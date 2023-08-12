@@ -89,7 +89,7 @@ struct cascpostprocessing {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
+    ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
 
     ConfigurableAxis centFT0MAxis{"FT0M",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
@@ -98,7 +98,7 @@ struct cascpostprocessing {
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
 
-    AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
+    ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
 
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
@@ -211,15 +211,16 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-
-    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    if (isMC) {
+      registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    }
   }
 
   void processRec(aod::MyCascades const& mycascades)
