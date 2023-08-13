@@ -1880,8 +1880,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pidbasic")) {
-    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
-    cut->AddCut(VarManager::kTPCchi2, 0, 4);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCncls, 60, 161.);
     return cut;
   }
 
