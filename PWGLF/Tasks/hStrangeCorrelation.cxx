@@ -65,6 +65,7 @@ struct correlateStrangeness {
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta #varphi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.6, 1.6}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -119,6 +120,7 @@ struct correlateStrangeness {
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
         float ptassoc = assoc.pt();
+        float pttrigger = trigg.pt();
 
         // skip if basic ranges not met
         if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
@@ -127,22 +129,24 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
+        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
+          continue;
 
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index)) {
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
-              histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
-              histos.fill(HIST("sameEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 3))
-              histos.fill(HIST("sameEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 1))
-              histos.fill(HIST("mixedEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 2))
-              histos.fill(HIST("mixedEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 3))
-              histos.fill(HIST("mixedEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
           }
         });
       }
@@ -177,6 +181,7 @@ struct correlateStrangeness {
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
         float ptassoc = assoc.pt();
+        float pttrigger = trigg.pt();
 
         // skip if basic ranges not met
         if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
@@ -185,22 +190,24 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
+        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
+          continue;
 
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index + 3)) {
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
-              histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
-              histos.fill(HIST("sameEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 3))
-              histos.fill(HIST("sameEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("sameEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 1))
-              histos.fill(HIST("mixedEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 2))
-              histos.fill(HIST("mixedEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
             if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 3))
-              histos.fill(HIST("mixedEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+              histos.fill(HIST("mixedEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
           }
         });
       }
@@ -225,6 +232,7 @@ struct correlateStrangeness {
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
         float ptassoc = assoc.pt();
+        float pttrigger = trigg.pt();
 
         // skip if basic ranges not met
         if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
@@ -233,11 +241,13 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
+        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
+          continue;
 
         if (!mixing)
-          histos.fill(HIST("sameEvent/Pion"), deltaphi, deltaeta, ptassoc, pvz, mult);
+          histos.fill(HIST("sameEvent/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
         else
-          histos.fill(HIST("mixedEvent/Pion"), deltaphi, deltaeta, ptassoc, pvz, mult);
+          histos.fill(HIST("mixedEvent/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
       }
     }
   }
@@ -275,6 +285,7 @@ struct correlateStrangeness {
     const AxisSpec preAxisDeltaPhi{axisDeltaPhi, "#Delta#varphi"};
     const AxisSpec preAxisDeltaEta{axisDeltaEta, "#Delta#eta"};
     const AxisSpec preAxisPtAssoc{axisPtAssoc, "#it{p}_{T}^{assoc} (GeV/c)"};
+    const AxisSpec preAxisPtTrigger{axisPtTrigger, "#it{p}_{T}^{trigger} (GeV/c)"};
     const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
     const AxisSpec preAxisMult{axisMult, "mult percentile"};
 
@@ -282,30 +293,35 @@ struct correlateStrangeness {
     histos.add("axes/hDeltaPhiAxis", "", kTH1C, {preAxisDeltaPhi});
     histos.add("axes/hDeltaEtaAxis", "", kTH1C, {preAxisDeltaEta});
     histos.add("axes/hPtAssocAxis", "", kTH1C, {preAxisPtAssoc});
+    histos.add("axes/hPtTriggerAxis", "", kTH1C, {preAxisPtTrigger});
     histos.add("axes/hVertexZAxis", "", kTH1C, {preAxisVtxZ});
     histos.add("axes/hMultAxis", "", kTH1C, {preAxisMult});
 
     std::vector<double> edgesDeltaPhiOrig = preAxisDeltaPhi.binEdges;
     std::vector<double> edgesDeltaEtaOrig = preAxisDeltaEta.binEdges;
     std::vector<double> edgesPtAssocOrig = preAxisPtAssoc.binEdges;
+    std::vector<double> edgesPtTriggerOrig = preAxisPtTrigger.binEdges;
     std::vector<double> edgesVtxZOrig = preAxisVtxZ.binEdges;
     std::vector<double> edgesMultOrig = preAxisMult.binEdges;
 
     std::vector<float> rangesDeltaPhi = {static_cast<float>(edgesDeltaPhiOrig[0]), static_cast<float>(edgesDeltaPhiOrig[edgesDeltaPhiOrig.size() - 1])};
     std::vector<float> rangesDeltaEta = {static_cast<float>(edgesDeltaEtaOrig[0]), static_cast<float>(edgesDeltaEtaOrig[edgesDeltaEtaOrig.size() - 1])};
     std::vector<float> rangesPtAssoc = {static_cast<float>(edgesPtAssocOrig[0]), static_cast<float>(edgesPtAssocOrig[edgesPtAssocOrig.size() - 1])};
+    std::vector<float> rangesPtTrigger = {static_cast<float>(edgesPtTriggerOrig[0]), static_cast<float>(edgesPtTriggerOrig[edgesPtTriggerOrig.size() - 1])};
     std::vector<float> rangesVtxZ = {static_cast<float>(edgesVtxZOrig[0]), static_cast<float>(edgesVtxZOrig[edgesVtxZOrig.size() - 1])};
     std::vector<float> rangesMult = {static_cast<float>(edgesMultOrig[0]), static_cast<float>(edgesMultOrig[edgesMultOrig.size() - 1])};
 
     axisRanges.emplace_back(rangesDeltaPhi);
     axisRanges.emplace_back(rangesDeltaEta);
     axisRanges.emplace_back(rangesPtAssoc);
+    axisRanges.emplace_back(rangesPtTrigger);
     axisRanges.emplace_back(rangesVtxZ);
     axisRanges.emplace_back(rangesMult);
 
     std::vector<double> edgesDeltaPhi;
     std::vector<double> edgesDeltaEta;
     std::vector<double> edgesPtAssoc;
+    std::vector<double> edgesPtTrigger;
     std::vector<double> edgesVtxZ;
     std::vector<double> edgesMult;
 
@@ -353,8 +369,20 @@ struct correlateStrangeness {
       // fixed binning, generate the bin edges on-the-spot
       double min = edgesPtAssocOrig[0];
       double delta = (edgesPtAssocOrig[1] - edgesPtAssocOrig[0]) / preAxisPtAssoc.nBins.value();
-      for (int i = offset; i < preAxisVtxZ.nBins.value() + 1 - offset; i++)
+      for (int i = offset; i < preAxisPtAssoc.nBins.value() + 1 - offset; i++)
         edgesPtAssoc.emplace_back(min + static_cast<double>(i) * delta);
+    }
+    // ===] pt trigger [===
+    if (!preAxisPtTrigger.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesPtTriggerOrig.size()) - offset; i++)
+        edgesPtTrigger.emplace_back(edgesPtTriggerOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesPtTriggerOrig[0];
+      double delta = (edgesPtTriggerOrig[1] - edgesPtTriggerOrig[0]) / preAxisPtTrigger.nBins.value();
+      for (int i = offset; i < preAxisPtTrigger.nBins.value() + 1 - offset; i++)
+        edgesPtTrigger.emplace_back(min + static_cast<double>(i) * delta);
     }
     // ===] vtx Z [===
     if (!preAxisVtxZ.nBins.has_value()) {
@@ -384,52 +412,54 @@ struct correlateStrangeness {
     LOGF(info, "Initialized THnF axis delta-phi with %i bins.", edgesDeltaPhi.size() - 1);
     LOGF(info, "Initialized THnF axis delta-eta with %i bins.", edgesDeltaEta.size() - 1);
     LOGF(info, "Initialized THnF axis pTassoc with %i bins.", edgesPtAssoc.size() - 1);
+    LOGF(info, "Initialized THnF axis pTtrigger with %i bins.", edgesPtTrigger.size() - 1);
     LOGF(info, "Initialized THnF axis vertex-Z with %i bins.", edgesVtxZ.size() - 1);
     LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMult.size() - 1);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
     const AxisSpec axisDeltaEtaNDim{edgesDeltaEta, "#Delta#eta"};
     const AxisSpec axisPtAssocNDim{edgesPtAssoc, "#it{p}_{T}^{assoc} (GeV/c)"};
+    const AxisSpec axisPtTriggerNDim{edgesPtTrigger, "#it{p}_{T}^{trigger} (GeV/c)"};
     const AxisSpec axisVtxZNDim{edgesVtxZ, "vertex Z (cm)"};
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
 
     if (bitcheck(doCorrelation, 0)) {
       histos.add("h3dK0ShortSpectrum", "h3dK0ShortSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hK0ShortEtaVsPtVsPhi", "hK0ShortEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 1)) {
       histos.add("h3dLambdaSpectrum", "h3dLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hLambdaEtaVsPtVsPhi", "hLambdaEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 2)) {
       histos.add("h3dAntiLambdaSpectrum", "h3dAntiLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hAntiLambdaEtaVsPtVsPhi", "hAntiLambdaEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 3)) {
       histos.add("h3dXiMinusSpectrum", "h3dXiMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hXiMinusEtaVsPtVsPhi", "hXiMinusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 4)) {
       histos.add("h3dXiPlusSpectrum", "h3dXiPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hXiPlusEtaVsPtVsPhi", "hXiPlusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 5)) {
       histos.add("h3dOmegaMinusSpectrum", "h3dOmegaMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hOmegaMinusEtaVsPtVsPhi", "hOmegaMinusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
       histos.add("h3dOmegaPlusSpectrum", "h3dOmegaPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("hOmegaPlusEtaVsPtVsPhi", "hOmegaPlusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 7)) {
-      histos.add("sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
       histos.add("hPionEtaVsPtVsPhi", "hPionEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
     LOGF(info, "Init THnFs done");
@@ -475,7 +505,7 @@ struct correlateStrangeness {
     if (TMath::Abs(collision.posZ()) > zVertexCut) {
       return;
     }
-    if (collision.centFT0M() > axisRanges[4][1] || collision.centFT0M() < axisRanges[4][0]) {
+    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return;
     }
     // ________________________________________________
@@ -520,7 +550,7 @@ struct correlateStrangeness {
     if (TMath::Abs(collision.posZ()) > zVertexCut) {
       return;
     }
-    if (collision.centFT0M() > axisRanges[4][1] || collision.centFT0M() < axisRanges[4][0]) {
+    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return;
     }
     // ________________________________________________
@@ -560,7 +590,7 @@ struct correlateStrangeness {
     if (TMath::Abs(collision.posZ()) > zVertexCut) {
       return;
     }
-    if (collision.centFT0M() > axisRanges[4][1] || collision.centFT0M() < axisRanges[4][0]) {
+    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return;
     }
     // ________________________________________________
@@ -596,9 +626,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
+      if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
+      if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
 
       if (!doprocessMixedEventHCascades) {
@@ -629,9 +659,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
+      if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
+      if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -661,9 +691,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
+      if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
+      if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
