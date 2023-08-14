@@ -703,7 +703,7 @@ struct MultiplicityCounter {
 
     usedTracksIds.clear();
     if (atracks != nullptr) {
-    for (auto const& track : *atracks) {
+      for (auto const& track : *atracks) {
         auto otrack = track.template track_as<FiLTracks>();
         usedTracksIds.emplace_back(track.trackId());
         if (otrack.collisionId() != track.bestCollisionId()) {
