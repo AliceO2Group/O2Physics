@@ -496,10 +496,10 @@ struct hypertriton3bodyFinder {
         float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
         // apply mass selections
         // float p2Pos = pP[0] * pP[0] + pP[1] * pP[1] + pP[2] * pP[2], p2Neg = pN[0] * pN[0] + pN[1] * pN[1] + pN[2] * pN[2];
-        float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
-        float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
+        float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
         float massMargin = 20 * (0.001 * (1. + 0.5 * ptV0)) + 0.07;
-        if (massV0LambdaHyp - RecoDecay::getMassPDG(kLambda0) > massMargin && massV0AntiLambdaHyp - RecoDecay::getMassPDG(kLambda0) > massMargin) {
+        if (massV0LambdaHyp - o2::constants::physics::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::physics::MassLambda > massMargin) {
           continue;
         }
         registry.fill(HIST("hV0Counter"), 7.5);
@@ -642,7 +642,7 @@ struct hypertriton3bodyFinder {
 
           // Fix: Reconstruction H3L DCA Check
           vtx3bodydata(
-            t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(),
+            t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
