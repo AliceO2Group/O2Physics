@@ -24,7 +24,7 @@ class GFWWeights : public TNamed
 {
  public:
   GFWWeights();
-  GFWWeights(const char* name);
+  explicit GFWWeights(const char* name);
   ~GFWWeights();
   void Init(bool AddData = kTRUE, bool AddM = kTRUE);
   void Fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight = 1); // htype: 0 for data, 1 for mc rec, 2 for mc gen

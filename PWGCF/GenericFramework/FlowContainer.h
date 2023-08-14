@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef FLOWCONTAINER__H
-#define FLOWCONTAINER__H
+#ifndef PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
+#define PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
 #include "TH3F.h"
 #include "TProfile2D.h"
 #include "TProfile.h"
@@ -32,7 +32,7 @@ class FlowContainer : public TNamed
 {
  public:
   FlowContainer();
-  FlowContainer(const char* name);
+  explicit FlowContainer(const char* name);
   ~FlowContainer();
   enum StatisticsType { kSingleSample,
                         kJackKnife,
@@ -165,4 +165,4 @@ class FlowContainer : public TNamed
   ClassDef(FlowContainer, 2);
 };
 
-#endif
+#endif  // PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
