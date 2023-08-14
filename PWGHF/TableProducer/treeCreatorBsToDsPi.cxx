@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file treeCreatorBsToDsPi.cxx
-/// \brief Writer of Bs → Ds- π+ candidates in the form of flat tables to be stored in TTrees.
+/// \brief Writer of Bs0 → Ds- π+ candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug, local optimization of analysis on small samples or ML training.
 ///        The output tables are defined and filled in this file.
 /// \note Adapted from treeCreatorB0T0DPi.cxx
@@ -32,7 +32,6 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! Radius of secondary vertex (cm)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! Momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float); //! Normalised impact parameter of prong0
@@ -97,7 +96,6 @@ DECLARE_SOA_TABLE(HfCandBsFulls, "AOD", "HFCANDBSFULL",
                   hf_cand::ErrorDecayLength,
                   hf_cand::ErrorDecayLengthXY,
                   hf_cand::Chi2PCA,
-                  full::RSecondaryVertex,
                   full::DecayLength,
                   full::DecayLengthXY,
                   full::DecayLengthNormalised,
@@ -149,7 +147,7 @@ DECLARE_SOA_TABLE(HfCandBsFullPs, "AOD", "HFCANDBSFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_bs::FlagMcMatchRec);
+                  hf_cand_bs::FlagMcMatchGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -235,7 +233,6 @@ struct HfTreeCreatorBsToDsPi {
         candidate.errorDecayLength(),
         candidate.errorDecayLengthXY(),
         candidate.chi2PCA(),
-        candidate.rSecondaryVertex(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
