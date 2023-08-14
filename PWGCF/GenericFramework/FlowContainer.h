@@ -165,4 +165,4 @@ class FlowContainer : public TNamed
   ClassDef(FlowContainer, 2);
 };
 
-#endif  // PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
+#endif // PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
