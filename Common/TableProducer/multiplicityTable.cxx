@@ -24,6 +24,7 @@ using namespace o2::framework;
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
   Produces<aod::Mults> mult;
+  Produces<aod::MultsExtra> multExtra;
   Produces<aod::MultZeqs> multzeq;
 
   // For vertex-Z corrections in calibration
@@ -39,6 +40,7 @@ struct MultiplicityTableTaskIndexed {
 
   // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+  Configurable<bool> populateMultExtra{"populateMultExtra", true, "if 1: populate table with some extra QA information"};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -237,6 +239,10 @@ struct MultiplicityTableTaskIndexed {
       LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
       mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
       multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+
+      if (populateMultExtra) {
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber);
+      }
     }
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
