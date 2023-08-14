@@ -2552,7 +2552,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-<<<<<<< HEAD
   // loop to define TOF PID cuts with and without post calibration
   for (int icase = 0; icase < vecPIDcase.size(); icase++) {
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_loose", vecPIDcase.at(icase).Data()))) {
@@ -2580,21 +2579,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
       }
       return cut;
     }
-=======
-  if (!nameStr.compare("electronPID_TOFnsigma")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
-    cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
-    return cut;
-  }
-
-  if (!nameStr.compare("electronPID_TOFnsigma_Corr")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
-    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
-    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
-    return cut;
-  }
->>>>>>> fe8bbbc2 (update cuts and histograms for dalitz selection)
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongHadRej", vecPIDcase.at(icase).Data()))) {
       if (icase == 0) {
