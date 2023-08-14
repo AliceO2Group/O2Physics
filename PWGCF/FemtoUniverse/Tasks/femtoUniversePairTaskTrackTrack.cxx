@@ -162,6 +162,8 @@ struct femtoUniversePairTaskTrackTrack {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  /// @brief Counter for particle swapping
+  int fNeventsProcessed = 0;
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
@@ -326,6 +328,10 @@ struct femtoUniversePairTaskTrackTrack {
   template <bool isMC, typename PartitionType, typename PartType>
   void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
+    // variables for particle swapping
+    bool swpart = fNeventsProcessed % 2;
+    fNeventsProcessed++;
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       // if (part.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || part.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt")) {
@@ -412,7 +418,13 @@ struct femtoUniversePairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D);
+
+        swpart = !swpart;
       }
     } else {
 
@@ -509,6 +521,10 @@ struct femtoUniversePairTaskTrackTrack {
   void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
 
+    // variables for particle swapping
+    bool swpart = fNeventsProcessed % 2;
+    fNeventsProcessed++;
+
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // if (p1.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
       //   continue;
@@ -545,7 +561,12 @@ struct femtoUniversePairTaskTrackTrack {
         }
       }
 
-      mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+      if (swpart)
+        mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+      else
+        mixedEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D);
+
+      swpart = !swpart;
     }
   }
 
