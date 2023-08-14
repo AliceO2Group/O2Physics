@@ -25,6 +25,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, Tracks, "_2"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
+DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                 //!
 
 // General 3 body Vtx properties: position, momentum
 DECLARE_SOA_COLUMN(PxTrack0, pxtrack0, float); //! track0 px at min
@@ -109,7 +110,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! 3 body vtx pz
 } // namespace vtx3body
 
 DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDATA", //!
-                       o2::soa::Index<>, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::CollisionId,
+                       o2::soa::Index<>, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::CollisionId, vtx3body::Decay3BodyId,
                        vtx3body::X, vtx3body::Y, vtx3body::Z,
                        vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,
                        vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,
@@ -152,11 +153,31 @@ namespace vtx3body
 DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to Vtx3BodyData entry
 }
 
-DECLARE_SOA_TABLE(Vtx3BodyDataLink, "AOD", "VtxDATALINK", //! Joinable table with Decay3bodys which links to Vtx3BodyData which is not produced for all entries
+DECLARE_SOA_TABLE(Decay3BodyDataLink, "AOD", "DECAY3BODYLINK", //! Joinable table with Decay3bodys which links to Vtx3BodyData which is not produced for all entries
                   vtx3body::Vtx3BodyDataId);
 
-using Vtxs3BodyLinked = soa::Join<Decay3Bodys, Vtx3BodyDataLink>;
-using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;
+using Decay3BodysLinked = soa::Join<Decay3Bodys, Decay3BodyDataLink>;
+using Decay3BodyLinked = Decay3BodysLinked::iterator;
+
+// Definition of labels for Vtx3BodyDatas
+namespace mcvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Vtx3BodyDatas
+} // namespace mcvtx3bodylabel
+
+DECLARE_SOA_TABLE(McVtx3BodyLabels, "AOD", "MCVTXLABEL", //! Table joinable with Vtx3BodyData containing the MC labels
+                  mcvtx3bodylabel::McParticleId);
+using McVtx3BodyLabel = McVtx3BodyLabels::iterator;
+
+// Definition of labels for Decay3Bodys // Full table, joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+namespace mcfullvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
+} // namespace mcfullvtx3bodylabel
+
+DECLARE_SOA_TABLE(McFullVtx3BodyLabels, "AOD", "MCFULLVTXLABEL", //! Table joinable with Decay3Bodys
+                  mcfullvtx3bodylabel::McParticleId);
+using McFullVtx3BodyLabel = McFullVtx3BodyLabels::iterator;
 
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_
