@@ -868,6 +868,10 @@ struct lfTpcPid {
         tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                              \
       }                                                                                                                  \
     } else {                                                                                                             \
+      if (!collisions.size()) {                                                                                          \
+        LOG(warn) << "No collisions in the data frame. Skipping the PID table for " << #Particle;                        \
+        return;                                                                                                          \
+      }                                                                                                                  \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                         \
       bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                      \
       float bb = 0.f;                                                                                                    \
@@ -927,6 +931,10 @@ struct lfTpcPid {
         tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());             \
       }                                                                                             \
     } else {                                                                                        \
+      if (!collisions.size()) {                                                                     \
+        LOG(warn) << "No collisions in the data frame. Skipping the PID table for " << #Particle;   \
+        return;                                                                                     \
+      }                                                                                             \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);    \
       bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
       float bb = 0.f;                                                                               \
@@ -980,6 +988,10 @@ struct lfTpcPid {
                          Trks const& tracks,
                          aod::BCsWithTimestamps const&)
   {
+    if (!collisions.size()) {
+      LOG(warn) << "No collisions in the data frame.";
+      return;
+    }
     tablePIDFullPi.reserve(tracks.size());
     bbPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
     bbNegPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
