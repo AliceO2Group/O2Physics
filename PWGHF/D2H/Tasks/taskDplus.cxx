@@ -194,7 +194,7 @@ struct HfTaskDplus {
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }

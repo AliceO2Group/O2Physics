@@ -197,7 +197,7 @@ struct JetFinderHFTask {
 
     for (auto const& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) & (1 << candDecay)) {
-        auto particleY = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto particleY = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (particleY < candYMin || particleY > candYMax) {
           continue;
         }

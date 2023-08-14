@@ -753,7 +753,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 /// \param hArmPod is the pointer to an array of QA histo AP plot before selection
 /// \return an integer passes all cuts
 template <typename V0, typename Coll, typename T, typename H2, typename H3>
-int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const float& minGammaCosinePa, const float& minV0CosinePa, const float& minV0Radius, const float& maxNsigmaPrForLambda, const float& deltaMassK0s, const float& deltaMassLambda, const int& setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+int8_t isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const float& minGammaCosinePa, const float& minV0CosinePa, const float& minV0Radius, const float& maxNsigmaPrForLambda, const float& deltaMassK0s, const float& deltaMassLambda, const int& setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
   int8_t isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
 
@@ -915,7 +915,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
 /// \param hSplinePion spline of pion and anti-pion calibrations
 /// \return true if cascade passes all cuts
 template <typename Casc, typename V0, typename T, typename Coll, typename H3>
-bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& cosPAXi, const float& cosPALambda, const float& DCAxyXi, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
+bool isSelectedCascade(const Casc& casc, const V0& v0, const std::array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& cosPAXi, const float& cosPALambda, const float& DCAxyXi, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
 {
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
@@ -1273,7 +1273,7 @@ std::array<T, 3> PredictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort:
 /// \param pidSpecies is the PID species
 /// \return the corrected Nsigma value for the PID species
 template <typename T, typename H3>
-float getTPCPostCalib(const array<H3, 2>& hCalibMap, const T& track, const int pidSpecies)
+float getTPCPostCalib(const std::array<H3, 2>& hCalibMap, const T& track, const int pidSpecies)
 {
   auto tpcNCls = track.tpcNClsFound();
   auto tpcPin = track.tpcInnerParam();
