@@ -40,7 +40,7 @@ struct MultiplicityTableTaskIndexed {
 
   // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
-  Configurable<bool> populateMultExtra{"populateMultExtra", false, "if 1: populate table with some extra QA information"};
+  Configurable<bool> populateMultExtra{"populateMultExtra", true, "if 1: populate table with some extra QA information"};
 
   int mRunNumber;
   bool lCalibLoaded;
