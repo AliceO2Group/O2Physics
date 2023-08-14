@@ -263,8 +263,8 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
   int ptInd;
   for (int i = 0; i < static_cast<int>(corconf.Regs.size()); i++) { // looping over all regions
     if (corconf.Regs.at(i).size() == 0)
-      return complex<double>(0, 0);                                 // again, if no regions in the current subevent, then quit immediatelly
-    ptInd = corconf.ptInd.at(i);                                    // for i=0 (potentially, POI)
+      return complex<double>(0, 0); // again, if no regions in the current subevent, then quit immediatelly
+    ptInd = corconf.ptInd.at(i);    // for i=0 (potentially, POI)
     if (ptInd < 0)
       ptInd = ptbin;
     // picking up the indecies of regions...
@@ -307,7 +307,7 @@ vector<pair<int, vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& i
       retPair.push_back(make_pair(incfg.Regs[iR][0], vector<int>{incfg.Hars[iR][0]})); // If we have a PoI, then it comes with the first harmonic
       retPair.push_back(make_pair(incfg.Regs[iR][1], incfg.Hars[iR]));                 // Then the second is ref. with full harmonics
     } else {
-      retPair.push_back(make_pair(incfg.Regs[iR][0], incfg.Hars[iR]));                 // Otherwise, it's only ref with all harmonics
+      retPair.push_back(make_pair(incfg.Regs[iR][0], incfg.Hars[iR])); // Otherwise, it's only ref with all harmonics
     }
     if (incfg.Overlap[iR] > -1)
       retPair.push_back(make_pair(incfg.Overlap[iR], incfg.Hars[iR])); // if overlap provided, then also fetch its harmonics

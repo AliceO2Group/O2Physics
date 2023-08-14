@@ -43,7 +43,7 @@ class GFWCumulant
   bool IsPtBinFilled(int ptb);
   void CreateComplexVectorArray(int N = 1, int P = 1, int Pt = 1);
   void CreateComplexVectorArrayVarPower(int N = 1, vector<int> Pvec = {1}, int Pt = 1);
-  int PW(int ind) { return fPowVec.at(ind); };  // No checks to speed up, be carefull!!!
+  int PW(int ind) { return fPowVec.at(ind); }; // No checks to speed up, be carefull!!!
   void DestroyComplexVectorArray();
   complex<double> Vec(int, int, int ptbin = 0); // envelope class to summarize pt-dif. Q-vec getter
  protected:
@@ -56,7 +56,7 @@ class GFWCumulant
   vector<int> fPowVec; //! Powers array
   int fPt;             //! fPt bins
   bool* fFilledPts;
-  bool fInitialized;   // Arrays are initialized
+  bool fInitialized; // Arrays are initialized
   complex<double> fNullQ = 0;
 };
 

@@ -86,7 +86,7 @@ struct GenericFramework {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
     o2::framework::AxisSpec axis = axisPt;
@@ -233,7 +233,7 @@ struct GenericFramework {
       if (track.dcaXY() > 7 * (0.0026 + 0.0050 / pow(track.pt(), 1.01)))
         continue;
       fWeights->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
-    };
+    }
   }
   PROCESS_SWITCH(GenericFramework, processWeights, "Process weights for acceptance corrections", false);
 };
