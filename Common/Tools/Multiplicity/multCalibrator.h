@@ -20,11 +20,10 @@
 #define MULTCALIBRATOR_H
 
 #include <iostream>
-#include "TNamed.h"
-#include "TH1D.h"
 #include <map>
 
-using namespace std;
+#include "TNamed.h"
+#include "TH1D.h"
 
 class multCalibrator : public TNamed
 {
@@ -47,7 +46,7 @@ class multCalibrator : public TNamed
   void SetBoundaries(Long_t lNB, Double_t* lB)
   {
     if (lNB < 2 || lNB > 1e+6) {
-      cout << "Please make sure you are using a reasonable number of boundaries!" << endl;
+      std::cout << "Please make sure you are using a reasonable number of boundaries!" << std::endl;
       lNB = -1;
     }
     lDesiredBoundaries = lB;
