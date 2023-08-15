@@ -868,7 +868,7 @@ struct MultiplicityCounter {
           cent = collision.centFT0M();
       }
 
-      auto mcCollision = collision.mcCollision();
+      // auto mcCollision = collision.mcCollision();
 
       if (useEvSel && !collision.sel8()) // event selection cut
         continue;
