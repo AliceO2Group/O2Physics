@@ -11,7 +11,7 @@
 
 #include "EventSelectionParams.h"
 
-namespace evsel
+namespace o2::aod::evsel
 {
 const char* selectionLabels[kNsel] = {
   "kIsBBV0A",
@@ -49,6 +49,8 @@ const char* selectionLabels[kNsel] = {
   "kIsTriggerTVX",
   "kIsINT1"};
 }
+
+using namespace o2::aod::evsel;
 
 EventSelectionParams::EventSelectionParams(int system, int run)
 {

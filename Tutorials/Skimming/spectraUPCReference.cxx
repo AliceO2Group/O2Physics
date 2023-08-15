@@ -22,6 +22,7 @@
 #include "TLorentzVector.h"
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 

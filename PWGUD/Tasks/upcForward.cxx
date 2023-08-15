@@ -24,11 +24,15 @@ alien:///alice/data/2015/LHC15o/000246392/pass5_lowIR/PWGZZ/Run3_Conversion/148_
 #include <TString.h>
 #include "TLorentzVector.h"
 #include "Common/CCDB/TriggerAliases.h"
+
 using namespace std;
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
 #define mmuon 0.1057 // mass of muon
+
 struct UPCForward {
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
