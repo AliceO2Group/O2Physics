@@ -48,7 +48,7 @@ const char* selectionLabels[kNsel] = {
   "kNoPileupTPC",
   "kIsTriggerTVX",
   "kIsINT1"};
-}
+} // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;
 
