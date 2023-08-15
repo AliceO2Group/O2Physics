@@ -869,7 +869,10 @@ struct lfTpcPid {
       }                                                                                                                  \
     } else {                                                                                                             \
       if (!collisions.size()) {                                                                                          \
-        LOG(warn) << "No collisions in the data frame. Skipping the PID table for " << #Particle;                        \
+        LOG(warn) << "No collisions in the data frame. Dummy PID table for " << #Particle;                               \
+        for (unsigned int i{0}; i < tracks.size(); ++i) {                                                                \
+          tablePID##Particle(aod::pidtpc_tiny::binning::underflowBin);                                                   \
+        }                                                                                                                \
         return;                                                                                                          \
       }                                                                                                                  \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                         \
@@ -932,7 +935,10 @@ struct lfTpcPid {
       }                                                                                             \
     } else {                                                                                        \
       if (!collisions.size()) {                                                                     \
-        LOG(warn) << "No collisions in the data frame. Skipping the PID table for " << #Particle;   \
+        LOG(warn) << "No collisions in the data frame. Dummy PID table for " << #Particle;          \
+        for (unsigned int i{0}; i < tracks.size(); ++i) {                                           \
+          tablePIDFull##Particle(-999.f, -999.f);                                                   \
+        }                                                                                           \
         return;                                                                                     \
       }                                                                                             \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);    \
@@ -988,23 +994,25 @@ struct lfTpcPid {
                          Trks const& tracks,
                          aod::BCsWithTimestamps const&)
   {
+    bool dummyPID = false;
     if (!collisions.size()) {
-      LOG(warn) << "No collisions in the data frame.";
-      return;
+      LOG(warn) << "No collisions in the data frame. Dummy PID table for Pi-Ka-Pr";
+      dummyPID = true;
+    } else {
+      tablePIDFullPi.reserve(tracks.size());
+      bbPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      tablePIDFullKa.reserve(tracks.size());
+      bbKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      tablePIDFullPr.reserve(tracks.size());
+      bbPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
     }
-    tablePIDFullPi.reserve(tracks.size());
-    bbPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    tablePIDFullKa.reserve(tracks.size());
-    bbKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    tablePIDFullPr.reserve(tracks.size());
-    bbPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
     float bb = 0.f;
     float expSigma = 1.f;
     for (auto const& trk : tracks) {
-      if (!trk.hasTPC()) {
+      if (!trk.hasTPC() || dummyPID) {
         tablePIDFullPi(-999.f, -999.f);
         tablePIDFullKa(-999.f, -999.f);
         tablePIDFullPr(-999.f, -999.f);
