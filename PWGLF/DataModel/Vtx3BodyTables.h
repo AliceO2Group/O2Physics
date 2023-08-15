@@ -75,9 +75,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under Hypertrito
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antiHypertriton hypothesis
                            [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}); });
 
-DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton,                                                                                                      //! 3 body vtx y with hypertriton or antihypertriton hypothesis
+DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton,                                                                                                           //! 3 body vtx y with hypertriton or antihypertriton hypothesis
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassHyperTriton); }); // here MassHyperTriton = 2.992
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                        //! 3 body vtx eta
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                             //! 3 body vtx eta
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! 3 body vtx phi
                            [](float Px, float Py) -> float { return RecoDecay::phi(Px, Py); });

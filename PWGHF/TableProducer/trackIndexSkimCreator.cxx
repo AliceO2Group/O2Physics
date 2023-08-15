@@ -1004,25 +1004,25 @@ struct HfTrackIndexSkimCreator {
     }
 
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{array{massPi, massK},
-                                                              std::array{massK, massPi}};
+                                                                   std::array{massK, massPi}};
 
     arrMass2Prong[hf_cand_2prong::DecayType::JpsiToEE] = std::array{array{massElectron, massElectron},
-                                                               std::array{massElectron, massElectron}};
+                                                                    std::array{massElectron, massElectron}};
 
     arrMass2Prong[hf_cand_2prong::DecayType::JpsiToMuMu] = std::array{array{massMuon, massMuon},
-                                                                 std::array{massMuon, massMuon}};
+                                                                      std::array{massMuon, massMuon}};
 
     arrMass3Prong[hf_cand_3prong::DecayType::DplusToPiKPi] = std::array{array{massPi, massK, massPi},
-                                                                   std::array{massPi, massK, massPi}};
+                                                                        std::array{massPi, massK, massPi}};
 
     arrMass3Prong[hf_cand_3prong::DecayType::LcToPKPi] = std::array{array{massProton, massK, massPi},
-                                                               std::array{massPi, massK, massProton}};
+                                                                    std::array{massPi, massK, massProton}};
 
     arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi] = std::array{array{massK, massK, massPi},
-                                                               std::array{massPi, massK, massK}};
+                                                                    std::array{massPi, massK, massK}};
 
     arrMass3Prong[hf_cand_3prong::DecayType::XicToPKPi] = std::array{array{massProton, massK, massPi},
-                                                                std::array{massPi, massK, massProton}};
+                                                                     std::array{massPi, massK, massProton}};
 
     // cuts for 2-prong decays retrieved by json. the order must be then one in hf_cand_2prong::DecayType
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
@@ -2677,13 +2677,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
     }
 
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{array{massXi, massPi},
-                                                                            std::array{massPi, massXi}};
+                                                                                 std::array{massPi, massXi}};
 
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = std::array{array{massOmega, massPi},
-                                                                                  std::array{massPi, massOmega}};
+                                                                                       std::array{massPi, massOmega}};
 
     arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = std::array{array{massXi, massPi, massPi},
-                                                                              std::array{massPi, massPi, massXi}};
+                                                                                   std::array{massPi, massPi, massXi}};
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);

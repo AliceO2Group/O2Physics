@@ -346,12 +346,12 @@ struct HfCandidateCreatorBsExpressions {
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
       auto arrayDaughtersBs = std::array{candDs.prong0_as<aod::TracksWMc>(),
-                                    candDs.prong1_as<aod::TracksWMc>(),
-                                    candDs.prong2_as<aod::TracksWMc>(),
-                                    candidate.prong1_as<aod::TracksWMc>()};
+                                         candDs.prong1_as<aod::TracksWMc>(),
+                                         candDs.prong2_as<aod::TracksWMc>(),
+                                         candidate.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersDs = std::array{candDs.prong0_as<aod::TracksWMc>(),
-                                    candDs.prong1_as<aod::TracksWMc>(),
-                                    candDs.prong2_as<aod::TracksWMc>()};
+                                         candDs.prong1_as<aod::TracksWMc>(),
+                                         candDs.prong2_as<aod::TracksWMc>()};
 
       // Checking Bs(bar) → Ds∓ π± → (K- K+ π∓) π±
       indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);

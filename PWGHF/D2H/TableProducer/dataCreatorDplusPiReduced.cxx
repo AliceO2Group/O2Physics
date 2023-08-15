@@ -392,8 +392,8 @@ struct HfDataCreatorDplusPiReducedMc {
 
     for (const auto& candD : candsD) {
       auto arrayDaughtersD = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                   candD.prong1_as<aod::TracksWMc>(),
-                                   candD.prong2_as<aod::TracksWMc>()};
+                                        candD.prong1_as<aod::TracksWMc>(),
+                                        candD.prong2_as<aod::TracksWMc>()};
 
       for (const auto& trackPion : tracksPion) {
         if (trackPion.hfReducedCollisionId() != candD.hfReducedCollisionId()) {
@@ -401,9 +401,9 @@ struct HfDataCreatorDplusPiReducedMc {
         }
         // const auto& trackId = trackPion.globalIndex();
         auto arrayDaughtersB0 = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                      candD.prong1_as<aod::TracksWMc>(),
-                                      candD.prong2_as<aod::TracksWMc>(),
-                                      trackPion.track_as<aod::TracksWMc>()};
+                                           candD.prong1_as<aod::TracksWMc>(),
+                                           candD.prong2_as<aod::TracksWMc>(),
+                                           trackPion.track_as<aod::TracksWMc>()};
         // B0 → D- π+ → (π- K+ π-) π+
         // Printf("Checking B0 → D- π+");
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);

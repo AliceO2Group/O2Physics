@@ -304,9 +304,9 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// matching to MC
       auto arrayDaughters = std::array{candLc.prong0_as<TracksMC>(),
-                                  candLc.prong1_as<TracksMC>(),
-                                  candLc.prong2_as<TracksMC>(),
-                                  candSigmac.prong1_as<TracksMC>()};
+                                       candLc.prong1_as<TracksMC>(),
+                                       candLc.prong2_as<TracksMC>(),
+                                       candSigmac.prong1_as<TracksMC>()};
       chargeSigmac = candSigmac.charge();
       if (chargeSigmac == 0) {
         /// candidate Σc0

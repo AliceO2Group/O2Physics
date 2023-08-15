@@ -352,12 +352,12 @@ struct HfCandidateCreatorB0Expressions {
       debug = 0;
       auto candD = candidate.prong0();
       auto arrayDaughtersB0 = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                    candD.prong1_as<aod::TracksWMc>(),
-                                    candD.prong2_as<aod::TracksWMc>(),
-                                    candidate.prong1_as<aod::TracksWMc>()};
+                                         candD.prong1_as<aod::TracksWMc>(),
+                                         candD.prong2_as<aod::TracksWMc>(),
+                                         candidate.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersD = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                   candD.prong1_as<aod::TracksWMc>(),
-                                   candD.prong2_as<aod::TracksWMc>()};
+                                        candD.prong1_as<aod::TracksWMc>(),
+                                        candD.prong2_as<aod::TracksWMc>()};
 
       // B0 → D- π+ → (π- K+ π-) π+
       // Printf("Checking B0 → D- π+");

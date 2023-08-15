@@ -286,9 +286,9 @@ struct HfCandidateCreatorXMc {
       auto daughterNegJpsi = jpsiTrack.prong1_as<aod::TracksWMc>();
       auto arrayJpsiDaughters = std::array{daughterPosJpsi, daughterNegJpsi};
       auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(),
-                                  candidate.prong2_as<aod::TracksWMc>(),
-                                  daughterPosJpsi,
-                                  daughterNegJpsi};
+                                       candidate.prong2_as<aod::TracksWMc>(),
+                                       daughterPosJpsi,
+                                       daughterNegJpsi};
 
       // X → J/ψ π+ π-
       // Printf("Checking X → J/ψ π+ π-");

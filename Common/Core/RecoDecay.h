@@ -134,8 +134,8 @@ class RecoDecay
   static std::array<double, 3> crossProd(const std::array<T, 3>& vec1, const std::array<U, 3>& vec2)
   {
     return std::array<double, 3>{(static_cast<double>(vec1[1]) * static_cast<double>(vec2[2])) - (static_cast<double>(vec1[2]) * static_cast<double>(vec2[1])),
-                            (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
-                            (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
+                                 (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
+                                 (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
   }
 
   /// Calculates magnitude squared of a vector.
@@ -733,7 +733,7 @@ class RecoDecay
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
-    std::array<int, N> arrDaughtersIndex;       // array of indices of provided daughters
+    std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
     if (sign) {
       *sign = sgn;
     }

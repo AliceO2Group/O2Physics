@@ -247,12 +247,12 @@ struct HfCandidateCreatorLbMc {
       debug = 0;
       auto lcCand = candidate.prong0();
       auto arrayDaughters = std::array{lcCand.prong0_as<aod::TracksWMc>(),
-                                  lcCand.prong1_as<aod::TracksWMc>(),
-                                  lcCand.prong2_as<aod::TracksWMc>(),
-                                  candidate.prong1_as<aod::TracksWMc>()};
+                                       lcCand.prong1_as<aod::TracksWMc>(),
+                                       lcCand.prong2_as<aod::TracksWMc>(),
+                                       candidate.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersLc = std::array{lcCand.prong0_as<aod::TracksWMc>(),
-                                    lcCand.prong1_as<aod::TracksWMc>(),
-                                    lcCand.prong2_as<aod::TracksWMc>()};
+                                         lcCand.prong1_as<aod::TracksWMc>(),
+                                         lcCand.prong2_as<aod::TracksWMc>()};
       // Λb → Λc+ π-
       // Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);

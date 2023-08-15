@@ -221,12 +221,12 @@ struct HfCandidateCreatorXiccMc {
       debug = 0;
       auto xicCand = candidate.prong0();
       auto arrayDaughters = std::array{xicCand.prong0_as<aod::TracksWMc>(),
-                                  xicCand.prong1_as<aod::TracksWMc>(),
-                                  xicCand.prong2_as<aod::TracksWMc>(),
-                                  candidate.prong1_as<aod::TracksWMc>()};
+                                       xicCand.prong1_as<aod::TracksWMc>(),
+                                       xicCand.prong2_as<aod::TracksWMc>(),
+                                       candidate.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersXic = std::array{xicCand.prong0_as<aod::TracksWMc>(),
-                                     xicCand.prong1_as<aod::TracksWMc>(),
-                                     xicCand.prong2_as<aod::TracksWMc>()};
+                                          xicCand.prong1_as<aod::TracksWMc>(),
+                                          xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
       // Printf("Checking Ξcc±± → p± K∓ π± π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
