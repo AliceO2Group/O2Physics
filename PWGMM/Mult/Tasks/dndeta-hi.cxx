@@ -669,7 +669,7 @@ struct MultiplicityCounter {
           //  for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
           //   for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
           //    if (bevtc[ievtc] == true && btrigc[itrigc] == true){
-          //				registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(),cent, Double_t(kBkg), track.pt());
+          //     registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(),cent, Double_t(kBkg), track.pt());
           //    }
           //   }
           //  }
