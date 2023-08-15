@@ -48,11 +48,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::constants::math;
-
 namespace o2::aod
 {
 
@@ -153,17 +148,17 @@ static const float massK0S = 0.497614;
 static const float massLambda = 1.11568;
 static const float massXi = 1.32171;
 
-static const AxisSpec ptAxis{50, 0.f, 50.f};
-static const AxisSpec pAxis{50, 0.f, 10.f};
-static const AxisSpec kstarAxis{100, 0.f, 1.f};
-static const AxisSpec etaAxis{30, -1.5f, 1.5f};
-static const AxisSpec nSigmaAxis{100, -10.f, 10.f};
-static const AxisSpec alphaAxis{100, -1.f, 1.f};
-static const AxisSpec qtAxis{100, 0.f, 0.25f};
-static const AxisSpec bdtAxis{100, 0.f, 1.f};
-static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 8> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 0.139f, 0.159f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 1.1f, 1.4f}, AxisSpec{100, 2.3f, 2.9f}, AxisSpec{100, 2.3f, 2.9f}};
-static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
+static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
+static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
+static const o2::framework::AxisSpec kstarAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec etaAxis{30, -1.5f, 1.5f};
+static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
+static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
+static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
+static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec phiAxis{36, 0., TwoPI};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 8> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
+static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
 // channels to trigger on for femto
@@ -209,7 +204,7 @@ static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", 
 // dummy array
 static const std::vector<std::string> labelsEmpty{};
 static constexpr double cutsTrackDummy[hf_cuts_single_track::nBinsPtTrack][hf_cuts_single_track::nCutVarsTrack] = {{0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}};
-LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack};
+o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack};
 
 /// load the TPC spline from the CCDB
 /// \param ccdbApi is Api for CCDB
