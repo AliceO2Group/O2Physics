@@ -19,11 +19,6 @@
 #ifndef DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::track;
-
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/FT0Corrected.h"
