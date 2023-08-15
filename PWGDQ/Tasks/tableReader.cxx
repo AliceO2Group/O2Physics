@@ -997,7 +997,26 @@ struct AnalysisSameEventPairing {
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
         dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
         if (fConfigFlatTables.value) {
-          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(), t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(), -999., -999., -999., VarManager::fgValues[VarManager::kMass], false, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), 0., 0., t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., t1.isAmbiguous(), t2.isAmbiguous());
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                        -999., -999., -999.,
+                        VarManager::fgValues[VarManager::kMass],
+                        false,
+                        VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA],
+                        VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                        VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
+                        VarManager::fgValues[VarManager::kCosPointingAngle],
+                        t1.pt(), t1.eta(), t1.phi(), t1.sign(),
+                        t2.pt(), t2.eta(), t2.phi(), t2.sign(),
+                        t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
+                        0., 0.,
+                        t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
+                        t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
+                        t1.chi2(), t2.chi2(),
+                        -999., -999., -999., -999.,
+                        -999., -999., -999., -999.,
+                        -999., -999., -999., -999.,
+                        -999., -999., -999., -999.,
+                        t1.isAmbiguous(), t2.isAmbiguous());
         }
       }
 
