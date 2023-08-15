@@ -14,12 +14,10 @@
 
 #ifndef TOOLS_KFPARTICLE_QAKFEVENTTRACK_H_
 #define TOOLS_KFPARTICLE_QAKFEVENTTRACK_H_
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::track;
 
 enum FlagsTracks {
   kITS = BIT(0),
