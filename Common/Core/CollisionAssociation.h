@@ -232,12 +232,12 @@ class CollisionAssociation
   }
 
  private:
-  float mNumSigmaForTimeCompat{4.};                                         // number of sigma for time compatibility
-  float mTimeMargin{500.};                                                  // additional time margin in ns
+  float mNumSigmaForTimeCompat{4.};                                                  // number of sigma for time compatibility
+  float mTimeMargin{500.};                                                           // additional time margin in ns
   int mTrackSelection{o2::aod::track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};                                             // use the information of PV contributors
-  bool mIncludeUnassigned{true};                                            // include tracks that were originally not assigned to any collision
-  bool mFillTableOfCollIdsPerTrack{false};                                  // fill additional table with vectors of compatible collisions per track
+  bool mUsePvAssociation{true};                                                      // use the information of PV contributors
+  bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
+  bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
 };
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_
