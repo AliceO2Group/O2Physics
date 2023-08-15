@@ -472,9 +472,9 @@ struct MultiplicityCounter {
       auto collisionsample = collisions.sliceBy(perMcCol, mcCollision.globalIndex());
       auto cent = -1;
 
-      if (collisionsample.size() != 1)
+      if (collisionsample.size() != 1) {
         cent = -1;
-      else {
+      } else {
         for (auto& collision : collisionsample) {
           if (IsPbPb) {
             if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>())
@@ -769,7 +769,7 @@ struct MultiplicityCounter {
     Int_t pid = 0;
     for (auto& particle : mcParticles) {
       auto p = pdg->GetParticle(particle.pdgCode());
-      if (std::abs(particle.pdgCode() == 310 && fabs(particle.eta()) < 0.5) && fabs(genz) < 10)
+      if (std::abs(particle.pdgCode()) == 310 && fabs(particle.eta()) < 0.5 && fabs(genz) < 10)
         registry.fill(HIST("Selection"), 17.);
       if (!particle.isPhysicalPrimary()) {
         continue;
