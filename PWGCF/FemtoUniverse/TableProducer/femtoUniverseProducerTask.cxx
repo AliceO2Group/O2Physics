@@ -52,10 +52,12 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl,
+  soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
             aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+
+// global tracks
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -83,7 +85,6 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoUniverseProducerTask {
-
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
@@ -120,18 +121,16 @@ struct femtoUniverseProducerTask {
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfUseGlobalTrack{"ConfUseGlobalTrack", true, "Use global track cuts (as defined in the official o2 documentation)"};
-    Configurable<float> ConfPtLowGlobalTrack{"ConfPtLowGlobalTrack", 0.14, "Lower limit for Pt for the global track"};             // pT low
-    Configurable<float> ConfPtHighGlobalTrack{"ConfPtHighGlobalTrack", 5.0, "Higher limit for Pt for the global track"};           // pT high
-    Configurable<float> ConfEtaLowGlobalTrack{"ConfEtaLowGlobalTrack", -0.8, "Lower limit for Eta for the global track"};          // eta low
-    Configurable<float> ConfEtaHighGlobalTrack{"ConfEtaHighGlobalTrack", 0.8, "Higher limit for Eta for the global track"};        // eta high
-    Configurable<float> ConfDcaXYGlobalTrack{"ConfDcaXYGlobalTrack", 2.4, "Value for DCA_XY for the global track"};                // max dca to vertex XY
-    Configurable<float> ConfDcaZGlobalTrack{"ConfDcaZGlobalTrack", 3.2, "Value for DCA_Z for the global track"};                   // max dca to vertex Z
-    Configurable<int> ConfTpcClGlobalTrack{"ConfTpcClGlobalTrack", 88, "Number of tpc clasters for the global track"};             // min number of found TPC clusters
-    Configurable<int> ConfTpcCrosRoGlobalTrack{"ConfTpcCrosRoGlobalTrack", 70, "Number of tpc crossed rows for the global track"}; // min number of crossed rows
-    Configurable<float> ConfChi2TpcGlobalTrack{"ConfChi2TpcGlobalTrack", 4.0, "Chi2 / cluster for the TPC track segment for the global track"};
-    Configurable<float> ConfChi2ItsGlobalTrack{"ConfChi2ItsGlobalTrack", 36.0, "Chi2 / cluster for the ITS track segment for the global track"};
-  } ConfGlobalTracks;
+    Configurable<float> ConfPtLowCustomCut{"ConfPtLowCustomCut", 0.14, "Lower limit for Pt for the global track"};             // pT low
+    Configurable<float> ConfPtHighCustomCut{"ConfPtHighCustomCut", 5.0, "Higher limit for Pt for the global track"};           // pT high
+    Configurable<float> ConfEtaCustomCut{"ConfEtaCustomCut", 0.8, "Eta cut for the global track"};                             // eta
+    Configurable<float> ConfDcaXYCustomCut{"ConfDcaXYCustomCut", 2.4, "Value for DCA_XY for the global track"};                // max dca to vertex XY
+    Configurable<float> ConfDcaZCustomCut{"ConfDcaZCustomCut", 3.2, "Value for DCA_Z for the global track"};                   // max dca to vertex Z
+    Configurable<int> ConfTpcClCustomCut{"ConfTpcClCustomCut", 88, "Number of tpc clasters for the global track"};             // min number of found TPC clusters
+    Configurable<int> ConfTpcCrosRoCustomCut{"ConfTpcCrosRoCustomCut", 70, "Number of tpc crossed rows for the global track"}; // min number of crossed rows
+    Configurable<float> ConfChi2TpcCustomCut{"ConfChi2TpcCustomCut", 4.0, "Chi2 / cluster for the TPC track segment for the global track"};
+    Configurable<float> ConfChi2ItsCustomCut{"ConfChi2ItsCustomCut", 36.0, "Chi2 / cluster for the ITS track segment for the global track"};
+  } ConfCustomCuts;
 
   // Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
@@ -180,6 +179,9 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfV0RejectKaons{"ConfV0RejectKaons", false, "Switch to reject kaons"};
   Configurable<float> ConfV0InvKaonMassLowLimit{"ConfV0InvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfV0InvKaonMassUpLimit{"ConfV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+
+  Filter GlobalCutFilter = requireGlobalTrackInFilter();
+  Filter CustomTrackFilter = (aod::track::pt > ConfCustomCuts.ConfPtLowCustomCut) && (aod::track::pt < ConfCustomCuts.ConfPtHighCustomCut) && (nabs(aod::track::eta) < ConfCustomCuts.ConfEtaCustomCut);
 
   // PHI
   FemtoUniversePhiSelection phiCuts;
@@ -357,30 +359,6 @@ struct femtoUniverseProducerTask {
     ccdb->setCreatedNotAfter(now);
   }
 
-  // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
-  template <typename ParticleType>
-  bool isGlobalTrack(ParticleType const& track)
-  {
-    if (track.pt() < ConfGlobalTracks.ConfPtLowGlobalTrack || track.pt() > ConfGlobalTracks.ConfPtHighGlobalTrack) { // pT cut
-      return false;
-    } else if (track.eta() < ConfGlobalTracks.ConfEtaLowGlobalTrack || track.eta() > ConfGlobalTracks.ConfEtaHighGlobalTrack) { // eta cut
-      return false;
-    } else if (track.dcaXY() > ConfGlobalTracks.ConfDcaXYGlobalTrack) { // DCA XY cut
-      return false;
-    } else if (track.dcaZ() > ConfGlobalTracks.ConfDcaZGlobalTrack) { // DCA Z cut
-      return false;
-    } else if (track.tpcNClsFound() < (uint8_t)ConfGlobalTracks.ConfTpcClGlobalTrack) { // number of tpc clusters cut
-      return false;
-    } else if (track.tpcNClsCrossedRows() < (uint8_t)ConfGlobalTracks.ConfTpcCrosRoGlobalTrack) { // number of tpc clusters crossed rows cut
-      return false;
-    } else if (track.itsChi2NCl() > ConfGlobalTracks.ConfChi2ItsGlobalTrack) { // max chi^2 per cluster ITS cut
-      return false;
-    } else if (track.tpcChi2NCl() > ConfGlobalTracks.ConfChi2TpcGlobalTrack) { // max chi^2 per cluster TPC cut
-      return false;
-    }
-    return true;
-  }
-
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
   void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
@@ -526,10 +504,6 @@ struct femtoUniverseProducerTask {
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
-      } else if (ConfGlobalTracks.ConfUseGlobalTrack) {
-        // if (!isGlobalTrack(track)) {
-        //   continue;
-        // }
       }
 
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
@@ -654,17 +628,6 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
-      // global track cuts for phi meson daughters
-      if (ConfGlobalTracks.ConfUseGlobalTrack) {
-        // daughter 1 -- global track cut
-        if (!isGlobalTrack(p1)) {
-          continue;
-        }
-        // daughter 2 -- global track cut
-        if (!isGlobalTrack(p2)) {
-          continue;
-        }
-      }
       // implementing PID cuts for phi children
       if (!(IsKaonNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
         continue;
@@ -845,9 +808,10 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackData,
                  "Provide experimental data for track track", true);
 
+  // using FilteredFemtoFullTracks = soa::Filtered<FemtoFullTracks>;
   void processTrackPhiData(aod::FemtoFullCollision const& col,
                            aod::BCsWithTimestamps const&,
-                           aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+                           soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
