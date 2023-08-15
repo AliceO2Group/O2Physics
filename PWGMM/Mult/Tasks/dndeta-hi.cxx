@@ -278,8 +278,8 @@ struct MultiplicityCounter {
 
   // expressions::Filter trackSelectionProper = requireGlobalTrackWoPtEtaInFilter();
   // expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
-  //	(nabs(aod::track::bestDCAZ) <= 2.f) &&
-  //	(nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+  // (nabs(aod::track::bestDCAZ) <= 2.f) &&
+  // (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
   // expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   expressions::Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
@@ -664,18 +664,15 @@ struct MultiplicityCounter {
           // registry.fill(HIST("Tracks/ProcessMCCounting/hMCStatusCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getHepMCStatusCode());
           // registrfill(HIST("Tracks/ProcessMCCounting/hProcessCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getProcess());
           // }
-          //  else{
-          //	for (auto ievtc = 1u; ievtc < kECend; ievtc++)
-          //	{
-          //		for (auto itrigc = 1u; itrigc < kTrigend; itrigc++)
-          //		{
-          //			if (bevtc[ievtc] == true && btrigc[itrigc] == true){
+          // else {
+          //  for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+          //   for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+          //    if (bevtc[ievtc] == true && btrigc[itrigc] == true){
           //				registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(),cent, Double_t(kBkg), track.pt());
-          //			}
-          //		}
-          //	}
-
-          //}
+          //    }
+          //   }
+          //  }
+          // }
         }
       }
     }
