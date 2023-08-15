@@ -57,8 +57,6 @@ using FemtoFullTracks =
             aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
 
-// global tracks
-
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
 // to be used when we add v0Filter
@@ -121,21 +119,16 @@ struct femtoUniverseProducerTask {
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfPtLowCustomCut{"ConfPtLowCustomCut", 0.14, "Lower limit for Pt for the global track"};             // pT low
-    Configurable<float> ConfPtHighCustomCut{"ConfPtHighCustomCut", 5.0, "Higher limit for Pt for the global track"};           // pT high
-    Configurable<float> ConfEtaCustomCut{"ConfEtaCustomCut", 0.8, "Eta cut for the global track"};                             // eta
-    Configurable<float> ConfDcaXYCustomCut{"ConfDcaXYCustomCut", 2.4, "Value for DCA_XY for the global track"};                // max dca to vertex XY
-    Configurable<float> ConfDcaZCustomCut{"ConfDcaZCustomCut", 3.2, "Value for DCA_Z for the global track"};                   // max dca to vertex Z
-    Configurable<int> ConfTpcClCustomCut{"ConfTpcClCustomCut", 88, "Number of tpc clasters for the global track"};             // min number of found TPC clusters
-    Configurable<int> ConfTpcCrosRoCustomCut{"ConfTpcCrosRoCustomCut", 70, "Number of tpc crossed rows for the global track"}; // min number of crossed rows
-    Configurable<float> ConfChi2TpcCustomCut{"ConfChi2TpcCustomCut", 4.0, "Chi2 / cluster for the TPC track segment for the global track"};
-    Configurable<float> ConfChi2ItsCustomCut{"ConfChi2ItsCustomCut", 36.0, "Chi2 / cluster for the ITS track segment for the global track"};
-  } ConfCustomCuts;
+    Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
+    Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
+    Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
+    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
+  } ConfFilterCuts;
 
-  // Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPtmax{
-    FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPtmax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkEta{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kEtaMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{70.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCnClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.83f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCfClsMin, "Track selection: ")};
@@ -181,7 +174,12 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfV0InvKaonMassUpLimit{"ConfV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
   Filter GlobalCutFilter = requireGlobalTrackInFilter();
-  Filter CustomTrackFilter = (aod::track::pt > ConfCustomCuts.ConfPtLowCustomCut) && (aod::track::pt < ConfCustomCuts.ConfPtHighCustomCut) && (nabs(aod::track::eta) < ConfCustomCuts.ConfEtaCustomCut);
+
+  Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
+                             (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
+                             (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
+                             (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut) &&
+                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut);
 
   // PHI
   FemtoUniversePhiSelection phiCuts;
@@ -231,23 +229,42 @@ struct femtoUniverseProducerTask {
     // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
     // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
     // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
-    if (ConfPhiCommon.ConfNsigmaTPCTOFKaon) {
-      if (mom < 0.4) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiCommon.ConfNsigmaTPCKaon) {
-          return true;
-        } else {
-          return false;
-        }
-      } else if (mom > 0.4) {
-        // if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
-          return true;
-        } else {
-          return false;
-        }
+
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
       }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
+          return true;
+        }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
-    return false;
   }
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
@@ -278,18 +295,15 @@ struct femtoUniverseProducerTask {
     colCuts.init(&qaRegistry);
     trackCuts.setSelection(ConfTrkTPCnclsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCfCls, femtoUniverseTrackSelection::kTPCfClsMin, femtoUniverseSelection::kLowerLimit);
-    //--test
     trackCuts.setSelection(ConfTrkTPCcRowsMin, femtoUniverseTrackSelection::kTPCcRowsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCsCls, femtoUniverseTrackSelection::kTPCsClsMax, femtoUniverseSelection::kUpperLimit);
     trackCuts.setSelection(ConfTrkITSnclsMin, femtoUniverseTrackSelection::kITSnClsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkITSnclsIbMin, femtoUniverseTrackSelection::kITSnClsIbMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoUniverseTrackSelection::kDCAxyMax, femtoUniverseSelection::kAbsUpperLimit);
-    // trackCuts.setSelection(ConfTrkCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+    trackCuts.setSelection(ConfTrkCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
     trackCuts.setSelection(ConfTrkPtmin, femtoUniverseTrackSelection::kpTMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkPtmax, femtoUniverseTrackSelection::kpTMax, femtoUniverseSelection::kUpperLimit);
     trackCuts.setSelection(ConfTrkEta, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-
-    //---end test
     trackCuts.setSelection(ConfTrkDCAzMax, femtoUniverseTrackSelection::kDCAzMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfTrkPIDspecies);
@@ -629,10 +643,10 @@ struct femtoUniverseProducerTask {
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       // implementing PID cuts for phi children
-      if (!(IsKaonNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+      if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
         continue;
       }
-      if (!(IsKaonNSigma(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+      if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
         continue;
       }
 
