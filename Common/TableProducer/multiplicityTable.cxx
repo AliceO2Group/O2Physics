@@ -242,14 +242,14 @@ struct MultiplicityTableTaskIndexed {
 
       if (populateMultExtra) {
         int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
-        for(auto track : pvContribsGrouped){ 
-          if(track.hasITS()) 
+        for (auto track : pvContribsGrouped) {
+          if (track.hasITS())
             nHasITS++;
-          if(track.hasTPC()) 
+          if (track.hasTPC())
             nHasTPC++;
-          if(track.hasTOF()) 
+          if (track.hasTOF())
             nHasTOF++;
-          if(track.hasTRD()) 
+          if (track.hasTRD())
             nHasTRD++;
         };
 

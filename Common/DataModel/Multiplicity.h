@@ -49,10 +49,10 @@ DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
 DECLARE_SOA_COLUMN(MultPVz, multPVz, float);                                 //!
 DECLARE_SOA_COLUMN(MultSel8, multSel8, bool);                                //!
 
-DECLARE_SOA_COLUMN(MultNTracksHasITS, multNTracksHasITS, int);                       //!
-DECLARE_SOA_COLUMN(MultNTracksHasTPC, multNTracksHasTPC, int);                       //!
-DECLARE_SOA_COLUMN(MultNTracksHasTOF, multNTracksHasTOF, int);                       //!
-DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int);                       //!
+DECLARE_SOA_COLUMN(MultNTracksHasITS, multNTracksHasITS, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTPC, multNTracksHasTPC, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTOF, multNTracksHasTOF, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
