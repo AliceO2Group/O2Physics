@@ -261,7 +261,7 @@ struct HfTaskLc {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }
       auto pt = candidate.pt();
@@ -289,8 +289,8 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLengthVsPt"), candidate.decayLength(), pt);
       registry.fill(HIST("Data/hDecLengthxy"), candidate.decayLengthXY());
       registry.fill(HIST("Data/hDecLengthxyVsPt"), candidate.decayLengthXY(), pt);
-      registry.fill(HIST("Data/hCt"), ctLc(candidate));
-      registry.fill(HIST("Data/hCtVsPt"), ctLc(candidate), pt);
+      registry.fill(HIST("Data/hCt"), hfHelper.ctLc(candidate));
+      registry.fill(HIST("Data/hCtVsPt"), hfHelper.ctLc(candidate), pt);
       registry.fill(HIST("Data/hCPA"), candidate.cpa());
       registry.fill(HIST("Data/hCPAVsPt"), candidate.cpa(), pt);
       registry.fill(HIST("Data/hCPAxy"), candidate.cpaXY());
@@ -321,7 +321,7 @@ struct HfTaskLc {
         continue;
       }
       /// rapidity selection
-      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -357,8 +357,8 @@ struct HfTaskLc {
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthVsPtRecSig"), candidate.decayLength(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyRecSig"), candidate.decayLengthXY());
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyVsPtRecSig"), candidate.decayLengthXY(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), ctLc(candidate));
-        registry.fill(HIST("MC/reconstructed/signal/hCtVsPtRecSig"), ctLc(candidate), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), hfHelper.ctLc(candidate));
+        registry.fill(HIST("MC/reconstructed/signal/hCtVsPtRecSig"), hfHelper.ctLc(candidate), pt);
         registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), candidate.cpa());
         registry.fill(HIST("MC/reconstructed/signal/hCPAVsPtRecSig"), candidate.cpa(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hCPAxyRecSig"), candidate.cpaXY());
@@ -398,8 +398,8 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt"), candidate.decayLength(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyRecSigPrompt"), candidate.decayLengthXY());
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyVsPtRecSigPrompt"), candidate.decayLengthXY(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hCtRecSigPrompt"), ctLc(candidate));
-          registry.fill(HIST("MC/reconstructed/prompt/hCtVsPtRecSigPrompt"), ctLc(candidate), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hCtRecSigPrompt"), hfHelper.ctLc(candidate));
+          registry.fill(HIST("MC/reconstructed/prompt/hCtVsPtRecSigPrompt"), hfHelper.ctLc(candidate), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hCPARecSigPrompt"), candidate.cpa());
           registry.fill(HIST("MC/reconstructed/prompt/hCPAVsPtRecSigPrompt"), candidate.cpa(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hCPAxyRecSigPrompt"), candidate.cpaXY());
@@ -437,8 +437,8 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt"), candidate.decayLength(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyRecSigNonPrompt"), candidate.decayLengthXY());
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyVsPtRecSigNonPrompt"), candidate.decayLengthXY(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCtRecSigNonPrompt"), ctLc(candidate));
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt"), ctLc(candidate), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hCtRecSigNonPrompt"), hfHelper.ctLc(candidate));
+          registry.fill(HIST("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt"), hfHelper.ctLc(candidate), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hCPARecSigNonPrompt"), candidate.cpa());
           registry.fill(HIST("MC/reconstructed/nonprompt/hCPAVsPtRecSigNonPrompt"), candidate.cpa(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyRecSigNonPrompt"), candidate.cpaXY());
