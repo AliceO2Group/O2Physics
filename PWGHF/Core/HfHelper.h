@@ -17,9 +17,15 @@
 #ifndef PWGHF_CORE_HFHELPER_H_
 #define PWGHF_CORE_HFHELPER_H_
 
-#include "TPDGCode.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TPDGCode.h>
 
 #include "Framework/O2DatabasePDGPlugin.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 
 class HfHelper
 {
@@ -44,19 +50,19 @@ class HfHelper
   template <typename T>
   auto ctD0(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kD0));
+    return candidate.ct(mass(o2::analysis::pdg::kD0));
   }
 
   template <typename T>
   auto yD0(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kD0));
+    return candidate.y(mass(o2::analysis::pdg::kD0));
   }
 
   template <typename T>
   auto eD0(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kD0));
+    return candidate.e(mass(o2::analysis::pdg::kD0));
   }
 
   template <typename T>
@@ -74,13 +80,13 @@ class HfHelper
   template <typename T>
   auto cosThetaStarD0(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(kPiPlus), mass(kKPlus)}, mass(pdg::Code::kD0), 1);
+    return candidate.cosThetaStar(std::array{mass(kPiPlus), mass(kKPlus)}, mass(o2::analysis::pdg::kD0), 1);
   }
 
   template <typename T>
   auto cosThetaStarD0bar(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(kKPlus), mass(kPiPlus)}, mass(pdg::Code::kD0), 0);
+    return candidate.cosThetaStar(std::array{mass(kKPlus), mass(kPiPlus)}, mass(o2::analysis::pdg::kD0), 0);
   }
 
   // J/ψ
@@ -88,19 +94,19 @@ class HfHelper
   template <typename T>
   auto ctJpsi(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kJPsi));
+    return candidate.ct(mass(o2::analysis::pdg::kJPsi));
   }
 
   template <typename T>
   auto yJpsi(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kJPsi));
+    return candidate.y(mass(o2::analysis::pdg::kJPsi));
   }
 
   template <typename T>
   auto eJpsi(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kJPsi));
+    return candidate.e(mass(o2::analysis::pdg::kJPsi));
   }
 
   // J/ψ → e+ e−
@@ -148,31 +154,31 @@ class HfHelper
   template <typename T>
   auto ctBplus(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kBPlus));
+    return candidate.ct(mass(o2::analysis::pdg::kBPlus));
   }
 
   template <typename T>
   auto yBplus(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kBPlus));
+    return candidate.y(mass(o2::analysis::pdg::kBPlus));
   }
 
   template <typename T>
   auto eBplus(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kBPlus));
+    return candidate.e(mass(o2::analysis::pdg::kBPlus));
   }
 
   template <typename T>
   auto invMassBplusToD0Pi(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kD0), mass(kPiPlus)});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kD0), mass(kPiPlus)});
   }
 
   template <typename T>
   auto cosThetaStarBplus(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(pdg::Code::kD0), mass(kPiPlus)}, mass(pdg::Code::kBPlus), 1);
+    return candidate.cosThetaStar(std::array{mass(o2::analysis::pdg::kD0), mass(kPiPlus)}, mass(o2::analysis::pdg::kBPlus), 1);
   }
 
   // 3-prong
@@ -182,19 +188,19 @@ class HfHelper
   template <typename T>
   auto ctDplus(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kDPlus));
+    return candidate.ct(mass(o2::analysis::pdg::kDPlus));
   }
 
   template <typename T>
   auto yDplus(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kDPlus));
+    return candidate.y(mass(o2::analysis::pdg::kDPlus));
   }
 
   template <typename T>
   auto eDplus(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kDPlus));
+    return candidate.e(mass(o2::analysis::pdg::kDPlus));
   }
 
   template <typename T>
@@ -208,19 +214,19 @@ class HfHelper
   template <typename T>
   auto ctDs(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kDS));
+    return candidate.ct(mass(o2::analysis::pdg::kDS));
   }
 
   template <typename T>
   auto yDs(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kDS));
+    return candidate.y(mass(o2::analysis::pdg::kDS));
   }
 
   template <typename T>
   auto eDs(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kDS));
+    return candidate.e(mass(o2::analysis::pdg::kDS));
   }
 
   template <typename T>
@@ -238,15 +244,15 @@ class HfHelper
   template <typename T>
   auto deltaMassPhiDsToKKPi(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, array{mass(kKPlus), mass(kKPlus)});
-    return std::abs(invMassKKpair - mass(pdg::Code::kPhi));
+    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{mass(kKPlus), mass(kKPlus)});
+    return std::abs(invMassKKpair - mass(o2::analysis::pdg::kPhi));
   }
 
   template <typename T>
   auto deltaMassPhiDsToPiKK(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, array{mass(kKPlus), mass(kKPlus)});
-    return std::abs(invMassKKpair - mass(pdg::Code::kPhi));
+    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{mass(kKPlus), mass(kKPlus)});
+    return std::abs(invMassKKpair - mass(o2::analysis::pdg::kPhi));
   }
 
   /// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
@@ -257,9 +263,9 @@ class HfHelper
   auto cosPiKPhiRestFrame(const T& candidate, int option)
   {
     // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
-    array<float, 3> momPi;
-    array<float, 3> momK1;
-    array<float, 3> momK2;
+    std::array<float, 3> momPi;
+    std::array<float, 3> momK1;
+    std::array<float, 3> momK2;
 
     if (option == 0) { // KKPi
       momPi = candidate.pVectorProng2();
@@ -302,19 +308,19 @@ class HfHelper
   template <typename T>
   auto ctLc(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kLambdaCPlus));
+    return candidate.ct(mass(o2::analysis::pdg::kLambdaCPlus));
   }
 
   template <typename T>
   auto yLc(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kLambdaCPlus));
+    return candidate.y(mass(o2::analysis::pdg::kLambdaCPlus));
   }
 
   template <typename T>
   auto eLc(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kLambdaCPlus));
+    return candidate.e(mass(o2::analysis::pdg::kLambdaCPlus));
   }
 
   template <typename T>
@@ -334,19 +340,19 @@ class HfHelper
   template <typename T>
   auto ctXic(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kXiCPlus));
+    return candidate.ct(mass(o2::analysis::pdg::kXiCPlus));
   }
 
   template <typename T>
   auto yXic(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kXiCPlus));
+    return candidate.y(mass(o2::analysis::pdg::kXiCPlus));
   }
 
   template <typename T>
   auto eXic(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kXiCPlus));
+    return candidate.e(mass(o2::analysis::pdg::kXiCPlus));
   }
 
   template <typename T>
@@ -380,7 +386,7 @@ class HfHelper
   template <typename T>
   auto invMassXicplusToXiPiPi(const T& candidate)
   {
-    return candidate.m(array{mass(kXiMinus), mass(kPiPlus), mass(kPiPlus)});
+    return candidate.m(std::array{mass(kXiMinus), mass(kPiPlus), mass(kPiPlus)});
   }
 
   // hf_cand_x
@@ -416,12 +422,12 @@ class HfHelper
   template <typename T>
   auto qX(const T& candidate)
   {
-    auto piVec1 = array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-    auto piVec2 = array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
+    auto piVec1 = std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+    auto piVec2 = std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
     double massPi = mass(kPiPlus);
 
-    auto arrayMomenta = array{piVec1, piVec2};
-    double massPiPi = RecoDecay::m(std::arrayMomenta, array{massPi, massPi});
+    auto arrayMomenta = std::array{piVec1, piVec2};
+    double massPiPi = RecoDecay::m(arrayMomenta, std::array{massPi, massPi});
 
     // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
     double massJpsi = mass(o2::analysis::pdg::kJPsi);
@@ -467,25 +473,25 @@ class HfHelper
   template <typename T>
   auto ctXicc(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kXiCCPlusPlus));
+    return candidate.ct(mass(o2::analysis::pdg::kXiCCPlusPlus));
   }
 
   template <typename T>
   auto yXicc(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kXiCCPlusPlus));
+    return candidate.y(mass(o2::analysis::pdg::kXiCCPlusPlus));
   }
 
   template <typename T>
   auto eXicc(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kXiCCPlusPlus));
+    return candidate.e(mass(o2::analysis::pdg::kXiCCPlusPlus));
   }
 
   template <typename T>
   auto invMassXiccToXicPi(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kXiCPlus), mass(kPiPlus)});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kXiCPlus), mass(kPiPlus)});
   }
 
   // chic → Jpsi gamma
@@ -493,24 +499,24 @@ class HfHelper
   template <typename T>
   auto ctChic(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kChiC1));
+    return candidate.ct(mass(o2::analysis::pdg::kChiC1));
   }
 
   template <typename T>
   auto yChic(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kChiC1));
+    return candidate.y(mass(o2::analysis::pdg::kChiC1));
   }
 
   template <typename T>
   auto eChic(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kChiC1));
+    return candidate.e(mass(o2::analysis::pdg::kChiC1));
   }
   template <typename T>
   auto invMassChicToJpsiGamma(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kJPsi), 0.});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kJPsi), 0.});
   }
 
   // Λb → Λc+ π- → p K- π+ π-
@@ -518,24 +524,24 @@ class HfHelper
   template <typename T>
   auto ctLb(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kLambdaB0));
+    return candidate.ct(mass(o2::analysis::pdg::kLambdaB0));
   }
 
   template <typename T>
   auto yLb(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kLambdaB0));
+    return candidate.y(mass(o2::analysis::pdg::kLambdaB0));
   }
 
   template <typename T>
   auto eLb(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kLambdaB0));
+    return candidate.e(mass(o2::analysis::pdg::kLambdaB0));
   }
   template <typename T>
   auto invMassLbToLcPi(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kLambdaCPlus), mass(kPiPlus)});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kLambdaCPlus), mass(kPiPlus)});
   }
 
   // B0(B0bar) → D∓ π±
@@ -543,31 +549,31 @@ class HfHelper
   template <typename T>
   auto ctB0(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kB0));
+    return candidate.ct(mass(o2::analysis::pdg::kB0));
   }
 
   template <typename T>
   auto yB0(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kB0));
+    return candidate.y(mass(o2::analysis::pdg::kB0));
   }
 
   template <typename T>
   auto eB0(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kB0));
+    return candidate.e(mass(o2::analysis::pdg::kB0));
   }
 
   template <typename T>
   auto invMassB0ToDPi(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kDMinus), mass(kPiPlus)});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kDMinus), mass(kPiPlus)});
   }
 
   template <typename T>
   auto cosThetaStarB0(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(pdg::Code::kDMinus), mass(kPiPlus)}, mass(pdg::Code::kB0), 1);
+    return candidate.cosThetaStar(std::array{mass(o2::analysis::pdg::kDMinus), mass(kPiPlus)}, mass(o2::analysis::pdg::kB0), 1);
   }
 
   // Bs(bar) → Ds∓ π±
@@ -575,31 +581,31 @@ class HfHelper
   template <typename T>
   auto ctBs(const T& candidate)
   {
-    return candidate.ct(mass(pdg::Code::kBS));
+    return candidate.ct(mass(o2::analysis::pdg::kBS));
   }
 
   template <typename T>
   auto yBs(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kBS));
+    return candidate.y(mass(o2::analysis::pdg::kBS));
   }
 
   template <typename T>
   auto eBs(const T& candidate)
   {
-    return candidate.e(mass(pdg::Code::kBS));
+    return candidate.e(mass(o2::analysis::pdg::kBS));
   }
 
   template <typename T>
   auto invMassBsToDsPi(const T& candidate)
   {
-    return candidate.m(std::array{mass(pdg::Code::kDSBar), mass(kPiPlus)});
+    return candidate.m(std::array{mass(o2::analysis::pdg::kDSBar), mass(kPiPlus)});
   }
 
   template <typename T>
   auto cosThetaStarBs(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(pdg::Code::kDSBar), mass(kPiPlus)}, mass(pdg::Code::kBS), 1);
+    return candidate.cosThetaStar(std::array{mass(o2::analysis::pdg::kDSBar), mass(kPiPlus)}, mass(o2::analysis::pdg::kBS), 1);
   }
 
   /// Σc0,++ → Λc+(→pK-π+) π-,+
@@ -621,13 +627,13 @@ class HfHelper
   template <typename T>
   auto ySc0(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kSigmaC0));
+    return candidate.y(mass(o2::analysis::pdg::kSigmaC0));
   }
 
   template <typename T>
   auto yScPlusPlus(const T& candidate)
   {
-    return candidate.y(mass(pdg::Code::kSigmaCPlusPlus));
+    return candidate.y(mass(o2::analysis::pdg::kSigmaCPlusPlus));
   }
 
  private:
