@@ -40,9 +40,11 @@ struct f0980analysis {
                                "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8,
                                 "Maximum pseudorapidiy for charged track"};
+  Configurable<float> cfgMinDCArToPVcut{"cfgMinDCArToPVcut", -0.5,
+                                        "Minimum transverse DCA"};
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5,
                                         "Maximum transverse DCA"};
-  Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", 0.0,
+  Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", -2.0,
                                         "Minimum longitudinal DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0,
                                         "Maximum longitudinal DCA"};
@@ -70,6 +72,9 @@ struct f0980analysis {
   Configurable<bool> cfgPVContributor{
     "cfgPVContributor", true,
     "PV contributor track selection"}; // PV Contriuibutor
+  Configurable<bool> cfgUseTOF{
+    "cfgUseTOF", false,
+    "Flag for the usage of TOF for PID"};
 
   void init(o2::framework::InitContext&)
   {
@@ -77,7 +82,7 @@ struct f0980analysis {
                                      1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5,
                                      5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0};
 
-    AxisSpec centAxis = {20, 0, 100};
+    AxisSpec centAxis = {22, 0, 110};
     AxisSpec ptAxis = {ptBinning};
     AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec epAxis = {20, -constants::math::PI, constants::math::PI};
@@ -95,6 +100,8 @@ struct f0980analysis {
     histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {PIDqaAxis, PIDqaAxis}});
+
+    AxisSpec NTracksAxis = {10, 0, 10};
 
     if (doprocessMCLight) {
       histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F,
@@ -115,7 +122,7 @@ struct f0980analysis {
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
       return false;
-    if (track.dcaXY() > cfgMaxDCArToPVcut)
+    if (track.dcaXY() < cfgMinDCArToPVcut || track.dcaXY() > cfgMaxDCArToPVcut)
       return false;
     if (track.dcaZ() < cfgMinDCAzToPVcut || track.dcaZ() > cfgMaxDCAzToPVcut)
       return false;
@@ -133,7 +140,8 @@ struct f0980analysis {
   bool SelPion(const TrackType track)
   {
     if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) !=
-        aod::resodaughter::kHasTOF) {
+          aod::resodaughter::kHasTOF ||
+        !cfgUseTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
         return false;
       }
@@ -216,8 +224,11 @@ struct f0980analysis {
 
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
+
     for (auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 9010221)
+        continue;
+      if (!part.producedByGenerator())
         continue;
       if (part.y() < cfgMinRap || part.y() > cfgMaxRap) {
         continue;

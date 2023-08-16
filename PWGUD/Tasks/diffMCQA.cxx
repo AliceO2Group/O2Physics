@@ -70,7 +70,7 @@ struct DiffMCQA {
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMCTruth")) {
-      registry.add("MCTruth/Stat", "Simulated event type; event type; Entries", {HistType::kTH1F, {{5, 0.5, 5.5}}});
+      registry.add("MCTruth/Stat", "Simulated event type; event type; Entries", {HistType::kTH1F, {{4, 0.5, 4.5}}});
       registry.add("MCTruth/recCols", "Number of reconstructed collisions; Number of reconstructed collisions; Entries", {HistType::kTH1F, {{31, -0.5, 30.5}}});
     }
 

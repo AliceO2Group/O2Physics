@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef FLOWCONTAINER__H
-#define FLOWCONTAINER__H
+#ifndef PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
+#define PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
 #include "TH3F.h"
 #include "TProfile2D.h"
 #include "TProfile.h"
@@ -32,7 +32,7 @@ class FlowContainer : public TNamed
 {
  public:
   FlowContainer();
-  FlowContainer(const char* name);
+  explicit FlowContainer(const char* name);
   ~FlowContainer();
   enum StatisticsType { kSingleSample,
                         kJackKnife,
@@ -47,10 +47,10 @@ class FlowContainer : public TNamed
     if (fProf)
       fProf->RebinX(rN);
   };
-  int GetNMultiBins() { return fProf->GetNbinsX(); };
-  double GetMultiAtBin(int bin) { return fProf->GetXaxis()->GetBinCenter(bin); };
+  int GetNMultiBins() { return fProf->GetNbinsX(); }
+  double GetMultiAtBin(int bin) { return fProf->GetXaxis()->GetBinCenter(bin); }
   int FillProfile(const char* hname, double multi, double y, double w, double rn);
-  TProfile2D* GetProfile() { return fProf; };
+  TProfile2D* GetProfile() { return fProf; }
   void OverrideProfileErrors(TProfile2D* inpf);
   void ReadAndMerge(const char* infile);
   void PickAndMerge(TFile* tfi);
@@ -58,32 +58,32 @@ class FlowContainer : public TNamed
   bool OverrideMainWithSub(int subind, bool ExcludeChosen);
   bool RandomizeProfile(int nSubsets = 0);
   bool CreateStatisticsProfile(StatisticsType StatType, int arg);
-  TObjArray* GetSubProfiles() { return fProfRand; };
+  TObjArray* GetSubProfiles() { return fProfRand; }
   Long64_t Merge(TCollection* collist);
   void SetIDName(TString newname); //! do not store
-  void SetPtRebin(int newval) { fPtRebin = newval; };
+  void SetPtRebin(int newval) { fPtRebin = newval; }
   void SetPtRebin(int nbins, double* binedges);
   void SetMultiRebin(int nbins, double* binedges);
   double* GetMultiRebin(int& nBins);
-  void SetPropagateErrors(bool newval) { fPropagateErrors = newval; };
+  void SetPropagateErrors(bool newval) { fPropagateErrors = newval; }
   TProfile* GetCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
   TProfile* GetCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
   TH1D* GetHistCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
   TH1D* GetHistCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
 
-  TH1D* GetVN2VsMulti(int n = 2, int l_pta = 0) { return GetVN2VsX(n, kFALSE, l_pta); };
-  TH1D* GetVN2VsPt(int n = 2, double min = -1, double max = -1) { return GetVN2VsX(n, kTRUE, min, max); };
-  TH1D* GetCN4VsMulti(int n = 2, int pti = 0) { return GetCN4VsX(n, kFALSE, pti); };
-  TH1D* GetCN4VsPt(int n = 2, double min = -1, double max = -1) { return GetCN4VsX(n, kTRUE, min, max); };
+  TH1D* GetVN2VsMulti(int n = 2, int l_pta = 0) { return GetVN2VsX(n, kFALSE, l_pta); }
+  TH1D* GetVN2VsPt(int n = 2, double min = -1, double max = -1) { return GetVN2VsX(n, kTRUE, min, max); }
+  TH1D* GetCN4VsMulti(int n = 2, int pti = 0) { return GetCN4VsX(n, kFALSE, pti); }
+  TH1D* GetCN4VsPt(int n = 2, double min = -1, double max = -1) { return GetCN4VsX(n, kTRUE, min, max); }
 
-  TH1D* GetVN4VsMulti(int n = 2, int pti = 0) { return GetVN4VsX(n, kFALSE, pti); };
-  TH1D* GetVN4VsPt(int n = 2, double min = -1, double max = -1) { return GetVN4VsX(n, kTRUE, min, max); };
+  TH1D* GetVN4VsMulti(int n = 2, int pti = 0) { return GetVN4VsX(n, kFALSE, pti); }
+  TH1D* GetVN4VsPt(int n = 2, double min = -1, double max = -1) { return GetVN4VsX(n, kTRUE, min, max); }
 
-  TH1D* GetVN6VsMulti(int n = 2, int pti = 0) { return GetVN6VsX(n, kFALSE, pti); };
-  TH1D* GetVN6VsPt(int n = 2, double min = -1, double max = -1) { return GetVN6VsX(n, kTRUE, min, max); };
+  TH1D* GetVN6VsMulti(int n = 2, int pti = 0) { return GetVN6VsX(n, kFALSE, pti); }
+  TH1D* GetVN6VsPt(int n = 2, double min = -1, double max = -1) { return GetVN6VsX(n, kTRUE, min, max); }
 
-  TH1D* GetVN8VsMulti(int n = 2, int pti = 0) { return GetVN8VsX(n, kFALSE, pti); };
-  TH1D* GetVN8VsPt(int n = 2, double min = -1, double max = -1) { return GetVN8VsX(n, kTRUE, min, max); };
+  TH1D* GetVN8VsMulti(int n = 2, int pti = 0) { return GetVN8VsX(n, kFALSE, pti); }
+  TH1D* GetVN8VsPt(int n = 2, double min = -1, double max = -1) { return GetVN8VsX(n, kTRUE, min, max); }
 
   TH1D* GetCNN(int n = 2, int c = 2, bool onPt = kTRUE, double arg1 = -1, double arg2 = -1);
   TH1D* GetVNN(int n = 2, int c = 2, bool onPt = kTRUE, double arg1 = -1, double arg2 = -1);
@@ -165,4 +165,4 @@ class FlowContainer : public TNamed
   ClassDef(FlowContainer, 2);
 };
 
-#endif
+#endif // PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_

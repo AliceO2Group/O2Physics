@@ -42,7 +42,7 @@ struct lambdaAnalysis {
 
   // Tracks
   Configurable<float> cfgPtMin{"ptMin", 0.15, "Minimum Track pT"};
-  Configurable<float> cfgPtMax{"ptMax", 999., "Maximum Track pT"};
+  Configurable<float> cfgPtMax{"ptMax", 36., "Maximum Track pT"};
   Configurable<float> cfgEtaCut{"etaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cfgDcaz{"dcazMin", 1., "Minimum DCAz"};
   Configurable<float> cfgDcaxy{"dcaxyMin", 0.1, "Minimum DCAxy"};
@@ -51,16 +51,20 @@ struct lambdaAnalysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
 
   // TPC TOF Protons
-  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {999.}, "pT dependent TPC cuts protons"};
-  Configurable<std::vector<int>> protonTPCPIDcut{"protonTPCPIDcut", {3}, "TPC cuts protons"};
-  Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {999.}, "pT dependent TOF cuts protons"};
-  Configurable<std::vector<int>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
+  Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.2, "max pT for tpc protons"};
+  Configurable<float> tpcNSigmaProton{"tpcNSigmaProton", 3, "nsigma tpc for Proton when Tof signal is present"};
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 1.2}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {3, 3}, "TPC cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {36.}, "pT dependent TOF cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
 
-  // TPC TOF Protons
-  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {999.}, "pT dependent TPC cuts kaons"};
-  Configurable<std::vector<int>> kaonTPCPIDcut{"kaonTPCPIDcut", {3}, "TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {999.}, "pT dependent TOF cuts kaons"};
-  Configurable<std::vector<int>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
+  // TPC TOF Kaons
+  Configurable<float> tpcKaonMaxPt{"tpcKaonMaxPt", 0.6, "max pT for tpc kaons"};
+  Configurable<float> tpcNSigmaKaon{"tpcNSigmaKaon", 3, "nsigma tpc for Kaon when Tof signal is present"};
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.2, 0.6}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {3, 3}, "TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {36.}, "pT dependent TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
 
   // Event Mixing.
   Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
@@ -151,13 +155,13 @@ struct lambdaAnalysis {
     bool isTrk1Proton{true}, isTrk2Kaon{true}, trk1HasTOF{false}, trk2HasTOF{false}, selTrk1{true}, selTrk2{true};
 
     auto prTpcPIDpt = static_cast<std::vector<float>>(protonTPCPIDpt);
-    auto prTpcPIDcut = static_cast<std::vector<int>>(protonTPCPIDcut);
+    auto prTpcPIDcut = static_cast<std::vector<float>>(protonTPCPIDcut);
     auto prTofPIDpt = static_cast<std::vector<float>>(protonTOFPIDpt);
-    auto prTofPIDcut = static_cast<std::vector<int>>(protonTOFPIDcut);
+    auto prTofPIDcut = static_cast<std::vector<float>>(protonTOFPIDcut);
     auto kaTpcPIDpt = static_cast<std::vector<float>>(kaonTPCPIDpt);
-    auto kaTpcPIDcut = static_cast<std::vector<int>>(kaonTPCPIDcut);
+    auto kaTpcPIDcut = static_cast<std::vector<float>>(kaonTPCPIDcut);
     auto kaTofPIDpt = static_cast<std::vector<float>>(kaonTOFPIDpt);
-    auto kaTofPIDcut = static_cast<std::vector<int>>(kaonTOFPIDcut);
+    auto kaTofPIDcut = static_cast<std::vector<float>>(kaonTOFPIDcut);
 
     TLorentzVector p1, p2, p;
 
@@ -180,71 +184,57 @@ struct lambdaAnalysis {
       if (!selTrk1 || !selTrk2)
         continue;
 
-      // TPC + TOF.
-      // Protons
-      if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-        trk1HasTOF = true;
-        for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
-          if (trkPr.pt() < prTofPIDpt[i]) {
-            if (std::abs(trkPr.tpcNSigmaPr()) >= 2) {
-              isTrk1Proton = false;
-            }
-            if (std::abs(trkPr.tofNSigmaPr()) >= prTofPIDcut[i]) {
+      // Protons.
+      if (trkPr.pt() < tpcProtonMaxPt) {
+        // TPC only
+        for (int i = 1; i < static_cast<int>(prTpcPIDpt.size()); ++i) {
+          if (trkPr.pt() >= prTpcPIDpt[i - 1] && trkPr.pt() < prTpcPIDpt[i]) {
+            if (std::abs(trkPr.tpcNSigmaPr()) >= prTpcPIDcut[i - 1]) {
               isTrk1Proton = false;
             }
           }
         }
-      }
-      // Kaons
-      if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
-        trk2HasTOF = true;
-        for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
-          if (trkKa.pt() < kaTofPIDpt[i]) {
-            if (std::abs(trkKa.tpcNSigmaKa()) >= 2) {
-              isTrk2Kaon = false;
-            }
-            if (std::abs(trkKa.tofNSigmaKa()) >= kaTofPIDcut[i]) {
-              isTrk2Kaon = false;
+      } else {
+        // TPC + TOF
+        if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+          trk1HasTOF = true;
+          for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
+            if (trkPr.pt() < prTofPIDpt[i]) {
+              if (std::abs(trkPr.tofNSigmaPr()) >= prTofPIDcut[i] || std::abs(trkPr.tpcNSigmaPr()) >= tpcNSigmaProton) {
+                isTrk1Proton = false;
+                trk1HasTOF = false;
+              }
             }
           }
+        } else {
+          isTrk1Proton = false;
         }
       }
 
-      // Apply only TPC when either TOF is not present or Tracks are not coming from TOF+TPC cuts.
-      // Protons
-      if (!trk1HasTOF || !isTrk1Proton) {
-        // Switch off the TOF flag.
-        trk1HasTOF = false;
-        for (int i = 0; i < static_cast<int>(prTpcPIDpt.size()); ++i) {
-          if (trkPr.pt() < prTpcPIDpt[i]) {
-            if (std::abs(trkPr.tpcNSigmaPr()) >= prTpcPIDcut[i]) {
-              isTrk1Proton = false;
-            }
-          }
-          // Reject tracks with pT > 1.1.
-          if (trkPr.pt() >= prTpcPIDpt[i]) {
-            if (std::abs(trkPr.tpcNSigmaPr()) >= 0) {
-              isTrk1Proton = false;
+      // Kaons
+      if (trkKa.pt() < tpcKaonMaxPt) {
+        // TPC only
+        for (int i = 1; i < static_cast<int>(kaTpcPIDpt.size()); ++i) {
+          if (trkKa.pt() >= kaTpcPIDpt[i - 1] && trkKa.pt() < kaTpcPIDpt[i]) {
+            if (std::abs(trkKa.tpcNSigmaKa()) >= kaTpcPIDcut[i - 1]) {
+              isTrk2Kaon = false;
             }
           }
         }
-      }
-      // Kaons
-      if (!trk2HasTOF || !isTrk2Kaon) {
-        // Switch off the TOF flag.
-        trk2HasTOF = false;
-        for (int i = 0; i < static_cast<int>(kaTpcPIDpt.size()); ++i) {
-          if (trkKa.pt() < kaTpcPIDpt[i]) {
-            if (std::abs(trkKa.tpcNSigmaKa()) >= kaTpcPIDcut[i]) {
-              isTrk2Kaon = false;
+      } else {
+        // TPC + TOF
+        if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+          trk2HasTOF = true;
+          for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
+            if (trkKa.pt() < kaTofPIDpt[i]) {
+              if (std::abs(trkKa.tofNSigmaKa()) >= kaTofPIDcut[i] || std::abs(trkKa.tpcNSigmaKa()) >= tpcNSigmaKaon) {
+                isTrk2Kaon = false;
+                trk2HasTOF = false;
+              }
             }
           }
-          // reject tracks with pT > 0.6
-          if (trkKa.pt() >= kaTpcPIDpt[i]) {
-            if (std::abs(trkKa.tpcNSigmaKa()) >= 0) {
-              isTrk2Kaon = false;
-            }
-          }
+        } else {
+          isTrk2Kaon = false;
         }
       }
 

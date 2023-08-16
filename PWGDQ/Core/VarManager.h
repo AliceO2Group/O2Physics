@@ -1645,6 +1645,11 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
+
+      values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v12.Px() +
+                                               (collision.posY() - secondaryVertex[1]) * v12.Py() +
+                                               (collision.posZ() - secondaryVertex[2]) * v12.Pz()) /
+                                              (v12.P() * values[VarManager::kVertexingLxyz]);
     }
   } else {
     KFParticle trk0KF;

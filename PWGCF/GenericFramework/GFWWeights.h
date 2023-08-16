@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef GFWWeights__H
-#define GFWWeights__H
+#ifndef PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
+#define PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
 #include "TObjArray.h"
 #include "TNamed.h"
 #include "TH3D.h"
@@ -24,26 +24,27 @@ class GFWWeights : public TNamed
 {
  public:
   GFWWeights();
+  explicit GFWWeights(const char* name);
   ~GFWWeights();
   void Init(bool AddData = kTRUE, bool AddM = kTRUE);
   void Fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight = 1); // htype: 0 for data, 1 for mc rec, 2 for mc gen
   double GetWeight(double phi, double eta, double vz, double pt, double cent, int htype);             // htype: 0 for data, 1 for mc rec, 2 for mc gen
   double GetNUA(double phi, double eta, double vz);                                                   // This just fetches correction from integrated NUA, should speed up
   double GetNUE(double pt, double eta, double vz);                                                    // fetches weight from fEffInt
-  bool IsDataFilled() { return fDataFilled; };
-  bool IsMCFilled() { return fMCFilled; };
+  bool IsDataFilled() { return fDataFilled; }
+  bool IsMCFilled() { return fMCFilled; }
   double FindMax(TH3D* inh, int& ix, int& iy, int& iz);
   void MCToEfficiency();
-  TObjArray* GetRecArray() { return fW_mcrec; };
-  TObjArray* GetGenArray() { return fW_mcgen; };
-  TObjArray* GetDataArray() { return fW_data; };
+  TObjArray* GetRecArray() { return fW_mcrec; }
+  TObjArray* GetGenArray() { return fW_mcgen; }
+  TObjArray* GetDataArray() { return fW_data; }
   void CreateNUA(bool IntegrateOverCentAndPt = kTRUE);
   void CreateNUE(bool IntegrateOverCentrality = kTRUE);
   TH1D* GetIntegratedEfficiencyHist();
   bool CalculateIntegratedEff();
   double GetIntegratedEfficiency(double pt);
-  void SetDataFilled(bool newval) { fDataFilled = newval; };
-  void SetMCFilled(bool newval) { fMCFilled = newval; };
+  void SetDataFilled(bool newval) { fDataFilled = newval; }
+  void SetMCFilled(bool newval) { fMCFilled = newval; }
   void ReadAndMerge(TString filelinks, TString listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
   void SetPtBins(int Nbins, double* bins);
   Long64_t Merge(TCollection* collist);
@@ -74,4 +75,4 @@ class GFWWeights : public TNamed
   ClassDef(GFWWeights, 1);
 };
 
-#endif
+#endif // PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
