@@ -122,9 +122,11 @@ struct HfCandidateSelectorLbToLcPi {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::Tracks const&)
+  void process(aod::HfCandLb const& hfCandLbs,
+               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               aod::Tracks const&)
   {
-    for (auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
+    for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
 

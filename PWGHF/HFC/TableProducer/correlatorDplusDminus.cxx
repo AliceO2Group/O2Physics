@@ -134,7 +134,9 @@ struct HfCorrelatorDplusDminus {
   }
 
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, aod::TracksWDca& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+  void processData(aod::Collision const& collision,
+                   aod::TracksWDca const& tracks,
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -156,7 +158,7 @@ struct HfCorrelatorDplusDminus {
 
     auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-    for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
+    for (const auto& candidate1 : selectedDPlusCandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
         continue;
       }
@@ -201,7 +203,7 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign != 1) {
         continue;
       }
-      for (auto& candidate2 : selectedDPlusCandidatesGrouped) {
+      for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
         // check decay channel flag for candidate2
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
@@ -242,7 +244,9 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, aod::TracksWDca& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
+  void processMcRec(aod::Collision const& collision,
+                    aod::TracksWDca const& tracks,
+                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -267,7 +271,7 @@ struct HfCorrelatorDplusDminus {
     // MC reco level
     bool flagDplusSignal = false;
     bool flagDminusSignal = false;
-    for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
+    for (const auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
@@ -318,7 +322,7 @@ struct HfCorrelatorDplusDminus {
         continue; // reject Dminus in outer loop
       }
       flagDplusSignal = std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
-      for (auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
+      for (const auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }
@@ -368,12 +372,13 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcRec, "Process MC Reco mode", true);
 
   /// Dplus-Dminus correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mccollision, MCParticlesPlus3Prong const& particlesMC)
+  void processMcGen(aod::McCollision const& mccollision,
+                    MCParticlesPlus3Prong const& particlesMC)
   {
     int counterDplusDminus = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       // check if the particle is Dplus or Dminus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -397,7 +402,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       registry.fill(HIST("hCountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus (for normalisation)
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != -pdg::Code::kDPlus) { // check that inner particle is a Dminus
           continue;
         }
@@ -432,13 +437,13 @@ struct HfCorrelatorDplusDminus {
             if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
-              for (auto& dau : particle1.daughters_as<MCParticlesPlus3Prong>()) {
+              for (const auto& dau : particle1.daughters_as<MCParticlesPlus3Prong>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate1DauInAcc = false;
                   break;
                 }
               }
-              for (auto& dau : particle2.daughters_as<MCParticlesPlus3Prong>()) {
+              for (const auto& dau : particle2.daughters_as<MCParticlesPlus3Prong>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate2DauInAcc = false;
                   break;
@@ -459,13 +464,14 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processCCbar(aod::McCollision const& mccollision, MCParticlesPlus2Prong const& particlesMC)
+  void processCCbar(aod::McCollision const& mccollision,
+                    MCParticlesPlus2Prong const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
@@ -495,7 +501,7 @@ struct HfCorrelatorDplusDminus {
       }
       registry.fill(HIST("hCountCtriggersMCGen"), 0, particle1.pt()); // to count trigger c quark (for normalisation)
 
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != PDG_t::kCharmBar) {
           continue;
         }

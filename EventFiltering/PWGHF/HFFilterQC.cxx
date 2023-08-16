@@ -118,7 +118,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
 
     std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Check if the particle is of interest
       checkParticleDecay(pdgCharmDaughters, particlesMC, particle, nPart, triggerDecision);
     }

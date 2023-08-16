@@ -147,9 +147,11 @@ struct HfTaskBs {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const&, TracksWithSel const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi>> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const&,
+               TracksWithSel const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
@@ -188,7 +190,7 @@ struct HfTaskBs {
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
     // MC rec
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
@@ -259,7 +261,7 @@ struct HfTaskBs {
     } // rec
 
     // MC gen. level
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
 
         auto ptParticle = particle.pt();
@@ -272,7 +274,7 @@ struct HfTaskBs {
         std::array<float, 2> yProngs;
         std::array<float, 2> etaProngs;
         int counter = 0;
-        for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

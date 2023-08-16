@@ -105,7 +105,7 @@ struct HfCandidateCreatorX {
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over Jpsi candidates
-    for (auto& jpsiCand : jpsiCands) {
+    for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
@@ -151,7 +151,7 @@ struct HfCandidateCreatorX {
       int index1Jpsi = jpsiCand.prong1Id();
 
       // loop over pi+ candidates
-      for (auto& trackPos : tracks) {
+      for (const auto& trackPos : tracks) {
         if (trackPos.pt() < ptPionMin) {
           continue;
         }
@@ -163,7 +163,7 @@ struct HfCandidateCreatorX {
         }
 
         // loop over pi- candidates
-        for (auto& trackNeg : tracks) {
+        for (const auto& trackNeg : tracks) {
           if (trackNeg.pt() < ptPionMin) {
             continue;
           }
@@ -276,7 +276,7 @@ struct HfCandidateCreatorXMc {
     int8_t channel = 0;
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -320,7 +320,7 @@ struct HfCandidateCreatorXMc {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

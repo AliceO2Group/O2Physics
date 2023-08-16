@@ -132,16 +132,20 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(const o2::aod::Collisions& collisions, aod::TrackAssoc const& trackIndices, const TracksSigmac& tracks, CandidatesLc const& candidates, aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void process(aod::Collisions const& collisions,
+               aod::TrackAssoc const& trackIndices,
+               TracksSigmac const& tracks,
+               CandidatesLc const& candidates,
+               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       histos.fill(HIST("hCounter"), 1);
       auto thisCollId = collision.globalIndex();
 
       /// loop over Λc+ → pK-π+ (and charge conj.) candidates
       auto candidatesThisColl = candidates.sliceBy(hf3ProngPerCollision, thisCollId);
-      for (auto const& candLc : candidatesThisColl) {
+      for (const auto& candLc : candidatesThisColl) {
         histos.fill(HIST("hCounter"), 2);
 
         /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
@@ -172,7 +176,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
         /// loop over tracks
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        for (auto const& trackId : trackIdsThisCollision) {
+        for (const auto& trackId : trackIdsThisCollision) {
 
           auto trackSoftPi = trackId.track_as<TracksSigmac>();
           // auto trackSoftPi = tracks.rawIteratorAt(trackId.trackId());
@@ -268,12 +272,13 @@ struct HfCandidateSigmac0plusplusMc {
 
   /// @brief dummy process function, to be run on data
   /// @param
-  void process(const aod::Tracks&) {}
+  void process(aod::Tracks const&) {}
 
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param particlesMc table of generated particles
-  void processMc(aod::McParticles const& particlesMc, const TracksMC& tracks,
+  void processMc(aod::McParticles const& particlesMc,
+                 TracksMC const& tracks,
                  LambdacMc const& /*, const LambdacMcGen&*/)
   {
 
@@ -288,7 +293,7 @@ struct HfCandidateSigmac0plusplusMc {
     // std::vector<int> arrDaughIndex; /// index of daughters of MC particle
 
     /// Match reconstructed Σc0,++ candidates
-    for (auto const& candSigmac : *candidatesSigmac) {
+    for (const auto& candSigmac : *candidatesSigmac) {
       indexRec = -1;
       sign = 0;
       flag = 0;
@@ -341,7 +346,7 @@ struct HfCandidateSigmac0plusplusMc {
     } /// end loop over reconstructed Σc0,++ candidates
 
     /// Match generated Σc0,++ candidates
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       flag = 0;
       origin = 0;
 
@@ -352,8 +357,8 @@ struct HfCandidateSigmac0plusplusMc {
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0
-        // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
-        for (auto const& daughter : particle.daughters_as<aod::McParticles>()) {
+        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
@@ -366,8 +371,8 @@ struct HfCandidateSigmac0plusplusMc {
         }
       } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++
-        // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
-        for (auto const& daughter : particle.daughters_as<aod::McParticles>()) {
+        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
