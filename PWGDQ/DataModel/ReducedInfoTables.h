@@ -441,6 +441,7 @@ DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse p
 DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
 DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);           //! Chi2 for PCA of the dilepton
+DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float); //! Cosine of the pointing angle
 DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 2)
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
@@ -488,15 +489,17 @@ DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
-                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, dilepton_track_index::FwdDcaX1, dilepton_track_index::FwdDcaY1, dilepton_track_index::FwdDcaX2, dilepton_track_index::FwdDcaY2,
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   reducedpair::Mass,
                   reducedpair::McDecision,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign, reducedpair::Chi2pca,
                   reducedpair::Tauz, reducedpair::TauzErr,
                   reducedpair::Tauxy, reducedpair::TauxyErr,
+                  reducedpair::CosPointingAngle,
                   dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Sign1,
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::Sign2,
+                  dilepton_track_index::FwdDcaX1, dilepton_track_index::FwdDcaY1, dilepton_track_index::FwdDcaX2, dilepton_track_index::FwdDcaY2,
                   dilepton_track_index::McMask1, dilepton_track_index::McMask2,
                   dilepton_track_index::Chi2MatchMCHMID1, dilepton_track_index::Chi2MatchMCHMID2,
                   dilepton_track_index::Chi2MatchMCHMFT1, dilepton_track_index::Chi2MatchMCHMFT2,
