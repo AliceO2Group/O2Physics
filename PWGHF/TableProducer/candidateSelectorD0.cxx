@@ -76,6 +76,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
+  using cand2ProngKF = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF>;
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   void init(InitContext& initContext)
@@ -102,7 +103,7 @@ struct HfCandidateSelectorD0 {
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <typename T>
+  template <int ReconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -134,6 +135,12 @@ struct HfCandidateSelectorD0 {
     // candidate DCA
     // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
+    // candidate chi2
+    // if constexpr (ReconstructionType == useKFParticle) {
+    //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
+    //     return false;
+    // }
+
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
     if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
@@ -161,7 +168,7 @@ struct HfCandidateSelectorD0 {
   /// \param trackKaon is the track with the kaon hypothesis
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <typename T1, typename T2>
+  template <int ReconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
     auto candpT = candidate.pt();
@@ -171,12 +178,20 @@ struct HfCandidateSelectorD0 {
     }
 
     // invariant-mass cut
+    float massD0, massD0bar;
+    if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+      massD0 = candidate.kfGeoMassD0();
+      massD0bar = candidate.kfGeoMassD0bar();
+    } else {
+      massD0 = invMassD0ToPiK(candidate);
+      massD0bar = invMassD0barToKPi(candidate);
+    }
     if (trackPion.sign() > 0) {
-      if (std::abs(invMassD0ToPiK(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0 - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(invMassD0barToKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0bar - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -217,8 +232,8 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-
-  void process(aod::HfCand2Prong const& candidates, TracksSel const&)
+  template <int ReconstructionType, typename THfCand2Prong>
+  void processSel(THfCand2Prong const& candidates, TracksSel const&)
   {
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -241,8 +256,8 @@ struct HfCandidateSelectorD0 {
       statusHFFlag = 1;
 
       auto ptCand = candidate.pt();
-      auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
+      auto trackPos = candidate.template prong0_as<TracksSel>(); // positive daughter
+      auto trackNeg = candidate.template prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
@@ -349,6 +364,18 @@ struct HfCandidateSelectorD0 {
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
     }
   }
+
+  void processWithDCAFitterN(aod::HfCand2Prong const& candidates, TracksSel const& tracks)
+  {
+    processSel<0>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
+
+  void processWithKFParticle(cand2ProngKF const& candidates, TracksSel const& tracks)
+  {
+    processSel<1>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
