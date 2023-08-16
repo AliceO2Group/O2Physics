@@ -28,9 +28,6 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
-constexpr static int useDCAFitterN = 0;
-constexpr static int useKFParticle = 1;
-
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
   Produces<aod::HfSelD0> hfSelD0Candidate;
@@ -59,6 +56,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
+  using cand2ProngKF = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF>;
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   void init(InitContext& initContext)
@@ -109,8 +107,7 @@ struct HfCandidateSelectorD0 {
 
     // candidate chi2
     // if constexpr (ReconstructionType == useKFParticle) {
-
-    //   if (candidate.kfTopChi2OverNDF() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
+    //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     //     return false;
     // }
 
@@ -152,13 +149,12 @@ struct HfCandidateSelectorD0 {
 
     // invariant-mass cut
     float massD0, massD0bar;
-    if constexpr (ReconstructionType == useDCAFitterN) {
+    if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+      massD0 = candidate.kfGeoMassD0();
+      massD0bar = candidate.kfGeoMassD0bar();
+    } else {
       massD0 = invMassD0ToPiK(candidate);
       massD0bar = invMassD0barToKPi(candidate);
-    }
-    if constexpr (ReconstructionType == useKFParticle) {
-      massD0 = candidate.kfGeoMass_DZero();
-      massD0bar = candidate.kfGeoMass_DZeroBar();
     }
     if (trackPion.sign() > 0) {
       if (std::abs(massD0 - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
@@ -240,9 +236,9 @@ struct HfCandidateSelectorD0 {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
+      bool topolD0 = selectionTopolConjugate<ReconstructionType>(candidate, trackPos, trackNeg);
       // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
+      bool topolD0bar = selectionTopolConjugate<ReconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
@@ -308,12 +304,12 @@ struct HfCandidateSelectorD0 {
   {
     processSel<0>(candidates, tracks);
   }
-  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
+  PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
+
+  void processWithKFParticle(cand2ProngKF const& candidates, TracksSel const& tracks)
   {
     processSel<1>(candidates, tracks);
   }
-
-  PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", false);
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);
 };
 

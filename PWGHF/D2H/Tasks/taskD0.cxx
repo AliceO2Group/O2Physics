@@ -28,9 +28,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
-constexpr static int useDCAFitterN = 0;
-constexpr static int useKFParticle = 1;
-
 /// D0 analysis task
 struct HfTaskD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -166,8 +163,8 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  template <int ReconstructionType, typename THfCand2Prong, typename THfCand2ProngSel>
-  void processData(THfCand2Prong& candidates, THfCand2ProngSel& selectedD0CandidatesSets)
+  template <int ReconstructionType, typename THfCand2ProngSel>
+  void processData(THfCand2ProngSel& selectedD0CandidatesSets)
   {
     for (auto& candidate : selectedD0CandidatesSets) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
@@ -178,13 +175,12 @@ struct HfTaskD0 {
       }
 
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == useDCAFitterN) {
+      if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+        massD0 = candidate.kfGeoMassD0();
+        massD0bar = candidate.kfGeoMassD0bar();
+      } else {
         massD0 = invMassD0ToPiK(candidate);
         massD0bar = invMassD0barToKPi(candidate);
-      }
-      if constexpr (ReconstructionType == useKFParticle) {
-        massD0 = candidate.kfGeoMass_DZero();
-        massD0bar = candidate.kfGeoMass_DZeroBar();
       }
       auto ptCandidate = candidate.pt();
 
@@ -228,20 +224,20 @@ struct HfTaskD0 {
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
     }
   }
-  void processWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
-    processData<0>(candidates, selectedD0Candidates);
+    processData<0>(selectedD0Candidates);
   }
-  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const& candidates)
-  {
-    processData<1>(candidates, selectedD0CandidatesKF);
-  }
-
   PROCESS_SWITCH(HfTaskD0, processWithDCAFitterN, "process taskD0 with DCAFitterN", true);
+
+  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const&)
+  {
+    processData<1>(selectedD0CandidatesKF);
+  }
   PROCESS_SWITCH(HfTaskD0, processWithKFParticle, "process taskD0 with KFParticle", false);
 
-  template <int ReconstructionType, typename THfCand2Prong, typename THfCand2ProngFlag>
-  void processMc(THfCand2Prong& candidates, THfCand2ProngFlag& recoFlag2ProngSets,
+  template <int ReconstructionType, typename THfCand2ProngFlag>
+  void processMc(THfCand2ProngFlag& recoFlag2ProngSets,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
     // MC rec.
@@ -254,13 +250,12 @@ struct HfTaskD0 {
         continue;
       }
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == useDCAFitterN) {
+      if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+        massD0 = candidate.kfGeoMassD0();
+        massD0bar = candidate.kfGeoMassD0bar();
+      } else {
         massD0 = invMassD0ToPiK(candidate);
         massD0bar = invMassD0barToKPi(candidate);
-      }
-      if constexpr (ReconstructionType == useKFParticle) {
-        massD0 = candidate.kfGeoMass_DZero();
-        massD0bar = candidate.kfGeoMass_DZeroBar();
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
@@ -435,19 +430,16 @@ struct HfTaskD0 {
     }
   }
 
-  void processMcWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>& candidates,
-                               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+  void processMcWithDCAFitterN(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    processMc<0>(candidates, recoFlag2Prong, particlesMC, tracks);
+    processMc<0>(recoFlag2Prong, particlesMC, tracks);
   }
-
-  void processMcWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>& candidates,
-                               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
-  {
-    processMc<1>(candidates, recoFlag2ProngKF, particlesMC, tracks);
-  }
-
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
+
+  void processMcWithKFParticle(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+  {
+    processMc<1>(recoFlag2ProngKF, particlesMC, tracks);
+  }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 };
 
