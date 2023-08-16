@@ -84,7 +84,7 @@ struct HfCandidateCreatorBs {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   OutputObj<TH1F> hMassDsToKKPi{TH1F("hMassDsToKKPi", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "D_{s}candidates;D_{s} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "D_{s} candidates;D_{s} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;#pi candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPADs{TH1F("hCPADs", "D_{s} candidates;D_{s} cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassBsToDsPi{TH1F("hMassBsToDsPi", "2-prong candidates;inv. mass (B_{s} #rightarrow D_{s}#pi #rightarrow KK#pi#pi) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
