@@ -241,10 +241,11 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, TracksWPid const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
+               TracksWPid const&)
   {
     // Printf("Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       /*
       // no such selection for LcK0sp for now - it is the only cascade
       if (!(candidate.hfflag() & 1 << D0ToPiK)) {
@@ -351,11 +352,12 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::TracksWMc const& tracks, TracksWPid const&)
+                 aod::TracksWMc const& tracks,
+                 TracksWPid const&)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
@@ -514,7 +516,7 @@ struct HfTaskLcToK0sP {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;

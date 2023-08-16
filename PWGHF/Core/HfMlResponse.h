@@ -111,7 +111,7 @@ class HfMlResponse
   /// \param ccdbApi is the CCDB API
   /// \param pathCCDB is the model path in CCDB
   /// \param timestampCCDB is the CCDB timestamp
-  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
   {
     uint8_t counterModel{0};
     for (const auto& onnxFile : onnxFiles) {

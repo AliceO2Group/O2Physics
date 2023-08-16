@@ -96,7 +96,7 @@ struct HfCandidateCreatorChic {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over Jpsi candidates
-    for (auto& jpsiCand : jpsiCands) {
+    for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
@@ -133,7 +133,7 @@ struct HfCandidateCreatorChic {
       // -----------------------------------------------------------------
       // loop over gamma candidates
 
-      for (auto& ecal : ecals) {
+      for (const auto& ecal : ecals) {
 
         if (ecal.e() < energyGammaMin) {
           continue;
@@ -226,7 +226,7 @@ struct HfCandidateCreatorChicMc {
     int8_t channel = 0;
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       flag = 0;
       origin = 0;
       channel = 0;
@@ -264,7 +264,7 @@ struct HfCandidateCreatorChicMc {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
