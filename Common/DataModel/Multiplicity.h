@@ -46,6 +46,8 @@ DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, float); //!
 DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                           //!
 DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);       //!
 DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
+DECLARE_SOA_COLUMN(MultPVz, multPVz, float);                                 //!
+DECLARE_SOA_COLUMN(MultSel8, multSel8, bool);                                //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
@@ -67,7 +69,7 @@ using Mult = Mults::iterator;
 
 // for QA purposes
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
-                  mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber);
+                  mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8);
 using MultExtra = MultsExtra::iterator;
 
 namespace multZeq
