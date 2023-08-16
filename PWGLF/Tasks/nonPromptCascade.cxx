@@ -37,12 +37,6 @@ namespace
 {
 static constexpr int nParticles{4};
 static constexpr int nCutsPID{2};
-static constexpr std::array<float, nParticles> masses{
-  constants::physics::MassKaonCharged,
-  constants::physics::MassPionCharged,
-  constants::physics::MassProton,
-  constants::physics::MassPionCharged};
-static constexpr std::array<int, nParticles> charges{-1, -1, 1, -1};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> particlesNames{"K-bachelor", "Pi-bachelor", "Pr", "Pi"};
 static const std::vector<std::string> cutsNames{"TPCnSigmaMin", "TPCnSigmaMax"};
@@ -328,8 +322,6 @@ struct NonPromptCascadeTask {
   {
     bool keepEvent[nParticles]{false};
     bool isOmega{false};
-
-    // const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
