@@ -332,7 +332,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, collision.bc().runNumber());
     }
 
@@ -342,7 +342,7 @@ struct HfTreeCreatorD0ToKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -373,7 +373,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, collision.bc().runNumber());
     }
 
@@ -445,7 +445,7 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),

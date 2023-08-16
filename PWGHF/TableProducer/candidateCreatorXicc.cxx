@@ -95,7 +95,7 @@ struct HfCandidateCreatorXicc {
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    for (auto& xicCand : xicCands) {
+    for (const auto& xicCand : xicCands) {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
         continue;
       }
@@ -132,7 +132,7 @@ struct HfCandidateCreatorXicc {
       int index2Xic = track2.globalIndex();
       int charge = track0.sign() + track1.sign() + track2.sign();
 
-      for (auto& trackpion : tracks) {
+      for (const auto& trackpion : tracks) {
         if (trackpion.pt() < cutPtPionMin) {
           continue;
         }
@@ -214,7 +214,7 @@ struct HfCandidateCreatorXiccMc {
     int8_t debug = 0;
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -245,7 +245,7 @@ struct HfCandidateCreatorXiccMc {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

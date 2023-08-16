@@ -206,7 +206,7 @@ struct HfTaskFlow {
   //  FIXME: Some collisions are rejected here, what causes (part of) differences with the D0 task
   //  ---------------
   template <typename TCollision>
-  bool isCollisionSelected(TCollision collision, bool fillHistograms = false)
+  bool isCollisionSelected(TCollision const& collision, bool fillHistograms = false)
   {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
@@ -239,10 +239,10 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillQA(float multiplicity, TTracks tracks)
+  void fillQA(float multiplicity, TTracks const& tracks)
   {
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPt"), track1.pt());
       registry.fill(HIST("hEta"), track1.eta());
@@ -254,13 +254,13 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillMixingQA(float multiplicity, float vz, TTracks tracks)
+  void fillMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
     registry.fill(HIST("hMultiplicityMixing"), multiplicity);
     registry.fill(HIST("hVtxZMixing"), vz);
 
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPtMixing"), track1.pt());
       registry.fill(HIST("hEtaMixing"), track1.eta());
@@ -270,13 +270,13 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillHFMixingQA(float multiplicity, float vz, TTracks tracks)
+  void fillHFMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
     registry.fill(HIST("hMultiplicityHFMixing"), multiplicity);
     registry.fill(HIST("hVtxZHFMixing"), vz);
 
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPtHFMixing"), track1.pt());
       registry.fill(HIST("hEtaHFMixing"), track1.eta());
@@ -286,9 +286,9 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillMFTQA(float multiplicity, TTracks tracks)
+  void fillMFTQA(float multiplicity, TTracks const& tracks)
   {
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       registry.fill(HIST("hEtaMFT"), track1.eta());
       float phi = track1.phi();
       o2::math_utils::bringTo02Pi(phi);
@@ -299,7 +299,7 @@ struct HfTaskFlow {
 
   //  TODO: Check how to put this into a Filter
   template <typename TTrack>
-  bool isAcceptedCandidate(TTrack candidate)
+  bool isAcceptedCandidate(TTrack const& candidate)
   {
     if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
       return false;
@@ -312,9 +312,9 @@ struct HfTaskFlow {
 
   //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
   template <typename TTracks>
-  void fillCandidateQA(TTracks candidates)
+  void fillCandidateQA(TTracks const& candidates)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!isAcceptedCandidate(candidate)) {
         continue;
       }
@@ -347,12 +347,12 @@ struct HfTaskFlow {
   }
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
-  void fillCorrelations(TTarget target, TTracksTrig tracks1, TTracksAssoc tracks2, float multiplicity, float posZ)
+  void fillCorrelations(TTarget target, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, float multiplicity, float posZ)
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
 
-    for (auto& track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -381,7 +381,7 @@ struct HfTaskFlow {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
 
-      for (auto& track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
 
         //  case of h-h correlations where the two types of tracks are the same
         //  this avoids autocorrelations and double counting of particle pairs
@@ -427,7 +427,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(aodCollisions& collisions, TTracksTrig& tracks1, TTracksAssoc& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  void mixCollisions(aodCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
@@ -435,7 +435,7 @@ struct HfTaskFlow {
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
     Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
       if (!(isCollisionSelected(collision1, false))) {
         continue;
@@ -534,8 +534,8 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTpcTpcHH(aodCollisions& collisions,
-                            aodTracks& tracks)
+  void processMixedTpcTpcHH(aodCollisions const& collisions,
+                            aodTracks const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
@@ -551,9 +551,9 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedHfHadrons(aodCollisions& collisions,
-                             aodTracks& tracks,
-                             hfCandidates& candidates)
+  void processMixedHfHadrons(aodCollisions const& collisions,
+                             aodTracks const& tracks,
+                             hfCandidates const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
