@@ -109,9 +109,6 @@ struct f0980analysis {
                  {pTqaAxis});
       histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals",
                  HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
-
-	  histos.add("MCL/ntracks", "", HistType::kTH1F,
-				{NTracksAxis});
     }
 
     histos.print();
