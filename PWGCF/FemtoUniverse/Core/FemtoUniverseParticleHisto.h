@@ -141,6 +141,8 @@ class FemtoUniverseParticleHisto
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       /// Cascade histograms
       /// to be implemented
+    } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+      // Phi histograms
     } else {
       LOG(fatal) << "FemtoUniverseParticleHisto: Histogramming for requested object not defined - quitting!";
     }
@@ -171,6 +173,9 @@ class FemtoUniverseParticleHisto
       } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
         /// Cascade histograms
         tempFitVarAxisTitle = "cos#alpha";
+      } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+        // Phi histograms
+        tempFitVarAxisTitle = "InvMass";
       } else {
         LOG(fatal) << "FemtoUniverseParticleHisto: Histogramming for requested object not defined - quitting!";
       }
@@ -307,6 +312,8 @@ class FemtoUniverseParticleHisto
         /// V0 histograms
       } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
         /// Cascade histograms
+      } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+        // Phi histograms
       } else {
         LOG(fatal) << "FemtoUniverseParticleHisto: Histogramming for requested object not defined - quitting!";
       }
