@@ -52,7 +52,7 @@ struct PureMcMultiplicityCounter {
       {"Particles/Primaries/Pt", " ;p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}},
       {"Particles/Primaries/Eta", " ; #eta", {HistType::kTH1F, {EtaAxis}}},
       {"Particles/Primaries/Y", " ; y", {HistType::kTH1F, {RapidityAxis}}},
-    }//
+    } //
   };
 
   void init(InitContext const&)
@@ -91,31 +91,27 @@ struct PureMcMultiplicityCounter {
       registry.fill(HIST("Particles/Primaries/Eta"), particle.eta());
       registry.fill(HIST("Particles/Primaries/Y"), particle.y());
 
-      static_for<0,3>(
-        [&](auto idx)
-        {
+      static_for<0, 3>(
+        [&](auto idx) {
           constexpr int i = idx.value;
           if (particle.pdgCode() == speciesIds[i]) {
             registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/Eta"), particle.eta());
             registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/Y"), particle.y());
           }
-        }
-        );
+        });
 
       if (std::abs(particle.eta()) >= etaRange) {
         continue;
       }
       ++Np;
       registry.fill(HIST("Particles/Primaries/Pt"), particle.pt());
-      static_for<0,3>(
-        [&](auto idx)
-        {
+      static_for<0, 3>(
+        [&](auto idx) {
           constexpr int i = idx.value;
           if (particle.pdgCode() == speciesIds[i]) {
             registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/Pt"), particle.pt());
           }
-        }
-        );
+        });
     }
     registry.fill(HIST("Events/Properties/Multiplicity"), Np);
   }
