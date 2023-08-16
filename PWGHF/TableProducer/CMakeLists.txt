@@ -157,6 +157,11 @@ o2physics_add_dpl_workflow(tree-creator-bplus-to-d0-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tree-creator-bs-to-ds-pi
+                    SOURCES treeCreatorBsToDsPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tree-creator-d0-to-k-pi
                     SOURCES treeCreatorD0ToKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
