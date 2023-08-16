@@ -344,7 +344,7 @@ struct HfCandidateCreatorBplusExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto const& candidate : *rowCandidateBPlus) {
+    for (const auto& candidate : *rowCandidateBPlus) {
       // Printf("New rec. candidate");
 
       flag = 0;
@@ -365,7 +365,7 @@ struct HfCandidateCreatorBplusExpressions {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

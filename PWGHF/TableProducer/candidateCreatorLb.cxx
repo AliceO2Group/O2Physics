@@ -103,7 +103,7 @@ struct HfCandidateCreatorLb {
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over Lc candidates
-    for (auto& lcCand : lcCands) {
+    for (const auto& lcCand : lcCands) {
       if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
@@ -143,7 +143,7 @@ struct HfCandidateCreatorLb {
       int index2Lc = track2.globalIndex();
       // int charge = track0.sign() + track1.sign() + track2.sign();
 
-      for (auto& trackPion : tracks) {
+      for (const auto& trackPion : tracks) {
         if (trackPion.pt() < ptPionMin) {
           continue;
         }
@@ -240,7 +240,7 @@ struct HfCandidateCreatorLbMc {
     int8_t debug = 0;
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -271,7 +271,7 @@ struct HfCandidateCreatorLbMc {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

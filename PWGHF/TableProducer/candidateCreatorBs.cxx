@@ -341,7 +341,7 @@ struct HfCandidateCreatorBsExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto const& candidate : *rowCandidateBs) {
+    for (const auto& candidate : *rowCandidateBs) {
       flag = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
@@ -402,7 +402,7 @@ struct HfCandidateCreatorBsExpressions {
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       flag = 0;
       arrDaughDsIndex.clear();
       // Bs(bar) → Ds∓ π±

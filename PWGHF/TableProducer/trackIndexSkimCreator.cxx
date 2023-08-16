@@ -840,7 +840,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
           /// contributors for the current collision
           auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, thisCollId, cache);
-          for (auto contributor : pvContrCollision) {
+          for (const auto& contributor : pvContrCollision) {
             vecPvContributorGlobId.push_back(contributor.globalIndex());
             vecPvContributorTrackParCov.push_back(getTrackParCov(contributor));
           }

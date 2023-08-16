@@ -84,7 +84,7 @@ struct HfTagSelTracks {
 
   void process(TracksWithDca const& tracks)
   {
-    for (auto const& track : tracks) {
+    for (const auto& track : tracks) {
       bool statusProng = true;
 
       auto ptTrack = track.pt();
@@ -181,14 +181,14 @@ struct HfTrackIndexSkimCreator {
     df2.setUseAbsDCA(useAbsDCA);
 
     // loop over positive tracks
-    for (auto const& trackPos1 : tracks) {
+    for (const auto& trackPos1 : tracks) {
       if (trackPos1.signed1Pt() < 0) {
         continue;
       }
       auto trackParVarPos1 = getTrackParCov(trackPos1);
 
       // loop over negative tracks
-      for (auto const& trackNeg1 : tracks) {
+      for (const auto& trackNeg1 : tracks) {
         if (trackNeg1.signed1Pt() > 0) {
           continue;
         }
@@ -347,7 +347,7 @@ struct HfCandidateCreator2Prong {
     df.setUseAbsDCA(useAbsDCA);
 
     // loop over pairs of track indices
-    for (auto const& rowTrackIndexProng2 : rowsTrackIndexProng2) {
+    for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
       auto track0 = rowTrackIndexProng2.prong0_as<TracksWithCov>();
       auto track1 = rowTrackIndexProng2.prong1_as<TracksWithCov>();
       auto trackParVarPos1 = getTrackParCov(track0);
@@ -482,7 +482,7 @@ struct HfCandidateSelectorD0 {
                TracksWithPid const&)
   {
     // looping over 2-prong candidates
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;
@@ -578,7 +578,7 @@ struct HfTaskD0 {
 
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
   {
-    for (auto const& candidate : selectedD0Candidates) {
+    for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), invMassD0(candidate));
       }

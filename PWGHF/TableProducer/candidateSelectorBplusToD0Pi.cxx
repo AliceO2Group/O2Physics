@@ -93,9 +93,9 @@ struct HfCandidateSelectorBplusToD0Pi {
     int selectionFlagD0 = -1;
     int selectionFlagD0bar = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
+    for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-bplus") == 0) {
-        for (auto const& option : device.options) {
+        for (const auto& option : device.options) {
           if (option.name.compare("selectionFlagD0") == 0) {
             selectionFlagD0 = option.defaultValue.get<int>();
             LOGF(info, "selectionFlagD0 = %d", selectionFlagD0);
@@ -133,10 +133,12 @@ struct HfCandidateSelectorBplusToD0Pi {
     return true;
   }
 
-  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPidWithSel const&)
+  void process(aod::HfCandBplus const& hfCandBs,
+               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&,
+               TracksPidWithSel const&)
   {
 
-    for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
+    for (const auto& hfCandB : hfCandBs) { // looping over Bplus candidates
 
       int statusBplus = 0;
       auto ptCandB = hfCandB.pt();

@@ -78,7 +78,7 @@ struct HfTaskJpsi {
   {
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
@@ -192,13 +192,14 @@ struct HfTaskJpsiMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi, aod::HfCand2ProngMcRec>> const& candidates,
-               McParticlesHf const& particlesMC, aod::TracksWMc const& tracks)
+               McParticlesHf const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
@@ -274,7 +275,7 @@ struct HfTaskJpsiMc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

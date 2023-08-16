@@ -135,7 +135,7 @@ struct HfTreeCreatorChicToJpsiGamma {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -149,7 +149,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     // Filling candidate properties
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
       array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
       array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
@@ -207,7 +207,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     // Filling particle properties
     float massChic = RecoDecay::getMassPDG(pdg::Code::kChiC1);
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),

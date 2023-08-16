@@ -107,7 +107,7 @@ struct HfCandidateCreatorCascade {
                aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles const& mcParticles
 #endif
   )
   {
