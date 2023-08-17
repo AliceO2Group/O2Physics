@@ -293,6 +293,11 @@ struct femtoUniverseProducerTask {
 
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
+
+    trackCuts.setSelection(ConfTrkCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+    trackCuts.setSelection(ConfTrkPtmin, femtoUniverseTrackSelection::kpTMin, femtoUniverseSelection::kLowerLimit);
+    trackCuts.setSelection(ConfTrkPtmax, femtoUniverseTrackSelection::kpTMax, femtoUniverseSelection::kUpperLimit);
+    trackCuts.setSelection(ConfTrkEta, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkTPCnclsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCfCls, femtoUniverseTrackSelection::kTPCfClsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCcRowsMin, femtoUniverseTrackSelection::kTPCcRowsMin, femtoUniverseSelection::kLowerLimit);
@@ -300,10 +305,6 @@ struct femtoUniverseProducerTask {
     trackCuts.setSelection(ConfTrkITSnclsMin, femtoUniverseTrackSelection::kITSnClsMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkITSnclsIbMin, femtoUniverseTrackSelection::kITSnClsIbMin, femtoUniverseSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoUniverseTrackSelection::kDCAxyMax, femtoUniverseSelection::kAbsUpperLimit);
-    trackCuts.setSelection(ConfTrkCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-    trackCuts.setSelection(ConfTrkPtmin, femtoUniverseTrackSelection::kpTMin, femtoUniverseSelection::kLowerLimit);
-    trackCuts.setSelection(ConfTrkPtmax, femtoUniverseTrackSelection::kpTMax, femtoUniverseSelection::kUpperLimit);
-    trackCuts.setSelection(ConfTrkEta, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkDCAzMax, femtoUniverseTrackSelection::kDCAzMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfTrkPIDspecies);
