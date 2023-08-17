@@ -750,26 +750,27 @@ struct correlateStrangeness {
         histos.fill(HIST("Generated/hXiPlus"), mcParticle.pt(), mcParticle.eta());
     }
 
-    if( collisions.size() < 1 ) return; 
+    if (collisions.size() < 1)
+      return;
 
     for (auto const& mcParticle : mcParticles) {
-      if( !mcParticle.isPhysicalPrimary() ) 
+      if (!mcParticle.isPhysicalPrimary())
         continue;
-      if( abs(mcParticle.pdgCode()) == 211) 
+      if (abs(mcParticle.pdgCode()) == 211)
         histos.fill(HIST("GeneratedWithPV/hPion"), mcParticle.pt(), mcParticle.eta());
-      if( abs(mcParticle.pdgCode()) == 310) 
+      if (abs(mcParticle.pdgCode()) == 310)
         histos.fill(HIST("GeneratedWithPV/hK0Short"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() == 3122) 
+      if (mcParticle.pdgCode() == 3122)
         histos.fill(HIST("GeneratedWithPV/hLambda"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() ==-3122) 
+      if (mcParticle.pdgCode() == -3122)
         histos.fill(HIST("GeneratedWithPV/hAntiLambda"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() == 3312) 
+      if (mcParticle.pdgCode() == 3312)
         histos.fill(HIST("GeneratedWithPV/hXiMinus"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() ==-3312) 
+      if (mcParticle.pdgCode() == -3312)
         histos.fill(HIST("GeneratedWithPV/hXiPlus"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() == 3334) 
+      if (mcParticle.pdgCode() == 3334)
         histos.fill(HIST("GeneratedWithPV/hXiMinus"), mcParticle.pt(), mcParticle.eta());
-      if( mcParticle.pdgCode() ==-3334) 
+      if (mcParticle.pdgCode() == -3334)
         histos.fill(HIST("GeneratedWithPV/hXiPlus"), mcParticle.pt(), mcParticle.eta());
     }
   }
