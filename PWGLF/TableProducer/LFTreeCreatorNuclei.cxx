@@ -205,7 +205,7 @@ struct LfTreeCreatorNuclei {
           const auto& particle = track.mcParticle();
           tableCandidateMC(particle.pdgCode(),
                            particle.isPhysicalPrimary(),
-                           particle.producedByGenerator(), 
+                           particle.producedByGenerator(),
                            particle.px(),
                            particle.py(),
                            particle.pz());
