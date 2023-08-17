@@ -398,7 +398,7 @@ struct HfTaskMcEfficiency {
         }
         /// check if we end-up with the correct final state using MC info
         int8_t sign = 0;
-        if (std::abs(mcParticle.pdgCode()) == pdg::kD0 && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
+        if (std::abs(mcParticle.pdgCode()) == pdg::kD0 && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           /// check if we have D0(bar) → π± K∓
           continue;
         }

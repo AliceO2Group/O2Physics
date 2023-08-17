@@ -56,6 +56,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 
 using namespace o2::aod;
+using namespace o2::aod::evsel;
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_bplus;
