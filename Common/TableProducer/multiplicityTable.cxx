@@ -243,7 +243,6 @@ struct MultiplicityTableTaskIndexed {
       multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
 
       if (populateMultExtra) {
-        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8());
         int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
         for (auto track : pvAllContribsGrouped) {
           if (track.hasITS())
@@ -255,7 +254,6 @@ struct MultiplicityTableTaskIndexed {
           if (track.hasTRD())
             nHasTRD++;
         };
-
         multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD);
       }
     }
