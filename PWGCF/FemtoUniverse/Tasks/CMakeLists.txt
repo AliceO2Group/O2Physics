@@ -13,6 +13,11 @@ o2physics_add_dpl_workflow(femtouniverse-pair-track-track
           SOURCES femtoUniversePairTaskTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+          
+o2physics_add_dpl_workflow(o2-analysis-cf-femtouniverse-pair-track-track-mult-kt
+          SOURCES femtoUniversePairTaskTrackTrackMultKt.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femtouniverse-pair-track-track-extended
           SOURCES femtoUniversePairTaskTrackTrackExtended.cxx
