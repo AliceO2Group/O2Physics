@@ -145,7 +145,7 @@ constexpr double binsPt[nBinsPt + 1] = {
   1.,
   2.,
   4.,
-  6,
+  6.,
   10.,
   50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
