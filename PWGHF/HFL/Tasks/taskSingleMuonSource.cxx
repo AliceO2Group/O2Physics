@@ -94,7 +94,7 @@ struct HfTaskSingleMuonSource {
 
     HistogramConfigSpec h3PtDCAChi2{HistType::kTH3F, {axisPt, axisDCA, axisChi2}};
 
-    for (auto const& src : muonSources) {
+    for (const auto& src : muonSources) {
       registry.add(Form("h3%sPtDCAChi2", src.Data()), "", h3PtDCAChi2);
     }
   }
@@ -249,7 +249,9 @@ struct HfTaskSingleMuonSource {
     }
   }
 
-  void process(MyCollisions::iterator const& collision, McMuons const& muons, aod::McParticles const&)
+  void process(MyCollisions::iterator const& collision,
+               McMuons const& muons,
+               aod::McParticles const&)
   {
     // event selections
     if (!collision.sel8()) {

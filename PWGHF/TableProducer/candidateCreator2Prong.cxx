@@ -252,7 +252,7 @@ struct HfCandidateCreator2ProngExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto& candidate : *rowCandidateProng2) {
+    for (const auto& candidate : *rowCandidateProng2) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -293,7 +293,7 @@ struct HfCandidateCreator2ProngExpressions {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

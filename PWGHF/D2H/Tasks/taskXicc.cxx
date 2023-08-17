@@ -70,9 +70,8 @@ struct HfTaskXicc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
-  // void process(aod::HfCandXicc const& candidates)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
@@ -173,13 +172,13 @@ struct HfTaskXiccMc {
     registry.add("hCPAVsPtVsYRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{2200, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {20, -5., 5.}}});
   }
 
-  // void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
@@ -260,7 +259,7 @@ struct HfTaskXiccMc {
     } // end of loop over reconstructed candidates
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

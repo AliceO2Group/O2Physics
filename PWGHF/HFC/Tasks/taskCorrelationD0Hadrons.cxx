@@ -216,7 +216,7 @@ struct HfTaskCorrelationD0Hadrons {
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -324,7 +324,7 @@ struct HfTaskCorrelationD0Hadrons {
 
   void processMcRec(aod::DHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -522,7 +522,7 @@ struct HfTaskCorrelationD0Hadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::DHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();

@@ -174,10 +174,14 @@ struct HfCandidateSelectorD0Alice3Barrel {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksSel const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const& barreltracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusHFFlag = 0;

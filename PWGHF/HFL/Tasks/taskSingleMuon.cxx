@@ -235,11 +235,16 @@ struct HfTaskSingleMuon {
     }
   }
 
-  void processMuon(soa::Filtered<MyCollisions>::iterator const& collision, MFTTracksExtra const& tracksMFT, MyMuons const& muons)
+  void processMuon(soa::Filtered<MyCollisions>::iterator const& collision,
+                   MFTTracksExtra const& tracksMFT,
+                   MyMuons const& muons)
   {
     runMuonSel(collision, tracksMFT, muons);
   }
-  void processMuonMc(soa::Filtered<MyCollisions>::iterator const& collision, MFTTracksExtra const& tracksMFT, soa::Filtered<MyMcMuons> const& muons, aod::McParticles const& mc)
+  void processMuonMc(soa::Filtered<MyCollisions>::iterator const& collision,
+                     MFTTracksExtra const& tracksMFT,
+                     soa::Filtered<MyMcMuons> const& muons,
+                     aod::McParticles const& mc)
   {
     runMuonSelMc(collision, tracksMFT, muons, mc);
   }
