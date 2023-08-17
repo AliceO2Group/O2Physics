@@ -294,16 +294,16 @@ struct f1protoninitializer {
           if (numberPiKpair == 1) {
             qaRegistry.fill(HIST("hInvMassk0"), track3.mK0Short(), track3.pt());
           }
-          pT = RecoDecay::pt(array{track1.px() + track2.px() + track3.px(), track1.py() + track2.py() + track3.py()});
-          auto arrMomF1 = array{
-            array{track1.px(), track1.py(), track1.pz()},
-            array{track2.px(), track2.py(), track2.pz()},
-            array{track3.px(), track3.py(), track3.pz()}};
-          auto arrMom23 = array{
-            array{track2.px(), track2.py(), track2.pz()},
-            array{track3.px(), track3.py(), track3.pz()}};
-          masskKs0 = RecoDecay::m(arrMom23, array{massKa, massK0s});
-          massF1 = RecoDecay::m(arrMomF1, array{massPi, massKa, massK0s});
+          pT = RecoDecay::pt(std::array{track1.px() + track2.px() + track3.px(), track1.py() + track2.py() + track3.py()});
+          auto arrMomF1 = std::array{
+            std::array{track1.px(), track1.py(), track1.pz()},
+            std::array{track2.px(), track2.py(), track2.pz()},
+            std::array{track3.px(), track3.py(), track3.pz()}};
+          auto arrMom23 = std::array{
+            std::array{track2.px(), track2.py(), track2.pz()},
+            std::array{track3.px(), track3.py(), track3.pz()}};
+          masskKs0 = RecoDecay::m(arrMom23, std::array{massKa, massK0s});
+          massF1 = RecoDecay::m(arrMomF1, std::array{massPi, massKa, massK0s});
           qaRegistry.fill(HIST("hInvMassKKs0"), masskKs0);
           if ((masskKs0 > cMaxMassKKs0) || (massF1 > cMaxMassF1) || (pT < cMinF1Pt)) {
             continue;

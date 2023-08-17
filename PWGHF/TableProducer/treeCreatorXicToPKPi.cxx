@@ -318,7 +318,7 @@ struct HfTreeCreatorXicToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());

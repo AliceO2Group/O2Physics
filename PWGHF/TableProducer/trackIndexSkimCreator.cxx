@@ -401,7 +401,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
   /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, or cascade decays)
   /// \return true if track passes all cuts
-  bool isSelectedTrackDCA(const float& trackPt, const array<float, 2>& dca, const int candType)
+  bool isSelectedTrackDCA(const float& trackPt, const std::array<float, 2>& dca, const int candType)
   {
     auto pTBinTrack = findBin(binsPtTrack, trackPt);
     if (pTBinTrack == -1) {
@@ -1003,26 +1003,26 @@ struct HfTrackIndexSkimCreator {
       return;
     }
 
-    arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = array{array{massPi, massK},
-                                                              array{massK, massPi}};
+    arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{array{massPi, massK},
+                                                                   std::array{massK, massPi}};
 
-    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToEE] = array{array{massElectron, massElectron},
-                                                               array{massElectron, massElectron}};
+    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToEE] = std::array{array{massElectron, massElectron},
+                                                                    std::array{massElectron, massElectron}};
 
-    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToMuMu] = array{array{massMuon, massMuon},
-                                                                 array{massMuon, massMuon}};
+    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToMuMu] = std::array{array{massMuon, massMuon},
+                                                                      std::array{massMuon, massMuon}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::DplusToPiKPi] = array{array{massPi, massK, massPi},
-                                                                   array{massPi, massK, massPi}};
+    arrMass3Prong[hf_cand_3prong::DecayType::DplusToPiKPi] = std::array{array{massPi, massK, massPi},
+                                                                        std::array{massPi, massK, massPi}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::LcToPKPi] = array{array{massProton, massK, massPi},
-                                                               array{massPi, massK, massProton}};
+    arrMass3Prong[hf_cand_3prong::DecayType::LcToPKPi] = std::array{array{massProton, massK, massPi},
+                                                                    std::array{massPi, massK, massProton}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi] = array{array{massK, massK, massPi},
-                                                               array{massPi, massK, massK}};
+    arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi] = std::array{array{massK, massK, massPi},
+                                                                    std::array{massPi, massK, massK}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::XicToPKPi] = array{array{massProton, massK, massPi},
-                                                                array{massPi, massK, massProton}};
+    arrMass3Prong[hf_cand_3prong::DecayType::XicToPKPi] = std::array{array{massProton, massK, massPi},
+                                                                     std::array{massPi, massK, massProton}};
 
     // cuts for 2-prong decays retrieved by json. the order must be then one in hf_cand_2prong::DecayType
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
@@ -1119,7 +1119,7 @@ struct HfTrackIndexSkimCreator {
     };
     cacheIndices(cut2Prong, massMinIndex, massMaxIndex, d0d0Index);
 
-    auto arrMom = array{pVecTrack0, pVecTrack1};
+    auto arrMom = std::array{pVecTrack0, pVecTrack1};
     auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1) + ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
@@ -1195,7 +1195,7 @@ struct HfTrackIndexSkimCreator {
     };
     cacheIndices(cut3Prong, massMinIndex, massMaxIndex);
 
-    auto arrMom = array{pVecTrack0, pVecTrack1, pVecTrack2};
+    auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
     auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
@@ -1658,14 +1658,14 @@ struct HfTrackIndexSkimCreator {
               // get secondary vertex
               const auto& secondaryVertex2 = df2.getPCACandidate();
               // get track momenta
-              array<float, 3> pvec0;
-              array<float, 3> pvec1;
+              std::array<float, 3> pvec0;
+              std::array<float, 3> pvec1;
               df2.getTrack(0).getPxPyPzGlo(pvec0);
               df2.getTrack(1).getPxPyPzGlo(pvec1);
 
               /// PV refit excluding the candidate daughters, if contributors
-              array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-              array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              std::array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              std::array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
               if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
@@ -1727,7 +1727,7 @@ struct HfTrackIndexSkimCreator {
 
               auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
               // 2-prong selections after secondary vertex
-              array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
+              std::array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
               if constexpr (doPvRefit) {
                 pvCoord2Prong[0] = pvRefitCoord2Prong[0];
                 pvCoord2Prong[1] = pvRefitCoord2Prong[1];
@@ -1763,7 +1763,7 @@ struct HfTrackIndexSkimCreator {
                   registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
                   registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
                   registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
-                  array<array<float, 3>, 2> arrMom = {pvec0, pvec1};
+                  std::array<array<float, 3>, 2> arrMom = {pvec0, pvec1};
                   for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
                     if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
                       if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
@@ -1847,16 +1847,16 @@ struct HfTrackIndexSkimCreator {
               // get secondary vertex
               const auto& secondaryVertex3 = df3.getPCACandidate();
               // get track momenta
-              array<float, 3> pvec0;
-              array<float, 3> pvec1;
-              array<float, 3> pvec2;
+              std::array<float, 3> pvec0;
+              std::array<float, 3> pvec1;
+              std::array<float, 3> pvec2;
               df3.getTrack(0).getPxPyPzGlo(pvec0);
               df3.getTrack(1).getPxPyPzGlo(pvec1);
               df3.getTrack(2).getPxPyPzGlo(pvec2);
 
               /// PV refit excluding the candidate daughters, if contributors
-              array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-              array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              std::array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              std::array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
               if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
@@ -1945,7 +1945,7 @@ struct HfTrackIndexSkimCreator {
 
               auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
               // 3-prong selections after secondary vertex
-              array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
+              std::array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
               if constexpr (doPvRefit) {
                 pvCoord3Prong2Pos1Neg[0] = pvRefitCoord3Prong2Pos1Neg[0];
                 pvCoord3Prong2Pos1Neg[1] = pvRefitCoord3Prong2Pos1Neg[1];
@@ -1982,7 +1982,7 @@ struct HfTrackIndexSkimCreator {
                 registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-                array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                std::array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                     if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
@@ -2067,16 +2067,16 @@ struct HfTrackIndexSkimCreator {
               // get secondary vertex
               const auto& secondaryVertex3 = df3.getPCACandidate();
               // get track momenta
-              array<float, 3> pvec0;
-              array<float, 3> pvec1;
-              array<float, 3> pvec2;
+              std::array<float, 3> pvec0;
+              std::array<float, 3> pvec1;
+              std::array<float, 3> pvec2;
               df3.getTrack(0).getPxPyPzGlo(pvec0);
               df3.getTrack(1).getPxPyPzGlo(pvec1);
               df3.getTrack(2).getPxPyPzGlo(pvec2);
 
               /// PV refit excluding the candidate daughters, if contributors
-              array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-              array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+              std::array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+              std::array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
               if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
@@ -2165,7 +2165,7 @@ struct HfTrackIndexSkimCreator {
 
               auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
               // 3-prong selections after secondary vertex
-              array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
+              std::array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
               if constexpr (doPvRefit) {
                 pvCoord3Prong1Pos2Neg[0] = pvRefitCoord3Prong1Pos2Neg[0];
                 pvCoord3Prong1Pos2Neg[1] = pvRefitCoord3Prong1Pos2Neg[1];
@@ -2200,7 +2200,7 @@ struct HfTrackIndexSkimCreator {
                 registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-                array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                std::array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                     if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
@@ -2539,7 +2539,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
           // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
           // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
-          mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
+          mass2K0sP = RecoDecay::m(std::array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, std::array{massP, massK0s});
           if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
             MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
             continue;
@@ -2578,7 +2578,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
           // invariant mass
           // re-calculate invariant masses with updated momenta, to fill the histogram
-          mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
+          mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
 
           std::array<float, 3> posCasc = {0., 0., 0.};
           const auto& cascVtx = fitter.getPCACandidate();
@@ -2676,14 +2676,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
       return;
     }
 
-    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = array{array{massXi, massPi},
-                                                                            array{massPi, massXi}};
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{array{massXi, massPi},
+                                                                                 std::array{massPi, massXi}};
 
-    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = array{array{massOmega, massPi},
-                                                                                  array{massPi, massOmega}};
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = std::array{array{massOmega, massPi},
+                                                                                       std::array{massPi, massOmega}};
 
-    arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = array{array{massXi, massPi, massPi},
-                                                                              array{massPi, massPi, massXi}};
+    arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = std::array{array{massXi, massPi, massPi},
+                                                                                   std::array{massPi, massPi, massXi}};
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -2905,8 +2905,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
           continue;
         }
 
-        array<float, 3> pvecV0;        // V0
-        array<float, 3> pvecXiDauPion; // bach pion
+        std::array<float, 3> pvecV0;        // V0
+        std::array<float, 3> pvecXiDauPion; // bach pion
 
         dfc.getTrack(0).getPxPyPzGlo(pvecV0);
         dfc.getTrack(1).getPxPyPzGlo(pvecXiDauPion);
@@ -2990,7 +2990,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
 
-                array<array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                std::array<array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                   switch (iDecay3P) {
@@ -3025,7 +3025,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
             registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
 
-            array<array<float, 3>, 2> arrMom = {pVec1, pVec2};
+            std::array<array<float, 3>, 2> arrMom = {pVec1, pVec2};
             for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
               auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
               switch (iDecay2P) {

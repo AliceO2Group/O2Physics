@@ -28,6 +28,9 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Framework/runDataProcessing.h"
 
+using namespace o2;
+using namespace o2::framework;
+
 struct tofPidCollisionTimeQa {
   ConfigurableAxis evTimeBins{"evTimeBins", {1000, -1000.f, 1000.f}, "Binning for the event time"};
   ConfigurableAxis evTimeDeltaBins{"evTimeDeltaBins", {1000, -1000.f, 1000.f}, "Binning for the delta between event times"};
@@ -312,7 +315,7 @@ struct tofPidCollisionTimeQa {
         const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaT0C) : 999.f;
         const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, betaT0AC) : 999.f;
 
-        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, PID::Pion>::GetExpectedSignal(trk);
+        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<Trks::iterator, o2::track::PID::Pion>::GetExpectedSignal(trk);
 
         histos.fill(HIST("tofbeta/inclusive"), trk.p(), trk.beta());
         histos.fill(HIST("tofmass/inclusive"), trk.p(), trk.mass());

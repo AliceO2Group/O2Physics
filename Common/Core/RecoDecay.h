@@ -29,10 +29,6 @@
 #include "CommonConstants/MathConstants.h"
 #include "Framework/Logger.h"
 
-using std::array;
-using namespace o2;
-using namespace o2::constants::math;
-
 /// Base class for calculating properties of reconstructed decays
 ///
 /// Provides static helper functions for:
@@ -109,9 +105,9 @@ class RecoDecay
   /// \param args  pack of 3-vector arrays
   /// \return sum of vectors
   template <typename... T>
-  static auto sumOfVec(const array<T, 3>&... args)
+  static auto sumOfVec(const std::array<T, 3>&... args)
   {
-    return array{getElement(0, args...), getElement(1, args...), getElement(2, args...)};
+    return std::array{getElement(0, args...), getElement(1, args...), getElement(2, args...)};
   }
 
   /// Calculates scalar product of vectors.
@@ -120,7 +116,7 @@ class RecoDecay
   /// \param vec1,vec2  vectors
   /// \return scalar product
   template <std::size_t N, typename T, typename U>
-  static double dotProd(const array<T, N>& vec1, const array<U, N>& vec2)
+  static double dotProd(const std::array<T, N>& vec1, const std::array<U, N>& vec2)
   {
     double res{0};
     for (std::size_t iDim = 0; iDim < N; ++iDim) {
@@ -135,11 +131,11 @@ class RecoDecay
   /// \param vec1,vec2  vectors
   /// \return cross-product vector
   template <typename T, typename U>
-  static array<double, 3> crossProd(const array<T, 3>& vec1, const array<U, 3>& vec2)
+  static std::array<double, 3> crossProd(const std::array<T, 3>& vec1, const std::array<U, 3>& vec2)
   {
-    return array<double, 3>{(static_cast<double>(vec1[1]) * static_cast<double>(vec2[2])) - (static_cast<double>(vec1[2]) * static_cast<double>(vec2[1])),
-                            (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
-                            (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
+    return std::array<double, 3>{(static_cast<double>(vec1[1]) * static_cast<double>(vec2[2])) - (static_cast<double>(vec1[2]) * static_cast<double>(vec2[1])),
+                                 (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
+                                 (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
   }
 
   /// Calculates magnitude squared of a vector.
@@ -147,7 +143,7 @@ class RecoDecay
   /// \param vec  vector
   /// \return magnitude squared
   template <std::size_t N, typename T>
-  static double mag2(const array<T, N>& vec)
+  static double mag2(const std::array<T, N>& vec)
   {
     return dotProd(vec, vec);
   }
@@ -176,11 +172,11 @@ class RecoDecay
   /// \param mom  3-momentum array
   /// \return pseudorapidity
   template <typename T>
-  static double eta(const array<T, 3>& mom)
+  static double eta(const std::array<T, 3>& mom)
   {
     // eta = arctanh(pz/p)
-    if (std::abs(mom[0]) < Almost0 && std::abs(mom[1]) < Almost0) { // very small px and py
-      return static_cast<double>(mom[2] > 0 ? VeryBig : -VeryBig);
+    if (std::abs(mom[0]) < o2::constants::math::Almost0 && std::abs(mom[1]) < o2::constants::math::Almost0) { // very small px and py
+      return static_cast<double>(mom[2] > 0 ? o2::constants::math::VeryBig : -o2::constants::math::VeryBig);
     }
     return static_cast<double>(std::atanh(mom[2] / p(mom)));
   }
@@ -190,7 +186,7 @@ class RecoDecay
   /// \param mass  mass
   /// \return rapidity
   template <typename T, typename U>
-  static double y(const array<T, 3>& mom, U mass)
+  static double y(const std::array<T, 3>& mom, U mass)
   {
     // y = arctanh(pz/E)
     return std::atanh(mom[2] / e(mom, mass));
@@ -239,10 +235,10 @@ class RecoDecay
   /// \param mom  3-momentum array
   /// \return cosine of pointing angle
   template <typename T, typename U, typename V>
-  static double cpa(const T& posPV, const U& posSV, const array<V, 3>& mom)
+  static double cpa(const T& posPV, const U& posSV, const std::array<V, 3>& mom)
   {
     // CPA = (l . p)/(|l| |p|)
-    auto lineDecay = array{posSV[0] - posPV[0], posSV[1] - posPV[1], posSV[2] - posPV[2]};
+    auto lineDecay = std::array{posSV[0] - posPV[0], posSV[1] - posPV[1], posSV[2] - posPV[2]};
     auto cos = dotProd(lineDecay, mom) / std::sqrt(mag2(lineDecay) * mag2(mom));
     if (cos < -1.) {
       return -1.;
@@ -259,11 +255,11 @@ class RecoDecay
   /// \param mom  {x, y, z} or {x, y} momentum array
   /// \return cosine of pointing angle in {x, y}
   template <std::size_t N, typename T, typename U, typename V>
-  static double cpaXY(const T& posPV, const U& posSV, const array<V, N>& mom)
+  static double cpaXY(const T& posPV, const U& posSV, const std::array<V, N>& mom)
   {
     // CPAXY = (r . pT)/(|r| |pT|)
-    auto lineDecay = array{posSV[0] - posPV[0], posSV[1] - posPV[1]};
-    auto momXY = array{mom[0], mom[1]};
+    auto lineDecay = std::array{posSV[0] - posPV[0], posSV[1] - posPV[1]};
+    auto momXY = std::array{mom[0], mom[1]};
     auto cos = dotProd(lineDecay, momXY) / std::sqrt(mag2(lineDecay) * mag2(momXY));
     if (cos < -1.) {
       return -1.;
@@ -281,7 +277,7 @@ class RecoDecay
   /// \param length  decay length
   /// \return proper lifetime times c
   template <typename T, typename U, typename V>
-  static double ct(const array<T, 3>& mom, U length, V mass)
+  static double ct(const std::array<T, 3>& mom, U length, V mass)
   {
     // c t = l m c^2/(p c)
     return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
@@ -295,7 +291,7 @@ class RecoDecay
   /// \param iProng  index of the prong
   /// \return cosine of θ* of the i-th prong under the assumption of the invariant mass
   template <typename T, typename U, typename V>
-  static double cosThetaStar(const array<array<T, 3>, 2>& arrMom, const array<U, 2>& arrMass, V mTot, int iProng)
+  static double cosThetaStar(const std::array<std::array<T, 3>, 2>& arrMom, const std::array<U, 2>& arrMass, V mTot, int iProng)
   {
     auto pVecTot = pVec(arrMom[0], arrMom[1]);                                                                             // momentum of the mother particle
     auto pTot = p(pVecTot);                                                                                                // magnitude of the momentum of the mother particle
@@ -315,7 +311,7 @@ class RecoDecay
   /// \param args  pack of 3-momentum arrays
   /// \return total 3-momentum array
   template <typename... T>
-  static auto pVec(const array<T, 3>&... args)
+  static auto pVec(const std::array<T, 3>&... args)
   {
     return sumOfVec(args...);
   }
@@ -332,7 +328,7 @@ class RecoDecay
   /// \param args  pack of 3-momentum arrays
   /// \return total momentum squared
   template <typename... T>
-  static double p2(const array<T, 3>&... args)
+  static double p2(const std::array<T, 3>&... args)
   {
     return sumOfSquares(getElement(0, args...), getElement(1, args...), getElement(2, args...));
   }
@@ -358,7 +354,7 @@ class RecoDecay
   /// \param args  pack of 3-(or 2-)momentum arrays
   /// \return total transverse momentum squared
   template <std::size_t N, typename... T>
-  static double pt2(const array<T, N>&... args)
+  static double pt2(const std::array<T, N>&... args)
   {
     return sumOfSquares(getElement(0, args...), getElement(1, args...));
   }
@@ -387,7 +383,7 @@ class RecoDecay
   /// \param mass  mass
   /// \return energy squared
   template <typename T, typename U>
-  static double e2(const array<T, 3>& mom, U mass)
+  static double e2(const std::array<T, 3>& mom, U mass)
   {
     return e2(mom[0], mom[1], mom[2], mass);
   }
@@ -417,7 +413,7 @@ class RecoDecay
   /// \param energy  energy
   /// \return invariant mass squared
   template <typename T>
-  static double m2(const array<T, 3>& mom, double energy)
+  static double m2(const std::array<T, 3>& mom, double energy)
   {
     return energy * energy - p2(mom);
   }
@@ -428,9 +424,9 @@ class RecoDecay
   /// \param arrMass  array of N masses (in the same order as arrMom)
   /// \return invariant mass squared
   template <std::size_t N, typename T, typename U>
-  static double m2(const array<array<T, 3>, N>& arrMom, const array<U, N>& arrMass)
+  static double m2(const std::array<std::array<T, 3>, N>& arrMom, const std::array<U, N>& arrMass)
   {
-    array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
+    std::array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
     double energyTot{0.};                  // candidate energy
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
       for (std::size_t iMom = 0; iMom < 3; ++iMom) {
@@ -460,15 +456,15 @@ class RecoDecay
   /// \param mom  {x, y, z} particle momentum array
   /// \return impact parameter in {x, y}
   template <typename T, typename U, typename V>
-  static double impParXY(const T& point, const U& posSV, const array<V, 3>& mom)
+  static double impParXY(const T& point, const U& posSV, const std::array<V, 3>& mom)
   {
     // Ported from AliAODRecoDecay::ImpParXY
-    auto flightLineXY = array{posSV[0] - point[0], posSV[1] - point[1]};
-    auto k = dotProd(flightLineXY, array{mom[0], mom[1]}) / pt2(mom);
+    auto flightLineXY = std::array{posSV[0] - point[0], posSV[1] - point[1]};
+    auto k = dotProd(flightLineXY, std::array{mom[0], mom[1]}) / pt2(mom);
     auto dx = flightLineXY[0] - k * static_cast<double>(mom[0]);
     auto dy = flightLineXY[1] - k * static_cast<double>(mom[1]);
     auto absImpPar = sqrtSumOfSquares(dx, dy);
-    auto flightLine = array{posSV[0] - point[0], posSV[1] - point[1], posSV[2] - point[2]};
+    auto flightLine = std::array{posSV[0] - point[0], posSV[1] - point[1], posSV[2] - point[2]};
     auto cross = crossProd(mom, flightLine);
     return (cross[2] > 0. ? absImpPar : -1. * absImpPar);
   }
@@ -483,8 +479,8 @@ class RecoDecay
   /// \param momProng {x, y, z} or {x, y} prong momentum array
   /// \return normalized difference between expected and observed impact parameter
   template <std::size_t N, std::size_t M, typename T, typename U, typename V, typename W, typename X, typename Y>
-  static double normImpParMeasMinusExpProng(T decLenXY, U errDecLenXY, const array<V, N>& momMother, W impParProng,
-                                            X errImpParProng, const array<Y, M>& momProng)
+  static double normImpParMeasMinusExpProng(T decLenXY, U errDecLenXY, const std::array<V, N>& momMother, W impParProng,
+                                            X errImpParProng, const std::array<Y, M>& momProng)
   {
     // Ported from AliAODRecoDecayHF::Getd0MeasMinusExpProng adding normalization directly in the function
     auto sinThetaP = (static_cast<double>(momProng[0]) * static_cast<double>(momMother[1]) - static_cast<double>(momProng[1]) * static_cast<double>(momMother[0])) /
@@ -506,9 +502,9 @@ class RecoDecay
   /// \return maximum normalized difference between expected and observed impact parameters
   template <std::size_t N, std::size_t M, std::size_t K, typename T, typename U, typename V, typename W, typename X,
             typename Y, typename Z>
-  static double maxNormalisedDeltaIP(const T& posPV, const U& posSV, V errDecLenXY, const array<W, M>& momMother,
-                                     const array<X, N>& arrImpPar, const array<Y, N>& arrErrImpPar,
-                                     const array<array<Z, K>, N>& arrMom)
+  static double maxNormalisedDeltaIP(const T& posPV, const U& posSV, V errDecLenXY, const std::array<W, M>& momMother,
+                                     const std::array<X, N>& arrImpPar, const std::array<Y, N>& arrErrImpPar,
+                                     const std::array<std::array<Z, K>, N>& arrMom)
   {
     auto decLenXY = distanceXY(posPV, posSV);
     double maxNormDeltaIP{0.};
@@ -661,7 +657,7 @@ class RecoDecay
   template <std::size_t N, typename T>
   static void getDaughters(const T& particle,
                            std::vector<int>* list,
-                           const array<int, N>& arrPDGFinal,
+                           const std::array<int, N>& arrPDGFinal,
                            int8_t depthMax = -1,
                            int8_t stage = 0)
   {
@@ -726,9 +722,9 @@ class RecoDecay
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
   template <std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
-                             const array<U, N>& arrDaughters,
+                             const std::array<U, N>& arrDaughters,
                              int PDGMother,
-                             array<int, N> arrPDGDaughters,
+                             std::array<int, N> arrPDGDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1)
@@ -737,7 +733,7 @@ class RecoDecay
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
-    array<int, N> arrDaughtersIndex;       // array of indices of provided daughters
+    std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
     if (sign) {
       *sign = sgn;
     }
@@ -834,7 +830,7 @@ class RecoDecay
                             bool acceptAntiParticles = false,
                             int8_t* sign = nullptr)
   {
-    array<int, 0> arrPDGDaughters;
+    std::array<int, 0> arrPDGDaughters;
     return isMatchedMCGen(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
   }
 
@@ -852,7 +848,7 @@ class RecoDecay
   static bool isMatchedMCGen(const T& particlesMC,
                              const U& candidate,
                              int PDGParticle,
-                             array<int, N> arrPDGDaughters,
+                             std::array<int, N> arrPDGDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1,

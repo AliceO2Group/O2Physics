@@ -203,8 +203,8 @@ struct HfTaskChicMc {
     for (const auto& particle : particlesMC) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(pdg::Code::kChiC1); // chi_c1(1p)
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
-          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
+          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }
 
