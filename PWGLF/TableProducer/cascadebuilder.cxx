@@ -1543,6 +1543,7 @@ struct cascadePreselector {
   Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
   Configurable<bool> dIfMCgenerateOmegaPlus{"dIfMCgenerateOmegaPlus", true, "if MC, generate MC true OmegaPlus (yes/no)"};
   Configurable<int> dIfMCselectV0MotherPDG{"dIfMCselectV0MotherPDG", 0, "if MC, selects based on mother particle (zero for no selection)"};
+  Configurable<bool> dIfMCselectPhysicalPrimary{"dIfMCselectPhysicalPrimary", true, "if MC, select MC physical primary (yes/no)"};
 
   Configurable<bool> ddEdxPreSelectXiMinus{"ddEdxPreSelectXiMinus", true, "pre-select dE/dx compatibility with XiMinus (yes/no)"};
   Configurable<bool> ddEdxPreSelectXiPlus{"ddEdxPreSelectXiPlus", true, "pre-select dE/dx compatibility with XiPlus (yes/no)"};
@@ -1636,7 +1637,7 @@ struct cascadePreselector {
                       lPDG = 0; // this is not the species you're looking for
                       if (lBachMother.has_mothers()) {
                         for (auto& lBachGrandMother : lBachMother.template mothers_as<aod::McParticles>()) {
-                          if (lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
+                          if (lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG && (!dIfMCselectPhysicalPrimary || lBachGrandMother.isPhysicalPrimary()))
                             lPDG = lV0Mother.pdgCode();
                         }
                       }
