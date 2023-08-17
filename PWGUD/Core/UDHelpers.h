@@ -472,25 +472,25 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 
     // 0 <= bit <= 31
     auto bit = bc2u.globalBC() - minbc;
-    if (!bc2u.selection_bit(evsel::kNoBGT0A))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0A))
       SETBIT(info.BGFT0Apf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGT0C))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0C))
       SETBIT(info.BGFT0Cpf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBT0A))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0A))
       SETBIT(info.BBFT0Apf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBT0C))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0C))
       SETBIT(info.BBFT0Cpf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGV0A))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGV0A))
       SETBIT(info.BGFV0Apf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBV0A))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBV0A))
       SETBIT(info.BBFV0Apf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGFDA))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDA))
       SETBIT(info.BGFDDApf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGFDC))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDC))
       SETBIT(info.BGFDDCpf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBFDA))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDA))
       SETBIT(info.BBFDDApf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBFDC))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDC))
       SETBIT(info.BBFDDCpf, bit);
   }
 }

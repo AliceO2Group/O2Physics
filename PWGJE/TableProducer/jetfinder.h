@@ -41,21 +41,21 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
-using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+using JetTracks = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-using ParticlesD0 = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-using ParticlesLc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-using ParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
+using ParticlesD0 = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand2ProngMcGen>>;
+using ParticlesLc = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand3ProngMcGen>>;
+using ParticlesBplus = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCandBplusMcGen>>;
 
-using CandidatesD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-using CandidatesD0MCD = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+using CandidatesD0Data = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0>>;
+using CandidatesD0MCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0, o2::aod::HfCand2ProngMcRec>>;
 
-using CandidatesBplusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
-using CandidatesBplusMCD = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+using CandidatesBplusData = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi>>;
+using CandidatesBplusMCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>>;
 
-using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-using CandidatesLcMCD = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+using CandidatesLcData = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc>>;
+using CandidatesLcMCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc, o2::aod::HfCand3ProngMcRec>>;
 
 // functions for track, cluster and candidate selection
 
@@ -97,7 +97,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
       }
 
       if constexpr (std::is_same_v<std::decay_t<U>, CandidatesBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::filtered_iterator>) {
-        if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
+        if (cand.template prong0_as<o2::aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<o2::aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
@@ -195,7 +195,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
 template <typename T>
 bool checkDaughters(T const& particle, int globalIndex)
 {
-  for (auto daughter : particle.template daughters_as<aod::McParticles>()) {
+  for (auto daughter : particle.template daughters_as<o2::aod::McParticles>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
     }

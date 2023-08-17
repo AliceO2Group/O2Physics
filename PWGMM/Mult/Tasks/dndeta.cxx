@@ -27,9 +27,9 @@
 #include "bestCollisionTable.h"
 
 using namespace o2;
+using namespace o2::aod::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::track;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
@@ -272,8 +272,8 @@ struct MultiplicityCounter {
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(evsel::kIsBBT0A) &&
-                        bc.selection_bit(evsel::kIsBBT0C)) != 0) {
+      if (!useEvSel || (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+                        bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
         registry.fill(HIST("Events/BCSelection"), 1.);
         cols.clear();
         for (auto& collision : collisions) {

@@ -16,15 +16,11 @@
 
 #ifndef DPG_TASKS_TPC_TPCTREECREATORLIGHT_H_
 #define DPG_TASKS_TPC_TPCTREECREATORLIGHT_H_
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::track;
-using namespace o2::dataformats;
 
 enum ParticleSpecies {
   kPionTrack = BIT(0),

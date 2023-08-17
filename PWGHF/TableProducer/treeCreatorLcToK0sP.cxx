@@ -293,7 +293,7 @@ struct HfTreeCreatorLcToK0sP {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()},
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
                        RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());

@@ -15,7 +15,7 @@
 #include <Rtypes.h>
 #include <TMath.h>
 
-namespace evsel
+namespace o2::aod::evsel
 {
 // Event selection criteria
 enum EventSelectionFlags {
@@ -58,9 +58,7 @@ enum EventSelectionFlags {
 
 extern const char* selectionLabels[kNsel];
 
-} // namespace evsel
-
-using namespace evsel;
+} // namespace o2::aod::evsel
 
 class EventSelectionParams
 {
@@ -70,9 +68,9 @@ class EventSelectionParams
   void SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
   bool* GetSelection(int iSelection);
 
-  bool selectionBarrel[kNsel];
-  bool selectionMuonWithPileupCuts[kNsel];
-  bool selectionMuonWithoutPileupCuts[kNsel];
+  bool selectionBarrel[o2::aod::evsel::kNsel];
+  bool selectionMuonWithPileupCuts[o2::aod::evsel::kNsel];
+  bool selectionMuonWithoutPileupCuts[o2::aod::evsel::kNsel];
 
   // time-of-flight offset
   float fV0ADist = 329.00 / TMath::Ccgs() * 1e9; // ns
