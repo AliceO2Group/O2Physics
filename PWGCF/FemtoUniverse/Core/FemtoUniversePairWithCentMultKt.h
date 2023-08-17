@@ -45,7 +45,7 @@ class PairWithCentMultKt
     UseKt = processKT;
 
     for (int i = 0; i < static_cast<int>(CentMultBins.size() - 1); i++) {
-      std::string HistTitle = "mult_" + std::to_string(int(CentMultBins[i])) + "-" + std::to_string(int(CentMultBins[i + 1]));
+      std::string HistTitle = "mult_" + std::to_string(static_cast<int>((CentMultBins[i])) + "-" + std::to_string(int(CentMultBins[i + 1]));
       std::string HistSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string HistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
       std::string HistFolderMult = "mult_" + HistSuffix1 + "_" + HistSuffix2;
