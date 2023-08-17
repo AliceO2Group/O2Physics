@@ -111,6 +111,7 @@ struct GenericFramework {
       oba->Add(new TNamed("ChGap22", "ChGap22"));     // for gap (|eta|>0.4) case
       oba->Add(new TNamed("ChGap32", "ChGap32"));     //
       oba->Add(new TNamed("ChGap42", "ChGap42"));     //
+      oba->Add(new TNamed("ChFull22", "ChFull22"));   // no-gap case
       oba->Add(new TNamed("ChFull24", "ChFull24"));   // no-gap case
       oba->Add(new TNamed("ChFull26", "ChFull26"));   // no-gap case
       oba->Add(new TNamed("ChFull28", "ChFull28"));   // no-gap case
@@ -153,6 +154,7 @@ struct GenericFramework {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {4} refN {-4}", "ChGap42", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2 -2 -2 -2 -2}", "ChFull28", kFALSE));
