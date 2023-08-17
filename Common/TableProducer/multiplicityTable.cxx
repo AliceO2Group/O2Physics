@@ -134,6 +134,7 @@ struct MultiplicityTableTaskIndexed {
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run3Tracks> pvAllContribTracksIU = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
@@ -242,6 +243,19 @@ struct MultiplicityTableTaskIndexed {
 
       if (populateMultExtra) {
         multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8());
+        int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
+        for(auto track : pvAllContribTracksIU){ 
+          if(track.hasITS()) 
+            nHasITS++;
+          if(track.hasTPC()) 
+            nHasTPC++;
+          if(track.hasTOF()) 
+            nHasTOF++;
+          if(track.hasTRD()) 
+            nHasTRD++;
+        };
+
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD);
       }
     }
   }
