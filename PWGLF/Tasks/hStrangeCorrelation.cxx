@@ -503,6 +503,8 @@ struct correlateStrangeness {
       histos.add("Generated/hXiPlus", "", kTH2F, {axisPtQA, axisEta});
       histos.add("Generated/hOmegaMinus", "", kTH2F, {axisPtQA, axisEta});
       histos.add("Generated/hOmegaPlus", "", kTH2F, {axisPtQA, axisEta});
+
+      histos.addClone("Generated/", "GeneratedWithPV/");
     }
   }
 
@@ -727,11 +729,6 @@ struct correlateStrangeness {
   }
   void processMCGenerated(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcParticles)
   {
-    // MC process part: take only that which has at least one collision reconstructed
-    // could be debated - first test only
-    if (collisions.size() < 1)
-      return;
-
     for (auto const& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary())
         continue;
@@ -751,6 +748,29 @@ struct correlateStrangeness {
         histos.fill(HIST("Generated/hXiMinus"), mcParticle.pt(), mcParticle.eta());
       if (mcParticle.pdgCode() == -3334)
         histos.fill(HIST("Generated/hXiPlus"), mcParticle.pt(), mcParticle.eta());
+    }
+
+    if( collisions.size() < 1 ) return; 
+
+    for (auto const& mcParticle : mcParticles) {
+      if( !mcParticle.isPhysicalPrimary() ) 
+        continue;
+      if( abs(mcParticle.pdgCode()) == 211) 
+        histos.fill(HIST("GeneratedWithPV/hPion"), mcParticle.pt(), mcParticle.eta());
+      if( abs(mcParticle.pdgCode()) == 310) 
+        histos.fill(HIST("GeneratedWithPV/hK0Short"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() == 3122) 
+        histos.fill(HIST("GeneratedWithPV/hLambda"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() ==-3122) 
+        histos.fill(HIST("GeneratedWithPV/hAntiLambda"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() == 3312) 
+        histos.fill(HIST("GeneratedWithPV/hXiMinus"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() ==-3312) 
+        histos.fill(HIST("GeneratedWithPV/hXiPlus"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() == 3334) 
+        histos.fill(HIST("GeneratedWithPV/hXiMinus"), mcParticle.pt(), mcParticle.eta());
+      if( mcParticle.pdgCode() ==-3334) 
+        histos.fill(HIST("GeneratedWithPV/hXiPlus"), mcParticle.pt(), mcParticle.eta());
     }
   }
 
