@@ -829,7 +829,7 @@ struct lambdakzeroPreselector {
       if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
         for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
-            if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary()) ) {
+            if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
 
               // additionally check PDG of the mother particle if requested
@@ -837,7 +837,7 @@ struct lambdakzeroPreselector {
                 lPDG = 0; // this is not the species you're looking for
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
-                    if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG )
+                    if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                       lPDG = lNegMother.pdgCode();
                   }
                 }
