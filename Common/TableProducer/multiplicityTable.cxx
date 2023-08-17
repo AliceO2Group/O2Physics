@@ -134,6 +134,7 @@ struct MultiplicityTableTaskIndexed {
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run3Tracks> pvAllContribTracksIU = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
@@ -167,6 +168,7 @@ struct MultiplicityTableTaskIndexed {
       float multZeqNContribs = 0.f;
 
       auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -242,7 +244,7 @@ struct MultiplicityTableTaskIndexed {
 
       if (populateMultExtra) {
         int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
-        for (auto track : pvContribsGrouped) {
+        for (auto track : pvAllContribsGrouped) {
           if (track.hasITS())
             nHasITS++;
           if (track.hasTPC())
@@ -252,7 +254,6 @@ struct MultiplicityTableTaskIndexed {
           if (track.hasTRD())
             nHasTRD++;
         };
-
         multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD);
       }
     }
