@@ -44,7 +44,7 @@ class PairWithCentMultKt
     CentMultBins.erase(CentMultBins.begin());
     UseKt = processKT;
 
-    for (int i = 0; i < static_cast<int>(CentMultBins.size()-1); i++) {
+    for (int i = 0; i < static_cast<int>(CentMultBins.size() - 1); i++) {
       std::string HistTitle = "mult_" + std::to_string(int(CentMultBins[i])) + "-" + std::to_string(int(CentMultBins[i + 1]));
       std::string HistSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string HistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
@@ -52,13 +52,13 @@ class PairWithCentMultKt
       std::string HistName = HistFolderMult + "/kstar";
       PairWithCentMultKtRegistry->add(HistName.c_str(), HistTitle.c_str(), HistType::kTH1F, {kstarAxis});
       if (UseKt) {
-        for (int i = 0; i < static_cast<int>(KtBins.size()-1); i++) {
-    	  std::string kt_bin1_string = std::to_string(KtBins[i]);
-    	  std::replace( kt_bin1_string.begin(), kt_bin1_string.end(), '.', '_');
-   	  std::string kt_bin2_string = std::to_string(KtBins[i+1]);
-    	  std::replace( kt_bin2_string.begin(), kt_bin2_string.end(), '.', '_');
-    	  kt_bin1_string.resize (4);
-    	  kt_bin2_string.resize (4);
+        for (int i = 0; i < static_cast<int>(KtBins.size() - 1); i++) {
+          std::string kt_bin1_string = std::to_string(KtBins[i]);
+          std::replace(kt_bin1_string.begin(), kt_bin1_string.end(), '.', '_');
+          std::string kt_bin2_string = std::to_string(KtBins[i + 1]);
+          std::replace(kt_bin2_string.begin(), kt_bin2_string.end(), '.', '_');
+          kt_bin1_string.resize(4);
+          kt_bin2_string.resize(4);
           std::string HistTitleKt = "kt_" + kt_bin1_string + "-" + kt_bin2_string;
           std::string HistSuffix1Kt = static_cast<std::string>(HistSuffix[i]);
           std::string HistSuffix2Kt = static_cast<std::string>(HistSuffix[i + 1]);
