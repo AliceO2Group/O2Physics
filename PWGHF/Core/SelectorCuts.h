@@ -147,8 +147,7 @@ constexpr double binsPt[nBinsPt + 1] = {
   4.,
   6,
   10.,
-  50.
-};
+  50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the ML model paths, one model per pT bin
@@ -166,8 +165,7 @@ constexpr double cuts[nBinsPt][nCutScores] = {
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
-  {0.5, 0.5, 0.5}
-};
+  {0.5, 0.5, 0.5}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
