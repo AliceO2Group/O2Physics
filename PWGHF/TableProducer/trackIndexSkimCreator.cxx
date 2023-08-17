@@ -1003,25 +1003,25 @@ struct HfTrackIndexSkimCreator {
       return;
     }
 
-    arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{array{massPi, massK},
+    arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{std::array{massPi, massK},
                                                                    std::array{massK, massPi}};
 
-    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToEE] = std::array{array{massElectron, massElectron},
+    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToEE] = std::array{std::array{massElectron, massElectron},
                                                                     std::array{massElectron, massElectron}};
 
-    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToMuMu] = std::array{array{massMuon, massMuon},
+    arrMass2Prong[hf_cand_2prong::DecayType::JpsiToMuMu] = std::array{std::array{massMuon, massMuon},
                                                                       std::array{massMuon, massMuon}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::DplusToPiKPi] = std::array{array{massPi, massK, massPi},
+    arrMass3Prong[hf_cand_3prong::DecayType::DplusToPiKPi] = std::array{std::array{massPi, massK, massPi},
                                                                         std::array{massPi, massK, massPi}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::LcToPKPi] = std::array{array{massProton, massK, massPi},
+    arrMass3Prong[hf_cand_3prong::DecayType::LcToPKPi] = std::array{std::array{massProton, massK, massPi},
                                                                     std::array{massPi, massK, massProton}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi] = std::array{array{massK, massK, massPi},
+    arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi] = std::array{std::array{massK, massK, massPi},
                                                                     std::array{massPi, massK, massK}};
 
-    arrMass3Prong[hf_cand_3prong::DecayType::XicToPKPi] = std::array{array{massProton, massK, massPi},
+    arrMass3Prong[hf_cand_3prong::DecayType::XicToPKPi] = std::array{std::array{massProton, massK, massPi},
                                                                      std::array{massPi, massK, massProton}};
 
     // cuts for 2-prong decays retrieved by json. the order must be then one in hf_cand_2prong::DecayType
@@ -2539,7 +2539,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
           // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
           // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
-          mass2K0sP = RecoDecay::m(std::array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, std::array{massP, massK0s});
+          mass2K0sP = RecoDecay::m(std::array{std::array{bach.px(), bach.py(), bach.pz()}, momentumV0}, std::array{massP, massK0s});
           if ((cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutInvMassCascLc)) {
             MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutInvMassCascLc << ")");
             continue;
@@ -2676,13 +2676,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
       return;
     }
 
-    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{array{massXi, massPi},
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{std::array{massXi, massPi},
                                                                                  std::array{massPi, massXi}};
 
-    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = std::array{array{massOmega, massPi},
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = std::array{std::array{massOmega, massPi},
                                                                                        std::array{massPi, massOmega}};
 
-    arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = std::array{array{massXi, massPi, massPi},
+    arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = std::array{std::array{massXi, massPi, massPi},
                                                                                    std::array{massPi, massPi, massXi}};
 
     ccdb->setURL(ccdbUrl);
