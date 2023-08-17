@@ -116,6 +116,8 @@ DECLARE_SOA_COLUMN(FlagDplusToPiKPi, flagDplusToPiKPi, uint8_t); //!
 DECLARE_SOA_COLUMN(FlagLcToPKPi, flagLcToPKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagDsToKKPi, flagDsToKKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
+
+DECLARE_SOA_COLUMN(FlagDstarToD0Pi, flagDstarToD0Pi, uint8_t); //!
 } // namespace hf_track_index
 
 DECLARE_SOA_TABLE(Hf2Prongs_000, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates (Run 2 converted format)
@@ -184,10 +186,18 @@ namespace hf_track_index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, Hf2Prongs, ""); //! Index to a D0 prong
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(HfDstars, "AOD", "HFDSTAR", //! D* -> D0pi candidates
+DECLARE_SOA_TABLE(HfDstars_000, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run 2 converted format)
                   o2::soa::Index<>,
                   hf_track_index::Prong0Id,
                   hf_track_index::ProngD0Id);
+
+DECLARE_SOA_TABLE(HfDstars_001, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run 3 format)
+                  o2::soa::Index<>,
+                  hf_track_index::CollisionId,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::ProngD0Id);
+
+using HfDstars = HfDstars_001;
 using HfDstar = HfDstars::iterator;
 
 DECLARE_SOA_TABLE(HfCutStatus2Prong, "AOD", "HFCUTSTATUS2P", //!
@@ -201,7 +211,10 @@ DECLARE_SOA_TABLE(HfCutStatus3Prong, "AOD", "HFCUTSTATUS3P", //!
                   hf_track_index::FlagDsToKKPi,
                   hf_track_index::FlagXicToPKPi);
 
-namespace hf_pv_refit_cand_2prong
+DECLARE_SOA_TABLE(HfCutStatusDstar, "AOD", "HFCUTSTATUSDST", //!
+                  hf_track_index::FlagDstarToD0Pi);
+
+namespace hf_pv_refit
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
 DECLARE_SOA_COLUMN(PvRefitY, pvRefitY, float);             //!
@@ -212,42 +225,42 @@ DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
-} // namespace hf_pv_refit_cand_2prong
+} // namespace hf_pv_refit
 
 DECLARE_SOA_TABLE(HfPvRefit2Prong, "AOD", "HFPVREFIT2PRONG", //!
-                  hf_pv_refit_cand_2prong::PvRefitX,
-                  hf_pv_refit_cand_2prong::PvRefitY,
-                  hf_pv_refit_cand_2prong::PvRefitZ,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaX2,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaXY,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaY2,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaXZ,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaYZ,
-                  hf_pv_refit_cand_2prong::PvRefitSigmaZ2);
-
-namespace hf_pv_refit_cand_3prong
-{
-DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
-DECLARE_SOA_COLUMN(PvRefitY, pvRefitY, float);             //!
-DECLARE_SOA_COLUMN(PvRefitZ, pvRefitZ, float);             //!
-DECLARE_SOA_COLUMN(PvRefitSigmaX2, pvRefitSigmaX2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaXY, pvRefitSigmaXY, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
-} // namespace hf_pv_refit_cand_3prong
+                  hf_pv_refit::PvRefitX,
+                  hf_pv_refit::PvRefitY,
+                  hf_pv_refit::PvRefitZ,
+                  hf_pv_refit::PvRefitSigmaX2,
+                  hf_pv_refit::PvRefitSigmaXY,
+                  hf_pv_refit::PvRefitSigmaY2,
+                  hf_pv_refit::PvRefitSigmaXZ,
+                  hf_pv_refit::PvRefitSigmaYZ,
+                  hf_pv_refit::PvRefitSigmaZ2);
 
 DECLARE_SOA_TABLE(HfPvRefit3Prong, "AOD", "HFPVREFIT3PRONG", //!
-                  hf_pv_refit_cand_3prong::PvRefitX,
-                  hf_pv_refit_cand_3prong::PvRefitY,
-                  hf_pv_refit_cand_3prong::PvRefitZ,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaX2,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaXY,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaY2,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaXZ,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaYZ,
-                  hf_pv_refit_cand_3prong::PvRefitSigmaZ2);
+                  hf_pv_refit::PvRefitX,
+                  hf_pv_refit::PvRefitY,
+                  hf_pv_refit::PvRefitZ,
+                  hf_pv_refit::PvRefitSigmaX2,
+                  hf_pv_refit::PvRefitSigmaXY,
+                  hf_pv_refit::PvRefitSigmaY2,
+                  hf_pv_refit::PvRefitSigmaXZ,
+                  hf_pv_refit::PvRefitSigmaYZ,
+                  hf_pv_refit::PvRefitSigmaZ2,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfPvRefitDstar, "AOD", "HFPVREFITDSTAR", //!
+                  hf_pv_refit::PvRefitX,
+                  hf_pv_refit::PvRefitY,
+                  hf_pv_refit::PvRefitZ,
+                  hf_pv_refit::PvRefitSigmaX2,
+                  hf_pv_refit::PvRefitSigmaXY,
+                  hf_pv_refit::PvRefitSigmaY2,
+                  hf_pv_refit::PvRefitSigmaXZ,
+                  hf_pv_refit::PvRefitSigmaYZ,
+                  hf_pv_refit::PvRefitSigmaZ2,
+                  o2::soa::Marker<2>);
 
 // general decay properties
 namespace hf_cand
