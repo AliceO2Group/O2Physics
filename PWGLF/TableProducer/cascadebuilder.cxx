@@ -1080,8 +1080,8 @@ struct cascadeBuilder {
     KFParticle kfpV0 = createKFParticleFromTrackParCov(v0TrackParCov, 0, o2::constants::physics::MassLambda);
     KFParticle kfpBachPion = createKFParticleFromTrackParCov(lBachelorTrack, cascadecandidate.charge, massBachelorPion);
     KFParticle kfpBachKaon = createKFParticleFromTrackParCov(lBachelorTrack, cascadecandidate.charge, massBachelorKaon);
-    const KFParticle* XiDaugthers[2] = {&kfpBachPion, &KFV0};
-    const KFParticle* OmegaDaugthers[2] = {&kfpBachKaon, &KFV0};
+    const KFParticle* XiDaugthers[2] = {&kfpBachPion, &kfpV0};
+    const KFParticle* OmegaDaugthers[2] = {&kfpBachKaon, &kfpV0};
 
     // construct mother
     KFParticle KFXi, KFOmega;
