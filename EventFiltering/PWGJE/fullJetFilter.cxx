@@ -18,6 +18,8 @@
 #include <string_view>
 #include <TMath.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
@@ -281,7 +283,7 @@ struct fullJetFilter {
     EMCALHWTriggerConfiguration result = EMCALHWTriggerConfiguration::UNKNOWN;
     bool hasMinBias = false, hasL0 = false;
     for (auto& cls : ctpconfig.getCTPClasses()) {
-      std::string_view trgclsname = cls.name;
+      auto trgclsname = boost::algorithm::to_upper_copy(cls.name);
       if (trgclsname.find("-EMC") == std::string::npos) {
         // Not an EMCAL trigger class
         continue;
