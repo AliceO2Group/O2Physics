@@ -76,6 +76,21 @@ class FemtoUniversePairCleaner
         return true;
       }
       return false;
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+      /// Track-Phi combination part1 is Phi and part 2 is hadron
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+        LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide second argument kPhi candidate.";
+        return false;
+      }
+
+      // getting Phi (part1) children
+      const auto& posChild = particles.iteratorAt(part2.index() - 2);
+      const auto& negChild = particles.iteratorAt(part2.index() - 1);
+
+      if (part1.globalIndex() != posChild.globalIndex() || part1.globalIndex() != negChild.globalIndex()) {
+        return true;
+      }
+      return false;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
