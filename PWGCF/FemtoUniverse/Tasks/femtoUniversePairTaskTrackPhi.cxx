@@ -150,8 +150,8 @@ struct femtoUniversePairTaskTrackPhi {
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
-  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
-  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
+  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
+  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
   FemtoUniverseTrackSelection trackCuts;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -391,10 +391,14 @@ struct femtoUniversePairTaskTrackPhi {
       //   }
       // }
 
+      if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        continue;
+      }
+
       // track cleaning
-      // if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-      //   continue;
-      // }
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
       sameEventFemtoCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
     }
