@@ -1114,6 +1114,13 @@ struct LFNucleiBATask {
     }
     // MC histograms  -   all, primary, sec. from weak decay, sec. from material
     histos.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}});
+    histos.add("spectraGen/histPtGen", "PtGen", HistType::kTH1F, {{800, 0.f, 8.f}});
+    histos.add("spectraGen/histPtRec", "PtRec", HistType::kTH1F, {{1600, -8.f, 8.f}});
+    histos.add("spectraGen/histPtShift_Pr", "PtReco-PtGen vs PtReco (protons)  ", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+
+    histos.add("spectraGen/histPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    histos.add("spectraGen/histPShift", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    histos.add("spectraGen/histPtShiftVsEta", "PReco-PGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
     histos.add("spectraGen/histPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {800, 0.f, 8.f}});
     histos.add("spectraGen/histPShift", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {800, 0.f, 8.f}});
@@ -1354,6 +1361,9 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/proton/dca/before/hDCAxyVsPtProtonTrue"), track.pt(), track.dcaXY());
                 histos.fill(HIST("tracks/proton/dca/before/hDCAzVsPtProtonTrue"), track.pt(), track.dcaZ());
                 if (isPhysPrim) {
+                  if constexpr (!IsFilteredData) {
+                    histos.fill(HIST("spectraGen/histPtShift_Pr"), track.pt(), track.pt() - track.mcParticle().pt());
+                  }
                   histos.fill(HIST("tracks/proton/dca/before/hDCAxyVsPtProtonTruePrim"), track.pt(), track.dcaXY());
                   histos.fill(HIST("tracks/proton/dca/before/hDCAzVsPtProtonTruePrim"), track.pt(), track.dcaZ());
                 }
@@ -1480,11 +1490,13 @@ struct LFNucleiBATask {
               if (enableHe) {
                 histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtantiHeliumTrue"), hePt, track.dcaXY());
                 histos.fill(HIST("tracks/helium/dca/before/hDCAzVsPtantiHeliumTrue"), hePt, track.dcaZ());
-
                 if (isPhysPrim) {
                   if constexpr (!IsFilteredData) {
-                    histos.fill(HIST("spectraGen/histPtShift"), hePt - track.mcParticle().pt(), hePt);
-                    histos.fill(HIST("spectraGen/histPShift"), track.p() - track.mcParticle().p(), track.p());
+                    histos.fill(HIST("spectraGen/histPtGen"), std::abs(track.mcParticle().pt()));
+                    histos.fill(HIST("spectraGen/histPtRec"), (2.f * track.pt()));
+                    histos.fill(HIST("spectraGen/histPtShift"), (2.f * track.pt()), (2.f * track.pt()) - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPtShiftVsEta"), track.eta(), (2.f * track.pt()) - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPShift"), 2.f * track.p(), 2.f * track.p() - track.mcParticle().p());
                   }
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtantiHeliumTruePrim"), hePt, track.dcaXY());
                   histos.fill(HIST("tracks/helium/dca/before/hDCAzVsPtantiHeliumTruePrim"), hePt, track.dcaZ());
@@ -1494,7 +1506,6 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/helium/dca/before/hDCAzVsPtantiHeliumTrueSec"), hePt, track.dcaZ());
                 }
                 if (!isPhysPrim && !isProdByGen) {
-                  histos.fill(HIST("tracks/helium/h1antiHelimSpectraTrueTransport"), hePt);
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtantiHeliumTrueTransport"), hePt, track.dcaXY());
                   histos.fill(HIST("tracks/helium/dca/before/hDCAzVsPtantiHeliumTrueTransport"), hePt, track.dcaZ());
                 }
