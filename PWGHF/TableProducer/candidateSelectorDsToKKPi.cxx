@@ -310,10 +310,10 @@ struct HfCandidateSelectorDsToKKPi {
           continue;
         }
         if (pidDsToKKPi) {
-        SETBIT(statusDsToKKPi, aod::SelectionStep::RecoMl);
+          SETBIT(statusDsToKKPi, aod::SelectionStep::RecoMl);
         }
         if (pidDsToPiKK) {
-        SETBIT(statusDsToPiKK, aod::SelectionStep::RecoMl);
+          SETBIT(statusDsToPiKK, aod::SelectionStep::RecoMl);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, candidate.pt());
