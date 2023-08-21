@@ -57,7 +57,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
   /// Configurables for both particles
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
-  Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};  
+  Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
   /// Particle 1
   Configurable<uint32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -66,10 +66,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == ConfPDGCodePartOne) && 
-                                          aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1 &&
-                                          nabs(aod::femtouniverseparticle::eta)< ConfEtaMax;
- 
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == ConfPDGCodePartOne) &&
+                                         aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
@@ -81,10 +80,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
 
   /// Partition for particle 2
-   Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == ConfPDGCodePartTwo) && 
-                                            aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2 &&
-                                            nabs(aod::femtouniverseparticle::eta)< ConfEtaMax;
- 
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == ConfPDGCodePartTwo) &&
+                                         aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
 
@@ -149,8 +147,6 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     if (ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
     }
-
-   
   }
 
   template <typename CollisionType>
@@ -177,22 +173,18 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
 
-    
-
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
- 
-        
+
         trackHistoPartTwo.fillQA<isMC, false>(part);
       }
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
-    
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
@@ -216,7 +208,6 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMcTruth, processSameEvent, "Enable processing same event", true);
 
- 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   /// \tparam PartitionType
@@ -232,9 +223,6 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   {
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-
-      
-
 
       mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
     }
@@ -268,7 +256,6 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMcTruth, processMixedEvent, "Enable processing mixed events", true);
 };
-  
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
