@@ -43,10 +43,10 @@ class PairWithCentMultKt
     KtBins.erase(KtBins.begin());
     CentMultBins.erase(CentMultBins.begin());
     UseKt = processKT;
-   
+
     for (int i = 0; i < static_cast<int>(CentMultBins.size() - 1); i++) {
       int lowBin = static_cast<int>((CentMultBins[i]));
-      int highBin = static_cast<int>((CentMultBins[i+1]));
+      int highBin = static_cast<int>((CentMultBins[i + 1]));
       std::string HistTitle = "mult_" + std::to_string(lowBin) + "-" + std::to_string(highBin);
       std::string HistSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string HistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
