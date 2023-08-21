@@ -79,6 +79,7 @@ struct QaEfficiency {
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<int> minITScl{"minITScl", 4, "Additional cut on the ITS cluster"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
@@ -964,6 +965,7 @@ struct QaEfficiency {
       customTrackCuts.SetRequireITSRefit(requireITS.value);
       customTrackCuts.SetRequireTPCRefit(requireTPC.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
+      customTrackCuts.SetRequireHitsInITSLayers(minITScl.value, {0, 1, 2, 3, 4, 5, 6});
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
