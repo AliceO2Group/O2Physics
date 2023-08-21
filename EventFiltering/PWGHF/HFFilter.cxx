@@ -854,7 +854,7 @@ struct HfFilter { // Main struct for HF triggers
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
         auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
         auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
-        for (auto& v0 : v0sThisCollision) {
+        for (const auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK || isGoodDPlus)) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();

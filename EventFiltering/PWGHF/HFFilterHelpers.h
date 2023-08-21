@@ -35,7 +35,10 @@
 #include "Math/Vector4D.h"
 
 #include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/DataTypes.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/AnalysisHelpers.h"
@@ -45,6 +48,11 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::constants::math;
 
 namespace o2::aod
 {
@@ -98,9 +106,12 @@ enum bachelorTrackSelection {
 
 enum PIDSpecies {
   kEl = 0,
-  kKa,
   kPi,
-  kPr
+  kAntiPi,
+  kKa,
+  kAntiKa,
+  kPr,
+  kAntiPr
 };
 
 enum V0Species {
@@ -283,21 +294,21 @@ class HfFilterHelper
   template <typename T>
   int8_t isCharmBaryonPreselected(const T& trackSameChargeFirst, const T& trackSameChargeSecond, const T& trackOppositeCharge);
   template <typename T, typename H2>
-  int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt);
+  int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename T, typename H2>
-  int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt);
+  int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const int& activateQA, H2 hMassVsPt);
   template <typename T, typename H2>
-  int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt);
+  int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename T, typename H2>
-  int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const float& phiLc, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt);
+  int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename T, typename H2>
-  int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const float& phiXic, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt);
-  template <typename V0, typename Coll, typename T, typename H2, typename H3>
-  int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const float& minGammaCosinePa, const float& minV0CosinePa, const float& minV0Radius, const float& maxNsigmaPrForLambda, const float& deltaMassK0s, const float& deltaMassLambda, const int& setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
-  template <typename Casc, typename V0, typename T, typename Coll, typename H3>
-  bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& cosPAXi, const float& cosPALambda, const float& DCAxyXi, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton);
-  template <typename T, typename T2, typename T3, typename T4, typename H3>
-  int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca, const float& minPt, const T3& pTBinsTrack, const T4& cutsSingleTrack, const float& maxNsigmaTPC, const float& maxNsigmaTOF, const int& setTPCCalib, H3 hMapPion, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineKaon);
+  int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
+  template <typename V0, typename Coll, typename T, typename H2>
+  int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
+  template <typename Casc, typename V0, typename T, typename Coll>
+  bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision);
+  template <typename T, typename T2>
+  int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <typename T, typename U>
   int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores);
 
@@ -308,7 +319,8 @@ class HfFilterHelper
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
 
   // PID
-  std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath);
+  void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
+  void setTpcRecalibMaps(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath);
 
   // ML
   Ort::Experimental::Session* initONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, int64_t timestampCCDB);
@@ -317,14 +329,20 @@ class HfFilterHelper
 
  private:
   // selections
-  template <typename T, typename H3>
-  bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong, const int setTPCCalib, H3 hMapKaon, const std::array<std::vector<double>, 2>& hSplineKaon);
+  template <typename T>
+  bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong);
+  template <typename T>
+  bool isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProton, const float& nsigmaTOFProton);
 
   // PID
   template <typename T>
   double getTPCSplineCalib(const T& track, const int& pidSpecies);
   template <typename T>
   float getTPCPostCalib(const T& track, const int& pidSpecies);
+
+  // helpers
+  template <typename T1, typename T2>
+  int findBin(T1 const& binsPt, T2 value);
 
   // selections
   std::vector<double> mPtBinsTracks{};                        // vector of pT bins for single track cuts
@@ -1013,7 +1031,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const V0& v0, co
   }
 
   // additional track cuts
-  for (auto const& dauTrack : dauTracks) {
+  for (const auto& dauTrack : dauTracks) {
     //  TPC clusters selections
     if (dauTrack.tpcNClsFound() < 70) { // TODO: put me as a configurable please
       return false;
@@ -1368,23 +1386,6 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track, const flo
   return true;
 }
 
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
-/// \return index of the pT bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
-template <typename T1, typename T2>
-inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
-{
-  if (value < binsPt.front()) {
-    return -1;
-  }
-  if (value >= binsPt.back()) {
-    return -1;
-  }
-  return std::distance(binsPt.begin(), std::upper_bound(binsPt.begin(), binsPt.end(), value)) - 1;
-}
-
 /// Update the TPC PID baesd on the spline of particles
 /// \param track is a track parameter
 /// \param pidSpecies is the particle species to be considered
@@ -1455,6 +1456,23 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   auto width = mHistMapPiPr[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
 
   return (tpcNSigma - mean) / width;
+}
+
+/// Finds pT bin in an array.
+/// \param bins  array of pT bins
+/// \param value  pT
+/// \return index of the pT bin
+/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
+template <typename T1, typename T2>
+inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
+{
+  if (value < binsPt.front()) {
+    return -1;
+  }
+  if (value >= binsPt.back()) {
+    return -1;
+  }
+  return std::distance(binsPt.begin(), std::upper_bound(binsPt.begin(), binsPt.end(), value)) - 1;
 }
 
 } // namespace hffilters
