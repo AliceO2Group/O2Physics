@@ -58,7 +58,7 @@ class FemtoUniverseCutculator
 
     // check the config file for all known producer task
     std::vector<const char*> ProducerTasks = {
-      "femto-dream-producer-task", "femto-dream-producer-reduced-task"};
+      "femto-universe-producer-task"};
     for (auto& Producer : ProducerTasks) {
       if (root.count(Producer) > 0) {
         mConfigTree = root.get_child(Producer);
