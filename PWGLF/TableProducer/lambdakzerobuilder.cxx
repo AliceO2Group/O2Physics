@@ -971,7 +971,7 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
