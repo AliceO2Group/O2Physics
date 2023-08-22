@@ -217,55 +217,6 @@ struct phianalysis {
     }
   }
   PROCESS_SWITCH(phianalysis, processMC, "Process Event for MC", false);
-
-  // Processing Event Mixing
-  using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>;
-  BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
-  void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
-  {
-    LOGF(debug, "Event Mixing Started");
-    auto tracksTuple = std::make_tuple(resotracks);
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      Partition<aod::ResoTracks> selectedTracks1 = requireTOFPIDKaonCutInFilter() && (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
-      selectedTracks1.bindTable(tracks1);
-
-      Partition<aod::ResoTracks> selectedTracks2 = requireTOFPIDKaonCutInFilter() && (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
-      selectedTracks2.bindTable(tracks2);
-
-      for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(selectedTracks1, selectedTracks2))) {
-        // Un-like sign pair only
-        if (trk1.sign() * trk2.sign() > 0)
-          continue;
-        if ((trk1.pt() < 0.3) && (std::abs(trk1.tpcNSigmaKa()) > 6.0))
-          continue;
-        if ((trk1.pt() >= 0.3) && (trk1.pt() < 0.4) && (std::abs(trk1.tpcNSigmaKa()) > 4.0))
-          continue;
-        if ((trk1.pt() >= 0.4) && (std::abs(trk1.tpcNSigmaKa()) > 2.0))
-          continue;
-
-        if ((trk2.pt() < 0.3) && (std::abs(trk2.tpcNSigmaKa()) > 6.0))
-          continue;
-        if ((trk2.pt() >= 0.3) && (trk2.pt() < 0.4) && (std::abs(trk2.tpcNSigmaKa()) > 4.0))
-          continue;
-        if ((trk2.pt() >= 0.4) && (std::abs(trk2.tpcNSigmaKa()) > 2.0))
-          continue;
-
-        lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-        lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-        lResonance = lDecayDaughter1 + lDecayDaughter2;
-
-        if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5)
-          continue;
-
-        histos.fill(HIST("phiinvmassME"), lResonance.M());
-        histos.fill(HIST("h3phiinvmassME"), collision1.multV0M(), lResonance.Pt(), lResonance.M());
-      }
-    }
-  };
-  PROCESS_SWITCH(phianalysis, processME, "Process EventMixing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
