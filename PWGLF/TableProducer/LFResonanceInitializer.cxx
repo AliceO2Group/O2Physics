@@ -964,11 +964,11 @@ struct reso2initializer {
     fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0CascMC, "Process for MC", false);
-  };
+};
 
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{
-      adaptAnalysisTask<reso2initializer>(cfgc, TaskName{"lf-reso2initializer"}),
-    };
-  }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<reso2initializer>(cfgc, TaskName{"lf-reso2initializer"}),
+  };
+}
