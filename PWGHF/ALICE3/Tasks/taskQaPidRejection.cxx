@@ -161,7 +161,9 @@ struct HfTaskQaPidRejection {
   void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
                const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
                const aod::McCollisions& mcCollisions,
-               const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+               const aod::McParticles& mcParticles,
+               const aod::RICHs&,
+               const aod::MIDs&)
   {
     std::vector<int64_t> recoEvt(collisions.size());
     std::vector<int64_t> recoTracks(tracks.size());
@@ -352,7 +354,9 @@ struct HfTaskQaPidRejectionGeneral {
   void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
                const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
                const aod::McCollisions& mcCollisions,
-               const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+               const aod::McParticles& mcParticles,
+               const aod::RICHs&,
+               const aod::MIDs&)
   {
     for (const auto& track : tracks) {
 

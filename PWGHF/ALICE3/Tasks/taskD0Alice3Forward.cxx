@@ -41,9 +41,10 @@ struct HfTaskD0Alice3Forward {
      {"hMassBkgD0ForwardRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Forward, aod::HfCand2ProngMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -66,13 +67,13 @@ struct HfTaskD0Alice3Forward {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
+        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("hMassGen"), ptGen, std::abs(yGen));
       }
     }

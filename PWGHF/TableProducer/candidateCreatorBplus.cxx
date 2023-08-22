@@ -218,7 +218,7 @@ struct HfCandidateCreatorBplus {
         df.getTrack(0).getPxPyPzGlo(pVec0);
         df.getTrack(1).getPxPyPzGlo(pVec1);
         // Get D0 momentum
-        array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
 
         // build a D0 neutral track
         auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1);
@@ -290,14 +290,14 @@ struct HfCandidateCreatorBplus {
 
           // get uncertainty of the decay length
           double phi, theta;
-          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secVertexBplus, phi, theta);
+          getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secVertexBplus, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
 
           // calculate invariant mass and fill the Invariant Mass control plot
-          massD0Pi = RecoDecay::m(array{pVecD0, pVecBach}, array{massD0, massPi});
+          massD0Pi = RecoDecay::m(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
           if (std::abs(massD0Pi - massBplus) > invMassWindowBplus) {
             continue;
           }
@@ -344,19 +344,19 @@ struct HfCandidateCreatorBplusExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto const& candidate : *rowCandidateBPlus) {
+    for (const auto& candidate : *rowCandidateBPlus) {
       // Printf("New rec. candidate");
 
       flag = 0;
       origin = 0;
       auto candDaughterD0 = candidate.prong0_as<aod::HfCand2Prong>();
-      auto arrayDaughtersD0 = array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
-      auto arrayDaughters = array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersD0 = std::array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
       // Printf("Checking B± → D0(bar) π±");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kBPlus, array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
-      indexRecD0 = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD0, -pdg::Code::kD0, array{+kKPlus, -kPiPlus}, true, &signD0, 1);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
+      indexRecD0 = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD0, -pdg::Code::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
         flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
@@ -365,7 +365,7 @@ struct HfCandidateCreatorBplusExpressions {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
@@ -376,13 +376,13 @@ struct HfCandidateCreatorBplusExpressions {
       // B± → D0bar(D0) π± → (K± π∓) π±
       // Printf("Checking B± → D0(bar) π±");
       std::vector<int> arrayDaughterB;
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kBPlus, array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
         // D0(bar) → π± K∓
         // Printf("Checking D0(bar) → π± K∓");
         for (auto iD : arrayDaughterB) {
           auto candDaughterMC = particlesMC.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
-            indexGenD0 = RecoDecay::isMatchedMCGen(particlesMC, candDaughterMC, pdg::Code::kD0, array{-kKPlus, +kPiPlus}, true, &signD0, 1);
+            indexGenD0 = RecoDecay::isMatchedMCGen(particlesMC, candDaughterMC, pdg::Code::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
           }
         }
         if (indexGenD0 > -1) {

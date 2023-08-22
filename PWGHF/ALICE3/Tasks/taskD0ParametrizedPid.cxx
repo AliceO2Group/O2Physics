@@ -57,11 +57,13 @@ struct HfTaskD0ParametrizedPid {
      {"hMassSigD0PerfectPid", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0PerfectPid", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
-  void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, McParticlesHf const& particlesMC, aod::TracksWMc const& tracks)
-  // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates,
+               McParticlesHf const& particlesMC,
+               aod::TracksWMc const& tracks)
+  // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMc, aod::TracksWMc const& tracks)
   {
     // float ncontributor = collision.numContrib();
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //   continue;
       // }
@@ -108,18 +110,18 @@ struct HfTaskD0ParametrizedPid {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //   continue;
       // }
       float maxFiducialY = 0.8;
       float minFiducialY = -0.8;
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
+        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("hGenPtVsY"), ptGen, std::abs(yGen));
         if (ptGen < 5.0) {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;

@@ -73,7 +73,8 @@ struct UpcCandProducer {
 
   using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                      o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
-                                     o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+                                     o2::aod::TOFSignal, o2::aod::pidTOFbeta,
+                                     o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
 
   typedef std::pair<uint64_t, std::vector<int64_t>> BCTracksPair;
 
@@ -302,6 +303,7 @@ struct UpcCandProducer {
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
                     track.tpcSignal(), track.tofSignal(), track.trdSignal(), track.length(), track.tofExpMom(), track.detectorMap());
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                  track.beta(), track.betaerror(),
                   track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       udTracksDCA(track.dcaZ(), track.dcaXY());
       udTracksFlags(colId, track.isPVContributor());
@@ -379,13 +381,13 @@ struct UpcCandProducer {
         for (auto amp : ampsC)
           fitInfo.ampFT0C += amp;
         fitInfo.triggerMaskFT0 = ft0.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGT0A))
+        if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
           SETBIT(fitInfo.BGFT0Apf, bit);
-        if (!bc.selection_bit(evsel::kNoBGT0C))
+        if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
           SETBIT(fitInfo.BGFT0Cpf, bit);
-        if (bc.selection_bit(evsel::kIsBBT0A))
+        if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
           SETBIT(fitInfo.BBFT0Apf, bit);
-        if (bc.selection_bit(evsel::kIsBBT0C))
+        if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
           SETBIT(fitInfo.BBFT0Cpf, bit);
       }
       if (bc.has_foundFV0()) {
@@ -396,9 +398,9 @@ struct UpcCandProducer {
         for (auto amp : amps)
           fitInfo.ampFV0A += amp;
         fitInfo.triggerMaskFV0A = fv0a.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGV0A))
+        if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
           SETBIT(fitInfo.BGFV0Apf, bit);
-        if (bc.selection_bit(evsel::kIsBBV0A))
+        if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
           SETBIT(fitInfo.BBFV0Apf, bit);
       }
       if (bc.has_foundFDD()) {
@@ -416,13 +418,13 @@ struct UpcCandProducer {
           fitInfo.ampFDDC += amp;
         }
         fitInfo.triggerMaskFDD = fdd.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGFDA))
+        if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
           SETBIT(fitInfo.BGFDDApf, bit);
-        if (!bc.selection_bit(evsel::kNoBGFDC))
+        if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
           SETBIT(fitInfo.BGFDDCpf, bit);
-        if (bc.selection_bit(evsel::kIsBBFDA))
+        if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
           SETBIT(fitInfo.BBFDDApf, bit);
-        if (bc.selection_bit(evsel::kIsBBFDC))
+        if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
           SETBIT(fitInfo.BBFDDCpf, bit);
       }
       ++curit;

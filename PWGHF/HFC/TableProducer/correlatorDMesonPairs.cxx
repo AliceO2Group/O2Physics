@@ -333,7 +333,7 @@ struct HfCorrelatorDMesonPairs {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0 && std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (!kinematicCutsGen(particle1)) {
         continue;
       }
@@ -404,7 +404,9 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processDataD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
+  void processDataD0(aod::Collision const& collision,
+                     soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                     soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() <= 1) {
@@ -449,7 +451,9 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataD0, "Process data D0", true);
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRecD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
+  void processMcRecD0(aod::Collision const& collision,
+                      soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                      soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
     // protection against empty tables to be sliced
     if (selectedD0CandidatesMc.size() <= 1) {
@@ -519,7 +523,8 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRecD0, "Process D0 Mc Reco mode", false);
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGenD0(aod::McCollision const&, McParticlesPlus2Prong const& particlesMc)
+  void processMcGenD0(aod::McCollision const&,
+                      McParticlesPlus2Prong const& particlesMc)
   {
     analyseMcGen(particlesMc);
   }
@@ -527,7 +532,9 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGenD0, "Process D0 Mc Gen mode", false);
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processDataDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::Tracks const&)
+  void processDataDPlus(aod::Collision const& collision,
+                        soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                        soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&)
   {
     // protection against empty tables to be sliced
     if (selectedDPlusCandidates.size() <= 1) {
@@ -585,7 +592,9 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataDPlus, "Process Data DPlus", false);
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRecDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&, aod::Tracks const&)
+  void processMcRecDPlus(aod::Collision const& collision,
+                         soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                         soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&)
   {
     // protection against empty tables to be sliced
     if (selectedDPlusCandidatesMc.size() <= 1) {
@@ -664,7 +673,8 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRecDPlus, "Process DPlus Mc Reco", false);
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGenDPlus(aod::McCollision const&, McParticlesPlus3Prong const& particlesMc)
+  void processMcGenDPlus(aod::McCollision const&,
+                         McParticlesPlus3Prong const& particlesMc)
   {
     analyseMcGen(particlesMc);
   }

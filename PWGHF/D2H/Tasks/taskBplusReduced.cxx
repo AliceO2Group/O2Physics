@@ -160,7 +160,7 @@ struct HfTaskBplusReduced {
   void process(soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
                aod::HfCand2ProngReduced const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
@@ -201,7 +201,7 @@ struct HfTaskBplusReduced {
                  aod::HfCand2ProngReduced const&)
   {
     // MC rec
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
@@ -257,7 +257,7 @@ struct HfTaskBplusReduced {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMc.size());
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();

@@ -149,9 +149,11 @@ struct HfTaskB0 {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&,
+               TracksWithSel const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -191,7 +193,7 @@ struct HfTaskB0 {
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
     // MC rec
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -263,11 +265,11 @@ struct HfTaskB0 {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMc.size());
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -276,10 +278,10 @@ struct HfTaskB0 {
         std::array<float, 2> yProngs;
         std::array<float, 2> etaProngs;
         int counter = 0;
-        for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
           counter++;
         }
 

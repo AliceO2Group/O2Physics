@@ -234,11 +234,13 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(aod::Collision const& collision,
+               soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
-      for (auto const& track : tracks) {
+      for (const auto& track : tracks) {
         if (std::abs(track.eta()) > 4.0) {
           continue;
         }
@@ -250,7 +252,7 @@ struct HfTaskLc {
     }
     registry.fill(HIST("Data/hMultiplicity"), nTracks);
 
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -305,9 +307,10 @@ struct HfTaskLc {
 
   /// Fills MC histograms.
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::TracksWMc const& /*tracks*/)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+                 aod::TracksWMc const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       /// Select Lc
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
@@ -450,9 +453,9 @@ struct HfTaskLc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }

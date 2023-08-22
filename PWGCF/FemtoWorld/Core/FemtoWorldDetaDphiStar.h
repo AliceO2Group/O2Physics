@@ -14,13 +14,15 @@
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDDETADPHISTAR_H_
-#define FEMTOWORLDDETADPHISTAR_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
+
+#include <string>
+#include <memory>
+#include <vector>
 
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
-
 #include "Framework/HistogramRegistry.h"
-#include <string>
 
 namespace o2::analysis
 {
@@ -70,6 +72,8 @@ class FemtoWorldDetaDphiStar
     }
     if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
     }
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+    }
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
@@ -118,6 +122,9 @@ class FemtoWorldDetaDphiStar
       return pass;
     } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
       /// Track-Phi combination
+      return true;
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+      /// Track-D0 combination
       return true;
     } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";
@@ -199,11 +206,11 @@ class FemtoWorldDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return (dPhiAvg / (float)num);
+    return (dPhiAvg / static_cast<float>(num));
   }
 };
 
 } /* namespace femtoWorld */
 } /* namespace o2::analysis */
 
-#endif /* FEMTOWORLDDETADPHISTAR_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_

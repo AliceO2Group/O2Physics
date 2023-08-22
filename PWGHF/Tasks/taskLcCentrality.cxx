@@ -73,12 +73,13 @@ struct HfTaskLcCentrality {
 
   // FIXME: Add ALICE 2/3 switch!
   // void process(aod::HfCand3Prong const& candidates)
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -143,11 +144,12 @@ struct HfTaskLcCentralityMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -176,9 +178,9 @@ struct HfTaskLcCentralityMc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

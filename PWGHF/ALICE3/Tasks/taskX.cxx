@@ -74,7 +74,7 @@ struct HfTaskX {
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HfSelXToJpsiPiPi>> const& candidates)
   {
     int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -155,12 +155,13 @@ struct HfTaskXMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HfSelXToJpsiPiPi, aod::HfCandXMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -206,11 +207,11 @@ struct HfTaskXMc {
     } // rec
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
-          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
+          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
@@ -219,7 +220,7 @@ struct HfTaskXMc {
         // properties of gen matched X(3872), to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (auto& daugh : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daugh : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daugh.pt();
           counter++;
         }

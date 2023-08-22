@@ -200,7 +200,7 @@ struct HfTreeCreatorLbToLcPi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto fillTable = [&](int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,

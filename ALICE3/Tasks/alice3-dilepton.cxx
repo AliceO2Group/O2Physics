@@ -80,6 +80,7 @@ struct Alice3Dilepton {
     registry.add("Generated/Particle/Pt", "Particle Pt", kTH1F, {axisPt});
     registry.add("Generated/Particle/Eta", "Particle Eta", kTH1F, {axisEta});
     registry.add("Generated/Particle/Phi", "Particle Phi", kTH1F, {axisPhi});
+    registry.add("Generated/Particle/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Generated/Particle/prodVx", "Particle Prod. Vertex X", kTH1F, {axisProdx});
     registry.add("Generated/Particle/prodVy", "Particle Prod. Vertex Y", kTH1F, {axisPrody});
     registry.add("Generated/Particle/prodVz", "Particle Prod. Vertex Z", kTH1F, {axisProdz});
@@ -106,6 +107,7 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Eta", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
@@ -114,14 +116,19 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
     registry.add("Reconstructed/Pair/LSpp/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/LSpp/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/LSpp/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Pair/LSpp/Phi", "Pair Phi", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Pair/LSpp/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
     registry.add("Reconstructed/Pair/LSnn/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/LSnn/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/LSnn/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Pair/LSnn/Phi", "Pair Phi", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Pair/LSnn/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
 
     HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
     registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
@@ -323,6 +330,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Pair/ULS/Pt"), v12.Pt());
         registry.fill(HIST("Reconstructed/Pair/ULS/Eta"), v12.Eta());
         registry.fill(HIST("Reconstructed/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
         registry.fill(HIST("Reconstructed/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
       } // end of unlike-sign pair loop
 
@@ -364,12 +372,14 @@ struct Alice3Dilepton {
           registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Pt"), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Mass_Pt"), v12.M(), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
           registry.fill(HIST("Reconstructed/Pair/LSpp/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
         } else if constexpr (pairtype == PairType::kLSnn) {
           registry.fill(HIST("Reconstructed/Pair/LSnn/Mass"), v12.M());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Pt"), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Mass_Pt"), v12.M(), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
           registry.fill(HIST("Reconstructed/Pair/LSnn/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
         }
@@ -483,6 +493,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Generated/Particle/Pt"), mcParticle.pt());
         registry.fill(HIST("Generated/Particle/Eta"), mcParticle.eta());
         registry.fill(HIST("Generated/Particle/Phi"), mcParticle.phi());
+        registry.fill(HIST("Generated/Particle/Eta_Pt"), mcParticle.pt(), mcParticle.eta());
 
         registry.fill(HIST("Generated/Particle/prodVx"), mcParticle.vx());
         registry.fill(HIST("Generated/Particle/prodVy"), mcParticle.vy());
@@ -544,6 +555,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
+        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
       } // end of track loop
 
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);

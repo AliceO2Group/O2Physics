@@ -391,26 +391,26 @@ struct HfDataCreatorDplusPiReducedMc {
     int8_t debug = 0;
 
     for (const auto& candD : candsD) {
-      auto arrayDaughtersD = array{candD.prong0_as<aod::TracksWMc>(),
-                                   candD.prong1_as<aod::TracksWMc>(),
-                                   candD.prong2_as<aod::TracksWMc>()};
+      auto arrayDaughtersD = std::array{candD.prong0_as<aod::TracksWMc>(),
+                                        candD.prong1_as<aod::TracksWMc>(),
+                                        candD.prong2_as<aod::TracksWMc>()};
 
       for (const auto& trackPion : tracksPion) {
         if (trackPion.hfReducedCollisionId() != candD.hfReducedCollisionId()) {
           continue;
         }
         // const auto& trackId = trackPion.globalIndex();
-        auto arrayDaughtersB0 = array{candD.prong0_as<aod::TracksWMc>(),
-                                      candD.prong1_as<aod::TracksWMc>(),
-                                      candD.prong2_as<aod::TracksWMc>(),
-                                      trackPion.track_as<aod::TracksWMc>()};
+        auto arrayDaughtersB0 = std::array{candD.prong0_as<aod::TracksWMc>(),
+                                           candD.prong1_as<aod::TracksWMc>(),
+                                           candD.prong2_as<aod::TracksWMc>(),
+                                           trackPion.track_as<aod::TracksWMc>()};
         // B0 → D- π+ → (π- K+ π-) π+
         // Printf("Checking B0 → D- π+");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           // D- → π- K+ π-
           // Printf("Checking D- → π- K+ π-");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, pdg::Code::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
           } else {
@@ -426,16 +426,16 @@ struct HfDataCreatorDplusPiReducedMc {
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
         // Match D- -> π- K+ π-
         auto candDMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D- -> π- K+ π-");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(pdg::Code::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }
@@ -453,10 +453,10 @@ struct HfDataCreatorDplusPiReducedMc {
       std::array<float, 2> yProngs;
       std::array<float, 2> etaProngs;
       int counter = 0;
-      for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+      for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
-        yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
         counter++;
       }
       rowHfB0McGenReduced(flag, origin,

@@ -159,7 +159,7 @@ struct HfTreeCreatorXToJpsiPiPi {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -173,7 +173,7 @@ struct HfTreeCreatorXToJpsiPiPi {
     // Filling candidate properties
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!candidate.isSelXToJpsiToMuMuPiPi()) {
         continue;
       }
@@ -240,14 +240,14 @@ struct HfTreeCreatorXToJpsiPiPi {
     // Filling particle properties
     float massX = 3.872;
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi || std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massX),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massX),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

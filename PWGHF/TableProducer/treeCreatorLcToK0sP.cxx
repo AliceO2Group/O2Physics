@@ -270,13 +270,13 @@ struct HfTreeCreatorLcToK0sP {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
@@ -286,14 +286,14 @@ struct HfTreeCreatorLcToK0sP {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()},
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
                        RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());
@@ -309,13 +309,13 @@ struct HfTreeCreatorLcToK0sP {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
