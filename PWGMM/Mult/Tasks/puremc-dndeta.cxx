@@ -14,6 +14,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
@@ -39,6 +40,7 @@ static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPl
 
 struct PureMcMultiplicityCounter {
   SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
@@ -57,12 +59,35 @@ struct PureMcMultiplicityCounter {
 
   void init(InitContext const&)
   {
-    AxisSpec MultAxis = {multBinning, "N_{p}"};
-    registry.add({"Events/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
     for (auto i = 0u; i < speciesIds.size(); ++i) {
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Pt").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Eta").c_str(), " ; #eta", {HistType::kTH1F, {EtaAxis}}});
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Y").c_str(), " ; y", {HistType::kTH1F, {RapidityAxis}}});
+    }
+
+    AxisSpec MultAxis = {multBinning, "N_{p}"};
+    registry.add({"Events/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
+    if (doprocessReco) {
+      registry.add({"Collisions/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"Collisions/Vertex/X", "; X (cm); events", {HistType::kTH1F, {ZAxis}}});
+      registry.add({"Collisions/Vertex/Y", "; Y (cm); events", {HistType::kTH1F, {ZAxis}}});
+      registry.add({"Collisions/Vertex/Z", "; Z (cm); events", {HistType::kTH1F, {ZAxis}}});
+      registry.add({"Tracks/Pt", " ;p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+      registry.add({"Tracks/Eta", " ; #eta", {HistType::kTH1F, {EtaAxis}}});
+      registry.add({"Tracks/DCAXY", "; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}});
+      registry.add({"Tracks/DCAZ", "; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}});
+    }
+    if (doprocessResponse) {
+      registry.add({"Events/Efficiency", "", {HistType::kTH1F, {{6, -0.5, 5.5}}}});
+      registry.add({"Events/Response", " ; N_{gen}; N_{rec}", {HistType::kTH2F, {MultAxis, MultAxis}}});
+      auto eff = registry.get<TH1>(HIST("Events/Efficiency"));
+      auto* x = eff->GetXaxis();
+      x->SetBinLabel(1, "Generated");
+      x->SetBinLabel(2, "Generate INEL>0");
+      x->SetBinLabel(3, "Reconstructed");
+      x->SetBinLabel(4, "Reconstructed INEL>0");
+      x->SetBinLabel(5, "Selected");
+      x->SetBinLabel(6, "Selected INEL>0");
     }
   }
 
@@ -115,6 +140,68 @@ struct PureMcMultiplicityCounter {
     }
     registry.fill(HIST("Events/Properties/Multiplicity"), Np);
   }
+
+  void processReco(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks)
+  {
+    registry.fill(HIST("Collisions/Vertex/X"), collision.posX());
+    registry.fill(HIST("Collisions/Vertex/Y"), collision.posY());
+    registry.fill(HIST("Collisions/Vertex/Z"), collision.posZ());
+    auto Ntrk = 0;
+    for (auto& track : tracks) {
+      registry.fill(HIST("Tracks/DCAXY"), track.dcaXY());
+      registry.fill(HIST("Tracks/DCAZ"), track.dcaZ());
+      registry.fill(HIST("Tracks/Pt"), track.pt());
+      registry.fill(HIST("Tracks/Eta"), track.eta());
+      if (std::abs(track.eta()) < etaRange) {
+        ++Ntrk;
+      }
+    }
+    registry.fill(HIST("Collisions/Properties/Multiplicity"), Ntrk);
+  }
+
+  PROCESS_SWITCH(PureMcMultiplicityCounter, processReco, "Process smeared tracks", false);
+
+  void processResponse(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
+  {
+    registry.fill(HIST("Events/Efficiency"), 1);
+    auto Np = 0;
+    for (auto const& particle : particles) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (!particle.producedByGenerator()) {
+        continue;
+      }
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < mincharge) {
+        continue;
+      }
+      ++Np;
+    }
+    if (Np > 0) {
+      registry.fill(HIST("Events/Efficiency"), 2);
+    }
+    for (auto& collision : collisions) {
+      auto Ntrk = 0;
+      registry.fill(HIST("Events/Efficiency"), 3);
+      auto tracksample = tracks.sliceBy(perCol, collision.globalIndex());
+      for (auto& track : tracksample) {
+        if (std::abs(track.eta()) < etaRange) {
+          ++Ntrk;
+        }
+      }
+      if (Ntrk > 0) {
+        registry.fill(HIST("Events/Efficiency"), 4);
+      }
+      registry.fill(HIST("Events/Response"), Np, Ntrk);
+    }
+  }
+
+  PROCESS_SWITCH(PureMcMultiplicityCounter, processResponse, "Process response", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
