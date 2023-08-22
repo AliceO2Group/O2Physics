@@ -80,7 +80,7 @@ struct QaEfficiency {
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
   Configurable<int> minITScl{"minITScl", 4, "Additional cut on the ITS cluster"};
-  Configurable<bool> doPVcut{"doPVcut", 4, "Select tracks used for primary vertex recostruction"};
+  Configurable<bool> doPVcut{"doPVcut", false, "Select tracks used for primary vertex recostruction"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
