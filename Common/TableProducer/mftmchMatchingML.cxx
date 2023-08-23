@@ -10,6 +10,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/DataModel/mftmchMatchingML.h"
+#include <math.h>
+#include <string>
+#include <regex>
+#include <TLorentzVector.h>
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -19,8 +25,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/mftmchMatchingML.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Math/SMatrix.h"
 #include "DetectorsBase/Propagator.h"
@@ -30,11 +34,6 @@
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "CCDB/CcdbApi.h"
 #include "Tools/ML/model.h"
-#include <string>
-#include <regex>
-#include <math.h>
-#include <TLorentzVector.h>
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -61,7 +60,7 @@ struct mftmchMatchingML {
   float chi2up = 1000000;
   float chi2MatchMCHMIDup = 1000000;
 
-  Filter etaFilter = ((etalow < aod::fwdtrack::eta) && (etaup < aod::fwdtrack::eta ));
+  Filter etaFilter = ((etalow < aod::fwdtrack::eta) && (etaup < aod::fwdtrack::eta));
   Filter pDcaFilter = (((pDCAcutrAtBsorberEndlow1 < aod::fwdtrack::rAtAbsorberEnd) || (aod::fwdtrack::rAtAbsorberEnd < pDCAcutrAtBsorberEndup1) || (aod::fwdtrack::pDca < pDCAcutdcaup1)) && ((aod::fwdtrack::rAtAbsorberEnd < pDCAcutrAtBsorberEndlow2) || (aod::fwdtrack::rAtAbsorberEnd < pDCAcutrAtBsorberEndup2) || (aod::fwdtrack::pDca < pDCAcutdcaup2)));
   Filter chi2Filter = (aod::fwdtrack::chi2 < chi2up);
   Filter chi2MatchFilter = (aod::fwdtrack::chi2MatchMCHMID < chi2MatchMCHMIDup);
@@ -111,14 +110,14 @@ struct mftmchMatchingML {
     Float_t Ratio_Y      = MFT_Y      / MCH_Y;
     Float_t Ratio_Phi    = MFT_Phi    / MCH_Phi;
     Float_t Ratio_Tanl   = MFT_Tanl   / MCH_Tanl;
-          
+
     Float_t Delta_X      = MFT_X      - MCH_X;
     Float_t Delta_Y      = MFT_Y      - MCH_Y;
     Float_t Delta_Phi    = MFT_Phi    - MCH_Phi;
     Float_t Delta_Tanl   = MFT_Tanl   - MCH_Tanl;
 
     Float_t Delta_XY     = sqrt(Delta_X*Delta_X + Delta_Y*Delta_Y);
-    
+
     std::vector<float> input_tensor_values{
       MFT_X,
       MFT_Y,
@@ -138,12 +137,12 @@ struct mftmchMatchingML {
       Ratio_Phi,
       Ratio_Tanl,
     };
-    return input_tensor_values;  
+    return input_tensor_values;
   }
 
   template <typename F, typename M>
   double matchONNX(F const& fwdtrack, M const& mfttrack)
-  {  
+  {
     std::vector<std::string> input_names;
     std::vector<std::vector<int64_t>> input_shapes;
     std::vector<std::string> output_names;
@@ -153,23 +152,23 @@ struct mftmchMatchingML {
     input_shapes = onnx_session->GetInputShapes();
     output_names = onnx_session->GetOutputNames();
     output_shapes = onnx_session->GetOutputShapes();
-    
+
     auto input_shape = input_shapes[0];
     input_shape[0] = 1;
 
     std::vector<float> input_tensor_values;
-    input_tensor_values = getVariables(fwdtrack,mfttrack);
+    input_tensor_values = getVariables(fwdtrack, mfttrack);
 
     if (input_tensor_values[8] < 3) {
       std::vector<Ort::Value> input_tensors;
-      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float> (input_tensor_values.data(), input_tensor_values.size(), input_shape));  
+      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float> (input_tensor_values.data(), input_tensor_values.size(), input_shape));
 
       std::vector<Ort::Value> output_tensors = onnx_session->Run(input_names, input_tensors, output_names);
-       
+
       const float* output_value = output_tensors[0].GetTensorData<float>();
 
       auto score = output_value[0];
-      
+
       return score;
     } else {
       auto score = 0;
@@ -217,7 +216,7 @@ struct mftmchMatchingML {
           double px = fwdtrack.p() * sin(M_PI/2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
           double py = fwdtrack.p() * sin(M_PI/2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
           double pz = fwdtrack.p() * cos(M_PI/2 - atan(mfttrack.tgl()));
-          fwdtrackml(fwdtrack.collisionId(),0,mfttrack.x(),mfttrack.y(),mfttrack.z(),mfttrack.phi(),mfttrack.tgl(),fwdtrack.sign()/std::sqrt(std::pow(px,2) + std::pow(py,2)),fwdtrack.nClusters(),-1,-1,-1,-1,-1,result,mfttrack.globalIndex(),fwdtrack.globalIndex(),fwdtrack.mchBitMap(),fwdtrack.midBitMap(),fwdtrack.midBoards(),mfttrack.trackTime(),mfttrack.trackTimeRes(), mfttrack.eta(),std::sqrt(std::pow(px,2) + std::pow(py,2)),std::sqrt(std::pow(px,2) + std::pow(py,2)+std::pow(pz,2)), dcaX, dcaY);
+          fwdtrackml(fwdtrack.collisionId(), 0, mfttrack.x(), mfttrack.y(), mfttrack.z(), mfttrack.phi(), mfttrack.tgl(), fwdtrack.sign()/std::sqrt(std::pow(px,2) + std::pow(py,2)), fwdtrack.nClusters(), -1, -1, -1, -1, -1, result, mfttrack.globalIndex(), fwdtrack.globalIndex(), fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mfttrack.trackTime(), mfttrack.trackTimeRes(), mfttrack.eta(), std::sqrt(std::pow(px,2) + std::pow(py,2)), std::sqrt(std::pow(px,2) + std::pow(py,2)+std::pow(pz,2)), dcaX, dcaY);
         }
       }
     }
