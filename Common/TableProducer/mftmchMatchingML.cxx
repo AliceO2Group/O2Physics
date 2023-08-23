@@ -1,7 +1,6 @@
-// Copyright 2019-2020 CERN and copyright holds of ALICE O2.
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
-
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -40,9 +39,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::ml;
+using o2::globaltracking::MatchingFunc_t;
 using o2::track::TrackParCovFwd;
 using o2::track::TrackParFwd;
-using o2::globaltracking::MatchingFunc_t;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
@@ -76,11 +75,12 @@ struct mftmchMatchingML {
   OnnxModel model;
 
   template <typename F, typename M>
-  std::vector<float> getVariables(F const& fwdtrack, M const& mfttrack){
+  std::vector<float> getVariables(F const& fwdtrack, M const& mfttrack)
+  {
 
     static constexpr Double_t MatchingPlaneZ = -77.5;
 
-    //propagate muontrack to matching position
+    // propagate muontrack to matching position
     double muonchi2 = fwdtrack.chi2();
     SMatrix5 muonpars(fwdtrack.x(), fwdtrack.y(), fwdtrack.phi(), fwdtrack.tgl(), fwdtrack.signed1Pt());
     std::vector<double> muonv1;
@@ -88,7 +88,7 @@ struct mftmchMatchingML {
     o2::track::TrackParCovFwd muonpars1{fwdtrack.z(), muonpars, muoncovs, muonchi2};
     muonpars1.propagateToZlinear(MatchingPlaneZ);
 
-    //propagate mfttrack to matching position
+    // propagate mfttrack to matching position
     double mftchi2 = mfttrack.chi2();
     SMatrix5 mftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
     std::vector<double> mftv1;
@@ -96,27 +96,27 @@ struct mftmchMatchingML {
     o2::track::TrackParCovFwd mftpars1{mfttrack.z(), mftpars, mftcovs, mftchi2};
     mftpars1.propagateToZlinear(MatchingPlaneZ);
 
-    Float_t MFT_X      = mftpars1.getX();
-    Float_t MFT_Y      = mftpars1.getY();
-    Float_t MFT_Phi    = mftpars1.getPhi();
-    Float_t MFT_Tanl   = mftpars1.getTanl();
+    Float_t MFT_X = mftpars1.getX();
+    Float_t MFT_Y = mftpars1.getY();
+    Float_t MFT_Phi = mftpars1.getPhi();
+    Float_t MFT_Tanl = mftpars1.getTanl();
 
-    Float_t MCH_X      = muonpars1.getX();
-    Float_t MCH_Y      = muonpars1.getY();
-    Float_t MCH_Phi    = muonpars1.getPhi();
-    Float_t MCH_Tanl   = muonpars1.getTanl();
+    Float_t MCH_X = muonpars1.getX();
+    Float_t MCH_Y = muonpars1.getY();
+    Float_t MCH_Phi = muonpars1.getPhi();
+    Float_t MCH_Tanl = muonpars1.getTanl();
 
-    Float_t Ratio_X      = MFT_X      / MCH_X;
-    Float_t Ratio_Y      = MFT_Y      / MCH_Y;
-    Float_t Ratio_Phi    = MFT_Phi    / MCH_Phi;
-    Float_t Ratio_Tanl   = MFT_Tanl   / MCH_Tanl;
+    Float_t Ratio_X = MFT_X / MCH_X;
+    Float_t Ratio_Y = MFT_Y / MCH_Y;
+    Float_t Ratio_Phi = MFT_Phi / MCH_Phi;
+    Float_t Ratio_Tanl = MFT_Tanl / MCH_Tanl;
 
-    Float_t Delta_X      = MFT_X      - MCH_X;
-    Float_t Delta_Y      = MFT_Y      - MCH_Y;
-    Float_t Delta_Phi    = MFT_Phi    - MCH_Phi;
-    Float_t Delta_Tanl   = MFT_Tanl   - MCH_Tanl;
+    Float_t Delta_X = MFT_X - MCH_X;
+    Float_t Delta_Y = MFT_Y - MCH_Y;
+    Float_t Delta_Phi = MFT_Phi - MCH_Phi;
+    Float_t Delta_Tanl = MFT_Tanl - MCH_Tanl;
 
-    Float_t Delta_XY     = sqrt(Delta_X*Delta_X + Delta_Y*Delta_Y);
+    Float_t Delta_XY = sqrt(Delta_X*Delta_X + Delta_Y*Delta_Y);
 
     std::vector<float> input_tensor_values{
       MFT_X,
@@ -201,9 +201,9 @@ struct mftmchMatchingML {
   {
     for (auto& [fwdtrack, mfttrack] : combinations(CombinationsFullIndexPolicy(fwdtracks, mfttracks))) {
 
-      if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack){
+      if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
         double result = matchONNX(fwdtrack, mfttrack);
-        if (result > cfgThrScore){
+        if (result > cfgThrScore) {
           double mftchi2 = mfttrack.chi2();
           SMatrix5 mftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
           std::vector<double> mftv1;
@@ -213,10 +213,10 @@ struct mftmchMatchingML {
 
           float dcaX = (mftpars1.getX() - collision.posX());
           float dcaY = (mftpars1.getY() - collision.posY());
-          double px = fwdtrack.p() * sin(M_PI/2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
-          double py = fwdtrack.p() * sin(M_PI/2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
-          double pz = fwdtrack.p() * cos(M_PI/2 - atan(mfttrack.tgl()));
-          fwdtrackml(fwdtrack.collisionId(), 0, mfttrack.x(), mfttrack.y(), mfttrack.z(), mfttrack.phi(), mfttrack.tgl(), fwdtrack.sign()/std::sqrt(std::pow(px,2) + std::pow(py,2)), fwdtrack.nClusters(), -1, -1, -1, -1, -1, result, mfttrack.globalIndex(), fwdtrack.globalIndex(), fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mfttrack.trackTime(), mfttrack.trackTimeRes(), mfttrack.eta(), std::sqrt(std::pow(px,2) + std::pow(py,2)), std::sqrt(std::pow(px,2) + std::pow(py,2)+std::pow(pz,2)), dcaX, dcaY);
+          double px = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
+          double py = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
+          double pz = fwdtrack.p() * cos(M_PI / 2 - atan(mfttrack.tgl()));
+          fwdtrackml(fwdtrack.collisionId(), 0, mfttrack.x(), mfttrack.y(), mfttrack.z(), mfttrack.phi(), mfttrack.tgl(), fwdtrack.sign() / std::sqrt(std::pow(px, 2) + std::pow(py, 2)), fwdtrack.nClusters(), -1, -1, -1, -1, -1, result, mfttrack.globalIndex(), fwdtrack.globalIndex(), fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mfttrack.trackTime(), mfttrack.trackTimeRes(), mfttrack.eta(), std::sqrt(std::pow(px, 2) + std::pow(py, 2)), std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)), dcaX, dcaY);
         }
       }
     }
@@ -226,6 +226,5 @@ struct mftmchMatchingML {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<mftmchMatchingML>(cfgc)
-  };
+    adaptAnalysisTask<mftmchMatchingML>(cfgc)};
 }

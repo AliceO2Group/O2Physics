@@ -1246,7 +1246,7 @@ struct TableMaker {
 
   // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
   void processMuonMLOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                       soa::Filtered<aod::FwdTracksML> const& tracksMuon)
+                         soa::Filtered<aod::FwdTracksML> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
