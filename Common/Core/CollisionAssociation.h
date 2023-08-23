@@ -151,7 +151,7 @@ class CollisionAssociation
 
     // loop over collisions to find time-compatible tracks
     auto trackBegin = tracks.begin();
-    auto bOffsetMax = mBcWindowForOneSigma * mNumSigmaForTimeCompat + mTimeMargin / constants::lhc::LHCBunchSpacingNS;
+    auto bOffsetMax = mBcWindowForOneSigma * mNumSigmaForTimeCompat + mTimeMargin / o2::constants::lhc::LHCBunchSpacingNS;
     for (const auto& collision : collisions) {
       const float collTime = collision.collisionTime();
       const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
@@ -163,7 +163,7 @@ class CollisionAssociation
         }
 
         float trackTime = track.trackTime();
-        const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
+        const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
         if (std::abs(bcOffsetWindow) > bOffsetMax) {
           continue;
         }
@@ -235,13 +235,13 @@ class CollisionAssociation
   }
 
  private:
-  float mNumSigmaForTimeCompat{4.};                                         // number of sigma for time compatibility
-  float mTimeMargin{500.};                                                  // additional time margin in ns
-  int mTrackSelection{track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};                                             // use the information of PV contributors
-  bool mIncludeUnassigned{true};                                            // include tracks that were originally not assigned to any collision
-  bool mFillTableOfCollIdsPerTrack{false};                                  // fill additional table with vectors of compatible collisions per track
-  int mBcWindowForOneSigma{115};                                            // BC window to be multiplied by the number of sigmas to define maximum window to be considered 
+  float mNumSigmaForTimeCompat{4.};                                                  // number of sigma for time compatibility
+  float mTimeMargin{500.};                                                           // additional time margin in ns
+  int mTrackSelection{o2::aod::track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
+  bool mUsePvAssociation{true};                                                      // use the information of PV contributors
+  bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
+  bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
+  int mBcWindowForOneSigma{115};                                                     // BC window to be multiplied by the number of sigmas to define maximum window to be considered 
 };
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_
