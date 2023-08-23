@@ -33,6 +33,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 struct hstrangecorrelationfilter {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -49,6 +51,8 @@ struct hstrangecorrelationfilter {
   // Track quality
   Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+  Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
+  Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
 
   // Associated particle selections in phase space
   Configurable<float> assocEtaMin{"assocEtaCutMin", -0.8, "triggeretamin"};
@@ -187,6 +191,12 @@ struct hstrangecorrelationfilter {
       }
       if (!track.hasITS() && triggerRequireITS) {
         continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+      }
+      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters){
+        continue; // skip, has shared clusters
+      }
+      if (!(bitcheck(track.itsClusterMap(),0)) && triggerRequireL0){
+        continue; // skip, doesn't have cluster in ITS L0
       }
       triggerTrack(
         track.collisionId(),
