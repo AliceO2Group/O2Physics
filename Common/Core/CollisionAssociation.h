@@ -241,7 +241,7 @@ class CollisionAssociation
   bool mUsePvAssociation{true};                                                      // use the information of PV contributors
   bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
   bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
-  int mBcWindowForOneSigma{115};                                                     // BC window to be multiplied by the number of sigmas to define maximum window to be considered 
+  int mBcWindowForOneSigma{115};                                                     // BC window to be multiplied by the number of sigmas to define maximum window to be considered
 };
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_
