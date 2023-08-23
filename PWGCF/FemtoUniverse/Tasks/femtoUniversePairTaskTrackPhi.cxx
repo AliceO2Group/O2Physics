@@ -373,17 +373,17 @@ struct femtoUniversePairTaskTrackPhi {
         continue;
       }
 
-      // // Close Pair Rejection
-      // // if (ConfIsCPR.value) {
-      // if (pairCloseRejection.isClosePair(hadron, phicandidate, parts, magFieldTesla)) {
-      //   continue;
-      // }
-      // //}
+      // Close Pair Rejection
+      // if (ConfIsCPR.value) {
+      if (pairCloseRejection.isClosePair(hadron, phicandidate, parts, magFieldTesla)) {
+        continue;
+      }
+      //}
 
-      // // Track Cleaning
-      // if (!pairCleaner.isCleanPair(hadron, phicandidate, parts)) {
-      //   continue;
-      // }
+      // Track Cleaning
+      if (!pairCleaner.isCleanPair(hadron, phicandidate, parts)) {
+        continue;
+      }
       sameEventFemtoCont.setPair<isMC>(hadron, phicandidate, multCol, twotracksconfigs.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(hadron, phicandidate, multCol, twotracksconfigs.ConfUse3D);
     }
@@ -463,9 +463,9 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       // // if (ConfIsCPR.value) {
-      // if (pairCloseRejection.isClosePair(hadron, phicandidate, parts, magFieldTesla)) {
-      //   continue;
-      // }
+      if (pairCloseRejection.isClosePair(hadron, phicandidate, parts, magFieldTesla)) {
+        continue;
+      }
       // }
 
       mixedEventFemtoCont.setPair<isMC>(hadron, phicandidate, multCol, twotracksconfigs.ConfUse3D);
