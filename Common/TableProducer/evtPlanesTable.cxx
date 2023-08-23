@@ -118,7 +118,6 @@ struct evtPlanesTable {
     if (centBin < 0 || centBin > 8) {
       return;
     }
-    LOGF(info, "Centrality percentile = %.0f Centrality bin: %d", qVec.cent(), centBin);
     histosQA.fill(HIST("histCentFull"), qVec.cent());
 
     // Calculate the event plane for each detector, then save them in the
@@ -159,7 +158,6 @@ struct evtPlanesTable {
           fillHistosQA<7, indexDet>(evtPlaneValues);
           break;
       }
-      printf("EP-%s: %.2f\n", ep::detNames[indexDet].data(), evtPlaneValues[indexDet]);
     });
 
     // Fill the columns of the evtPlane table.

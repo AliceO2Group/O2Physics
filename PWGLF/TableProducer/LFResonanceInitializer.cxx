@@ -303,16 +303,16 @@ struct reso2initializer {
   {
     float returnValue = -999.0;
     switch (multEstimator) {
-    case 0:
-      returnValue = ResoEvents.centFT0M();
-    case 1:
-      returnValue = ResoEvents.centFT0C();
-    case 2:
-      returnValue = ResoEvents.centFT0A();
-    case 99:
-      returnValue = ResoEvents.centFV0A();
-    default:
-      returnValue = ResoEvents.centFT0M();
+      case 0:
+        returnValue = ResoEvents.centFT0M();
+      case 1:
+        returnValue = ResoEvents.centFT0C();
+      case 2:
+        returnValue = ResoEvents.centFT0A();
+      case 99:
+        returnValue = ResoEvents.centFV0A();
+      default:
+        returnValue = ResoEvents.centFT0M();
     }
     return returnValue;
   }
@@ -323,16 +323,16 @@ struct reso2initializer {
   {
     float returnValue = -999.0;
     switch (multEstimator) {
-    case 0:
-      returnValue = ResoEvents.multFT0M();
-    case 1:
-      returnValue = ResoEvents.multFT0C();
-    case 2:
-      returnValue = ResoEvents.multFT0A();
-    case 99:
-      returnValue = ResoEvents.multFV0A();
-    default:
-      returnValue = ResoEvents.multFT0M();
+      case 0:
+        returnValue = ResoEvents.multFT0M();
+      case 1:
+        returnValue = ResoEvents.multFT0C();
+      case 2:
+        returnValue = ResoEvents.multFT0A();
+      case 99:
+        returnValue = ResoEvents.multFV0A();
+      default:
+        returnValue = ResoEvents.multFT0M();
     }
     return returnValue;
   }
@@ -770,8 +770,8 @@ struct reso2initializer {
     }
     }
 
-    void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
-    {
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
+  {
     if (ConfBypassCCDB)
       return;
     if (mRunNumber == bc.runNumber()) {
