@@ -192,7 +192,7 @@ struct mftmchMatchingML {
       LOG(info) << "Network file downloaded from: " << modelFile << " to: "
                 << "."
                 << "/" << cfgModelName.value;
-                                                                                             model.initModel(cfgModelName, false, 1, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
+      model.initModel(cfgModelName, false, 1, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
       onnx_session = model.getSession();
     } else {
       LOG(info) << "Failed to retrieve Network file";
