@@ -24,6 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -54,6 +55,7 @@ struct Alice3Dilepton {
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
+  Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -511,8 +513,8 @@ struct Alice3Dilepton {
     } // end of mc collision loop
   }   // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs>;
-  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::TracksAlice3>;
+  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax && o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
