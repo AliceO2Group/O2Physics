@@ -158,10 +158,7 @@ struct qVectorsTable {
       coll.centFT0M(), coll.centFT0A(), coll.centFT0C(),
       coll.centFV0A()};
     float cent = centAllEstim[cfgCentEsti];
-    LOG(info) << "COLLISION INDEX: " << coll.globalIndex()
-              << " Centrality percentile: " << cent;
     if (cent < 0. || cent > 100.) {
-      LOGF(info, "Invalid centrality value. Skipping this event.");
       return;
     }
 
@@ -178,7 +175,6 @@ struct qVectorsTable {
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
     /// attribute dummy values to the corresponding qVect.
     if (coll.has_foundFT0()) {
-      LOGF(info, "A FT0 has been found. Getting Q-vectors for it...");
       auto ft0 = coll.foundFT0();
 
       // Iterate over the non-dead channels for FT0-A to get the total Q-vector
@@ -255,7 +251,6 @@ struct qVectorsTable {
         qVectFV0A[1] = 999.;
       }
     } else {
-      LOGF(info, "No FV0 has been found. Setting Q-vectors to -999.");
       qVectFV0A[0] = -999.;
       qVectFV0A[1] = -999.;
     }

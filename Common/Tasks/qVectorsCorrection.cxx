@@ -123,7 +123,6 @@ struct qVectorsCorrection {
       histosQA.fill(HIST(qV::centClasses[bin]) + HIST("histQvecFV0A"),
                     vec.qvecFV0ARe(), vec.qvecFV0AIm());
     }
-    LOGF(info, "QA has been filled.");
   }
 
   void process(aod::Qvectors const& qVecs)
@@ -171,7 +170,6 @@ struct qVectorsCorrection {
     // corresponding TH1 histograms.
     static_for<0, 7>([&](auto iCent) {
       constexpr int indexCent = iCent.value;
-      printf("Centrality class: %s\n", qV::centClasses[indexCent].data());
 
       const std::shared_ptr<TH1> hist1D =
         histosQA.get<TH1>(HIST(qV::centClasses[indexCent]) + HIST("histQvecCorrConst"));
@@ -235,7 +233,6 @@ struct qVectorsCorrection {
 
       for (int i = 0; i < 12; i++) {
         hist1D->SetBinContent(i + 1, corrConst[i]);
-        printf("Index: %d corrConst: %e\n", i, corrConst[i]);
       }
     }); // Go to the next centrality class.
   }     // End void process(...)
