@@ -192,10 +192,10 @@ struct hstrangecorrelationfilter {
       if (!track.hasITS() && triggerRequireITS) {
         continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
       }
-      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters){
+      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
         continue; // skip, has shared clusters
       }
-      if (!(bitcheck(track.itsClusterMap(),0)) && triggerRequireL0){
+      if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
         continue; // skip, doesn't have cluster in ITS L0
       }
       triggerTrack(
