@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(femtouniverse-producer
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+          o2physics_add_dpl_workflow(femtouniverse-mctruth-producer
+          SOURCES femtoUniverseProducerMCTruthTask.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtouniverse-producer-reduced
           SOURCES femtoUniverseProducerReducedTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
