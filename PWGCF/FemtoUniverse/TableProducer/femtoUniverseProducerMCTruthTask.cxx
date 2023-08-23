@@ -212,7 +212,7 @@ struct femtoUniverseProducerMCTruthTask {
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           // LOGF(info,"%d %d",pdg,pdgCode);
-          if ((int)pdg == (int)pdgCode)
+          if (static_cast<int>(pdg) == static_cast<int>(pdgCode))
             pass = true;
         }
         if (!pass)
