@@ -116,7 +116,7 @@ struct mftmchMatchingML {
     Float_t Delta_Phi = MFT_Phi - MCH_Phi;
     Float_t Delta_Tanl = MFT_Tanl - MCH_Tanl;
 
-    Float_t Delta_XY = sqrt(Delta_X*Delta_X + Delta_Y*Delta_Y);
+    Float_t Delta_XY = sqrt(Delta_X * Delta_X + Delta_Y * Delta_Y);
 
     std::vector<float> input_tensor_values{
       MFT_X,
@@ -161,7 +161,7 @@ struct mftmchMatchingML {
 
     if (input_tensor_values[8] < 3) {
       std::vector<Ort::Value> input_tensors;
-      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float> (input_tensor_values.data(), input_tensor_values.size(), input_shape));
+      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float>(input_tensor_values.data(), input_tensor_values.size(), input_shape));
 
       std::vector<Ort::Value> output_tensors = onnx_session->Run(input_names, input_tensors, output_names);
 
@@ -182,12 +182,12 @@ struct mftmchMatchingML {
     std::map<std::string, std::string> metadata;
 
     ccdbApi.init(cfgCCDBURL);
-    //retrieving onnx file from ccdb
+    // retrieving onnx file from ccdb
     std::string modelFile = cfgModelDir.value;
     bool retrieveSuccess = ccdbApi.retrieveBlob(modelFile, ".", metadata, 1642502592629, false, cfgModelName.value);
 
-    //start session
-    if (retrieveSuccess){
+    // start session
+    if (retrieveSuccess) {
       std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(modelFile, metadata, -1);
       LOG(info) << "Network file downloaded from: " << modelFile << " to: " << "." << "/" << cfgModelName.value;
       model.initModel(cfgModelName, false, 1, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0)); //temporary

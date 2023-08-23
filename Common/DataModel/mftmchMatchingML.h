@@ -51,4 +51,4 @@ DECLARE_SOA_TABLE(FwdTracksML, "AOD", "FWDTRACKML",
                   fwdtrack::FwdDcaY);
 } // namespace o2::aod
 
-#endif  // COMMON_DATAMODEL_MFTMCHMATCHINGML_H_
+#endif // COMMON_DATAMODEL_MFTMCHMATCHINGML_H_
