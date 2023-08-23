@@ -52,7 +52,7 @@ struct MaterialBudget {
   Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
-  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
+  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
   Configurable<bool> fDoMixing{"DoMixing", false, "do event mixing"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -172,7 +172,7 @@ struct MaterialBudget {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  PresliceUnsorted<MyV0Photons> perCollision_pcm = aod::v0photonkf::collisionId;
 
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
@@ -198,7 +198,6 @@ struct MaterialBudget {
       }
 
       auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
-
       for (auto& cut : cuts) {
         for (auto& photon : photons_coll) {
 

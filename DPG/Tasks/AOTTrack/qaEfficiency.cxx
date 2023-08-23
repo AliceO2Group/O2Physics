@@ -80,6 +80,7 @@ struct QaEfficiency {
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
   Configurable<int> minITScl{"minITScl", 4, "Additional cut on the ITS cluster"};
+  Configurable<bool> doPVContributorCut{"doPVContributorCut", false, "Select tracks used for primary vertex recostruction (isPVContributor)"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
@@ -703,30 +704,31 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
     h->GetXaxis()->SetBinLabel(13, "passedDCAz");
     h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
-    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
-    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
-    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(15, "passed isPVContributor");
+    h->GetXaxis()->SetBinLabel(16, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(18, "passedTOF (partial)");
     switch (globalTrackSelection) {
       case 0:
-        h->GetXaxis()->SetBinLabel(18, "No extra selection");
+        h->GetXaxis()->SetBinLabel(19, "No extra selection");
         break;
       case 1:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrack");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrack");
         break;
       case 2:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoPtEta");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrackWoPtEta");
         break;
       case 3:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoDCA");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrackWoDCA");
         break;
       case 4:
-        h->GetXaxis()->SetBinLabel(18, "isQualityTrack");
+        h->GetXaxis()->SetBinLabel(19, "isQualityTrack");
         break;
       case 5:
-        h->GetXaxis()->SetBinLabel(18, "isInAcceptanceTrack");
+        h->GetXaxis()->SetBinLabel(19, "isInAcceptanceTrack");
         break;
       case 6:
-        h->GetXaxis()->SetBinLabel(18, "customTrackSelection");
+        h->GetXaxis()->SetBinLabel(19, "customTrackSelection");
         break;
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
@@ -796,10 +798,11 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
     h->GetXaxis()->SetBinLabel(13, "passedDCAz");
     h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
-    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
-    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
-    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
-    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
+    h->GetXaxis()->SetBinLabel(15, "passed isPVContributor");
+    h->GetXaxis()->SetBinLabel(16, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(18, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(19, "Passed globalCut");
 
     const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                etaMin, etaMax,
@@ -1427,6 +1430,10 @@ struct QaEfficiency {
         return false;
       }
       histos.fill(countingHisto, 14);
+      if (doPVContributorCut && !track.isPVContributor()) {
+        return false;
+      }
+      histos.fill(countingHisto, 15);
 
       passedITS = track.passedITSNCls() &&
                   track.passedITSChi2NDF() &&
@@ -1450,15 +1457,15 @@ struct QaEfficiency {
     }
 
     if (passedITS) { // Partial
-      histos.fill(countingHisto, 15);
-    }
-
-    if (passedTPC) { // Partial
       histos.fill(countingHisto, 16);
     }
 
-    if (passedTOF) { // Partial
+    if (passedTPC) { // Partial
       histos.fill(countingHisto, 17);
+    }
+
+    if (passedTOF) { // Partial
+      histos.fill(countingHisto, 18);
     }
 
     switch (globalTrackSelection) {
@@ -1479,7 +1486,7 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
-    histos.fill(countingHisto, 18);
+    histos.fill(countingHisto, 19);
 
     return false;
   }
