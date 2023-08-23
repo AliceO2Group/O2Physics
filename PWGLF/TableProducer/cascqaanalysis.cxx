@@ -82,6 +82,7 @@ struct cascqaanalysis {
     AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
     AxisSpec nAssocCollAxis = {5, -0.5f, 4.5f, "N_{assoc.}"};
     AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
+    AxisSpec nChargedFV0AGenAxis = {500, 0, 500, "N_{FV0A, gen.}"};
     AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
     AxisSpec multFT0Axis = {10000, 0, 40000, "FT0 amplitude"};
 
@@ -103,6 +104,7 @@ struct cascqaanalysis {
       // Rec. lvl
       registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
       registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
       for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -113,12 +115,13 @@ struct cascqaanalysis {
       registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
+      registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2F, {nChargedFV0AGenAxis, eventTypeAxis}});
     } else {
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3F, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
     }
-
-    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {centFV0AAxis}});
   }
 
   Filter preFilter =
@@ -179,6 +182,30 @@ struct cascqaanalysis {
     return nchFT0;
   }
 
+  template <typename TMcParticles>
+  uint16_t GetGenNchInFV0Aregion(TMcParticles particles)
+  {
+    // Particle counting in FV0A: 2.2<η<5.1
+    uint16_t nchFV0A = 0;
+    for (auto& mcParticle : particles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      if (mcParticle.eta() < 2.2 || mcParticle.eta() > 5.1) {
+        continue; // select on V0A Nch region
+      }
+      nchFV0A++; // increment
+    }
+    return nchFV0A;
+  }
+
   template <typename TCollision>
   int GetEventTypeFlag(TCollision const& collision)
   {
@@ -220,7 +247,6 @@ struct cascqaanalysis {
 
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hZCollision"), collision.posZ());
-      registry.fill(HIST("hCentFV0A"), collision.centFV0A());
     }
     return true;
   }
@@ -291,6 +317,9 @@ struct cascqaanalysis {
 
     registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
     registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
+    registry.fill(HIST("hFV0ApvContr"), collision.centFV0A(), nTracksPVcontr, evType);
+
+    registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
 
     float lEventScale = scalefactor;
 
@@ -336,8 +365,9 @@ struct cascqaanalysis {
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       //
-      float ctauXi = RecoDecay::getMassPDG(3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmega = RecoDecay::getMassPDG(3334) * cascpos / (cascptotmom + 1e-13);
+
+      float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
+      float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
 
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
@@ -383,9 +413,11 @@ struct cascqaanalysis {
     // N charged in FT0M region in corresponding gen. MC collision
     auto mcPartSlice = mcParticles.sliceBy(perMcCollision, collision.mcCollision_as<aod::McCollisions>().globalIndex());
     uint16_t nchFT0 = GetGenNchInFT0Mregion(mcPartSlice);
+    uint16_t nchFV0 = GetGenNchInFV0Aregion(mcPartSlice);
 
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
     registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
+    registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
 
     float lEventScale = scalefactor;
 
@@ -431,8 +463,8 @@ struct cascqaanalysis {
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       //
-      float ctauXi = RecoDecay::getMassPDG(3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmega = RecoDecay::getMassPDG(3334) * cascpos / (cascptotmom + 1e-13);
+      float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
+      float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
 
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
@@ -500,7 +532,9 @@ struct cascqaanalysis {
     }
 
     uint16_t nchFT0 = GetGenNchInFT0Mregion(mcParticles);
+    uint16_t nchFV0 = GetGenNchInFV0Aregion(mcParticles);
     registry.fill(HIST("hNchFT0MGenEvType"), nchFT0, evType);
+    registry.fill(HIST("hNchFV0AGenEvType"), nchFV0, evType);
 
     typedef struct CollisionIndexAndType {
       int64_t index;
