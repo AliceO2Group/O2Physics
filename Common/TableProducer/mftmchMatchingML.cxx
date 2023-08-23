@@ -13,8 +13,8 @@
 #include <math.h>
 #include <string>
 #include <regex>
-#include <TLorentzVector.h>
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include <TLorentzVector.h>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -189,10 +189,12 @@ struct mftmchMatchingML {
     // start session
     if (retrieveSuccess) {
       std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(modelFile, metadata, -1);
-      LOG(info) << "Network file downloaded from: " << modelFile << " to: " << "." << "/" << cfgModelName.value;
+      LOG(info) << "Network file downloaded from: " << modelFile << " to: "
+                << "."
+                << "/" << cfgModelName.value;
       model.initModel(cfgModelName, false, 1, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0)); //temporary
       onnx_session = model.getSession();
-    }else{
+    } else {
       LOG(info) << "Failed to retrieve Network file";
     }
   }
