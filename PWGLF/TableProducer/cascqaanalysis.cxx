@@ -329,7 +329,7 @@ struct cascqaanalysis {
     registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
     registry.fill(HIST("hFV0ApvContr"), collision.centFV0A(), nTracksPVcontr, evType);
 
-    if(multQA){
+    if (multQA) {
       registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
       registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
@@ -432,7 +432,7 @@ struct cascqaanalysis {
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
     registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
 
-    if(multQA){
+    if (multQA) {
       registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
     }
