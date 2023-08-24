@@ -251,8 +251,14 @@ struct PureMcMultiplicityCounter {
     }
 
     for (auto& track : tracks) {
+      if (std::abs(track.eta()) >= etaRange) {
+        continue;
+      }
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
+        if (particle.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (particle.isPhysicalPrimary()) {
           registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
         } else {
