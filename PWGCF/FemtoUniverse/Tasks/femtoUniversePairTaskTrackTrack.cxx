@@ -131,7 +131,7 @@ struct femtoUniversePairTaskTrackTrack {
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
-  
+
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -158,7 +158,6 @@ struct femtoUniversePairTaskTrackTrack {
     mixedEventFemtoCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     sameEventAngularCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     mixedEventAngularCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
@@ -262,7 +261,7 @@ struct femtoUniversePairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      
+
       sameEventFemtoCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
       sameEventAngularCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
     }
