@@ -65,6 +65,9 @@ struct cascqaanalysis {
   // Switch between Data/MC-dedicated FT0M X-axes
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
+  // QA histograms for the multiplicity estimation
+  Configurable<bool> multQA{"multQA", 0, "0 - not to do QA, 1 - do the QA"};
+
   // Necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -84,7 +87,7 @@ struct cascqaanalysis {
     AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
     AxisSpec nChargedFV0AGenAxis = {500, 0, 500, "N_{FV0A, gen.}"};
     AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
-    AxisSpec multFT0Axis = {10000, 0, 40000, "FT0 amplitude"};
+    AxisSpec signalAxis = {20000, 0, 20000, "Amplitude"};
 
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
@@ -103,7 +106,6 @@ struct cascqaanalysis {
     if (isMC) {
       // Rec. lvl
       registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
       registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
@@ -118,9 +120,18 @@ struct cascqaanalysis {
       registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2F, {nChargedFV0AGenAxis, eventTypeAxis}});
     } else {
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3F, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
+    }
+
+    if (multQA) {
+      if (isMC) {
+        // Rec. lvl
+        registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+      } else {
+        registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+        registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
+      }
+      registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalAxis, signalAxis}});
     }
   }
 
@@ -316,10 +327,13 @@ struct cascqaanalysis {
     int nTracksGlobal = tracksGroupedGlobal.size();
 
     registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
-    registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
     registry.fill(HIST("hFV0ApvContr"), collision.centFV0A(), nTracksPVcontr, evType);
 
-    registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
+    if(multQA){
+      registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
+      registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
+      registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
+    }
 
     float lEventScale = scalefactor;
 
@@ -416,8 +430,12 @@ struct cascqaanalysis {
     uint16_t nchFV0 = GetGenNchInFV0Aregion(mcPartSlice);
 
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
-    registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
     registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
+
+    if(multQA){
+      registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
+      registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
+    }
 
     float lEventScale = scalefactor;
 
