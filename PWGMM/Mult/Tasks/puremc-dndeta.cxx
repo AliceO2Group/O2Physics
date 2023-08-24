@@ -97,9 +97,9 @@ struct PureMcMultiplicityCounter {
 
   void process(aod::McCollision const& collision, aod::McParticles const& particles)
   {
-    registry.fill(HIST("Events/Vertex/X"), collision.posX());
-    registry.fill(HIST("Events/Vertex/Y"), collision.posY());
-    registry.fill(HIST("Events/Vertex/Z"), collision.posZ());
+    registry.fill(HIST("MCEvents/Vertex/X"), collision.posX());
+    registry.fill(HIST("MCEvents/Vertex/Y"), collision.posY());
+    registry.fill(HIST("MCEvents/Vertex/Z"), collision.posZ());
 
     auto Np = 0;
     for (auto const& particle : particles) {
@@ -171,7 +171,7 @@ struct PureMcMultiplicityCounter {
 
   void processResponse(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
   {
-    registry.fill(HIST("MCEvents/Efficiency"), 1);
+    registry.fill(HIST("MCEvents/Efficiency"), 0);
     auto Np = 0;
     for (auto const& particle : particles) {
       if (!particle.isPhysicalPrimary()) {
@@ -194,11 +194,11 @@ struct PureMcMultiplicityCounter {
       ++Np;
     }
     if (Np > 0) {
-      registry.fill(HIST("MCEvents/Efficiency"), 2);
+      registry.fill(HIST("MCEvents/Efficiency"), 1);
     }
     for (auto& collision : collisions) {
       auto Ntrk = 0;
-      registry.fill(HIST("MCEvents/Efficiency"), 3);
+      registry.fill(HIST("MCEvents/Efficiency"), 2);
       auto tracksample = tracks.sliceBy(perCol, collision.globalIndex());
       for (auto& track : tracksample) {
         if (std::abs(track.eta()) < etaRange) {
@@ -206,7 +206,7 @@ struct PureMcMultiplicityCounter {
         }
       }
       if (Ntrk > 0) {
-        registry.fill(HIST("MCEvents/Efficiency"), 4);
+        registry.fill(HIST("MCEvents/Efficiency"), 3);
       }
       registry.fill(HIST("MCEvents/Response"), Np, Ntrk);
     }
