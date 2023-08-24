@@ -80,14 +80,19 @@ struct cascqaanalysis {
   {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-    AxisSpec centFT0MAxis = {10550, 0.f, 105.5f, "FT0M (%)"};
-    AxisSpec centFV0AAxis = {10550, 0.f, 105.5f, "FV0A (%)"};
+    ConfigurableAxis centFT0MAxis{"FT0M",
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
+                                  "FT0M (%)"};
+    ConfigurableAxis centFV0AAxis{"FV0A",
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
+                                  "FV0A (%)"};
     AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
     AxisSpec nAssocCollAxis = {5, -0.5f, 4.5f, "N_{assoc.}"};
     AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
     AxisSpec nChargedFV0AGenAxis = {500, 0, 500, "N_{FV0A, gen.}"};
     AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
-    AxisSpec signalAxis = {20000, 0, 20000, "Amplitude"};
+    AxisSpec signalFT0MAxis = {10000, 0, 40000, "FT0M amplitude"};
+    AxisSpec signalFV0AAxis = {10000, 0, 40000, "FV0A amplitude"};
 
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
@@ -131,7 +136,7 @@ struct cascqaanalysis {
         registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
         registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       }
-      registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalAxis, signalAxis}});
+      registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalFT0MAxis, signalFV0AAxis}});
     }
   }
 
