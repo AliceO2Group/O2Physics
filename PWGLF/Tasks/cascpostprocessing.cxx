@@ -322,7 +322,7 @@ struct cascpostprocessing {
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3312)) > lambdamasswin)
+      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3122)) > lambdamasswin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
