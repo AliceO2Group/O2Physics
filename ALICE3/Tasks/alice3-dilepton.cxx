@@ -561,8 +561,7 @@ struct Alice3Dilepton {
         bool isEleInnerTOF = abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
         bool isNotPionInnerTOF = abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
         isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
-        if (isEleOuterTOF || isEleInnerTOF)
-        {
+        if (isEleOuterTOF || isEleInnerTOF) {
           registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
           registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
           registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
