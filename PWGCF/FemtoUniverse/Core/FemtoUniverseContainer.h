@@ -20,6 +20,7 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 
+#include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 
@@ -244,7 +245,7 @@ class FemtoUniverseContainer
           }
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
 
-          if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+          if (abs(part1.fdMCParticle().pdgMCTruth()) == abs(mPDGOne) && abs(part2.fdMCParticle().pdgMCTruth()) == abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
             setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots);
             setPair_MC(femtoObsMC, femtoObs, mT, mult);
           } else {

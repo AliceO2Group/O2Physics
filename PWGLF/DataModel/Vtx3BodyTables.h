@@ -25,6 +25,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, Tracks, "_2"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
+DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                 //!
 
 // General 3 body Vtx properties: position, momentum
 DECLARE_SOA_COLUMN(PxTrack0, pxtrack0, float); //! track0 px at min
@@ -64,20 +65,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to 3 body deca
 
 // CosPA
 DECLARE_SOA_DYNAMIC_COLUMN(VtxCosPA, vtxcosPA, //! 3 body vtx CosPA
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(array{pvX, pvY, pvZ}, array{X, Y, Z}, array{Px, Py, Pz}); });
+                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAVtxToPV, dcavtxtopv, //! DCA of 3 body vtx to PV
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under Hypertriton hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(array{array{pxtrack0, pytrack0, pztrack0}, array{pxtrack1, pytrack1, pztrack1}, array{pxtrack2, pytrack2, pztrack2}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}); });
+                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}); });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antiHypertriton hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(array{array{pxtrack0, pytrack0, pztrack0}, array{pxtrack1, pytrack1, pztrack1}, array{pxtrack2, pytrack2, pztrack2}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}); });
+                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}); });
 
-DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton,                                                                                                      //! 3 body vtx y with hypertriton or antihypertriton hypothesis
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, o2::constants::physics::MassHyperTriton); }); // here MassHyperTriton = 2.992
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                        //! 3 body vtx eta
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(array{Px, Py, Pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton,                                                                                                           //! 3 body vtx y with hypertriton or antihypertriton hypothesis
+                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassHyperTriton); }); // here MassHyperTriton = 2.992
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                             //! 3 body vtx eta
+                           [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! 3 body vtx phi
                            [](float Px, float Py) -> float { return RecoDecay::phi(Px, Py); });
 
@@ -88,15 +89,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(Track1Pt, track1pt, //! daughter1 pT
 DECLARE_SOA_DYNAMIC_COLUMN(Track2Pt, track2pt, //! daughter2 pT
                            [](float pxtrack2, float pytrack2) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack2, pytrack2); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track0Eta, track0eta, //! daughter0 eta
-                           [](float pxtrack0, float pytrack0, float pztrack0) -> float { return RecoDecay::eta(array{pxtrack0, pytrack0, pztrack0}); });
+                           [](float pxtrack0, float pytrack0, float pztrack0) -> float { return RecoDecay::eta(std::array{pxtrack0, pytrack0, pztrack0}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track0Phi, track0phi, //! daughter0 phi
                            [](float pxtrack0, float pytrack0) -> float { return RecoDecay::phi(pxtrack0, pytrack0); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track1Eta, track1eta, //! daughter1 eta
-                           [](float pxtrack1, float pytrack1, float pztrack1) -> float { return RecoDecay::eta(array{pxtrack1, pytrack1, pztrack1}); });
+                           [](float pxtrack1, float pytrack1, float pztrack1) -> float { return RecoDecay::eta(std::array{pxtrack1, pytrack1, pztrack1}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track1Phi, track1phi, //! daughter1 phi
                            [](float pxtrack1, float pytrack1) -> float { return RecoDecay::phi(pxtrack1, pytrack1); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track2Eta, track2eta, //! daughter2 eta
-                           [](float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::eta(array{pxtrack2, pytrack2, pztrack2}); });
+                           [](float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::eta(std::array{pxtrack2, pytrack2, pztrack2}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Track2Phi, track2phi, //! daughter2 phi
                            [](float pxtrack2, float pytrack2) -> float { return RecoDecay::phi(pxtrack2, pytrack2); });
 
@@ -109,7 +110,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! 3 body vtx pz
 } // namespace vtx3body
 
 DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDATA", //!
-                       o2::soa::Index<>, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::CollisionId,
+                       o2::soa::Index<>, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::CollisionId, vtx3body::Decay3BodyId,
                        vtx3body::X, vtx3body::Y, vtx3body::Z,
                        vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,
                        vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,
@@ -152,11 +153,31 @@ namespace vtx3body
 DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to Vtx3BodyData entry
 }
 
-DECLARE_SOA_TABLE(Vtx3BodyDataLink, "AOD", "VtxDATALINK", //! Joinable table with Decay3bodys which links to Vtx3BodyData which is not produced for all entries
+DECLARE_SOA_TABLE(Decay3BodyDataLink, "AOD", "DECAY3BODYLINK", //! Joinable table with Decay3bodys which links to Vtx3BodyData which is not produced for all entries
                   vtx3body::Vtx3BodyDataId);
 
-using Vtxs3BodyLinked = soa::Join<Decay3Bodys, Vtx3BodyDataLink>;
-using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;
+using Decay3BodysLinked = soa::Join<Decay3Bodys, Decay3BodyDataLink>;
+using Decay3BodyLinked = Decay3BodysLinked::iterator;
+
+// Definition of labels for Vtx3BodyDatas
+namespace mcvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Vtx3BodyDatas
+} // namespace mcvtx3bodylabel
+
+DECLARE_SOA_TABLE(McVtx3BodyLabels, "AOD", "MCVTXLABEL", //! Table joinable with Vtx3BodyData containing the MC labels
+                  mcvtx3bodylabel::McParticleId);
+using McVtx3BodyLabel = McVtx3BodyLabels::iterator;
+
+// Definition of labels for Decay3Bodys // Full table, joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+namespace mcfullvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
+} // namespace mcfullvtx3bodylabel
+
+DECLARE_SOA_TABLE(McFullVtx3BodyLabels, "AOD", "MCFULLVTXLABEL", //! Table joinable with Decay3Bodys
+                  mcfullvtx3bodylabel::McParticleId);
+using McFullVtx3BodyLabel = McFullVtx3BodyLabels::iterator;
 
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_

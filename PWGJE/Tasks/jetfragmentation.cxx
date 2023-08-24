@@ -293,8 +293,7 @@ struct JetFragmentation {
       if (detJet.eta() < matchedDetJetEtaMin || detJet.eta() > matchedDetJetEtaMax) {
         continue; // TODO: should be done in filter
       }
-      if (detJet.has_matchedJetGeo()) {
-        const auto& partJet = detJet.template matchedJetGeo_as<McPJets>();
+      for (auto& partJet : detJet.template matchedJetGeo_as<McPJets>()) {
         double deltaEta = partJet.eta() - detJet.eta();
         double deltaPhi = partJet.phi() - detJet.phi();
         deltaPhi = CheckDphi(deltaPhi);
@@ -349,7 +348,8 @@ struct JetFragmentation {
             registry.fill(HIST("matching/jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
           } // if track is not matched
         }   // for detJet tracks
-      } else if (!detJet.has_matchedJetGeo()) {
+      }
+      if (!detJet.has_matchedJetGeo()) {
         for (const auto& track : detJet.tracks_as<McTracks>()) {
           double detChargeFrag = -1., detTrackProj = -1.;
           detTrackProj = track.px() * detJet.px() + track.py() * detJet.py() + track.pz() * detJet.pz();

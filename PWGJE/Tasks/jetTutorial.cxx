@@ -197,8 +197,7 @@ struct JetTutorialTask {
   void processMCMatched(aod::Collision const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets)
   {
     for (const auto& MCDjet : MCDjets) {
-      if (MCDjet.has_matchedJetGeo() && MCDjet.matchedJetGeoId() >= 0) {
-        const auto& MCPjet = MCDjet.matchedJetGeo_as<MCPJetTable>();
+      for (auto& MCPjet : MCDjet.matchedJetGeo_as<MCPJetTable>()) {
         registry.fill(HIST("h_matched_jets_pt"), MCPjet.pt(), MCDjet.pt());
         registry.fill(HIST("h_matched_jets_pt"), MCPjet.phi(), MCDjet.phi());
         registry.fill(HIST("h_matched_jets_pt"), MCPjet.eta(), MCDjet.eta());

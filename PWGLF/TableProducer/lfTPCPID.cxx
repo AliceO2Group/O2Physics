@@ -60,6 +60,20 @@ static constexpr float defaultParameters[nSpecies][nParameters]{{2.f, 2.f, 0.f, 
                                                                 {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
                                                                 {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
                                                                 {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}};
+static constexpr int nOptions = 4;
+static const std::vector<std::string> optionNames{"Bethe Bloch path",      // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
+                                                  "Post calibration path", // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
+                                                  "Simple Bethe Bloch",    // (true/false)
+                                                  "RequirePostCalib"};     // (true/false)
+const std::string defaultOptions[nSpecies][nOptions]{{"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"},
+                                                     {"", "", "false", "false"}};
 
 // Structure to hold the parameters
 struct bbParams {
@@ -82,6 +96,8 @@ struct bbParams {
   TF1* postCorrectionFunSigma = nullptr;
 
   // Utility parameters for the usage
+  bool betheBlochSet = true;     // Flag to check if the Bethe-Bloch parameters have been set. By default is true as the default values are set. Used to check if the parameters have been set after a CCDB update
+  bool requirePostCalib = true;  // Flag to force the post calib. to be required, if not found, it will trigger a fatal error
   bool takeFromCcdb = false;     // Flag to get the parameters from the CCDB
   bool takePostFromCcdb = false; // Flag to get the post calib parameters from the CCDB
   std::string ccdbPath = "";     // Path to the CCDB object
@@ -94,7 +110,7 @@ struct bbParams {
   bool setValues(std::vector<float> v)
   {
     if (v.size() != 8) {
-      LOG(error) << "bbParams `" << name << "` :: The vector of Bethe-Bloch parameters has the wrong size";
+      LOG(fatal) << "bbParams `" << name << "` :: The vector of Bethe-Bloch parameters has the wrong size " << v.size() << " while expecting 8";
       return false;
     }
     LOG(info) << "bbParams `" << name << "` :: Before: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", resolution " << res;
@@ -107,6 +123,7 @@ struct bbParams {
     exp = v[6];
     res = v[7];
     LOG(info) << "bbParams `" << name << "` :: After: set of parameters -> bb1: " << bb1 << ", bb2: " << bb2 << ", bb3: " << bb3 << ", bb4: " << bb4 << ", bb5: " << bb5 << ", mip: " << mip << ", exp: " << exp << ", resolution " << res;
+    betheBlochSet = true; // Bethe bloch parameters are set!
     return true;
   }
 
@@ -115,7 +132,7 @@ struct bbParams {
   bool setValues(TH1F* h)
   {
     if (!h) {
-      LOG(warning) << "bbParams `" << name << "` :: The input histogram of Bethe-Bloch parameters is not valid";
+      LOG(fatal) << "bbParams `" << name << "` :: The input histogram of Bethe-Bloch parameters is not valid";
       return false;
     }
     if (isSimple) {
@@ -169,19 +186,42 @@ struct bbParams {
   }
 
   ///
+  /// @brief Set the Bethe Bloch calibration from a TList
+  /// @param l List containing the post calibration objects as TF1 or TGraph
+  void setValues(TList* l)
+  {
+    const char* bbname = Form("BBParameter_%s", name.c_str());
+    TH1F* h = static_cast<TH1F*>(l->FindObject(bbname));
+    if (!h) {
+      l->ls();
+      LOG(fatal) << "bbParams `" << name << "` :: did not find BetheBloch parametrization " << bbname << " in the input list";
+    }
+    setValues(h);
+  }
+
+  ///
   /// @brief Set the post calibration from a TList
   /// @param l List containing the post calibration objects as TF1 or TGraph
   void setPostCorrection(TList* l)
   {
     if (!l) {
-      LOG(warning) << "bbParams `" << name << "` :: Did not find the post calib list";
+      LOG(fatal) << "bbParams `" << name << "` :: Did not find the post calib list";
       return;
     }
+
+    // Reset post calibration
+    postCorrectionFun = nullptr;
+    postCorrection = nullptr;
+    postCorrectionFunSigma = nullptr;
+    postCorrectionSigma = nullptr;
 
     TString objname = Form("dEdx_MinusBB_%s", name.c_str());
     TObject* obj = l->FindObject(objname);
     if (!obj) {
-      LOG(warning) << "Did not find the post calib object " << objname << ", cannot assign post calibration";
+      if (requirePostCalib) {
+        l->ls();
+        LOG(fatal) << "Did not find the post calib object " << objname << ", cannot assign post calibration";
+      }
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
@@ -189,15 +229,17 @@ struct bbParams {
       } else if (cn.Contains("TGraph")) {
         postCorrection = static_cast<TGraph*>(l->FindObject(obj->GetName()));
       } else {
-        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib object";
+        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib object " << objname;
       }
     }
 
     objname = Form("sigmaFitOverSigmaParam_%s", name.c_str());
     obj = l->FindObject(objname);
     if (!obj) {
-      LOG(warning) << "Did not find the post calib sigma object " << objname << ", cannot assign post calibration";
-
+      if (requirePostCalib) {
+        l->ls();
+        LOG(fatal) << "Did not find the post calib sigma object " << objname << ", cannot assign post calibration";
+      }
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
@@ -205,15 +247,36 @@ struct bbParams {
       } else if (cn.Contains("TGraph")) {
         postCorrectionSigma = static_cast<TGraph*>(l->FindObject(obj->GetName()));
       } else {
-        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib sigma object";
+        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib sigma object " << objname;
       }
+    }
+    LOG(info) << "bbParams `" << name << "` :: Setting post calibration";
+    if (l->FindObject("Tag")) {
+      LOG(info) << "          Tag: " << l->FindObject("Tag")->GetTitle();
+    }
+    if (postCorrectionFun) {
+      LOG(info) << "          postCorrection: " << postCorrectionFun->ClassName() << " " << postCorrectionFun->GetName();
+    } else if (postCorrection) {
+      LOG(info) << "          postCorrection: " << postCorrection->ClassName() << " " << postCorrection->GetName();
+    } else {
+      LOG(info) << "          postCorrection: Not assigned";
+    }
+    if (postCorrectionFunSigma) {
+      LOG(info) << "          postCorrectionSigma: " << postCorrectionFunSigma->ClassName() << " " << postCorrectionFunSigma->GetName();
+    } else if (postCorrectionSigma) {
+      LOG(info) << "          postCorrectionSigma: " << postCorrectionSigma->ClassName() << " " << postCorrectionSigma->GetName();
+    } else {
+      LOG(info) << "          postCorrectionSigma: Not assigned";
     }
   }
 
   ///
   /// Set values from a configuration. In this case also the post calibration is checked
-  void init(const char* particle, const Configurable<LabeledArray<float>>& confParams,
-            const Configurable<std::vector<std::string>>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
+  void init(const char* particle,
+            const Configurable<LabeledArray<float>>& confParams,
+            // const Configurable<LabeledArray<std::string>>& cfg,
+            const Configurable<std::vector<std::string>>& cfg,
+            o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
     LOG(info) << "bbParams `" << name << "` :: inizializing parameters from json with particle " << particle;
     // First check the json configuration
@@ -233,12 +296,17 @@ struct bbParams {
     }
 
     // Check the TFile/CCDB configuration
-    if (cfg.value.size() != 3) {
+    if (cfg.value.size() != 4) {
       LOG(fatal) << "bbParams `" << name << "` :: The input configurable has the wrong size " << cfg.value.size() << " while expecting 3";
     }
     const std::string bb = cfg.value.at(0);
     const std::string post = cfg.value.at(1);
     const std::string simple = cfg.value.at(2);
+    requirePostCalib = (cfg.value.at(3) == "true");
+    // const std::string bb = cfg->get(particle, "Bethe Bloch path");
+    // const std::string post = cfg->get(particle, "Post calibration path");
+    // const std::string simple = cfg->get(particle, "Simple Bethe Bloch");
+    // requirePostCalib = (cfg->get(particle, "RequirePostCalib") == "true");
     LOG(info) << "bbParams `" << name << "` :: initializing from configurable '" << cfg.name << "' bb = " << bb << " post = " << post << " simple = " << simple;
     if (simple == "true" || simple == "yes") { // Check if the parametrization to be used is simple
       LOG(info) << "bbParams `" << name << "` :: using simple BetheBloch parametrization";
@@ -252,6 +320,9 @@ struct bbParams {
       if (bb.size() > 1) {
         LOG(fatal) << "Cannot define post calibration path and BB parameters path at the same time as the BB parameters will be taken from the post. calib. source. Pick one!";
       }
+      if (requirePostCalib) {
+        LOG(info) << "bbParams `" << name << "` :: fatal errors if post calibrations will not be found!";
+      }
       LOG(info) << "bbParams `" << name << "` :: Loading calib. and post calib. from configurable '" << cfg.name << "' with value '" << post << "'";
       std::string s = post;
       if (s.rfind("ccdb://", 0) == 0) { // Getting post calib. from CCDB
@@ -264,7 +335,7 @@ struct bbParams {
           LOG(info) << "bbParams `" << name << "` :: For post calib fetching parameters from CCDB (only once) using timestamp " << ccdbObj->getTimestamp() << " and path " << s;
           TList* l = ccdbObj->get<TList>(s);
           setPostCorrection(l);
-          setValues(static_cast<TH1F*>(l->FindObject(Form("BBParameter_%s", name.c_str()))));
+          setValues(l);
         }
       } else { // Getting post calib. from file
         TFile* f = TFile::Open(post.c_str(), "READ");
@@ -280,7 +351,7 @@ struct bbParams {
           LOG(fatal) << "The input file " << post << " does not contain the TList ccdb_object";
         }
         setPostCorrection(l);
-        setValues(static_cast<TH1F*>(l->FindObject(Form("BBParameter_%s", name.c_str()))));
+        setValues(l);
       }
     }
 
@@ -326,32 +397,42 @@ struct bbParams {
   /// @param ccdbObj Managare of the CCDB
   /// @param timestamp Timestamp to ask the new parameters
   /// @return false if not succesfull
-  bool updateValues(aod::BCsWithTimestamps::iterator const& bunchCrossing, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
+  void updateValues(aod::BCsWithTimestamps::iterator const& bunchCrossing, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
+    if (!takePostFromCcdb && !takeFromCcdb) {
+      LOG(debug) << "bbParams `" << name << "` :: Requested to not update parameters, ccdb timestamp != 0";
+      return;
+    }
     // Check that the last updated number is different
     if (lastRunNumber == bunchCrossing.runNumber()) {
       LOG(debug) << "bbParams `" << name << "` :: Not updating parameters of " << name << " from run number " << lastRunNumber << " as they are already up to date";
-      return false;
+      return;
     }
+    betheBlochSet = false; // Reset the set betheBloch flag as it could also be not found
+
     // First check the post calib
     if (takePostFromCcdb) {
       LOG(info) << "bbParams `" << name << "` :: Updating post calib from run number " << lastRunNumber << " to " << bunchCrossing.runNumber() << ". Taking them from CCDB path '" << ccdbPathPost << "' with timestamp " << bunchCrossing.timestamp();
       TList* postL = ccdbObj->getForTimeStamp<TList>(ccdbPathPost, bunchCrossing.timestamp());
-      setPostCorrection(postL);
-      if (postL) {
-        setValues(static_cast<TH1F*>(postL->FindObject(Form("BBParameter_%s", name.c_str()))));
+      if (!postL) { // If the CCDB does not throw a fatal error, we use the centrally provided values
+        LOG(info) << "bbParams `" << name << "` :: Post calibration input not found on CCDB, using default values";
+        return;
       }
+      setPostCorrection(postL);
+      setValues(postL);
       lastRunNumber = bunchCrossing.runNumber();
-      return false;
+      return;
     }
     // Secondly we check the BB parameters
-    if (!takeFromCcdb) {
-      LOG(debug) << "bbParams `" << name << "` :: Not taking parameters from CCDB";
-      return false;
-    }
     LOG(info) << "bbParams `" << name << "` :: Updating parameters of " << name << " from run number " << lastRunNumber << " to " << bunchCrossing.runNumber() << ". Taking them from CCDB path '" << ccdbPath << "' with timestamp " << bunchCrossing.timestamp();
     lastRunNumber = bunchCrossing.runNumber();
-    return setValues(ccdbObj->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()));
+    betheBlochSet = false; // Reset the set betheBloch flag as it could also be not found
+    TH1F* h = ccdbObj->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp());
+    if (!h) { // If the CCDB does not throw a fatal error, we use the centrally provided values
+      LOG(info) << "bbParams `" << name << "` :: Bethe Bloch calibration input not found on CCDB, using default values";
+      return;
+    }
+    setValues(h);
   }
 };
 
@@ -392,59 +473,67 @@ struct lfTpcPid {
                                                  "Bethe Bloch parameters"};
   // Parameter setting from input file (including the ccdb)
   Configurable<std::vector<std::string>> fileParamBbEl{"fileParamBbEl",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for electrons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbMu{"fileParamBbMu",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for muons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbPi{"fileParamBbPi",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for pions 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbKa{"fileParamBbKa",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for kaons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbPr{"fileParamBbPr",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for protons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbDe{"fileParamBbDe",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for deuterons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbTr{"fileParamBbTr",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for tritons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbHe{"fileParamBbHe",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for helium3 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbAl{"fileParamBbAl",
-                                                       {"", "", ""},
+                                                       {"", "", "", ""},
                                                        "Input for the parametrization for helium4 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegEl{"fileParamBbNegEl",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative electrons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegMu{"fileParamBbNegMu",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative muons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegPi{"fileParamBbNegPi",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative pions 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegKa{"fileParamBbNegKa",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative kaons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegPr{"fileParamBbNegPr",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative protons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegDe{"fileParamBbNegDe",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative deuterons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegTr{"fileParamBbNegTr",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative tritons 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegHe{"fileParamBbNegHe",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative helium3 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
   Configurable<std::vector<std::string>> fileParamBbNegAl{"fileParamBbNegAl",
-                                                          {"", "", ""},
+                                                          {"", "", "", ""},
                                                           "Input for the parametrization for negative helium4 1) BB 2) Post 3) Simple. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
+
+  // Configurable<LabeledArray<std::string>> fileParamBbPositive{"fileParamBbPositive",
+  //                                                             {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+  //                                                             "Input for the parametrization for positive particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
+
+  // Configurable<LabeledArray<std::string>> fileParamBbNegative{"fileParamBbNegative",
+  //                                                             {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+  //                                                             "Input for the parametrization for negative particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", -1, "timestamp of the object used to query in CCDB the detector response. If 0 the object corresponding to the run number is used, if < 0 the latest object is used"};
@@ -472,7 +561,7 @@ struct lfTpcPid {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   template <o2::track::PID::ID id, typename T>
-  float BetheBlochLf(const T& track, const bbParams& params)
+  float BetheBlochLf(const T& track, const bbParams& params) const
   {
     static constexpr float invmass = 1.f / o2::track::pid_constants::sMasses2Z[id];
     static constexpr float charge = o2::track::pid_constants::sCharges[id];
@@ -490,99 +579,99 @@ struct lfTpcPid {
   }
 
   template <typename T>
-  float BetheBlochEl(const T& track)
+  float BetheBlochEl(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Electron>(track, bbEl);
   }
   template <typename T>
-  float BetheBlochMu(const T& track)
+  float BetheBlochMu(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Muon>(track, bbMu);
   }
   template <typename T>
-  float BetheBlochPi(const T& track)
+  float BetheBlochPi(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Pion>(track, bbPi);
   }
   template <typename T>
-  float BetheBlochKa(const T& track)
+  float BetheBlochKa(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Kaon>(track, bbKa);
   }
   template <typename T>
-  float BetheBlochPr(const T& track)
+  float BetheBlochPr(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Proton>(track, bbPr);
   }
   template <typename T>
-  float BetheBlochDe(const T& track)
+  float BetheBlochDe(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Deuteron>(track, bbDe);
   }
   template <typename T>
-  float BetheBlochTr(const T& track)
+  float BetheBlochTr(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Triton>(track, bbTr);
   }
   template <typename T>
-  float BetheBlochHe(const T& track)
+  float BetheBlochHe(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Helium3>(track, bbHe);
   }
   template <typename T>
-  float BetheBlochAl(const T& track)
+  float BetheBlochAl(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Alpha>(track, bbAl);
   }
 
   template <typename T>
-  float BetheBlochNegEl(const T& track)
+  float BetheBlochNegEl(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Electron>(track, bbNegEl);
   }
   template <typename T>
-  float BetheBlochNegMu(const T& track)
+  float BetheBlochNegMu(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Muon>(track, bbNegMu);
   }
   template <typename T>
-  float BetheBlochNegPi(const T& track)
+  float BetheBlochNegPi(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Pion>(track, bbNegPi);
   }
   template <typename T>
-  float BetheBlochNegKa(const T& track)
+  float BetheBlochNegKa(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Kaon>(track, bbNegKa);
   }
   template <typename T>
-  float BetheBlochNegPr(const T& track)
+  float BetheBlochNegPr(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Proton>(track, bbNegPr);
   }
   template <typename T>
-  float BetheBlochNegDe(const T& track)
+  float BetheBlochNegDe(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Deuteron>(track, bbNegDe);
   }
   template <typename T>
-  float BetheBlochNegTr(const T& track)
+  float BetheBlochNegTr(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Triton>(track, bbNegTr);
   }
   template <typename T>
-  float BetheBlochNegHe(const T& track)
+  float BetheBlochNegHe(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Helium3>(track, bbNegHe);
   }
   template <typename T>
-  float BetheBlochNegAl(const T& track)
+  float BetheBlochNegAl(const T& track) const
   {
     return BetheBlochLf<o2::track::PID::Alpha>(track, bbNegAl);
   }
 
   template <o2::track::PID::ID id, typename T>
-  float BetheBlochResolutionLf(const T& track, const bbParams& params, const float bb)
+  float BetheBlochResolutionLf(const T& track, const bbParams& params, const float bb) const
   {
     float corr = 1.f;
     if (params.postCorrectionSigma != nullptr) {
@@ -595,92 +684,92 @@ struct lfTpcPid {
   }
 
   template <typename T>
-  float BetheBlochResEl(const T& track, const float bb)
+  float BetheBlochResEl(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Electron>(track, bbEl, bb);
   }
   template <typename T>
-  float BetheBlochResMu(const T& track, const float bb)
+  float BetheBlochResMu(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Muon>(track, bbMu, bb);
   }
   template <typename T>
-  float BetheBlochResPi(const T& track, const float bb)
+  float BetheBlochResPi(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Pion>(track, bbPi, bb);
   }
   template <typename T>
-  float BetheBlochResKa(const T& track, const float bb)
+  float BetheBlochResKa(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Kaon>(track, bbKa, bb);
   }
   template <typename T>
-  float BetheBlochResPr(const T& track, const float bb)
+  float BetheBlochResPr(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Proton>(track, bbPr, bb);
   }
   template <typename T>
-  float BetheBlochResDe(const T& track, const float bb)
+  float BetheBlochResDe(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Deuteron>(track, bbDe, bb);
   }
   template <typename T>
-  float BetheBlochResTr(const T& track, const float bb)
+  float BetheBlochResTr(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Triton>(track, bbTr, bb);
   }
   template <typename T>
-  float BetheBlochResHe(const T& track, const float bb)
+  float BetheBlochResHe(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Helium3>(track, bbHe, bb);
   }
   template <typename T>
-  float BetheBlochResAl(const T& track, const float bb)
+  float BetheBlochResAl(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Alpha>(track, bbAl, bb);
   }
   template <typename T>
-  float BetheBlochResNegEl(const T& track, const float bb)
+  float BetheBlochResNegEl(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Electron>(track, bbEl, bb);
   }
   template <typename T>
-  float BetheBlochResNegMu(const T& track, const float bb)
+  float BetheBlochResNegMu(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Muon>(track, bbMu, bb);
   }
   template <typename T>
-  float BetheBlochResNegPi(const T& track, const float bb)
+  float BetheBlochResNegPi(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Pion>(track, bbPi, bb);
   }
   template <typename T>
-  float BetheBlochResNegKa(const T& track, const float bb)
+  float BetheBlochResNegKa(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Kaon>(track, bbKa, bb);
   }
   template <typename T>
-  float BetheBlochResNegPr(const T& track, const float bb)
+  float BetheBlochResNegPr(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Proton>(track, bbPr, bb);
   }
   template <typename T>
-  float BetheBlochResNegDe(const T& track, const float bb)
+  float BetheBlochResNegDe(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Deuteron>(track, bbDe, bb);
   }
   template <typename T>
-  float BetheBlochResNegTr(const T& track, const float bb)
+  float BetheBlochResNegTr(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Triton>(track, bbTr, bb);
   }
   template <typename T>
-  float BetheBlochResNegHe(const T& track, const float bb)
+  float BetheBlochResNegHe(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Helium3>(track, bbHe, bb);
   }
   template <typename T>
-  float BetheBlochResNegAl(const T& track, const float bb)
+  float BetheBlochResNegAl(const T& track, const float bb) const
   {
     return BetheBlochResolutionLf<o2::track::PID::Alpha>(track, bbAl, bb);
   }
@@ -779,6 +868,13 @@ struct lfTpcPid {
         tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                              \
       }                                                                                                                  \
     } else {                                                                                                             \
+      if (!collisions.size()) {                                                                                          \
+        LOG(warn) << "No collisions in the data frame. Dummy PID table for " << #Particle;                               \
+        for (unsigned int i{0}; i < tracks.size(); ++i) {                                                                \
+          tablePID##Particle(aod::pidtpc_tiny::binning::underflowBin);                                                   \
+        }                                                                                                                \
+        return;                                                                                                          \
+      }                                                                                                                  \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                         \
       bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                      \
       float bb = 0.f;                                                                                                    \
@@ -794,8 +890,16 @@ struct lfTpcPid {
           }                                                                                                              \
         }                                                                                                                \
         if (trk.sign() > 0) {                                                                                            \
+          if (!bb##Particle.betheBlochSet) {                                                                             \
+            tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                          \
+            continue;                                                                                                    \
+          }                                                                                                              \
           bb = BetheBloch##Particle(trk);                                                                                \
         } else {                                                                                                         \
+          if (!bbNeg##Particle.betheBlochSet) {                                                                          \
+            tablePID##Particle(trk.tpcNSigmaStore##Particle());                                                          \
+            continue;                                                                                                    \
+          }                                                                                                              \
           bb = BetheBlochNeg##Particle(trk);                                                                             \
         }                                                                                                                \
         aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - bb) / BetheBlochRes##Particle(trk, bb), \
@@ -830,6 +934,13 @@ struct lfTpcPid {
         tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());             \
       }                                                                                             \
     } else {                                                                                        \
+      if (!collisions.size()) {                                                                     \
+        LOG(warn) << "No collisions in the data frame. Dummy PID table for " << #Particle;          \
+        for (unsigned int i{0}; i < tracks.size(); ++i) {                                           \
+          tablePIDFull##Particle(-999.f, -999.f);                                                   \
+        }                                                                                           \
+        return;                                                                                     \
+      }                                                                                             \
       bb##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);    \
       bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb); \
       float bb = 0.f;                                                                               \
@@ -846,14 +957,21 @@ struct lfTpcPid {
           }                                                                                         \
         }                                                                                           \
         if (trk.sign() > 0) {                                                                       \
+          if (!bb##Particle.betheBlochSet) {                                                        \
+            tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());         \
+            continue;                                                                               \
+          }                                                                                         \
           bb = BetheBloch##Particle(trk);                                                           \
           expSigma = BetheBlochRes##Particle(trk, bb);                                              \
         } else {                                                                                    \
+          if (!bbNeg##Particle.betheBlochSet) {                                                     \
+            tablePIDFull##Particle(trk.tpcExpSigma##Particle(), trk.tpcNSigma##Particle());         \
+            continue;                                                                               \
+          }                                                                                         \
           bb = BetheBlochNeg##Particle(trk);                                                        \
           expSigma = BetheBlochResNeg##Particle(trk, bb);                                           \
         }                                                                                           \
-        tablePIDFull##Particle(expSigma,                                                            \
-                               (trk.tpcSignal() - bb) / expSigma);                                  \
+        tablePIDFull##Particle(expSigma, (trk.tpcSignal() - bb) / expSigma);                        \
       }                                                                                             \
     }                                                                                               \
   }                                                                                                 \
@@ -876,19 +994,25 @@ struct lfTpcPid {
                          Trks const& tracks,
                          aod::BCsWithTimestamps const&)
   {
-    tablePIDFullPi.reserve(tracks.size());
-    bbPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    tablePIDFullKa.reserve(tracks.size());
-    bbKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    tablePIDFullPr.reserve(tracks.size());
-    bbPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
-    bbNegPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+    bool dummyPID = false;
+    if (!collisions.size()) {
+      LOG(warn) << "No collisions in the data frame. Dummy PID table for Pi-Ka-Pr";
+      dummyPID = true;
+    } else {
+      tablePIDFullPi.reserve(tracks.size());
+      bbPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegPi.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      tablePIDFullKa.reserve(tracks.size());
+      bbKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegKa.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      tablePIDFullPr.reserve(tracks.size());
+      bbPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+      bbNegPr.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);
+    }
     float bb = 0.f;
     float expSigma = 1.f;
     for (auto const& trk : tracks) {
-      if (!trk.hasTPC()) {
+      if (!trk.hasTPC() || dummyPID) {
         tablePIDFullPi(-999.f, -999.f);
         tablePIDFullKa(-999.f, -999.f);
         tablePIDFullPr(-999.f, -999.f);

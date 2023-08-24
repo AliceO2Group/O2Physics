@@ -18,6 +18,8 @@
 #include <string_view>
 #include <TMath.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
@@ -81,12 +83,11 @@ struct fullJetFilter {
     UNKNOWN
   };
 
-  enum class EMCALHWTriggerType {
-    TRG_EMC_MB,
-    TRG_EMC_L0,
-    TRG_EMC_GA,
-    TRG_EMC_JE,
-    TRG_UNKNOWN
+  enum EMCALHardwareTrigger {
+    TRG_MB,
+    TRG_EMC7,
+    TRG_DMC7,
+    TRG_NTriggers
   };
 
   Produces<aod::FullJetFilters> tags;
@@ -129,6 +130,10 @@ struct fullJetFilter {
   OutputObj<TH1D> hSelectMaxJetPtLow{"hSelectMaxJetPtLow"};
   OutputObj<TH1D> hMaxClusterEMCAL{"hMaxClusterEMCAL"};
   OutputObj<TH1D> hMaxClusterDCAL{"hMaxClusterDCAL"};
+  OutputObj<TH1D> hMaxClusterEMCALMinBias{"hMaxClusterEMCALMinBias"};
+  OutputObj<TH1D> hMaxClusterDCALMinBias{"hMaxClusterDCALMinBias"};
+  OutputObj<TH1D> hMaxClusterEMCALLevel0{"hMaxClusterEMCALLevel0"};
+  OutputObj<TH1D> hMaxClusterDCALLevel0{"hMaxClusterDCALLevel0"};
   OutputObj<TH1D> hSelectGammaVeryHighMaxClusterEMCAL{"hSelectGammaVeryHighMaxClusterEMCAL"};
   OutputObj<TH1D> hSelectGammaMaxClusterEMCAL{"hSelectGammaMaxClusterEMCAL"};
   OutputObj<TH1D> hSelectGammaLowMaxClusterEMCAL{"hSelectGammaLowMaxClusterEMCAL"};
@@ -230,6 +235,10 @@ struct fullJetFilter {
     hSelectMaxJetPtLow.setObject(new TH1D("hSelectMaxJetPtLow", "Max. jet pt selected collisions (low threshold)", nPtBins, kMinPt, kMaxPt));
     hMaxClusterEMCAL.setObject(new TH1D("hMaxClusterEMCAL", "Max.cluster pt EMCAL", nPtBins, kMinPt, kMaxPt));
     hMaxClusterDCAL.setObject(new TH1D("hMaxClusterDCAL", "Max. cluster pt DCAL", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterEMCALMinBias.setObject(new TH1D("hMaxClusterEMCALMinBias", "Max.cluster pt EMCAL (min. bias)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterDCALMinBias.setObject(new TH1D("hMaxClusterDCALMinBias", "Max. cluster pt DCAL (mib. bias)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterEMCALLevel0.setObject(new TH1D("hMaxClusterEMCALLevel0", "Max.cluster pt EMCAL (Level-0)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterDCALLevel0.setObject(new TH1D("hMaxClusterDCALLevel0", "Max. cluster pt DCAL (Level-0)", nPtBins, kMinPt, kMaxPt));
     hSelectGammaVeryHighMaxClusterEMCAL.setObject(new TH1D("hSelectGammaVeryHighMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (very high threshold)", nPtBins, kMinPt, kMaxPt));
     hSelectGammaMaxClusterEMCAL.setObject(new TH1D("hSelectGammaMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL", nPtBins, kMinPt, kMaxPt));
     hSelectGammaLowMaxClusterEMCAL.setObject(new TH1D("hSelectGammaLowMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (low threshold)", nPtBins, kMinPt, kMaxPt));
@@ -274,7 +283,7 @@ struct fullJetFilter {
     EMCALHWTriggerConfiguration result = EMCALHWTriggerConfiguration::UNKNOWN;
     bool hasMinBias = false, hasL0 = false;
     for (auto& cls : ctpconfig.getCTPClasses()) {
-      std::string_view trgclsname = cls.name;
+      auto trgclsname = boost::algorithm::to_upper_copy(cls.name);
       if (trgclsname.find("-EMC") == std::string::npos) {
         // Not an EMCAL trigger class
         continue;
@@ -451,7 +460,7 @@ struct fullJetFilter {
     return isEMCALMinBias(collision) || isEMCALLevel0(collision) || isEMCALLevel1(collision);
   }
 
-  void runGammaTrigger(const selectedClusters& clusters, EMCALHWTriggerType hardwaretrigger, std::array<bool, kCategories>& keepEvent)
+  void runGammaTrigger(const selectedClusters& clusters, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hardwaretriggers, std::array<bool, kCategories>& keepEvent)
   {
     double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1.;
     static constexpr std::array<ThresholdType_t, 4> thresholds = {{ThresholdType_t::VERY_HIGH_THRESHOLD, ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD, ThresholdType_t::VERY_LOW_THRESHOLD}};
@@ -480,10 +489,11 @@ struct fullJetFilter {
       }
       hEmcClusterPtEta->Fill(observableGamma, cluster.eta());
       hEmcClusterPtPhi->Fill(observableGamma, cluster.phi());
-      if (hardwaretrigger == EMCALHWTriggerType::TRG_EMC_L0) {
+      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7) || hardwaretriggers.test(EMCALHardwareTrigger::TRG_DMC7)) {
         hEmcClusterPtEtaLevel0->Fill(observableGamma, cluster.eta());
         hEmcClusterPtPhiLevel0->Fill(observableGamma, cluster.phi());
-      } else if (hardwaretrigger == EMCALHWTriggerType::TRG_EMC_MB) {
+      }
+      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
         hEmcClusterPtEtaMinBias->Fill(observableGamma, cluster.eta());
         hEmcClusterPtPhiMinBias->Fill(observableGamma, cluster.phi());
       }
@@ -491,10 +501,20 @@ struct fullJetFilter {
     }
     hMaxClusterEMCAL->Fill(maxClusterObservableEMCAL);
     hMaxClusterDCAL->Fill(maxClusterObservableDCAL);
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
+      hMaxClusterEMCALMinBias->Fill(maxClusterObservableEMCAL);
+      hMaxClusterDCALMinBias->Fill(maxClusterObservableDCAL);
+    }
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7)) {
+      hMaxClusterEMCALLevel0->Fill(maxClusterObservableEMCAL);
+    }
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_DMC7)) {
+      hMaxClusterDCALLevel0->Fill(maxClusterObservableDCAL);
+    }
     for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
       if (thresholds[ithreshold] == ThresholdType_t::VERY_LOW_THRESHOLD) {
         // Accept very-low threshold only in case of min. bias input to EMCAL/DCAL
-        if (hardwaretrigger != EMCALHWTriggerType::TRG_EMC_MB) {
+        if (!hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
           continue;
         }
       }
@@ -603,7 +623,10 @@ struct fullJetFilter {
       constexpr bool isFullJets = std::is_same<JetCollection, filteredFullJets>::value;
       constexpr bool isNeutralJets = std::is_same<JetCollection, filteredNeutralJets>::value;
       int64_t ts = bcs.iteratorAt(0).timestamp();
-      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getForTimeStamp<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts)));
+      // Request run number in addition to timestamp in order to handle concurrent runs
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = std::to_string(run);
+      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata)));
       switch (mHardwareTriggerConfig) {
         case EMCALHWTriggerConfiguration::MB_ONLY: {
           LOG(info) << "Found hardware trigger configuration Min. bias only";
@@ -640,11 +663,15 @@ struct fullJetFilter {
       keepEvent[kEMCALReadout] = true;
     }
 
-    EMCALHWTriggerType hwtrigger = EMCALHWTriggerType::TRG_UNKNOWN;
-    if (isEMCALLevel0(collision)) {
-      hwtrigger = EMCALHWTriggerType::TRG_EMC_L0;
-    } else if (isEMCALMinBias(collision)) {
-      hwtrigger = EMCALHWTriggerType::TRG_EMC_MB;
+    std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hardwaretriggers;
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_MB, true);
+    }
+    if (collision.alias_bit(triggerAliases::kEMC7)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_EMC7, true);
+    }
+    if (collision.alias_bit(triggerAliases::kDMC7)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_DMC7, true);
     }
 
     if (b_doJetTrigger) {
@@ -652,7 +679,7 @@ struct fullJetFilter {
     }
 
     if (b_doGammaTrigger) {
-      runGammaTrigger(clusters, hwtrigger, keepEvent);
+      runGammaTrigger(clusters, hardwaretriggers, keepEvent);
     }
 
     for (int iDecision{0}; iDecision < kCategories; iDecision++) {

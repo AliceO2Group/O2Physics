@@ -13,14 +13,14 @@
 
 #include <TLorentzVector.h>
 
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,43 +31,84 @@ struct f0980analysis {
   SliceCache cache;
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
-  Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Maximum transverse DCA"};
-  Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", 0.0, "Minimum longitudinal DCA"};
-  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
-  Configurable<float> cfgMaxTPCStandalone{"cfgMaxTPCStandalone", 2.0, "Maximum TPC PID as standalone"};
+  Configurable<float> cfgMinPt{"cfgMinPt", 0.15,
+                               "Minimum transverse momentum for charged track"};
+  Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8,
+                                "Maximum pseudorapidiy for charged track"};
+  Configurable<float> cfgMinDCArToPVcut{"cfgMinDCArToPVcut", -0.5,
+                                        "Minimum transverse DCA"};
+  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5,
+                                        "Maximum transverse DCA"};
+  Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", -2.0,
+                                        "Minimum longitudinal DCA"};
+  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0,
+                                        "Maximum longitudinal DCA"};
+  Configurable<float> cfgMaxTPCStandalone{"cfgMaxTPCStandalone", 2.0,
+                                          "Maximum TPC PID as standalone"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
   Configurable<int> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
 
+  Configurable<bool> cfgPrimaryTrack{
+    "cfgPrimaryTrack", true,
+    "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgGlobalWoDCATrack{
+    "cfgGlobalWoDCATrack", true,
+    "Global track selection without DCA"}; // kQualityTracks (kTrackType |
+                                           // kTPCNCls | kTPCCrossedRows |
+                                           // kTPCCrossedRowsOverNCls |
+                                           // kTPCChi2NDF | kTPCRefit |
+                                           // kITSNCls | kITSChi2NDF |
+                                           // kITSRefit | kITSHits) |
+                                           // kInAcceptanceTracks (kPtRange |
+                                           // kEtaRange)
+  Configurable<bool> cfgPVContributor{
+    "cfgPVContributor", true,
+    "PV contributor track selection"}; // PV Contriuibutor
+  Configurable<bool> cfgUseTOF{
+    "cfgUseTOF", false,
+    "Flag for the usage of TOF for PID"};
+
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {
-      0.0, 0.2, 0.4, 0.6, 0.8,
-      1.0, 1.5, 2.0, 2.5, 3.0,
-      3.5, 4.0, 4.5, 5.0, 6.0,
-      7.0, 8.0, 10.0, 13.0, 20.0};
+    std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8,
+                                     1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5,
+                                     5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0};
 
-    AxisSpec centAxis = {20, 0, 100};
+    AxisSpec centAxis = {22, 0, 110};
     AxisSpec ptAxis = {ptBinning};
     AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec epAxis = {20, -constants::math::PI, constants::math::PI};
 
     AxisSpec PIDqaAxis = {120, -6, 6};
-    AxisSpec pTqaAxis = {100, 0, 20};
+    AxisSpec pTqaAxis = {200, 0, 20};
 
-    histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
-    histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
-    histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_US", "unlike invariant mass",
+               {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
+               {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
+               {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {PIDqaAxis, PIDqaAxis}});
+
+    AxisSpec NTracksAxis = {10, 0, 10};
+
+    if (doprocessMCLight) {
+      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F,
+                 {pTqaAxis});
+      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals",
+                 HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
+    }
 
     histos.print();
   }
@@ -81,9 +122,15 @@ struct f0980analysis {
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
       return false;
-    if (track.dcaXY() > cfgMaxDCArToPVcut)
+    if (track.dcaXY() < cfgMinDCArToPVcut || track.dcaXY() > cfgMaxDCArToPVcut)
       return false;
     if (track.dcaZ() < cfgMinDCAzToPVcut || track.dcaZ() > cfgMaxDCAzToPVcut)
+      return false;
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+      return false;
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+      return false;
+    if (cfgPVContributor && !track.isPVContributor())
       return false;
 
     return true;
@@ -92,12 +139,15 @@ struct f0980analysis {
   template <typename TrackType>
   bool SelPion(const TrackType track)
   {
-    if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) != aod::resodaughter::kHasTOF) {
+    if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) !=
+          aod::resodaughter::kHasTOF ||
+        !cfgUseTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
         return false;
       }
     } else {
-      if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPC || std::fabs(track.tofNSigmaPi()) > cfgMaxTOF) {
+      if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPC ||
+          std::fabs(track.tofNSigmaPi()) > cfgMaxTOF) {
         return false;
       }
     }
@@ -105,12 +155,16 @@ struct f0980analysis {
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks)
+  void fillHistograms(const CollisionType& collision,
+                      const TracksType& dTracks)
   {
     TLorentzVector Pion1, Pion2, Reco;
-    for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
+    for (auto& [trk1, trk2] :
+         combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
 
       if (trk1.index() == trk2.index()) {
+        if (!SelTrack(trk1))
+          continue;
         histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
         histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
         histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
@@ -130,11 +184,24 @@ struct f0980analysis {
         continue;
 
       if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
+        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
+                    collision.multV0M());
+        if constexpr (IsMC) {
+          if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
+            continue;
+          if (trk1.motherId() != trk2.motherId())
+            continue;
+          if (abs(trk1.motherPDG()) != 9010221)
+            continue;
+          histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(),
+                      collision.multV0M());
+        }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(), collision.multV0M());
+        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
+                    collision.multV0M());
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(), collision.multV0M());
+        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
+                    collision.multV0M());
       }
     }
   }
@@ -143,11 +210,45 @@ struct f0980analysis {
                    aod::ResoTracks const& resotracks)
   {
     fillHistograms<false>(collision, resotracks);
-  };
+  }
   PROCESS_SWITCH(f0980analysis, processData, "Process Event for data", true);
+
+  void processMCLight(
+    aod::ResoCollision& collision,
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+    aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(collision, resotracks);
+  }
+  PROCESS_SWITCH(f0980analysis, processMCLight, "Process Event for MC", false);
+
+  void processMCTrue(aod::ResoMCParents& resoParents)
+  {
+
+    for (auto& part : resoParents) { // loop over all pre-filtered MC particles
+      if (abs(part.pdgCode()) != 9010221)
+        continue;
+      if (!part.producedByGenerator())
+        continue;
+      if (part.y() < cfgMinRap || part.y() > cfgMaxRap) {
+        continue;
+      }
+      bool pass = false;
+      if ((abs(part.daughterPDG1()) == kPiPlus &&
+           abs(part.daughterPDG2()) == kPiPlus)) {
+        pass = true;
+      }
+      if (!pass) // If we have both decay products
+        continue;
+
+      histos.fill(HIST("MCL/hpT_f0980_GEN"), part.pt());
+    }
+  };
+  PROCESS_SWITCH(f0980analysis, processMCTrue, "Process Event for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<f0980analysis>(cfgc, TaskName{"lf-f0980analysis"})};
+  return WorkflowSpec{
+    adaptAnalysisTask<f0980analysis>(cfgc, TaskName{"lf-f0980analysis"})};
 }

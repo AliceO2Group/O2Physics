@@ -1080,8 +1080,8 @@ struct cascadeBuilder {
     KFParticle kfpV0 = createKFParticleFromTrackParCov(v0TrackParCov, 0, o2::constants::physics::MassLambda);
     KFParticle kfpBachPion = createKFParticleFromTrackParCov(lBachelorTrack, cascadecandidate.charge, massBachelorPion);
     KFParticle kfpBachKaon = createKFParticleFromTrackParCov(lBachelorTrack, cascadecandidate.charge, massBachelorKaon);
-    const KFParticle* XiDaugthers[2] = {&kfpBachPion, &KFV0};
-    const KFParticle* OmegaDaugthers[2] = {&kfpBachKaon, &KFV0};
+    const KFParticle* XiDaugthers[2] = {&kfpBachPion, &kfpV0};
+    const KFParticle* OmegaDaugthers[2] = {&kfpBachKaon, &kfpV0};
 
     // construct mother
     KFParticle KFXi, KFOmega;
@@ -1543,6 +1543,7 @@ struct cascadePreselector {
   Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
   Configurable<bool> dIfMCgenerateOmegaPlus{"dIfMCgenerateOmegaPlus", true, "if MC, generate MC true OmegaPlus (yes/no)"};
   Configurable<int> dIfMCselectV0MotherPDG{"dIfMCselectV0MotherPDG", 0, "if MC, selects based on mother particle (zero for no selection)"};
+  Configurable<bool> dIfMCselectPhysicalPrimary{"dIfMCselectPhysicalPrimary", true, "if MC, select MC physical primary (yes/no)"};
 
   Configurable<bool> ddEdxPreSelectXiMinus{"ddEdxPreSelectXiMinus", true, "pre-select dE/dx compatibility with XiMinus (yes/no)"};
   Configurable<bool> ddEdxPreSelectXiPlus{"ddEdxPreSelectXiPlus", true, "pre-select dE/dx compatibility with XiPlus (yes/no)"};
@@ -1636,7 +1637,7 @@ struct cascadePreselector {
                       lPDG = 0; // this is not the species you're looking for
                       if (lBachMother.has_mothers()) {
                         for (auto& lBachGrandMother : lBachMother.template mothers_as<aod::McParticles>()) {
-                          if (lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
+                          if (lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG && (!dIfMCselectPhysicalPrimary || lBachGrandMother.isPhysicalPrimary()))
                             lPDG = lV0Mother.pdgCode();
                         }
                       }
@@ -1684,7 +1685,7 @@ struct cascadePreselector {
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement, bitdEdxOmegaPlus);
+      bitset(maskElement, bitdEdxXiPlus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
@@ -1770,7 +1771,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {

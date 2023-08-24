@@ -44,6 +44,7 @@
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,7 +58,8 @@ struct OnTheFlyTracker {
   Produces<aod::TracksCovExtension> tracksParCovExtension;
   Produces<aod::McTrackLabels> tracksLabels;
   Produces<aod::TracksDCA> tracksDCA;
-  Produces<aod::CollisionsAlice3> collisionAlice3;
+  Produces<aod::CollisionsAlice3> collisionsAlice3;
+  Produces<aod::TracksAlice3> TracksAlice3;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
@@ -77,6 +79,7 @@ struct OnTheFlyTracker {
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
+  Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
 
@@ -127,6 +130,7 @@ struct OnTheFlyTracker {
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
+  std::vector<TrackAlice3> ghostTracksAlice3;
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
@@ -168,6 +172,9 @@ struct OnTheFlyTracker {
       }
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+
+      // smear un-reco'ed tracks if asked to do so
+      mSmearer.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
     }
 
     // Basic QA
@@ -260,6 +267,7 @@ struct OnTheFlyTracker {
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     tracksAlice3.clear();
+    ghostTracksAlice3.clear();
     bcData.clear();
 
     o2::dataformats::DCA dcaInfo;
@@ -334,7 +342,8 @@ struct OnTheFlyTracker {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
       }
 
-      if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
+      bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      if (!reconstructed && !processUnreconstructedTracks) {
         continue;
       }
       if (TMath::IsNaN(trackParCov.getZ())) {
@@ -359,7 +368,11 @@ struct OnTheFlyTracker {
 
       // populate vector with track if we reco-ed it
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
-      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
+      if (reconstructed) {
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
+      } else {
+        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
+      }
     }
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -430,7 +443,7 @@ struct OnTheFlyTracker {
                0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
                0, 0);
     collLabels(mcCollision.globalIndex(), 0);
-    collisionAlice3(dNdEta);
+    collisionsAlice3(dNdEta);
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -476,6 +489,51 @@ struct OnTheFlyTracker {
         trackSelection((uint8_t)0, false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
+      TracksAlice3(true);
+    }
+    // populate ghost tracks
+    for (const auto& trackParCov : ghostTracksAlice3) {
+      // Fixme: collision index could be changeable
+      aod::track::TrackTypeEnum trackType = aod::track::Track;
+
+      if (populateTracksDCA) {
+        float dcaXY = 1e+10, dcaZ = 1e+10;
+        o2::track::TrackParCov trackParametrization(trackParCov);
+        if (trackParametrization.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+          dcaXY = dcaInfo.getY();
+          dcaZ = dcaInfo.getZ();
+        }
+        if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
+          histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
+        }
+        tracksDCA(dcaXY, dcaZ);
+      }
+
+      tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+      tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+
+      // TODO do we keep the rho as 0? Also the sigma's are duplicated information
+      tracksParCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
+                   std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      tracksParCovExtension(trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
+                            trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
+                            trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
+                            trackParCov.getSigma1Pt2());
+      tracksLabels(trackParCov.mcLabel, 0);
+
+      // populate extra tables if required to do so
+      if (populateTracksExtra) {
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0,
+                    (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      }
+      if (populateTrackSelection) {
+        trackSelection((uint8_t)0, false, false, false, false, false, false);
+        trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
+      }
+      TracksAlice3(false);
     }
   }
 };

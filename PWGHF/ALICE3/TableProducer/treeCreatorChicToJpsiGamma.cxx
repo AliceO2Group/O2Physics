@@ -129,13 +129,13 @@ struct HfTreeCreatorChicToJpsiGamma {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               aod::Tracks const& tracks,
                aod::HfCand2Prong const& jpsiCands)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -149,10 +149,10 @@ struct HfTreeCreatorChicToJpsiGamma {
     // Filling candidate properties
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
-      array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
-      array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-      array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+    for (const auto& candidate : candidates) {
+      std::array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
+      std::array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
+      std::array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
       auto pchic = RecoDecay::p(pvecChic);
       auto pjpsi = RecoDecay::p(pvecJpsi);
       auto pl1 = std::abs(RecoDecay::dotProd(pvecChic, pvecJpsi)) / pchic;
@@ -168,8 +168,8 @@ struct HfTreeCreatorChicToJpsiGamma {
                            float FunctionY) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.prong0().prong0().collision().bcId(),
+            candidate.prong0().prong0().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -207,14 +207,14 @@ struct HfTreeCreatorChicToJpsiGamma {
     // Filling particle properties
     float massChic = RecoDecay::getMassPDG(pdg::Code::kChiC1);
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massChic),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massChic),
           0., // put here the jpsi mass
           particle.flagMcMatchGen(),
           particle.originMcGen());

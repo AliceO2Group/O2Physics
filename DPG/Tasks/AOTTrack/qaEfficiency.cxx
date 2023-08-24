@@ -79,6 +79,8 @@ struct QaEfficiency {
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<int> minITScl{"minITScl", 4, "Additional cut on the ITS cluster"};
+  Configurable<bool> doPVContributorCut{"doPVContributorCut", false, "Select tracks used for primary vertex recostruction (isPVContributor)"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
@@ -182,6 +184,12 @@ struct QaEfficiency {
                                                                     "MC/el/neg_pdg/pt/prm/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/its_tpc_tof",
                                                                     "MC/ka/neg_pdg/pt/prm/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/its_tpc_tof", "MC/de/neg_pdg/pt/prm/its_tpc_tof",
                                                                     "MC/tr/neg_pdg/pt/prm/its_tpc_tof", "MC/he/neg_pdg/pt/prm/its_tpc_tof", "MC/al/neg_pdg/pt/prm/its_tpc_tof"};
+  static constexpr std::string_view hPtTrkItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/ka/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/de/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/tr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/he/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/al/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/el/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/ka/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/de/neg_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/tr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/he/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/al/neg_pdg/pt/prm/trk/its_tpc_tof"};
   static constexpr std::string_view hPtGeneratedPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/generated", "MC/mu/pos_pdg/pt/prm/generated", "MC/pi/pos_pdg/pt/prm/generated",
                                                                     "MC/ka/pos_pdg/pt/prm/generated", "MC/pr/pos_pdg/pt/prm/generated", "MC/de/pos_pdg/pt/prm/generated",
                                                                     "MC/tr/pos_pdg/pt/prm/generated", "MC/he/pos_pdg/pt/prm/generated", "MC/al/pos_pdg/pt/prm/generated",
@@ -504,6 +512,7 @@ struct QaEfficiency {
     registry->add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPt, kTH1F, {axisPt});
 
     registry->add(hPtItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
@@ -609,7 +618,7 @@ struct QaEfficiency {
     makeEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]));
     makeEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]));
-    makeEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
+    makeEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]));
@@ -619,6 +628,7 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]));
 
     makeEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]));
@@ -694,30 +704,31 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
     h->GetXaxis()->SetBinLabel(13, "passedDCAz");
     h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
-    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
-    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
-    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(15, "passed isPVContributor");
+    h->GetXaxis()->SetBinLabel(16, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(18, "passedTOF (partial)");
     switch (globalTrackSelection) {
       case 0:
-        h->GetXaxis()->SetBinLabel(18, "No extra selection");
+        h->GetXaxis()->SetBinLabel(19, "No extra selection");
         break;
       case 1:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrack");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrack");
         break;
       case 2:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoPtEta");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrackWoPtEta");
         break;
       case 3:
-        h->GetXaxis()->SetBinLabel(18, "isGlobalTrackWoDCA");
+        h->GetXaxis()->SetBinLabel(19, "isGlobalTrackWoDCA");
         break;
       case 4:
-        h->GetXaxis()->SetBinLabel(18, "isQualityTrack");
+        h->GetXaxis()->SetBinLabel(19, "isQualityTrack");
         break;
       case 5:
-        h->GetXaxis()->SetBinLabel(18, "isInAcceptanceTrack");
+        h->GetXaxis()->SetBinLabel(19, "isInAcceptanceTrack");
         break;
       case 6:
-        h->GetXaxis()->SetBinLabel(18, "customTrackSelection");
+        h->GetXaxis()->SetBinLabel(19, "customTrackSelection");
         break;
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
@@ -787,10 +798,11 @@ struct QaEfficiency {
     h->GetXaxis()->SetBinLabel(12, "passedDCAxy");
     h->GetXaxis()->SetBinLabel(13, "passedDCAz");
     h->GetXaxis()->SetBinLabel(14, "passedGoldenChi2");
-    h->GetXaxis()->SetBinLabel(15, "passedITS (partial)");
-    h->GetXaxis()->SetBinLabel(16, "passedTPC (partial)");
-    h->GetXaxis()->SetBinLabel(17, "passedTOF (partial)");
-    h->GetXaxis()->SetBinLabel(18, "Passed globalCut");
+    h->GetXaxis()->SetBinLabel(15, "passed isPVContributor");
+    h->GetXaxis()->SetBinLabel(16, "passedITS (partial)");
+    h->GetXaxis()->SetBinLabel(17, "passedTPC (partial)");
+    h->GetXaxis()->SetBinLabel(18, "passedTOF (partial)");
+    h->GetXaxis()->SetBinLabel(19, "Passed globalCut");
 
     const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                etaMin, etaMax,
@@ -956,6 +968,7 @@ struct QaEfficiency {
       customTrackCuts.SetRequireITSRefit(requireITS.value);
       customTrackCuts.SetRequireTPCRefit(requireTPC.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
+      customTrackCuts.SetRequireHitsInITSLayers(minITScl.value, {0, 1, 2, 3, 4, 5, 6});
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
@@ -1080,6 +1093,7 @@ struct QaEfficiency {
         h->fill(HIST(hPhiTrkItsTpcPrm[histogramIndex]), track.phi());
         if (passedTOF) {
           h->fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hPtTrkItsTpcTofPrm[histogramIndex]), track.pt());
           h->fill(HIST(hEtaItsTpcTofPrm[histogramIndex]), mcParticle.eta());
           h->fill(HIST(hPhiItsTpcTofPrm[histogramIndex]), mcParticle.phi());
         }
@@ -1214,7 +1228,7 @@ struct QaEfficiency {
     doFillEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
@@ -1224,6 +1238,7 @@ struct QaEfficiency {
     doFillEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
 
     doFillEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
@@ -1415,6 +1430,10 @@ struct QaEfficiency {
         return false;
       }
       histos.fill(countingHisto, 14);
+      if (doPVContributorCut && !track.isPVContributor()) {
+        return false;
+      }
+      histos.fill(countingHisto, 15);
 
       passedITS = track.passedITSNCls() &&
                   track.passedITSChi2NDF() &&
@@ -1438,15 +1457,15 @@ struct QaEfficiency {
     }
 
     if (passedITS) { // Partial
-      histos.fill(countingHisto, 15);
-    }
-
-    if (passedTPC) { // Partial
       histos.fill(countingHisto, 16);
     }
 
-    if (passedTOF) { // Partial
+    if (passedTPC) { // Partial
       histos.fill(countingHisto, 17);
+    }
+
+    if (passedTOF) { // Partial
+      histos.fill(countingHisto, 18);
     }
 
     switch (globalTrackSelection) {
@@ -1467,7 +1486,7 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
-    histos.fill(countingHisto, 18);
+    histos.fill(countingHisto, 19);
 
     return false;
   }
