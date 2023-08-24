@@ -510,7 +510,6 @@ struct Alice3Dilepton {
                        ptMin < o2::aod::track::pt &&
                        o2::aod::track::pt < ptMax &&
                        o2::aod::track_alice3::isReconstructed == selectReconstructed;
-  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax && o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
