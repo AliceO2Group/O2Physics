@@ -18,6 +18,8 @@
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
+#include "Index.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -41,6 +43,7 @@ static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPl
 struct PureMcMultiplicityCounter {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
@@ -92,6 +95,11 @@ struct PureMcMultiplicityCounter {
       x->SetBinLabel(4, "Reconstructed INEL>0");
       x->SetBinLabel(5, "Selected");
       x->SetBinLabel(6, "Selected INEL>0");
+    }
+    if (doprocessEfficiency) {
+      registry.add({"Particles/Primaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Primaries/EfficiencyD", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Secondaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
     }
   }
 
@@ -213,6 +221,45 @@ struct PureMcMultiplicityCounter {
   }
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processResponse, "Process response", false);
+
+  void processEfficiency(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& particles)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    auto sample = particles.sliceBy(perMcCol, collision.mcCollisionId());
+
+    for (auto& particle : particles) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (!particle.producedByGenerator()) {
+        continue;
+      }
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      if (std::abs(particle.eta()) >= etaRange) {
+        continue;
+      }
+      registry.fill(HIST("Particles/Primaries/EfficiencyD"), particle.pt());
+      if (particle.has_tracks()) {
+        registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
+        if (particle.tracksIds().size() > 1) {
+          for (auto j = 0u; j < particle.tracksIds().size() - 1; ++j) {
+            registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(PureMcMultiplicityCounter, processEfficiency, "Process efficiency", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
