@@ -21,4 +21,4 @@ o2physics_add_header_only_library(DataModel
                                           McCollisionExtra.h
                                           EvtPlanes.h
                                           Qvectors.h
-                                          mftmchMatchingML.h)
+                                          MftmchMatchingML.h)
