@@ -222,14 +222,14 @@ struct PureMcMultiplicityCounter {
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processResponse, "Process response", false);
 
-  void processEfficiency(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& particles)
+  void processEfficiency(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks)
   {
     if (!collision.has_mcCollision()) {
       return;
     }
-    auto sample = particles.sliceBy(perMcCol, collision.mcCollisionId());
+    auto psample = particles.sliceBy(perMcCol, collision.mcCollisionId());
 
-    for (auto& particle : particles) {
+    for (auto& particle : psample) {
       if (!particle.isPhysicalPrimary()) {
         continue;
       }
@@ -248,12 +248,15 @@ struct PureMcMultiplicityCounter {
         continue;
       }
       registry.fill(HIST("Particles/Primaries/EfficiencyD"), particle.pt());
-      if (particle.has_tracks()) {
-        registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
-        if (particle.tracksIds().size() > 1) {
-          for (auto j = 0u; j < particle.tracksIds().size() - 1; ++j) {
-            registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
-          }
+    }
+
+    for (auto& track : tracks) {
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (particle.isPhysicalPrimary()) {
+          registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
+        } else {
+          registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
         }
       }
     }
