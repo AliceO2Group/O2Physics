@@ -372,20 +372,22 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-      indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
-      if (indexRec > -1) {
-        // Checking Ds± → K- K+ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+      if (indexRec < 0) {
+        // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
-          RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
-          if (arrDaughDsIndex.size() == 2) {
-            for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
-              auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
-              arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
-            }
-            if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+          // Checking Ds± → K- K+ π±
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+            if (arrDaughDsIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
+                auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
             }
           }
         }
