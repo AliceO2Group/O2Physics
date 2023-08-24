@@ -162,7 +162,7 @@ struct EmcEventSelectionQA {
         }
       }
 
-      if (bc.selection_bit(kIsTriggerTVX)) {
+      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
         mHistManager.fill(HIST("hBCTVX"), bcID);
       }
 

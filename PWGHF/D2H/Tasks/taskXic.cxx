@@ -191,7 +191,7 @@ struct HfTaskXic {
     int nTracks = 0;
 
     if (collision.numContrib() > 1) {
-      for (auto const& track : tracks) {
+      for (const auto& track : tracks) {
         if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
@@ -203,7 +203,7 @@ struct HfTaskXic {
     }
 
     registry.fill(HIST("Data/hMultiplicity"), nTracks); // filling the histo for multiplicity
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto ptCandidate = candidate.pt();
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
@@ -287,7 +287,7 @@ struct HfTaskXic {
   {
 
     // MC rec.
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Selected Xic
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
@@ -366,9 +366,9 @@ struct HfTaskXic {
       }
     }
     // MC gen.
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
-        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -377,10 +377,10 @@ struct HfTaskXic {
         std::array<float, 3> yProngs;
         std::array<float, 3> etaProngs;
         int counter = 0;
-        for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
           counter++;
         }
 

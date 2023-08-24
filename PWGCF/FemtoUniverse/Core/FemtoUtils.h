@@ -47,10 +47,10 @@ int getPIDselection(float nSigma, std::vector<float> vNsigma)
 /// function that checks whether the PID selection specified in the vectors is
 /// fulfilled
 /// \param pidcut Bit-wise container for the PID
-/// \param vSpecies vector with ID corresponding to the selected species (output from cutculator)
-/// \param nSpecies number of available selected species (output from cutculator)
-/// \param nSigma number of sigma selection fo PID
-/// \param vNsigma vector with available n-sigma selections for PID
+/// \param vSpecies number (ID) of the species of interest (as returned by the CutCulator), e.g. 0 / 1 / 2, usually 0 if only one particle species in the skimmed data
+/// \param nSpecies number of available selected species (output from cutculator), i.e. how many particle types were saved in the skimmed data
+/// \param nSigma Nsigma selection for PID (e.g. 3, for NsigmaTPC < 3 or NsigmaTPCTOF < 3)
+/// \param vNsigma vector with available n-sigma selections for PID (to check if chosen nSigma value is avialable + size to get the bit number)
 /// \param kDetector enum corresponding to the PID technique
 /// \return Whether the PID selection specified in the vectors is fulfilled
 bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
@@ -70,8 +70,9 @@ bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
 /// \param pidcut Bit-wise container for the PID
 /// \param momentum Momentum of the track
 /// \param pidThresh Momentum threshold that separates between TPC and TPC+TOF PID
-/// \param vSpecies Vector with the species of interest (number returned by the CutCulator)
-/// \param nSpecies number of available selected species (output from cutculator)
+/// \param vSpecies number (ID) of the species of interest (as returned by the CutCulator), e.g. 0 / 1 / 2, usually 0 if only one particle specie in the skimmed data
+/// \param nSpecies number of available selected species (output from cutculator), i.e. how many particle types were saved in the skimmed data
+/// \param vNsigma vector with available n-sigma selections for PID
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled

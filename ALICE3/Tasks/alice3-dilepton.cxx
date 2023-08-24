@@ -56,12 +56,10 @@ struct Alice3Dilepton {
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
-
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF",3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF",3., "Electron inclusion in inner TOF"};
   Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF",3., "Pion exclusion in outer TOF"};
   Configurable<float> nSigmaPionCutInnerTOF{"nSigmaPionCutInnerTOF",3., "Pion exclusion in inner TOF"};
-
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -513,6 +511,7 @@ struct Alice3Dilepton {
   ptMin < o2::aod::track::pt &&
   o2::aod::track::pt < ptMax &&
   o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax && o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;

@@ -34,6 +34,8 @@
 #include "TProfile.h"
 #include "TFitResult.h"
 
+using namespace std;
+
 ClassImp(multGlauberNBDFitter);
 
 multGlauberNBDFitter::multGlauberNBDFitter() : TNamed(),

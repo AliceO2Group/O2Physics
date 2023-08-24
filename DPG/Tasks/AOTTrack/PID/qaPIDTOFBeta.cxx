@@ -25,6 +25,10 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 /// Task to produce the TOF Beta QA plots
 struct tofPidBetaQa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
