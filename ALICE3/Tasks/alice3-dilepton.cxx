@@ -57,6 +57,12 @@ struct Alice3Dilepton {
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
 
+  Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF",3., "Electron inclusion in outer TOF"};
+  Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF",3., "Electron inclusion in inner TOF"};
+  Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF",3., "Pion exclusion in outer TOF"};
+  Configurable<float> nSigmaPionCutInnerTOF{"nSigmaPionCutInnerTOF",3., "Pion exclusion in inner TOF"};
+
+
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -92,20 +98,15 @@ struct Alice3Dilepton {
     registry.add("Generated/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Generated/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
     registry.add("Generated/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-    registry.add("Generated/Pair/LSpp/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Generated/Pair/LSpp/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Generated/Pair/LSpp/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Generated/Pair/LSpp/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Generated/Pair/LSpp/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-    registry.add("Generated/Pair/LSnn/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Generated/Pair/LSnn/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Generated/Pair/LSnn/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Generated/Pair/LSnn/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Generated/Pair/LSnn/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
+
+    registry.addClone("Generated/Pair/ULS", "Generated/Pair/LSpp");
+    registry.addClone("Generated/Pair/ULS", "Generated/Pair/LSnn");
 
     registry.add("Reconstructed/Event/VtxX", "Vertex X", kTH1F, {axisVx});
     registry.add("Reconstructed/Event/VtxY", "Vertex Y", kTH1F, {axisVy});
     registry.add("Reconstructed/Event/VtxZ", "Vertex Z", kTH1F, {axisVz});
+
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Eta", kTH1F, {axisPhi});
@@ -114,23 +115,16 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
 
+    registry.addClone("Reconstructed/Track","Reconstructed/TrackPID");
+
     registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
     registry.add("Reconstructed/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
 
-    registry.add("Reconstructed/Pair/LSpp/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Reconstructed/Pair/LSpp/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Reconstructed/Pair/LSpp/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Reconstructed/Pair/LSpp/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Reconstructed/Pair/LSpp/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-
-    registry.add("Reconstructed/Pair/LSnn/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Reconstructed/Pair/LSnn/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Reconstructed/Pair/LSnn/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Reconstructed/Pair/LSnn/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Reconstructed/Pair/LSnn/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+    registry.addClone("Reconstructed/Pair/ULS", "Reconstructed/Pair/LSpp");
+    registry.addClone("Reconstructed/Pair/ULS", "Reconstructed/Pair/LSnn");
 
     HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
     registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
@@ -514,7 +508,11 @@ struct Alice3Dilepton {
   }   // end of processGen
 
   using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::TracksAlice3>;
-  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax && o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = etaMin < o2::aod::track::eta &&
+  o2::aod::track::eta < etaMax &&
+  ptMin < o2::aod::track::pt &&
+  o2::aod::track::pt < ptMax &&
+  o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -558,6 +556,23 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
+        // implement pid
+        bool isEleOuterTOF = abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+        bool isNotPionOuterTOF = abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+        bool isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
+        bool isEleInnerTOF = abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+        bool isNotPionInnerTOF = abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+        bool isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
+        if (isEleOuterTOF || isEleInnerTOF)
+        {
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phi());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
+        }
       } // end of track loop
 
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
