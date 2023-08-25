@@ -50,10 +50,14 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);  //! Centrality/multiplic
 } // namespace cfcollision
 DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Reduced collision table
                   o2::soa::Index<>,
-                  cfcollision::CFMcCollisionId,
                   bc::RunNumber, collision::PosZ,
                   cfcollision::Multiplicity, timestamp::Timestamp);
+DECLARE_SOA_TABLE(CFCollLabels, "AOD", "CFCOLLLABEL", //! Labels for reduced collision table
+                  cfcollision::CFMcCollisionId);
 using CFCollision = CFCollisions::iterator;
+using CFCollLabel = CFCollLabels::iterator;
+using CFCollisionsWithLabel = soa::Join<CFCollisions, CFCollLabels>;
+using CFCollisionWithLabel = CFCollisionsWithLabel::iterator;
 
 namespace cftrack
 {
@@ -66,10 +70,15 @@ DECLARE_SOA_COLUMN(Sign, sign, int8_t);               //! Sign (positive, negati
 } // namespace cftrack
 DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! Reduced track table
                   o2::soa::Index<>,
-                  cftrack::CFCollisionId, cftrack::CFMcParticleId,
+                  cftrack::CFCollisionId,
                   cftrack::Pt, cftrack::Eta, cftrack::Phi,
                   cftrack::Sign, track::TrackType);
+DECLARE_SOA_TABLE(CFTrackLabels, "AOD", "CFTRACKLABEL", //! Labels for reduced track table
+                  cftrack::CFMcParticleId);
 using CFTrack = CFTracks::iterator;
+using CFTrackLabel = CFTrackLabels::iterator;
+using CFTracksWithLabel = soa::Join<CFTracks, CFTrackLabels>;
+using CFTrackWithLabel = CFTracksWithLabel::iterator;
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_CFDERIVED_H
