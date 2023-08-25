@@ -29,7 +29,8 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
@@ -124,10 +125,13 @@ struct femtoUniversePairTaskTrackTrack {
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
+  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
+  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
+  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
+
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -145,10 +149,16 @@ struct femtoUniversePairTaskTrackTrack {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
-    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
-    sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-    mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    sameEventFemtoCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
+    mixedEventFemtoCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
+    sameEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
+    mixedEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
+
+    sameEventFemtoCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    mixedEventFemtoCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    sameEventAngularCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    mixedEventAngularCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
@@ -251,7 +261,9 @@ struct femtoUniversePairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+
+      sameEventFemtoCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      sameEventAngularCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
     }
   }
 
@@ -330,7 +342,8 @@ struct femtoUniversePairTaskTrackTrack {
         }
       }
 
-      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      mixedEventFemtoCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      mixedEventAngularCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
     }
   }
 
