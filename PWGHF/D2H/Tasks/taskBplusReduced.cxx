@@ -158,7 +158,7 @@ struct HfTaskBplusReduced {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
-               aod::HfCand2ProngReduced const&)
+               aod::HfRedCand2Prongs const&)
   {
     for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
@@ -168,8 +168,8 @@ struct HfTaskBplusReduced {
         continue;
       }
 
-      auto candD0 = candidate.prong0_as<HfCand2ProngReduced>();
-      // auto candPi = candidate.prong1_as<aod::HfTracksPidReduced>();
+      auto candD0 = candidate.prong0_as<HfRedCand2Prongs>();
+      // auto candPi = candidate.prong1_as<aod::HfRedPidTracks>();
       auto ptCandBplus = candidate.pt();
 
       registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
@@ -196,9 +196,9 @@ struct HfTaskBplusReduced {
   }   // process
 
   /// B+ MC analysis and fill histograms
-  void processMc(soa::Join<aod::HfCandBplus, aod::HfBpMcRecReduced> const& candidates,
-                 aod::HfBpMcGenReduced const& particlesMc,
-                 aod::HfCand2ProngReduced const&)
+  void processMc(soa::Join<aod::HfCandBplus, aod::HfMcRecRedBps> const& candidates,
+                 aod::HfMcGenRedBps const& particlesMc,
+                 aod::HfRedCand2Prongs const&)
   {
     // MC rec
     for (const auto& candidate : candidates) {
@@ -210,7 +210,7 @@ struct HfTaskBplusReduced {
       }
 
       auto ptCandBplus = candidate.pt();
-      auto candD0 = candidate.prong0_as<aod::HfCand2ProngReduced>();
+      auto candD0 = candidate.prong0_as<aod::HfRedCand2Prongs>();
 
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 

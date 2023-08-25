@@ -44,12 +44,14 @@ enum Event : uint8_t {
 /// Creation of Dplus-Pi pairs
 struct HfDataCreatorDplusPiReduced {
   // Produces AOD tables to store track information
-  Produces<aod::HfReducedCollisions> hfReducedCollision;
-  Produces<aod::HfOriginalCollisionsCounter> hfCollisionCounter;
-  Produces<aod::HfTracksReduced> hfTrackPion;
-  Produces<aod::HfTracksPidReduced> hfTrackPidPion;
-  Produces<aod::HfCand3ProngReduced> hfCand3Prong;
-  Produces<aod::HfCandB0Config> rowCandidateConfig;
+  Produces<aod::HfRedCollisions> hfReducedCollision;
+  Produces<aod::HfOrigColCounts> hfCollisionCounter;
+  Produces<aod::HfRedTracks> hfTrackPion;
+  Produces<aod::HfRedPidTracks> hfTrackPidPion;
+  Produces<aod::HfRedCand3Prongs> hfCand3Prong;
+  Produces<aod::HfCandB0Configs> rowCandidateConfig;
+  Produces<aod::HfMcRecRedDpPis> rowHfDPiMcRecReduced;
+  Produces<aod::HfMcGenRedB0s> rowHfB0McGenReduced;
 
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -95,6 +97,7 @@ struct HfDataCreatorDplusPiReduced {
   using TracksPidAll = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using TracksPIDWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPidAll, aod::TrackSelection>;
+  using TracksPIDWithSelAndMc = soa::Join<TracksPIDWithSel, aod::McTrackLabels>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
@@ -188,11 +191,13 @@ struct HfDataCreatorDplusPiReduced {
     return true;
   }
 
-  void process(aod::Collisions const& collisions,
-               CandsDFiltered const& candsD,
-               aod::TrackAssoc const& trackIndices,
-               TracksPIDWithSel const&,
-               aod::BCsWithTimestamps const&)
+  template<bool doMC = false, typename P, typename T>
+  void runDataCreation(aod::Collisions const& collisions,
+                       CandsDFiltered const& candsD,
+                       aod::TrackAssoc const& trackIndices,
+                       T const& tracks,
+                       P const& particlesMc,
+                       aod::BCsWithTimestamps const& bcs)
   {
     // store configurables needed for B0 workflow
     if (!isHfCandB0ConfigFilled) {
@@ -200,15 +205,10 @@ struct HfDataCreatorDplusPiReduced {
       isHfCandB0ConfigFilled = true;
     }
 
-    static int aodNumber = 0;
-    aodNumber++;
-
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
 
-    static int nCol = 0;
     for (const auto& collision : collisions) {
-      nCol++;
 
       // helpers for ReducedTables filling
       int hfReducedCollisionIndex = hfReducedCollision.lastIndex() + 1;
@@ -217,9 +217,6 @@ struct HfDataCreatorDplusPiReduced {
       bool fillHfReducedCollision = false;
 
       auto primaryVertex = getPrimaryVertex(collision);
-      if (nCol % 10000 == 0) {
-        LOG(debug) << nCol << " collisions parsed";
-      }
 
       // Set the magnetic field from ccdb.
       // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -244,9 +241,9 @@ struct HfDataCreatorDplusPiReduced {
         registry.fill(HIST("hCPAD"), candD.cpa());
 
         // track0 <-> pi, track1 <-> K, track2 <-> pi
-        auto track0 = candD.prong0_as<TracksPIDWithSel>();
-        auto track1 = candD.prong1_as<TracksPIDWithSel>();
-        auto track2 = candD.prong2_as<TracksPIDWithSel>();
+        auto track0 = candD.template prong0_as<T>();
+        auto track1 = candD.template prong1_as<T>();
+        auto track2 = candD.template prong2_as<T>();
         auto trackParCov0 = getTrackParCov(track0);
         auto trackParCov1 = getTrackParCov(track1);
         auto trackParCov2 = getTrackParCov(track2);
@@ -297,7 +294,7 @@ struct HfDataCreatorDplusPiReduced {
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) {
-          auto trackPion = trackId.track_as<TracksPIDWithSel>();
+          auto trackPion = trackId.template track_as<T>();
 
           // apply selections on pion tracks
           if (!isPionSelected(trackPion, track0, track1, track2) || !isSelectedTrackDCA(trackPion)) {
@@ -337,6 +334,32 @@ struct HfDataCreatorDplusPiReduced {
             selectedTracksPion.emplace_back(trackPion.globalIndex());
           }
           fillHfCand3Prong = true;
+
+          if constexpr (doMC) {
+            // we check the MC matching to be stored
+            auto arrayDaughtersD = std::array{track0, track1, track2};
+            auto arrayDaughtersB0 = std::array{track0, track1, track2, trackPion};
+            int8_t sign{0};
+            int8_t flag{0};
+            int8_t debug{0};
+            // B0 → D- π+ → (π- K+ π-) π+
+            auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              // D- → π- K+ π-
+              // Printf("Checking D- → π- K+ π-");
+              indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, pdg::Code::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+              if (indexRec > -1) {
+                flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+              } else {
+                debug = 1;
+                LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
+              }
+            }
+            auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), pdg::Code::kB0, true);
+            auto particleMother = particlesMc.rawIteratorAt(indexMother);
+
+            rowHfDPiMcRecReduced(candD.globalIndex(), trackPion.globalIndex(), flag, debug, particleMother.pt());
+          }
         }                       // pion loop
         if (fillHfCand3Prong) { // fill candDplus table only once per D candidate
           hfCand3Prong(track0.globalIndex(), track1.globalIndex(), track2.globalIndex(),
@@ -357,6 +380,7 @@ struct HfDataCreatorDplusPiReduced {
           fillHfReducedCollision = true;
         }
       } // candsD loop
+
       registry.fill(HIST("hEvents"), 1 + Event::Processed);
       if (!fillHfReducedCollision) {
         registry.fill(HIST("hEvents"), 1 + Event::NoDPiSelected);
@@ -369,109 +393,71 @@ struct HfDataCreatorDplusPiReduced {
                          collision.covXZ(), collision.covYZ(), collision.covZZ(),
                          bz);
     } // collision
-  }   // process
-};    // struct
 
-/// Performs MC matching.
-struct HfDataCreatorDplusPiReducedMc {
-  Produces<aod::HfDPiMcRecReduced> rowHfDPiMcRecReduced;
-  Produces<aod::HfB0McGenReduced> rowHfB0McGenReduced;
-
-  void init(InitContext const&) {}
-
-  void processMc(aod::HfCand3ProngReduced const& candsD,
-                 aod::HfTracksReduced const& tracksPion,
-                 aod::TracksWMc const&,
-                 aod::McParticles const& particlesMc)
-  {
-    int indexRec = -1;
-    int8_t sign = 0;
-    int8_t flag = 0;
-    int8_t origin = 0;
-    int8_t debug = 0;
-
-    for (const auto& candD : candsD) {
-      auto arrayDaughtersD = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                        candD.prong1_as<aod::TracksWMc>(),
-                                        candD.prong2_as<aod::TracksWMc>()};
-
-      for (const auto& trackPion : tracksPion) {
-        if (trackPion.hfReducedCollisionId() != candD.hfReducedCollisionId()) {
-          continue;
-        }
-        // const auto& trackId = trackPion.globalIndex();
-        auto arrayDaughtersB0 = std::array{candD.prong0_as<aod::TracksWMc>(),
-                                           candD.prong1_as<aod::TracksWMc>(),
-                                           candD.prong2_as<aod::TracksWMc>(),
-                                           trackPion.track_as<aod::TracksWMc>()};
-        // B0 → D- π+ → (π- K+ π-) π+
-        // Printf("Checking B0 → D- π+");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
-        if (indexRec > -1) {
-          // D- → π- K+ π-
-          // Printf("Checking D- → π- K+ π-");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, pdg::Code::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
-          if (indexRec > -1) {
+    if constexpr (doMC) {
+      // Match generated particles.
+      for (const auto& particle : particlesMc) {
+        int8_t sign{0};
+        int8_t flag{0};
+        // B0 → D- π+
+        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
+          // Match D- -> π- K+ π-
+          auto candDMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+          // Printf("Checking D- -> π- K+ π-");
+          if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(pdg::Code::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
             flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
-          } else {
-            debug = 1;
-            LOGF(info, "WARNING: B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
           }
         }
-        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::TracksWMc>().mcParticle_as<aod::McParticles>(), pdg::Code::kB0, true);
-        auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
-        rowHfDPiMcRecReduced(candD.globalIndex(), trackPion.globalIndex(), flag, origin, debug, particleMother.pt());
-      }
-    } // rec
-
-    // Match generated particles.
-    for (const auto& particle : particlesMc) {
-      // Printf("New gen. candidate");
-      flag = 0;
-      origin = 0;
-      // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
-        // Match D- -> π- K+ π-
-        auto candDMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking D- -> π- K+ π-");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(pdg::Code::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-          flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+        // save information for B0 task
+        if (!TESTBIT(std::abs(flag), hf_cand_b0::DecayType::B0ToDPi)) {
+          continue;
         }
-      }
 
-      // save information for B0 task
-      if (!TESTBIT(std::abs(flag), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
+        auto ptParticle = particle.pt();
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
+        auto etaParticle = particle.eta();
 
-      auto ptParticle = particle.pt();
-      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
-      auto etaParticle = particle.eta();
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
+        int counter = 0;
+        for (const auto& daught : particle.template daughters_as<P>()) {
+          ptProngs[counter] = daught.pt();
+          etaProngs[counter] = daught.eta();
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          counter++;
+        }
+        rowHfB0McGenReduced(flag, ptParticle, yParticle, etaParticle,
+                            ptProngs[0], yProngs[0], etaProngs[0],
+                            ptProngs[1], yProngs[1], etaProngs[1]);
+      } // gen
+    }
+  }
 
-      std::array<float, 2> ptProngs;
-      std::array<float, 2> yProngs;
-      std::array<float, 2> etaProngs;
-      int counter = 0;
-      for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
-        ptProngs[counter] = daught.pt();
-        etaProngs[counter] = daught.eta();
-        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
-        counter++;
-      }
-      rowHfB0McGenReduced(flag, origin,
-                          ptParticle, yParticle, etaParticle,
-                          ptProngs[0], yProngs[0], etaProngs[0],
-                          ptProngs[1], yProngs[1], etaProngs[1]);
-    } // gen
+  void process(aod::Collisions const& collisions,
+                CandsDFiltered const& candsD,
+                aod::TrackAssoc const& trackIndices,
+                TracksPIDWithSel const& tracks,
+                aod::BCsWithTimestamps const& bcs)
+  {
+    runDataCreation<false>(collisions, candsD, trackIndices, tracks, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfDataCreatorDplusPiReduced, process, "Process without MC info", true);
 
-  } // processMc
-  PROCESS_SWITCH(HfDataCreatorDplusPiReducedMc, processMc, "Process MC", false);
+  void processMc(aod::Collisions const& collisions,
+                 CandsDFiltered const& candsD,
+                 aod::TrackAssoc const& trackIndices,
+                 TracksPIDWithSelAndMc const& tracks,
+                 aod::McParticles const& particlesMc,
+                 aod::BCsWithTimestamps const& bcs)
+  {
+    runDataCreation<true>(collisions, candsD, trackIndices, tracks, particlesMc, bcs);
+  }
+  PROCESS_SWITCH(HfDataCreatorDplusPiReduced, processMc, "Process with MC info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfDataCreatorDplusPiReduced>(cfgc),
-    adaptAnalysisTask<HfDataCreatorDplusPiReducedMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDataCreatorDplusPiReduced>(cfgc)};
 }

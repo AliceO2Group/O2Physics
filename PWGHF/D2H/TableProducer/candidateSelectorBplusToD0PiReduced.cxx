@@ -90,9 +90,9 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   }
 
   void process(HfCandBplus const& hfCandBs,
-               HfCand2ProngReduced const&,
-               HfTracksPidReduced const&,
-               HfCandBpConfig const& configs)
+               HfRedCand2Prongs const&,
+               HfRedPidTracks const&,
+               HfCandBpConfigs const& configs)
   {
     // get DplusPi creator configurable
     for (const auto& config : configs) {
@@ -112,8 +112,8 @@ struct HfCandidateSelectorBplusToD0PiReduced {
     for (const auto& hfCandBp : hfCandBs) {
       int statusBplus = 0;
       auto ptCandBplus = hfCandBp.pt();
-      // auto candD0 = hfCandBp.prong0_as<HfCand2ProngReduced>();
-      // auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
+      // auto candD0 = hfCandBp.prong0_as<HfRedCand2Prongs>();
+      // auto trackPi = hfCandBp.prong1_as<HfRedPidTracks>();
 
       // check if flagged as B+ → D π
       if (!TESTBIT(hfCandBp.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
@@ -147,7 +147,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
+        auto trackPi = hfCandBp.prong1_as<HfRedPidTracks>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_bplus::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
