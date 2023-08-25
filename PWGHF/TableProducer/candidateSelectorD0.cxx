@@ -334,7 +334,6 @@ struct HfCandidateSelectorD0 {
                                          candidate.cpaXY(),
                                          candidate.decayLength(),
                                          candidate.decayLengthXY(),
-                                         candidate.decayLengthXYNormalised(),
                                          candidate.impactParameter0(),
                                          candidate.impactParameter1(),
                                          candidate.impactParameterProduct()};
