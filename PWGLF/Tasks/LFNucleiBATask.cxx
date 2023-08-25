@@ -1263,17 +1263,17 @@ struct LFNucleiBATask {
 
       float shift = 0.f;
 
-      if (enablePtShift) {
+      if (enablePtShift && !fShift) {
         fShift = new TF1("fShift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         auto par = (std::vector<float>)parShiftPt;
         fShift->SetParameters(par[0], par[1], par[2], par[3], par[4]);
-        shift = fShift->Eval(2 * track.pt());
       }
 
       switch (helium3Pt) {
         case 0:
           hePt = track.pt();
-          if (enablePtShift) {
+          if (enablePtShift && fShift) {
+            shift = fShift->Eval(2 * track.pt());
             hePt = track.pt() - shift / 2.f;
           }
           break;
