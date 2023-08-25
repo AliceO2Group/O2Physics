@@ -777,6 +777,18 @@ struct QaEfficiency {
     });
   }
 
+  // Efficiencies
+  TEfficiency* effITSTPCMatchingVsPt = nullptr;
+  TEfficiency* effTPCITSMatchingVsPt = nullptr;
+  TEfficiency* effTPCTOFMatchingVsPt = nullptr;
+  TEfficiency* effTPCTOFMatchingVsP = nullptr;
+  TEfficiency* effTPCTOFMatchingVsEta = nullptr;
+  TEfficiency* effTPCTOFMatchingVsPhi = nullptr;
+
+  // 2D
+  TEfficiency* effTPCTOFMatchingVsPtVsEta = nullptr;
+  TEfficiency* effTPCTOFMatchingVsPtVsPhi = nullptr;
+
   void initData(const AxisSpec& axisSel)
   {
     if (!doprocessData) {
@@ -882,33 +894,52 @@ struct QaEfficiency {
     listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
+      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto, TEfficiency*& eff) {
         TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
         if (axis->IsVariableBinSize()) {
-          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
+          eff = new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray());
         } else {
-          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+          eff = new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax());
         }
+        listEfficiencyData->Add(eff);
       };
 
-      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/pos/eta/its_tpc_tof"));
-      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"));
+      makeEfficiency("ITSTPCMatchingEfficiencyVsPt",
+                     "ITS-TPC M.E. (ITS-TPC)/ITS in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"),
+                     effITSTPCMatchingVsPt);
+      makeEfficiency("TPCITSMatchingEfficiencyVsPt",
+                     "ITS-TPC M.E. (ITS-TPC)/TPC in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"),
+                     effTPCITSMatchingVsPt);
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPt",
+                     "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"),
+                     effTPCTOFMatchingVsPt);
+      makeEfficiency("TPCTOFMatchingEfficiencyVsP",
+                     "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/pos/pt/its_tpc_tof"),
+                     effTPCTOFMatchingVsP);
+      makeEfficiency("TPCTOFMatchingEfficiencyVsEta",
+                     "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/pos/eta/its_tpc_tof"),
+                     effTPCTOFMatchingVsEta);
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi",
+                     "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"),
+                     effTPCTOFMatchingVsPhi);
 
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY) {
+      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
         TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
         TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
-          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
+          eff = new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray());
         } else {
-          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
+          eff = new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax());
         }
+        listEfficiencyData->Add(eff);
       };
 
-      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin, phiMax, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/eta/its_tpc_tof"));
-      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin, etaMax, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/phi/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta",
+                       Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin, phiMax, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/eta/its_tpc_tof"),
+                       effTPCTOFMatchingVsPtVsEta);
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi",
+                       Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin, etaMax, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/pos/pt/its_tpc_tof"), HIST("Data/pos/phi/its_tpc_tof"),
+                       effTPCTOFMatchingVsPtVsPhi);
     }
   }
 
@@ -951,13 +982,30 @@ struct QaEfficiency {
     doLimits(phiMin, phiMax, phiBins);
     doLimits(yMin, yMax, yBins);
 
-    const AxisSpec axisSel{40, 0.5, 40.5, "Selection"};
-    histos.add("eventSelection", "Event Selection", kTH1F, {axisSel});
+    histos.add("eventSelection", "Event Selection", kTH1D, {{10, 0.5, 10.5, "Selection"}});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
+    if (applyEvSel == 0) {
+      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (no ev. sel)");
+    } else if (applyEvSel == 1) {
+      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (sel7)");
+    } else if (applyEvSel == 2) {
+      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (sel8)");
+    } else {
+      LOG(fatal) << "Can't interpret event selection asked " << applyEvSel << " (0: no event selection, 1: sel7, 2: sel8)";
+    }
+
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
 
+    if (doprocessMC) {
+      histos.add("MC/generatedCollisions", "Generated Collisions", kTH1D, {{10, 0.5, 10.5, "Generated collisions"}});
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(1, "Gen. coll");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(2, "At least 1 reco");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(3, "Reco. coll.");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(4, "Reco. good coll.");
+    }
+
+    const AxisSpec axisSel{40, 0.5, 40.5, "Selection"};
     initData(axisSel);
     initMC(axisSel);
 
@@ -1498,14 +1546,20 @@ struct QaEfficiency {
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
+    histos.fill(HIST("MC/generatedCollisions"), 1);
+
     if (collisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
       return;
     }
+    histos.fill(HIST("MC/generatedCollisions"), 2);
 
     for (const auto& collision : collisions) {
+      histos.fill(HIST("MC/generatedCollisions"), 3);
       if (!isCollisionSelected<false>(collision)) {
         continue;
       }
+      histos.fill(HIST("MC/generatedCollisions"), 4);
+
       const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
       // Track loop
@@ -1698,15 +1752,18 @@ struct QaEfficiency {
 
       if (makeEff) {
         if (passedITS) {
-          static_cast<TEfficiency*>(listEfficiencyData->At(0))->Fill(passedTPC, track.pt());
+          effITSTPCMatchingVsPt->Fill(passedTPC, track.pt());
+        }
+        if (passedTPC) {
+          effTPCITSMatchingVsPt->Fill(passedITS, track.pt());
         }
         if (passedITS && passedTPC) {
-          static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(passedTOF, track.pt());
-          static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(passedTOF, track.p());
-          static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(passedTOF, track.eta());
-          static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(passedTOF, track.phi());
-          static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(passedTOF, track.pt(), track.eta());
-          static_cast<TEfficiency*>(listEfficiencyData->At(6))->Fill(passedTOF, track.pt(), track.phi());
+          effTPCTOFMatchingVsPt->Fill(passedTOF, track.pt());
+          effTPCTOFMatchingVsP->Fill(passedTOF, track.p());
+          effTPCTOFMatchingVsEta->Fill(passedTOF, track.eta());
+          effTPCTOFMatchingVsPhi->Fill(passedTOF, track.phi());
+          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, track.pt(), track.eta());
+          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, track.pt(), track.phi());
         }
       }
     }
