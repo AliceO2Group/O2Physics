@@ -169,15 +169,15 @@ struct Alice3Dilepton {
     if (mother1_pdg != mother2_pdg)
       return -1;
 
-    if (abs(mother1_pdg) != 22        // photon
-        && abs(mother1_pdg) != 111    // pi0
-        && abs(mother1_pdg) != 221    // eta
-        && abs(mother1_pdg) != 331    // eta'
-        && abs(mother1_pdg) != 113    // rho
-        && abs(mother1_pdg) != 223    // omega
-        && abs(mother1_pdg) != 333    // phi
-        && abs(mother1_pdg) != 443    // Jpsi
-        && abs(mother1_pdg) != 100443 // psi2S
+    if (std::abs(mother1_pdg) != 22        // photon
+        && std::abs(mother1_pdg) != 111    // pi0
+        && std::abs(mother1_pdg) != 221    // eta
+        && std::abs(mother1_pdg) != 331    // eta'
+        && std::abs(mother1_pdg) != 113    // rho
+        && std::abs(mother1_pdg) != 223    // omega
+        && std::abs(mother1_pdg) != 333    // phi
+        && std::abs(mother1_pdg) != 443    // Jpsi
+        && std::abs(mother1_pdg) != 100443 // psi2S
     ) {
       return -1;
     }
@@ -210,7 +210,7 @@ struct Alice3Dilepton {
     int mother1_pdg = mother_p1.pdgCode();
     int mother2_pdg = mother_p2.pdgCode();
 
-    if (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999))) {
+    if (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999))) {
       return HFllType::kBe_Be; // bb->ee, decay type = 2
     }
 
@@ -222,9 +222,9 @@ struct Alice3Dilepton {
       int grand_mother1_pdg = grand_mother_p1.pdgCode();
       int grand_mother2_pdg = grand_mother_p2.pdgCode();
 
-      if (((400 < abs(mother1_pdg) && abs(mother1_pdg) < 499) || (4000 < abs(mother1_pdg) && abs(mother1_pdg) < 4999)) && ((400 < abs(mother2_pdg) && abs(mother2_pdg) < 499) || (4000 < abs(mother2_pdg) && abs(mother2_pdg) < 4999))) { // mother is charm
+      if (((400 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 499) || (4000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 4999)) && ((400 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 499) || (4000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 4999))) { // mother is charm
 
-        if (((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
+        if (((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
           return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
         } else {
           return kCe_Ce; // prompt cc->ee, decay type = 0
@@ -233,8 +233,8 @@ struct Alice3Dilepton {
 
       if (motherid_p1 == grand_motherid_p2 || grand_motherid_p1 == motherid_p2) {
         if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
+          (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) ||
+          (((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999)) && ((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)))) {
           return HFllType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3
         }
       }
@@ -273,8 +273,8 @@ struct Alice3Dilepton {
 
       if (motherid_p1 != grand_motherid_p2 && grand_motherid_p1 != motherid_p2) { // different mother and grand mother
         if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
+          (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) ||
+          (((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999)) && ((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)))) {
           return HFllType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4
         }
       }
@@ -292,12 +292,12 @@ struct Alice3Dilepton {
         }
 
         auto mct1 = t1.template mcParticle_as<aod::McParticles>();
-        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+        if (std::abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
           continue;
         }
 
         auto mct2 = t2.template mcParticle_as<aod::McParticles>();
-        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+        if (std::abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
           continue;
         }
 
@@ -315,8 +315,8 @@ struct Alice3Dilepton {
         // float dcaXY_res_t2 = sqrt(t2.cYY());
 
         float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         registry.fill(HIST("Reconstructed/Pair/ULS/Mass"), v12.M());
@@ -334,12 +334,12 @@ struct Alice3Dilepton {
         }
 
         auto mct1 = t1.template mcParticle_as<aod::McParticles>();
-        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+        if (std::abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
           continue;
         }
 
         auto mct2 = t2.template mcParticle_as<aod::McParticles>();
-        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+        if (std::abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
           continue;
         }
 
@@ -357,8 +357,8 @@ struct Alice3Dilepton {
         // float dcaXY_res_t2 = sqrt(t2.cYY());
 
         float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == PairType::kLSpp) {
@@ -385,7 +385,7 @@ struct Alice3Dilepton {
   {
     if constexpr (pairtype == PairType::kULS) {
       for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+        if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
         }
 
@@ -405,8 +405,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         registry.fill(HIST("Generated/Pair/ULS/Mass"), v12.M());
@@ -418,7 +418,7 @@ struct Alice3Dilepton {
 
     } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
       for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+        if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
         }
 
@@ -438,8 +438,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == PairType::kLSpp) {
@@ -473,7 +473,7 @@ struct Alice3Dilepton {
 
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
       for (const auto& mcParticle : mcParticles_per_coll) {
-        if (abs(mcParticle.pdgCode()) != pdg) {
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
         if (!mcParticle.isPhysicalPrimary()) {
@@ -540,7 +540,7 @@ struct Alice3Dilepton {
           continue;
         }
         const auto mcParticle = track.mcParticle_as<aod::McParticles>();
-        if (abs(mcParticle.pdgCode()) != pdg) {
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
         if (!mcParticle.isPhysicalPrimary()) {
@@ -554,11 +554,11 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
         // implement pid
-        bool isEleOuterTOF = abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
-        bool isNotPionOuterTOF = abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+        bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+        bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
         isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
-        bool isEleInnerTOF = abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
-        bool isNotPionInnerTOF = abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+        bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+        bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
         isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
         if (isEleOuterTOF || isEleInnerTOF) {
           registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
