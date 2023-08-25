@@ -90,8 +90,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   }
 
   void process(HfCandB0 const& hfCandsB0,
-               HfTracksPidReduced const&,
-               HfCandB0Config const& configs)
+               HfRedPidTracks const&,
+               HfCandB0Configs const& configs)
   {
     // get DplusPi creator configurable
     for (const auto& config : configs) {
@@ -143,7 +143,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandB0.prong1_as<HfTracksPidReduced>();
+        auto trackPi = hfCandB0.prong1_as<HfRedPidTracks>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");

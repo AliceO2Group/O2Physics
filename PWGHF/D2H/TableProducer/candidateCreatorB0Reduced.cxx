@@ -55,8 +55,8 @@ struct HfCandidateCreatorB0Reduced {
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  Preslice<aod::HfCand3ProngReduced> candsDPerCollision = hf_track_index_reduced::hfReducedCollisionId;
-  Preslice<aod::HfTracksReduced> tracksPionPerCollision = hf_track_index_reduced::hfReducedCollisionId;
+  Preslice<aod::HfRedCand3Prongs> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRedTracks> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   HistogramRegistry registry{"registry"};
 
@@ -78,10 +78,10 @@ struct HfCandidateCreatorB0Reduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void process(aod::HfReducedCollisions const& collisions,
-               aod::HfCand3ProngReduced const& candsD,
-               aod::HfTracksReduced const& tracksPion,
-               aod::HfOriginalCollisionsCounter const& collisionsCounter)
+  void process(aod::HfRedCollisions const& collisions,
+               aod::HfRedCand3Prongs const& candsD,
+               aod::HfRedTracks const& tracksPion,
+               aod::HfOrigColCounts const& collisionsCounter)
   {
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -110,6 +110,11 @@ struct HfCandidateCreatorB0Reduced {
 
         auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
         for (const auto& trackPion : tracksPionThisCollision) {
+          // this track is among daughters
+          if (trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong0Id()) {
+            continue;
+          }
+
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
 
@@ -177,16 +182,16 @@ struct HfCandidateCreatorB0Reduced {
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorB0ReducedExpressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
-  Produces<aod::HfB0McRecReduced> rowB0McRec;
+  Produces<aod::HfMcRecRedB0s> rowB0McRec;
 
-  void processMc(HfDPiMcRecReduced const& rowsDPiMcRec)
+  void processMc(HfMcRecRedDpPis const& rowsDPiMcRec)
   {
     for (const auto& candB0 : *rowCandidateB0) {
       for (const auto& rowDPiMcRec : rowsDPiMcRec) {
         if ((rowDPiMcRec.prong0Id() != candB0.prong0Id()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id())) {
           continue;
         }
-        rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.originMcRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
       }
     }
   }

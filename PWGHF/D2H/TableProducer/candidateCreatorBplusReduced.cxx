@@ -56,8 +56,8 @@ struct HfCandidateCreatorBplusReduced {
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  Preslice<aod::HfCand2ProngReduced> candsDPerCollision = hf_track_index_reduced::hfReducedCollisionId;
-  Preslice<aod::HfTracksReduced> tracksPionPerCollision = hf_track_index_reduced::hfReducedCollisionId;
+  Preslice<aod::HfRedCand2Prongs> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRedTracks> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   HistogramRegistry registry{"registry"};
 
@@ -79,10 +79,10 @@ struct HfCandidateCreatorBplusReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void process(aod::HfReducedCollisions const& collisions,
-               aod::HfCand2ProngReduced const& candsD,
-               aod::HfTracksReduced const& tracksPion,
-               aod::HfOriginalCollisionsCounter const& collisionsCounter)
+  void process(aod::HfRedCollisions const& collisions,
+               aod::HfRedCand2Prongs const& candsD,
+               aod::HfRedTracks const& tracksPion,
+               aod::HfOrigColCounts const& collisionsCounter)
   {
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -178,16 +178,16 @@ struct HfCandidateCreatorBplusReduced {
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorBplusReducedExpressions {
   Spawns<aod::HfCandBplusExt> rowCandidateBPlus;
-  Produces<aod::HfBpMcRecReduced> rowBplusMcRec;
+  Produces<aod::HfMcRecRedBps> rowBplusMcRec;
 
-  void processMc(HfD0PiMcRecReduced const& rowsD0PiMcRec)
+  void processMc(HfMcRecRedD0Pis const& rowsD0PiMcRec)
   {
     for (const auto& candBplus : *rowCandidateBPlus) {
       for (const auto& rowD0PiMcRec : rowsD0PiMcRec) {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.originMcRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.ptMother());
       }
     }
   }
