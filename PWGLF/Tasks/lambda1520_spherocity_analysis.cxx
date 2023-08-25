@@ -36,7 +36,7 @@ const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 struct lambdaAnalysis {
 
   // Configurables.
-  Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram"};
+  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms"};
   Configurable<int> nTracksSph{"nTracksSph", 3, "min #tracks for spherocity distribution"};
 
