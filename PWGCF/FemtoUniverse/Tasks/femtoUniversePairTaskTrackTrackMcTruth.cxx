@@ -12,6 +12,7 @@
 /// \file femtoUniversePairTaskTrackTrackMcTruth.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Malgorzata Janik, WUT, majanik@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #include <vector>
 #include "Framework/AnalysisTask.h"
@@ -55,11 +56,11 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == ConfPDGCodePartOne) &&
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == ConfPDGCodePartOne) &&
                                          aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
 
   /// Histogramming for particle 1
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> trackHistoPartOne;
 
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
@@ -69,11 +70,11 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == ConfPDGCodePartTwo) &&
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == ConfPDGCodePartTwo) &&
                                          aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
 
   /// Histogramming for particle 2
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> trackHistoPartTwo;
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
@@ -83,8 +84,8 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   std::vector<float> kNsigma;
 
   /// particle part
-  ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarPDGBins{"ConfDTempFitVarInvMassBins", {6000, -2300, 2300}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
 
   /// Correlation part
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
@@ -120,9 +121,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   {
 
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, 0, ConfPDGCodePartOne, false);
+    trackHistoPartOne.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartOne, false);
     if (!ConfIsSame) {
-      trackHistoPartTwo.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, 0, ConfPDGCodePartTwo, false);
+      trackHistoPartTwo.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartTwo, false);
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});

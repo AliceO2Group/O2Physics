@@ -191,12 +191,12 @@ struct femtoUniverseProducerMCTruthTask {
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             pass = true;
-            continue;
           }
         }
         if (!pass)
           continue;
       }
+
       // we cannot use isSelectedMinimal since it takes Ncls
       // if (!trackCuts.isSelectedMinimal(track)) {
       //   continue;
@@ -209,11 +209,17 @@ struct femtoUniverseProducerMCTruthTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled
-      outputParts(outputCollision.lastIndex(), particle.pt(), particle.eta(),
-                  particle.phi(), aod::femtouniverseparticle::ParticleType::kTrack,
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                   0,
                   pdgCode,
-                  0, childIDs, 0, 0);
+                  pdgCode,
+                  childIDs,
+                  0,
+                  0);
     }
   }
 
