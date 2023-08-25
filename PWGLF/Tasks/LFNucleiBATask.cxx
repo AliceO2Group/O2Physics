@@ -18,6 +18,7 @@
 ///
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include <TLorentzVector.h>
+#include <TF1.h>
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -85,6 +86,9 @@ struct LFNucleiBATask {
   Configurable<bool> enableExpSignalTOF{"enableExpSignalTOF", false, "Flag to export T - T(exp) plots."};
   Configurable<bool> isPVContributorCut{"isPVContributorCut", false, "Flag to enable isPVContributor cut."};
 
+  Configurable<bool> enablePtShift{"enablePtShift", false, "Flag to enable Pt shift (for He only)"};
+  Configurable<std::vector<float>> parShiftPt{"parShiftPt", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for Pt shift (if enabled)."};
+
   Configurable<bool> makeDCABeforeCutPlots{"makeDCABeforeCutPlots", false, "Flag to enable plots of DCA before cuts"};
   Configurable<bool> makeDCAAfterCutPlots{"makeDCAAfterCutPlots", false, "Flag to enable plots of DCA after cuts"};
   Configurable<bool> enableDCACustomCut{"enableDCACustomCut", false, "Flag to enable DCA custom cuts - unflag to use standard isGlobalCut DCA cut"};
@@ -121,6 +125,8 @@ struct LFNucleiBATask {
   static constexpr float fMassTriton = 2.80892f;
   static constexpr float fMassHelium = 2.80839f;
   static constexpr float fMassAlpha = 3.72738f;
+
+  TF1* fShift = 0;
 
   void init(o2::framework::InitContext&)
   {
@@ -1255,9 +1261,21 @@ struct LFNucleiBATask {
           break;
       }
 
+      float shift = 0.f;
+
+      if (enablePtShift) {
+        fShift = new TF1("fShift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        auto par = (std::vector<float>)parShiftPt;
+        fShift->SetParameters(par[0], par[1], par[2], par[3], par[4]);
+        shift = fShift->Eval(2 * track.pt());
+      }
+
       switch (helium3Pt) {
         case 0:
           hePt = track.pt();
+          if (enablePtShift) {
+            hePt = track.pt() - shift / 2.f;
+          }
           break;
         case 1:
           hePt = 2.f * track.pt();
@@ -1490,9 +1508,9 @@ struct LFNucleiBATask {
                 if (isPhysPrim) {
                   if constexpr (!IsFilteredData) {
                     histos.fill(HIST("spectraGen/histPtGen"), std::abs(track.mcParticle().pt()));
-                    histos.fill(HIST("spectraGen/histPtRec"), (2.f * track.pt()));
-                    histos.fill(HIST("spectraGen/histPtShift"), (2.f * track.pt()), (2.f * track.pt()) - track.mcParticle().pt());
-                    histos.fill(HIST("spectraGen/histPtShiftVsEta"), track.eta(), (2.f * track.pt()) - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPtRec"), (2.f * hePt));
+                    histos.fill(HIST("spectraGen/histPtShift"), (2.f * hePt), (2.f * hePt) - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPtShiftVsEta"), track.eta(), (2.f * hePt) - track.mcParticle().pt());
                     histos.fill(HIST("spectraGen/histPShift"), 2.f * track.p(), 2.f * track.p() - track.mcParticle().p());
                   }
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtantiHeliumTruePrim"), hePt, track.dcaXY());
