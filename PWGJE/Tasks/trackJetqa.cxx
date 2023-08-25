@@ -34,30 +34,15 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-//****************************************************************************************
-/**
- * QA histograms for track quantities.
- */
-//****************************************************************************************
 struct TrackJetQa 
 {
   HistogramRegistry histos{"JetQAHistograms"};
 
-  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  //Filter trackFilter = requireGlobalTrackWoPtEtaInFilter();
 
-  std::string trackSelection;
+  Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks"};
 
-  // function that performs track selections on each track
-  using JetTracks = soa::Join<aod::Tracks, aod::TrackSelection>;
-  template <typename T>
-  bool selectTrack(T const& track, std::string trackSelection)
-  {
-    if (trackSelection == "globalTracks") {
-      return track.isGlobalTrackWoPtEta();
-    }
-  }
-
-  Filter trackFilter = requireGlobalTrackInFilter();
+  Configurable<bool> enable{"selectTrack", true, "false = disable track selection, true = enable track selection"}; 
   
   Configurable<int> nBins{"nBins", 200, "N bins in histos"}; 
   
@@ -69,9 +54,6 @@ struct TrackJetQa
 
   void init(o2::framework::InitContext&)
   {
-    // set track selections
-    trackSelection = static_cast<std::string>(trackSelections);
-
     // kinetic histograms
     histos.add("Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c];number of entries", HistType::kTH1F, {{ptBinning}});
     histos.add("Kine/eta", "#eta;#it{p}_{T} [GeV/c];#eta", {HistType::kTH2F,  {{nBins, 0, 20}, {180, -0.9, 0.9}}});
@@ -114,109 +96,79 @@ struct TrackJetQa
     histos.print();
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, 
-               soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, 
+               soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {
-    // Loop over collisions
-    //int collisionNumber = 0;
-    //int maxCollisions = 10;
+    //for (const auto& collision : collisions) {
 
-    for (const auto& collision : collisions) {
-      /*if (collisionNumber >= maxCollisions) {
-            std::cout << "Reached the maximum number of collisions to print." << std::endl;
-            break;
-      }*/
-
-      // fill event property variables
-      histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
-        
-      if (!collision.sel8()){
-        return;
-      }
-      histos.fill(HIST("EventProp/collisionVtxZSel8"), collision.posZ());
-
-      if (fabs(collision.posZ()) > ValVtx) {
-        return;
-      }
-      histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
+    // fill event property variables
+    histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
       
-      // Loop over tracks
-      //int trackNumber = 0;
-      //int maxTracks = 10;
+    if (!collision.sel8()){
+      return;
+    }
+    histos.fill(HIST("EventProp/collisionVtxZSel8"), collision.posZ());
 
-      for (const auto& track : tracks) {
-        /*if (trackNumber >= maxTracks) {
-              std::cout << "Reached the maximum number of tracks to print." << std::endl;
-              break;
-        }
-        
-        // Print the track number and its properties
-        std::cout << "Track " << trackNumber << ": "
-                  << "pt = " << track.pt() << " GeV, "
-                  << "phi = " << track.phi() << " rad, "
-                  << "eta = " << track.eta() << std::endl;
-        trackNumber++;*/
-        if (track.collisionId() == collision.globalIndex()){
-      
+    if (fabs(collision.posZ()) > ValVtx) {
+      return;
+    }
+    histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
+    
+    Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
+    groupedTracks.bindTable(tracks);        
+    // Loop over tracks
+    for (const auto& track : groupedTracks) {
       // Track selection
-      //if (selectTrack(track, trackSelection) == true)) {
-        /*if (!selectTrack(track, trackSelection)){
-          return;
-        }*/
-     
-      // fill kinematic variables
-      histos.fill(HIST("Kine/pt"), track.pt());
-      histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
-      histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
-      histos.fill(HIST("Kine/etaVSphi"), track.eta(), track.phi());
-
-      // fill track parameter variables
-      histos.fill(HIST("TrackPar/alpha"), track.pt(), track.alpha());
-      histos.fill(HIST("TrackPar/x"), track.pt(), track.x());
-      histos.fill(HIST("TrackPar/y"), track.pt(), track.y());
-      histos.fill(HIST("TrackPar/z"), track.pt(), track.z());
-      histos.fill(HIST("TrackPar/signed1Pt"), track.pt(), track.signed1Pt());
-      histos.fill(HIST("TrackPar/snp"), track.pt(), track.snp());
-      histos.fill(HIST("TrackPar/tgl"), track.pt(), track.tgl());
-      for (unsigned int i = 0; i < 64; i++) {
-        if (track.flags() & (1 << i)) {
-          histos.fill(HIST("TrackPar/flags"), track.pt(), i);
-        }
+      if (enable && !track.isGlobalTrackWoPtEta()) {
+        continue;
       }
-      histos.fill(HIST("TrackPar/dcaXY"), track.pt(), track.dcaXY());
-      histos.fill(HIST("TrackPar/dcaZ"), track.pt(), track.dcaZ());
-      histos.fill(HIST("TrackPar/length"), track.pt(), track.length());
-      histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt()*track.pt()*track.pt());
       
-      // fill ITS variables
-      histos.fill(HIST("ITS/itsNCls"), track.pt(), track.itsNCls());
-      histos.fill(HIST("ITS/itsChi2NCl"), track.pt(), track.itsChi2NCl());
-      for (unsigned int i = 0; i < 7; i++) {
-        if (track.itsClusterMap() & (1 << i)) {
-          histos.fill(HIST("ITS/itsHits"), track.pt(), i);
-        }
-      }
+    // fill kinematic variables
+    histos.fill(HIST("Kine/pt"), track.pt());
+    histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
+    histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
+    histos.fill(HIST("Kine/etaVSphi"), track.eta(), track.phi());
 
-      // fill TPC variables
-      histos.fill(HIST("TPC/tpcNClsFindable"), track.pt(), track.tpcNClsFindable());
-      histos.fill(HIST("TPC/tpcNClsFound"), track.pt(), track.tpcNClsFound());
-      histos.fill(HIST("TPC/tpcNClsShared"), track.pt(), track.tpcNClsShared());
-      histos.fill(HIST("TPC/tpcNClsCrossedRows"), track.pt(), track.tpcNClsCrossedRows());
-      histos.fill(HIST("TPC/tpcCrossedRowsOverFindableCls"), track.pt(), track.tpcCrossedRowsOverFindableCls());
-      histos.fill(HIST("TPC/tpcFractionSharedCls"), track.pt(), track.tpcFractionSharedCls());
-      histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
-      }
-      //collisionNumber++;
+    // fill track parameter variables
+    histos.fill(HIST("TrackPar/alpha"), track.pt(), track.alpha());
+    histos.fill(HIST("TrackPar/x"), track.pt(), track.x());
+    histos.fill(HIST("TrackPar/y"), track.pt(), track.y());
+    histos.fill(HIST("TrackPar/z"), track.pt(), track.z());
+    histos.fill(HIST("TrackPar/signed1Pt"), track.pt(), track.signed1Pt());
+    histos.fill(HIST("TrackPar/snp"), track.pt(), track.snp());
+    histos.fill(HIST("TrackPar/tgl"), track.pt(), track.tgl());
+    for (unsigned int i = 0; i < 64; i++) {
+      if (track.flags() & (1 << i)) {
+        histos.fill(HIST("TrackPar/flags"), track.pt(), i);
       }
     }
+    histos.fill(HIST("TrackPar/dcaXY"), track.pt(), track.dcaXY());
+    histos.fill(HIST("TrackPar/dcaZ"), track.pt(), track.dcaZ());
+    histos.fill(HIST("TrackPar/length"), track.pt(), track.length());
+    histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt()*track.pt()*track.pt());
+    
+    // fill ITS variables
+    histos.fill(HIST("ITS/itsNCls"), track.pt(), track.itsNCls());
+    histos.fill(HIST("ITS/itsChi2NCl"), track.pt(), track.itsChi2NCl());
+    for (unsigned int i = 0; i < 7; i++) {
+      if (track.itsClusterMap() & (1 << i)) {
+        histos.fill(HIST("ITS/itsHits"), track.pt(), i);
+      }
+    }
+
+    // fill TPC variables
+    histos.fill(HIST("TPC/tpcNClsFindable"), track.pt(), track.tpcNClsFindable());
+    histos.fill(HIST("TPC/tpcNClsFound"), track.pt(), track.tpcNClsFound());
+    histos.fill(HIST("TPC/tpcNClsShared"), track.pt(), track.tpcNClsShared());
+    histos.fill(HIST("TPC/tpcNClsCrossedRows"), track.pt(), track.tpcNClsCrossedRows());
+    histos.fill(HIST("TPC/tpcCrossedRowsOverFindableCls"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("TPC/tpcFractionSharedCls"), track.pt(), track.tpcFractionSharedCls());
+    histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
+    }
   }
+  //}
 };
 
-//****************************************************************************************
-/**
- * Workflow definition.
- */
-//****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
