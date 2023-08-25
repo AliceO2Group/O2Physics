@@ -83,6 +83,7 @@ struct PureMcMultiplicityCounter {
       registry.add({"Events/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     }
     if (doprocessResponse) {
+      registry.add({"MCEvents/VertexCorrelation", " ; Z_{vtx}^{gen} (cm); Z_{vtx}^{rec} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}});
       registry.add({"MCEvents/Efficiency", "", {HistType::kTH1F, {{6, -0.5, 5.5}}}});
       registry.add({"MCEvents/Response", " ; N_{gen}; N_{rec}", {HistType::kTH2F, {MultAxis, MultAxis}}});
       auto eff = registry.get<TH1>(HIST("MCEvents/Efficiency"));
@@ -98,6 +99,10 @@ struct PureMcMultiplicityCounter {
       registry.add({"Particles/Primaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       registry.add({"Particles/Primaries/EfficiencyD", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       registry.add({"Particles/Secondaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Primaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
+      registry.add({"Particles/Primaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+      registry.add({"Particles/Secondaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
+      registry.add({"Particles/Secondaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
     }
   }
 
@@ -175,7 +180,7 @@ struct PureMcMultiplicityCounter {
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processReco, "Process smeared tracks", false);
 
-  void processResponse(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
+  void processResponse(aod::McCollision const& mccollision, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
   {
     registry.fill(HIST("MCEvents/Efficiency"), 0);
     auto Np = 0;
@@ -215,6 +220,7 @@ struct PureMcMultiplicityCounter {
         registry.fill(HIST("MCEvents/Efficiency"), 3);
       }
       registry.fill(HIST("MCEvents/Response"), Np, Ntrk);
+      registry.fill(HIST("MCEvents/VertexCorrelation"), mccollision.posZ(), collision.posZ());
     }
   }
 
@@ -259,8 +265,12 @@ struct PureMcMultiplicityCounter {
         }
         if (particle.isPhysicalPrimary()) {
           registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
+          registry.fill(HIST("Particles/Primaries/PtCorrelation"), particle.pt(), track.pt());
+          registry.fill(HIST("Particles/Primaries/EtaCorrelation"), particle.eta(), track.eta());
         } else {
           registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
+          registry.fill(HIST("Particles/Secondaries/PtCorrelation"), particle.pt(), track.pt());
+          registry.fill(HIST("Particles/Secondaries/EtaCorrelation"), particle.eta(), track.eta());
         }
       }
     }
