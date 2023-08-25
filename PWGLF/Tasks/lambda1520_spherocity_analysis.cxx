@@ -36,10 +36,9 @@ const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 struct lambdaAnalysis {
 
   // Configurables.
-  Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram."};
-  Configurable<int> nBinsMult{"nBinsMult", 150, "N bins in Multiplicity histograms."};
-  Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms."};
-  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 1., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 60., 70., 80., 90., 104.}, "Binning of the centrality axis"};
+  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms"};
+  Configurable<int> nTracksSph{"nTracksSph", 3, "min #tracks for spherocity distribution"};
 
   // Tracks
   Configurable<float> cfgPtMin{"ptMin", 0.15, "Minimum Track pT"};
@@ -79,11 +78,8 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
-    const AxisSpec axisEv(1, 0, 1, "N_{Ev}");
-    const AxisSpec axisPosZ(220, -11, 11, "z_{vtx} (cm)");
-    const AxisSpec axisMult(nBinsMult, 0, 150, "Multiplicity");
-    const AxisSpec axisSp(120, -0.1, 1.1, "S_{0}");
-    const AxisSpec axisCent(binsCent, "V0M (%)");
+    const AxisSpec axisSp(100, 0., 1., "S_{0}");
+    const AxisSpec axisCent(105, 0, 105, "V0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
     const AxisSpec axisEta(200, -1, 1, "#eta");
@@ -95,11 +91,9 @@ struct lambdaAnalysis {
     const AxisSpec axisInvM(nBinsInvM, 1.4, 2.4, {"M_{inv} (GeV/c^{2})"});
 
     // Create Histograms.
-    histos.add("Event/hEvents", "Number of Events", kTH1F, {axisEv});
-    histos.add("Event/hVtxZ", "posZ of Collisions", kTH1F, {axisPosZ});
-    histos.add("Event/hMult", "Event Multiplicity", kTH1F, {axisMult});
-    histos.add("Event/hMult2", "V0M (%) Multiplicity", kTH1F, {binsCent});
+    histos.add("Event/hCent", "V0M (%)", kTH1F, {axisCent});
     histos.add("Event/hSph", "Event Spherocity", kTH1F, {axisSp});
+    histos.add("Event/hSpCent", "Spherocity vs V0M(%)", kTH2F, {axisCent, axisSp});
     histos.add("QAbefore/Proton/hTPCNsigma", "n#sigma^{TPC} Protons", kTH2F, {axisPtQA, axisTPCNsigma});
     histos.add("QAbefore/Proton/hTOFNsigma", "n#sigma^{TOF} Protons", kTH2F, {axisPtQA, axisTOFNsigma});
     histos.add("QAbefore/Proton/hTpcTofNsigma", "n#sigma^{TPC} vs n#sigma^{TOF} Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
@@ -318,14 +312,12 @@ struct lambdaAnalysis {
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
   {
 
-    if (tracks.size() < 3)
-      return;
+    histos.fill(HIST("Event/hCent"), collision.multV0M());
 
-    histos.fill(HIST("Event/hEvents"), 0.5);
-    histos.fill(HIST("Event/hVtxZ"), collision.posZ());
-    histos.fill(HIST("Event/hMult"), tracks.size());
-    histos.fill(HIST("Event/hMult2"), collision.multV0M());
-    histos.fill(HIST("Event/hSph"), collision.spherocity());
+    if (tracks.size() >= nTracksSph) {
+      histos.fill(HIST("Event/hSph"), collision.spherocity());
+      histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
+    }
 
     fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
