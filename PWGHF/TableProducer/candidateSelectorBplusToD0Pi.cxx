@@ -158,7 +158,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       auto trackPi = hfCandB.prong1_as<TracksPidWithSel>();
 
       // topological cuts
-      if (!hf_sel_candidate_bplus::selectionTopol(hfCandB, cuts, binsPt)) {
+      if (!hfHelper.selectionBplusToD0PiTopol(hfCandB, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         // Printf("B+ candidate selection failed at topology selection");
         continue;
@@ -176,7 +176,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       // track-level PID selection
       if (usePid) {
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!selectionPID(pidTrackPi)) {
+        if (!selectionPID(pidTrackPi)) { // FIXME use helper function
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }

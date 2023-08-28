@@ -133,7 +133,7 @@ struct HfCandidateSelectorBsToDsPi {
       }
 
       // topological cuts
-      if (!hf_sel_candidate_bs::selectionTopol(hfCandBs, cuts, binsPt)) {
+      if (!hfHelper.selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
         continue;
       }
@@ -151,7 +151,7 @@ struct HfCandidateSelectorBsToDsPi {
       if (usePid) {
         auto trackPi = hfCandBs.prong1_as<TracksPidWithSel>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!hf_sel_candidate_bs::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           continue;
         }

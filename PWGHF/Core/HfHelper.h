@@ -636,6 +636,255 @@ class HfHelper
     return candidate.y(mass(o2::analysis::pdg::kSigmaCPlusPlus));
   }
 
+  /// Apply topological cuts as defined in SelectorCuts.h
+  /// \param candB0 B0 candidate
+  /// \param cuts B0 candidate selection per pT bin"
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionB0ToDPiTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
+  {
+    auto ptCandB0 = candB0.pt();
+    auto ptD = RecoDecay::pt(candB0.pxProng0(), candB0.pyProng0());
+    auto ptPi = RecoDecay::pt(candB0.pxProng1(), candB0.pyProng1());
+
+    int pTBin = findBin(binsPt, ptCandB0);
+    if (pTBin == -1) {
+      // LOGF(info, "B0 topol selection failed at getpTBin");
+      return false;
+    }
+
+    // // check that the candidate pT is within the analysis range
+    // if (ptCandB0 < ptCandMin || ptCandB0 >= ptCandMax) {
+    //   return false;
+    // }
+
+    // B0 mass cut
+    if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+      // Printf("B0 topol selection failed at mass diff check");
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // D- pt
+    if (ptD < cuts->get(pTBin, "pT D")) {
+      return false;
+    }
+
+    /*
+    // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
+    if (std::abs(o2::aod::hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+      return false;
+    }
+    */
+
+    // B0 Decay length
+    if (candB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
+      return false;
+    }
+
+    // B0 Decay length XY
+    if (candB0.decayLengthXY() < cuts->get(pTBin, "B0 decLenXY")) {
+      return false;
+    }
+
+    // B0 chi2PCA cut
+    if (candB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      return false;
+    }
+
+    // B0 CPA cut
+    if (candB0.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // d0 of pi
+    if (std::abs(candB0.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of D
+    if (std::abs(candB0.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of B0 candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionB0ToDPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Apply topological cuts as defined in SelectorCuts.h
+  /// \param candBp B+ candidate
+  /// \param cuts B+ candidate selection per pT bin"
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionBplusToD0PiTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+  {
+    auto ptcandBp = candBp.pt();
+    auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
+
+    int pTBin = findBin(binsPt, ptcandBp);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // B+ mass cut
+    if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // d0(D0)xd0(pi)
+    if (candBp.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+      return false;
+    }
+
+    // B Decay length
+    if (candBp.decayLength() < cuts->get(pTBin, "B decLen")) {
+      return false;
+    }
+
+    // B Decay length XY
+    if (candBp.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+      return false;
+    }
+
+    // B+ CPA cut
+    if (candBp.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of B+ candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionBplusToD0PiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply topological cuts as defined in SelectorCuts.h
+  /// \param candBs Bs candidate
+  /// \param cuts Bs candidate selections
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionBsToDsPiTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
+  {
+    auto ptCandBs = candBs.pt();
+    auto ptDs = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
+    auto ptPi = RecoDecay::pt(candBs.pxProng1(), candBs.pyProng1());
+
+    int pTBin = findBin(binsPt, ptCandBs);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // Bs mass cut
+    if (std::abs(o2::aod::hf_cand_bs::invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // Ds pt
+    if (ptDs < cuts->get(pTBin, "pT Ds")) {
+      return false;
+    }
+
+    // Bs Decay length
+    if (candBs.decayLength() < cuts->get(pTBin, "Bs decLen")) {
+      return false;
+    }
+
+    // Bs Decay length XY
+    if (candBs.decayLengthXY() < cuts->get(pTBin, "Bs decLenXY")) {
+      return false;
+    }
+
+    // Bs chi2PCA cut
+    if (candBs.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      return false;
+    }
+
+    // Bs CPA cut
+    if (candBs.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // d0 of pi
+    if (std::abs(candBs.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of Ds
+    if (std::abs(candBs.impactParameter0()) < cuts->get(pTBin, "d0 Ds")) {
+      return false;
+    }
+
+    // d0(Ds)xd0(pi)
+    if (candBs.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackPi PID status of trackPi (prong1 of Bs candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of Bs candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionBsToDsPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
  private:
 };
 

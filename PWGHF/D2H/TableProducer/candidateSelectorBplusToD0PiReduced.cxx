@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CandidateSelectorBplusToD0PiReduced.cxx
+/// \file candidateSelectorBplusToD0PiReduced.cxx
 /// \brief B+ → D0bar π+ candidate selector
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
@@ -130,7 +130,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       // topological cuts
-      if (!hf_sel_candidate_bplus::selectionTopol(hfCandBp, cuts, binsPt)) {
+      if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         // LOGF(info, "B+ candidate selection failed at topology selection");
         continue;
@@ -149,7 +149,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       if (usePid) {
         auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!hf_sel_candidate_bplus::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;

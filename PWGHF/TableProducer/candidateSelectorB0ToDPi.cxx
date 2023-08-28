@@ -134,7 +134,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
 
       // topological cuts
-      if (!hf_sel_candidate_b0::selectionTopol(hfCandB0, cuts, binsPt)) {
+      if (!hfHelper.selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
@@ -153,7 +153,7 @@ struct HfCandidateSelectorB0ToDPi {
       if (usePid) {
         auto trackPi = hfCandB0.prong1_as<TracksPidWithSel>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;
