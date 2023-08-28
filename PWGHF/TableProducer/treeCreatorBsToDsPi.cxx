@@ -211,14 +211,14 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        invMassBsToDsPi(candidate),
+        hfHelper.invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        yBs(candidate),
+        hfHelper.yBs(candidate),
         flagMc);
     } else {
       rowCandidateFull(
@@ -256,17 +256,17 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        invMassBsToDsPi(candidate),
+        hfHelper.invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        ctBs(candidate),
+        hfHelper.ctBs(candidate),
         candidate.eta(),
         candidate.phi(),
-        yBs(candidate),
-        eBs(candidate),
+        hfHelper.yBs(candidate),
+        hfHelper.eBs(candidate),
         flagMc);
     }
   }

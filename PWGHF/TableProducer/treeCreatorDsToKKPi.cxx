@@ -263,13 +263,13 @@ struct HfTreeCreatorDsToKKPi {
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
     if constexpr (massHypo == 0) {
-      invMassDs = invMassDsToKKPi(candidate);
-      deltaMassPhiKK = deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = std::abs(cos3PiKDsToKKPi(candidate));
+      invMassDs = hfHelper.invMassDsToKKPi(candidate);
+      deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
+      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToKKPi(candidate));
     } else if constexpr (massHypo == 1) {
-      invMassDs = invMassDsToPiKK(candidate);
-      deltaMassPhiKK = deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = std::abs(cos3PiKDsToPiKK(candidate));
+      invMassDs = hfHelper.invMassDsToPiKK(candidate);
+      deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
+      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToPiKK(candidate));
     }
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();
@@ -302,7 +302,7 @@ struct HfTreeCreatorDsToKKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        yDs(candidate),
+        hfHelper.yDs(candidate),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -361,11 +361,11 @@ struct HfTreeCreatorDsToKKPi {
         invMassDs,
         candidate.pt(),
         candidate.p(),
-        ctDs(candidate),
+        hfHelper.ctDs(candidate),
         candidate.eta(),
         candidate.phi(),
-        yDs(candidate),
-        eDs(candidate),
+        hfHelper.yDs(candidate),
+        hfHelper.eDs(candidate),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),

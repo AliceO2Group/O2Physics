@@ -108,10 +108,10 @@ struct HfCandidateCreatorLb {
         continue;
       }
       if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(invMassLcToPKPi(lcCand), lcCand.pt());
+        hMassLcToPKPi->Fill(hfHelper.invMassLcToPKPi(lcCand), lcCand.pt());
       }
       if (lcCand.isSelLcToPiKP() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(invMassLcToPiKP(lcCand), lcCand.pt());
+        hMassLcToPKPi->Fill(hfHelper.invMassLcToPiKP(lcCand), lcCand.pt());
       }
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());

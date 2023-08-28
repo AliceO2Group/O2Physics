@@ -109,20 +109,20 @@ struct HfCandidateCreatorX {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (std::abs(invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(hfHelper.invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (std::abs(invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(hfHelper.invMassJpsiToMuMu(jpsiCand));
       }
 
       hPtJpsi->Fill(jpsiCand.pt());

@@ -66,7 +66,7 @@ struct HfCandidateSelectorLbToLcPi {
     }
 
     //Λb0 mass cut
-    if (std::abs(invMassLbToLcPi(hfCandLb) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassLbToLcPi(hfCandLb) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
       // Printf("Lb topol selection failed at mass diff check");
       return false;
     }
@@ -83,7 +83,7 @@ struct HfCandidateSelectorLbToLcPi {
 
     // Lc mass
     // if (trackPi.sign() < 0) {
-    // if (std::abs(invMassLcToPKPi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
+    // if (std::abs(hfHelper.invMassLcToPKPi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
     // return false;
     // }
     // }

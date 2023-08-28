@@ -163,14 +163,14 @@ struct HfTaskBplus {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       auto ptCandBplus = candidate.pt();
       auto candD0 = candidate.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
       auto candPi = candidate.prong1();
 
-      registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
+      registry.fill(HIST("hMass"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
       registry.fill(HIST("hPtCand"), ptCandBplus);
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -182,15 +182,15 @@ struct HfTaskBplus {
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandBplus);
       registry.fill(HIST("hCPAxy"), candidate.cpaXY(), ptCandBplus);
       registry.fill(HIST("hEta"), candidate.eta(), ptCandBplus);
-      registry.fill(HIST("hRapidity"), yBplus(candidate), ptCandBplus);
+      registry.fill(HIST("hRapidity"), hfHelper.yBplus(candidate), ptCandBplus);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), ptCandBplus);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandBplus);
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandBplus);
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandBplus);
       if (candPi.sign() > 0) {
-        registry.fill(HIST("hInvMassD0"), invMassD0barToKPi(candD0), ptCandBplus);
+        registry.fill(HIST("hInvMassD0"), hfHelper.invMassD0barToKPi(candD0), ptCandBplus);
       } else {
-        registry.fill(HIST("hInvMassD0"), invMassD0ToPiK(candD0), ptCandBplus);
+        registry.fill(HIST("hInvMassD0"), hfHelper.invMassD0ToPiK(candD0), ptCandBplus);
       }
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandBplus);
       registry.fill(HIST("hCPAxyFinerBinning"), candidate.cpaXY(), ptCandBplus);
@@ -207,7 +207,7 @@ struct HfTaskBplus {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       auto ptCandBplus = candidate.pt();
@@ -223,10 +223,10 @@ struct HfTaskBplus {
         registry.fill(HIST("hCPAFinerBinningRecSig"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCPAxyFinerBinningRecSig"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidityRecSig"), yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidityRecSig"), hfHelper.yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBplus);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandBplus);
-        registry.fill(HIST("hMassRecSig"), invMassBplusToD0Pi(candidate), ptCandBplus);
+        registry.fill(HIST("hMassRecSig"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), ptCandBplus);
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), ptCandBplus);
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0(), ptCandBplus);
@@ -240,10 +240,10 @@ struct HfTaskBplus {
         registry.fill(HIST("hCPAFinerBinningRecBg"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCPAxyFinerBinningRecBg"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidityRecBg"), yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidityRecBg"), hfHelper.yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBplus);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandBplus);
-        registry.fill(HIST("hMassRecBg"), invMassBplusToD0Pi(candidate), ptCandBplus);
+        registry.fill(HIST("hMassRecBg"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), ptCandBplus);
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), ptCandBplus);
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), ptCandBplus);

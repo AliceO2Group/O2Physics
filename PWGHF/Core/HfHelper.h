@@ -660,7 +660,7 @@ class HfHelper
     // }
 
     // B0 mass cut
-    if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
       // Printf("B0 topol selection failed at mass diff check");
       return false;
     }
@@ -677,7 +677,7 @@ class HfHelper
 
     /*
     // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-    if (std::abs(o2::aod::hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+    if (std::abs(invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
       return false;
     }
     */
@@ -816,7 +816,7 @@ class HfHelper
     }
 
     // Bs mass cut
-    if (std::abs(o2::aod::hf_cand_bs::invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
       return false;
     }
 

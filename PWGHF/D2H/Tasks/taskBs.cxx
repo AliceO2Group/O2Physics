@@ -155,7 +155,7 @@ struct HfTaskBs {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -167,9 +167,9 @@ struct HfTaskBs {
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hPtCand"), ptCandBs);
       registry.fill(HIST("hEta"), candidate.eta(), ptCandBs);
-      registry.fill(HIST("hRapidity"), yBs(candidate), ptCandBs);
+      registry.fill(HIST("hRapidity"), hfHelper.yBs(candidate), ptCandBs);
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandBs);
-      registry.fill(HIST("hMass"), invMassBsToDsPi(candidate), ptCandBs);
+      registry.fill(HIST("hMass"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
       registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandBs);
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandBs);
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), ptCandBs);
@@ -179,7 +179,7 @@ struct HfTaskBs {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), ptCandBs);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandBs);
       registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), ptCandBs);
-      registry.fill(HIST("hInvMassDs"), invMassDsToKKPi(candDs), ptCandBs);
+      registry.fill(HIST("hInvMassDs"), hfHelper.invMassDsToKKPi(candDs), ptCandBs);
     } // candidate loop
   }   // process
 
@@ -194,13 +194,13 @@ struct HfTaskBs {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto ptCandBs = candidate.pt();
       auto candDs = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
-      auto invMassCandBs = invMassBsToDsPi(candidate);
+      auto invMassCandBs = hfHelper.invMassBsToDsPi(candidate);
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
@@ -210,10 +210,10 @@ struct HfTaskBs {
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandBs);
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBs);
-        registry.fill(HIST("hRapidityRecSig"), yBs(candidate), ptCandBs);
+        registry.fill(HIST("hRapidityRecSig"), hfHelper.yBs(candidate), ptCandBs);
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), ptCandBs);
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), ptCandBs);
-        registry.fill(HIST("hMassRecSig"), invMassBsToDsPi(candidate), ptCandBs);
+        registry.fill(HIST("hMassRecSig"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBs);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandBs);
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), ptCandBs);
@@ -232,10 +232,10 @@ struct HfTaskBs {
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandBs);
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBs);
-        registry.fill(HIST("hRapidityRecBg"), yBs(candidate), ptCandBs);
+        registry.fill(HIST("hRapidityRecBg"), hfHelper.yBs(candidate), ptCandBs);
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), ptCandBs);
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), ptCandBs);
-        registry.fill(HIST("hMassRecBg"), invMassBsToDsPi(candidate), ptCandBs);
+        registry.fill(HIST("hMassRecBg"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBs);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandBs);
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), ptCandBs);

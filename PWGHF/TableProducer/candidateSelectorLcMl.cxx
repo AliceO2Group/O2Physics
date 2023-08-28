@@ -258,14 +258,14 @@ struct HfCandidateSelectorLcMl {
       const float massProton = RecoDecay::getMassPDG(kProton);
       const float massLc = RecoDecay::getMassPDG(o2::analysis::pdg::kLambdaCPlus);
       if (statusLcToPiKP == 1) {
-        auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
-        if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {
+        auto hfHelper.invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
+        if (std::abs(hfHelper.invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {
           statusLcToPiKP = 0;
         }
       }
       if (statusLcToPKPi == 1) {
-        auto invMassLcToPKPi = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massProton, massK, massPi});
-        if (std::abs(invMassLcToPKPi - massLc) >= maxDeltaMass && candidate.pt() < 10) {
+        auto hfHelper.invMassLcToPKPi = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massProton, massK, massPi});
+        if (std::abs(hfHelper.invMassLcToPKPi - massLc) >= maxDeltaMass && candidate.pt() < 10) {
           statusLcToPKPi = 0;
         }
       }

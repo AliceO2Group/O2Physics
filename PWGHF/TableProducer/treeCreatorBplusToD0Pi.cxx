@@ -232,9 +232,9 @@ struct HfTreeCreatorBplusToD0Pi {
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0barToKPi(d0Cand);
+          invMassD0 = o2::aod::hf_cand_2prong::hfHelper.invMassD0barToKPi(d0Cand);
         } else if (piCand.sign() < 0) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0ToPiK(d0Cand);
+          invMassD0 = o2::aod::hf_cand_2prong::hfHelper.invMassD0ToPiK(d0Cand);
         }
 
         // if (FunctionSelection >= 1) {
@@ -280,7 +280,7 @@ struct HfTreeCreatorBplusToD0Pi {
             invMassD0,
             d0Cand.ptProng0(),
             d0Cand.ptProng1(),
-            o2::aod::hf_cand_2prong::yD0(d0Cand),
+            o2::aod::hf_cand_2prong::hfHelper.yD0(d0Cand),
             d0Cand.eta(),
             d0Cand.cpa(),
             d0Cand.cpaXY(),
@@ -306,8 +306,8 @@ struct HfTreeCreatorBplusToD0Pi {
         }
       };
 
-      // fillTable(0, candidate.isSelBplusToD0Pi(), invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
-      fillTable(0, invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
+      // fillTable(0, candidate.isSelBplusToD0Pi(), hfHelper.invMassBplusToD0Pi(candidate), hfHelper.ctBplus(candidate), hfHelper.yBplus(candidate));
+      fillTable(0, hfHelper.invMassBplusToD0Pi(candidate), hfHelper.ctBplus(candidate), hfHelper.yBplus(candidate));
     }
 
     // Filling particle properties

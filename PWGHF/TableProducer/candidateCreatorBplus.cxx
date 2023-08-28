@@ -180,11 +180,11 @@ struct HfCandidateCreatorBplus {
         if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(yD0(candD0)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candD0)) > yCandMax) {
           continue;
         }
 
-        hRapidityD0->Fill(yD0(candD0));
+        hRapidityD0->Fill(hfHelper.yD0(candD0));
 
         // track0 <-> pi, track1 <-> K
         auto prong0 = candD0.prong0_as<TracksWithSel>();

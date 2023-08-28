@@ -106,14 +106,14 @@ struct HfTaskJpsi {
           }
         }
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
         continue;
       }
 
       if (modeJpsiToMuMu) {
-        registry.fill(HIST("hMass"), invMassJpsiToMuMu(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
       } else {
-        registry.fill(HIST("hMass"), invMassJpsiToEE(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -228,7 +228,7 @@ struct HfTaskJpsiMc {
         }
       }
 
-      if (yCandMax >= 0. && std::abs(yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
@@ -240,9 +240,9 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassSig"), invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassSig"), invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthXYSig"), candidate.decayLengthXY(), candidate.pt());
@@ -250,8 +250,8 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Sig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Sig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hCtSig"), hfHelper.ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYSig"), hfHelper.yJpsi(candidate), candidate.pt());
         registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())), particleMother.pt());
 
       } else {
@@ -259,9 +259,9 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassBg"), invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassBg"), invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthxyBg"), candidate.decayLengthXY(), candidate.pt());
@@ -269,8 +269,8 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Bg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Bg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hCtBg"), hfHelper.ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYBg"), hfHelper.yJpsi(candidate), candidate.pt());
       }
     }
     // MC gen.

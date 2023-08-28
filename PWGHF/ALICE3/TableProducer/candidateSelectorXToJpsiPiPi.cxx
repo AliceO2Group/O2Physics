@@ -83,7 +83,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
     }
 
     // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
-    if (TMath::Abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
+    if (TMath::Abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
       // Printf("X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }

@@ -159,7 +159,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
     auto selectedD0candidatesGrouped = selectedD0candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     for (const auto& candidate1 : selectedD0candidatesGrouped) {
-      if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -177,19 +177,19 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
       // fill invariant mass plots and generic info from all D0/D0bar candidates
       if (candidate1.isSelD0TofPlusRichPid() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
-        registry.fill(HIST("hMassD0"), invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassD0"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
       }
       if (candidate1.isSelD0barTofPlusRichPid() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
-        registry.fill(HIST("hMassD0bar"), invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassD0bar"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
       }
       registry.fill(HIST("hPtCand"), candidate1.pt());
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
-      registry.fill(HIST("hY"), yD0(candidate1));
+      registry.fill(HIST("hY"), hfHelper.yD0(candidate1));
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0barTofPlusRichPid() + (candidate1.isSelD0TofPlusRichPid() * 2));
 
       // D-Dbar correlation dedicated section
@@ -205,7 +205,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
           continue;
         }
         // kinematic selection on D0bar candidates
-        if (yCandMax >= 0. && std::abs(yD0(candidate2)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
@@ -219,8 +219,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
                          candidate2.eta() - candidate1.eta(),
                          candidate1.pt(),
                          candidate2.pt());
-        entryD0D0barRecoInfo(invMassD0ToPiK(candidate1),
-                             invMassD0barToKPi(candidate2),
+        entryD0D0barRecoInfo(hfHelper.invMassD0ToPiK(candidate1),
+                             hfHelper.invMassD0barToKPi(candidate2),
                              0);
         double etaCut = 0.;
         double ptCut = 0.;
@@ -279,7 +279,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -298,26 +298,26 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
         registry.fill(HIST("hEtaMCRec"), candidate1.eta());
         registry.fill(HIST("hPhiMCRec"), candidate1.phi());
-        registry.fill(HIST("hYMCRec"), yD0(candidate1));
+        registry.fill(HIST("hYMCRec"), hfHelper.yD0(candidate1));
         registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0barTofPlusRichPid() + (candidate1.isSelD0TofPlusRichPid() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
       if (candidate1.isSelD0TofPlusRichPid() >= selectionFlagD0) {    // only reco as D0
         if (candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK) { // also matched as D0
-          registry.fill(HIST("hMassD0MCRecSig"), invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecSig"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassD0MCRecRefl"), invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecRefl"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
-          registry.fill(HIST("hMassD0MCRecBkg"), invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecBkg"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
       if (candidate1.isSelD0barTofPlusRichPid() >= selectionFlagD0bar) { // only reco as D0bar
         if (candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) { // also matched as D0bar
-          registry.fill(HIST("hMassD0barMCRecSig"), invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecSig"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK) {
-          registry.fill(HIST("hMassD0barMCRecRefl"), invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecRefl"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
-          registry.fill(HIST("hMassD0barMCRecBkg"), invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecBkg"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
 
@@ -337,7 +337,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         }
         flagD0barSignal = candidate2.flagMcMatchRec() == -(1 << DecayType::D0ToPiK);  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
         flagD0barReflection = candidate2.flagMcMatchRec() == 1 << DecayType::D0ToPiK; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
-        if (yCandMax >= 0. && std::abs(yD0(candidate2)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
@@ -365,8 +365,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
                          candidate2.eta() - candidate1.eta(),
                          candidate1.pt(),
                          candidate2.pt());
-        entryD0D0barRecoInfo(invMassD0ToPiK(candidate1),
-                             invMassD0barToKPi(candidate2),
+        entryD0D0barRecoInfo(hfHelper.invMassD0ToPiK(candidate1),
+                             hfHelper.invMassD0barToKPi(candidate2),
                              pairSignalStatus);
         double etaCut = 0.;
         double ptCut = 0.;

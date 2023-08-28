@@ -234,7 +234,7 @@ struct HfTreeCreatorXToJpsiPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), invMassXToJpsiPiPi(candidate), ctX(candidate), yX(candidate), qX(candidate), dRX(candidate, 1), dRX(candidate, 2), balancePtPionsX(candidate));
+      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), hfHelper.invMassXToJpsiPiPi(candidate), hfHelper.ctX(candidate), hfHelper.yX(candidate), hfHelper.qX(candidate), hfHelper.dRX(candidate, 1), hfHelper.dRX(candidate, 2), hfHelper.balancePtPionsX(candidate));
     }
 
     // Filling particle properties

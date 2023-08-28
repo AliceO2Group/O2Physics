@@ -291,7 +291,7 @@ struct HfCandidateCreatorBs {
           int hfFlag = BIT(hf_cand_bs::DecayType::BsToDsPi);
 
           // fill output histograms for Bs candidates
-          hMassDsToKKPi->Fill(invMassDsToKKPi(candDs), candDs.pt());
+          hMassDsToKKPi->Fill(hfHelper.invMassDsToKKPi(candDs), candDs.pt());
           hCovSVXX->Fill(covMatrixPCA[0]);
           hCovPVXX->Fill(covMatrixPV[0]);
           hMassBsToDsPi->Fill(massDsPi);

@@ -155,17 +155,17 @@ struct HfCandidateCreatorSigmac0plusplus {
         }
         /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
         /// if not selected, skip it and go to the next one
-        if (yCandLcMax >= 0. && std::abs(yLc(candLc)) > yCandLcMax) {
+        if (yCandLcMax >= 0. && std::abs(hfHelper.yLc(candLc)) > yCandLcMax) {
           continue;
         }
 
         /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
         auto statusSpreadMinvPKPiFromPDG = 0;
         auto statusSpreadMinvPiKPFromPDG = 0;
-        if (candLc.isSelLcToPKPi() >= 1 && std::abs(invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
+        if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
           statusSpreadMinvPKPiFromPDG = 1;
         }
-        if (candLc.isSelLcToPiKP() >= 1 && std::abs(invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
+        if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
           statusSpreadMinvPiKPFromPDG = 1;
         }
         if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

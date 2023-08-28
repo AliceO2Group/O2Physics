@@ -199,19 +199,19 @@ struct HfTaskMcEfficiency {
         /// all candidates
         if (isHypoMass1TrackStep) {
           if (pdgCode == pdg::kLambdaCPlus) {
-            massHypo1 = invMassLcToPKPi(candidate);
+            massHypo1 = hfHelper.invMassLcToPKPi(candidate);
           } else if (pdgCode == pdg::kDPlus) {
-            massHypo1 = invMassDplusToPiKPi(candidate);
+            massHypo1 = hfHelper.invMassDplusToPiKPi(candidate);
           } else if (pdgCode == pdg::kDS) {
-            massHypo1 = invMassDsToKKPi(candidate);
+            massHypo1 = hfHelper.invMassDsToKKPi(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched, origin);
         }
         if (isHypoMass2TrackStep) {
           if (pdgCode == pdg::kLambdaCPlus) {
-            massHypo2 = invMassLcToPiKP(candidate);
+            massHypo2 = hfHelper.invMassLcToPiKP(candidate);
           } else if (pdgCode == pdg::kDS) {
-            massHypo2 = invMassDsToPiKK(candidate);
+            massHypo2 = hfHelper.invMassDsToPiKK(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched, origin);
         }
@@ -313,10 +313,10 @@ struct HfTaskMcEfficiency {
         float pt = candidate.pt();
         bool selected = false;
         if (pdgCode == pdg::kD0) {
-          mass = invMassD0ToPiK(candidate);
+          mass = hfHelper.invMassD0ToPiK(candidate);
           selected = candidate.isSelD0() >= selectionFlagD0;
         } else if (pdgCode == pdg::kD0Bar) {
-          mass = invMassD0barToKPi(candidate);
+          mass = hfHelper.invMassD0barToKPi(candidate);
           selected = candidate.isSelD0bar() >= selectionFlagD0bar;
         }
         LOGP(debug, "Candidate {} has prong {} and prong {} and pT {} and mass {}", candidate.globalIndex(), candidate.prong0Id(), candidate.prong1Id(), candidate.pt(), mass);

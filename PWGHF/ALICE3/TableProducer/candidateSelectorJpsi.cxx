@@ -122,12 +122,12 @@ struct HfCandidateSelectorJpsi {
     }
 
     // cut on e+ e− invariant mass
-    if (std::abs(invMassJpsiToEE(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassJpsiToEE(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
       selEE = 0;
     }
 
     // cut on μ+ μ− invariant mass
-    if (std::abs(invMassJpsiToMuMu(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassJpsiToMuMu(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
       selMuMu = 0;
     }
 

@@ -420,7 +420,7 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
-      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1); // Candidate type attribution.
 
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
@@ -438,10 +438,10 @@ struct HfCorrelatorDMesonPairs {
                     candidate2.eta() - candidate1.eta(),
                     candidate1.pt(),
                     candidate2.pt(),
-                    yD0(candidate1),
-                    yD0(candidate2),
-                    invMassD0ToPiK(candidate1),
-                    invMassD0barToKPi(candidate2),
+                    hfHelper.yD0(candidate1),
+                    hfHelper.yD0(candidate2),
+                    hfHelper.invMassD0ToPiK(candidate1),
+                    hfHelper.invMassD0barToKPi(candidate2),
                     candidateType1,
                     candidateType2,
                     0);
@@ -469,7 +469,7 @@ struct HfCorrelatorDMesonPairs {
         fillInfoHists(candidate1, true, true);
       }
 
-      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
 
       int8_t origin1 = 0, matchedRec1 = 0;
@@ -505,10 +505,10 @@ struct HfCorrelatorDMesonPairs {
                     candidate2.eta() - candidate1.eta(),
                     candidate1.pt(),
                     candidate2.pt(),
-                    yD0(candidate1),
-                    yD0(candidate2),
-                    invMassD0ToPiK(candidate1),
-                    invMassD0barToKPi(candidate2),
+                    hfHelper.yD0(candidate1),
+                    hfHelper.yD0(candidate2),
+                    hfHelper.invMassD0ToPiK(candidate1),
+                    hfHelper.invMassD0barToKPi(candidate2),
                     candidateType1,
                     candidateType2,
                     1);
@@ -555,7 +555,7 @@ struct HfCorrelatorDMesonPairs {
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, outerParticleSign);
       fillInfoHists(candidate1, false, false);
-      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
@@ -578,10 +578,10 @@ struct HfCorrelatorDMesonPairs {
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
-                       yDplus(candidate1),
-                       yDplus(candidate2),
-                       invMassDplusToPiKPi(candidate1),
-                       invMassDplusToPiKPi(candidate2),
+                       hfHelper.yDplus(candidate1),
+                       hfHelper.yDplus(candidate2),
+                       hfHelper.invMassDplusToPiKPi(candidate1),
+                       hfHelper.invMassDplusToPiKPi(candidate2),
                        candidateType1,
                        candidateType2,
                        0);
@@ -614,7 +614,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, outerParticleSign);
-      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       int8_t origin1 = 0, matchedRec1 = 0;
       if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
@@ -655,10 +655,10 @@ struct HfCorrelatorDMesonPairs {
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
-                       yDplus(candidate1),
-                       yDplus(candidate2),
-                       invMassDplusToPiKPi(candidate1),
-                       invMassDplusToPiKPi(candidate2),
+                       hfHelper.yDplus(candidate1),
+                       hfHelper.yDplus(candidate2),
+                       hfHelper.invMassDplusToPiKPi(candidate1),
+                       hfHelper.invMassDplusToPiKPi(candidate2),
                        candidateType1,
                        candidateType2,
                        1);

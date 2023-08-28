@@ -167,12 +167,12 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yD0(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
         continue;
       }
 
-      auto massD0 = invMassD0ToPiK(candidate);
-      auto massD0bar = invMassD0barToKPi(candidate);
+      auto massD0 = hfHelper.invMassD0ToPiK(candidate);
+      auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
 
       if (candidate.isSelD0() >= selectionFlagD0) {
@@ -199,8 +199,8 @@ struct HfTaskD0 {
       registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), ptCandidate);
       registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), ptCandidate);
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), ptCandidate);
-      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), ptCandidate);
-      registry.fill(HIST("hCt"), ctD0(candidate), ptCandidate);
+      registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
+      registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), ptCandidate);
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("hEta"), candidate.eta(), ptCandidate);
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), ptCandidate);
@@ -209,8 +209,8 @@ struct HfTaskD0 {
       registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), ptCandidate);
       registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), ptCandidate);
       registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), ptCandidate);
-      registry.fill(HIST("hCTSFinerBinning"), cosThetaStarD0(candidate), ptCandidate);
-      registry.fill(HIST("hCtFinerBinning"), ctD0(candidate), ptCandidate);
+      registry.fill(HIST("hCTSFinerBinning"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
+      registry.fill(HIST("hCtFinerBinning"), hfHelper.ctD0(candidate), ptCandidate);
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
     }
@@ -226,11 +226,11 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yD0(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
         continue;
       }
-      auto massD0 = invMassD0ToPiK(candidate);
-      auto massD0bar = invMassD0barToKPi(candidate);
+      auto massD0 = hfHelper.invMassD0ToPiK(candidate);
+      auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
@@ -239,7 +239,7 @@ struct HfTaskD0 {
         auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
         registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                         // gen. level pT
         auto ptRec = candidate.pt();
-        auto yRec = yD0(candidate);
+        auto yRec = hfHelper.yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
           registry.fill(HIST("hPtGenVsPtRecSig"), ptGen, ptRec);
@@ -309,7 +309,7 @@ struct HfTaskD0 {
       auto ptCandidate = candidate.pt();
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
-      auto rapidityCandidate = yD0(candidate);
+      auto rapidityCandidate = hfHelper.yD0(candidate);
       auto declengthCandidate = candidate.decayLength();
       auto declengthxyCandidate = candidate.decayLengthXY();
       auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
@@ -317,8 +317,8 @@ struct HfTaskD0 {
       auto d0Prong0 = candidate.impactParameter0();
       auto d0Prong1 = candidate.impactParameter1();
       auto d0d0Candidate = candidate.impactParameterProduct();
-      auto ctsCandidate = cosThetaStarD0(candidate);
-      auto ctCandidate = ctD0(candidate);
+      auto ctsCandidate = hfHelper.cosThetaStarD0(candidate);
+      auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
       if (candidate.isSelD0() >= selectionFlagD0) {

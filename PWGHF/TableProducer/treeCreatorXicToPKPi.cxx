@@ -304,8 +304,8 @@ struct HfTreeCreatorXicToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelXicToPKPi(), invMassXicToPKPi(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
-      fillTable(1, candidate.isSelXicToPiKP(), invMassXicToPiKP(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
+      fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
+      fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }
 
     // Filling particle properties
@@ -436,8 +436,8 @@ struct HfTreeCreatorXicToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelXicToPKPi(), invMassXicToPKPi(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
-      fillTable(1, candidate.isSelXicToPiKP(), invMassXicToPiKP(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
+      fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
+      fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToPKPi, processData, "Process data tree writer", false);

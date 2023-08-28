@@ -351,14 +351,14 @@ struct HfTreeCreatorD0ToKPi {
       }
       auto prong0 = candidate.prong0_as<TracksWPid>();
       auto prong1 = candidate.prong1_as<TracksWPid>();
-      double yD = yD0(candidate);
-      double eD = eD0(candidate);
-      double ctD = ctD0(candidate);
+      double yD = hfHelper.yD0(candidate);
+      double eD = hfHelper.eD0(candidate);
+      double ctD = hfHelper.ctD0(candidate);
       if (candidate.isSelD0()) {
-        fillTable(candidate, prong0, prong1, 0, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, 0, 0);
+        fillTable(candidate, prong0, prong1, 0, hfHelper.invMassD0ToPiK(candidate), hfHelper.cosThetaStarD0(candidate), ctD, yD, eD, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable(candidate, prong0, prong1, 1, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, 0, 0);
+        fillTable(candidate, prong0, prong1, 1, hfHelper.invMassD0barToKPi(candidate), hfHelper.cosThetaStarD0bar(candidate), ctD, yD, eD, 0, 0);
       }
     }
   }
@@ -387,14 +387,14 @@ struct HfTreeCreatorD0ToKPi {
       for (const auto& candidate : reconstructedCandSig) {
         auto prong0 = candidate.prong0_as<TracksWPid>();
         auto prong1 = candidate.prong0_as<TracksWPid>();
-        double yD = yD0(candidate);
-        double eD = eD0(candidate);
-        double ctD = ctD0(candidate);
+        double yD = hfHelper.yD0(candidate);
+        double eD = hfHelper.eD0(candidate);
+        double ctD = hfHelper.ctD0(candidate);
         if (candidate.isSelD0()) {
-          fillTable(candidate, prong0, prong1, 0, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 0, hfHelper.invMassD0ToPiK(candidate), hfHelper.cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          fillTable(candidate, prong0, prong1, 1, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 1, hfHelper.invMassD0barToKPi(candidate), hfHelper.cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
     } else if (fillOnlyBackground) {
@@ -412,14 +412,14 @@ struct HfTreeCreatorD0ToKPi {
         }
         auto prong0 = candidate.prong0_as<TracksWPid>();
         auto prong1 = candidate.prong0_as<TracksWPid>();
-        double yD = yD0(candidate);
-        double eD = eD0(candidate);
-        double ctD = ctD0(candidate);
+        double yD = hfHelper.yD0(candidate);
+        double eD = hfHelper.eD0(candidate);
+        double ctD = hfHelper.ctD0(candidate);
         if (candidate.isSelD0()) {
-          fillTable(candidate, prong0, prong1, 0, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 0, hfHelper.invMassD0ToPiK(candidate), hfHelper.cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          fillTable(candidate, prong0, prong1, 1, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 1, hfHelper.invMassD0barToKPi(candidate), hfHelper.cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
     } else {
@@ -431,14 +431,14 @@ struct HfTreeCreatorD0ToKPi {
       for (const auto& candidate : candidates) {
         auto prong0 = candidate.prong0_as<TracksWPid>();
         auto prong1 = candidate.prong0_as<TracksWPid>();
-        double yD = yD0(candidate);
-        double eD = eD0(candidate);
-        double ctD = ctD0(candidate);
+        double yD = hfHelper.yD0(candidate);
+        double eD = hfHelper.eD0(candidate);
+        double ctD = hfHelper.ctD0(candidate);
         if (candidate.isSelD0()) {
-          fillTable(candidate, prong0, prong1, 0, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 0, hfHelper.invMassD0ToPiK(candidate), hfHelper.cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          fillTable(candidate, prong0, prong1, 1, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+          fillTable(candidate, prong0, prong1, 1, hfHelper.invMassD0barToKPi(candidate), hfHelper.cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
     }

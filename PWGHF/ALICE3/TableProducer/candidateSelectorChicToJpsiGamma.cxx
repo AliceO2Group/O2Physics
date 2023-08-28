@@ -76,7 +76,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
     }
 
     auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
-    if (TMath::Abs(invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
+    if (TMath::Abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
       // Printf("Chic topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }

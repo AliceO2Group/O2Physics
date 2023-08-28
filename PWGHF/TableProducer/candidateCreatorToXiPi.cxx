@@ -360,7 +360,7 @@ struct HfCandidateCreatorToXiPi {
           double decLenCascade = RecoDecay::distance(coordVtxOmegac, vertexCasc);
           double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
           double ctOmegac = RecoDecay::ct(pVecOmegac, decLenOmegac, massOmegacFromPDG);
-          double ctXic = RecoDecay::ct(pVecOmegac, decLenOmegac, massXicFromPDG);
+          double hfHelper.ctXic = RecoDecay::ct(pVecOmegac, decLenOmegac, massXicFromPDG);
           double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
           double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
 
@@ -406,7 +406,7 @@ struct HfCandidateCreatorToXiPi {
                        impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
                        mLambda, mCasc, mOmegac,
                        cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
-                       ctOmegac, ctCascade, ctV0, ctXic,
+                       ctOmegac, ctCascade, ctV0, hfHelper.ctXic,
                        pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromOme,
                        pseudorapOmegac, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,

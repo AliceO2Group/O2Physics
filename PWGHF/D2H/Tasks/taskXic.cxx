@@ -209,17 +209,17 @@ struct HfTaskXic {
         continue;
       }
 
-      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
       if (candidate.isSelXicToPKPi() >= selectionFlagXic) { // pKpi
-        registry.fill(HIST("Data/hMassVsPt"), invMassXicToPKPi(candidate), ptCandidate);
-        registry.fill(HIST("Data/hMass"), invMassXicToPKPi(candidate));
+        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassXicToPKPi(candidate), ptCandidate);
+        registry.fill(HIST("Data/hMass"), hfHelper.invMassXicToPKPi(candidate));
       }
       if (candidate.isSelXicToPiKP() >= selectionFlagXic) { // piKp
-        registry.fill(HIST("Data/hMassVsPt"), invMassXicToPiKP(candidate), ptCandidate);
-        registry.fill(HIST("Data/hMass"), invMassXicToPiKP(candidate));
+        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassXicToPiKP(candidate), ptCandidate);
+        registry.fill(HIST("Data/hMass"), hfHelper.invMassXicToPiKP(candidate));
       }
       registry.fill(HIST("Data/hPt"), ptCandidate);
       registry.fill(HIST("Data/hEta"), candidate.eta());
@@ -234,7 +234,7 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hd0Prong0"), candidate.impactParameter0(), ptCandidate);
       registry.fill(HIST("Data/hd0Prong1"), candidate.impactParameter1(), ptCandidate);
       registry.fill(HIST("Data/hd0Prong2"), candidate.impactParameter2(), ptCandidate);
-      registry.fill(HIST("Data/hCt"), ctXic(candidate), ptCandidate);
+      registry.fill(HIST("Data/hCt"), hfHelper.ctXic(candidate), ptCandidate);
       registry.fill(HIST("Data/hCPA"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("Data/hCPAXY"), candidate.cpaXY(), ptCandidate);
       registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), ptCandidate);
@@ -292,7 +292,7 @@ struct HfTaskXic {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       } // rapidity selection
-      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -301,10 +301,10 @@ struct HfTaskXic {
       auto ptCandidate = candidate.pt();
 
       if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
-        massXicToPKPi = invMassXicToPKPi(candidate);
+        massXicToPKPi = hfHelper.invMassXicToPKPi(candidate);
       }
       if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
-        massXicToPiKP = invMassXicToPiKP(candidate); // mass conjugate
+        massXicToPiKP = hfHelper.invMassXicToPiKP(candidate); // mass conjugate
       }
 
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XicToPKPi) {
@@ -328,7 +328,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong0RecSig"), candidate.impactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong1RecSig"), candidate.impactParameter1(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong2RecSig"), candidate.impactParameter2(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), ctXic(candidate), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), hfHelper.ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPAXYRecSig"), candidate.cpaXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta(), ptCandidate);
@@ -356,7 +356,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hd0Prong0RecBg"), candidate.impactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hd0Prong1RecBg"), candidate.impactParameter1(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hd0Prong2RecBg"), candidate.impactParameter2(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), ctXic(candidate), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), hfHelper.ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPARecBg"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPAXYRecBg"), candidate.cpaXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hEtaRecBg"), candidate.eta(), ptCandidate);

@@ -243,11 +243,11 @@ struct HfDataCreatorD0PiReduced {
         float invMassD0;
 
         if (candD0.isSelD0() >= selectionFlagD0) {
-          invMassD0 = invMassD0ToPiK(candD0);
+          invMassD0 = hfHelper.invMassD0ToPiK(candD0);
           registry.fill(HIST("hMassD0ToKPi"), invMassD0);
         }
         if (candD0.isSelD0bar() >= selectionFlagD0bar) {
-          invMassD0 = invMassD0barToKPi(candD0);
+          invMassD0 = hfHelper.invMassD0barToKPi(candD0);
           registry.fill(HIST("hMassD0ToKPi"), invMassD0);
         }
         registry.fill(HIST("hPtD0"), candD0.pt());

@@ -239,7 +239,7 @@ struct HfDataCreatorDplusPiReduced {
         bool fillHfCand3Prong = false;
         float invMassD;
 
-        registry.fill(HIST("hMassDToPiKPi"), invMassDplusToPiKPi(candD));
+        registry.fill(HIST("hMassDToPiKPi"), hfHelper.invMassDplusToPiKPi(candD));
         registry.fill(HIST("hPtD"), candD.pt());
         registry.fill(HIST("hCPAD"), candD.cpa());
 
@@ -311,7 +311,7 @@ struct HfDataCreatorDplusPiReduced {
             continue;
           }
 
-          invMassD = hf_cand_3prong_reduced::invMassDplusToPiKPi(pVec0, pVec1, pVec2);
+          invMassD = hf_cand_3prong_reduced::hfHelper.invMassDplusToPiKPi(pVec0, pVec1, pVec2);
 
           // fill Pion tracks table
           // if information on track already stored, go to next track

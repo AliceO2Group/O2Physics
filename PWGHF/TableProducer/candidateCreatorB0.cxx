@@ -176,7 +176,7 @@ struct HfCandidateCreatorB0 {
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
 
       for (const auto& candD : candsDThisColl) { // start loop over filtered D candidates indices as associated to this collision in candidateCreator3Prong.cxx
-        hMassDToPiKPi->Fill(invMassDplusToPiKPi(candD), candD.pt());
+        hMassDToPiKPi->Fill(hfHelper.invMassDplusToPiKPi(candD), candD.pt());
         hPtD->Fill(candD.pt());
         hCPAD->Fill(candD.cpa());
 

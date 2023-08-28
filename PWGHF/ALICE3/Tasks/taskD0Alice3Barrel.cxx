@@ -72,14 +72,14 @@ struct HfTaskD0Alice3Barrel {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (std::abs(yD0(candidate)) > 4.0) {
+      if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
         continue;
       }
 
-      auto massD0 = invMassD0ToPiK(candidate);
-      auto massD0bar = invMassD0barToKPi(candidate);
+      auto massD0 = hfHelper.invMassD0ToPiK(candidate);
+      auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(yD0(candidate));
+      auto rapidityCandidate = std::abs(hfHelper.yD0(candidate));
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
