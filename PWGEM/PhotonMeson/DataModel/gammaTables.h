@@ -47,7 +47,7 @@ DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event inf
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1,
-                  cent::CentFV0A, cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFDDM, cent::CentNTPV,
+                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentNTPV,
                   emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
 using EMReducedEvent = EMReducedEvents::iterator;
 
