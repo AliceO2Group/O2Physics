@@ -56,6 +56,13 @@ struct QaTrackCuts {
 
   void init(InitContext&)
   {
+
+    histos.add("eventSelection", "Event Selection", kTH1D, {{10, 0.5, 10.5, "Selection"}});
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
+
     const AxisSpec axisSelections{30, 0.5, 30.5f, "Selection"};
     // histos.add("events", "events", kTH1D, {axisSelections});
     for (int i = 0; i < nhist; i++) {
