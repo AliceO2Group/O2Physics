@@ -77,8 +77,20 @@ struct HfCandidateSelectorD0 {
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
+  // Define histograms
+  AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
+  AxisSpec axisBdtScore{100, 0.f, 1.f};
+  AxisSpec axisSelStatus{2, -0.5f, 1.5f};
+
+  HistogramRegistry registry{"registry",
+                             {{"hMassDmesonSel", ";#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassDmeson}}}}};
+
   void init(InitContext& initContext)
   {
+    if (applyMl) {
+      registry.add("DebugBdt/hBdtScoreVsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
+    }
+
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -346,6 +358,11 @@ struct HfCandidateSelectorD0 {
           statusD0 = 0;
           statusD0bar = 0;
         }
+        registry.fill(HIST("DebugBdt/hBdtScoreVsStatus"), outputMl[0], statusD0);
+        registry.fill(HIST("DebugBdt/hBdtScoreVsStatus"), outputMl[0], statusD0bar);
+      }
+      if (statusD0 != 0 || statusD0bar != 0) {
+        registry.fill(HIST("hMassDmesonSel"), invMassD0ToPiK(candidate));
       }
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
     }
