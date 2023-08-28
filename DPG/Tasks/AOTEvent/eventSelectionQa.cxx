@@ -21,14 +21,16 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "TH1F.h"
 #include "TH2F.h"
+
 using namespace o2::framework;
 using namespace o2;
-using namespace evsel;
+using namespace o2::aod::evsel;
 
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs"};

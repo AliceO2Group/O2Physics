@@ -367,7 +367,7 @@ struct HfTreeCreatorDplusToPiKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -377,7 +377,7 @@ struct HfTreeCreatorDplusToPiKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -398,7 +398,7 @@ struct HfTreeCreatorDplusToPiKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -440,13 +440,13 @@ struct HfTreeCreatorDplusToPiKPi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
+    for (const auto& particle : particles) {
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

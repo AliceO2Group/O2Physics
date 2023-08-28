@@ -141,8 +141,8 @@ struct HfCandidateCreator2Prong {
       auto trackParVar1 = df.getTrack(1);
 
       // get track momenta
-      array<float, 3> pvec0;
-      array<float, 3> pvec1;
+      std::array<float, 3> pvec0;
+      std::array<float, 3> pvec1;
       trackParVar0.getPxPyPzGlo(pvec0);
       trackParVar1.getPxPyPzGlo(pvec1);
 
@@ -181,7 +181,7 @@ struct HfCandidateCreator2Prong {
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+      getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -201,9 +201,9 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant masses
-        auto arrayMomenta = array{pvec0, pvec1};
-        massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
-        massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
+        auto arrayMomenta = std::array{pvec0, pvec1};
+        massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
+        massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
         hMass2->Fill(massPiK);
         hMass2->Fill(massKPi);
       }
@@ -252,15 +252,15 @@ struct HfCandidateCreator2ProngExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto& candidate : *rowCandidateProng2) {
+    for (const auto& candidate : *rowCandidateProng2) {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
-      auto arrayDaughters = array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
       // Printf("Checking D0(bar) → π± K∓");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
@@ -268,7 +268,7 @@ struct HfCandidateCreator2ProngExpressions {
       // J/ψ → e+ e−
       if (flag == 0) {
         // Printf("Checking J/ψ → e+ e−");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -277,7 +277,7 @@ struct HfCandidateCreator2ProngExpressions {
       // J/ψ → μ+ μ−
       if (flag == 0) {
         // Printf("Checking J/ψ → μ+ μ−");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -293,21 +293,21 @@ struct HfCandidateCreator2ProngExpressions {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
 
       // D0(bar) → π± K∓
       // Printf("Checking D0(bar) → π± K∓");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
         // Printf("Checking J/ψ → e+ e−");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
       }
@@ -315,7 +315,7 @@ struct HfCandidateCreator2ProngExpressions {
       // J/ψ → μ+ μ−
       if (flag == 0) {
         // Printf("Checking J/ψ → μ+ μ−");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
       }

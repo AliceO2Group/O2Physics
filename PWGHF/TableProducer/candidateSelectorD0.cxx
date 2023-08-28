@@ -20,6 +20,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -31,6 +32,7 @@ using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
   Produces<aod::HfSelD0> hfSelD0Candidate;
+  Produces<aod::HfMlD0> hfMlD0Candidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -52,6 +54,23 @@ struct HfCandidateSelectorD0 {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+
+  o2::analysis::HfMlResponse<float> hfMlResponse;
+  std::vector<float> outputMl = {};
+
+  o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -67,6 +86,18 @@ struct HfCandidateSelectorD0 {
     selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
     selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.init();
+      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
+    }
   }
 
   /// Conjugate-independent topological cuts
@@ -188,10 +219,11 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksSel const&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const&)
   {
     // looping over 2-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;
@@ -203,16 +235,23 @@ struct HfCandidateSelectorD0 {
 
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusHFFlag = 1;
 
+      auto ptCand = candidate.pt();
       auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
       auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusTopol = 1;
@@ -227,6 +266,9 @@ struct HfCandidateSelectorD0 {
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusCand = 1;
@@ -272,6 +314,9 @@ struct HfCandidateSelectorD0 {
 
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
 
@@ -282,6 +327,26 @@ struct HfCandidateSelectorD0 {
         statusD0bar = 1; // identified as D0bar
       }
       statusPID = 1;
+
+      if (applyMl) {
+        // ML selections
+
+        std::vector<float> inputFeatures{candidate.cpa(),
+                                         candidate.cpaXY(),
+                                         candidate.decayLength(),
+                                         candidate.decayLengthXY(),
+                                         candidate.impactParameter0(),
+                                         candidate.impactParameter1(),
+                                         candidate.impactParameterProduct()};
+
+        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+        hfMlD0Candidate(outputMl);
+
+        if (!isSelectedMl) {
+          statusD0 = 0;
+          statusD0bar = 0;
+        }
+      }
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
     }
   }

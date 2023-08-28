@@ -177,7 +177,8 @@ struct HfCandidateSelectorToXiPi {
     registry.add("hSelMassOme", "hSelMassOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
   }
 
-  void process(aod::HfCandToXiPi const& candidates, TracksSel const&)
+  void process(aod::HfCandToXiPi const& candidates,
+               TracksSel const&)
   {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
@@ -185,7 +186,7 @@ struct HfCandidateSelectorToXiPi {
     int collId = -999;
 
     // looping over omegac candidates
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 

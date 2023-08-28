@@ -18,6 +18,8 @@
 #include <string_view>
 #include <TMath.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
@@ -281,7 +283,7 @@ struct fullJetFilter {
     EMCALHWTriggerConfiguration result = EMCALHWTriggerConfiguration::UNKNOWN;
     bool hasMinBias = false, hasL0 = false;
     for (auto& cls : ctpconfig.getCTPClasses()) {
-      std::string_view trgclsname = cls.name;
+      auto trgclsname = boost::algorithm::to_upper_copy(cls.name);
       if (trgclsname.find("-EMC") == std::string::npos) {
         // Not an EMCAL trigger class
         continue;
@@ -621,7 +623,10 @@ struct fullJetFilter {
       constexpr bool isFullJets = std::is_same<JetCollection, filteredFullJets>::value;
       constexpr bool isNeutralJets = std::is_same<JetCollection, filteredNeutralJets>::value;
       int64_t ts = bcs.iteratorAt(0).timestamp();
-      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getForTimeStamp<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts)));
+      // Request run number in addition to timestamp in order to handle concurrent runs
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = std::to_string(run);
+      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata)));
       switch (mHardwareTriggerConfig) {
         case EMCALHWTriggerConfiguration::MB_ONLY: {
           LOG(info) << "Found hardware trigger configuration Min. bias only";

@@ -72,6 +72,9 @@ struct FilterCF {
   Produces<aod::CFCollisions> outputCollisions;
   Produces<aod::CFTracks> outputTracks;
 
+  Produces<aod::CFCollLabels> outputMcCollisionLabels;
+  Produces<aod::CFTrackLabels> outputTrackLabels;
+
   Produces<aod::CFMcCollisions> outputMcCollisions;
   Produces<aod::CFMcParticles> outputMcParticles;
 
@@ -99,7 +102,7 @@ struct FilterCF {
     }
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    outputCollisions(-1, bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+    outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
 
     for (auto& track : tracks) {
       uint8_t trackType = 0;
@@ -109,7 +112,7 @@ struct FilterCF {
         trackType = 2;
       }
 
-      outputTracks(outputCollisions.lastIndex(), -1, track.pt(), track.eta(), track.phi(), track.sign(), trackType);
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
 
       yields->Fill(collision.multiplicity(), track.pt(), track.eta());
       etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
@@ -202,7 +205,8 @@ struct FilterCF {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       // NOTE works only when we store all MC collisions (as we do here)
-      outputCollisions(collision.mcCollisionId(), bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+      outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+      outputMcCollisionLabels(collision.mcCollisionId());
 
       for (auto& track : groupedTracks) {
         uint8_t trackType = 0;
@@ -219,8 +223,9 @@ struct FilterCF {
             LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {} (reco flag {})", track.index(), track.mcParticleId(), mcParticleId, reconstructed[track.mcParticleId()]);
           }
         }
-        outputTracks(outputCollisions.lastIndex(), mcParticleId,
+        outputTracks(outputCollisions.lastIndex(),
                      truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), trackType);
+        outputTrackLabels(mcParticleId);
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());
         etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());

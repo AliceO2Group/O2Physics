@@ -47,9 +47,10 @@ struct HfTaskLcParametrizedPid {
      {"hMassBkgLcPerfectPid", "3-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{500, 1.6, 3.1}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLcParametrizedPid, aod::HfCand3ProngMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -114,13 +115,13 @@ struct HfTaskLcParametrizedPid {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
+        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("hMassGen"), ptGen, std::abs(yGen));
       }
     }

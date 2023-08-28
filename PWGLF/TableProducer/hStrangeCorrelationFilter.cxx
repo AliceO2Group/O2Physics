@@ -33,6 +33,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 struct hstrangecorrelationfilter {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -49,6 +51,8 @@ struct hstrangecorrelationfilter {
   // Track quality
   Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+  Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
+  Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
 
   // Associated particle selections in phase space
   Configurable<float> assocEtaMin{"assocEtaCutMin", -0.8, "triggeretamin"};
@@ -121,6 +125,8 @@ struct hstrangecorrelationfilter {
   HistogramRegistry registry{
     "registry",
     {}};
+  using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
+  using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
@@ -185,6 +191,12 @@ struct hstrangecorrelationfilter {
       }
       if (!track.hasITS() && triggerRequireITS) {
         continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+      }
+      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
+        continue; // skip, has shared clusters
+      }
+      if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
+        continue; // skip, doesn't have cluster in ITS L0
       }
       triggerTrack(
         track.collisionId(),
@@ -257,7 +269,7 @@ struct hstrangecorrelationfilter {
     }
   }
 
-  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, V0LinkedTagged const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -280,6 +292,7 @@ struct hstrangecorrelationfilter {
 
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
+      auto origV0entry = v0.v0_as<V0LinkedTagged>(); // retrieve tags
 
       if (negdau.tpcNClsCrossedRows() < minTPCNCrossedRows)
         continue;
@@ -364,11 +377,14 @@ struct hstrangecorrelationfilter {
             (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
             (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
       ) {
-        assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
+        assocV0(v0.collisionId(), v0.globalIndex(),
+                compatibleK0Short, compatibleLambda, compatibleAntiLambda,
+                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(),
+                massRegK0Short, massRegLambda, massRegAntiLambda);
       }
     }
   }
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&, CascadesLinkedTagged const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -389,6 +405,7 @@ struct hstrangecorrelationfilter {
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = v0data.posTrack_as<DauTracks>();
       auto negTrackCast = v0data.negTrack_as<DauTracks>();
+      auto origCascadeEntry = casc.cascade_as<CascadesLinkedTagged>();
 
       // minimum TPC crossed rows
       if (bachTrackCast.tpcNClsCrossedRows() < minTPCNCrossedRows)
@@ -465,7 +482,11 @@ struct hstrangecorrelationfilter {
             ((compatibleXiMinus || compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) ||
             ((compatibleOmegaMinus || compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
       ) {
-        assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
+        assocCascades(casc.collisionId(), casc.globalIndex(),
+                      compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
+                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(),
+                      origCascadeEntry.isTrueOmegaMinus(), origCascadeEntry.isTrueOmegaPlus(),
+                      massRegXi, massRegOmega);
       }
     }
   }

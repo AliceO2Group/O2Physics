@@ -94,24 +94,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
     list->Add(new TH2F("hV0R_minTrackX", "V0R vs. trackiu x;R_{xy} of V0 (cm);min TrackIU X (cm)", 200, 0.0f, 200.0f, 400, 0.f, 200.0f));
 
-    const int nrxy = 102;
-    double rxy[nrxy] = {0.f};
-    for (int i = 0; i < 90; i++) {
-      rxy[i] = 1.0 * i;
-    }
-    for (int i = 90; i < nrxy; i++) {
-      rxy[i] = 10.0 * (i - 90) + 90.0;
-    }
-
-    const int ndim = 3; // r, phi, eta
-    const int nbins[ndim] = {nrxy - 1, 72, 40};
-    const double xmin[ndim] = {0.0, 0.0, -2.0};
-    const double xmax[ndim] = {200.0, TMath::TwoPi(), +2.0};
-
-    THnSparseF* hs_conv_point = new THnSparseF("hs_conv_point", "hs_conv_point;R_{xy} (cm);#varphi (rad.);#eta;", ndim, nbins, xmin, xmax);
-    hs_conv_point->SetBinEdges(0, rxy);
-    list->Add(hs_conv_point);
-
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
       list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
@@ -134,8 +116,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 1000, -1.0f, 1.0f));
-    }
-  }
+    } // end of mc
+  }   // end of V0
 
   if (TString(histClass) == "Cluster") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
@@ -212,6 +194,61 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Eta_Primary"))->Sumw2();
   }
+
+  if (TString(histClass) == "material_budget_study") {
+    const int nrxy = 102;
+    double rxy[nrxy] = {0.f};
+    for (int i = 0; i < 90; i++) {
+      rxy[i] = 1.0 * i;
+    }
+    for (int i = 90; i < nrxy; i++) {
+      rxy[i] = 10.0 * (i - 90) + 90.0;
+    }
+
+    const int npt = 71;
+    double pt[npt] = {0.f};
+    for (int i = 0; i < 10; i++) {
+      pt[i] = 0.01 * i;
+    }
+    for (int i = 10; i < 60; i++) {
+      pt[i] = 0.1 * (i - 10) + 0.1;
+    }
+    for (int i = 60; i < npt; i++) {
+      pt[i] = 0.5 * (i - 60) + 5.0;
+    }
+    if (TString(subGroup) == "V0") {
+      const int ndim = 4; // pt, r, phi, eta
+      const int nbins[ndim] = {npt - 1, nrxy - 1, 72, 40};
+      const double xmin[ndim] = {0.0, 0.0, 0.0, -2.0};
+      const double xmax[ndim] = {10.0, 200.0, TMath::TwoPi(), +2.0};
+      THnSparseF* hs_conv_point = new THnSparseF("hs_conv_point", "hs_conv_point;p_{T,#gamma} (GeV/c);R_{xy} (cm);#varphi (rad.);#eta;", ndim, nbins, xmin, xmax);
+      hs_conv_point->SetBinEdges(0, pt);
+      hs_conv_point->SetBinEdges(1, rxy);
+      hs_conv_point->Sumw2();
+      list->Add(hs_conv_point);
+    } else if (TString(subGroup) == "Pair") {
+      const int ndim = 9; // mgg, pT1, rxy1, eta1, phi1, pT2, rxy2, eta2, phi2
+      const int nbins[ndim] = {200, npt - 1, nrxy - 1, 72, 40, npt - 1, nrxy - 1, 72, 40};
+      const double xmin[ndim] = {0.0, 0.0, 0, 0, -2, 0.0, 0, 0, -2};
+      const double xmax[ndim] = {0.4, 10.0, 200, TMath::TwoPi(), +2, 10.0, 200, TMath::TwoPi(), +2};
+
+      THnSparseF* hs_conv_point_same = new THnSparseF("hs_conv_point_same", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma}^{tag} (GeV/c);R_{xy}^{tag} (cm);#varphi^{tag} (rad.);#eta^{tag};p_{T,#gamma}^{probe} (GeV/c);R_{xy}^{probe} (cm);#varphi^{probe} (rad.);#eta^{probe};", ndim, nbins, xmin, xmax);
+      hs_conv_point_same->SetBinEdges(1, pt);
+      hs_conv_point_same->SetBinEdges(2, rxy);
+      hs_conv_point_same->SetBinEdges(5, pt);
+      hs_conv_point_same->SetBinEdges(6, rxy);
+      hs_conv_point_same->Sumw2();
+      list->Add(hs_conv_point_same);
+
+      THnSparseF* hs_conv_point_mix = new THnSparseF("hs_conv_point_mix", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma}^{tag} (GeV/c);R_{xy}^{tag} (cm);#varphi^{tag} (rad.);#eta^{tag};p_{T,#gamma}^{probe} (GeV/c);R_{xy}^{probe} (cm);#varphi^{probe} (rad.);#eta^{probe};", ndim, nbins, xmin, xmax);
+      hs_conv_point_mix->SetBinEdges(1, pt);
+      hs_conv_point_mix->SetBinEdges(2, rxy);
+      hs_conv_point_mix->SetBinEdges(5, pt);
+      hs_conv_point_mix->SetBinEdges(6, rxy);
+      hs_conv_point_mix->Sumw2();
+      list->Add(hs_conv_point_mix);
+    } // end of pair
+  }   // end of material budget study
 
   if (TString(histClass) == "Generated") {
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
