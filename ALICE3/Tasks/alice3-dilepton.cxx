@@ -97,8 +97,8 @@ struct Alice3Dilepton {
     registry.add("Generated/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
     registry.add("Generated/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
 
-    registry.addClone("Generated/Pair/ULS", "Generated/Pair/LSpp");
-    registry.addClone("Generated/Pair/ULS", "Generated/Pair/LSnn");
+    registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSpp/");
+    registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSnn/");
 
     registry.add("Reconstructed/Event/VtxX", "Vertex X", kTH1F, {axisVx});
     registry.add("Reconstructed/Event/VtxY", "Vertex Y", kTH1F, {axisVy});
@@ -112,7 +112,7 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
 
-    registry.addClone("Reconstructed/Track", "Reconstructed/TrackPID");
+    registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
 
     registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
@@ -120,8 +120,8 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
     registry.add("Reconstructed/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
 
-    registry.addClone("Reconstructed/Pair/ULS", "Reconstructed/Pair/LSpp");
-    registry.addClone("Reconstructed/Pair/ULS", "Reconstructed/Pair/LSnn");
+    registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSpp/");
+    registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSnn/");
 
     HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
     registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
