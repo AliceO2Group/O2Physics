@@ -72,8 +72,8 @@ struct DGCandAnalyzer {
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
 
   // a function to fill 2Prong histograms
   template <typename TTrack>
@@ -117,7 +117,7 @@ struct DGCandAnalyzer {
     }
   }
 
-  void init(InitContext&)
+  void init(InitContext& context)
   {
     // initalise ccdb
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
@@ -137,81 +137,89 @@ struct DGCandAnalyzer {
     }
     bcnums.clear();
 
-    registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-    registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-    registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
-
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
-    registry.add("tracks/nSigmaTPCPEl", "nSigma TPC for electrons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
-    registry.add("tracks/nSigmaTPCPPi", "nSigma TPC for pions", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
-    registry.add("tracks/nSigmaTPCPMu", "nSigma TPC for muons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
-    registry.add("tracks/nSigmaTPCPKa", "nSigma TPC for kaons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
-    registry.add("tracks/nSigmaTPCPPr", "nSigma TPC for protons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
 
-    const AxisSpec axisnsTOF{nsTOFAxis, "nSigma TOF axis for histograms"};
-    registry.add("tracks/nSigmaTOFPEl", "nSigma TOF for electrons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
-    registry.add("tracks/nSigmaTOFPPi", "nSigma TOF for pions versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
-    registry.add("tracks/nSigmaTOFPMu", "nSigma TOF for muons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
-    registry.add("tracks/nSigmaTOFPKa", "nSigma TOF for kaons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
-    registry.add("tracks/nSigmaTOFPPr", "nSigma TOF for protons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+    if (context.mOptions.get<bool>("processReco")) {
+      registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
 
-    registry.add("tracks/trackHits", "Track hits in various detectors", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-    registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
-    registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{800, -20., 20.}}});
-    registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
-    registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
-    registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
-    registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
+      registry.add("tracks/nSigmaTPCPEl", "nSigma TPC for electrons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPPi", "nSigma TPC for pions", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPMu", "nSigma TPC for muons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPKa", "nSigma TPC for kaons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPPr", "nSigma TPC for protons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
 
-    registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
-    registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("system/unlikeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("system/nLikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
-    registry.add("system/likeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("system/likeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      const AxisSpec axisnsTOF{nsTOFAxis, "nSigma TOF axis for histograms"};
+      registry.add("tracks/nSigmaTOFPEl", "nSigma TOF for electrons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPPi", "nSigma TOF for pions versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPMu", "nSigma TOF for muons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPKa", "nSigma TOF for kaons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPPr", "nSigma TOF for protons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
 
-    // FIT signals
-    registry.add("FIT/FT0AAmplitude", "Total amplitude in FV0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FIT/FT0CAmplitude", "Total amplitude in FT0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FIT/FV0AAmplitude", "Total amplitude in FT0C", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FIT/FDDAAmplitude", "Total amplitude in FDDA", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FIT/FDDCAmplitude", "Total amplitude in FDDC", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("tracks/trackHits", "Track hits in various detectors", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
+      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{800, -20., 20.}}});
+      registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
+      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
+      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
 
-    registry.add("FIT/BBFV0A", "FV0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("FIT/BBFT0A", "FT0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("FIT/BBFT0C", "FT0C signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("FIT/BBFDDA", "FDDA signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("FIT/BBFDDC", "FDDC signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+      registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/unlikeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/nLikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+      registry.add("system/likeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/likeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
 
-    // 2 track events
-    registry.add("2Prong/TPCNCl1", "Number of found TPC clusters of track 1", {HistType::kTH1F, {{200, 0., 200.}}});
-    registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
-    registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{1000, 0., 10.}}});
-    registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
-    registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
-    registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
-    registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 300.}, {300, 0., 300.}}});
-    registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
-    registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
-    registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{1000, -5., 5.}, {1000, -5., 5.}}});
-    registry.add("2Prong/eta1Vseta2", "etas of track 1 versus track 2", {HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}}});
-    registry.add("2Prong/pt1pt2", "pTs of track 1 versus track 2", {HistType::kTH2F, {axispt, axispt}});
-    registry.add("2Prong/pt1eta1", "pT versus eta of track 1", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
-    registry.add("2Prong/pt2eta2", "pT versus eta of track 2", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
-    registry.add("2Prong/Angle", "Angle between both tracks", {HistType::kTH1F, {{175, -0.2, 3.3}}});
-    registry.add("2Prong/AngleIVM", "Angle versis invariant mass", {HistType::kTH2F, {axisIVM, {175, -0.2, 3.3}}});
-    registry.add("2Prong/pt1IVM", "pT of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("2Prong/pt2IVM", "pT of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("2Prong/eta1IVM", "eta of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
-    registry.add("2Prong/eta2IVM", "eta of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
-    registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
-    registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
-    registry.add("2Prong/NCl1IVM", "Number of found TPC clusters of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
-    registry.add("2Prong/NCl2IVM", "Number of found TPC clusters of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+      // FIT signals
+      registry.add("FIT/FT0AAmplitude", "Total amplitude in FV0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FT0CAmplitude", "Total amplitude in FT0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FV0AAmplitude", "Total amplitude in FT0C", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FDDAAmplitude", "Total amplitude in FDDA", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FDDCAmplitude", "Total amplitude in FDDC", {HistType::kTH1F, {{5000, 0., 5000.}}});
+
+      registry.add("FIT/BBFV0A", "FV0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFT0A", "FT0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFT0C", "FT0C signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFDDA", "FDDA signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFDDC", "FDDC signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+
+      // 2 track events
+      registry.add("2Prong/TPCNCl1", "Number of found TPC clusters of track 1", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+      registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+      registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 300.}, {300, 0., 300.}}});
+      registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+      registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+      registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{1000, -5., 5.}, {1000, -5., 5.}}});
+      registry.add("2Prong/eta1Vseta2", "etas of track 1 versus track 2", {HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}}});
+      registry.add("2Prong/pt1pt2", "pTs of track 1 versus track 2", {HistType::kTH2F, {axispt, axispt}});
+      registry.add("2Prong/pt1eta1", "pT versus eta of track 1", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
+      registry.add("2Prong/pt2eta2", "pT versus eta of track 2", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
+      registry.add("2Prong/Angle", "Angle between both tracks", {HistType::kTH1F, {{175, -0.2, 3.3}}});
+      registry.add("2Prong/AngleIVM", "Angle versis invariant mass", {HistType::kTH2F, {axisIVM, {175, -0.2, 3.3}}});
+      registry.add("2Prong/pt1IVM", "pT of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("2Prong/pt2IVM", "pT of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("2Prong/eta1IVM", "eta of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
+      registry.add("2Prong/eta2IVM", "eta of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
+      registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+      registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+      registry.add("2Prong/NCl1IVM", "Number of found TPC clusters of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+      registry.add("2Prong/NCl2IVM", "Number of found TPC clusters of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+    }
+
+    if (context.mOptions.get<bool>("processMcTruth")) {
+      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("mcTruth/IVMpt", "Invariant mass versus p_{T}", {HistType::kTH2F, {axisIVM, axispt}});
+    }
   }
 
-  void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
+  void processReco(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
     // count collisions
     registry.fill(HIST("stat/candCaseAll"), 0., 1.);
@@ -406,10 +414,10 @@ struct DGCandAnalyzer {
         registry.fill(HIST("tracks/trackHits"), 3., track.hasTRD() * 1.);
         registry.fill(HIST("tracks/trackHits"), 4., track.hasTOF() * 1.);
 
-        // registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
-        // registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
-        // registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
-        // registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
+        registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
+        registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
+        registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
+        registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
         registry.fill(HIST("tracks/TPCNCl"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), 1.);
         registry.fill(HIST("tracks/TPCChi2NCl"), track.tpcChi2NCl(), 1.);
 
@@ -480,6 +488,38 @@ struct DGCandAnalyzer {
     }
     registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
   }
+
+  PROCESS_SWITCH(DGCandAnalyzer, processReco, "Analyse reconstructed data", true);
+
+  using UDMcCollisionsFull = aod::UDMcCollisions;
+  using UDMcCollisionFull = UDMcCollisionsFull::iterator;
+  using UDMcTracksFull = aod::UDMcParticles;
+
+  void processMcTruth(UDMcCollisionFull const& mcCollison, UDMcTracksFull const& mcParts)
+  {
+
+    // which type of event is this
+    // 0: MB
+    // 1: Pythia diffractive
+    // 2: GRANIITTI diffractive
+    bool isPythiaDiff = udhelpers::isPythiaCDE(mcParts);
+    bool isGraniittiDiff = udhelpers::isGraniittiCDE(mcParts);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(0., 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(1., (!isPythiaDiff && !isGraniittiDiff) * 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(2., isPythiaDiff * 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(3., isGraniittiDiff * 1.);
+
+    // compute GRANIITTI event invariant mass
+    if (!isGraniittiDiff) {
+      return;
+    }
+    auto ivm = udhelpers::ivmGraniittiCDE(mcParts);
+
+    // update histograms
+    registry.get<TH2>(HIST("mcTruth/IVMpt"))->Fill(ivm.M(), ivm.Perp(), 1.);
+  }
+
+  PROCESS_SWITCH(DGCandAnalyzer, processMcTruth, "Analyse MC truth", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

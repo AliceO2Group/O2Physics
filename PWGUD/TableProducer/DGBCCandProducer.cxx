@@ -384,7 +384,7 @@ struct DGBCCandProducer {
 
         auto colTracks = tracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
         auto colFwdTracks = fwdtracks.sliceByCached(aod::fwdtrack::collisionId, col.globalIndex(), cache);
-        auto bcRange = udhelpers::compatibleBCs1(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+        auto bcRange = udhelpers::compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
         isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
 
         // update UDTables, case 1.
