@@ -312,7 +312,7 @@ struct HfDataCreatorDplusPiReduced {
             continue;
           }
 
-          invMassD = hf_cand_3prong_reduced::hfHelper.invMassDplusToPiKPi(pVec0, pVec1, pVec2);
+          invMassD = hfHelper.invMassDplusToPiKPi(pVec0, pVec1, pVec2);
 
           // fill Pion tracks table
           // if information on track already stored, go to next track

@@ -422,10 +422,10 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.mGamma());
     }
     if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::hfHelper.ctV0K0s(candidate));
+      inputFeatures.push_back(hfHelper.ctV0K0s(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::hfHelper.ctV0Lambda(candidate));
+      inputFeatures.push_back(hfHelper.ctV0Lambda(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::dcaV0Daughters]) {
       inputFeatures.push_back(candidate.dcaV0daughters());
@@ -467,7 +467,7 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(bach.tofNSigmaPr());
     }
     if (selectedInputFeatures[MLInputFeatures::m]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::hfHelper.invMassLcToK0sP(candidate));
+      inputFeatures.push_back(hfHelper.invMassLcToK0sP(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::pt]) {
       inputFeatures.push_back(candidate.pt());
@@ -482,7 +482,7 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.cpaXY());
     }
     if (selectedInputFeatures[MLInputFeatures::ct]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::hfHelper.ctLc(candidate));
+      inputFeatures.push_back(hfHelper.ctLc(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::eta]) {
       inputFeatures.push_back(candidate.eta());
@@ -491,10 +491,10 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.phi());
     }
     if (selectedInputFeatures[MLInputFeatures::y]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::hfHelper.yLc(candidate));
+      inputFeatures.push_back(hfHelper.yLc(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::e]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::hfHelper.eLc(candidate));
+      inputFeatures.push_back(hfHelper.eLc(candidate));
     }
 
     return inputFeatures;
