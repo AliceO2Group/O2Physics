@@ -62,10 +62,10 @@ const double yAxisMax = 5.;
 const int ptDAxisNBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
-const double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
+const double massD0 = hfHelper.mass(pdg::Code::kD0);
 const double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
-auto massPi = RecoDecay::getMassPDG(kPiPlus);
-auto massK = RecoDecay::getMassPDG(kKPlus);
+auto massPi = hfHelper.mass(kPiPlus);
+auto massK = hfHelper.mass(kKPlus);
 
 // definition of ME variables and new types
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
@@ -155,7 +155,7 @@ struct HfCorrelatorD0HadronsSelection {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, hfHelper.mass(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -572,7 +572,7 @@ struct HfCorrelatorD0Hadrons {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, hfHelper.mass(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -834,7 +834,7 @@ struct HfCorrelatorD0Hadrons {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, RecoDecay::getMassPDG(t1.pdgCode()));
+        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, hfHelper.mass(t1.pdgCode()));
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }

@@ -77,9 +77,9 @@ struct HfCandidateCreatorBplus {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-  double massBplus = RecoDecay::getMassPDG(pdg::Code::kBPlus);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massD0 = hfHelper.mass(pdg::Code::kD0);
+  double massBplus = hfHelper.mass(pdg::Code::kBPlus);
   double massD0Pi = 0.;
   double bz = 0.;
 

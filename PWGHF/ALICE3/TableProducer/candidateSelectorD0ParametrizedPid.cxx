@@ -144,11 +144,11 @@ struct HfCandidateSelectorD0ParametrizedPid {
 
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - hfHelper.mass(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - hfHelper.mass(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }

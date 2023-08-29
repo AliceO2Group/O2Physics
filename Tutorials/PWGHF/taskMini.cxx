@@ -37,8 +37,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Constants
-static const double massPi = RecoDecay::getMassPDG(kPiPlus);
-static const double massK = RecoDecay::getMassPDG(kKPlus);
+static const double massPi = hfHelper.mass(kPiPlus);
+static const double massK = hfHelper.mass(kKPlus);
 static const auto arrMassPiK = std::array{massPi, massK};
 static const auto arrMassKPi = std::array{massK, massPi};
 
@@ -273,7 +273,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
 template <typename T>
 auto invMassD0(const T& candidate)
 {
-  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
+  return candidate.m(std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
 }
 
 /// @brief Invariant mass of a D0bar -> K π candidate
@@ -283,7 +283,7 @@ auto invMassD0(const T& candidate)
 template <typename T>
 auto invMassD0bar(const T& candidate)
 {
-  return candidate.m(std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+  return candidate.m(std::array{hfHelper.mass(kKPlus), hfHelper.mass(kPiPlus)});
 }
 } // namespace hf_cand_prong2
 
@@ -468,11 +468,11 @@ struct HfCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(invMassD0(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(invMassD0(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(invMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(invMassD0bar(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
         return false;
       }
     }

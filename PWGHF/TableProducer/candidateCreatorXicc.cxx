@@ -61,9 +61,9 @@ struct HfCandidateCreatorXicc {
 
   HfHelper hfHelper;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
-  double massXic = RecoDecay::getMassPDG(static_cast<int>(pdg::Code::kXiCPlus));
+  double massPi = hfHelper.mass(kPiPlus);
+  double massK = hfHelper.mass(kKPlus);
+  double massXic = hfHelper.mass(static_cast<int>(pdg::Code::kXiCPlus));
   double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);

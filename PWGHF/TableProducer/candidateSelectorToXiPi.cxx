@@ -180,8 +180,8 @@ struct HfCandidateSelectorToXiPi {
   void process(aod::HfCandToXiPi const& candidates,
                TracksSel const&)
   {
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+    double massLambdaFromPDG = hfHelper.mass(kLambda0);
+    double massXiFromPDG = hfHelper.mass(kXiMinus);
 
     int collId = -999;
 

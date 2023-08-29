@@ -393,7 +393,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) {
-      auto mass = RecoDecay::getMassPDG(pdgCode);
+      auto mass = hfHelper.mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() != pdgCode) {
@@ -506,7 +506,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) { /// loop over PDG codes
-      auto mass = RecoDecay::getMassPDG(pdgCode);
+      auto mass = hfHelper.mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) { /// loop over MC particles
 

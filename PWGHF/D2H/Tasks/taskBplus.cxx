@@ -262,7 +262,7 @@ struct HfTaskBplus {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(pdg::Code::kBPlus));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -272,7 +272,7 @@ struct HfTaskBplus {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, hfHelper.mass(daught.pdgCode()));
           counter++;
         }
 

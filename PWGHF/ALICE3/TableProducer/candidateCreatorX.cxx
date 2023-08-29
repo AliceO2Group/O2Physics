@@ -62,8 +62,8 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massJpsi = RecoDecay::getMassPDG(443);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massJpsi = hfHelper.mass(443);
   double massJpsiPiPi;
 
   HfHelper hfHelper;

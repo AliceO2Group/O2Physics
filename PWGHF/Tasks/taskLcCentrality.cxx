@@ -185,7 +185,7 @@ struct HfTaskLcCentralityMc {
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

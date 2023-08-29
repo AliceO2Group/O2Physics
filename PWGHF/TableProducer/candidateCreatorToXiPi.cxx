@@ -138,11 +138,11 @@ struct HfCandidateCreatorToXiPi {
       df.setWeightedFinalPCA(useWeightedFinalPCA);
       df.setRefitWithMatCorr(refitWithMatCorr);
 
-      double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
-      double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
-      double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
-      double massOmegacFromPDG = RecoDecay::getMassPDG(kOmegaC0); // pdg code 4332
-      double massXicFromPDG = RecoDecay::getMassPDG(kXiCZero);    // pdg code 4132
+      double massPionFromPDG = hfHelper.mass(kPiPlus);    // pdg code 211
+      double massLambdaFromPDG = hfHelper.mass(kLambda0); // pdg code 3122
+      double massXiFromPDG = hfHelper.mass(kXiMinus);     // pdg code 3312
+      double massOmegacFromPDG = hfHelper.mass(kOmegaC0); // pdg code 4332
+      double massXicFromPDG = hfHelper.mass(kXiCZero);    // pdg code 4132
 
       // loop over cascades reconstructed by cascadebuilder.cxx
       auto thisCollId = collision.globalIndex();

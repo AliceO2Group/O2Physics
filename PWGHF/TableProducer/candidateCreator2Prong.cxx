@@ -57,8 +57,8 @@ struct HfCandidateCreator2Prong {
 
   float toMicrometers = 10000.; // from cm to µm
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massK = hfHelper.mass(kKPlus);
   double massPiK{0.};
   double massKPi{0.};
   double bz = 0.;

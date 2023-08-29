@@ -266,13 +266,13 @@ struct HfTaskXiccMc {
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
-        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())));
-        registry.fill(HIST("hPtvsEtavsYGen"), particle.pt(), particle.eta(), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())));
+        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode())));
+        registry.fill(HIST("hPtvsEtavsYGen"), particle.pt(), particle.eta(), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode())));
       }
     } // end of loop of MC particles
   }   // end of process function

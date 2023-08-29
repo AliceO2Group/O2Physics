@@ -83,9 +83,9 @@ struct HfDataCreatorD0PiReduced {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-  double massBplus = RecoDecay::getMassPDG(pdg::Code::kBPlus);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massD0 = hfHelper.mass(pdg::Code::kD0);
+  double massBplus = hfHelper.mass(pdg::Code::kBPlus);
   double massD0Pi{0.};
   double invMassD0{0.};
   double bz{0.};
@@ -439,7 +439,7 @@ struct HfDataCreatorD0PiReducedMc {
       }
 
       auto ptParticle = particle.pt();
-      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
+      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(pdg::Code::kBPlus));
       auto etaParticle = particle.eta();
 
       std::array<float, 2> ptProngs;
@@ -449,7 +449,7 @@ struct HfDataCreatorD0PiReducedMc {
       for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
-        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, hfHelper.mass(daught.pdgCode()));
         counter++;
       }
       rowHfBPMcGenReduced(flag, origin,

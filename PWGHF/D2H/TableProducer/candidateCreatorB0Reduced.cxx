@@ -46,9 +46,9 @@ struct HfCandidateCreatorB0Reduced {
   // selection
   Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
-  double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massD = hfHelper.mass(pdg::Code::kDMinus);
+  double massB0 = hfHelper.mass(pdg::Code::kB0);
   double massDPi{0.};
   double bz{0.};
 

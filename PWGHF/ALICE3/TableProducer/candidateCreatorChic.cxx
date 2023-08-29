@@ -64,7 +64,7 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
-  double massJpsi = RecoDecay::getMassPDG(pdg::Code::kJPsi);
+  double massJpsi = hfHelper.mass(pdg::Code::kJPsi);
   double massJpsiGamma = 0;
 
   HfHelper hfHelper;

@@ -153,11 +153,11 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(hfHelper.invMassXicToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassXicToPKPi(candidate) - hfHelper.mass(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassXicToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassXicToPiKP(candidate) - hfHelper.mass(pdg::Code::kXiCPlus)) > cuts->get(pTBin, "m")) {
         return false;
       }
     }

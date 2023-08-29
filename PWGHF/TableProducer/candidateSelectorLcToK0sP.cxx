@@ -517,15 +517,15 @@ struct HfCandidateSelectorLcToK0sP {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfCandCascade.mK0Short() - RecoDecay::getMassPDG(kK0Short)) > cuts->get(ptBin, "mK0s")) {
+    if (std::abs(hfCandCascade.mK0Short() - hfHelper.mass(kK0Short)) > cuts->get(ptBin, "mK0s")) {
       return false; // mass of the K0s
     }
 
-    if ((std::abs(hfCandCascade.mLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin, "mLambda"))) {
+    if ((std::abs(hfCandCascade.mLambda() - hfHelper.mass(kLambda0)) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - hfHelper.mass(kLambda0)) < cuts->get(ptBin, "mLambda"))) {
       return false; // mass of the Lambda
     }
 
-    if (std::abs(hfCandCascade.mGamma() - RecoDecay::getMassPDG(kGamma)) < cuts->get(ptBin, "mGamma")) {
+    if (std::abs(hfCandCascade.mGamma() - hfHelper.mass(kGamma)) < cuts->get(ptBin, "mGamma")) {
       return false; // mass of the Gamma
     }
 

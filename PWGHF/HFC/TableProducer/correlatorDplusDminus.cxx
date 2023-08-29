@@ -386,7 +386,7 @@ struct HfCorrelatorDplusDminus {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, hfHelper.mass(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -409,7 +409,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != -pdg::Code::kDPlus) { // check that inner particle is a Dminus
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, hfHelper.mass(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
@@ -484,7 +484,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, hfHelper.mass(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
@@ -508,7 +508,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != PDG_t::kCharmBar) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, hfHelper.mass(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {

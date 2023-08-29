@@ -208,7 +208,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     }
 
     // Filling particle properties
-    float massChic = RecoDecay::getMassPDG(pdg::Code::kChiC1);
+    float massChic = hfHelper.mass(pdg::Code::kChiC1);
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {

@@ -73,12 +73,12 @@ enum EventRejection {
   NEventRejection
 };
 
-static const double massPi = RecoDecay::getMassPDG(kPiPlus);
-static const double massK = RecoDecay::getMassPDG(kKPlus);
-static const double massProton = RecoDecay::getMassPDG(kProton);
-static const double massElectron = RecoDecay::getMassPDG(kElectron);
-static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
-static const double massDzero = RecoDecay::getMassPDG(o2::analysis::pdg::kD0);
+static const double massPi = hfHelper.mass(kPiPlus);
+static const double massK = hfHelper.mass(kKPlus);
+static const double massProton = hfHelper.mass(kProton);
+static const double massElectron = hfHelper.mass(kElectron);
+static const double massMuon = hfHelper.mass(kMuonPlus);
+static const double massDzero = hfHelper.mass(o2::analysis::pdg::kD0);
 
 // #define MY_DEBUG
 
@@ -2509,10 +2509,10 @@ struct HfTrackIndexSkimCreatorCascades {
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
 
-  double massP = RecoDecay::getMassPDG(kProton);
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  double massP = hfHelper.mass(kProton);
+  double massK0s = hfHelper.mass(kK0Short);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
@@ -2820,12 +2820,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // histograms
   HistogramRegistry registry{"registry"};
 
-  double massP = RecoDecay::getMassPDG(kProton);
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massXi = RecoDecay::getMassPDG(kXiMinus);
-  double massOmega = RecoDecay::getMassPDG(kOmegaMinus);
-  double massXiczero = RecoDecay::getMassPDG(pdg::Code::kXiCZero);
-  double massXicplus = RecoDecay::getMassPDG(pdg::Code::kXiCPlus);
+  double massP = hfHelper.mass(kProton);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massXi = hfHelper.mass(kXiMinus);
+  double massOmega = hfHelper.mass(kOmegaMinus);
+  double massXiczero = hfHelper.mass(pdg::Code::kXiCZero);
+  double massXicplus = hfHelper.mass(pdg::Code::kXiCPlus);
 
   void init(InitContext const&)
   {

@@ -79,10 +79,10 @@ struct HfCandidateCreatorCascade {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  double massP = RecoDecay::getMassPDG(kProton);
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  double massP = hfHelper.mass(kProton);
+  double massK0s = hfHelper.mass(kK0Short);
+  double massPi = hfHelper.mass(kPiPlus);
+  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.};
   double bz = 0.;
 

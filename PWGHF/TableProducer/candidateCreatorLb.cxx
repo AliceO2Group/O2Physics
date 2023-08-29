@@ -63,8 +63,8 @@ struct HfCandidateCreatorLb {
 
   HfHelper hfHelper;
 
-  double massPi = RecoDecay::getMassPDG(kPiMinus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  double massPi = hfHelper.mass(kPiMinus);
+  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
   double massLcPi = 0.;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);

@@ -122,7 +122,7 @@ struct HfTaskOmegacSt {
         std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
         std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
       }
     }
   }
@@ -199,7 +199,7 @@ struct HfTaskOmegacSt {
           LOG(debug) << "cascade with PDG code: " << pdgCode;
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
-            std::array<double, 2> masses{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)};
+            std::array<double, 2> masses{hfHelper.mass(kOmegaMinus), hfHelper.mass(kPiPlus)};
             std::array<std::array<float, 3>, 2> momenta;
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
@@ -229,9 +229,9 @@ struct HfTaskOmegacSt {
                 if (df2.process(trackParCovTrk, trackParCovPion)) {
                   const auto& secondaryVertex = df2.getPCACandidate();
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                  if (std::abs(RecoDecay::m(momenta, masses) - RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0)) < 0.02) {
+                  if (std::abs(RecoDecay::m(momenta, masses) - hfHelper.mass(analysis::pdg::Code::kOmegaC0)) < 0.02) {
                     registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                    registry.fill(HIST("hDecayLengthScaled"), decayLength * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                    registry.fill(HIST("hDecayLengthScaled"), decayLength * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   }
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
@@ -240,8 +240,8 @@ struct HfTaskOmegacSt {
                         std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
                         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                         registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                         registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
                         registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
                       }
