@@ -351,8 +351,8 @@ struct MultiplicityCounter {
           registry.fill(HIST("Selection"), 3.);
         }
       }
-      if (btrigc[kSel8] && fabs(z) < 10)
-        registry.fill(HIST("hft0multiplicity"), collision.multFT0C());
+      if (btrigc[kSel8g0] && fabs(z) < 10)
+        registry.fill(HIST("hft0multiplicity"), collision.multFT0M());
 
       for (auto& track : pertracks) {
         [[maybe_unused]] int dummy = track.globalIndex();
