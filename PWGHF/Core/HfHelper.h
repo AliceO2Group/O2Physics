@@ -21,7 +21,7 @@
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
 
-#include "Framework/AnalysisHelpers.h"
+#include "Framework/AnalysisHelpers.h" // declares o2::framework::Service
 #include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Common/Core/RecoDecay.h"
