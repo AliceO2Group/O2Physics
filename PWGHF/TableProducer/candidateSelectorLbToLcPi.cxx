@@ -50,6 +50,8 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
+  HfHelper hfHelper;
+
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandLb, const T2& hfCandLc, const T3& trackPi)

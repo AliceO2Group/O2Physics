@@ -169,6 +169,8 @@ struct HfTreeCreatorLcToK0sP {
   Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
 
+  HfHelper hfHelper;
+
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;

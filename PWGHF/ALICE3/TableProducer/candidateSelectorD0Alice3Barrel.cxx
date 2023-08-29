@@ -67,6 +67,8 @@ struct HfCandidateSelectorD0Alice3Barrel {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
+  HfHelper hfHelper;
+
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::RICHTracksIndex, aod::McTrackLabels>;
 
   /// Conjugate-independent topological cuts

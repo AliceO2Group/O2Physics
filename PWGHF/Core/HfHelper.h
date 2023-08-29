@@ -24,6 +24,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 
@@ -655,7 +656,7 @@ class HfHelper
     auto ptD = RecoDecay::pt(candB0.pxProng0(), candB0.pyProng0());
     auto ptPi = RecoDecay::pt(candB0.pxProng1(), candB0.pyProng1());
 
-    int pTBin = findBin(binsPt, ptCandB0);
+    int pTBin = o2::analysis::findBin(binsPt, ptCandB0);
     if (pTBin == -1) {
       // LOGF(info, "B0 topol selection failed at getpTBin");
       return false;
@@ -750,7 +751,7 @@ class HfHelper
     auto ptcandBp = candBp.pt();
     auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
 
-    int pTBin = findBin(binsPt, ptcandBp);
+    int pTBin = o2::analysis::findBin(binsPt, ptcandBp);
     if (pTBin == -1) {
       return false;
     }
@@ -817,7 +818,7 @@ class HfHelper
     auto ptDs = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
     auto ptPi = RecoDecay::pt(candBs.pxProng1(), candBs.pyProng1());
 
-    int pTBin = findBin(binsPt, ptCandBs);
+    int pTBin = o2::analysis::findBin(binsPt, ptCandBs);
     if (pTBin == -1) {
       return false;
     }
