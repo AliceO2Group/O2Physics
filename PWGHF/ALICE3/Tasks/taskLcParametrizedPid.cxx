@@ -32,6 +32,8 @@ using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 /// Fills MC histograms.
 struct HfTaskLcParametrizedPid {
+  HfHelper hfHelper;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPKPiNoPid == 1 || aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPiKPNoPid == 1);
 
   HistogramRegistry registry{

@@ -61,6 +61,8 @@ struct HfCandidateCreatorLb {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
+  HfHelper hfHelper;
+
   double massPi = RecoDecay::getMassPDG(kPiMinus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi = 0.;

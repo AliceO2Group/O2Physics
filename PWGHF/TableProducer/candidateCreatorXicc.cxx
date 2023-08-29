@@ -59,6 +59,8 @@ struct HfCandidateCreatorXicc {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
+  HfHelper hfHelper;
+
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
   double massXic = RecoDecay::getMassPDG(static_cast<int>(pdg::Code::kXiCPlus));

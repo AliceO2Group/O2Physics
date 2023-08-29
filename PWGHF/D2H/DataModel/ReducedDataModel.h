@@ -174,15 +174,6 @@ namespace hf_cand_3prong_reduced
 DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length in cm
 DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 3prong candidate in GeV/c2
-
-template <typename T>
-auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
-{
-  return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
-                      std::array{RecoDecay::getMassPDG(kPiPlus),
-                                 RecoDecay::getMassPDG(kKPlus),
-                                 RecoDecay::getMassPDG(kPiPlus)});
-}
 } // namespace hf_cand_3prong_reduced
 
 DECLARE_SOA_TABLE(HfCand3ProngReduced, "AOD", "HFCAND3PRONGRED", //! Table with 3prong candidate information for reduced workflow

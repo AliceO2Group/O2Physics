@@ -29,7 +29,6 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_sigmac;
 
 struct HfTaskSigmac {
-
   /// One value of rapidity only
   /// Remember that in Run2 the distinction among GenLimAcc, GenAccMother, GenAcc was done, where:
   ///  - GenLimAcc: Sc in |y|<0.5
@@ -39,6 +38,8 @@ struct HfTaskSigmac {
   /// OR
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandMax{"yCandMax", -1, "Sc rapidity"};
+
+  HfHelper hfHelper;
 
   /// analysis histograms
   HistogramRegistry registry{

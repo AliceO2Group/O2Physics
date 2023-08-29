@@ -42,6 +42,8 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
+  HfHelper hfHelper;
+
   enum HFStep { kHFStepMC = 0,
                 kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
                 kHFStepAcceptance,          // MC mothers where all prongs are in the acceptance

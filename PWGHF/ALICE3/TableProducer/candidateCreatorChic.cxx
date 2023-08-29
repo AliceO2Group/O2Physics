@@ -67,6 +67,8 @@ struct HfCandidateCreatorChic {
   double massJpsi = RecoDecay::getMassPDG(pdg::Code::kJPsi);
   double massJpsiGamma = 0;
 
+  HfHelper hfHelper;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -208,6 +210,8 @@ struct HfCandidateCreatorChicExpressions {
 struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMcRec> rowMcMatchRec;
   Produces<aod::HfCandChicMcGen> rowMcMatchGen;
+
+  HfHelper hfHelper;
 
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};

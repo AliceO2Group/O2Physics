@@ -209,6 +209,15 @@ class HfHelper
     return candidate.m(std::array{mass(kPiPlus), mass(kKPlus), mass(kPiPlus)});
   }
 
+  template <typename T>
+  auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
+  {
+    return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
+                        std::array{mass(kPiPlus),
+                                  mass(kKPlus),
+                                  mass(kPiPlus)});
+  }
+
   // Ds± → K± K∓ π±
 
   template <typename T>
@@ -660,7 +669,7 @@ class HfHelper
     // }
 
     // B0 mass cut
-    if (std::abs(invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassB0ToDPi(candB0) - mass(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
       // Printf("B0 topol selection failed at mass diff check");
       return false;
     }
@@ -677,7 +686,7 @@ class HfHelper
 
     /*
     // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-    if (std::abs(invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+    if (std::abs(invMassDplusToPiKPi(hfCandD) - mass(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
       return false;
     }
     */
@@ -749,7 +758,7 @@ class HfHelper
     }
 
     // B+ mass cut
-    if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassBplusToD0Pi(candBp) - mass(521)) > cuts->get(pTBin, "m")) {
       return false;
     }
 
@@ -816,7 +825,7 @@ class HfHelper
     }
 
     // Bs mass cut
-    if (std::abs(invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassBsToDsPi(candBs) - mass(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
       return false;
     }
 

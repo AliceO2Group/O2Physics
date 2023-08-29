@@ -69,11 +69,10 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   o2::analysis::HfMlResponse<float> hfMlResponse;
   std::vector<float> outputMl = {};
-
   o2::ccdb::CcdbApi ccdbApi;
-
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
+  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidKa>;
 

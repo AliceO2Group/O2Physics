@@ -60,6 +60,7 @@ struct HfCandidateSelectorBsToDsPi {
   bool selectionFlagDsAndUsePidInSync = true;
 
   TrackSelectorPi selectorPion;
+  HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 

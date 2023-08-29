@@ -55,11 +55,13 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+
   bool selectionFlagDAndUsePidInSync = true;
   // variable that will store the value of selectionFlagD (defined in dataCreatorD0PiReduced.cxx)
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
 
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   HistogramRegistry registry{"registry"};

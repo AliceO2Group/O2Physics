@@ -55,11 +55,13 @@ struct HfCandidateSelectorB0ToDPiReduced {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+
   // check if selectionFlagD (defined in dataCreatorDplusPiReduced.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   HistogramRegistry registry{"registry"};
