@@ -172,8 +172,8 @@ struct femtoUniversePairTaskTrackPhi {
         return false;
       }
     } else if (mom > 0.4) {
-      // if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaCombinedProton) {
-      if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaCombinedProton) {
+      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaCombinedProton) {
+        // if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaCombinedProton) {
         return true;
       } else {
         return false;
@@ -237,8 +237,8 @@ struct femtoUniversePairTaskTrackPhi {
           return false;
         }
       } else if (mom > 0.5) {
-        // if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
-        if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
+        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
+          // if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
           return true;
         } else {
           return false;
@@ -257,13 +257,10 @@ struct femtoUniversePairTaskTrackPhi {
         break;
       case 211:  // Pion
       case -211: // Pion-
-      case 111:  // Pion 0
         return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
-      case 130:  // Kaon 0 LONG
-      case 310:  // Kaon 0 SHORT
         return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
         break;
       default:
