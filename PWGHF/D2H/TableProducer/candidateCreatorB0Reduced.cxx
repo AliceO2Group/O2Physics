@@ -79,7 +79,7 @@ struct HfCandidateCreatorB0Reduced {
   }
 
   void process(aod::HfRedCollisions const& collisions,
-               soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>  const& candsD,
+               soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov> const& candsD,
                soa::Join<aod::HfRedTracks, aod::HfRedTracksCov> const& tracksPion,
                aod::HfOrigColCounts const& collisionsCounter)
   {

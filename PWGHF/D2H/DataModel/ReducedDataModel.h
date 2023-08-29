@@ -84,30 +84,30 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //! Covariance matrix
 } // namespace hf_track_par_cov
 
 // general columns
-#define HFTRACKPAR_COLUMNS    \
-  aod::track::X,                 \
-    aod::track::Alpha,           \
-    aod::track::Y,               \
-    aod::track::Z,               \
-    aod::track::Snp,             \
-    aod::track::Tgl,             \
+#define HFTRACKPAR_COLUMNS \
+  aod::track::X,           \
+    aod::track::Alpha,     \
+    aod::track::Y,         \
+    aod::track::Z,         \
+    aod::track::Snp,       \
+    aod::track::Tgl,       \
     aod::track::Signed1Pt
 
-#define HFTRACKPARCOV_COLUMNS    \
+#define HFTRACKPARCOV_COLUMNS  \
   hf_track_par_cov::CYY,       \
-    hf_track_par_cov::CZY,       \
-    hf_track_par_cov::CZZ,       \
-    hf_track_par_cov::CSnpY,     \
-    hf_track_par_cov::CSnpZ,     \
-    hf_track_par_cov::CSnpSnp,   \
-    hf_track_par_cov::CTglY,     \
-    hf_track_par_cov::CTglZ,     \
-    hf_track_par_cov::CTglSnp,   \
-    hf_track_par_cov::CTglTgl,   \
-    hf_track_par_cov::C1PtY,     \
-    hf_track_par_cov::C1PtZ,     \
-    hf_track_par_cov::C1PtSnp,   \
-    hf_track_par_cov::C1PtTgl,   \
+    hf_track_par_cov::CZY,     \
+    hf_track_par_cov::CZZ,     \
+    hf_track_par_cov::CSnpY,   \
+    hf_track_par_cov::CSnpZ,   \
+    hf_track_par_cov::CSnpSnp, \
+    hf_track_par_cov::CTglY,   \
+    hf_track_par_cov::CTglZ,   \
+    hf_track_par_cov::CTglSnp, \
+    hf_track_par_cov::CTglTgl, \
+    hf_track_par_cov::C1PtY,   \
+    hf_track_par_cov::C1PtZ,   \
+    hf_track_par_cov::C1PtSnp, \
+    hf_track_par_cov::C1PtTgl, \
     hf_track_par_cov::C1Pt21Pt2
 
 namespace hf_track_index_reduced
