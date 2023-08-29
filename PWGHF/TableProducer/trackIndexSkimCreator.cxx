@@ -43,6 +43,7 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
@@ -72,13 +73,6 @@ enum EventRejection {
   Chi2,
   NEventRejection
 };
-
-static const double massPi = hfHelper.mass(kPiPlus);
-static const double massK = hfHelper.mass(kKPlus);
-static const double massProton = hfHelper.mass(kProton);
-static const double massElectron = hfHelper.mass(kElectron);
-static const double massMuon = hfHelper.mass(kMuonPlus);
-static const double massDzero = hfHelper.mass(o2::analysis::pdg::kD0);
 
 // #define MY_DEBUG
 
@@ -981,11 +975,20 @@ struct HfTrackIndexSkimCreator {
   Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::cuts[0], hf_cuts_presel_dstar::nBinsPt, hf_cuts_presel_dstar::nCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
+  HfHelper hfHelper;
+
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
+
+  double massPi{0.};
+  double massK{0.};
+  double massProton{0.};
+  double massElectron{0.};
+  double massMuon{0.};
+  double massDzero{0.};
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
@@ -1032,6 +1035,13 @@ struct HfTrackIndexSkimCreator {
     if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit) {
       return;
     }
+
+    massPi = hfHelper.mass(kPiPlus);
+    massK = hfHelper.mass(kKPlus);
+    massProton = hfHelper.mass(kProton);
+    massElectron = hfHelper.mass(kElectron);
+    massMuon = hfHelper.mass(kMuonPlus);
+    massDzero = hfHelper.mass(o2::analysis::pdg::kD0);
 
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{std::array{massPi, massK},
                                                                    std::array{massK, massPi}};
@@ -2503,16 +2513,18 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
+  HfHelper hfHelper;
+
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
 
-  double massP = hfHelper.mass(kProton);
-  double massK0s = hfHelper.mass(kK0Short);
-  double massPi = hfHelper.mass(kPiPlus);
-  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+  double massP{0.};
+  double massK0s{0.};
+  double massPi{0.};
+  double massLc{0.};
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
@@ -2537,6 +2549,11 @@ struct HfTrackIndexSkimCreatorCascades {
     if (etaMinV0Daugh == -99999.) {
       etaMinV0Daugh.value = -etaMaxV0Daugh;
     }
+
+    massP = hfHelper.mass(kProton);
+    massK0s = hfHelper.mass(kK0Short);
+    massPi = hfHelper.mass(kPiPlus);
+    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -2807,6 +2824,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -2817,21 +2836,28 @@ struct HfTrackIndexSkimCreatorLfCascades {
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
 
+  double massP{0.};
+  double massPi{0.};
+  double massXi{0.};
+  double massOmega{0.};
+  double massXiczero{0.};
+  double massXicplus{0.};
+
   // histograms
   HistogramRegistry registry{"registry"};
-
-  double massP = hfHelper.mass(kProton);
-  double massPi = hfHelper.mass(kPiPlus);
-  double massXi = hfHelper.mass(kXiMinus);
-  double massOmega = hfHelper.mass(kOmegaMinus);
-  double massXiczero = hfHelper.mass(pdg::Code::kXiCZero);
-  double massXicplus = hfHelper.mass(pdg::Code::kXiCPlus);
 
   void init(InitContext const&)
   {
     if (!doprocessLfCascades) {
       return;
     }
+
+    massP = hfHelper.mass(kProton);
+    massPi = hfHelper.mass(kPiPlus);
+    massXi = hfHelper.mass(kXiMinus);
+    massOmega = hfHelper.mass(kOmegaMinus);
+    massXiczero = hfHelper.mass(pdg::Code::kXiCZero);
+    massXicplus = hfHelper.mass(pdg::Code::kXiCPlus);
 
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{std::array{massXi, massPi},
                                                                                  std::array{massPi, massXi}};

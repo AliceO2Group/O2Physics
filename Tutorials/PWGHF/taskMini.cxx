@@ -36,12 +36,6 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// Constants
-static const double massPi = hfHelper.mass(kPiPlus);
-static const double massK = hfHelper.mass(kKPlus);
-static const auto arrMassPiK = std::array{massPi, massK};
-static const auto arrMassKPi = std::array{massK, massPi};
-
 // Track selection =====================================================================
 
 namespace o2::aod
@@ -152,6 +146,8 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
+  HfHelper hfHelper;
+
   using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::HfSelTrack>>;
 
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng == true;
@@ -216,7 +212,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
         std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
-        auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
+        auto mass2Prong = RecoDecay::m(arrMom, std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
         registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
       }
     }
@@ -265,26 +261,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
-
-/// @brief Invariant mass of a D0 -> π K candidate
-/// @tparam T
-/// @param candidate
-/// @return invariant mass
-template <typename T>
-auto invMassD0(const T& candidate)
-{
-  return candidate.m(std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
-}
-
-/// @brief Invariant mass of a D0bar -> K π candidate
-/// @tparam T
-/// @param candidate
-/// @return invariant mass
-template <typename T>
-auto invMassD0bar(const T& candidate)
-{
-  return candidate.m(std::array{hfHelper.mass(kKPlus), hfHelper.mass(kPiPlus)});
-}
 } // namespace hf_cand_prong2
 
 // Candidate table
@@ -325,6 +301,8 @@ struct HfCandidateCreator2Prong {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+
+  HfHelper hfHelper;
 
   double massPiK{0.};
   double massKPi{0.};
@@ -380,8 +358,8 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       // calculate invariant masses
       auto arrayMomenta = std::array{pVec0, pVec1};
-      massPiK = RecoDecay::m(arrayMomenta, arrMassPiK);
-      massKPi = RecoDecay::m(arrayMomenta, arrMassKPi);
+      massPiK = RecoDecay::m(arrayMomenta, std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
+      massKPi = RecoDecay::m(arrayMomenta, std::array{hfHelper.mass(kKPlus), hfHelper.mass(kPiPlus)});
       hMass->Fill(massPiK);
       // hMass->Fill(massKPi);
     }
@@ -426,6 +404,7 @@ struct HfCandidateSelectorD0 {
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
@@ -468,11 +447,11 @@ struct HfCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(invMassD0(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(invMassD0bar(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
         return false;
       }
     }
@@ -561,6 +540,8 @@ struct HfTaskD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
 
+  HfHelper hfHelper;
+
   Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{
@@ -581,10 +562,10 @@ struct HfTaskD0 {
   {
     for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), invMassD0(candidate));
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), invMassD0bar(candidate));
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate));
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());

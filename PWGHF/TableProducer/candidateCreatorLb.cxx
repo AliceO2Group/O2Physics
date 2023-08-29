@@ -63,9 +63,9 @@ struct HfCandidateCreatorLb {
 
   HfHelper hfHelper;
 
-  double massPi = hfHelper.mass(kPiMinus);
-  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
-  double massLcPi = 0.;
+  double massPi{0.};
+  double massLc{0.};
+  double massLcPi{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
@@ -76,6 +76,12 @@ struct HfCandidateCreatorLb {
   OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massPi = hfHelper.mass(kPiMinus);
+    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<

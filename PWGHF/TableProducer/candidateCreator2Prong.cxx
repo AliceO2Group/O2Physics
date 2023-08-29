@@ -22,6 +22,7 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
@@ -50,18 +51,18 @@ struct HfCandidateCreator2Prong {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
+  int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
-
-  double massPi = hfHelper.mass(kPiPlus);
-  double massK = hfHelper.mass(kKPlus);
+  double massPi{0.};
+  double massK{0.};
   double massPiK{0.};
   double massKPi{0.};
-  double bz = 0.;
+  double bz{0.};
 
   OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -80,6 +81,9 @@ struct HfCandidateCreator2Prong {
     if (doprocessPvRefit && doprocessNoPvRefit) {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
+
+    massPi = hfHelper.mass(kPiPlus);
+    massK = hfHelper.mass(kKPlus);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

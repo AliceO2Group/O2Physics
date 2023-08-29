@@ -71,9 +71,9 @@ struct HfCandidateCreatorB0 {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massD = hfHelper.mass(pdg::Code::kDMinus);
-  double massB0 = hfHelper.mass(pdg::Code::kB0);
+  double massPi{0.};
+  double massD{0.};
+  double massB0{0.};
   double massDPi{0.};
   double bz{0.};
 
@@ -95,6 +95,9 @@ struct HfCandidateCreatorB0 {
 
   void init(InitContext const&)
   {
+    massPi = hfHelper.mass(kPiPlus);
+    massD = hfHelper.mass(pdg::Code::kDMinus);
+    massB0 = hfHelper.mass(pdg::Code::kB0);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

@@ -62,10 +62,6 @@ const double yAxisMax = 5.;
 const int ptDAxisNBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
-const double massD0 = hfHelper.mass(pdg::Code::kD0);
-const double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
-auto massPi = hfHelper.mass(kPiPlus);
-auto massK = hfHelper.mass(kKPlus);
 
 // definition of ME variables and new types
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
@@ -192,6 +188,11 @@ struct HfCorrelatorD0Hadrons {
 
   HfHelper hfHelper;
 
+  double massD0{0.};
+  double massPi{0.};
+  double massK{0.};
+  double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
+
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
@@ -240,6 +241,10 @@ struct HfCorrelatorD0Hadrons {
 
   void init(o2::framework::InitContext&)
   {
+    massD0 = hfHelper.mass(pdg::Code::kD0);
+    massPi = hfHelper.mass(kPiPlus);
+    massK = hfHelper.mass(kKPlus);
+
     auto vbins = (std::vector<double>)bins;
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});

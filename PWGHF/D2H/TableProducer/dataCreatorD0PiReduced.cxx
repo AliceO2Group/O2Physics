@@ -81,19 +81,17 @@ struct HfDataCreatorD0PiReduced {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
+  // Fitter to redo D0-vertex to get extrapolated daughter tracks (2-prong vertex filter)
+  o2::vertexing::DCAFitterN<2> df2;
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massD0 = hfHelper.mass(pdg::Code::kD0);
-  double massBplus = hfHelper.mass(pdg::Code::kBPlus);
+  int runNumber{0};
+  double massPi{0.};
+  double massD0{0.};
+  double massBplus{0.};
   double massD0Pi{0.};
   double invMassD0{0.};
   double bz{0.};
-
   bool isHfCandBplusConfigFilled = false;
-
-  // Fitter to redo D0-vertex to get extrapolated daughter tracks (2-prong vertex filter)
-  o2::vertexing::DCAFitterN<2> df2;
 
   using TracksPidAll = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -109,6 +107,10 @@ struct HfDataCreatorD0PiReduced {
 
   void init(InitContext const&)
   {
+    massPi = hfHelper.mass(kPiPlus);
+    massD0 = hfHelper.mass(pdg::Code::kD0);
+    massBplus = hfHelper.mass(pdg::Code::kBPlus);
+
     // histograms
     constexpr int kNBinsEvents = kNEvent;
     std::string labels[kNBinsEvents];
@@ -373,6 +375,8 @@ struct HfDataCreatorD0PiReduced {
 struct HfDataCreatorD0PiReducedMc {
   Produces<aod::HfD0PiMcRecReduced> rowHfD0PiMcRecReduced;
   Produces<aod::HfBpMcGenReduced> rowHfBPMcGenReduced;
+
+  HfHelper hfHelper;
 
   void init(InitContext const&) {}
 

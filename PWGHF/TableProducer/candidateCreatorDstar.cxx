@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
@@ -26,8 +27,7 @@ using namespace o2::framework;
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massD0 = hfHelper.mass(pdg::Code::kD0);
+  HfHelper hfHelper;
 
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
@@ -40,6 +40,9 @@ struct HfCandidateCreatorDstar {
                aod::Tracks const&,
                aod::Hf2Prongs const&)
   {
+    auto massPi = hfHelper.mass(kPiPlus);
+    auto massD0 = hfHelper.mass(pdg::Code::kD0);
+
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
       auto trackPi = rowTrackIndexDstar.prong0();

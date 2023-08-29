@@ -76,6 +76,7 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   OnnxModel model;
 
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;

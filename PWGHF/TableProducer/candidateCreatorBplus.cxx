@@ -75,13 +75,13 @@ struct HfCandidateCreatorBplus {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massD0 = hfHelper.mass(pdg::Code::kD0);
-  double massBplus = hfHelper.mass(pdg::Code::kBPlus);
-  double massD0Pi = 0.;
-  double bz = 0.;
+  int runNumber{0};
+  double massPi{0.};
+  double massD0{0.};
+  double massBplus{0.};
+  double massD0Pi{0.};
+  double bz{0.};
 
   using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
@@ -98,6 +98,9 @@ struct HfCandidateCreatorBplus {
 
   void init(InitContext const&)
   {
+    massPi = hfHelper.mass(kPiPlus);
+    massD0 = hfHelper.mass(pdg::Code::kD0);
+    massBplus = hfHelper.mass(pdg::Code::kBPlus);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

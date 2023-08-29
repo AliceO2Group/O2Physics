@@ -64,10 +64,10 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
-  double massJpsi = hfHelper.mass(pdg::Code::kJPsi);
-  double massJpsiGamma = 0;
-
   HfHelper hfHelper;
+
+  double massJpsi{0.};
+  double massJpsiGamma{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
@@ -79,6 +79,11 @@ struct HfCandidateCreatorChic {
   OutputObj<TH1F> hMassChicToJpsiToMuMuGamma{TH1F("hMassChicToJpsiToMuMuGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massJpsi = hfHelper.mass(pdg::Code::kJPsi);
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<

@@ -22,6 +22,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
@@ -46,14 +47,15 @@ struct HfCandidateCreatorB0Reduced {
   // selection
   Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massD = hfHelper.mass(pdg::Code::kDMinus);
-  double massB0 = hfHelper.mass(pdg::Code::kB0);
-  double massDPi{0.};
-  double bz{0.};
-
+  HfHelper hfHelper;
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
+
+  double massPi{0.};
+  double massD{0.};
+  double massB0{0.};
+  double massDPi{0.};
+  double bz{0.};
 
   Preslice<aod::HfCand3ProngReduced> candsDPerCollision = hf_track_index_reduced::hfReducedCollisionId;
   Preslice<aod::HfTracksReduced> tracksPionPerCollision = hf_track_index_reduced::hfReducedCollisionId;
@@ -67,6 +69,10 @@ struct HfCandidateCreatorB0Reduced {
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
+
+    massPi = hfHelper.mass(kPiPlus);
+    massD = hfHelper.mass(pdg::Code::kDMinus);
+    massB0 = hfHelper.mass(pdg::Code::kB0);
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);

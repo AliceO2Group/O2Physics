@@ -61,9 +61,9 @@ struct HfCandidateCreatorXicc {
 
   HfHelper hfHelper;
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massK = hfHelper.mass(kKPlus);
-  double massXic = hfHelper.mass(static_cast<int>(pdg::Code::kXiCPlus));
+  double massPi{0.};
+  double massK{0.};
+  double massXic{0.};
   double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -71,6 +71,13 @@ struct HfCandidateCreatorXicc {
   OutputObj<TH1F> hMassXic{TH1F("hMassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massPi = hfHelper.mass(kPiPlus);
+    massK = hfHelper.mass(kKPlus);
+    massXic = hfHelper.mass(pdg::Code::kXiCPlus);
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,

@@ -23,6 +23,7 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
@@ -59,7 +60,6 @@ struct HfCandidateCreatorCascade {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation histograms"};
   Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
-
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -67,10 +67,10 @@ struct HfCandidateCreatorCascade {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
   // for debugging
 #ifdef MY_DEBUG
@@ -79,10 +79,11 @@ struct HfCandidateCreatorCascade {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  double massP = hfHelper.mass(kProton);
-  double massK0s = hfHelper.mass(kK0Short);
-  double massPi = hfHelper.mass(kPiPlus);
-  double massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+  int runNumber{0};
+  double massP{0.};
+  double massK0s{0.};
+  double massPi{0.};
+  double massLc{0.};
   double mass2K0sP{0.};
   double bz = 0.;
 
@@ -92,6 +93,10 @@ struct HfCandidateCreatorCascade {
 
   void init(InitContext const&)
   {
+    massP = hfHelper.mass(kProton);
+    massK0s = hfHelper.mass(kK0Short);
+    massPi = hfHelper.mass(kPiPlus);
+    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

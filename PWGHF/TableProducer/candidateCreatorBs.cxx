@@ -69,11 +69,11 @@ struct HfCandidateCreatorBs {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
-  double massPi = hfHelper.mass(kPiPlus);
-  double massDs = hfHelper.mass(pdg::Code::kDSBar);
-  double massBs = hfHelper.mass(pdg::Code::kBS);
+  int runNumber{0};
+  double massPi{0.};
+  double massDs{0.};
+  double massBs{0.};
   double massDsPi{0.};
   double bz{0.};
 
@@ -95,6 +95,9 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
+    massPi = hfHelper.mass(kPiPlus);
+    massDs = hfHelper.mass(pdg::Code::kDSBar);
+    massBs = hfHelper.mass(pdg::Code::kBS);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
