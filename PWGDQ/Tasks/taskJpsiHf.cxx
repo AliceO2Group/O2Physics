@@ -21,6 +21,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
@@ -61,6 +62,8 @@ struct taskJPsiHf {
   Configurable<bool> configDebug{"configDebug", true, "If true, fill D0 - J/psi histograms separately"};
 
   SliceCache cache;
+  HfHelper hfHelper;
+
   Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
   Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
@@ -112,9 +115,9 @@ struct taskJPsiHf {
           continue;
         }
 
-        auto rapD0 = yD0(dmeson);
+        auto rapD0 = hfHelper.yD0(dmeson);
 
-        if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yD0(dmeson)) > yCandMax) {
           continue;
         }
 
@@ -124,7 +127,7 @@ struct taskJPsiHf {
         auto massD0bar = -1.;
 
         if (dmeson.isSelD0() >= selectionFlagD0) {
-          massD0 = invMassD0ToPiK(dmeson);
+          massD0 = hfHelper.invMassD0ToPiK(dmeson);
           registry.fill(HIST("Dmeson/hMassDmeson"), massD0);
           registry.fill(HIST("Dmeson/hPtDmeson"), ptD0);
           registry.fill(HIST("Dmeson/hRapDmeson"), rapD0);
@@ -132,7 +135,7 @@ struct taskJPsiHf {
         }
 
         if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-          massD0bar = invMassD0ToPiK(dmeson);
+          massD0bar = hfHelper.invMassD0ToPiK(dmeson);
           registry.fill(HIST("Dmeson/hMassDmeson"), massD0bar);
           registry.fill(HIST("Dmeson/hPtDmeson"), ptD0);
           registry.fill(HIST("Dmeson/hRapDmeson"), rapD0);
@@ -165,7 +168,7 @@ struct taskJPsiHf {
           continue;
         }
 
-        auto rapD0 = yD0(dmeson);
+        auto rapD0 = hfHelper.yD0(dmeson);
 
         if (yCandMax >= 0. && std::abs(rapD0) > yCandMax) {
           continue;
@@ -179,7 +182,7 @@ struct taskJPsiHf {
         auto phiDelta = std::abs(phiJPsi - phiD0);
 
         if (dmeson.isSelD0() >= selectionFlagD0) {
-          massD0 = invMassD0ToPiK(dmeson);
+          massD0 = hfHelper.invMassD0ToPiK(dmeson);
           registry.fill(HIST("JPsiDmeson/hSparseJPsiDmeson"), ptJPsi, ptD0, massJPsi, massD0, rapDelta, phiDelta);
           registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
           registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
@@ -191,7 +194,7 @@ struct taskJPsiHf {
           registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
         }
         if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-          massD0bar = invMassD0barToKPi(dmeson);
+          massD0bar = hfHelper.invMassD0barToKPi(dmeson);
           registry.fill(HIST("JPsiDmeson/hSparseJPsiDmeson"), ptJPsi, ptD0, massJPsi, massD0bar, rapDelta, phiDelta);
           registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
           registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
