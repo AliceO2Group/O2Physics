@@ -193,7 +193,7 @@ struct HfDataCreatorDplusPiReduced {
     return true;
   }
 
-  template<bool doMC = false, typename P, typename T>
+  template <bool doMC = false, typename P, typename T>
   void runDataCreation(aod::Collisions const& collisions,
                        CandsDFiltered const& candsD,
                        aod::TrackAssoc const& trackIndices,
@@ -430,10 +430,10 @@ struct HfDataCreatorDplusPiReduced {
   }
 
   void process(aod::Collisions const& collisions,
-                CandsDFiltered const& candsD,
-                aod::TrackAssoc const& trackIndices,
-                TracksPIDWithSel const& tracks,
-                aod::BCsWithTimestamps const& bcs)
+               CandsDFiltered const& candsD,
+               aod::TrackAssoc const& trackIndices,
+               TracksPIDWithSel const& tracks,
+               aod::BCsWithTimestamps const& bcs)
   {
     runDataCreation<false>(collisions, candsD, trackIndices, tracks, tracks, bcs);
   }
