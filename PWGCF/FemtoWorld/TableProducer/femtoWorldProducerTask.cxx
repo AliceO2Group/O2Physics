@@ -26,7 +26,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-
 #include "TLorentzVector.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -104,7 +103,6 @@ struct femtoWorldProducerTask {
   // Configurables for D0/D0bar mesons
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
   // Choose if filtering or skimming version is run
@@ -221,7 +219,7 @@ struct femtoWorldProducerTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  // HfHelper hfHelper;
+  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -1149,8 +1147,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      // if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
-      if (yCandMax >= 0. && std::abs(0) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
         continue;
       }
 
@@ -1280,10 +1277,8 @@ struct femtoWorldProducerTask {
                     candidate.phi(),
                     candidate.p(),
                     0.,                           // general mass
-                    0,    // D0mass
-                    0, // D0bar mass
-                    // hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    // hfHelper.invMassD0barToKPi(candidate), // D0bar mass
+                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
+                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
                     candidate.isSelD0(),          // D0 flag
                     candidate.isSelD0bar(),       // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
@@ -2099,8 +2094,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(0) > yCandMax) {
-      // if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
         continue;
       }
 
@@ -2232,10 +2226,8 @@ struct femtoWorldProducerTask {
                     candidate.phi(),
                     candidate.p(),
                     0.,                           // general mass
-                    0,    // D0mass
-                    0, // D0bar mass
-                    // hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    // hfHelper.invMassD0barToKPi(candidate), // D0bar mass
+                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
+                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
                     candidate.isSelD0(),          // D0 flag
                     candidate.isSelD0bar(),       // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
