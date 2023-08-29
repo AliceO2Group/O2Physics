@@ -28,13 +28,3 @@ o2physics_target_root_dictionary(AnalysisCore
                         PID/PIDTOF.h
                         PID/TPCPIDResponse.h
               LINKDEF AnalysisCoreLinkDef.h)
-
-o2physics_add_executable(merger
-              COMPONENT_NAME aod
-              SOURCES aodMerger.cxx
-              PUBLIC_LINK_LIBRARIES ROOT::Core ROOT::Net)
-
-o2physics_add_executable(thinner
-              COMPONENT_NAME aod
-              SOURCES aodThinner.cxx
-              PUBLIC_LINK_LIBRARIES ROOT::Core ROOT::Net)
