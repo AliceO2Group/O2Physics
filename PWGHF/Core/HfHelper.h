@@ -758,7 +758,7 @@ class HfHelper
     }
 
     // B+ mass cut
-    if (std::abs(invMassBplusToD0Pi(candBp) - mass(521)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassBplusToD0Pi(candBp) - mass(o2::analysis::pdg::kBPlus)) > cuts->get(pTBin, "m")) {
       return false;
     }
 
