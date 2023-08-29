@@ -388,7 +388,7 @@ struct HfTreeCreatorDsToKKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -399,7 +399,7 @@ struct HfTreeCreatorDsToKKPi {
       rowCandidateFull.reserve(selectedDsToKKPiCand.size() + selectedDsToPiKKCand.size());
     }
 
-    for (auto const& candidate : selectedDsToKKPiCand) {
+    for (const auto& candidate : selectedDsToKKPiCand) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -409,7 +409,7 @@ struct HfTreeCreatorDsToKKPi {
       fillCandidateTable<false, 0>(candidate);
     }
 
-    for (auto const& candidate : selectedDsToPiKKCand) {
+    for (const auto& candidate : selectedDsToPiKKCand) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -430,7 +430,7 @@ struct HfTreeCreatorDsToKKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -501,13 +501,13 @@ struct HfTreeCreatorDsToKKPi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particlesMC.size());
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

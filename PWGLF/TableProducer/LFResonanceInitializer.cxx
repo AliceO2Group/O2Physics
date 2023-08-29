@@ -43,8 +43,9 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
-  float cXiMass = RecoDecay::getMassPDG(3312);
+  float cXiMass = TDatabasePDG::Instance()->GetParticle(3312)->Mass();
   int mRunNumber;
+  int multEstimator;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -70,6 +71,7 @@ struct reso2initializer {
   Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
+  Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", false, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
 
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -146,7 +148,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
@@ -295,21 +297,44 @@ struct reso2initializer {
     return true;
   }
 
+  // Centralicity estimator selection
+  template <typename ResoColl>
+  float CentEst(ResoColl ResoEvents)
+  {
+    float returnValue = -999.0;
+    switch (multEstimator) {
+      case 0:
+        returnValue = ResoEvents.centFT0M();
+      case 1:
+        returnValue = ResoEvents.centFT0C();
+      case 2:
+        returnValue = ResoEvents.centFT0A();
+      case 99:
+        returnValue = ResoEvents.centFV0A();
+      default:
+        returnValue = ResoEvents.centFT0M();
+    }
+    return returnValue;
+  }
+
   // Multiplicity estimator selection
   template <typename ResoColl>
   float MultEst(ResoColl ResoEvents)
   {
-    if (cfgMultName.value == "FT0M") {
-      return ResoEvents.centFT0M();
-    } else if (cfgMultName.value == "FT0C") {
-      return ResoEvents.centFT0C();
-    } else if (cfgMultName.value == "FT0A") {
-      return ResoEvents.centFT0A();
-    } else if (cfgMultName.value == "FV0M") {
-      return ResoEvents.multFV0M();
-    } else {
-      return ResoEvents.centFT0M();
+    float returnValue = -999.0;
+    switch (multEstimator) {
+      case 0:
+        returnValue = ResoEvents.multFT0M();
+      case 1:
+        returnValue = ResoEvents.multFT0C();
+      case 2:
+        returnValue = ResoEvents.multFT0A();
+      case 99:
+        returnValue = ResoEvents.multFV0A();
+      default:
+        returnValue = ResoEvents.multFT0M();
     }
+    return returnValue;
   }
 
   // Filter for all tracks
@@ -708,15 +733,29 @@ struct reso2initializer {
   {
     mRunNumber = 0;
     d_bz = 0;
+    // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
+    if (cfgMultName.value == "FT0M") {
+      multEstimator = 0;
+    } else if (cfgMultName.value == "FT0C") {
+      multEstimator = 1;
+    } else if (cfgMultName.value == "FT0A") {
+      multEstimator = 2;
+    } else if (cfgMultName.value == "FV0A") {
+      multEstimator = 99;
+    } else {
+      multEstimator = 0;
+    }
+
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
-
-    ccdb->setURL(ccdburl.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(cfgFatalWhenNull);
-    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+    if (!ConfBypassCCDB) {
+      ccdb->setURL(ccdburl.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(cfgFatalWhenNull);
+      uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+      ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+    }
 
     // QA histograms
     if (ConfFillQA) {
@@ -732,6 +771,8 @@ struct reso2initializer {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
   {
+    if (ConfBypassCCDB)
+      return;
     if (mRunNumber == bc.runNumber()) {
       return;
     }
@@ -784,9 +825,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -806,9 +847,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -830,9 +871,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -853,9 +894,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -879,9 +920,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -907,9 +948,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks

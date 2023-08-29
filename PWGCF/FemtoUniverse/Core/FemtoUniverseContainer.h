@@ -20,6 +20,7 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 
+#include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 

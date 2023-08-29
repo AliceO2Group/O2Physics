@@ -84,7 +84,7 @@ struct HfTagSelTracks {
 
   void process(TracksWithDca const& tracks)
   {
-    for (auto const& track : tracks) {
+    for (const auto& track : tracks) {
       bool statusProng = true;
 
       auto ptTrack = track.pt();
@@ -181,14 +181,14 @@ struct HfTrackIndexSkimCreator {
     df2.setUseAbsDCA(useAbsDCA);
 
     // loop over positive tracks
-    for (auto const& trackPos1 : tracks) {
+    for (const auto& trackPos1 : tracks) {
       if (trackPos1.signed1Pt() < 0) {
         continue;
       }
       auto trackParVarPos1 = getTrackParCov(trackPos1);
 
       // loop over negative tracks
-      for (auto const& trackNeg1 : tracks) {
+      for (const auto& trackNeg1 : tracks) {
         if (trackNeg1.signed1Pt() > 0) {
           continue;
         }
@@ -201,8 +201,8 @@ struct HfTrackIndexSkimCreator {
         //  get secondary vertex
         const auto& secondaryVertex = df2.getPCACandidate();
         // get track momenta
-        array<float, 3> pVec0;
-        array<float, 3> pVec1;
+        std::array<float, 3> pVec0;
+        std::array<float, 3> pVec1;
         df2.getTrack(0).getPxPyPzGlo(pVec0);
         df2.getTrack(1).getPxPyPzGlo(pVec1);
 
@@ -251,7 +251,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //! pt of prong 1
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //! decay length of candidate
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! pt of candidate
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px of candidate
@@ -261,9 +261,9 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! py of candidate
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! pz of candidate
                               float, 1.f * pzProng0 + 1.f * pzProng1);
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::m(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 
 /// @brief Invariant mass of a D0 -> π K candidate
 /// @tparam T
@@ -272,7 +272,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
 template <typename T>
 auto invMassD0(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
+  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
 /// @brief Invariant mass of a D0bar -> K π candidate
@@ -282,7 +282,7 @@ auto invMassD0(const T& candidate)
 template <typename T>
 auto invMassD0bar(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+  return candidate.m(std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 } // namespace hf_cand_prong2
 
@@ -347,7 +347,7 @@ struct HfCandidateCreator2Prong {
     df.setUseAbsDCA(useAbsDCA);
 
     // loop over pairs of track indices
-    for (auto const& rowTrackIndexProng2 : rowsTrackIndexProng2) {
+    for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
       auto track0 = rowTrackIndexProng2.prong0_as<TracksWithCov>();
       auto track1 = rowTrackIndexProng2.prong1_as<TracksWithCov>();
       auto trackParVarPos1 = getTrackParCov(track0);
@@ -363,8 +363,8 @@ struct HfCandidateCreator2Prong {
       auto trackParVar1 = df.getTrack(1);
 
       // get track momenta
-      array<float, 3> pVec0;
-      array<float, 3> pVec1;
+      std::array<float, 3> pVec0;
+      std::array<float, 3> pVec1;
       trackParVar0.getPxPyPzGlo(pVec0);
       trackParVar1.getPxPyPzGlo(pVec1);
 
@@ -482,7 +482,7 @@ struct HfCandidateSelectorD0 {
                TracksWithPid const&)
   {
     // looping over 2-prong candidates
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;
@@ -578,7 +578,7 @@ struct HfTaskD0 {
 
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
   {
-    for (auto const& candidate : selectedD0Candidates) {
+    for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), invMassD0(candidate));
       }

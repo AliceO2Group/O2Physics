@@ -56,14 +56,13 @@ struct HfCandidateSelectorDplusToPiKPi {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
-  Configurable<std::vector<std::string>> modelPathsMl{"modelPathsMl", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTDplus", "Path on CCDB"};
-  Configurable<std::vector<std::string>> onnxFilesCCDB{"onnxFilesCCDB", std::vector<std::string>{"ModelHandler_onnx_DplusToPiKPi.onnx"}, "ONNX file names on CCDB, for each pT bin"};
+  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -105,10 +104,12 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl, modelPathsMl);
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFilesCCDB, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
       outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
@@ -183,10 +184,11 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, TracksSel const&)
+  void process(aod::HfCand3Prong const& candidates,
+               TracksSel const&)
   {
     // looping over 3-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag:
       auto statusDplusToPiKPi = 0;

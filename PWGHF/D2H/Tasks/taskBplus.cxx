@@ -153,7 +153,10 @@ struct HfTaskBplus {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::Tracks const&)
+  void process(aod::Collisions const& collision,
+               soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&,
+               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&,
+               aod::Tracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -195,7 +198,9 @@ struct HfTaskBplus {
   }   // process
 
   void processMc(soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const&,
-                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC, aod::TracksWMc const& tracks, aod::HfCand2Prong const&)
+                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC,
+                 aod::TracksWMc const& tracks,
+                 aod::HfCand2Prong const&)
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
@@ -250,7 +255,7 @@ struct HfTaskBplus {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto ptParticle = particle.pt();
@@ -261,7 +266,7 @@ struct HfTaskBplus {
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

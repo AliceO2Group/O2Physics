@@ -216,12 +216,13 @@ struct HfTaskSigmac {
   /// @brief process function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  void process(const aod::HfCandSc& candidatesSc,
-               const RecoLc&, const aod::Tracks&)
+  void process(aod::HfCandSc const& candidatesSc,
+               RecoLc const&,
+               aod::Tracks const&)
   {
 
     /// loop over the candidate Σc0,++
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       const int8_t chargeSc = candSc.charge(); // either Σc0 or Σc++
 
@@ -351,15 +352,16 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  void processMc(const soa::Join<aod::HfCandSc, aod::HfCandScMcRec>& candidatesSc,
+  void processMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                  aod::McParticles const& particlesMc,
                  soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMcSc,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLc,
-                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::TracksWMc&)
+                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&,
+                 aod::TracksWMc const&)
   {
 
     /// MC generated particles
-    for (auto& particle : particlesMcSc) {
+    for (const auto& particle : particlesMcSc) {
 
       /// reject immediately particles different from Σc0,++
       bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
@@ -378,7 +380,7 @@ struct HfTaskSigmac {
          OR
          consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
       */
-      if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
         continue;
       }
 
@@ -471,7 +473,7 @@ struct HfTaskSigmac {
     } /// end loop over generated particles
 
     /// reconstructed Σc0,++ matched to MC
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       /// Candidate selected as Σc0 and/or Σc++
       if (!(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi)) {
@@ -498,9 +500,9 @@ struct HfTaskSigmac {
         auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaC0, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
+        auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
@@ -617,9 +619,9 @@ struct HfTaskSigmac {
         auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
         auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
+        auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();

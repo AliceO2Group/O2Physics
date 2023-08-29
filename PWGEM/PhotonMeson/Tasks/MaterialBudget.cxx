@@ -51,8 +51,9 @@ struct MaterialBudget {
   Configurable<float> CentMax{"CentMax", 999, "max. centrality"};
   Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
 
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
-  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
+  Configurable<std::string> fConfigTagPCMCuts{"cfgTagPCMCuts", "qc_ITSTPC", "Comma separated list of V0 photon cuts for tag"};
+  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "qc_ITSTPC,qc_TPConly,qc_ITSonly", "Comma separated list of V0 photon cuts for probe"};
+  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
   Configurable<bool> fDoMixing{"DoMixing", false, "do event mixing"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -60,7 +61,8 @@ struct MaterialBudget {
   OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
   THashList* fMainList = new THashList();
 
-  std::vector<V0PhotonCut> fPCMCuts;
+  std::vector<V0PhotonCut> fTagPCMCuts;
+  std::vector<V0PhotonCut> fProbePCMCuts;
   std::vector<PairCut> fPairCuts;
 
   std::vector<std::string> fPairNames;
@@ -70,7 +72,8 @@ struct MaterialBudget {
       fPairNames.push_back("PCMPCM");
     }
 
-    DefinePCMCuts();
+    DefineTagPCMCuts();
+    DefineProbePCMCuts();
     DefinePairCuts();
     addhistograms();
 
@@ -87,9 +90,10 @@ struct MaterialBudget {
         std::string cutname1 = cut1.GetName();
         std::string cutname2 = cut2.GetName();
 
-        if ((pairname == "PCMPCM" || pairname == "PHOSPHOS" || pairname == "EMCEMC") && (cutname1 != cutname2)) {
-          continue;
-        }
+        // if (cutname1 == cutname2) {
+        //   continue;
+        // }
+
         THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
         std::string photon_cut_name = cutname1 + "_" + cutname2;
         o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys, photon_cut_name.data());
@@ -122,7 +126,7 @@ struct MaterialBudget {
     THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
 
     // for V0s
-    for (const auto& cut : fPCMCuts) {
+    for (const auto& cut : fProbePCMCuts) {
       const char* cutname = cut.GetName();
       THashList* list_v0_cut = o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
       o2::aod::emphotonhistograms::DefineHistograms(list_v0_cut, "material_budget_study", "V0");
@@ -138,24 +142,38 @@ struct MaterialBudget {
       o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
 
       if (pairname == "PCMPCM") {
-        add_pair_histograms(list_pair, pairname, fPCMCuts, fPCMCuts, fPairCuts);
+        add_pair_histograms(list_pair, pairname, fTagPCMCuts, fProbePCMCuts, fPairCuts);
       }
 
     } // end of pair name loop
   }
 
-  void DefinePCMCuts()
+  void DefineTagPCMCuts()
   {
-    TString cutNamesStr = fConfigPCMCuts.value;
+    TString cutNamesStr = fConfigTagPCMCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
+        fTagPCMCuts.push_back(*pcmcuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
+    LOGF(info, "Number of Tag PCM cuts = %d", fTagPCMCuts.size());
+  }
+
+  void DefineProbePCMCuts()
+  {
+    TString cutNamesStr = fConfigProbePCMCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fProbePCMCuts.push_back(*pcmcuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of Probe PCM cuts = %d", fProbePCMCuts.size());
   }
 
   void DefinePairCuts()
@@ -172,20 +190,21 @@ struct MaterialBudget {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::collisionId;
 
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    bool is_selected_pair = false;
-    return is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
+    // bool is_selected_pair = false;
+    // return is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
+    return o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
   }
 
   template <typename TEvents, typename TPhotons, typename TPreslice, typename TCuts, typename TLegs>
   void fillsinglephoton(TEvents const& collisions, TPhotons const& photons, TPreslice const& perCollision, TCuts const& cuts, TLegs const& legs)
   {
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
-    double value[3] = {0.f};
+    double value[4] = {0.f};
     for (auto& collision : collisions) {
       if (!collision.sel8()) {
         continue;
@@ -198,7 +217,6 @@ struct MaterialBudget {
       }
 
       auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
-
       for (auto& cut : cuts) {
         for (auto& photon : photons_coll) {
 
@@ -253,40 +271,50 @@ struct MaterialBudget {
       double value[9] = {0.f};
       float phi_cp1 = 0.f, eta_cp1 = 0.f;
       float phi_cp2 = 0.f, eta_cp2 = 0.f;
-      for (auto& cut : cuts1) {
-        for (auto& paircut : paircuts) {
+      for (auto& cut1 : cuts1) {
+        for (auto& cut2 : cuts2) {
+          // if (std::string(cut1.GetName()) == std::string(cut2.GetName())) {
+          //   continue;
+          // }
+          for (auto& g1 : photons1_coll) {
+            for (auto& g2 : photons2_coll) {
+              if (g1.globalIndex() == g2.globalIndex()) {
+                continue;
+              }
+              if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                continue;
+              }
+              for (auto& paircut : paircuts) {
 
-          for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
-            if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
-              continue;
-            }
-            if (!paircut.IsSelected(g1, g2)) {
-              continue;
-            }
+                if (!paircut.IsSelected(g1, g2)) {
+                  continue;
+                }
 
-            ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-            ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-            phi_cp1 = atan2(g1.recalculatedVtxY(), g1.recalculatedVtxX());
-            eta_cp1 = std::atanh(g1.recalculatedVtxZ() / sqrt(pow(g1.recalculatedVtxX(), 2) + pow(g1.recalculatedVtxY(), 2) + pow(g1.recalculatedVtxZ(), 2)));
-            phi_cp2 = atan2(g2.recalculatedVtxY(), g2.recalculatedVtxX());
-            eta_cp2 = std::atanh(g2.recalculatedVtxZ() / sqrt(pow(g2.recalculatedVtxX(), 2) + pow(g2.recalculatedVtxY(), 2) + pow(g2.recalculatedVtxZ(), 2)));
-            value[0] = v12.M();
-            value[1] = g1.pt();
-            value[2] = g1.recalculatedVtxR();
-            value[3] = phi_cp1 > 0.f ? phi_cp1 : phi_cp1 + TMath::TwoPi();
-            value[4] = eta_cp1;
-            value[5] = g2.pt();
-            value[6] = g2.recalculatedVtxR();
-            value[7] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
-            value[8] = eta_cp2;
+                ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // tag
+                ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // probe
+                ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+                phi_cp1 = atan2(g1.recalculatedVtxY(), g1.recalculatedVtxX());
+                eta_cp1 = std::atanh(g1.recalculatedVtxZ() / sqrt(pow(g1.recalculatedVtxX(), 2) + pow(g1.recalculatedVtxY(), 2) + pow(g1.recalculatedVtxZ(), 2)));
+                phi_cp2 = atan2(g2.recalculatedVtxY(), g2.recalculatedVtxX());
+                eta_cp2 = std::atanh(g2.recalculatedVtxZ() / sqrt(pow(g2.recalculatedVtxX(), 2) + pow(g2.recalculatedVtxY(), 2) + pow(g2.recalculatedVtxZ(), 2)));
+                value[0] = v12.M();
+                value[1] = g1.pt();
+                value[2] = g1.recalculatedVtxR();
+                value[3] = phi_cp1 > 0.f ? phi_cp1 : phi_cp1 + TMath::TwoPi();
+                value[4] = eta_cp1;
+                value[5] = g2.pt();
+                value[6] = g2.recalculatedVtxR();
+                value[7] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
+                value[8] = eta_cp2;
 
-            reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_same"))->Fill(value);
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_same"))->Fill(value);
 
-          } // end of combination
-        }   // end of pair cut loop
-      }     // end of cut loop
-    }       // end of collision loop
+              } // end of pair cut loop
+            }   // end of g2 loop
+          }     // end of g1 loop
+        }       // end of cut2 loop
+      }         // end of cut1 loop
+    }           // end of collision loop
   }
 
   Configurable<int> ndepth{"ndepth", 5, "depth for event mixing"};
@@ -315,43 +343,49 @@ struct MaterialBudget {
       float phi_cp2 = 0.f, eta_cp2 = 0.f;
       for (auto& cut1 : cuts1) {
         for (auto& cut2 : cuts2) {
-          for (auto& paircut : paircuts) {
-            for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
-              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
-
-              if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
+          // if (std::string(cut1.GetName()) == std::string(cut2.GetName())) {
+          //   continue;
+          // }
+          for (auto& g1 : photons_coll1) {
+            for (auto& g2 : photons_coll2) {
+              if (g1.globalIndex() == g2.globalIndex()) {
                 continue;
               }
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
-              if (!paircut.IsSelected(g1, g2)) {
-                continue;
-              }
+              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
 
-              ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-              ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-              ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              phi_cp1 = atan2(g1.recalculatedVtxY(), g1.recalculatedVtxX());
-              eta_cp1 = std::atanh(g1.recalculatedVtxZ() / sqrt(pow(g1.recalculatedVtxX(), 2) + pow(g1.recalculatedVtxY(), 2) + pow(g1.recalculatedVtxZ(), 2)));
-              phi_cp2 = atan2(g2.recalculatedVtxY(), g2.recalculatedVtxX());
-              eta_cp2 = std::atanh(g2.recalculatedVtxZ() / sqrt(pow(g2.recalculatedVtxX(), 2) + pow(g2.recalculatedVtxY(), 2) + pow(g2.recalculatedVtxZ(), 2)));
-              value[0] = v12.M();
-              value[1] = g1.pt();
-              value[2] = g1.recalculatedVtxR();
-              value[3] = phi_cp1 > 0.f ? phi_cp1 : phi_cp1 + TMath::TwoPi();
-              value[4] = eta_cp1;
-              value[5] = g2.pt();
-              value[6] = g2.recalculatedVtxR();
-              value[7] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
-              value[8] = eta_cp2;
-              reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_mix"))->Fill(value);
+              for (auto& paircut : paircuts) {
 
-            } // end of different photon combinations
-          }   // end of pair cut loop
-        }     // end of cut2 loop
-      }       // end of cut1 loop
-    }         // end of different collision combinations
+                if (!paircut.IsSelected(g1, g2)) {
+                  continue;
+                }
+
+                ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // tag
+                ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // probe
+                ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+                phi_cp1 = atan2(g1.recalculatedVtxY(), g1.recalculatedVtxX());
+                eta_cp1 = std::atanh(g1.recalculatedVtxZ() / sqrt(pow(g1.recalculatedVtxX(), 2) + pow(g1.recalculatedVtxY(), 2) + pow(g1.recalculatedVtxZ(), 2)));
+                phi_cp2 = atan2(g2.recalculatedVtxY(), g2.recalculatedVtxX());
+                eta_cp2 = std::atanh(g2.recalculatedVtxZ() / sqrt(pow(g2.recalculatedVtxX(), 2) + pow(g2.recalculatedVtxY(), 2) + pow(g2.recalculatedVtxZ(), 2)));
+                value[0] = v12.M();
+                value[1] = g1.pt();
+                value[2] = g1.recalculatedVtxR();
+                value[3] = phi_cp1 > 0.f ? phi_cp1 : phi_cp1 + TMath::TwoPi();
+                value[4] = eta_cp1;
+                value[5] = g2.pt();
+                value[6] = g2.recalculatedVtxR();
+                value[7] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
+                value[8] = eta_cp2;
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_mix"))->Fill(value);
+
+              } // end of pair cut loop
+            }   // end of g2 loop
+          }     // end of g1 loop
+        }       // end of cut2 loop
+      }         // end of cut1 loop
+    }           // end of different collision combinations
   }
 
   Partition<aod::EMReducedEvents> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
@@ -361,10 +395,10 @@ struct MaterialBudget {
 
   void processMB(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    fillsinglephoton(grouped_collisions, v0photons, perCollision_pcm, fPCMCuts, legs);
-    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs);
+    fillsinglephoton(grouped_collisions, v0photons, perCollision_pcm, fProbePCMCuts, legs);
+    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagPCMCuts, fProbePCMCuts, fPairCuts, legs);
     if (fDoMixing) {
-      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs);
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagPCMCuts, fProbePCMCuts, fPairCuts, legs);
     }
   }
 

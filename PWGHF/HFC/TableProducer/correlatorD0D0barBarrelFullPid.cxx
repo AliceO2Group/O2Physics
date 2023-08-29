@@ -134,7 +134,9 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   }
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel> const& candidates)
+  void processData(aod::Collision const& collision,
+                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -156,7 +158,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
     auto selectedD0candidatesGrouped = selectedD0candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-    for (auto& candidate1 : selectedD0candidatesGrouped) {
+    for (const auto& candidate1 : selectedD0candidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
         continue;
       }
@@ -195,7 +197,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (candidate1.isSelD0TofPlusRichPid() < selectionFlagD0) {
         continue;
       }
-      for (auto& candidate2 : selectedD0candidatesGrouped) {
+      for (const auto& candidate2 : selectedD0candidatesGrouped) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
@@ -243,7 +245,9 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   PROCESS_SWITCH(HfCorrelatorD0D0barBarrelFullPid, processData, "Process data", false);
 
   /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec> const& candidates)
+  void processMcRec(aod::Collision const& collision,
+                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -270,7 +274,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
     bool flagD0Reflection = false;
     bool flagD0barSignal = false;
     bool flagD0barReflection = false;
-    for (auto& candidate1 : selectedD0candidatesGroupedMC) {
+    for (const auto& candidate1 : selectedD0candidatesGroupedMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
@@ -324,7 +328,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
       flagD0Signal = candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
       flagD0Reflection = candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
-      for (auto& candidate2 : selectedD0candidatesGroupedMC) {
+      for (const auto& candidate2 : selectedD0candidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
@@ -384,17 +388,18 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   PROCESS_SWITCH(HfCorrelatorD0D0barBarrelFullPid, processMcRec, "Process MC Reco mode", true);
 
   /// D0-D0bar correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mccollision, MCParticlesPlus const& particlesMC)
+  void processMcGen(aod::McCollision const&,
+                    MCParticlesPlus const& particlesMC)
   {
     int counterD0D0bar = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -413,11 +418,11 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         continue;
       }
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != pdg::Code::kD0Bar) { // check that inner particle is D0bar
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
@@ -448,13 +453,13 @@ struct HfCorrelatorD0D0barBarrelFullPid {
             if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
-              for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
+              for (const auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate1DauInAcc = false;
                   break;
                 }
               }
-              for (auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
+              for (const auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate2DauInAcc = false;
                   break;
@@ -475,13 +480,14 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   PROCESS_SWITCH(HfCorrelatorD0D0barBarrelFullPid, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processCCbar(aod::McCollision const& mccollision, MCParticlesPlus const& particlesMC)
+  void processCCbar(aod::McCollision const&,
+                    MCParticlesPlus const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
@@ -491,7 +497,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
@@ -511,11 +517,11 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       }
       registry.fill(HIST("hCountCtriggersMCGen"), 0, particle1.pt()); // to count trigger c quark (for normalisation)
 
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != PDG_t::kCharmBar) { // check that inner particle is a cbar
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, RecoDecay::getMassPDG(particle2.pdgCode()))) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {

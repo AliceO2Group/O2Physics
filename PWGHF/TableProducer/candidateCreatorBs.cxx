@@ -215,8 +215,8 @@ struct HfCandidateCreatorBs {
         df3.getTrack(2).getPxPyPzGlo(pVec2);
 
         // Ds∓ → K∓ K± π∓
-        array<float, 3> pVecKK = RecoDecay::pVec(pVec0, pVec1);
-        array<float, 3> pVecDs = RecoDecay::pVec(pVec0, pVec1, pVec2);
+        std::array<float, 3> pVecKK = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> pVecDs = RecoDecay::pVec(pVec0, pVec1, pVec2);
         auto trackParCovKK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecKK, df3.calcPCACovMatrixFlat(),
                                                  trackParCov0, trackParCov1);
         auto trackParCovDs = o2::dataformats::V0(df3.getPCACandidatePos(), pVecDs, df3.calcPCACovMatrixFlat(),
@@ -249,7 +249,7 @@ struct HfCandidateCreatorBs {
             continue;
           }
 
-          array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
           auto trackParCovPi = getTrackParCov(trackPion);
 
           // ---------------------------------
@@ -270,7 +270,7 @@ struct HfCandidateCreatorBs {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex
 
           // calculate invariant mass and apply selection
-          massDsPi = RecoDecay::m(array{pVecDs, pVecPion}, array{massDs, massPi});
+          massDsPi = RecoDecay::m(std::array{pVecDs, pVecPion}, std::array{massDs, massPi});
           if (std::abs(massDsPi - massBs) > invMassWindowBs) {
             continue;
           }
@@ -284,7 +284,7 @@ struct HfCandidateCreatorBs {
           // get uncertainty of the decay length
           double phi, theta;
           // getPointDirection modifies phi and theta
-          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBs, phi, theta);
+          getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBs, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -341,25 +341,25 @@ struct HfCandidateCreatorBsExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto const& candidate : *rowCandidateBs) {
+    for (const auto& candidate : *rowCandidateBs) {
       flag = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
-      auto arrayDaughtersBs = array{candDs.prong0_as<aod::TracksWMc>(),
-                                    candDs.prong1_as<aod::TracksWMc>(),
-                                    candDs.prong2_as<aod::TracksWMc>(),
-                                    candidate.prong1_as<aod::TracksWMc>()};
-      auto arrayDaughtersDs = array{candDs.prong0_as<aod::TracksWMc>(),
-                                    candDs.prong1_as<aod::TracksWMc>(),
-                                    candDs.prong2_as<aod::TracksWMc>()};
+      auto arrayDaughtersBs = std::array{candDs.prong0_as<aod::TracksWMc>(),
+                                         candDs.prong1_as<aod::TracksWMc>(),
+                                         candDs.prong2_as<aod::TracksWMc>(),
+                                         candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersDs = std::array{candDs.prong0_as<aod::TracksWMc>(),
+                                         candDs.prong1_as<aod::TracksWMc>(),
+                                         candDs.prong2_as<aod::TracksWMc>()};
 
-      // Checking Bs(bar) → Ds∓ π± → (K- K+ π∓) π±
-      indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
+      indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // Checking Ds∓ → K- K+ π∓
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDSBar, array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, array{0}, 1);
+          RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
               auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
@@ -367,6 +367,27 @@ struct HfCandidateCreatorBsExpressions {
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
               flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
+            }
+          }
+        }
+      }
+
+      if (indexRec < 0) {
+        // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        if (indexRec > -1) {
+          // Checking Ds± → K- K+ π±
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+            if (arrDaughDsIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
+                auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
             }
           }
         }
@@ -380,7 +401,7 @@ struct HfCandidateCreatorBsExpressions {
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
         auto particleProng3 = arrayDaughtersBs[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 3> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBS, pdg::Code::kLambdaB0};
+        std::array<int, 4> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBPlus, pdg::Code::kBS, pdg::Code::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
           int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
@@ -402,15 +423,15 @@ struct HfCandidateCreatorBsExpressions {
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       flag = 0;
       arrDaughDsIndex.clear();
       // Bs(bar) → Ds∓ π±
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, std::array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
         // Match Ds∓ -> K- K+ π±
         auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDSBar, array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
-          RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, array{0}, 1);
+        if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
+          RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
               auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);

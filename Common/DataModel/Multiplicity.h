@@ -55,14 +55,18 @@ DECLARE_SOA_COLUMN(MultNTracksHasTOF, multNTracksHasTOF, int); //!
 DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
 
 } // namespace mult
-DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
+DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
+                  mult::MultFV0M<mult::MultFV0A, mult::MultFV0C>);
+DECLARE_SOA_TABLE(FT0Mults, "AOD", "FT0MULT", //! Multiplicity with the FT0 detector
                   mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>);
+DECLARE_SOA_TABLE(FDDMults, "AOD", "FDDMULT", //! Multiplicity with the FDD detector
                   mult::MultFDDA, mult::MultFDDC,
-                  mult::MultZNA, mult::MultZNC,
-                  mult::MultFV0M<mult::MultFV0A, mult::MultFV0C>,
-                  mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>,
-                  mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>,
+                  mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>);
+DECLARE_SOA_TABLE(ZDCMults, "AOD", "ZDCMULT", //! Multiplicity with the ZDC detector
+                  mult::MultZNA, mult::MultZNC);
+DECLARE_SOA_TABLE(BarrelMults, "AOD", "BARRELMULT", //! Multiplicity in the barrel
                   mult::MultTracklets,
                   mult::MultTPC,
                   mult::MultNTracksPV,
@@ -70,6 +74,7 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultNTracksPVetaHalf,
                   mult::IsInelGt0<mult::MultNTracksPVeta1>,
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
+using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using Mult = Mults::iterator;
 
 // for QA purposes

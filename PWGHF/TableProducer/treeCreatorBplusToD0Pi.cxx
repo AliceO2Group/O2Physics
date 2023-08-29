@@ -205,7 +205,7 @@ struct HfTreeCreatorBplusToD0Pi {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -218,7 +218,7 @@ struct HfTreeCreatorBplusToD0Pi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto fillTable = [&](int CandFlag,
                            // int FunctionSelection,
                            float FunctionInvMass,
@@ -312,14 +312,14 @@ struct HfTreeCreatorBplusToD0Pi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::BplusToD0Pi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.globalIndex());
       }

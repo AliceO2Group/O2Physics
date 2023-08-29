@@ -89,9 +89,7 @@ class HfMlResponse
   /// \param cuts is a LabeledArray containing selections per bin
   /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
   /// \param nClasses is the number of classes for each model
-  /// \param paths is a vector of onnx model paths (set empty if ccdb access foreseen)
-  void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
-                 const uint8_t& nClasses, const std::vector<std::string>& paths)
+  void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir, const uint8_t& nClasses)
   {
     mBinsLimits = binsLimits;
     mCuts = cuts;
@@ -99,11 +97,7 @@ class HfMlResponse
     mNClasses = nClasses;
     mNModels = binsLimits.size() - 1;
     mModels = std::vector<o2::ml::OnnxModel>(mNModels);
-    if (paths.empty()) {
-      mPaths = std::vector<std::string>(mNModels);
-    } else {
-      mPaths = paths;
-    }
+    mPaths = std::vector<std::string>(mNModels);
   }
 
   /// Set models paths to CCDB
@@ -111,8 +105,12 @@ class HfMlResponse
   /// \param ccdbApi is the CCDB API
   /// \param pathCCDB is the model path in CCDB
   /// \param timestampCCDB is the CCDB timestamp
-  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
   {
+    if (onnxFiles.size() != mNModels) {
+      LOG(fatal) << "Number of expected models different from the one set! Please check your configurables.";
+    }
+
     uint8_t counterModel{0};
     for (const auto& onnxFile : onnxFiles) {
       std::map<std::string, std::string> metadata;
@@ -124,6 +122,17 @@ class HfMlResponse
       }
       ++counterModel;
     }
+  }
+
+  /// Set models paths to local or cvmfs
+  /// \param onnxFiles is a vector of onnx file names, one for each bin
+  void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
+  {
+    if (onnxFiles.size() != mNModels) {
+      LOG(fatal) << "Number of expected models different from the one set! Please check your configurables.";
+    }
+
+    mPaths = onnxFiles;
   }
 
   /// Initialize class instance (initialize OnnxModels)
