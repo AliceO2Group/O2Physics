@@ -213,9 +213,7 @@ class HfHelper
   auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
   {
     return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
-                        std::array{mass(kPiPlus),
-                                  mass(kKPlus),
-                                  mass(kPiPlus)});
+                        std::array{mass(kPiPlus), mass(kKPlus), mass(kPiPlus)});
   }
 
   // Ds± → K± K∓ π±
@@ -669,7 +667,7 @@ class HfHelper
     // }
 
     // B0 mass cut
-    if (std::abs(invMassB0ToDPi(candB0) - mass(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassB0ToDPi(candB0) - mass(o2::analysis::pdg::kB0)) > cuts->get(pTBin, "m")) {
       // Printf("B0 topol selection failed at mass diff check");
       return false;
     }
@@ -686,7 +684,7 @@ class HfHelper
 
     /*
     // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-    if (std::abs(invMassDplusToPiKPi(hfCandD) - mass(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+    if (std::abs(invMassDplusToPiKPi(hfCandD) - mass(o2::analysis::pdg::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
       return false;
     }
     */
@@ -825,7 +823,7 @@ class HfHelper
     }
 
     // Bs mass cut
-    if (std::abs(invMassBsToDsPi(candBs) - mass(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassBsToDsPi(candBs) - mass(o2::analysis::pdg::kBS)) > cuts->get(pTBin, "m")) {
       return false;
     }
 
