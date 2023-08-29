@@ -46,9 +46,11 @@ struct HfDataCreatorD0PiReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision;
   Produces<aod::HfOrigColCounts> hfCollisionCounter;
-  Produces<aod::HfRedTracks> hfTrackPion;
-  Produces<aod::HfRedPidTracks> hfTrackPidPion;
-  Produces<aod::HfRedCand2Prongs> hfCand2Prong;
+  Produces<aod::HfRedTracksBase> hfTrackPion;
+  Produces<aod::HfRedTracksCov> hfTrackCovPion;
+  Produces<aod::HfRedTracksPid> hfTrackPidPion;
+  Produces<aod::HfRed2Prongs> hfCand2Prong;
+  Produces<aod::HfRed2ProngsCov> hfCand2ProngCov;
   Produces<aod::HfCandBpConfigs> rowCandidateConfig;
   Produces<aod::HfMcRecRedD0Pis> rowHfD0PiMcRecReduced;
   Produces<aod::HfMcGenRedBps> rowHfBpMcGenReduced;
@@ -240,15 +242,15 @@ struct HfDataCreatorD0PiReduced {
       auto candsDThisColl = candsD0.sliceBy(candsDPerCollision, thisCollId);
       for (const auto& candD0 : candsDThisColl) {
         bool fillHfCand2Prong = false;
-        float invMassD0;
+        float invMassD0{-1.f}, invMassD0bar{-1.f};
 
         if (candD0.isSelD0() >= selectionFlagD0) {
           invMassD0 = o2::aod::hf_cand_2prong::invMassD0ToPiK(candD0);
           registry.fill(HIST("hMassD0ToKPi"), invMassD0);
         }
         if (candD0.isSelD0bar() >= selectionFlagD0bar) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0barToKPi(candD0);
-          registry.fill(HIST("hMassD0ToKPi"), invMassD0);
+          invMassD0bar = o2::aod::hf_cand_2prong::invMassD0barToKPi(candD0);
+          registry.fill(HIST("hMassD0ToKPi"), invMassD0bar);
         }
         registry.fill(HIST("hPtD0"), candD0.pt());
         registry.fill(HIST("hCPAD0"), candD0.cpa());
@@ -314,17 +316,14 @@ struct HfDataCreatorD0PiReduced {
             hfTrackPion(trackPion.globalIndex(), hfReducedCollisionIndex,
                         trackPion.x(), trackPion.alpha(),
                         trackPion.y(), trackPion.z(), trackPion.snp(),
-                        trackPion.tgl(), trackPion.signed1Pt(),
-                        trackPion.cYY(), trackPion.cZY(), trackPion.cZZ(),
-                        trackPion.cSnpY(), trackPion.cSnpZ(),
-                        trackPion.cSnpSnp(), trackPion.cTglY(), trackPion.cTglZ(),
-                        trackPion.cTglSnp(), trackPion.cTglTgl(),
-                        trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
-                        trackPion.c1PtTgl(), trackPion.c1Pt21Pt2(),
-                        trackPion.px(), trackPion.py(), trackPion.pz());
-            hfTrackPidPion(hfReducedCollisionIndex,
-                           trackPion.pt(),
-                           trackPion.hasTPC(), trackPion.hasTOF(),
+                        trackPion.tgl(), trackPion.signed1Pt());
+            hfTrackCovPion(trackPion.cYY(), trackPion.cZY(), trackPion.cZZ(),
+                           trackPion.cSnpY(), trackPion.cSnpZ(),
+                           trackPion.cSnpSnp(), trackPion.cTglY(), trackPion.cTglZ(),
+                           trackPion.cTglSnp(), trackPion.cTglTgl(),
+                           trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
+                           trackPion.c1PtTgl(), trackPion.c1Pt21Pt2());
+            hfTrackPidPion(trackPion.hasTPC(), trackPion.hasTOF(),
                            trackPion.tpcNSigmaEl(), trackPion.tpcNSigmaMu(), trackPion.tpcNSigmaPi(), trackPion.tpcNSigmaKa(), trackPion.tpcNSigmaPr(),
                            trackPion.tofNSigmaEl(), trackPion.tofNSigmaMu(), trackPion.tofNSigmaPi(), trackPion.tofNSigmaKa(), trackPion.tofNSigmaPr());
             // add trackPion.globalIndex() to a list
@@ -364,16 +363,13 @@ struct HfDataCreatorD0PiReduced {
                        trackParCovD0.getX(), trackParCovD0.getAlpha(),
                        trackParCovD0.getY(), trackParCovD0.getZ(), trackParCovD0.getSnp(),
                        trackParCovD0.getTgl(), trackParCovD0.getQ2Pt(),
-                       trackParCovD0.getSigmaY2(), trackParCovD0.getSigmaZY(), trackParCovD0.getSigmaZ2(),
-                       trackParCovD0.getSigmaSnpY(), trackParCovD0.getSigmaSnpZ(),
-                       trackParCovD0.getSigmaSnp2(), trackParCovD0.getSigmaTglY(), trackParCovD0.getSigmaTglZ(),
-                       trackParCovD0.getSigmaTglSnp(), trackParCovD0.getSigmaTgl2(),
-                       trackParCovD0.getSigma1PtY(), trackParCovD0.getSigma1PtZ(), trackParCovD0.getSigma1PtSnp(),
-                       trackParCovD0.getSigma1PtTgl(), trackParCovD0.getSigma1Pt2(),
-                       pVecD0[0], pVecD0[1], pVecD0[2],
-                       candD0.cpa(),
-                       candD0.decayLength(),
-                       invMassD0);
+                       candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex(), invMassD0, invMassD0bar);
+          hfCand2ProngCov(trackParCovD0.getSigmaY2(), trackParCovD0.getSigmaZY(), trackParCovD0.getSigmaZ2(),
+                          trackParCovD0.getSigmaSnpY(), trackParCovD0.getSigmaSnpZ(),
+                          trackParCovD0.getSigmaSnp2(), trackParCovD0.getSigmaTglY(), trackParCovD0.getSigmaTglZ(),
+                          trackParCovD0.getSigmaTglSnp(), trackParCovD0.getSigmaTgl2(),
+                          trackParCovD0.getSigma1PtY(), trackParCovD0.getSigma1PtZ(), trackParCovD0.getSigma1PtSnp(),
+                          trackParCovD0.getSigma1PtTgl(), trackParCovD0.getSigma1Pt2());
           fillHfReducedCollision = true;
         }
       } // candsD loop
