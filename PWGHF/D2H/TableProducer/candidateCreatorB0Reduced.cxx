@@ -55,8 +55,8 @@ struct HfCandidateCreatorB0Reduced {
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  Preslice<aod::HfRedCand3Prongs> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
-  Preslice<aod::HfRedTracks> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<soa::Join<aod::HfRedTracks, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   HistogramRegistry registry{"registry"};
 
@@ -79,8 +79,8 @@ struct HfCandidateCreatorB0Reduced {
   }
 
   void process(aod::HfRedCollisions const& collisions,
-               aod::HfRedCand3Prongs const& candsD,
-               aod::HfRedTracks const& tracksPion,
+               soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>  const& candsD,
+               soa::Join<aod::HfRedTracks, aod::HfRedTracksCov> const& tracksPion,
                aod::HfOrigColCounts const& collisionsCounter)
   {
     for (const auto& collisionCounter : collisionsCounter) {

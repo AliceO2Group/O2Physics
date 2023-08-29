@@ -63,6 +63,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   HistogramRegistry registry{"registry"};
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
   void init(InitContext const& initContext)
   {
     if (usePid) {
@@ -90,7 +92,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   }
 
   void process(HfCandB0 const& hfCandsB0,
-               HfRedPidTracks const&,
+               TracksPion const&,
                HfCandB0Configs const& configs)
   {
     // get DplusPi creator configurable
@@ -143,7 +145,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandB0.prong1_as<HfRedPidTracks>();
+        auto trackPi = hfCandB0.prong1_as<TracksPion>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
