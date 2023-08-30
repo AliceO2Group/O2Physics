@@ -60,16 +60,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
     }
-    if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
-      std::string dirName = static_cast<std::string>(dirNames[0]);
-      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      if (plotForEveryRadii) {
-        for (int i = 0; i < 9; i++) {
-          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        }
-      }
-    }
     if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
       for (int i = 0; i < 2; i++) {
         std::string dirName = static_cast<std::string>(dirNames[1]);
@@ -106,23 +96,6 @@ class FemtoUniverseDetaDphiStar
       // check if provided particles are in agreement with the class instantiation
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack) {
         LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
-        return false;
-      }
-      auto deta = part1.eta() - part2.eta();
-      auto dphiAvg = AveragePhiStar(part1, part2, 0);
-      histdetadpi[0][0]->Fill(deta, dphiAvg);
-      if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-        return true;
-      } else {
-        histdetadpi[0][1]->Fill(deta, dphiAvg);
-        return false;
-      }
-
-    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
-      /// Track-Track combination
-      // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
-        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kMCTruthTrack,kMCTruthTrack candidates.";
         return false;
       }
       auto deta = part1.eta() - part2.eta();

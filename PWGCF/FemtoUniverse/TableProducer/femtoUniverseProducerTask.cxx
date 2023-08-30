@@ -84,8 +84,6 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoUniverseProducerTask {
-  int evCount = 0;
-
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
@@ -893,7 +891,7 @@ struct femtoUniverseProducerTask {
                    aod::BCsWithTimestamps const&,
                    soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                    aod::McCollisions const& mcCollisions,
-                   aod::McParticles const& mcParticles)
+                   aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -938,9 +936,6 @@ struct femtoUniverseProducerTask {
                         aod::McCollisions const& mcCollisions,
                         aod::McParticles const& mcParticles)
   {
-    if (evCount > 30)
-      return;
-    evCount++;
     // magnetic field for run not needed for mc truth
     // fill the tables
     fillMCTruthCollisions(col, mcParticles);
