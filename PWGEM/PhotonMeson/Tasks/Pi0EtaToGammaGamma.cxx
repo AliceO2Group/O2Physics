@@ -50,7 +50,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct Pi0EtaToGammaGamma {
@@ -275,7 +275,7 @@ struct Pi0EtaToGammaGamma {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photon::emreducedeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 

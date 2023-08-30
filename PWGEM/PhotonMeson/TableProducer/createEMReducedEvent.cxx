@@ -31,6 +31,9 @@ using namespace o2::soa;
 
 struct createEMReducedEvent {
   Produces<o2::aod::EMReducedEvents> event;
+  Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
+  Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
+  Produces<o2::aod::EMCEMReducedEventIds> emceventid;
 
   enum SubSystem {
     kPCM = 0x1,
@@ -67,7 +70,7 @@ struct createEMReducedEvent {
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>;
 
   template <uint8_t system, typename TPCMs, typename TPHOSs, typename TEMCs>
-  void process(MyCollisions const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters)
+  void processEvent(MyCollisions const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -85,6 +88,10 @@ struct createEMReducedEvent {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
         ng_pcm = v0photons_coll.size();
         registry.fill(HIST("hNGammas_PCM"), ng_pcm);
+        // for (auto& v0 : v0photons_coll) {
+        for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
+          v0kfeventid(event.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
@@ -127,40 +134,39 @@ struct createEMReducedEvent {
             ng_pcm, ng_phos, ng_emc); // ng is needed for event mixing to filter events that contain at least 1 photon.
 
     } // end of collision loop
-
-  } // end of process
+  }   // end of processEvent
 
   void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons)
   {
-    process<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
+    processEvent<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
   }
   void process_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
   {
-    process<kPHOS>(collisions, bcs, nullptr, phosclusters, nullptr);
+    processEvent<kPHOS>(collisions, bcs, nullptr, phosclusters, nullptr);
   }
   void process_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
   {
-    process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
+    processEvent<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
   void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
-    process<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr);
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr);
   }
   void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
-    process<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters);
+    processEvent<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters);
   }
   void process_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
-    process<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters);
+    processEvent<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters);
   }
   void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
-    process<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters);
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters);
   }
 
   void processDummy(MyCollisions const& collisions) {}
