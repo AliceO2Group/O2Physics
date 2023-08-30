@@ -25,9 +25,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_xicc;
-using namespace o2::analysis::hf_cuts_xicc_to_p_k_pi_pi;
 
 /// Struct for applying Xicc selection cuts
 struct HfCandidateSelectorXiccToPKPiPi {
@@ -48,7 +45,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], hf_cuts_xicc_to_p_k_pi_pi::nBinsPt, hf_cuts_xicc_to_p_k_pi_pi::nCutVars, hf_cuts_xicc_to_p_k_pi_pi::labelsPt, hf_cuts_xicc_to_p_k_pi_pi::labelsCutVar}, "Xicc candidate selection per pT bin"};
 
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
@@ -153,7 +150,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 
-      if (!(hfCandXicc.hfflag() & 1 << DecayType::XiccToXicPi)) {
+      if (!(hfCandXicc.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
         hfSelXiccToPKPiPiCandidate(statusXiccToPKPiPi);
         continue;
       }

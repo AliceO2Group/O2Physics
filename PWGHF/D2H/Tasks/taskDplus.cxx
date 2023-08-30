@@ -27,7 +27,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
 
 /// D± analysis task
 struct HfTaskDplus {
@@ -99,7 +98,7 @@ struct HfTaskDplus {
   {
     for (const auto& candidate : selectedDPlusCandidates) {
       // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
@@ -139,13 +138,13 @@ struct HfTaskDplus {
     // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : recoFlagDPlusCandidates) {
       // not possible in Filter since expressions do not support binary operators
-      if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -196,7 +195,7 @@ struct HfTaskDplus {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {

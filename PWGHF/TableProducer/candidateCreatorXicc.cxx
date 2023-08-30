@@ -30,8 +30,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_xicc;
 using namespace o2::framework::expressions; // FIXME not sure if this is needed
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -182,7 +180,7 @@ struct HfCandidateCreatorXicc {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << DecayType::XiccToXicPi;
+        int hfFlag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
 
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
@@ -245,7 +243,7 @@ struct HfCandidateCreatorXiccMc {
         // Printf("Checking Ξc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = 1 << DecayType::XiccToXicPi;
+          flag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
         } else {
           debug = 1;
           LOGF(info, "WARNING: Ξc±± in decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -265,7 +263,7 @@ struct HfCandidateCreatorXiccMc {
         auto XicCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking Ξc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
-          flag = sign * (1 << DecayType::XiccToXicPi);
+          flag = sign * (1 << aod::hf_cand_xicc::DecayType::XiccToXicPi);
         }
       }
       rowMcMatchGen(flag, origin);

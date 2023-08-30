@@ -28,8 +28,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 namespace o2::aod
 {
@@ -67,7 +65,7 @@ struct HfCandidateSelectorLcAlice3 {
   // topological cuts
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   HfHelper hfHelper;
 
@@ -165,7 +163,7 @@ struct HfCandidateSelectorLcAlice3 {
       int statusLcToPiKPTofPid = 0;
       int statusLcToPiKPTofPlusRichPid = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidateALICE3(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPiTofPid, statusLcToPKPiTofPlusRichPid, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKPTofPid, statusLcToPiKPTofPlusRichPid);
         continue;
       }

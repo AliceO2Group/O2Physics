@@ -29,8 +29,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_casc;
-using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
 // possible input features for ML
 enum MLInputFeatures {
@@ -125,7 +123,7 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> probBayesMinHighP{"probBayesMinHighP", 0.8, "min. Bayes probability for bachelor at high p [%]"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], hf_cuts_lc_to_k0s_p::nBinsPt, hf_cuts_lc_to_k0s_p::nCutVars, hf_cuts_lc_to_k0s_p::labelsPt, hf_cuts_lc_to_k0s_p::labelsCutVar}, "Lc candidate selection per pT bin"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};

@@ -27,7 +27,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 namespace o2::aod
 {
@@ -209,10 +208,10 @@ struct HfTreeCreatorD0ToKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::D0ToPiK));
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
 
-  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
 
   void init(InitContext const&)
   {
@@ -449,7 +448,7 @@ struct HfTreeCreatorD0ToKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
           particle.pt(),

@@ -27,8 +27,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 
 /// Struct for applying Dplus to piKpi selection cuts
 struct HfCandidateSelectorDplusToPiKPi {
@@ -51,7 +49,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 3., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Dplus candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], hf_cuts_dplus_to_pi_k_pi::nBinsPt, hf_cuts_dplus_to_pi_k_pi::nCutVars, hf_cuts_dplus_to_pi_k_pi::labelsPt, hf_cuts_dplus_to_pi_k_pi::labelsCutVar}, "Dplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -195,7 +193,7 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       auto ptCand = candidate.pt();
 
-      if (!TESTBIT(candidate.hfflag(), DecayType::DplusToPiKPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
           hfMlDplusToPiKPiCandidate(outputMl);

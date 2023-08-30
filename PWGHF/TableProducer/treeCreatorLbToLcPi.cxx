@@ -29,8 +29,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_lb;
 
 namespace o2::aod
 {

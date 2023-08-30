@@ -27,8 +27,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 /// Struct for applying Xic selection cuts
 struct HfCandidateSelectorXicToPKPi {
@@ -50,7 +48,7 @@ struct HfCandidateSelectorXicToPKPi {
   // topological cuts
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xic candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_p_k_pi::cuts[0], hf_cuts_xic_to_p_k_pi::nBinsPt, hf_cuts_xic_to_p_k_pi::nCutVars, hf_cuts_xic_to_p_k_pi::labelsPt, hf_cuts_xic_to_p_k_pi::labelsCutVar}, "Xic candidate selection per pT bin"};
 
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
@@ -175,7 +173,7 @@ struct HfCandidateSelectorXicToPKPi {
       auto statusXicToPKPi = 0;
       auto statusXicToPiKP = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
         continue;
       }

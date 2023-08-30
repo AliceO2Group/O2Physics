@@ -28,10 +28,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bs;               // from CandidateReconstructionTables.h
-using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
 /// Bs analysis task
@@ -127,11 +123,11 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc;
+      constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bs::DecayTypeMc::NDecayTypeMc;
       TString labels[kNBinsDecayTypeMc];
-      labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{-}_{s} #rightarrow K^{-} K^{+} #pi^{-}) #pi^{+}";
-      labels[DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
-      labels[DecayTypeMc::OtherDecay] = "Other decays";
+      labels[hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{-}_{s} #rightarrow K^{-} K^{+} #pi^{-}) #pi^{+}";
+      labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
+      labels[hf_cand_bs::DecayTypeMc::OtherDecay] = "Other decays";
       static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
       registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassBs, axisPt}});
       for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
@@ -230,7 +226,7 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
         }
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandBs);
@@ -252,12 +248,12 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::BsToDsPiToKKPiPi)) { // Bs → Ds- π+ → (K- K+ π-) π+
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
-          } else if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
+          if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) { // Bs → Ds- π+ → (K- K+ π-) π+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          } else if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
           } else {
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::OtherDecay, invMassCandBs, ptCandBs);
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::OtherDecay, invMassCandBs, ptCandBs);
           }
         }
       }

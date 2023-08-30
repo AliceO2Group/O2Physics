@@ -31,11 +31,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_correlation_d0_hadron;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
-using namespace o2::constants::math;
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
@@ -103,7 +98,7 @@ struct HfCorrelatorD0HadronsSelection {
 
       for (const auto& candidate1 : selectedD0CandidatesGrouped) {
         // check decay channel flag for candidate1
-        if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
+        if (!TESTBIT(candidate1.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
@@ -127,7 +122,7 @@ struct HfCorrelatorD0HadronsSelection {
       auto selectedD0CandidatesGroupedMc = selectedD0candidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
         // check decay channel flag for candidate1
-        if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
+        if (!TESTBIT(candidate1.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
@@ -305,7 +300,7 @@ struct HfCorrelatorD0Hadrons {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
+      if (!TESTBIT(candidate1.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
 
@@ -378,10 +373,10 @@ struct HfCorrelatorD0Hadrons {
 
         int signalStatus = 0;
         if ((candidate1.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
-          signalStatus += ParticleTypeData::D0Only;
+          signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0Only;
         }
         if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
-          signalStatus += ParticleTypeData::D0barOnly;
+          signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
         }
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
@@ -433,7 +428,7 @@ struct HfCorrelatorD0Hadrons {
 
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
       // check decay channel flag for candidate1
-      if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
+      if (!TESTBIT(candidate1.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
@@ -448,7 +443,7 @@ struct HfCorrelatorD0Hadrons {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(bins, candidate1.pt()));
       }
 
-      if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         // fill per-candidate distributions from D0/D0bar true candidates
         registry.fill(HIST("hPtCandRec"), candidate1.pt());
         registry.fill(HIST("hPtProng0Rec"), candidate1.ptProng0());
@@ -460,18 +455,18 @@ struct HfCorrelatorD0Hadrons {
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
       if (candidate1.isSelD0() >= selectionFlagD0) {                  // only reco as D0
-        if (candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK) { // also matched as D0
+        if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0RecSig"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        } else if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassD0RecRef"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0RecBg"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
       if (candidate1.isSelD0bar() >= selectionFlagD0bar) {               // only reco as D0bar
-        if (candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) { // also matched as D0bar
+        if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
           registry.fill(HIST("hMassD0barRecSig"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK) {
+        } else if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
           registry.fill(HIST("hMassD0barRecRef"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0barRecBg"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
@@ -484,8 +479,8 @@ struct HfCorrelatorD0Hadrons {
 
       // ============== D-h correlation dedicated section ====================================
 
-      flagD0 = candidate1.flagMcMatchRec() == (1 << DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate1 matched to D0 (particle)
-      flagD0bar = candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
+      flagD0 = candidate1.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate1 matched to D0 (particle)
+      flagD0bar = candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
 
       // ========== track loop starts here ========================
 
@@ -532,23 +527,23 @@ struct HfCorrelatorD0Hadrons {
 
         int signalStatus = 0;
         if (flagD0 && (candidate1.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0Sig);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Sig);
         } // signal case D0
         if (flagD0bar && (candidate1.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0Ref);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Ref);
         } // reflection case D0
         if (!flagD0 && !flagD0bar && (candidate1.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0Bg);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Bg);
         } // background case D0
 
         if (flagD0bar && (candidate1.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0barSig);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barSig);
         } // signal case D0bar
         if (flagD0 && (candidate1.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0barRef);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barRef);
         } // reflection case D0bar
         if (!flagD0 && !flagD0bar && (candidate1.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
-          SETBIT(signalStatus, ParticleTypeMcRec::D0barBg);
+          SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barBg);
         } // background case D0bar
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
@@ -687,16 +682,16 @@ struct HfCorrelatorD0Hadrons {
         int signalStatus = 0;
         if (t1.isSelD0() >= selectionFlagD0) {
           if (!isSoftPiD0) {
-            signalStatus += ParticleTypeData::D0Only;
+            signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0Only;
           } else {
-            signalStatus += ParticleTypeData::D0OnlySoftPi;
+            signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0OnlySoftPi;
           }
         }
         if (t1.isSelD0bar() >= selectionFlagD0bar) {
           if (!isSoftPiD0bar) {
-            signalStatus += ParticleTypeData::D0barOnly;
+            signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
           } else {
-            signalStatus += ParticleTypeData::D0barOnlySoftPi;
+            signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnlySoftPi;
           }
         }
 
@@ -748,55 +743,55 @@ struct HfCorrelatorD0Hadrons {
           }
         }
 
-        flagD0 = t1.flagMcMatchRec() == (1 << DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate1 matched to D0 (particle)
-        flagD0bar = t1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
+        flagD0 = t1.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate1 matched to D0 (particle)
+        flagD0bar = t1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
         int signalStatus = 0;
 
         if (flagD0 && (t1.isSelD0() >= selectionFlagD0)) {
           if (!isSoftPiD0) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0Sig); //  signalStatus += 1;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Sig); //  signalStatus += 1;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi); // signalStatus += 64;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi); // signalStatus += 64;
           }
         } // signal case D0
 
         if (flagD0bar && (t1.isSelD0() >= selectionFlagD0)) {
           if (!isSoftPiD0) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0Ref); //   signalStatus += 2;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Ref); //   signalStatus += 2;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi); // signalStatus += 64;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi); // signalStatus += 64;
           }
         } // reflection case D0
 
         if (!flagD0 && !flagD0bar && (t1.isSelD0() >= selectionFlagD0)) {
           if (!isSoftPiD0) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0Bg); //  signalStatus += 4;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0Bg); //  signalStatus += 4;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi);
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi);
           }
         } // background case D0
 
         if (flagD0bar && (t1.isSelD0bar() >= selectionFlagD0bar)) {
           if (!isSoftPiD0bar) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0barSig); //  signalStatus += 8;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barSig); //  signalStatus += 8;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi);
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi);
           }
         } // signal case D0bar
 
         if (flagD0 && (t1.isSelD0bar() >= selectionFlagD0bar)) {
           if (!isSoftPiD0bar) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0barRef); // signalStatus += 16;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barRef); // signalStatus += 16;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi);
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi);
           }
         } // reflection case D0bar
 
         if (!flagD0 && !flagD0bar && (t1.isSelD0bar() >= selectionFlagD0bar)) {
           if (!isSoftPiD0bar) {
-            SETBIT(signalStatus, ParticleTypeMcRec::D0barBg); //   signalStatus += 32;
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::D0barBg); //   signalStatus += 32;
           } else {
-            SETBIT(signalStatus, ParticleTypeMcRec::SoftPi);
+            SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi);
           }
         } // background case D0bar
 

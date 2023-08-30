@@ -27,8 +27,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
 enum pidInfoStored {
   kPiFromLam = 0,

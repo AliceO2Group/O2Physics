@@ -24,10 +24,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_ds_hadron;
-using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
-using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 double getDeltaPhi(double phiD, double phiHadron)

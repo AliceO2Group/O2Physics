@@ -31,9 +31,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_bplus;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 using namespace o2::framework::expressions;
 
 // string definitions, used for histogram axis labels

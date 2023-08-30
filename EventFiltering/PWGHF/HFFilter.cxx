@@ -40,8 +40,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hffilters;
-using namespace hf_cuts_single_track;
-using namespace hf_cuts_bdt_multiclass;
 
 struct HfFilter { // Main struct for HF triggers
 

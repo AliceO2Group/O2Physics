@@ -30,8 +30,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 /// Ξc± analysis task
 
@@ -208,7 +206,7 @@ struct HfTaskXic {
     registry.fill(HIST("Data/hMultiplicity"), nTracks); // filling the histo for multiplicity
     for (const auto& candidate : candidates) {
       auto ptCandidate = candidate.pt();
-      if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       }
 
@@ -292,7 +290,7 @@ struct HfTaskXic {
     // MC rec.
     for (const auto& candidate : candidates) {
       // Selected Xic
-      if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       } // rapidity selection
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yXic(candidate)) > yCandRecoMax) {
@@ -310,7 +308,7 @@ struct HfTaskXic {
         massXicToPiKP = hfHelper.invMassXicToPiKP(candidate); // mass conjugate
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
         // Signal
         registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), ptCandidate);     // rec. level pT
 
@@ -370,7 +368,7 @@ struct HfTaskXic {
     }
     // MC gen.
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
         auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;

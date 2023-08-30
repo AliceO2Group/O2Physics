@@ -26,9 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Fills MC histograms.
 struct HfTaskD0ParametrizedPid {
@@ -70,7 +67,7 @@ struct HfTaskD0ParametrizedPid {
       // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //   continue;
       // }
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
@@ -84,7 +81,7 @@ struct HfTaskD0ParametrizedPid {
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
@@ -93,10 +90,10 @@ struct HfTaskD0ParametrizedPid {
 
       if (candidate.isSelD0() >= 1) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
@@ -105,7 +102,7 @@ struct HfTaskD0ParametrizedPid {
 
       if (candidate.isSelD0PerfectPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
@@ -119,7 +116,7 @@ struct HfTaskD0ParametrizedPid {
       // }
       float maxFiducialY = 0.8;
       float minFiducialY = -0.8;
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > 4.0) {
           continue;
         }

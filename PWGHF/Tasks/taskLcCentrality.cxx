@@ -28,8 +28,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -83,7 +81,7 @@ struct HfTaskLcCentrality {
     registry.fill(HIST("hCentrality"), centrality);
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
@@ -155,13 +153,13 @@ struct HfTaskLcCentralityMc {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -184,7 +182,7 @@ struct HfTaskLcCentralityMc {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > yCandMax) {
           continue;
         }

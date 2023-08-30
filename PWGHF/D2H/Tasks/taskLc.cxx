@@ -28,8 +28,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
@@ -256,7 +254,7 @@ struct HfTaskLc {
     registry.fill(HIST("Data/hMultiplicity"), nTracks);
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
@@ -315,7 +313,7 @@ struct HfTaskLc {
   {
     for (const auto& candidate : candidates) {
       /// Select Lc
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       /// rapidity selection
@@ -323,7 +321,7 @@ struct HfTaskLc {
         continue;
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
@@ -457,7 +455,7 @@ struct HfTaskLc {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;

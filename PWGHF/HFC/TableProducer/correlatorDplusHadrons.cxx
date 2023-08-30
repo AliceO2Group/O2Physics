@@ -29,10 +29,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_dplus_hadron;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
-using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 
@@ -111,7 +107,7 @@ struct HfDplusSelection {
       auto selectedDplusCandidatesGroupedMc = recoFlagDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
@@ -260,7 +256,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -340,7 +336,7 @@ struct HfCorrelatorDplusHadrons {
       bool flagDplusSignal = false;
       for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
@@ -357,7 +353,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
         }
 
-        if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+        if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
           // fill per-candidate distributions from Dplus true candidates
           registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
           registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
@@ -370,7 +366,7 @@ struct HfCorrelatorDplusHadrons {
         }
         // fill invariant mass plots from Dplus signal and background candidates
         registry.fill(HIST("hMassDplusMCRec"), hfHelper.invMassDplusToPiKPi(candidate1), efficiencyWeight);
-        if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
+        if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) { // also matched as Dplus
           registry.fill(HIST("hMassDplusMCRecSig"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassDplusMCRecBkg"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
@@ -378,7 +374,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hDplusBin"), poolBin);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
-        flagDplusSignal = candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi;
+        flagDplusSignal = candidate1.flagMcMatchRec() == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
         for (const auto& track : tracks) {
           if (std::abs(track.eta()) > etaTrackMax) {
             continue;

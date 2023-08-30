@@ -27,8 +27,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
 
 /// Struct for applying Ds to KKpi selection cuts
 struct HfCandidateSelectorDsToKKPi {
@@ -47,7 +45,7 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], hf_cuts_ds_to_k_k_pi::nBinsPt, hf_cuts_ds_to_k_k_pi::nCutVars, hf_cuts_ds_to_k_k_pi::labelsPt, hf_cuts_ds_to_k_k_pi::labelsCutVar}, "Ds candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -211,7 +209,7 @@ struct HfCandidateSelectorDsToKKPi {
       auto statusDsToKKPi = 0;
       auto statusDsToPiKK = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
           hfMlDsToKKPiCandidate(outputMl);

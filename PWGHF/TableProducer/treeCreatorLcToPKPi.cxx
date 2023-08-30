@@ -25,7 +25,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
 
 namespace o2::aod
 {
@@ -313,7 +312,7 @@ struct HfTreeCreatorLcToPKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
           particle.pt(),

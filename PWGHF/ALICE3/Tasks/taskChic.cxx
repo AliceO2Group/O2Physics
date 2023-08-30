@@ -26,11 +26,8 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {

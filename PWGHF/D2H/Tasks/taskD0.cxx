@@ -26,8 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// D0 analysis task
 struct HfTaskD0 {
@@ -167,7 +165,7 @@ struct HfTaskD0 {
   void process(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     for (const auto& candidate : selectedD0Candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
@@ -226,7 +224,7 @@ struct HfTaskD0 {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : recoFlag2Prong) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
@@ -234,7 +232,7 @@ struct HfTaskD0 {
       }
       auto massD0 = hfHelper.invMassD0ToPiK(candidate);
       auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -326,7 +324,7 @@ struct HfTaskD0 {
       auto cpaxyCandidate = candidate.cpaXY();
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hPtProng0Sig"), ptProng0, rapidityCandidate);
           registry.fill(HIST("hPtProng1Sig"), ptProng1, rapidityCandidate);
           registry.fill(HIST("hDecLengthSig"), declengthCandidate, rapidityCandidate);
@@ -365,18 +363,18 @@ struct HfTaskD0 {
           registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
           registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
         }
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           }
         }
@@ -385,7 +383,7 @@ struct HfTaskD0 {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         if (yCandGenMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > yCandGenMax) {
           continue;
         }

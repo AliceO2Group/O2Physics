@@ -28,7 +28,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskMcEfficiency {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};

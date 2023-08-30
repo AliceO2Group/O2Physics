@@ -26,9 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Forward {
@@ -48,7 +45,7 @@ struct HfTaskD0Alice3Forward {
                aod::TracksWMc const& tracks)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
@@ -62,7 +59,7 @@ struct HfTaskD0Alice3Forward {
 
       if (candidate.isSelD0FRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -71,7 +68,7 @@ struct HfTaskD0Alice3Forward {
     }
 
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > 4.0) {
           continue;
         }

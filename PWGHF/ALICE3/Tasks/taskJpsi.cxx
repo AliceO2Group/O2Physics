@@ -26,8 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -79,7 +77,7 @@ struct HfTaskJpsi {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi>> const& candidates)
   {
-    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? aod::hf_cand_2prong::DecayType::JpsiToMuMu : aod::hf_cand_2prong::DecayType::JpsiToEE;
 
     for (const auto& candidate : candidates) {
 
@@ -202,7 +200,7 @@ struct HfTaskJpsiMc {
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? aod::hf_cand_2prong::DecayType::JpsiToMuMu : aod::hf_cand_2prong::DecayType::JpsiToEE;
 
     for (const auto& candidate : candidates) {
 

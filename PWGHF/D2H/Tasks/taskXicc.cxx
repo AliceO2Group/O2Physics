@@ -26,8 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_xicc;
-// using namespace o2::aod::hf_cand_3prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -75,7 +73,7 @@ struct HfTaskXicc {
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yXicc(candidate)) > yCandMax) {
@@ -184,13 +182,13 @@ struct HfTaskXiccMc {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yXicc(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMcGen>>(), 4422, true);
         auto particleXicc = particlesMC.rawIteratorAt(indexMother);
@@ -265,7 +263,7 @@ struct HfTaskXiccMc {
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > yCandMax) {
           continue;
         }

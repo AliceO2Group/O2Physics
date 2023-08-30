@@ -28,7 +28,6 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
 
 namespace o2::aod
 {
@@ -211,7 +210,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     float massChic = hfHelper.mass(pdg::Code::kChiC1);
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

@@ -28,7 +28,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates

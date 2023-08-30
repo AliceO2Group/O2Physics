@@ -32,9 +32,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
-using namespace hf_cuts_bdt_multiclass;
 using namespace o2::ml;
 
 /// Struct for applying Lc selection cuts
@@ -149,7 +146,7 @@ struct HfCandidateSelectorLcMl {
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }

@@ -29,10 +29,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_bplus;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
   Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate;
@@ -54,7 +51,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 999., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], hf_cuts_bplus_to_d0_pi::nBinsPt, hf_cuts_bplus_to_d0_pi::nCutVars, hf_cuts_bplus_to_d0_pi::labelsPt, hf_cuts_bplus_to_d0_pi::labelsCutVar}, "B+ candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 

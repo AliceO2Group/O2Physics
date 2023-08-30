@@ -26,8 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_b0;
-using namespace o2::aod::hf_sel_candidate_b0;
 
 namespace o2::aod
 {
@@ -362,7 +360,7 @@ struct HfTreeCreatorB0ToDPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

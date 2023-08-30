@@ -26,9 +26,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Barrel {
@@ -72,7 +69,7 @@ struct HfTaskD0Alice3Barrel {
       // if (centrality<=centralitySelectionMin && centrality>centralitySelectionMax) {
       // continue;
       // }
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
@@ -86,7 +83,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
@@ -95,7 +92,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
@@ -104,10 +101,10 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0RichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
           }
           registry.fill(HIST("hMassBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -116,7 +113,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
@@ -125,7 +122,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0barTofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
@@ -134,7 +131,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0PerfectPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
@@ -143,7 +140,7 @@ struct HfTaskD0Alice3Barrel {
     }
 
     for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()))) > 4.0) {
           continue;
         }

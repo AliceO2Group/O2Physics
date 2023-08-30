@@ -31,11 +31,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_ds_hadron;
-using namespace o2::aod::hf_selection_dmeson_collision;
-using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
-using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 double getDeltaPhi(double phiD, double phiHadron)
@@ -81,7 +76,7 @@ struct HfCorrelatorDsHadronsSelCollision {
 
   HfHelper hfHelper;
 
-  Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0); // filter in HfCand3Prong
+  Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0); // filter in HfCand3Prong
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
@@ -185,7 +180,7 @@ struct HfCorrelatorDsHadrons {
   HfHelper hfHelper;
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
+  Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;      // collisionFilter applied
@@ -472,7 +467,7 @@ struct HfCorrelatorDsHadrons {
         // prompt and non-prompt division
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
-        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
+        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi;
 
         if (yCandMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandMax) {
           continue;
@@ -566,7 +561,7 @@ struct HfCorrelatorDsHadrons {
       if (candidate.pt() > ptCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if ((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) {
@@ -602,7 +597,7 @@ struct HfCorrelatorDsHadrons {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
@@ -658,7 +653,7 @@ struct HfCorrelatorDsHadrons {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
@@ -723,7 +718,7 @@ struct HfCorrelatorDsHadrons {
       registry.fill(HIST("hTracksPoolBin"), poolBin);
       registry.fill(HIST("hDsPoolBin"), poolBinDs);
       for (const auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!(cand.hfflag() & 1 << DecayType::DsToKKPi)) {
+        if (!(cand.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(hfHelper.yDs(cand)) > yCandMax) {
@@ -769,7 +764,7 @@ struct HfCorrelatorDsHadrons {
       if (candidate.pt() > ptCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
@@ -800,7 +795,7 @@ struct HfCorrelatorDsHadrons {
         // prompt and non-prompt division
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
-        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
+        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi;
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),

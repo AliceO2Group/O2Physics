@@ -36,7 +36,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
 
 struct HfCandidateCreatorSigmac0plusplus {
 
@@ -153,7 +152,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
         /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
         /// if not selected, skip it and go to the next one
-        if (!(candLc.hfflag() & 1 << DecayType::LcToPKPi)) {
+        if (!(candLc.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
         }
         /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
@@ -305,7 +304,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
-      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << DecayType::LcToPKPi)) { /// (*)
+      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
         rowMCMatchScRec(flag, origin);
         continue;
       }
@@ -365,7 +364,7 @@ struct HfCandidateSigmac0plusplusMc {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
+          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
@@ -379,7 +378,7 @@ struct HfCandidateSigmac0plusplusMc {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
+          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);

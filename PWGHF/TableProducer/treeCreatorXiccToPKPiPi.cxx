@@ -26,8 +26,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_xicc;
 
 namespace o2::aod
 {
@@ -265,7 +263,7 @@ struct HfTreeCreatorXiccToPKPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

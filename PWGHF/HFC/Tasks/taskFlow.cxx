@@ -43,10 +43,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace constants::math;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
+using namespace o2::constants::math;
 
 struct HfTaskFlow {
   SliceCache cache;
@@ -304,7 +301,7 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
-    if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+    if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
     }
     if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {

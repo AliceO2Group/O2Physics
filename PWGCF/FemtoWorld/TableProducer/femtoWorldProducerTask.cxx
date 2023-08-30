@@ -49,8 +49,6 @@ using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 namespace o2::aod
 {
@@ -1144,7 +1142,7 @@ struct femtoWorldProducerTask {
     // loop over 2-prong candidates
     for (auto& candidate : candidates) { // selectedD0Candidates
 
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
@@ -2091,7 +2089,7 @@ struct femtoWorldProducerTask {
 
     // loop over 2-prong candidates
     for (const auto& candidate : candidates) { // selectedD0Candidates
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {

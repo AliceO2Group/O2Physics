@@ -30,10 +30,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::constants::math;
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies

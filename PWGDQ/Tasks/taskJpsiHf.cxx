@@ -30,7 +30,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-using namespace o2::aod::hf_cand_2prong;
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -111,7 +110,7 @@ struct taskJPsiHf {
   {
     if (configDebug) {
       for (auto& dmeson : dmesons) {
-        if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
+        if (!TESTBIT(dmeson.hfflag(), hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
 
@@ -164,7 +163,7 @@ struct taskJPsiHf {
 
       // loop over D mesons
       for (auto& dmeson : dmesons) {
-        if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
+        if (!TESTBIT(dmeson.hfflag(), hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
 

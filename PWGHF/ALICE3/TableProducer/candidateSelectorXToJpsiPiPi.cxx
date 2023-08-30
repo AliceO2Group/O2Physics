@@ -27,9 +27,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorXToJpsiPiPi {
@@ -48,7 +46,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], hf_cuts_x_to_jpsi_pi_pi::nBinsPt, hf_cuts_x_to_jpsi_pi_pi::nCutVars, hf_cuts_x_to_jpsi_pi_pi::labelsPt, hf_cuts_x_to_jpsi_pi_pi::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   HfHelper hfHelper;
 
