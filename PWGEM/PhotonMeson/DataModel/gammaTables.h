@@ -171,6 +171,7 @@ using V0Leg = V0Legs::iterator;
 
 namespace v0photon
 {
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);               //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
@@ -227,8 +228,13 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
 // iterators
 using V0Photon = V0Photons::iterator;
 
+DECLARE_SOA_TABLE(V0EMReducedEventIds, "AOD", "V0EMEVENTID", v0photon::EMReducedEventId); // To be joined with V0Photons table at analysis level.
+// iterators
+using V0EMReducedEventId = V0EMReducedEventIds::iterator;
+
 namespace v0photonkf
 {
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);               //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
 DECLARE_SOA_INDEX_COLUMN(V0Photon, v0photon);                           //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
@@ -277,6 +283,10 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
 // iterators
 using V0PhotonKF = V0PhotonsKF::iterator;
 
+DECLARE_SOA_TABLE(V0KFEMReducedEventIds, "AOD", "V0KFEMEVENTID", v0photonkf::EMReducedEventId); // To be joined with V0PhotonsKF table at analysis level.
+// iterators
+using V0KFEMReducedEventId = V0KFEMReducedEventIds::iterator;
+
 namespace MCTracksTrue
 {
 DECLARE_SOA_COLUMN(SameMother, sameMother, bool); // Do the tracks have the same mother particle?
@@ -307,18 +317,11 @@ DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated 
 DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return sqrt(x * x + y * y); });
 } // namespace v0Recalculations
 
-// namespace v0KFParticle
-//{
-// DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
-// } // namespace v0KFParticle
-
 DECLARE_SOA_TABLE(V0Recalculation, "AOD", "V0RECALC",
                   v0Recalculations::RecalculatedVtxX,
                   v0Recalculations::RecalculatedVtxY,
                   v0Recalculations::RecalculatedVtxZ,
-                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>
-                  // v0KFParticle::ChiSquareNDF
-);
+                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>);
 
 namespace gammamctrue
 {
@@ -391,6 +394,7 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! numbe
 
 namespace emccluster
 {
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);                                                                     //!
 DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                            //! cluster core energy (GeV)
 DECLARE_SOA_COLUMN(Time, time, float);                                                                                        //! cluster time (ns)
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                 //! flag to mark cluster as exotic
@@ -410,8 +414,14 @@ DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimme
                   // dynamic column
                   emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
 using SkimEMCCluster = SkimEMCClusters::iterator;
+
+DECLARE_SOA_TABLE(EMCEMReducedEventIds, "AOD", "EMCEMEVENTID", emccluster::EMReducedEventId); // To be joined with SkimEMCClusters table at analysis level.
+// iterators
+using EMCEMReducedEventId = EMCEMReducedEventIds::iterator;
+
 namespace phoscluster
 {
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);                           //!
 DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched"); //! matched track index
 DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
@@ -445,6 +455,10 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   phoscluster::Eta<phoscluster::X, phoscluster::Y, phoscluster::Z>,
                   phoscluster::Phi<phoscluster::X, phoscluster::Y>);
 using PHOSCluster = PHOSClusters::iterator;
+
+DECLARE_SOA_TABLE(PHOSEMReducedEventIds, "AOD", "PHOSEMEVENTID", phoscluster::EMReducedEventId); // To be joined with PHOSClusters table at analysis level.
+// iterators
+using PHOSEMReducedEventId = PHOSEMReducedEventIds::iterator;
 
 namespace caloextra
 {
