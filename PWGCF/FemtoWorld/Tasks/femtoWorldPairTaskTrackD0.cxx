@@ -38,7 +38,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-
 namespace
 {
 static constexpr int nPart = 2;                                                                         // number of particle types (for us it will be proton and phi)

@@ -1274,11 +1274,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                           // general mass
+                    0.,                                    // general mass
                     hfHelper.invMassD0ToPiK(candidate),    // D0mass
                     hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),          // D0 flag
-                    candidate.isSelD0bar(),       // D0bar flag
+                    candidate.isSelD0(),                   // D0 flag
+                    candidate.isSelD0bar(),                // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
@@ -2223,11 +2223,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                           // general mass
+                    0.,                                    // general mass
                     hfHelper.invMassD0ToPiK(candidate),    // D0mass
                     hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),          // D0 flag
-                    candidate.isSelD0bar(),       // D0bar flag
+                    candidate.isSelD0(),                   // D0 flag
+                    candidate.isSelD0bar(),                // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
