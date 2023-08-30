@@ -67,7 +67,7 @@ struct PureMcMultiplicityCounter {
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Y").c_str(), " ; y", {HistType::kTH1F, {RapidityAxis}}});
     }
 
-    AxisSpec MultAxis = {multBinning, "N_{p}"};
+    AxisSpec MultAxis = {multBinning};
     registry.add({"MCEvents/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
     registry.add({"MCEvents/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     if (doprocessReco) {
@@ -94,6 +94,10 @@ struct PureMcMultiplicityCounter {
       x->SetBinLabel(4, "Reconstructed INEL>0");
       x->SetBinLabel(5, "Selected");
       x->SetBinLabel(6, "Selected INEL>0");
+
+      registry.add({"MCEvents/EfficiencyMultiplicityN", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityNExtra", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityD", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
     }
     if (doprocessEfficiency) {
       registry.add({"Particles/Primaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
@@ -103,6 +107,11 @@ struct PureMcMultiplicityCounter {
       registry.add({"Particles/Primaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
       registry.add({"Particles/Secondaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
       registry.add({"Particles/Secondaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyN").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyD").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+      }
     }
   }
 
@@ -204,8 +213,17 @@ struct PureMcMultiplicityCounter {
       }
       ++Np;
     }
+    registry.fill(HIST("MCEvents/EfficiencyMultiplicityD"), Np);
     if (Np > 0) {
       registry.fill(HIST("MCEvents/Efficiency"), 1);
+    }
+    if (collisions.size() > 0) {
+      registry.fill(HIST("MCEvents/EfficiencyMultiplicityN"), Np);
+    }
+    if (collisions.size() > 1) {
+      for (auto i = 1; i < collisions.size(); ++i) {
+        registry.fill(HIST("MCEvents/EfficiencyMultiplicityNExtra"), Np);
+      }
     }
     for (auto& collision : collisions) {
       auto Ntrk = 0;
@@ -252,6 +270,13 @@ struct PureMcMultiplicityCounter {
         continue;
       }
       registry.fill(HIST("Particles/Primaries/EfficiencyD"), particle.pt());
+      static_for<0, 3>(
+        [&](auto idx) {
+          constexpr int i = idx.value;
+          if (particle.pdgCode() == speciesIds[i]) {
+            registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyD"), particle.pt());
+          }
+        });
     }
 
     for (auto& track : tracks) {
@@ -267,6 +292,14 @@ struct PureMcMultiplicityCounter {
           registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
           registry.fill(HIST("Particles/Primaries/PtCorrelation"), particle.pt(), track.pt());
           registry.fill(HIST("Particles/Primaries/EtaCorrelation"), particle.eta(), track.eta());
+
+          static_for<0, 3>(
+            [&](auto idx) {
+              constexpr int i = idx.value;
+              if (particle.pdgCode() == speciesIds[i]) {
+                registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyN"), particle.pt());
+              }
+            });
         } else {
           registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
           registry.fill(HIST("Particles/Secondaries/PtCorrelation"), particle.pt(), track.pt());
