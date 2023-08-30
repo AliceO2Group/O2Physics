@@ -418,7 +418,7 @@ struct cascadeBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false && && doprocessRun3withKFParticle == false) {
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false && &&doprocessRun3withKFParticle == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 nor processRun3withstrangenesstracking enabled. Please choose one!");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
