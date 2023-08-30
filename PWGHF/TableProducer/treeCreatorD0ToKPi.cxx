@@ -318,7 +318,7 @@ struct HfTreeCreatorD0ToKPi {
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
-        1 << candFlag，
+        1 << candFlag,
         invMass,
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct(),
