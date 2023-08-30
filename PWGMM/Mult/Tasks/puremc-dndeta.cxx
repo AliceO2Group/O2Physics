@@ -67,7 +67,7 @@ struct PureMcMultiplicityCounter {
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Y").c_str(), " ; y", {HistType::kTH1F, {RapidityAxis}}});
     }
 
-    AxisSpec MultAxis = {multBinning, "N_{p}"};
+    AxisSpec MultAxis = {multBinning};
     registry.add({"MCEvents/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
     registry.add({"MCEvents/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     if (doprocessReco) {
@@ -103,6 +103,13 @@ struct PureMcMultiplicityCounter {
       registry.add({"Particles/Primaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
       registry.add({"Particles/Secondaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
       registry.add({"Particles/Secondaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyN").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyD").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+      }
+      registry.add({"MCEvents/EfficiencyMultiplicityN", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityD", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
     }
   }
 
