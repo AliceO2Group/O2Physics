@@ -237,7 +237,7 @@ struct cascadeBuilder {
 
   o2::track::TrackParCov lBachelorTrack;
   o2::track::TrackParCov lV0Track;
-  o2::track::TrackPar lCascadeTrack;
+  o2::track::TrackParCov lCascadeTrack;
 
   // Helper struct to do bookkeeping of building parameters
   struct {
@@ -418,7 +418,7 @@ struct cascadeBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false) {
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false && doprocessRun3withKFParticle == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 nor processRun3withstrangenesstracking enabled. Please choose one!");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
@@ -853,7 +853,7 @@ struct cascadeBuilder {
     statisticsRegistry.cascstats[kCascRadius]++;
 
     // Calculate DCAxy of the cascade (with bending)
-    lCascadeTrack = fitter.createParentTrackPar();
+    lCascadeTrack = fitter.createParentTrackParCov();
     lCascadeTrack.setAbsCharge(cascadecandidate.charge); // to be sure
     lCascadeTrack.setPID(o2::track::PID::XiMinus);       // FIXME: not OK for omegas
     dcaInfo[0] = 999;
@@ -1274,7 +1274,7 @@ struct cascadeBuilder {
       if (createCascCovMats) {
         gpu::gpustd::array<float, 15> covmatrix;
         float trackCovariance[15];
-        covmatrix = lBachelorTrack.getCov();
+        covmatrix = lCascadeTrack.getCov();
         for (int i = 0; i < 15; i++)
           trackCovariance[i] = covmatrix[i];
         kfcasccovs(trackCovariance);
