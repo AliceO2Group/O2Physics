@@ -45,6 +45,9 @@ struct createEMReducedMCEvent {
   Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
+  Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
+  Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
+  Produces<o2::aod::EMCEMReducedEventIds> emceventid;
 
   HistogramRegistry registry{"EMMCEvent"};
 
