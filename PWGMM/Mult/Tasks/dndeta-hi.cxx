@@ -216,7 +216,7 @@ struct MultiplicityCounter {
   {
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{20000, 0, 200000}}}});
-    registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{100, 0, 100}}}});
+    registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{1000, 0, 1000}}}});
     registry.add({"hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis, ParticleTypeAxis, phibin}}});
     registry.add({"hreczvtx", "evntclass; triggerclass;  zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
     registry.add({"hphieta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, PhiAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
@@ -365,7 +365,7 @@ struct MultiplicityCounter {
           btrigc[kSel8g0] = true;
       }
 
-      auto cent = -1;
+      Double_t cent = -1;
       if (IsPbPb) {
         if constexpr (C::template contains<aod::CentFT0Cs>())
           cent = collision.centFT0C();
