@@ -116,7 +116,7 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::ImpactParameterProduct,
                   full::Eta,
                   full::Phi,
-                  full::Y)
+                  full::Y);
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::CollisionId,
