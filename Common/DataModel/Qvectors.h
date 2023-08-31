@@ -38,13 +38,12 @@ DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
 DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float);
 DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float);
 DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float);
-DECLARE_SOA_COLUMN(QvecFT0CUncorRe, qvecFT0CUncorRe, float); 
-DECLARE_SOA_COLUMN(QvecFT0CUncorIm, qvecFT0CUncorIm, float); 
+DECLARE_SOA_COLUMN(QvecFT0CUncorRe, qvecFT0CUncorRe, float);
+DECLARE_SOA_COLUMN(QvecFT0CUncorIm, qvecFT0CUncorIm, float);
 DECLARE_SOA_COLUMN(QvecFT0CRectrRe, qvecFT0CRectrRe, float);
 DECLARE_SOA_COLUMN(QvecFT0CRectrIm, qvecFT0CRectrIm, float);
 DECLARE_SOA_COLUMN(QvecFT0CTwistRe, qvecFT0CTwistRe, float);
 DECLARE_SOA_COLUMN(QvecFT0CTwistIm, qvecFT0CTwistIm, float);
-
 /// NOTE: Add here Qx,Qy for other systems.
 } // namespace qvec
 

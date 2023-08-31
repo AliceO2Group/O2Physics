@@ -159,7 +159,7 @@ struct evtPlanesTable {
     evPlane(qVec.cent(),
             evtPlaneValues[0], evtPlaneValues[1], evtPlaneValues[2],
             evtPlaneValues[3], evtPlaneValues[4],
-			evtPlaneValues[5], evtPlaneValues[6], evtPlaneValues[7]);
+            evtPlaneValues[5], evtPlaneValues[6], evtPlaneValues[7]);
   } // void process(aod::Qvector const& qVec)
 };
 
