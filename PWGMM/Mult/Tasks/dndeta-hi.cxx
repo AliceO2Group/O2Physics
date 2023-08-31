@@ -216,7 +216,7 @@ struct MultiplicityCounter {
   {
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{20000, 0, 200000}}}});
-    registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{1000, 0, 1000}}}});
+    registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{1001, -0.05, 100.05}}}});
     registry.add({"hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis, ParticleTypeAxis, phibin}}});
     registry.add({"hreczvtx", "evntclass; triggerclass;  zvtex", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
     registry.add({"hphieta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, PhiAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
