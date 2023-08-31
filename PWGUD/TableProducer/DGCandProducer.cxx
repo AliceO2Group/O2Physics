@@ -479,7 +479,7 @@ struct McDGCandProducer {
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);
 
-  void processDummy(CCs const& collisions)
+  void processDummy(aod::Collisions const& collisions)
   {
     // do nothing
     LOGF(info, "Running dummy process function!");
