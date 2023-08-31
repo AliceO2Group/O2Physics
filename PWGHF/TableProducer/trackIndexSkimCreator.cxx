@@ -1858,7 +1858,7 @@ struct HfTrackIndexSkimCreator {
                   registry.fill(HIST("hVtx2ProngX"), secondaryVertex2[0]);
                   registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
                   registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
-                  std::array<array<float, 3>, 2> arrMom = {pvec0, pvec1};
+                  std::array<std::array<float, 3>, 2> arrMom = {pvec0, pvec1};
                   for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
                     if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
                       if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
@@ -2066,9 +2066,9 @@ struct HfTrackIndexSkimCreator {
               // get secondary vertex
               const auto& secondaryVertex3 = df3.getPCACandidate();
               // get track momenta
-              array<float, 3> pvec0;
-              array<float, 3> pvec1;
-              array<float, 3> pvec2;
+              std::array<float, 3> pvec0;
+              std::array<float, 3> pvec1;
+              std::array<float, 3> pvec2;
               df3.getTrack(0).getPxPyPzGlo(pvec0);
               df3.getTrack(1).getPxPyPzGlo(pvec1);
               df3.getTrack(2).getPxPyPzGlo(pvec2);
@@ -2106,7 +2106,7 @@ struct HfTrackIndexSkimCreator {
                 registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-                std::array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                std::array<std::array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                     if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
@@ -2317,9 +2317,9 @@ struct HfTrackIndexSkimCreator {
               // get secondary vertex
               const auto& secondaryVertex3 = df3.getPCACandidate();
               // get track momenta
-              array<float, 3> pvec0;
-              array<float, 3> pvec1;
-              array<float, 3> pvec2;
+              std::array<float, 3> pvec0;
+              std::array<float, 3> pvec1;
+              std::array<float, 3> pvec2;
               df3.getTrack(0).getPxPyPzGlo(pvec0);
               df3.getTrack(1).getPxPyPzGlo(pvec1);
               df3.getTrack(2).getPxPyPzGlo(pvec2);
@@ -2357,7 +2357,7 @@ struct HfTrackIndexSkimCreator {
                 registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-                std::array<array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
+                std::array<std::array<float, 3>, 3> arr3Mom = {pvec0, pvec1, pvec2};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                     if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
@@ -3147,7 +3147,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
                 registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
 
-                std::array<array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                   switch (iDecay3P) {
@@ -3182,7 +3182,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
             registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
 
-            std::array<array<float, 3>, 2> arrMom = {pVec1, pVec2};
+            std::array<std::array<float, 3>, 2> arrMom = {pVec1, pVec2};
             for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
               auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
               switch (iDecay2P) {
