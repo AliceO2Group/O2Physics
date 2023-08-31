@@ -214,6 +214,11 @@ struct LFNucleiBATask {
     }
 
     if (enablePtSpectra) {
+      histos.add<TH1>("tracks/eff/hPtPr", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+      histos.add<TH1>("tracks/eff/hPtantiPr", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+      histos.add<TH1>("tracks/eff/hPtPrTOF", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+      histos.add<TH1>("tracks/eff/hPtantiPrTOF", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+
       if (enablePr) {
         histos.add<TH1>("tracks/eff/proton/hPtPr", "Track #it{p}_{T} (p); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
         histos.add<TH1>("tracks/eff/proton/hPtantiPr", "Track #it{p}_{T} (#bar{p}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
@@ -2193,6 +2198,14 @@ struct LFNucleiBATask {
       }
 
       // PID
+      if (enablePtSpectra) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("tracks/eff/hPtPr"), track.pt());
+        } else {
+          histos.fill(HIST("tracks/eff/hPtantiPr"), track.pt());
+        }
+      }
+
       if (enablePr) {
         if ((std::abs(track.tpcNSigmaPr()) < nsigmaTPCPr) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton))) < yCut)) {
           if (track.sign() > 0) {
@@ -2323,6 +2336,15 @@ struct LFNucleiBATask {
 
       if (doTOFplots) {
         if (track.hasTOF()) {
+
+          if (enablePtSpectra) {
+            if (track.sign() > 0) {
+              histos.fill(HIST("tracks/eff/hPtPrTOF"), track.pt());
+            } else {
+              histos.fill(HIST("tracks/eff/hPtantiPrTOF"), track.pt());
+            }
+          }
+
           histos.fill(HIST("tracks/h2TOFbetaVsP_debug"), track.p() / (1.f * track.sign()), track.beta());
           if (enableBetaCut && (track.beta() > betaCut))
             histos.fill(HIST("tracks/h2TOFbetaVsP_BetaCut"), track.p() / (1.f * track.sign()), track.beta());
