@@ -116,9 +116,7 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::ImpactParameterProduct,
                   full::Eta,
                   full::Phi,
-                  full::Y,
-                  full::FlagMc,
-                  full::OriginMcRec)
+                  full::Y)
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::CollisionId,
@@ -245,6 +243,30 @@ struct HfTreeCreatorD0ToKPi {
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateLiteTable) {
+      if (flagMc == 0) {
+        if (flagMc == (1 << DecayType::D0ToPiK)) {
+          candType |= o2::aod::full::IsSignal;
+        } else {
+          if (flagMc == -(1 << DecayType::D0ToPiK)) {
+            candType |= o2::aod::full::ReflectedD0;
+          }
+        }
+      }
+      if (flagMc == 1) {
+        if (flagMc == -(1 << DecayType::D0ToPiK)) {
+          candType |= o2::aod::full::IsSignal;
+        } else {
+          if (flagMc == (1 << DecayType::D0ToPiK)) {
+            candType |= o2::aod::full::ReflectedD0bar;
+          }
+        }
+      }
+      if (origin == RecoDecay::OriginType::Prompt) {
+        candType |= o2::aod::full::Prompt;
+      }
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        candType |= o2::aod::full::NonPrompt;
+      }
       rowCandidateLite(
         candidate.chi2PCA(),
         candidate.decayLength(),
@@ -274,9 +296,7 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameterProduct(),
         candidate.eta(),
         candidate.phi(),
-        y,
-        flagMc,
-        origin);
+        y);
     } else {
       rowCandidateFull(
         candidate.collisionId(),
@@ -407,33 +427,11 @@ struct HfTreeCreatorD0ToKPi {
         double ctD = ctD0(candidate);
         int candType = 0;
         if (candidate.isSelD0()) {
-          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0;
           fillTable(candidate, prong0, prong1, 0, candType, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0bar;
           fillTable(candidate, prong0, prong1, 1, candType, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
@@ -457,33 +455,11 @@ struct HfTreeCreatorD0ToKPi {
         double ctD = ctD0(candidate);
         int candType = 0;
         if (candidate.isSelD0()) {
-          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0;
           fillTable(candidate, prong0, prong1, 0, candType, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0bar;
           fillTable(candidate, prong0, prong1, 1, candType, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
@@ -501,33 +477,11 @@ struct HfTreeCreatorD0ToKPi {
         double ctD = ctD0(candidate);
         int candType = 0;
         if (candidate.isSelD0()) {
-          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0;
           fillTable(candidate, prong0, prong1, 0, candType, invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
         if (candidate.isSelD0bar()) {
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::IsSignal;
-          } else {
-            if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-              candType |= o2::aod::full::ReflectedD0;
-            }
-          }
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
+          candType |= o2::aod::full::SelD0bar;
           fillTable(candidate, prong0, prong1, 1, candType, invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
         }
       }
