@@ -29,20 +29,18 @@
 
 #include "PWGHF/Core/SelectorCuts.h"
 
-class HfHelper
+class HfHelperImpl : public o2::framework::O2DatabasePDGImpl
 {
  public:
   /// Default constructor
-  HfHelper() = default;
+  HfHelperImpl() = default;
 
   /// Default destructor
-  ~HfHelper() = default;
-
-  o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
+  ~HfHelperImpl() = default;
 
   auto mass(int pdgCode)
   {
-    return pdg->Mass(pdgCode);
+    return Mass(pdgCode);
   }
 
   // 2-prong
@@ -895,6 +893,12 @@ class HfHelper
   }
 
  private:
+};
+
+struct HfHelper : LoadableServicePlugin<HfHelperImpl> {
+  HfHelper() : LoadableServicePlugin{"O2HfHelper"}
+  {
+  }
 };
 
 #endif // PWGHF_CORE_HFHELPER_H_
