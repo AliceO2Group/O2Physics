@@ -317,7 +317,10 @@ struct phianalysisrun3 {
   PROCESS_SWITCH(phianalysisrun3, processGen, "Process Generated", false);
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hMC"), 1.5);
