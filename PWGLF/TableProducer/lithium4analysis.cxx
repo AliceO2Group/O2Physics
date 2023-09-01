@@ -234,7 +234,7 @@ struct lithium4analysis {
 
     for (auto& collision : collisions) {
       if (!collision.sel8()) {
-        return;
+        continue;
       }
       histos.fill(HIST("hNcontributor"), collision.numContrib());
       histos.fill(HIST("hVtxZ"), collision.posZ());
