@@ -37,7 +37,6 @@
 #include <TVirtualFitter.h>
 
 using namespace RooFit;
-using namespace std;
 
 class TF1;
 class TH1F;
