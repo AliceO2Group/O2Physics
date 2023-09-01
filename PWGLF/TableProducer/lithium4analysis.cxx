@@ -60,7 +60,6 @@ static const std::vector<std::string> particleNames{"He3"};
 constexpr float lithiumMass = 3.74976;
 constexpr float he3Mass = o2::constants::physics::MassHelium3;
 constexpr float protonMass = o2::constants::physics::MassProton;
-constexpr float piMass = o2::constants::physics::MassPionCharged;
 constexpr int lithium4PDG = 1000030040;
 constexpr int protonPDG = 2212;
 constexpr int he3PDG = 1000020030;
