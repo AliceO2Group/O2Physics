@@ -18,6 +18,12 @@ If used, modified, or distributed, please aknowledge the author of this code.
 */
 
 #include "GFW.h"
+
+using std::complex;
+using std::string;
+using std::vector;
+using std::pair;
+
 GFW::GFW() : fInitialized(false) {}
 
 GFW::~GFW()
