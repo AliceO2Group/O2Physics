@@ -493,7 +493,7 @@ struct MultiplicityCounter {
       Int_t pid = 0;
       for (auto& particle : particles) {
         auto p = pdg->GetParticle(particle.pdgCode());
-        if (std::abs(particle.pdgCode() == 310 && fabs(particle.eta()) < 0.5) && fabs(genz) < 10)
+        if (std::abs(particle.pdgCode()) == 310 && std::abs(particle.eta()) < 0.5 && std::abs(genz) < 10)
           registry.fill(HIST("Selection"), 17.);
         if (!particle.isPhysicalPrimary()) {
           continue;
