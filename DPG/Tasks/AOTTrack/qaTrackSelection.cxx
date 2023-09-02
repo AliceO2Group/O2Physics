@@ -134,6 +134,8 @@ struct QaTrackCuts {
       histos.addClone("NoEvSel/alltracks", "NoEvSel/customSel/alltracks");
       // "NoEvSel/alltracks", "NoEvSel/hastof", "NoEvSel/hastpc", "NoEvSel/hasits", "NoEvSel/hastrd",
       //                                                          "sel8/alltracks", "sel8/hastof", "sel8/hastpc", "sel8/hasits", "sel8/hastrd"
+      histos.add("NoEvSel/customSel/tpcCrossedRows/before", "TPC Crossed rows;TPC Crossed rows", kTH1D, {{165, -0.5, 164.5}});
+      histos.addClone("NoEvSel/customSel/tpcCrossedRows/before", "NoEvSel/customSel/tpcCrossedRows/after");
     }
   }
 
