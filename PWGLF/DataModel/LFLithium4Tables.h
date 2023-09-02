@@ -17,8 +17,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
-#ifndef PWGLF_DATAMODEL_LFLITHIUM4TABLEs_H_
-#define PWGLF_DATAMODEL_LFLITHIUM4TABLEs_H_
+#ifndef PWGLF_DATAMODEL_LFLITHIUM4TABLES_H_
+#define PWGLF_DATAMODEL_LFLITHIUM4TABLES_H_
 
 namespace o2::aod
 {
