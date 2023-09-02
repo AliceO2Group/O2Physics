@@ -42,6 +42,7 @@ struct QaEfficiency {
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
   // Track/particle selection
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
+  Configurable<bool> skipEventsWithoutTPCTracks{"skipEventsWithoutTPCTracks", false, "Flag to reject events that have no tracks reconstructed in the TPC"};
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
   // Charge selection
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
@@ -1001,8 +1002,9 @@ struct QaEfficiency {
       histos.add("MC/generatedCollisions", "Generated Collisions", kTH1D, {{10, 0.5, 10.5, "Generated collisions"}});
       histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(1, "Gen. coll");
       histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(2, "At least 1 reco");
-      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(3, "Reco. coll.");
-      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(4, "Reco. good coll.");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(3, "At least 1 TPC track");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(4, "Reco. coll.");
+      histos.get<TH1>(HIST("MC/generatedCollisions"))->GetXaxis()->SetBinLabel(5, "Reco. good coll.");
     }
 
     const AxisSpec axisSel{40, 0.5, 40.5, "Selection"};
@@ -1552,13 +1554,30 @@ struct QaEfficiency {
       return;
     }
     histos.fill(HIST("MC/generatedCollisions"), 2);
+    if (skipEventsWithoutTPCTracks) {
+      int nTPCTracks = 0;
+      for (const auto& collision : collisions) {
+        const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+        for (const auto& track : groupedTracks) {
+          if (track.hasTPC()) {
+            nTPCTracks++;
+            break;
+          }
+        }
+      }
+      if (nTPCTracks == 0) {
+        LOG(info) << "Skipping event with no TPC tracks";
+        return;
+      }
+    }
+    histos.fill(HIST("MC/generatedCollisions"), 3);
 
     for (const auto& collision : collisions) {
-      histos.fill(HIST("MC/generatedCollisions"), 3);
+      histos.fill(HIST("MC/generatedCollisions"), 4);
       if (!isCollisionSelected<false>(collision)) {
         continue;
       }
-      histos.fill(HIST("MC/generatedCollisions"), 4);
+      histos.fill(HIST("MC/generatedCollisions"), 5);
 
       const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
