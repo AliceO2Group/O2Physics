@@ -254,7 +254,7 @@ struct hypertriton3bodyAnalysisMc {
       }
 
       // 3sigma region for Dalitz plot
-      double mcsigma = 0.0018; // from local MC
+      double mcsigma = 0.0015; // from local MC
       double lowerlimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
       double upperlimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
 
@@ -372,9 +372,9 @@ struct hypertriton3bodyLabelCheck {
     "registry",
     {
       {"hLabeledVtxCounter", "hLabeledVtxCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"hMassTruesH3L", "hMassTruesH3L", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
-      {"hMassTruesH3LMatter", "hMassTruesH3LMatter", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
-      {"hMassTruesH3LAntiMatter", "hMassTruesH3LAntiMatter", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
+      {"hMassTrueH3L", "hMassTrueH3L", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
+      {"hMassTrueH3LMatter", "hMassTrueH3LMatter", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
+      {"hMassTrueH3LAntiMatter", "hMassTrueH3LAntiMatter", {HistType::kTH1F, {{100, 2.95f, 3.05f}}}},
     },
   };
 
@@ -398,11 +398,11 @@ struct hypertriton3bodyLabelCheck {
         registry.fill(HIST("hLabeledVtxCounter"), 1.5);
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
         if (mcparticle.pdgCode() > 0) {
-          registry.fill(HIST("hMassTruesH3L"), vtx.mHypertriton());
-          registry.fill(HIST("hMassTruesH3LMatter"), vtx.mHypertriton());
+          registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
+          registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
         } else {
-          registry.fill(HIST("hMassTruesH3L"), vtx.mAntiHypertriton());
-          registry.fill(HIST("hMassTruesH3LAntiMatter"), vtx.mAntiHypertriton());
+          registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
+          registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
         }
       }
     }

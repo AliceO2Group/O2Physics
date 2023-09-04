@@ -199,7 +199,7 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("hSelectedCandidatesCounter"), 5.5);
 
       // 3sigma region for Dalitz plot
-      double mcsigma = 0.0018; // from local MC
+      double mcsigma = 0.0015; // from local MC
       double lowerlimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
       double upperlimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
 
