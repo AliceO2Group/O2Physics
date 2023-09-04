@@ -305,8 +305,8 @@ struct hypertriton3bodyLabelBuilder {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
       {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
-      {"hHypertriton", "hHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-      {"hAntiHypertriton", "hAntiHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hAntiHypertritonMCPt", "hAntiHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hHypertritonMass", "hHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
       {"hAntiHypertritonMass", "hAntiHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
       {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -394,7 +394,7 @@ struct hypertriton3bodyLabelBuilder {
       if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
         double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hHypertritonCounter"), 0.5);
-        registry.fill(HIST("hHypertriton"), lPt);
+        registry.fill(HIST("hHypertritonMCPt"), lPt);
         registry.fill(HIST("hHypertritonMass"), hypertritonMCMass);
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, hypertritonMCMass);
         if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
@@ -413,7 +413,7 @@ struct hypertriton3bodyLabelBuilder {
       if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
         double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hHypertritonCounter"), 2.5);
-        registry.fill(HIST("hAntiHypertriton"), lPt);
+        registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
         registry.fill(HIST("hAntiHypertritonMass"), antiHypertritonMCMass);
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, antiHypertritonMCMass);
         if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
