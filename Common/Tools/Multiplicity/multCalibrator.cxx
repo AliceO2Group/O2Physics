@@ -27,6 +27,8 @@
 #include "TArrayF.h"
 #include "multCalibrator.h"
 
+using namespace std;
+
 const TString multCalibrator::fCentEstimName[kNCentEstim] = {
   "RawV0M", "RawT0M", "RawFDD", "RawNTracks",
   "ZeqV0M", "ZeqT0M", "ZeqFDD", "ZeqNTracks"};

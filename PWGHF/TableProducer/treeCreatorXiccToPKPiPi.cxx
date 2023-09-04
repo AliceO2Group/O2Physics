@@ -162,6 +162,8 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   void init(InitContext const&)
   {
   }
@@ -170,13 +172,13 @@ struct HfTreeCreatorXiccToPKPiPi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               TracksWPid const& tracks,
                aod::HfCand3Prong const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -189,7 +191,7 @@ struct HfTreeCreatorXiccToPKPiPi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -217,7 +219,7 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.pyProng1(),
             candidate.pzProng1(),
             candidate.chi2PCA(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPi(),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
@@ -234,11 +236,11 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.decayLength(),
             xicCand.decayLengthXY(),
             xicCand.decayLengthXYNormalised(),
-            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            xicCand.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPi(),
+            xicCand.prong1_as<TracksWPid>().tofNSigmaKa(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
@@ -259,14 +261,14 @@ struct HfTreeCreatorXiccToPKPiPi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

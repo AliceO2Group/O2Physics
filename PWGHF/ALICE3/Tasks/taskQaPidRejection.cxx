@@ -51,11 +51,11 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 } // namespace o2::aod
 
 struct HfTaskQaPidRejectionAlice3PidIndexBuilder {
-  Builds<o2::aod::HfTrackIndexALICE3PID> index;
-  void init(o2::framework::InitContext&) {}
+  Builds<aod::HfTrackIndexALICE3PID> index;
+  void init(InitContext&) {}
 };
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+void customize(std::vector<ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
     {"rej-el", VariantType::Int, 1, {"Efficiency for the Electron PDG code"}},
@@ -69,7 +69,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Task to QA the efficiency of a particular particle defined by particlePDG
-template <o2::track::pid_constants::ID particle>
+template <track::pid_constants::ID particle>
 struct HfTaskQaPidRejection {
   // Particle selection
   Configurable<int> nBinsEta{"nBinsEta", 40, "Number of eta bins"};
@@ -93,15 +93,35 @@ struct HfTaskQaPidRejection {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
+  TrackSelectorEl selectorElectron;
+  TrackSelectorMu selectorMuon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
+
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
   {
+    selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRich(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRich(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRichCondTof(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorMuon = selectorElectron;
+    selectorPion = selectorElectron;
+    selectorKaon = selectorElectron;
+    selectorProton = selectorElectron;
+
     AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
     AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
@@ -138,32 +158,13 @@ struct HfTaskQaPidRejection {
     histos.add("trackingMIDselMuon/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
+               const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
+               const aod::McCollisions& mcCollisions,
+               const aod::McParticles& mcParticles,
+               const aod::RICHs&,
+               const aod::MIDs&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
-    auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
-
-    auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
-
-    auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
-
-    TrackSelectorPID selectorMuon(kMuonPlus);
-
     std::vector<int64_t> recoEvt(collisions.size());
     std::vector<int64_t> recoTracks(tracks.size());
     LOGF(info, "%d", particlePDG);
@@ -172,15 +173,15 @@ struct HfTaskQaPidRejection {
       if (particlePDG != 0 && mcParticle.pdgCode() != particlePDG) { // Checking PDG code
         continue;
       }
-      bool isTOFhpElectron = !(selectorElectron.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpPion = !(selectorPion.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpKaon = !(selectorKaon.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpProton = !(selectorProton.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
+      bool isTOFhpElectron = !(selectorElectron.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpElectron = !(selectorElectron.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpPion = !(selectorPion.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpPion = !(selectorPion.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpKaon = !(selectorKaon.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpKaon = !(selectorKaon.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpProton = !(selectorProton.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpProton = !(selectorProton.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isMIDhpMuon = (selectorMuon.statusMid(track) == TrackSelectorPID::Accepted);
 
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("tracking/pteta"), track.pt(), track.eta());
@@ -272,12 +273,31 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+  TrackSelectorEl selectorElectron;
+  TrackSelectorMu selectorMuon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
   {
+    selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRich(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRich(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRichCondTof(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorMuon = selectorElectron;
+    selectorPion = selectorElectron;
+    selectorKaon = selectorElectron;
+    selectorProton = selectorElectron;
+
     AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
     AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
@@ -331,32 +351,13 @@ struct HfTaskQaPidRejectionGeneral {
     histos.add("hKaonMID/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
+               const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
+               const aod::McCollisions& mcCollisions,
+               const aod::McParticles& mcParticles,
+               const aod::RICHs&,
+               const aod::MIDs&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
-    auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
-
-    auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
-
-    auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
-
-    TrackSelectorPID selectorMuon(kMuonPlus);
-
     for (const auto& track : tracks) {
 
       if (std::abs(track.eta()) > etaMaxSel || track.pt() < ptMinSel) {
@@ -377,11 +378,11 @@ struct HfTaskQaPidRejectionGeneral {
         histos.fill(HIST("hKaonNoSel/pteta"), track.pt(), track.eta());
       }
 
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
+      bool isRICHhpElectron = !(selectorElectron.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpPion = !(selectorPion.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpKaon = !(selectorKaon.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpProton = !(selectorProton.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isMIDhpMuon = (selectorMuon.statusMid(track) == TrackSelectorPID::Accepted);
 
       bool isRICHElLoose = isRICHhpElectron;
 
@@ -505,19 +506,19 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec w;
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionAlice3PidIndexBuilder>(cfgc));
   if (cfgc.options().get<int>("rej-el")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Electron>>(cfgc, TaskName{"hf-task-qa-pid-rejection-electron"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Electron>>(cfgc, TaskName{"hf-task-qa-pid-rejection-electron"}));
   }
   if (cfgc.options().get<int>("rej-ka")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-kaon"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Kaon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-kaon"}));
   }
   if (cfgc.options().get<int>("rej-pr")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Proton>>(cfgc, TaskName{"hf-task-qa-pid-rejection-proton"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Proton>>(cfgc, TaskName{"hf-task-qa-pid-rejection-proton"}));
   }
   if (cfgc.options().get<int>("rej-mu")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Muon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-mu"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Muon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-mu"}));
   }
   if (cfgc.options().get<int>("rej-pi")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Pion>>(cfgc, TaskName{"hf-task-qa-pid-rejection-pion"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Pion>>(cfgc, TaskName{"hf-task-qa-pid-rejection-pion"}));
   }
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionGeneral>(cfgc));
   return w;

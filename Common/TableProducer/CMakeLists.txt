@@ -76,6 +76,11 @@ o2physics_add_dpl_workflow(collision-converter
                     PUBLIC_LINK_LIBRARIES
                 COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(bc-converter
+                    SOURCES bcConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction O2Physics::DataModel
@@ -118,3 +123,22 @@ o2physics_add_dpl_workflow(mccollisionextra
                     SOURCES mcCollsExtra.cxx
                     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qvector-table
+                    SOURCES qVectorsTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                                          O2Physics::AnalysisCore
+                                          O2::DetectorsCommonDataFormats
+                                          O2Physics::DataModel
+                                          O2::CCDB
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(evtplane-table
+                    SOURCES evtPlanesTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                                          O2Physics::AnalysisCore
+                                          O2::DetectorsCommonDataFormats
+                                          O2Physics::DataModel
+                                          O2::CCDB
+                    COMPONENT_NAME Analysis)
+

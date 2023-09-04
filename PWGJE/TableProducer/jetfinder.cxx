@@ -39,6 +39,7 @@ struct JetFinderTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -68,6 +69,7 @@ struct JetFinderTask {
   Service<o2::framework::O2DatabasePDG> pdg;
   std::string trackSelection;
   std::string eventSelection;
+  std::string particleSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -76,6 +78,7 @@ struct JetFinderTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
     eventSelection = static_cast<std::string>(eventSelections);
+    particleSelection = static_cast<std::string>(particleSelections);
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -153,7 +156,7 @@ struct JetFinderTask {
   void processParticleLevelChargedJets(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, trackEtaMin, trackEtaMax, 1, particles, pdg->Instance());
+    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 1, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
@@ -161,7 +164,7 @@ struct JetFinderTask {
   void processParticleLevelNeutralJets(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, trackEtaMin, trackEtaMax, 2, particles, pdg->Instance());
+    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 2, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
@@ -169,7 +172,7 @@ struct JetFinderTask {
   void processParticleLevelFullJets(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, trackEtaMin, trackEtaMax, 0, particles, pdg->Instance());
+    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 0, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 

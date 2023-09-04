@@ -172,6 +172,7 @@ struct HfTreeCreatorB0ToDPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
@@ -283,11 +284,11 @@ struct HfTreeCreatorB0ToDPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -296,14 +297,14 @@ struct HfTreeCreatorB0ToDPi {
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     }
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong1 = candidate.prong1_as<TracksWPid>();
       fillCandidateTable(candidate, prong1);
     }
   }
@@ -314,11 +315,11 @@ struct HfTreeCreatorB0ToDPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particles,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -329,7 +330,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else if (fillOnlyBackground) {
@@ -342,7 +343,7 @@ struct HfTreeCreatorB0ToDPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else {
@@ -351,21 +352,21 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
+    for (const auto& particle : particles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

@@ -48,7 +48,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
@@ -124,7 +124,8 @@ struct PCMQC {
     fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  // Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
   void processQC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));

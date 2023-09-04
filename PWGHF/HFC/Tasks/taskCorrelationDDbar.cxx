@@ -234,7 +234,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -282,7 +282,7 @@ struct HfTaskCorrelationDDbar {
         registry.fill(HIST("hDeltaPtDDbarSidebands"), ptDbar - ptD, efficiencyWeight);
         registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptDbar - ptD), efficiencyWeight);
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processData, "Process data", false);
@@ -291,7 +291,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processMcRec(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -429,7 +429,7 @@ struct HfTaskCorrelationDDbar {
             break;
         }
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcRec, "Process MC Reco mode", true);
@@ -438,7 +438,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables (and if tables are filled with quark pairs as well)
   void processMcGen(aod::DDbarPair const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -456,7 +456,7 @@ struct HfTaskCorrelationDDbar {
       registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
       registry.fill(HIST("hDeltaPtDDbarMCGen"), ptDbar - ptD);
       registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptDbar - ptD));
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcGen, "Process MC Gen mode", false);

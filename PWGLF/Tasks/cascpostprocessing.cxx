@@ -23,6 +23,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
@@ -78,6 +79,9 @@ struct cascpostprocessing {
 
   HistogramRegistry registry{"registryts"};
 
+  // Necessary for particle charges
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   void init(InitContext const&)
   {
 
@@ -89,7 +93,7 @@ struct cascpostprocessing {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
+    ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
 
     ConfigurableAxis centFT0MAxis{"FT0M",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
@@ -98,7 +102,7 @@ struct cascpostprocessing {
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
 
-    AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
+    ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
 
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
@@ -211,15 +215,16 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-
-    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    if (isMC) {
+      registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+      registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    }
   }
 
   void processRec(aod::MyCascades const& mycascades)
@@ -268,14 +273,14 @@ struct cascpostprocessing {
       }
 
       if (isXi) {
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) > masswin)
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapxi()) > rap)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
       } else {
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) > masswin)
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapomega()) > rap)
@@ -317,7 +322,7 @@ struct cascpostprocessing {
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (TMath::Abs(candidate.masslambdadau() - RecoDecay::getMassPDG(3122)) > lambdamasswin)
+      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3122)) > lambdamasswin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
@@ -365,7 +370,7 @@ struct cascpostprocessing {
         if (candidate.ctauxi() > proplifetime * ctauxiPDG)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < rejcomp)
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapxi();
@@ -381,7 +386,7 @@ struct cascpostprocessing {
         if (candidate.ctauomega() > proplifetime * ctauomegaPDG)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < rejcomp)
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapomega();
@@ -440,12 +445,12 @@ struct cascpostprocessing {
 
       if (isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc) {
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < masswintpc) {
           isCandidate = 1;
         }
       } else if (!isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc) {
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < masswintpc) {
           isCandidate = 1;
         }
       }

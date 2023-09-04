@@ -85,7 +85,7 @@ struct HfCandidateCreatorToXiPi {
   int runNumber;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using MyTracks = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
@@ -148,7 +148,7 @@ struct HfCandidateCreatorToXiPi {
       auto thisCollId = collision.globalIndex();
       auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
 
-      for (auto const& casc : groupedCascades) {
+      for (const auto& casc : groupedCascades) {
 
         //----------------accessing particles in the decay chain-------------
         // cascade daughter - charged particle
@@ -243,7 +243,7 @@ struct HfCandidateCreatorToXiPi {
 
         //-------------------combining cascade and pion tracks--------------------------
         auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        for (auto const& trackIndexPion : groupedTrackIndices) {
+        for (const auto& trackIndexPion : groupedTrackIndices) {
 
           auto trackPion = trackIndexPion.track_as<MyTracks>();
 
@@ -436,7 +436,7 @@ struct HfCandidateCreatorToXiPiMc {
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processDoNoMc, "Do not run MC process function", true);
 
   void processMc(aod::HfCandToXiPi const& candidates,
-                 aod::BigTracksMC const& tracks,
+                 aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
@@ -457,20 +457,20 @@ struct HfCandidateCreatorToXiPiMc {
     int pdgCodeProton = kProton;              // 2212
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("New rec. candidate");
       flag = 0;
       // origin = 0;
       debug = 0;
-      auto arrayDaughters = std::array{candidate.primaryPi_as<aod::BigTracksMC>(), // pi <- omegac
-                                       candidate.bachelor_as<aod::BigTracksMC>(),  // pi <- cascade
-                                       candidate.posTrack_as<aod::BigTracksMC>(),  // p <- lambda
-                                       candidate.negTrack_as<aod::BigTracksMC>()}; // pi <- lambda
-      auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::BigTracksMC>(),
-                                           candidate.posTrack_as<aod::BigTracksMC>(),
-                                           candidate.negTrack_as<aod::BigTracksMC>()};
-      auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::BigTracksMC>(),
-                                         candidate.negTrack_as<aod::BigTracksMC>()};
+      auto arrayDaughters = std::array{candidate.primaryPi_as<aod::TracksWMc>(), // pi <- omegac
+                                       candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
+                                       candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
+                                       candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
+      auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::TracksWMc>(),
+                                           candidate.posTrack_as<aod::TracksWMc>(),
+                                           candidate.negTrack_as<aod::TracksWMc>()};
+      auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::TracksWMc>(),
+                                         candidate.negTrack_as<aod::TracksWMc>()};
 
       // Omegac matching
       if (matchOmegacMc) {
@@ -538,7 +538,7 @@ struct HfCandidateCreatorToXiPiMc {
     } // close loop over candidates
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = -9;
       sign = -9;

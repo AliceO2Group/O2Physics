@@ -310,13 +310,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, -7, -7);
     }
   }
@@ -328,13 +328,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }

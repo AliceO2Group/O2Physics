@@ -175,7 +175,7 @@ struct nucleiFilter {
         qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
       }
     }
-    tags(keepEvent[0], keepEvent[1], keepEvent[2]);
+    tags(keepEvent[2]);
   }
 };
 

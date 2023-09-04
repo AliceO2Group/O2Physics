@@ -44,6 +44,7 @@ struct kfPerformanceStudy {
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.222f, 1.422f}, ""};
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.572f, 1.772f}, ""};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1.0f, 1.0f}, ""};
+  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {200, 0.0f, 0.5f}, ""};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -67,12 +68,14 @@ struct kfPerformanceStudy {
     histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPt, axisOmegaMass, axisOmegaMass});
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPt, axisOmegaMass, axisOmegaMass});
 
+    // all-in histograms
+    histos.add("h3dPointingAngle", "h3dPointingAngle", kTH3F, {axisPt, axisPointingAngle, axisPointingAngle});
     histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisPt, axisLambdaMass, axisLambdaMass}); /// for x check only
     histos.add("h3dDCAxy", "h3dDCAxy", kTH3F, {axisPt, axisDCAxy, axisDCAxy});
     histos.add("hPtCorrelation", "hPtCorrelation", kTH2F, {axisPt, axisPt});
   }
 
-  void process(aod::Collision const& Collision, CascadesCrossLinked const& Cascades, aod::CascDatas const&, aod::KFCascDatas const&, aod::TracksIU const&)
+  void process(aod::Collision const& collision, CascadesCrossLinked const& Cascades, aod::CascDatas const&, aod::KFCascDatas const&, aod::TracksIU const&)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
     for (auto& cascade : Cascades) { // allows for cross-referencing everything
@@ -81,12 +84,16 @@ struct kfPerformanceStudy {
       float massOmega = 0.0f, massOmegaKF = 0.0f;
       float massLambda = 0.0f, massLambdaKF = 0.0f;
       float dcaXY = 0.0f, dcaXYKF = 0.0f;
+      float pointingAngle = -1.0f, pointingAngleKF = -1.0f;
       int charge = 0;
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
-      if (bachTrack.sign() < 0)
+      if (bachTrack.sign() < 0) {
         charge = -1;
+      } else {
+        charge = +1;
+      }
 
       histos.fill(HIST("hChargeCounter"), charge);
 
@@ -99,6 +106,7 @@ struct kfPerformanceStudy {
         massXi = cascdata.mXi();
         massOmega = cascdata.mOmega();
         dcaXY = cascdata.dcaXYCascToPV();
+        pointingAngle = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
       if (cascade.has_kfCascData()) {
         // check aod::Cascades -> aod::KFCascData link
@@ -109,11 +117,13 @@ struct kfPerformanceStudy {
         massXiKF = cascdata.mXi();
         massOmegaKF = cascdata.mOmega();
         dcaXYKF = cascdata.dcaXYCascToPV();
+        pointingAngleKF = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
 
       histos.fill(HIST("hPtCorrelation"), pt, ptKF);
       histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
       histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);                // <- implicit pT choice, beware
+      histos.fill(HIST("h3dPointingAngle"), pt, pointingAngle, pointingAngleKF); // <- implicit pT choice, beware
       if (charge < 0) {
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);

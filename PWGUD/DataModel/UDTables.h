@@ -26,7 +26,7 @@ namespace o2::aod
 
 namespace udmccollision
 {
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t); //!
 } // namespace udmccollision
 
 DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISIONS",
@@ -132,6 +132,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(BBFV0A, bbFV0A,
 DECLARE_SOA_DYNAMIC_COLUMN(BGFV0A, bgFV0A,
                            [](int32_t bgFV0Apf) -> bool { return TESTBIT(bgFV0Apf, 16); });
 
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+
+DECLARE_SOA_INDEX_COLUMN(UDMcCollision, udMcCollision);
+
 } // namespace udcollision
 
 DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
@@ -166,8 +170,16 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
+DECLARE_SOA_TABLE(UDCollsLabels, "AOD", "UDCOLLSLABEL",
+                  udcollision::CollisionId);
+
+DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
+                  udcollision::UDMcCollisionId);
+
 using UDCollision = UDCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
+using UDCollsLabel = UDCollsLabels::iterator;
+using UDMcCollsLabel = UDMcCollsLabels::iterator;
 
 namespace udtrack
 {
@@ -190,6 +202,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                          //!
                            [](float px, float py) -> float {
                              return std::sqrt(px * px + py * py);
                            });
+
+DECLARE_SOA_INDEX_COLUMN(Track, track);
+
 } // namespace udtrack
 
 // Barrel track kinematics
@@ -211,6 +226,7 @@ DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
 
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtofbeta::Beta, pidtofbeta::BetaError,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
@@ -247,11 +263,15 @@ DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
                   udtrack::IsPVContributor,
                   udtrack::IsAmbiguous<udtrack::CollisionId>);
 
+DECLARE_SOA_TABLE(UDTracksLabels, "AOD", "UDTRACKLABEL",
+                  udtrack::TrackId);
+
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackDCA = UDTracksDCA::iterator;
 using UDTrackFlags = UDTracksFlags::iterator;
+using UDTracksLabel = UDTracksLabels::iterator;
 
 namespace udmctracklabel
 {
