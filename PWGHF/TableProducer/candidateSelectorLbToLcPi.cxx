@@ -14,12 +14,12 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -122,9 +122,11 @@ struct HfCandidateSelectorLbToLcPi {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandLb const& hfCandLbs,
+               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               aod::Tracks const&)
   {
-    for (auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
+    for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
 
@@ -138,7 +140,7 @@ struct HfCandidateSelectorLbToLcPi {
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto trackPi = hfCandLb.prong1_as<aod::BigTracksPID>();
+      auto trackPi = hfCandLb.prong1();
 
       // topological cuts
       if (!selectionTopol(hfCandLb, candLc, trackPi)) {

@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -76,17 +76,11 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoDreamProducerTaskV0Only {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
+  Produces<aod::FDExtParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
-
-  // Choose if filtering or skimming version is run
-
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
-
-  // Choose if running on converted data or Run3  / Pilot
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
@@ -116,6 +110,18 @@ struct femtoDreamProducerTaskV0Only {
                                             "ConfV0"),
     std::vector<float>{0.3f},
     FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin,
+                                              "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0PtMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMax,
+                                              "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0EtaMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0etaMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0etaMax,
                                               "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{
     FemtoDreamV0Selection::getSelectionName(
@@ -190,10 +196,8 @@ struct femtoDreamProducerTaskV0Only {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
-  HistogramRegistry qaRegistry{
-    "QAHistos",
-    {},
-    OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry Registry{"Producer", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -214,6 +218,10 @@ struct femtoDreamProducerTaskV0Only {
                           femtoDreamSelection::kEqual);
       v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kV0pTMin,
                           femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0PtMax, femtoDreamV0Selection::kV0pTMax,
+                          femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0EtaMax, femtoDreamV0Selection::kV0etaMax,
+                          femtoDreamSelection::kUpperLimit);
       v0Cuts.setSelection(ConfDCAV0DaughMax,
                           femtoDreamV0Selection::kV0DCADaughMax,
                           femtoDreamSelection::kUpperLimit);
@@ -260,7 +268,7 @@ struct femtoDreamProducerTaskV0Only {
                                 ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0,
                   aod::femtodreamparticle::ParticleType::kV0Child,
-                  aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+                  aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack,
                                                ConfRejectNotPropagatedTracks);
@@ -358,16 +366,12 @@ struct femtoDreamProducerTaskV0Only {
       multNtr = col.multTPC();
     }
 
-    /// First thing to do is to check whether the basic event selection criteria
-    /// are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
+    /// First thing to do is to check whether the basic event selection criteria are fullfilled
+    /// that includes checking if there is at least one usable V0 in the collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
       return;
     }
 
@@ -381,13 +385,9 @@ struct femtoDreamProducerTaskV0Only {
                   // track table row <-> aod::track table global index
 
     if (ConfStoreV0) {
-      for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-        auto negtrack =
-          v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough
-                                                  /// if we apply the filter
-                                                  /// the sign of Pos and Neg
-                                                  /// track is always negative
+      for (auto const& v0 : fullV0s) {
+        const auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+        const auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>();
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));

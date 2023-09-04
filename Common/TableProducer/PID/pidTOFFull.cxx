@@ -58,6 +58,7 @@ struct tofPidFull {
   Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"}; // temporary for pass3
   Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
@@ -65,39 +66,35 @@ struct tofPidFull {
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // Configuration flags to include and exclude particle hypotheses
-  Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPi{"pid-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidKa{"pid-ka", -1, {"Produce PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPr{"pid-pr", -1, {"Produce PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidDe{"pid-de", -1, {"Produce PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<LabeledArray<int>> enableParticle{"enableParticle",
+                                                 {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
+                                                 "Produce PID information for the various mass hypotheses. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
+  // Running variables
+  std::vector<int> mEnabledParticles; // Vector of enabled PID hypotheses to loop on when making tables
+  int mLastCollisionId = -1;          // Last collision ID analysed
   void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessWSlice == true && doprocessWoSlice == true && doprocessWoSliceDev == true) {
-      LOGF(fatal, "Cannot enable processWoSlice and processWSlice and doprocessWoSliceDev at the same time. Please choose one.");
+    if (doprocessWSlice == true && doprocessWoSlice == true) {
+      LOGF(fatal, "Cannot enable processWoSlice and processWSlice at the same time. Please choose one.");
     }
-    if (doprocessWSlice == false && doprocessWoSlice == false && doprocessWoSliceDev == false) {
-      LOGF(fatal, "Cannot run without any of processWoSlice and processWSlice and doprocessWoSliceDev enabled. Please choose one.");
+    if (doprocessWSlice == false && doprocessWoSlice == false) {
+      LOGF(fatal, "Cannot run without any of processWoSlice and processWSlice enabled. Please choose one.");
     }
 
     // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particle, flag);
-    };
-
-    enableFlag("El", pidEl);
-    enableFlag("Mu", pidMu);
-    enableFlag("Pi", pidPi);
-    enableFlag("Ka", pidKa);
-    enableFlag("Pr", pidPr);
-    enableFlag("De", pidDe);
-    enableFlag("Tr", pidTr);
-    enableFlag("He", pidHe);
-    enableFlag("Al", pidAl);
+    for (int i = 0; i < nSpecies; i++) {
+      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
+      if (f == 1) {
+        mEnabledParticles.push_back(i);
+      }
+    }
+    // Printing enabled tables
+    LOG(info) << "++ Enabled tables:";
+    for (const int& i : mEnabledParticles) {
+      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
+    }
 
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
@@ -139,18 +136,101 @@ struct tofPidFull {
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
-      } else {
+      } else { // Pass is available, load non standard parameters
         mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
         mRespParamsV2.printShiftParameters();
       }
     }
     mRespParamsV2.print();
+    if (timeShiftCCDBPath.value != "") {
+      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+      } else {
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+      }
+    }
+  }
+
+  // Reserves an empty table for the given particle ID with size of the given track table
+  void reserveTable(const int id, const int64_t& size)
+  {
+    switch (id) {
+      case 0:
+        tablePIDEl.reserve(size);
+        break;
+      case 1:
+        tablePIDMu.reserve(size);
+        break;
+      case 2:
+        tablePIDPi.reserve(size);
+        break;
+      case 3:
+        tablePIDKa.reserve(size);
+        break;
+      case 4:
+        tablePIDPr.reserve(size);
+        break;
+      case 5:
+        tablePIDDe.reserve(size);
+        break;
+      case 6:
+        tablePIDTr.reserve(size);
+        break;
+      case 7:
+        tablePIDHe.reserve(size);
+        break;
+      case 8:
+        tablePIDAl.reserve(size);
+        break;
+      default:
+        LOG(fatal) << "Wrong particle ID in reserveTable()";
+        break;
+    }
+  }
+
+  // Makes the table empty for the given particle ID, filling it with dummy values
+  void makeTableEmpty(const int id)
+  {
+    switch (id) {
+      case 0:
+        tablePIDEl(-999.f, -999.f);
+        break;
+      case 1:
+        tablePIDMu(-999.f, -999.f);
+        break;
+      case 2:
+        tablePIDPi(-999.f, -999.f);
+        break;
+      case 3:
+        tablePIDKa(-999.f, -999.f);
+        break;
+      case 4:
+        tablePIDPr(-999.f, -999.f);
+        break;
+      case 5:
+        tablePIDDe(-999.f, -999.f);
+        break;
+      case 6:
+        tablePIDTr(-999.f, -999.f);
+        break;
+      case 7:
+        tablePIDHe(-999.f, -999.f);
+        break;
+      case 8:
+        tablePIDAl(-999.f, -999.f);
+        break;
+      default:
+        LOG(fatal) << "Wrong particle ID in makeTableEmpty()";
+        break;
+    }
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
@@ -170,43 +250,17 @@ struct tofPidFull {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
-      if (flag.value != 1) {
-        return;
-      }
-      table.reserve(tracks.size());
-    };
-
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
+    for (auto const& pidId : mEnabledParticles) {
+      reserveTable(pidId, tracks.size());
+    }
 
     int lastCollisionId = -1;          // Last collision ID analysed
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
-        auto makeTableEmpty = [&](const Configurable<int>& flag, auto& table) {
-          if (flag.value != 1) {
-            return;
-          }
-          table(-999.f, -999.f);
-        };
-
-        makeTableEmpty(pidEl, tablePIDEl);
-        makeTableEmpty(pidMu, tablePIDMu);
-        makeTableEmpty(pidPi, tablePIDPi);
-        makeTableEmpty(pidKa, tablePIDKa);
-        makeTableEmpty(pidPr, tablePIDPr);
-        makeTableEmpty(pidDe, tablePIDDe);
-        makeTableEmpty(pidTr, tablePIDTr);
-        makeTableEmpty(pidHe, tablePIDHe);
-        makeTableEmpty(pidAl, tablePIDAl);
-
+        for (auto const& pidId : mEnabledParticles) {
+          makeTableEmpty(pidId);
+        }
         continue;
       }
 
@@ -230,24 +284,58 @@ struct tofPidFull {
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
       for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
-        // Check and fill enabled tables
-        auto makeTable = [&trkInColl, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
-          if (flag.value != 1) {
-            return;
+        for (auto const& pidId : mEnabledParticles) {   // Loop on enabled particle hypotheses
+          switch (pidId) {
+            case 0:
+              resolution = responseEl.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDEl(resolution,
+                         responseEl.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 1:
+              resolution = responseMu.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDMu(resolution,
+                         responseMu.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 2:
+              resolution = responsePi.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDPi(resolution,
+                         responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 3:
+              resolution = responseKa.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDKa(resolution,
+                         responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 4:
+              resolution = responsePr.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDPr(resolution,
+                         responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 5:
+              resolution = responseDe.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDDe(resolution,
+                         responseDe.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 6:
+              resolution = responseTr.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDTr(resolution,
+                         responseTr.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 7:
+              resolution = responseHe.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDHe(resolution,
+                         responseHe.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            case 8:
+              resolution = responseAl.GetExpectedSigma(mRespParamsV2, trkInColl);
+              tablePIDAl(resolution,
+                         responseAl.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              break;
+            default:
+              LOG(fatal) << "Wrong particle ID in processWSlice()";
+              break;
           }
-          table(responsePID.GetExpectedSigma(mRespParamsV2, trkInColl),
-                responsePID.GetSeparation(mRespParamsV2, trkInColl));
-        };
-
-        makeTable(pidEl, tablePIDEl, responseEl);
-        makeTable(pidMu, tablePIDMu, responseMu);
-        makeTable(pidPi, tablePIDPi, responsePi);
-        makeTable(pidKa, tablePIDKa, responseKa);
-        makeTable(pidPr, tablePIDPr, responsePr);
-        makeTable(pidDe, tablePIDDe, responseDe);
-        makeTable(pidTr, tablePIDTr, responseTr);
-        makeTable(pidHe, tablePIDHe, responseHe);
-        makeTable(pidAl, tablePIDAl, responseAl);
+        }
       }
     }
   }
@@ -268,48 +356,20 @@ struct tofPidFull {
     constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
 
-    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
-      if (flag.value != 1) {
-        return;
-      }
-      table.reserve(tracks.size());
-    };
-
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
-
-    int lastCollisionId = -1;          // Last collision ID analysed
+    for (auto const& pidId : mEnabledParticles) {
+      reserveTable(pidId, tracks.size());
+    }
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
-        auto makeTableEmpty = [&](const Configurable<int>& flag, auto& table) {
-          if (flag.value != 1) {
-            return;
-          }
-          table(-999.f, -999.f);
-        };
-
-        makeTableEmpty(pidEl, tablePIDEl);
-        makeTableEmpty(pidMu, tablePIDMu);
-        makeTableEmpty(pidPi, tablePIDPi);
-        makeTableEmpty(pidKa, tablePIDKa);
-        makeTableEmpty(pidPr, tablePIDPr);
-        makeTableEmpty(pidDe, tablePIDDe);
-        makeTableEmpty(pidTr, tablePIDTr);
-        makeTableEmpty(pidHe, tablePIDHe);
-        makeTableEmpty(pidAl, tablePIDAl);
-
+        for (auto const& pidId : mEnabledParticles) {
+          makeTableEmpty(pidId);
+        }
         continue;
       }
 
-      if (enableTimeDependentResponse && (track.collisionId() != lastCollisionId)) { // Time dependent calib is enabled and this is a new collision
-        lastCollisionId = track.collisionId();                                       // Cache last collision ID
+      if (enableTimeDependentResponse && (track.collisionId() != mLastCollisionId)) { // Time dependent calib is enabled and this is a new collision
+        mLastCollisionId = track.collisionId();                                       // Cache last collision ID
         timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath.value << "' and timestamp " << timestamp.value;
         if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
@@ -321,117 +381,61 @@ struct tofPidFull {
         }
       }
 
-      // Check and fill enabled tables
-      auto makeTable = [&track, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
-        if (flag.value != 1) {
-          return;
-        }
-        table(responsePID.GetExpectedSigma(mRespParamsV2, track),
-              responsePID.GetSeparation(mRespParamsV2, track));
-      };
-
-      makeTable(pidEl, tablePIDEl, responseEl);
-      makeTable(pidMu, tablePIDMu, responseMu);
-      makeTable(pidPi, tablePIDPi, responsePi);
-      makeTable(pidKa, tablePIDKa, responseKa);
-      makeTable(pidPr, tablePIDPr, responsePr);
-      makeTable(pidDe, tablePIDDe, responseDe);
-      makeTable(pidTr, tablePIDTr, responseTr);
-      makeTable(pidHe, tablePIDHe, responseHe);
-      makeTable(pidAl, tablePIDAl, responseAl);
-    }
-  }
-  PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices", false);
-
-  void processWoSliceDev(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
-  {
-    constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementationIU<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementationIU<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementationIU<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
-
-#define doReserveTable(Particle)               \
-  if (pid##Particle.value == 1) {              \
-    tablePID##Particle.reserve(tracks.size()); \
-  }
-
-    doReserveTable(El);
-    doReserveTable(Mu);
-    doReserveTable(Pi);
-    doReserveTable(Ka);
-    doReserveTable(Pr);
-    doReserveTable(De);
-    doReserveTable(Tr);
-    doReserveTable(He);
-    doReserveTable(Al);
-
-#undef doReserveTable
-
-    int lastCollisionId = -1;          // Last collision ID analysed
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
-
-#define doFillTableEmpty(Particle)      \
-  if (pid##Particle.value == 1) {       \
-    tablePID##Particle(-999.f, -999.f); \
-  }
-
-        doFillTableEmpty(El);
-        doFillTableEmpty(Mu);
-        doFillTableEmpty(Pi);
-        doFillTableEmpty(Ka);
-        doFillTableEmpty(Pr);
-        doFillTableEmpty(De);
-        doFillTableEmpty(Tr);
-        doFillTableEmpty(He);
-        doFillTableEmpty(Al);
-
-#undef doFillTableEmpty
-
-        continue;
-      }
-
-      if (enableTimeDependentResponse && (track.collisionId() != lastCollisionId)) { // Time dependent calib is enabled and this is a new collision
-        lastCollisionId = track.collisionId();                                       // Cache last collision ID
-        timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
-        LOG(debug) << "Updating parametrization from path '" << parametrizationPath.value << "' and timestamp " << timestamp.value;
-        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
-          if (fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          }
+      for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
+        switch (pidId) {
+          case 0:
+            resolution = responseEl.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDEl(resolution,
+                       responseEl.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 1:
+            resolution = responseMu.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDMu(resolution,
+                       responseMu.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 2:
+            resolution = responsePi.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDPi(resolution,
+                       responsePi.GetSeparation(mRespParamsV2, track));
+            break;
+          case 3:
+            resolution = responseKa.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDKa(resolution,
+                       responseKa.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 4:
+            resolution = responsePr.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDPr(resolution,
+                       responsePr.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 5:
+            resolution = responseDe.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDDe(resolution,
+                       responseDe.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 6:
+            resolution = responseTr.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDTr(resolution,
+                       responseTr.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 7:
+            resolution = responseHe.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDHe(resolution,
+                       responseHe.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          case 8:
+            resolution = responseAl.GetExpectedSigma(mRespParamsV2, track);
+            tablePIDAl(resolution,
+                       responseAl.GetSeparation(mRespParamsV2, track, resolution));
+            break;
+          default:
+            LOG(fatal) << "Wrong particle ID in processWoSlice()";
+            break;
         }
       }
-
-// Check and fill enabled tables
-#define doFillTable(Particle)                                                                                                              \
-  if (pid##Particle.value == 1) {                                                                                                          \
-    tablePID##Particle(response##Particle.GetExpectedSigma(mRespParamsV2, track), response##Particle.GetSeparation(mRespParamsV2, track)); \
-  }
-
-      doFillTable(El);
-      doFillTable(Mu);
-      doFillTable(Pi);
-      doFillTable(Ka);
-      doFillTable(Pr);
-      doFillTable(De);
-      doFillTable(Tr);
-      doFillTable(He);
-      doFillTable(Al);
-
-#undef doFillTable
     }
   }
-  PROCESS_SWITCH(tofPidFull, processWoSliceDev, "Process without track slices dev", false);
+  PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices and on TrackIU (faster but only Run3)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)}; }

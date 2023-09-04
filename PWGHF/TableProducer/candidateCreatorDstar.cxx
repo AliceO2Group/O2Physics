@@ -15,17 +15,12 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #include "Framework/AnalysisTask.h"
-// #include "DetectorsVertexing/DCAFitterN.h"
-// #include "Common/Core/trackUtilities.h"
-// #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
 #include "Framework/runDataProcessing.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::aod::hf_cand;
-// using namespace o2::aod::hf_cand_2prong;
 
 /// Reconstruction of D* decay candidates
 struct HfCandidateCreatorDstar {
@@ -42,15 +37,15 @@ struct HfCandidateCreatorDstar {
 
   void process(aod::Collisions const&,
                aod::HfDstars const& rowsTrackIndexDstar,
-               aod::BigTracks const&,
+               aod::Tracks const&,
                aod::Hf2Prongs const&)
   {
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
-      auto trackPi = rowTrackIndexDstar.prong0_as<aod::BigTracks>();
+      auto trackPi = rowTrackIndexDstar.prong0();
       auto prongD0 = rowTrackIndexDstar.prongD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.prong0_as<aod::BigTracks>();
-      auto trackD0Prong1 = prongD0.prong1_as<aod::BigTracks>();
+      auto trackD0Prong0 = prongD0.prong0();
+      auto trackD0Prong1 = prongD0.prong1();
       // auto collisionPiId = trackPi.collisionId();
       // auto collisionD0Id = trackD0Prong0.collisionId();
 

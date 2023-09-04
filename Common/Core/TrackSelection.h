@@ -48,11 +48,18 @@ class TrackSelection
     kNCuts
   };
 
+  // Flags for the Run3 ITS matching
   enum GlobalTrackRun3ITSMatching {
     Run3ITSibAny,
     Run3ITSallAny,
     Run3ITSall7Layers,
     Run3ITSibTwo
+  };
+
+  // Flags for the selection of the DCAxy
+  enum GlobalTrackRun3DCAxyCut : int {
+    Default,
+    ppPass3
   };
 
   static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];

@@ -1,0 +1,69 @@
+---
+data_prep:
+  dirs:
+    Prompt: [training_samples/train_29283, training_samples/train_29284]
+    Nonprompt: [training_samples/train_29283, training_samples/train_29284]
+    Bkg: [training_samples/train_29282]
+  # options: D0ToKPi, DplusToPiKPi, DsToKKPi, LcToPKPi, XicToPKPi
+  channel: LcToPKPi
+  preselection:
+    enable: true # preselection possible only for Ds and baryons
+    nsigma_tpc_proton: 3 # nsigma cut for proton
+    nsigma_tof_proton: 3 # nsigma cut for proton
+    delta_mass_kk: 1000. # mass difference between KK and phi in GeV/c2
+  class_balance:
+    share: all_signal # options: equal, all_signal
+    bkg_factor: 5 # factor to be applied to bkg compared to signal sample
+  test_fraction: 0.5
+  seed_split: 42
+
+ml:
+  raw_output: false
+  roc_auc_approach: ovo
+  roc_auc_average: macro
+  training_vars:
+    [
+      fPT1,
+      fDCAPrimXY1,
+      fDCAPrimZ1,
+      fPT2,
+      fDCAPrimXY2,
+      fDCAPrimZ2,
+      fPT3,
+      fDCAPrimXY3,
+      fDCAPrimZ3,
+    ]
+  hyper_pars:
+    {
+      "max_depth": 2,
+      "learning_rate": 0.08399178648090457,
+      "n_estimators": 1060,
+      "min_child_weight": 6,
+      "n_jobs": 4,
+      "tree_method": hist,
+      "subsample": 0.9548377633742259,
+      "colsample_bytree": 0.8551028604882291,
+    }
+  hyper_pars_opt:
+    activate: false
+    ntrials: 25
+    njobs: 4
+    timeout: 1800
+    hyper_par_ranges:
+      {
+        "max_depth": !!python/tuple [1, 3],
+        "learning_rate": !!python/tuple [0.01, 0.1],
+        "n_estimators": !!python/tuple [300, 1680],
+        "min_child_weight": !!python/tuple [1, 10],
+        "subsample": !!python/tuple [0.8, 1.],
+        "colsample_bytree": !!python/tuple [0.8, 1.],
+      }
+
+output:
+  directory: trainings/Lc
+  out_labels: # output labels, keep the right number of classes
+    Bkg: Bkg
+    Prompt: Prompt
+    Nonprompt: Nonprompt
+  # list of variables saved in the dataframes with the applied models
+  column_to_save_list: ["fPT3Prong"]

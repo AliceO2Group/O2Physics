@@ -27,28 +27,40 @@ namespace o2::aod
 {
 namespace upgrade_tof
 {
-DECLARE_SOA_COLUMN(NSigmaElectronInner, nSigmaElectronInner, float); //! NSigma electron InnerTOF
-DECLARE_SOA_COLUMN(NSigmaMuonInner, nSigmaMuonInner, float);         //! NSigma muon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaPionInner, nSigmaPionInner, float);         //! NSigma pion InnerTOF
-DECLARE_SOA_COLUMN(NSigmaKaonInner, nSigmaKaonInner, float);         //! NSigma kaon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaProtonInner, nSigmaProtonInner, float);     //! NSigma proton InnerTOF
-DECLARE_SOA_COLUMN(NSigmaElectronOuter, nSigmaElectronOuter, float); //! NSigma electron OuterTOF
-DECLARE_SOA_COLUMN(NSigmaMuonOuter, nSigmaMuonOuter, float);         //! NSigma muon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaPionOuter, nSigmaPionOuter, float);         //! NSigma pion OuterTOF
-DECLARE_SOA_COLUMN(NSigmaKaonOuter, nSigmaKaonOuter, float);         //! NSigma kaon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaProtonOuter, nSigmaProtonOuter, float);     //! NSigma proton OuterTOF
+DECLARE_SOA_COLUMN(NSigmaElectronInnerTOF, nSigmaElectronInnerTOF, float);     //! NSigma electron InnerTOF
+DECLARE_SOA_COLUMN(NSigmaMuonInnerTOF, nSigmaMuonInnerTOF, float);             //! NSigma muon InnerTOF
+DECLARE_SOA_COLUMN(NSigmaPionInnerTOF, nSigmaPionInnerTOF, float);             //! NSigma pion InnerTOF
+DECLARE_SOA_COLUMN(NSigmaKaonInnerTOF, nSigmaKaonInnerTOF, float);             //! NSigma kaon InnerTOF
+DECLARE_SOA_COLUMN(NSigmaProtonInnerTOF, nSigmaProtonInnerTOF, float);         //! NSigma proton InnerTOF
+DECLARE_SOA_COLUMN(InnerTOFTrackLength, innerTOFTrackLength, float);           //! track length for calculation of InnerTOF
+DECLARE_SOA_COLUMN(InnerTOFTrackLengthReco, innerTOFTrackLengthReco, float);   //! track length for calculation of InnerTOF
+DECLARE_SOA_COLUMN(DeltaTrackLengthInnerTOF, deltaTrackLengthInnerTOF, float); //! track length for calculation of InnerTOF
+DECLARE_SOA_COLUMN(NSigmaElectronOuterTOF, nSigmaElectronOuterTOF, float);     //! NSigma electron OuterTOF
+DECLARE_SOA_COLUMN(NSigmaMuonOuterTOF, nSigmaMuonOuterTOF, float);             //! NSigma muon OuterTOF
+DECLARE_SOA_COLUMN(NSigmaPionOuterTOF, nSigmaPionOuterTOF, float);             //! NSigma pion OuterTOF
+DECLARE_SOA_COLUMN(NSigmaKaonOuterTOF, nSigmaKaonOuterTOF, float);             //! NSigma kaon OuterTOF
+DECLARE_SOA_COLUMN(NSigmaProtonOuterTOF, nSigmaProtonOuterTOF, float);         //! NSigma proton OuterTOF
+DECLARE_SOA_COLUMN(OuterTOFTrackLength, outerTOFTrackLength, float);           //! track length for calculation of OuterTOF
+DECLARE_SOA_COLUMN(OuterTOFTrackLengthReco, outerTOFTrackLengthReco, float);   //! track length for calculation of OuterTOF
+DECLARE_SOA_COLUMN(DeltaTrackLengthOuterTOF, deltaTrackLengthOuterTOF, float); //! track length for calculation of InnerTOF
 } // namespace upgrade_tof
 DECLARE_SOA_TABLE(UpgradeTofs, "AOD", "UPGRADETOF",
-                  upgrade_tof::NSigmaElectronInner,
-                  upgrade_tof::NSigmaMuonInner,
-                  upgrade_tof::NSigmaPionInner,
-                  upgrade_tof::NSigmaKaonInner,
-                  upgrade_tof::NSigmaProtonInner,
-                  upgrade_tof::NSigmaElectronOuter,
-                  upgrade_tof::NSigmaMuonOuter,
-                  upgrade_tof::NSigmaPionOuter,
-                  upgrade_tof::NSigmaKaonOuter,
-                  upgrade_tof::NSigmaProtonOuter);
+                  upgrade_tof::NSigmaElectronInnerTOF,
+                  upgrade_tof::NSigmaMuonInnerTOF,
+                  upgrade_tof::NSigmaPionInnerTOF,
+                  upgrade_tof::NSigmaKaonInnerTOF,
+                  upgrade_tof::NSigmaProtonInnerTOF,
+                  upgrade_tof::InnerTOFTrackLength,
+                  upgrade_tof::InnerTOFTrackLengthReco,
+                  upgrade_tof::DeltaTrackLengthInnerTOF,
+                  upgrade_tof::NSigmaElectronOuterTOF,
+                  upgrade_tof::NSigmaMuonOuterTOF,
+                  upgrade_tof::NSigmaPionOuterTOF,
+                  upgrade_tof::NSigmaKaonOuterTOF,
+                  upgrade_tof::NSigmaProtonOuterTOF,
+                  upgrade_tof::OuterTOFTrackLength,
+                  upgrade_tof::OuterTOFTrackLengthReco,
+                  upgrade_tof::DeltaTrackLengthOuterTOF);
 
 using UpgradeTof = UpgradeTofs::iterator;
 

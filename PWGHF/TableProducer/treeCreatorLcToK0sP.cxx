@@ -17,10 +17,9 @@
 ///
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 
-#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -65,13 +64,17 @@ DECLARE_SOA_COLUMN(V0MLambda, v0MLambda, float);
 DECLARE_SOA_COLUMN(V0MAntiLambda, v0MAntiLambda, float);
 DECLARE_SOA_COLUMN(V0MK0Short, v0MK0Short, float);
 DECLARE_SOA_COLUMN(V0MGamma, v0MGamma, float);
+DECLARE_SOA_COLUMN(V0CtK0Short, v0CtK0Short, float);
+DECLARE_SOA_COLUMN(V0CtLambda, v0CtLambda, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
+DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -113,6 +116,8 @@ DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
                   full::V0MAntiLambda,
                   full::V0MK0Short,
                   full::V0MGamma,
+                  full::V0CtK0Short,
+                  full::V0CtLambda,
                   v0data::DCAV0Daughters,
                   v0data::PxPos,
                   v0data::PyPos,
@@ -136,39 +141,43 @@ DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
                   full::Phi,
                   full::Y,
                   full::E,
-                  full::FlagMc);
+                  full::FlagMc,
+                  full::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandCascFullEvents, "AOD", "HFCANDCASCFullE",
+DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ);
 
-DECLARE_SOA_TABLE(HfCandCascFullParticles, "AOD", "HFCANDCASCFullP",
+DECLARE_SOA_TABLE(HfCandCascFullPs, "AOD", "HFCANDCASCFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::FlagMc);
+                  full::FlagMc,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLcToK0sP {
-  Produces<o2::aod::HfCandCascFull> rowCandidateFull;
-  Produces<o2::aod::HfCandCascFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandCascFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandCascFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
 
   void init(InitContext const&)
   {
   }
 
   template <typename T, typename U>
-  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc)
+  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec)
   {
     rowCandidateFull(
       bach.collision().bcId(),
@@ -212,6 +221,8 @@ struct HfTreeCreatorLcToK0sP {
       candidate.mAntiLambda(),
       candidate.mK0Short(),
       candidate.mGamma(),
+      o2::aod::hf_cand_casc::ctV0K0s(candidate),
+      o2::aod::hf_cand_casc::ctV0Lambda(candidate),
       candidate.dcaV0daughters(),
       candidate.pxpos(),
       candidate.pypos(),
@@ -235,7 +246,8 @@ struct HfTreeCreatorLcToK0sP {
       candidate.phi(),
       o2::aod::hf_cand_3prong::yLc(candidate),
       o2::aod::hf_cand_3prong::eLc(candidate),
-      flagMc);
+      flagMc,
+      originMcRec);
   }
 
   template <typename T>
@@ -253,36 +265,38 @@ struct HfTreeCreatorLcToK0sP {
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
-                 aod::BigTracksPID const& tracks)
+                 TracksWPid const& tracks)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
-      auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
+    for (const auto& candidate : candidates) {
+      auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec());
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
+                       RecoDecay::getMassPDG(particle.pdgCode())),
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }
@@ -290,22 +304,22 @@ struct HfTreeCreatorLcToK0sP {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCandCascade, aod::HfSelLcToK0sP> const& candidates,
-                   aod::BigTracksPID const& tracks)
+                   TracksWPid const& tracks)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
-      auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
+    for (const auto& candidate : candidates) {
+      auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, 0);
+        fillCandidate(candidate, bach, 0, 0);
       }
     }
   }

@@ -9,31 +9,31 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
+#include <cmath>
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/runDataProcessing.h"
-#include <TROOT.h>
 #include <TDatabasePDG.h>
-#include <TParameter.h>
-#include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
-
-#include <cmath>
+#include <TROOT.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -215,8 +215,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
         if (collsign == kPOSITIVE) {
           /* check the cross collision reconstruction */
           bool crosscollfound = false;
-          for (unsigned int i = 0; (i < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++i) {
-            for (unsigned int j = i + 1; (j < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++j) {
+          for (unsigned int i = 0; (i < mclabelpos[collsign][ixpart].size()) && !crosscollfound;
+               ++i) {
+            for (unsigned int j = i + 1;
+                 (j < mclabelpos[collsign][ixpart].size()) && !crosscollfound;
+                 ++j) {
               auto track1 = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
               auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
 
@@ -226,21 +229,42 @@ struct CheckGeneratorLevelVsDetectorLevel {
               }
             }
           }
-          if (crosscollfound and (ba == kAFTER)) {
+          if (crosscollfound && (ba == kAFTER)) {
             if (cfgTrackMultiRec) {
-              LOGF(info, "BEGIN multi-reconstructed: ==================================================================");
-              LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-                   particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-              LOGF(info, "With status %d and flags %0X and multi-reconstructed as: ==================================", particle.statusCode(), particle.flags());
+              LOGF(info,
+                   "BEGIN multi-reconstructed: "
+                   "==================================================================");
+              LOGF(info,
+                   "Particle with index %d and pdg code %d assigned to MC collision %d, pT: "
+                   "%f, phi: %f, eta: %f",
+                   particle.globalIndex(),
+                   particle.pdgCode(),
+                   particle.mcCollisionId(),
+                   particle.pt(),
+                   particle.phi(),
+                   particle.eta());
+              LOGF(info,
+                   "With status %d and flags %0X and multi-reconstructed as: "
+                   "==================================",
+                   particle.statusCode(),
+                   particle.flags());
               for (unsigned int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
                 auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
                 auto coll = colls.iteratorAt(track.collisionId());
-                LOGF(info, "Track with index %d and label %d assigned to collision %d, with associated MC collision %d",
-                     track.globalIndex(), ixpart, track.collisionId(), coll.mcCollisionId());
+                LOGF(info,
+                     "Track with index %d and label %d assigned to collision %d, with "
+                     "associated MC collision %d",
+                     track.globalIndex(),
+                     ixpart,
+                     track.collisionId(),
+                     coll.mcCollisionId());
               }
-              LOGF(info, "END multi-reconstructed:   ==================================================================");
+              LOGF(info,
+                   "END multi-reconstructed:   "
+                   "==================================================================");
             }
-            histos.get<TH1>(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("pdgcodemr"))->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
+            histos.get<TH1>(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("pdgcodemr"))
+              ->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
           }
         }
 
@@ -299,7 +323,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
         }
         if (particle.mcCollisionId() != colls.iteratorAt(track.collisionId()).mcCollisionId()) {
-          if ((ba == kAFTER) and (collsign == kPOSITIVE) and cfgTrackCollAssoc) {
+          if ((ba == kAFTER) && (collsign == kPOSITIVE) && cfgTrackCollAssoc) {
             LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
                  particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
             LOGF(info, "        with status %d and flags %0X and", particle.statusCode(), particle.flags());
@@ -406,21 +430,22 @@ struct CheckGeneratorLevelVsDetectorLevel {
     for (auto& track : tracks) {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
-      if (not(label < 0)) {
-        if (not(track.collisionId() < 0)) {
+      if (!(label < 0)) {
+        if (!(track.collisionId() < 0)) {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
           if (IsEvtSelected(coll, centormult)) {
-            uint8_t asone = uint8_t(false);
-            uint8_t astwo = uint8_t(false);
-
             /* TODO: AcceptTrack does not consider PID */
-            AcceptTrack(track, asone, astwo);
-            if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
+            int pid = AcceptTrack(track);
+            if ((pid == 0) || (pid == 1)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
+            } else {
+              if (pid > 1) {
+                LOGF(fatal, "Task not prepared for PID");
+              }
             }
           }
         }
@@ -431,7 +456,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
 
-  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::McTrackLabels> const& tracks,
                                 soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels> const& collisions,
                                 aod::McParticles const& mcParticles)
   {
@@ -440,7 +465,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
 
-  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::McTrackLabels> const& tracks,
                                    soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
                                    aod::McParticles const& mcParticles)
   {

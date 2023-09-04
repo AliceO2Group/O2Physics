@@ -74,11 +74,11 @@ struct ClusterTutorial {
     bool isSelected = true;
     if (mDoEventSel) {
       if (theCollision.bc().runNumber() < 300000) {
-        if (!theCollision.alias()[kINT7]) {
+        if (!theCollision.alias_bit(kINT7)) {
           isSelected = false;
         }
       } else {
-        if (!theCollision.alias()[kTVXinEMC]) {
+        if (!theCollision.alias_bit(kTVXinEMC)) {
           isSelected = false;
         }
       }

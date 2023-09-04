@@ -68,7 +68,6 @@ struct qaKFParticleLc {
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -145,6 +144,11 @@ struct qaKFParticleLc {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
+  Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
+  Filter trackFilterPTMin = (aod::track::pt > d_pTMin);
+
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using BigTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
   using BigTracksExtended = soa::Join<BigTracks, aod::TracksDCA>;
@@ -189,44 +193,19 @@ struct qaKFParticleLc {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   } /// End init
-
-  /// Function to select collisions
-  template <typename T>
-  bool isSelectedCollision(const T& collision)
-  {
-    /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
-    }
-    /// Reject collisions with negative covariance matrix elemts on the digonal
-    if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
-      return false;
-    }
-    return true;
-  }
 
   /// Function for single track selection
   template <typename T>
   bool isSelectedTracks(const T& track1, const T& track2, const T& track3)
   {
-    if ((track1.p() < d_pTMin) || (track2.p() < d_pTMin) || (track3.p() < d_pTMin)) {
-      return false;
-    }
-    /// Eta range
-    if ((abs(track1.eta()) > d_etaRange) || (abs(track2.eta()) > d_etaRange) || (abs(track3.eta()) > d_etaRange)) {
-      return false;
-    }
     /// DCA XY of the daughter tracks to the primaty vertex
-    if ((track1.dcaXY() > d_dcaXYTrackPV) || (track2.dcaXY() > d_dcaXYTrackPV) || (track3.dcaXY() > d_dcaXYTrackPV)) {
+    if ((fabs(track1.dcaXY()) > d_dcaXYTrackPV) || (fabs(track2.dcaXY()) > d_dcaXYTrackPV) || (fabs(track3.dcaXY()) > d_dcaXYTrackPV)) {
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if ((track1.dcaZ() > d_dcaZTrackPV) || (track2.dcaZ() > d_dcaZTrackPV) || (track3.dcaZ() > d_dcaZTrackPV)) {
+    if ((fabs(track1.dcaZ()) > d_dcaZTrackPV) || (fabs(track2.dcaZ()) > d_dcaZTrackPV) || (fabs(track3.dcaZ()) > d_dcaZTrackPV)) {
       return false;
     }
     /// reject if the tracks with sum of charge != 1
@@ -486,7 +465,7 @@ struct qaKFParticleLc {
   }
 
   /// Process function for data
-  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Filtered<CollisionTableData>::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -497,10 +476,6 @@ struct qaKFParticleLc {
 #ifdef HomogeneousField
       KFParticle::SetField(magneticField);
 #endif
-    }
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);

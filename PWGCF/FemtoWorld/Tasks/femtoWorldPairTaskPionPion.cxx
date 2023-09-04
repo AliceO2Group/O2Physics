@@ -13,6 +13,7 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks - pions
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Alicja Plachta, WUT Warsaw
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -25,7 +26,7 @@
 #include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldEventHisto.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldContainer.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldPionContainer.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldDetaDphiStar.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldUtils.h"
 
@@ -42,8 +43,10 @@ using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
 
 struct femtoWorldPairTaskPionPion {
+
   SliceCache cache;
   Preslice<aod::FemtoWorldParticlesMerged> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
+
   /// Particle selection part
 
   Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
@@ -152,14 +155,25 @@ struct femtoWorldPairTaskPionPion {
   Configurable<int> ConfEtaBins{"ConfEtaBins", 15, "Number of eta bins in deta dphi"};
   Configurable<int> ConfMInvBins{"ConfMInvBins", 1000, "Number of bins in mInv distribution"};
 
-  FemtoWorldContainer<femtoWorldContainer::EventType::same, femtoWorldContainer::Observable::kstar> sameEventCont;
-  FemtoWorldContainer<femtoWorldContainer::EventType::mixed, femtoWorldContainer::Observable::kstar> mixedEventCont;
+  Configurable<bool> ConfPlusMinus{"ConfPlusMinus", true, "Process pi+pi- pions pairs"};
+  Configurable<bool> ConfPlusPlus{"ConfPlusPlus", true, "Process pi+pi+ pion pairs"};
+  Configurable<bool> ConfMinusMinus{"ConfMinusMinus", true, "Process pi-pi- pion pairs"};
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::samePM, femtoWorldPionContainer::Observable::kstar> sameEventPlusMinCont;
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::samePP, femtoWorldPionContainer::Observable::kstar> sameEventPlusPlusCont;
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::sameMM, femtoWorldPionContainer::Observable::kstar> sameEventMinMinCont;
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::mixedPM, femtoWorldPionContainer::Observable::kstar> mixedEventPlusMinCont;
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::mixedPP, femtoWorldPionContainer::Observable::kstar> mixedEventPlusPlusCont;
+  FemtoWorldPionContainer<femtoWorldPionContainer::EventType::mixedMM, femtoWorldPionContainer::Observable::kstar> mixedEventMinMinCont;
+
   FemtoWorldPairCleaner<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kTrack> pairCleaner;
   FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kTrack> pairCloseRejection;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   // HistogramRegistry qaRegistryFail{"TrackQAFailed", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry resultRegistryPlusMin{"CorrelationsPlusMin", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry resultRegistryPlusPlus{"CorrelationsPlusPlus", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry resultRegistryMinMin{"CorrelationsMinMin", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -175,13 +189,36 @@ struct femtoWorldPairTaskPionPion {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
-    sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
-    mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    if (ConfPlusMinus)
+      sameEventPlusMinCont.init(&resultRegistryPlusMin, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    if (ConfPlusMinus)
+      sameEventPlusMinCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    if (ConfPlusPlus)
+      sameEventPlusPlusCont.init(&resultRegistryPlusPlus, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    if (ConfPlusPlus)
+      sameEventPlusPlusCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    sameEventMinMinCont.init(&resultRegistryMinMin, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    sameEventMinMinCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+
+    if (ConfPlusMinus)
+      mixedEventPlusMinCont.init(&resultRegistryPlusMin, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    if (ConfPlusMinus)
+      mixedEventPlusMinCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    if (ConfPlusPlus)
+      mixedEventPlusPlusCont.init(&resultRegistryPlusPlus, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    if (ConfPlusPlus)
+      mixedEventPlusPlusCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+    if (ConfMinusMinus)
+      mixedEventMinMinCont.init(&resultRegistryMinMin, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
+    if (ConfMinusMinus)
+      mixedEventMinMinCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
+
     pairCleaner.init(&qaRegistry);
+
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistryPlusMin, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistryPlusPlus, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii);
+      pairCloseRejection.init(&resultRegistryMinMin, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii);
     }
 
     vPIDPartOne = ConfPIDPartOne;
@@ -216,8 +253,52 @@ struct femtoWorldPairTaskPionPion {
     return false;
   }
 
+  // Function to build combinations
+  template <typename T1, typename T2, typename T3, typename T4>
+  void CombineParticles(T1 groupPartsOne, T1 groupPartsTwo, T2 cont, T3 parts, T4 magFieldTesla, int multCol, int sameOrMixed)
+  {
+    if (sameOrMixed == 1) {
+      for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+        if (!(IsPionNSigma(p1.p(), p1.tpcNSigmaPi(), p1.tofNSigmaPi()))) {
+          continue;
+        }
+        if (!(IsPionNSigma(p2.p(), p2.tpcNSigmaPi(), p2.tofNSigmaPi()))) {
+          continue;
+        }
+        if (ConfIsCPR) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        cont.setPair(p1, p2, multCol);
+      }
+    } else if (sameOrMixed == 2) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (!(IsPionNSigma(p1.p(), p1.tpcNSigmaPi(), p1.tofNSigmaPi()))) {
+          continue;
+        }
+        if (!(IsPionNSigma(p2.p(), p2.tpcNSigmaPi(), p2.tofNSigmaPi()))) {
+          continue;
+        }
+        if (ConfIsCPR) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        cont.setPair(p1, p2, multCol);
+      }
+    }
+  }
+
   /// This function processes the same event and takes care of all the histogramming
-  /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticlesMerged& parts)
   {
@@ -253,31 +334,18 @@ struct femtoWorldPairTaskPionPion {
         trackHistoPartTwoFailed.fillQA(part);
       }
     }
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if (!(IsPionNSigma(p1.p(), p1.tpcNSigmaPi(), p1.tofNSigmaPi()))) {
-        continue;
-      }
-      if (!(IsPionNSigma(p2.p(), p2.tpcNSigmaPi(), p2.tofNSigmaPi()))) {
-        continue;
-      }
-      if (ConfIsCPR) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-          continue;
-        }
-      }
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      sameEventCont.setPair(p1, p2, multCol);
-    }
+    /// Build the combinations
+    if (ConfPlusMinus)
+      CombineParticles(groupPartsOne, groupPartsTwo, sameEventPlusMinCont, parts, magFieldTesla, multCol, 1);
+    if (ConfPlusPlus)
+      CombineParticles(groupPartsOne, groupPartsOne, sameEventPlusPlusCont, parts, magFieldTesla, multCol, 1);
+    if (ConfMinusMinus)
+      CombineParticles(groupPartsTwo, groupPartsTwo, sameEventMinMinCont, parts, magFieldTesla, multCol, 1);
   }
 
   PROCESS_SWITCH(femtoWorldPairTaskPionPion, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processMixedEvent(o2::aod::FemtoWorldCollisions& cols,
                          o2::aod::FemtoWorldParticlesMerged& parts)
   {
@@ -286,9 +354,6 @@ struct femtoWorldPairTaskPionPion {
 
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multV0M()}));
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
-
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
 
@@ -296,22 +361,25 @@ struct femtoWorldPairTaskPionPion {
         continue;
       }
 
+      const int multCol1 = collision1.multV0M();
+
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (!(IsPionNSigma(p1.p(), p1.tpcNSigmaPi(), p1.tofNSigmaPi()))) {
-          continue;
-        }
-        if (!(IsPionNSigma(p2.p(), p2.tpcNSigmaPi(), p2.tofNSigmaPi()))) {
-          continue;
-        }
-        if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
-            continue;
-          }
-        }
-        mixedEventCont.setPair(p1, p2, collision1.multV0M());
+      if (ConfPlusMinus) {
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
+        CombineParticles(groupPartsOne, groupPartsTwo, mixedEventPlusMinCont, parts, magFieldTesla1, multCol1, 2);
+      }
+      if (ConfPlusPlus) {
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
+        CombineParticles(groupPartsOne, groupPartsTwo, mixedEventPlusPlusCont, parts, magFieldTesla1, multCol1, 2);
+      }
+      if (ConfMinusMinus) {
+        auto groupPartsOne = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
+        CombineParticles(groupPartsOne, groupPartsTwo, mixedEventMinMinCont, parts, magFieldTesla1, multCol1, 2);
       }
     }
   }

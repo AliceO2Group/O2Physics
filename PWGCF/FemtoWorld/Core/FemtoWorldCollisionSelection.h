@@ -14,15 +14,15 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDCOLLISIONSELECTION_H_
-#define FEMTOWORLDCOLLISIONSELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_
+
+#include <string>
+#include <iostream>
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-
-#include <string>
-#include <iostream>
 
 using namespace o2::framework;
 
@@ -61,14 +61,22 @@ class FemtoWorldCollisionSelection
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
+    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
   }
 
   /// Print some debug information
   void printCuts()
   {
-    LOGF(info, "Debug information for FemtoWorldCollisionSelection \n Max. z-vertex: %f \n Check trigger: %B \n Trigger: %i \n Check offline: %B ", mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline);
+    LOG(info) << "Debug information for FemtoDreamCollisionSelection";
+    LOG(info) << "Max. z-vertex: " << mZvtxMax;
+    LOG(info) << "Check trigger: " << mCheckTrigger;
+    LOG(info) << "Trigger: " << mTrigger;
+    LOG(info) << " Check offline: " << mCheckOffline;
+    LOG(info) << " Check Run 3: " << mCheckIsRun3;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -86,7 +94,7 @@ class FemtoWorldCollisionSelection
         return false;
       }
     } else {
-      if (mCheckTrigger && !col.alias()[mTrigger]) {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
         return false;
       }
       if (mCheckOffline && !col.sel7()) {
@@ -104,8 +112,15 @@ class FemtoWorldCollisionSelection
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
       mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
+      mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
+      mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
+      if (mCheckIsRun3) {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
+      } else {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5 * (col.multFV0M())); // in AliPhysics, the VOM was defined by (V0A + V0C)/2.
+      }
     }
   }
 
@@ -135,4 +150,4 @@ class FemtoWorldCollisionSelection
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDCOLLISIONSELECTION_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_

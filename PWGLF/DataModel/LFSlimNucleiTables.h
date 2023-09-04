@@ -26,44 +26,64 @@ namespace NucleiTableNS
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Zvertex, zVertex, uint8_t);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
+DECLARE_SOA_COLUMN(Beta, beta, float);
+DECLARE_SOA_COLUMN(Zvertex, zVertex, float);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(DCAz, dcaz, float);
+DECLARE_SOA_COLUMN(TPCsignal, tpcSignal, float);
+DECLARE_SOA_COLUMN(ITSchi2, itsChi2, float);
+DECLARE_SOA_COLUMN(TPCchi2, tpcChi2, float);
+DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
+DECLARE_SOA_COLUMN(TPCfindableCls, tpcFindableCls, uint8_t);
+DECLARE_SOA_COLUMN(TPCcrossedRows, tpcCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
-DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
-DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
-DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
+DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::ITSchi2,
+                  NucleiTableNS::TPCchi2,
                   NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass)
+                  NucleiTableNS::TPCfindableCls,
+                  NucleiTableNS::TPCcrossedRows,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls)
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::ITSchi2,
+                  NucleiTableNS::TPCchi2,
                   NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass,
+                  NucleiTableNS::TPCfindableCls,
+                  NucleiTableNS::TPCcrossedRows,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
+                  NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode)
 
 } // namespace o2::aod

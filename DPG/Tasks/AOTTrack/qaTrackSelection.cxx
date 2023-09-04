@@ -56,6 +56,13 @@ struct QaTrackCuts {
 
   void init(InitContext&)
   {
+
+    histos.add("eventSelection", "Event Selection", kTH1D, {{10, 0.5, 10.5, "Selection"}});
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
+
     const AxisSpec axisSelections{30, 0.5, 30.5f, "Selection"};
     // histos.add("events", "events", kTH1D, {axisSelections});
     for (int i = 0; i < nhist; i++) {
@@ -127,6 +134,8 @@ struct QaTrackCuts {
       histos.addClone("NoEvSel/alltracks", "NoEvSel/customSel/alltracks");
       // "NoEvSel/alltracks", "NoEvSel/hastof", "NoEvSel/hastpc", "NoEvSel/hasits", "NoEvSel/hastrd",
       //                                                          "sel8/alltracks", "sel8/hastof", "sel8/hastpc", "sel8/hasits", "sel8/hastrd"
+      histos.add("NoEvSel/customSel/tpcCrossedRows/before", "TPC Crossed rows;TPC Crossed rows", kTH1D, {{165, -0.5, 164.5}});
+      histos.addClone("NoEvSel/customSel/tpcCrossedRows/before", "NoEvSel/customSel/tpcCrossedRows/after");
     }
   }
 

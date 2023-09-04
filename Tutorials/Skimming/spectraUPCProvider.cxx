@@ -24,6 +24,7 @@
 #include "DataModel/UDDerived.h"
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -33,17 +34,17 @@ struct UPCSpectraProviderTask {
 
   Filter trackFilter = (requireGlobalTrackInFilter());
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& col, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
-    bool checkV0 = collision.bbV0A() || collision.bbV0C() || collision.bgV0A() || collision.bgV0C();
+    bool checkV0 = col.selection_bit(kIsBBV0A) || col.selection_bit(kIsBBV0C) || !col.selection_bit(kNoBGV0A) || !col.selection_bit(kNoBGV0C);
     if (checkV0) {
       return;
     }
-    bool checkFDD = collision.bbFDA() || collision.bbFDC() || collision.bgFDA() || collision.bgFDC();
+    bool checkFDD = col.selection_bit(kIsBBFDA) || col.selection_bit(kIsBBFDC) || !col.selection_bit(kNoBGFDA) || !col.selection_bit(kNoBGFDC);
     if (checkFDD) {
       return;
     }
-    if (!collision.alias()[kCUP9]) {
+    if (!col.alias_bit(kCUP9)) {
       return;
     }
     if (tracks.size() != 2) {

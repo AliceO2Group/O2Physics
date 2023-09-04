@@ -16,11 +16,13 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,20 +51,23 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xic candidate selection per pT bin"};
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
+
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+
+  void init(InitContext const&)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorKaon = selectorPion;
+    selectorProton = selectorPion;
   }
-  */
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -96,10 +101,31 @@ struct HfCandidateSelectorXicToPKPi {
       return false;
     }
 
+    // candidate decay length XY
+    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+      return false;
+    }
+
+    // candidate normalized decay length XY
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+      return false;
+    }
+
     // candidate normalised decay length (Inspired from Lc selector)
     if (candidate.decayLengthXYNormalised() < decayLengthXYNormalisedMin) {
       return false;
     }
+
+    // candidate ct
+    if (ctXic(candidate) > cuts->get(pTBin, "ct")) {
+      return false;
+    }
+
+    // candidate impact parameter XY
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+      return false;
+    }
+
     return true;
   }
 
@@ -137,24 +163,11 @@ struct HfCandidateSelectorXicToPKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates,
+               TracksSel const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
-    TrackSelectorPID selectorProton(selectorPion);
-    selectorProton.setPDG(kProton);
-
     // looping over 3-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXicToPKPi = 0;
@@ -165,17 +178,9 @@ struct HfCandidateSelectorXicToPKPi {
         continue;
       }
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
-        continue;
-      }
-      */
+      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
@@ -204,28 +209,28 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        auto pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
-        auto pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
-        auto pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-        auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-        auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        auto pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+        auto pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+        auto pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        auto pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        auto pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
 
-        if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidXicToPKPi = 1; // accept XicpKpi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidXicToPKPi = 0; // exclude XicpKpi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidXicToPiKP = 1; // accept XicpiKp
-        } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidXicToPiKP = 0; // exclude XicpiKp
         }
       }

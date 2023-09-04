@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -32,7 +33,8 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 /// B0 analysis task
 struct HfTaskB0Reduced {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
-  Configurable<double> yCandMax{"yCandMax", -1, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
@@ -127,11 +129,11 @@ struct HfTaskB0Reduced {
   void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
                aod::HfCand3ProngReduced const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yB0(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -164,11 +166,11 @@ struct HfTaskB0Reduced {
                  aod::HfCand3ProngReduced const&)
   {
     // MC rec
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yB0(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -217,11 +219,11 @@ struct HfTaskB0Reduced {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMc.size());
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();
-      if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+      if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
         continue;
       }
 

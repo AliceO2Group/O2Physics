@@ -254,13 +254,11 @@ struct TableMakerMC {
         }
         if (fDoDetailedQA) {
           if (enableBarrelHistos) {
-            histClasses += Form("TrackBarrel_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
           if (enableMuonHistos) {
-            histClasses += Form("Muons_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fMuonCuts) {
               histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
@@ -339,21 +337,11 @@ struct TableMakerMC {
         continue;
       }
       // get the trigger aliases
-      uint32_t triggerAliases = 0;
-      for (int i = 0; i < kNaliases; i++) {
-        if (collision.alias()[i] > 0) {
-          triggerAliases |= (uint32_t(1) << i);
-        }
-      }
-      uint64_t tag = 0;
+      uint32_t triggerAliases = collision.alias_raw();
       // store the selection decisions
-      for (int i = 0; i < kNsel; i++) {
-        if (collision.selection()[i] > 0) {
-          tag |= (uint64_t(1) << i);
-        }
-      }
+      uint64_t tag = collision.selection_raw();
       if (collision.sel7()) {
-        tag |= (uint64_t(1) << kNsel); //! SEL7 stored at position kNsel in the tag bit map
+        tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
       }
 
       auto mcCollision = collision.mcCollision();
@@ -418,7 +406,14 @@ struct TableMakerMC {
         mcflags = 0;
         int i = 0;
         for (auto& sig : fMCSignals) {
-          if (sig.CheckSignal(true, mcTracks, mctrack)) {
+          bool checked = false;
+          if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
+            auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
+            checked = sig.CheckSignal(false, mctrack_raw);
+          } else {
+            checked = sig.CheckSignal(false, mctrack);
+          }
+          if (checked) {
             mcflags |= (uint16_t(1) << i);
           }
           i++;
@@ -533,11 +528,10 @@ struct TableMakerMC {
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mcTracks, mctrack)) {
+            if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
-                fHistMan->FillHistClass(Form("TrackBarrel_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -690,10 +684,9 @@ struct TableMakerMC {
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mcTracks, mctrack)) {
+            if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
-                fHistMan->FillHistClass(Form("Muons_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -739,7 +732,7 @@ struct TableMakerMC {
           muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
           muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                     muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                    muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),
+                    muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, -1, muon.mchBitMap(), muon.midBitMap(),
                     muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
                     muon.trackTime(), muon.trackTimeRes());
           if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
@@ -1006,7 +999,7 @@ struct TableMakerMC {
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < kNaliases; i++) {
-      if (bc.alias()[i] > 0) {
+      if (bc.alias_bit(i) > 0) {
         (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }

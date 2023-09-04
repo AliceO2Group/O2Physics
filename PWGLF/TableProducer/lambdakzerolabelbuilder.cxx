@@ -47,7 +47,7 @@ struct lambdakzeroLabelBuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels
-  void process(aod::Collision const& collision, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
+  void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       int lLabel = -1;

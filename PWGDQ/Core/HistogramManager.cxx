@@ -14,6 +14,7 @@
 #include <iostream>
 #include <memory>
 #include <fstream>
+#include "Framework/Logger.h"
 using namespace std;
 
 #include <TObject.h>
@@ -99,11 +100,11 @@ void HistogramManager::AddHistClass(const char* histClass)
   // Add a new histogram list
   //
   if (fMainList->FindObject(histClass)) {
-    cout << "Warning in HistogramManager::AddHistClass(): Cannot add histogram class " << histClass
-         << " because it already exists." << endl;
+    LOG(warn) << "HistogramManager::AddHistClass(): Cannot add histogram class " << histClass
+              << " because it already exists.";
     return;
   }
-  TList* hList = new TList;
+  auto* hList = new TList;
   hList->SetOwner(kTRUE);
   hList->SetName(histClass);
   fMainList->Add(hList);
@@ -127,15 +128,15 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   // TODO: replace the cout warning messages with LOG (same for all the other functions)
 
   // get the list to which the histogram should be added
-  TList* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!" << endl;
-    cout << "         Histogram not created" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
+    LOG(warn) << "         Histogram not created";
     return;
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram " << hname << " already exists" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
     return;
   }
 
@@ -325,15 +326,15 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  TList* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!" << endl;
-    cout << "         Histogram not created" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
+    LOG(warn) << "         Histogram not created";
     return;
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram " << hname << " already exists" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
     return;
   }
 
@@ -517,15 +518,15 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  TList* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!" << endl;
-    cout << "         Histogram not created" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
+    LOG(warn) << "         Histogram not created";
     return;
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram " << hname << " already exists" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
     return;
   }
 
@@ -596,15 +597,15 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  TList* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!" << endl;
-    cout << "         Histogram not created" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
+    LOG(warn) << "         Histogram not created";
     return;
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    cout << "Warning in HistogramManager::AddHistogram(): Histogram " << hname << " already exists" << endl;
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
     return;
   }
 
@@ -631,8 +632,8 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   fVariablesMap[histClass] = varList;
 
   // get the min and max for each axis
-  double* xmin = new double[nDimensions];
-  double* xmax = new double[nDimensions];
+  auto* xmin = new double[nDimensions];
+  auto* xmax = new double[nDimensions];
   int* nBins = new int[nDimensions];
   for (int idim = 0; idim < nDimensions; ++idim) {
     nBins[idim] = binLimits[idim].GetSize() - 1;
@@ -686,11 +687,11 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   //
 
   // get the needed histogram list
-  TList* hList = reinterpret_cast<TList*>(fMainList->FindObject(className));
+  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(className));
   if (!hList) {
     // TODO: add some meaningfull error message
-    /*cout << "Warning in HistogramManager::FillHistClass(): Histogram list " << className << " not found!" << endl;
-    cout << "         Histogram list not filled" << endl; */
+    /*LOG(warn) << "HistogramManager::FillHistClass(): Histogram list " << className << " not found!";
+    LOG(warn) << "         Histogram list not filled" << endl; */
     return;
   }
 
@@ -830,7 +831,7 @@ void HistogramManager::Print(Option_t*) const
   cout << "###################################################################" << endl;
   cout << "HistogramManager:: " << fMainList->GetName() << endl;
   for (int i = 0; i < fMainList->GetEntries(); ++i) {
-    TList* list = reinterpret_cast<TList*>(fMainList->At(i));
+    auto* list = reinterpret_cast<TList*>(fMainList->At(i));
     cout << "************** List " << list->GetName() << endl;
     for (int j = 0; j < list->GetEntries(); ++j) {
       TObject* obj = list->At(j);

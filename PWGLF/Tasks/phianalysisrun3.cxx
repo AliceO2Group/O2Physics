@@ -183,7 +183,7 @@ struct phianalysisrun3 {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::McCollisionLabels>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::McTrackLabels>>;
@@ -317,7 +317,10 @@ struct phianalysisrun3 {
   PROCESS_SWITCH(phianalysisrun3, processGen, "Process Generated", false);
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hMC"), 1.5);

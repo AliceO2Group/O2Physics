@@ -45,7 +45,7 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
         auto mp = mcTracks.iteratorAt(motherid);
         int pdg_mother = mp.pdgCode();
         // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
-        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
+        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 130 || abs(pdg_mother) == 3122) {
           return false;
         }
         if (mp.has_mothers()) {
@@ -73,11 +73,14 @@ template <typename TCollision, typename T, typename TMCs>
 bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
-  // production vertex of this particle is within 1 cm, but from weak decay
-  // float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
-  // if (r3D > 1.0) {
-  //   return false;
-  // }
+
+  if (mctrack.isPhysicalPrimary()) { // this is the first priority.
+    return false;
+  }
+
+  if (mctrack.producedByGenerator()) {
+    return false;
+  }
 
   if (mctrack.has_mothers()) {
     // auto mp = mctrack.template mothers_first_as<TMCs>();
@@ -86,7 +89,7 @@ bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTra
       if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
         auto mp = mcTracks.iteratorAt(motherid);
         int pdg_mother = mp.pdgCode();
-        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
+        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 130 || abs(pdg_mother) == 3122) {
           // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
           return true;
         }
@@ -97,29 +100,30 @@ bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTra
         }
       }
     }
-
-    // for (auto& mp : mctrack.template mothers_as<TMCs>() ) {
-    //   int pdg_mother = mp.pdgCode();
-    //   //LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
-    //   if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122 || abs(pdg_mother) == 3212) {
-    //     return true;
-    //   }
-    // }
-
-    // for (auto& m : mctrack.mothersIds()) {
-    //   if (m < mcTracks.size()) { // protect against bad mother indices
-    //     auto mp = mcTracks.iteratorAt(m);
-    //     int pdg_mother = mp.pdgCode();
-    //     LOGF(info, "mother pdg = %d", pdg_mother);
-    //     if (abs(pdg_mother) == 311 || abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
-    //       return true;
-    //     }
-    //   }
-    // }
   } else {
     return false;
   }
   return false;
+}
+//_______________________________________________________________________
+template <typename T, typename TMCs>
+int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int pdgY)
+{
+  // is photon from pi0? returns index of mother photon
+  if (mctrack.pdgCode() != pdgX) {
+    return -1;
+  }
+  if (mctrack.has_mothers()) {
+    int motherid = mctrack.mothersIds()[0]; // first mother
+    auto mp = mcTracks.iteratorAt(motherid);
+    int pdg_mother = mp.pdgCode();
+    if (pdg_mother == pdgY) {
+      return motherid;
+    }
+  } else {
+    return -1;
+  }
+  return -1;
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>

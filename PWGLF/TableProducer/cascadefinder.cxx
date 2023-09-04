@@ -267,7 +267,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1]);
+                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -357,7 +357,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1]);
+                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -395,7 +395,7 @@ struct cascadefinderQA {
   /// Connect to CascFinderData: newly indexed, note: CascDataExt table incompatible with standard V0 table!
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

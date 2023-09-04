@@ -49,7 +49,7 @@ class EMCPhotonCut : public TNamed
   template <typename T, typename Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
-    // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimEMCClusters table.
+    // auto track = cluster.template MatchedTrack_as<T>();
     auto track = nullptr;
     if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster, track)) {
       return false;
@@ -91,16 +91,22 @@ class EMCPhotonCut : public TNamed
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
       case EMCPhotonCuts::kTM: {
-        return true;
-        // if (track) {
-        //   float dEta = fabs(track.tracketa() - cluster.eta());
-        //   float dPhi = fabs(track.trackphi() - cluster.phi());
-        //   return (dEta > mTrackMatchingEta(track.trackpt())) || (dPhi > mTrackMatchingPhi(track.trackpt())) || (cluster.e() / track.trackp() >= mMinEoverP);
-        // } else {
-        //   // when we don't have any tracks the cluster should always survive the TM cut!
-        //   return true;
-        // }
+        auto trackseta = cluster.tracketa(); // std:vector<float>
+        auto tracksphi = cluster.trackphi(); // std:vector<float>
+        auto trackspt = cluster.trackpt();   // std:vector<float>
+        auto tracksp = cluster.trackp();     // std:vector<float>
+        int ntrack = tracksp.size();
+        for (int itr = 0; itr < ntrack; itr++) {
+          float dEta = fabs(trackseta[itr] - cluster.eta());
+          float dPhi = fabs(tracksphi[itr] - cluster.phi());
+          bool result = (dEta > mTrackMatchingEta(trackspt[itr])) || (dPhi > mTrackMatchingPhi(trackspt[itr])) || (cluster.e() / tracksp[itr] >= mMinEoverP);
+          if (!result) {
+            return false;
+          }
+        }
+        return true; // when we don't have any tracks the cluster should always survive the TM cut!
       }
+
       case EMCPhotonCuts::kExotic:
         return mUseExoticCut ? !cluster.isExotic() : true;
 

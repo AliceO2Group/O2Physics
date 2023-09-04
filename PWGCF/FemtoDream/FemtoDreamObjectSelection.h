@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -51,8 +51,8 @@ class FemtoDreamObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
-    mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
-    auto hist = mHistogramRegistry->get<TH1>(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cuthist"));
+    mQAHistogramRegistry->add((static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
+    auto hist = mQAHistogramRegistry->get<TH1>(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
       hist->GetXaxis()->SetBinLabel(i + 1, Form("%u", mSelections.at(i).getSelectionVariable()));
       hist->SetBinContent(i + 1, mSelections.at(i).getSelectionValue());
@@ -97,7 +97,7 @@ class FemtoDreamObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (const auto& sel : sels) {
+    for (auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }
@@ -187,7 +187,8 @@ class FemtoDreamObjectSelection
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry;                                     ///< For QA output
+  HistogramRegistry* mHistogramRegistry;                                     ///< For Analysis QA output
+  HistogramRegistry* mQAHistogramRegistry;                                   ///< For QA output
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 

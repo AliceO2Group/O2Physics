@@ -47,6 +47,7 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 struct cascadeLabelBuilder {
   Produces<aod::McCascLabels> casclabels; // MC labels for cascades
   Produces<aod::McTraCascLabels> tracasclabels; // MC labels for cascades
+  Produces<aod::McCascBBTags> bbtags;           // MC labels for cascades
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -99,7 +100,6 @@ struct cascadeLabelBuilder {
         lLabel);
     } // end casctable loop
   }
-  PROCESS_SWITCH(cascadeLabelBuilder, processCascades, "Produce regular cascade label tables", true);
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build tracked cascade labels
@@ -151,7 +151,69 @@ struct cascadeLabelBuilder {
         lLabel);
     } // end casctable loop
   }
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // build cascade labels
+  void processBBTags(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
+  {
+    for (auto& casc : casctable) {
+      bool bbTag = false; // bachelor-baryon correlation tag to pass
+
+      // Loop over those that actually have the corresponding V0 associated to them
+      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0.has_v0Data())) {
+        bbtags(bbTag);
+        continue; // skip those cascades for which V0 doesn't exist
+      }
+      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+
+      // Acquire all three daughter tracks, please
+      auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
+      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+
+      // Bachelor-baryon association checker
+      // this will allow for analyses to pinpoint the effect of spurious, unwanted correlations!
+
+      if (lBachTrack.has_mcParticle()) {
+        auto bachelorParticle = lBachTrack.mcParticle_as<aod::McParticles>();
+        if (bachelorParticle.pdgCode() == 211) { // pi+, look for antiproton in negative prong
+          if (lNegTrack.has_mcParticle()) {
+            auto baryonParticle = lNegTrack.mcParticle_as<aod::McParticles>();
+            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == -2212) {
+              for (auto& baryonMother : baryonParticle.mothers_as<aod::McParticles>()) {
+                for (auto& pionMother : bachelorParticle.mothers_as<aod::McParticles>()) {
+                  if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == -3122) {
+                    bbTag = true;
+                  }
+                }
+              }
+            }
+          }
+        }                                         // end if-pion
+        if (bachelorParticle.pdgCode() == -211) { // pi-, look for proton in positive prong
+          if (lNegTrack.has_mcParticle()) {
+            auto baryonParticle = lPosTrack.mcParticle_as<aod::McParticles>();
+            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == 2212) {
+              for (auto& baryonMother : baryonParticle.mothers_as<aod::McParticles>()) {
+                for (auto& pionMother : bachelorParticle.mothers_as<aod::McParticles>()) {
+                  if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == 3122) {
+                    bbTag = true;
+                  }
+                }
+              }
+            }
+          }
+        } // end if-pion
+      }   // end bachelor has mcparticle
+      // Construct label table (note: this will be joinable with CascDatas)
+      bbtags(bbTag);
+    } // end casctable loop
+  }
+
+  PROCESS_SWITCH(cascadeLabelBuilder, processCascades, "Produce regular cascade label tables", true);
   PROCESS_SWITCH(cascadeLabelBuilder, processTrackedCascades, "Produce tracked cascade label tables", false);
+  PROCESS_SWITCH(cascadeLabelBuilder, processBBTags, "Produce cascade bach-baryon correlation tags", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

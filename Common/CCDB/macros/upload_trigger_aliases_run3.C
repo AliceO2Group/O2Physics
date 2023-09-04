@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "DataFormatsCTP/Configuration.h"
 #include "CCDB/CcdbApi.h"
 #include "TObjArray.h"
 #include "TriggerAliases.h"
@@ -23,9 +24,13 @@ using std::string;
 
 void createDefaultAliases(map<int, TString>& mAliases)
 {
-  mAliases[kTVXinTRD] = "minbias_TVX";
-  mAliases[kTVXinEMC] = "minbias_TVX_L0";
-  mAliases[kTVXinPHOS] = "minbias_TVX_L0";
+  mAliases[kEMC7] = "CTVXEMC-B-NOPF-EMC";
+  mAliases[kDMC7] = "CTVXDMC-B-NOPF-EMC";
+  mAliases[kTVXinTRD] = "CMTVX-B-NOPF-TRD,minbias_TVX";
+  mAliases[kTVXinEMC] = "C0TVX-B-NOPF-EMC,minbias_TVX_L0";
+  mAliases[kTVXinPHOS] = "C0TVX-B-NOPF-PHSCPV,minbias_TVX_L0";
+  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0";
+  mAliases[kPHOS] = "CTVXPH0-B-NOPF-PHSCPV,mb_PH0_TVX";
 }
 
 void upload_trigger_aliases_run3()
@@ -54,8 +59,8 @@ void upload_trigger_aliases_run3()
   }
 
   if (0) {
-    ULong64_t sor = 1543767116001;
-    ULong64_t eor = 1669611662530;
+    ULong64_t sor = 1672531200000;
+    ULong64_t eor = 1893456000000;
     TriggerAliases* aliases = new TriggerAliases();
     metadata["runNumber"] = "default";
     ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor);
@@ -89,25 +94,40 @@ void upload_trigger_aliases_run3()
     }
 
     std::vector<o2::ctp::CTPClass> classes = ctpcfg->getCTPClasses();
-    // ctpcfg->printConfigString();
+    ctpcfg->printConfigString();
     // create trigger aliases
     TriggerAliases* aliases = new TriggerAliases();
     for (auto& al : mAliases) {
       int aliasId = al.first;
-      for (const auto& cl : classes) {
-        int classId = cl.getIndex();
-        LOGP(debug, "class index = {}, name = {}, cluster = {}", classId, cl.name, cl.cluster->name);
-        if (cl.name == al.second) {
-          if (aliasId == kTVXinTRD && cl.cluster->name != "trd") { // workaround for configs with ambiguous class names
+      LOGP(debug, "alias = {}", al.second);
+      for (const auto& className : *(classNames[aliasId])) {
+        TString sname = className->GetName();
+        LOGP(debug, " className = {}", sname.Data());
+        sname.ToUpper();
+        for (const auto& cl : classes) {
+          TString clname = cl.name;
+          clname.ToUpper();
+          if (clname != sname) {
             continue;
           }
-          if (aliasId == kTVXinEMC && cl.cluster->name != "emc") { // workaround for configs with ambiguous class names
+          int classId = cl.getIndex();
+          TString cluster = TString(cl.cluster->name);
+          cluster.ToUpper();
+          if (aliasId == kTVXinTRD && cluster != "TRD") { // workaround for configs with ambiguous class names
             continue;
           }
-          if (aliasId == kTVXinPHOS && cl.cluster->name != "phscpv") { // workaround for configs with ambiguous class names
+          if (aliasId == kTVXinEMC && cluster != "EMC") { // workaround for configs with ambiguous class names
             continue;
           }
+          if (aliasId == kTVXinPHOS && cluster != "PHSCPV") { // workaround for configs with ambiguous class names
+            continue;
+          }
+          if (aliasId == kTVXinHMP && cluster != "HMP") { // workaround for configs with ambiguous class names
+            continue;
+          }
+          LOGP(debug, " class index = {}, name = {}, cluster = {}", classId, cl.name, cl.cluster->name);
           aliases->AddClassIdToAlias(aliasId, classId);
+          break;
         }
       }
     }

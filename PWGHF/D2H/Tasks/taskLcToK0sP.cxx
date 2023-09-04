@@ -15,11 +15,12 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 ///
-/// based on taskD0.cxx, taskLc.cxx
+/// \note based on taskD0.cxx, taskLc.cxx
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -36,6 +37,8 @@ struct HfTaskLcToK0sP {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
+
+  using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"};
 
@@ -58,6 +61,7 @@ struct HfTaskLcToK0sP {
     AxisSpec axisCPACand = {110, -1.1f, 1.1f, "candiate cos pointing angle"};
     AxisSpec axisDecLength = {200, 0.f, 2.0f, "decay length (cm)"};
     AxisSpec axisProperLifetime = {100, 0.f, 0.2f, "#it{c#tau} (cm)"};
+    AxisSpec axisProperLifetimeV0 = {1000, 0.f, 80.f, "#it{c#tau} (cm)"};
     AxisSpec axisNSigma = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
     AxisSpec axisPidP = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     // data
@@ -98,6 +102,10 @@ struct HfTaskLcToK0sP {
     registry.add("hV0MAntiLambdaVsPtCand", "cascade candidates;v0 mass AntiLambda (GeV/#it{c}^{2});p_{T}", {HistType::kTH2F, {axisMassLambda, axisBinsPt}});
     registry.add("hV0MGamma", "cascade candidates;v0 mass Gamma (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassGamma}});
     registry.add("hV0MGammaVsPtCand", "cascade candidates;v0 mass Gamma (GeV/#it{c}^{2});p_{T}", {HistType::kTH2F, {axisMassGamma, axisBinsPt}});
+    registry.add("hCtV0K0Short", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+    registry.add("hCtV0K0ShortVsPtCand", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
+    registry.add("hCtV0Lambda", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+    registry.add("hCtV0LambdaVsPtCand", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
     registry.add("hCPACand", "cascade candidates;cosine pointing angle;entries", {HistType::kTH1F, {axisCPACand}});
     registry.add("hCPACandVsPtCand", "cascade candidates;cosine pointing angle;p_{T}", {HistType::kTH2F, {axisCPACand, axisBinsPt}});
     registry.add("hCPAxyCand", "cascade candidates;cosine pointing angle xy;entries", {HistType::kTH1F, {axisCPACand}});
@@ -194,6 +202,14 @@ struct HfTaskLcToK0sP {
       registry.add("MC/Rec/hV0MGammaVsPtCandRecSig", "cascade candidates;v0 mass Gamma (GeV/#it{c}^{2});p_{T}", {HistType::kTH2F, {axisMassGamma, axisBinsPt}});
       registry.add("MC/Rec/hV0MGammaRecBg", "cascade candidates;v0 mass Gamma (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassGamma}});
       registry.add("MC/Rec/hV0MGammaVsPtCandRecBg", "cascade candidates;v0 mass Gamma (GeV/#it{c}^{2});p_{T}", {HistType::kTH2F, {axisMassGamma, axisBinsPt}});
+      registry.add("MC/Rec/hCtV0K0ShortRecSig", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+      registry.add("MC/Rec/hCtV0K0ShortVsPtCandRecSig", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
+      registry.add("MC/Rec/hCtV0K0ShortRecBg", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+      registry.add("MC/Rec/hCtV0K0ShortVsPtCandRecBg", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
+      registry.add("MC/Rec/hCtV0LambdaRecSig", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+      registry.add("MC/Rec/hCtV0LambdaVsPtCandRecSig", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
+      registry.add("MC/Rec/hCtV0LambdaRecBg", "cascade candidates;proper lifetime (V0) * #it{c} (cm);entries", {HistType::kTH1F, {axisProperLifetimeV0}});
+      registry.add("MC/Rec/hCtV0LambdaVsPtCandRecBg", "cascade candidates;proper lifetime (V0) * #it{c} (cm);p_{T}", {HistType::kTH2F, {axisProperLifetimeV0, axisBinsPt}});
       registry.add("MC/Rec/hCPACandRecSig", "cascade candidates;cosine pointing angle;entries", {HistType::kTH1F, {axisCPACand}});
       registry.add("MC/Rec/hCPACandVsPtCandRecSig", "cascade candidates;cosine pointing angle;p_{T}", {HistType::kTH2F, {axisCPACand, axisBinsPt}});
       registry.add("MC/Rec/hCPACandRecBg", "cascade candidates;cosine pointing angle;entries", {HistType::kTH1F, {axisCPACand}});
@@ -225,11 +241,11 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void
-    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
+               TracksWPid const&)
   {
     // Printf("Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       /*
       // no such selection for LcK0sp for now - it is the only cascade
       if (!(candidate.hfflag() & 1 << D0ToPiK)) {
@@ -261,6 +277,8 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
+      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
+      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
@@ -304,6 +322,10 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hV0MAntiLambdaVsPtCand"), mAntiLambda, ptCand);
       registry.fill(HIST("hV0MGamma"), mGamma);
       registry.fill(HIST("hV0MGammaVsPtCand"), mGamma, ptCand);
+      registry.fill(HIST("hCtV0K0Short"), ctV0K0Short);
+      registry.fill(HIST("hCtV0K0ShortVsPtCand"), ctV0K0Short, ptCand);
+      registry.fill(HIST("hCtV0Lambda"), ctV0Lambda);
+      registry.fill(HIST("hCtV0LambdaVsPtCand"), ctV0Lambda, ptCand);
       registry.fill(HIST("hCPACand"), cpa);
       registry.fill(HIST("hCPACandVsPtCand"), cpa, ptCand);
       registry.fill(HIST("hCPAxyCand"), cpaXY);
@@ -315,7 +337,7 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hCtCand"), ctLc);
       registry.fill(HIST("hCtCandVsPtCand"), ctLc, ptCand);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
       registry.fill(HIST("hTPCNSigmaPrBach"), tpcNSigmaPr);
@@ -330,11 +352,12 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks, aod::BigTracksPID const&)
+                 aod::TracksWMc const& tracks,
+                 TracksWPid const&)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
@@ -359,13 +382,15 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
+      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
+      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
       auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
 
@@ -407,6 +432,10 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("MC/Rec/hV0MAntiLambdaVsPtCandRecSig"), mAntiLambda, ptCand);
         registry.fill(HIST("MC/Rec/hV0MGammaRecSig"), mGamma);
         registry.fill(HIST("MC/Rec/hV0MGammaVsPtCandRecSig"), mGamma, ptCand);
+        registry.fill(HIST("MC/Rec/hCtV0K0ShortRecSig"), ctV0K0Short);
+        registry.fill(HIST("MC/Rec/hCtV0K0ShortVsPtCandRecSig"), ctV0K0Short, ptCand);
+        registry.fill(HIST("MC/Rec/hCtV0LambdaRecSig"), ctV0Lambda);
+        registry.fill(HIST("MC/Rec/hCtV0LambdaVsPtCandRecSig"), ctV0Lambda, ptCand);
         registry.fill(HIST("MC/Rec/hCPACandRecSig"), cpa);
         registry.fill(HIST("MC/Rec/hCPACandVsPtCandRecSig"), cpa, ptCand);
         registry.fill(HIST("MC/Rec/hCPAxyCandRecSig"), cpaXY);
@@ -462,6 +491,10 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("MC/Rec/hV0MAntiLambdaVsPtCandRecBg"), mAntiLambda, ptCand);
         registry.fill(HIST("MC/Rec/hV0MGammaRecBg"), mGamma);
         registry.fill(HIST("MC/Rec/hV0MGammaVsPtCandRecBg"), mGamma, ptCand);
+        registry.fill(HIST("MC/Rec/hCtV0K0ShortRecBg"), ctV0K0Short);
+        registry.fill(HIST("MC/Rec/hCtV0K0ShortVsPtCandRecBg"), ctV0K0Short, ptCand);
+        registry.fill(HIST("MC/Rec/hCtV0LambdaRecBg"), ctV0Lambda);
+        registry.fill(HIST("MC/Rec/hCtV0LambdaVsPtCandRecBg"), ctV0Lambda, ptCand);
         registry.fill(HIST("MC/Rec/hCPACandRecBg"), cpa);
         registry.fill(HIST("MC/Rec/hCPACandVsPtCandRecBg"), cpa, ptCand);
         registry.fill(HIST("MC/Rec/hCPAxyCandRecBg"), cpaXY);
@@ -483,7 +516,7 @@ struct HfTaskLcToK0sP {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;

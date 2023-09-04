@@ -191,6 +191,7 @@ struct DQBarrelTrackSelection {
   Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 110.0, "Maximum TPC signal"};
   Configurable<int> fConfigCollisionTrackAssoc{"cfgCollisionTrackAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - track matching (in ns)"};
+  Configurable<float> fConfigSigmaForTimeCompat{"cfgSigmaForTimeCompat", 4.0, "nSigma window when doing collision - track matching "};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   // o2::ccdb::CcdbApi fCCDB_api;                /// API to access CCDB headers
@@ -289,7 +290,7 @@ struct DQBarrelTrackSelection {
       return;
     }
     float timeMargin = fConfigAssocTimeMargin.value;
-    float nSigmaForTimeCompat = 4.0;
+    float nSigmaForTimeCompat = fConfigSigmaForTimeCompat.value;
 
     auto trackBegin = fSelectedTracks.begin();
     const auto bOffsetMax = 241; // 6 mus (ITS)
@@ -556,6 +557,7 @@ struct DQMuonsSelection {
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 0.5f, "Low pt cut for muons"};
   Configurable<int> fConfigCollisionMuonAssoc{"cfgCollisionMuonAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - muon matching (in ns)"};
+  Configurable<float> fConfigSigmaForTimeCompat{"cfgSigmaForTimeCompat", 4.0, "nSigma window when doing collision - track matching "};
   Configurable<float> fSigmaTrack{"cfgSigmaTrack", 1.0, "Number of sigma for track time window"};
   Configurable<float> fSigmaVtx{"cfgSigmaVtx", 4.0, "Number of sigma for vertex time window"};
   Configurable<float> fTimeMarginTrack{"cfgTimeMarginTrack", 0.0, "Number of sigma for track time window"};
@@ -642,11 +644,11 @@ struct DQMuonsSelection {
     } // end loop over muons
   }
 
-  void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcstimestamp)
   {
     // association of time brackets to each collision
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       double t0 = bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime();
       double err = collision.collisionTimeRes() * fSigmaVtx + fTimeMarginVtx;
       std::pair<double, double> timeBracket = {t0 - err, t0 + err};
@@ -685,7 +687,7 @@ struct DQMuonsSelection {
       return;
     }
     float timeMargin = fConfigAssocTimeMargin.value;
-    float nSigmaForTimeCompat = 4.0;
+    float nSigmaForTimeCompat = fConfigSigmaForTimeCompat.value;
 
     auto trackBegin = fSelectedMuons.begin();
     const auto bOffsetMax = 200; // check 200 BCs in past and future
@@ -739,8 +741,8 @@ struct DQMuonsSelection {
       return;
     }
 
-    std::map<int64_t, std::vector<int64_t>> collTrackIds;   // map to keep all collision-track associations (ordered based on the key by construction)
-    std::map<uint64_t, uint64_t> collBCmap;                 // map to hold collision - BC associations
+    std::map<int64_t, std::vector<int64_t>> collTrackIds; // map to keep all collision-track associations (ordered based on the key by construction)
+    std::map<uint64_t, uint64_t> collBCmap;               // map to hold collision - BC associations
 
     // first lets associate all the non-orphan muons to their primary collision Id
     for (auto const& [muonIdx, filterMap] : fSelectedMuons) {
@@ -845,7 +847,7 @@ struct DQMuonsSelection {
   template <typename TMuons>
   void associateMuonsToCollisionsAllTracks(Collisions const& collisions,
                                            TMuons const& muons,
-                                           BCsWithTimestamps const& bcs,
+                                           BCsWithTimestamps const& bcstimestamp,
                                            AmbiguousFwdTracks const& ambiTracksFwd)
   {
     // first processing tracks registered in the ambigous tracks table
@@ -955,7 +957,6 @@ struct DQMuonsSelection {
                         AmbiguousFwdTracks const& ambFwdTracks)
   {
     runMuonSelection<gkMuonFillMap>(filteredMuons);
-    runCollisionMap(collisions, bcstimestamp);
     if (fConfigCollisionMuonAssoc.value == 0) {
       associateMuonsToCollisionsStandard(collisions, muons);
     } else if (fConfigCollisionMuonAssoc.value == 1) {
@@ -963,6 +964,7 @@ struct DQMuonsSelection {
     } else if (fConfigCollisionMuonAssoc.value == 2) {
       associateMuonsToCollisionsAmbigous(collisions, muons, bcs, ambFwdTracks);
     } else {
+      runCollisionMap(collisions, bcstimestamp);
       associateMuonsToCollisionsAllTracks(collisions, muons, bcstimestamp, ambFwdTracks);
       isMuonReassigned.clear();
       vtxOrdBrack.clear();
@@ -1377,7 +1379,8 @@ struct DQFilterPPTask {
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNBarrelCuts + fNMuonCuts; i++) {
-          fStats->Fill(static_cast<float>(i));
+          if (fFiltersMap[collision.globalIndex()] & (uint32_t(1) << i))
+            fStats->Fill(static_cast<float>(i));
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];

@@ -33,7 +33,7 @@ using namespace o2::framework;
 struct chargedSpectra {
 
   HistogramRegistry histos;
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // task settings that can be steered via hyperloop
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
@@ -273,7 +273,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   vars.isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
         vars.isAcceptedEvent = true;
       }
     }

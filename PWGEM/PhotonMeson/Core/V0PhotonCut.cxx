@@ -18,8 +18,20 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "PhivPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "RequireTPConly", "RequireTPCTRD", "RequireTPCTOF", "RequireTPCTRDTOF"};
 
+void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
+{
+  mMinV0Pt = minPt;
+  mMaxV0Pt = maxPt;
+  LOG(info) << "V0 Photon Cut, set v0 pt range: " << mMinV0Pt << " - " << mMaxV0Pt;
+}
+void V0PhotonCut::SetV0EtaRange(float minEta, float maxEta)
+{
+  mMinV0Eta = minEta;
+  mMaxV0Eta = maxEta;
+  LOG(info) << "V0 Photon Cut, set v0 eta range: " << mMinV0Eta << " - " << mMaxV0Eta;
+}
 void V0PhotonCut::SetMeeRange(float min, float max)
 {
   mMinMee = min;
@@ -31,6 +43,18 @@ void V0PhotonCut::SetPsiPairRange(float min, float max)
   mMinPsiPair = min;
   mMaxPsiPair = max;
   LOG(info) << "V0 Photon selection, set psi pair range: " << mMinPsiPair << " - " << mMaxPsiPair;
+}
+void V0PhotonCut::SetPhivPairRange(float min, float max)
+{
+  mMinPhivPair = min;
+  mMaxPhivPair = max;
+  LOG(info) << "V0 Photon selection, set phiv pair range: " << mMinPhivPair << " - " << mMaxPhivPair;
+}
+void V0PhotonCut::SetAPRange(float max_alpha, float max_qt)
+{
+  mMaxAlpha = max_alpha;
+  mMaxQt = max_qt;
+  LOG(info) << "V0 Photon selection, set Armenteroz-Podolanski range: " << mMaxAlpha << " - " << mMaxQt;
 }
 void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
 {
@@ -52,6 +76,11 @@ void V0PhotonCut::SetMaxPCA(float max)
 {
   mMaxPCA = max;
   LOG(info) << "V0 Photon Cut, set max distance between 2 legs: " << mMaxPCA;
+}
+void V0PhotonCut::SetMaxMarginZ(float max)
+{
+  mMaxMarginZ = max;
+  LOG(info) << "V0 Photon Cut, set max margin z: " << mMaxMarginZ;
 }
 void V0PhotonCut::SetOnWwireIB(bool flag)
 {
@@ -75,17 +104,17 @@ void V0PhotonCut::SetTPCNsigmaPiRange(float min, float max)
   mMaxTPCNsigmaPi = max;
   LOG(info) << "V0 Photon selection, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
 }
-void V0PhotonCut::SetPtRange(float minPt, float maxPt)
+void V0PhotonCut::SetTrackPtRange(float minPt, float maxPt)
 {
-  mMinPt = minPt;
-  mMaxPt = maxPt;
-  LOG(info) << "V0 Photon Cut, set pt range: " << mMinPt << " - " << mMaxPt;
+  mMinTrackPt = minPt;
+  mMaxTrackPt = maxPt;
+  LOG(info) << "V0 Photon Cut, set track pt range: " << mMinTrackPt << " - " << mMaxTrackPt;
 }
-void V0PhotonCut::SetEtaRange(float minEta, float maxEta)
+void V0PhotonCut::SetTrackEtaRange(float minEta, float maxEta)
 {
-  mMinEta = minEta;
-  mMaxEta = maxEta;
-  LOG(info) << "V0 Photon Cut, set eta range: " << mMinEta << " - " << mMaxEta;
+  mMinTrackEta = minEta;
+  mMaxTrackEta = maxEta;
+  LOG(info) << "V0 Photon Cut, set track eta range: " << mMinTrackEta << " - " << mMaxTrackEta;
 }
 void V0PhotonCut::SetMinNClustersTPC(int minNClustersTPC)
 {
@@ -102,10 +131,11 @@ void V0PhotonCut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "V0 Photon Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
-void V0PhotonCut::SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC)
+void V0PhotonCut::SetChi2PerClusterTPC(float min, float max)
 {
-  mMaxChi2PerClusterTPC = maxChi2PerClusterTPC;
-  LOG(info) << "V0 Photon Cut, set max chi2 per cluster TPC: " << mMaxChi2PerClusterTPC;
+  mMinChi2PerClusterTPC = min;
+  mMaxChi2PerClusterTPC = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster TPC range: " << mMinChi2PerClusterTPC << " - " << mMaxChi2PerClusterTPC;
 }
 void V0PhotonCut::SetMaxDcaXY(float maxDcaXY)
 {
@@ -124,16 +154,71 @@ void V0PhotonCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   LOG(info) << "V0 Photon Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 
+void V0PhotonCut::SetNClustersITS(int min, int max)
+{
+  mMinNClustersITS = min;
+  mMaxNClustersITS = max;
+  LOG(info) << "V0 Photon Cut, set N clusters ITS range: " << mMinNClustersITS << " - " << mMaxNClustersITS;
+}
+void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
+{
+  mMinChi2PerClusterITS = min;
+  mMaxChi2PerClusterITS = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
+}
+
+void V0PhotonCut::SetIsWithinBeamPipe(bool flag)
+{
+  mIsWithinBP = flag;
+  LOG(info) << "V0 Photon Cut, propagated to within beam pipe: " << mIsWithinBP;
+}
+
+void V0PhotonCut::SetRequireITSTPC(bool flag)
+{
+  mRequireITSTPC = flag;
+  LOG(info) << "V0 Photon Cut, require ITS-TPC matched track: " << mRequireITSTPC;
+}
+
+void V0PhotonCut::SetRequireITSonly(bool flag)
+{
+  mRequireITSonly = flag;
+  LOG(info) << "V0 Photon Cut, require ITS only track: " << mRequireITSonly;
+}
+
+void V0PhotonCut::SetRequireTPConly(bool flag)
+{
+  mRequireTPConly = flag;
+  LOG(info) << "V0 Photon Cut, require TPConly track: " << mRequireTPConly;
+}
+
+void V0PhotonCut::SetRequireTPCTRD(bool flag)
+{
+  mRequireTPCTRD = flag;
+  LOG(info) << "V0 Photon Cut, require TPC-TRD track: " << mRequireTPCTRD;
+}
+
+void V0PhotonCut::SetRequireTPCTOF(bool flag)
+{
+  mRequireTPCTOF = flag;
+  LOG(info) << "V0 Photon Cut, require TPC-TOF track: " << mRequireTPCTOF;
+}
+
+void V0PhotonCut::SetRequireTPCTRDTOF(bool flag)
+{
+  mRequireTPCTRDTOF = flag;
+  LOG(info) << "V0 Photon Cut, require TPC-TOF track: " << mRequireTPCTRDTOF;
+}
+
 void V0PhotonCut::print() const
 {
   LOG(info) << "V0 Photon Cut:";
   for (int i = 0; i < static_cast<int>(V0PhotonCuts::kNCuts); i++) {
     switch (static_cast<V0PhotonCuts>(i)) {
-      case V0PhotonCuts::kPtRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinPt << ", " << mMaxPt << "]";
+      case V0PhotonCuts::kTrackPtRange:
+        LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
         break;
-      case V0PhotonCuts::kEtaRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinEta << ", " << mMaxEta << "]";
+      case V0PhotonCuts::kTrackEtaRange:
+        LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
         break;
       case V0PhotonCuts::kTPCNCls:
         LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;

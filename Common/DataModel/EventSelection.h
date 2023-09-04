@@ -43,24 +43,10 @@ enum Run2EventCuts {
   kTRDHEE  // Offline TRD single-electron-in-EMCAL-acceptance trigger decision
 };
 
-// collision-joinable event selection decisions
 namespace evsel
 {
-// TODO bool arrays are not supported? Storing in int32 for the moment
-DECLARE_SOA_COLUMN(Alias, alias, int32_t[kNaliases]);
-DECLARE_SOA_COLUMN(Selection, selection, int32_t[kNsel]);
-DECLARE_SOA_COLUMN(BBV0A, bbV0A, bool);                                     //! Beam-beam time in V0A
-DECLARE_SOA_COLUMN(BBV0C, bbV0C, bool);                                     //! Beam-beam time in V0C
-DECLARE_SOA_COLUMN(BGV0A, bgV0A, bool);                                     //! Beam-gas time in V0A
-DECLARE_SOA_COLUMN(BGV0C, bgV0C, bool);                                     //! Beam-gas time in V0C
-DECLARE_SOA_COLUMN(BBFDA, bbFDA, bool);                                     //! Beam-beam time in FDA
-DECLARE_SOA_COLUMN(BBFDC, bbFDC, bool);                                     //! Beam-beam time in FDC
-DECLARE_SOA_COLUMN(BGFDA, bgFDA, bool);                                     //! Beam-gas time in FDA
-DECLARE_SOA_COLUMN(BGFDC, bgFDC, bool);                                     //! Beam-gas time in FDC
-DECLARE_SOA_COLUMN(MultRingV0A, multRingV0A, float[5]);                     //! V0A multiplicity per ring (4 rings in run2, 5 rings in run3)
-DECLARE_SOA_COLUMN(MultRingV0C, multRingV0C, float[4]);                     //! V0C multiplicity per ring (4 rings in run2)
-DECLARE_SOA_COLUMN(SpdClusters, spdClusters, uint32_t);                     //! Number of SPD clusters in two layers
-DECLARE_SOA_COLUMN(NTracklets, nTracklets, int);                            //! Tracklet multiplicity
+DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);                                //! Bitmask of fired trigger aliases (see TriggerAliases.h for definitions)
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);                        //! Bitmask of selection flags (see EventSelectionParams.h for definitions)
 DECLARE_SOA_COLUMN(Sel7, sel7, bool);                                       //! Event selection decision based on V0A & V0C
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);                                       //! Event selection decision based on TVX
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");      //! BC entry index in BCs table (-1 if doesn't exist)
@@ -69,20 +55,16 @@ DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
 } // namespace evsel
-DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
-                  evsel::Alias, evsel::Selection,
-                  evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
-                  evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
-                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::NTracklets,
-                  evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
-using EvSel = EvSels::iterator;
 
+// bc-joinable event selection decisions
 DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
-                  evsel::Alias, evsel::Selection,
-                  evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
-                  evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
-                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
+                  evsel::Alias, evsel::Selection, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
 using BcSel = BcSels::iterator;
+
+// collision-joinable event selection decisions
+DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
+                  evsel::Alias, evsel::Selection, evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
+using EvSel = EvSels::iterator;
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_EVENTSELECTION_H_

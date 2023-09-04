@@ -14,10 +14,10 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
-/ALICE3 @alibuild @njacazio @ginnocen @vkucera
+/ALICE3 @alibuild @njacazio @vkucera @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
 /EventFiltering @alibuild @mpuccio @strogolo
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
@@ -30,11 +30,11 @@
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar
-/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @fcatalan92 @lvermunt
-/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli @deepathoms
-/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @nzardosh @rvertesi
-/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @NicoleBastid @mvolkl
+/PWGHF @alibuild @vkucera @fcolamar @adubla
+/PWGHF/D2H @alibuild @vkucera @fcolamar @adubla @fcatalan92 @lvermunt
+/PWGHF/HFC @alibuild @vkucera @fcolamar @adubla @mmazzilli @deepathoms
+/PWGHF/HFJ @alibuild @vkucera @fcolamar @adubla @nzardosh @rvertesi
+/PWGHF/HFL @alibuild @vkucera @fcolamar @adubla @NicoleBastid @gtaillepied
 /PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
@@ -46,7 +46,7 @@
 /Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochu
 /Tutorials/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
-/Tutorials/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/Tutorials/PWGHF @alibuild @vkucera @fcolamar @adubla
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk

@@ -16,4 +16,8 @@ o2physics_add_header_only_library(DataModel
                                           FT0Corrected.h
                                           Multiplicity.h
                                           PIDResponse.h
-                                          TrackSelectionTables.h)
+                                          CollisionAssociationTables.h
+                                          TrackSelectionTables.h
+                                          McCollisionExtra.h
+                                          EvtPlanes.h
+                                          Qvectors.h)

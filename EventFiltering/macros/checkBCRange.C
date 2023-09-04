@@ -27,6 +27,7 @@ void checkBCRange(const char* filename = "AO2D.root")
   TFile inputFile(filename, "READ");
 
   // Loop over the TDirectories in the input file
+  int selectedEvs{0}, bcRanges{0}, totNotFound{0};
   for (auto directoryKey : *inputFile.GetListOfKeys()) {
 
     // std::cout << "Processing directory " << directoryKey->GetName() << std::endl;
@@ -53,6 +54,7 @@ void checkBCRange(const char* filename = "AO2D.root")
       treeDecision->GetEntry(iEntryDecision);
       if (cefpSelected == 0)
         continue;
+      selectedEvs++;
       InteractionRecord ir;
       ir.setFromLong(globalBCId);
       bcids.push_back(ir);
@@ -65,11 +67,15 @@ void checkBCRange(const char* filename = "AO2D.root")
 
     // Loop over the entries in the ranges tree and check if the BC range is valid
     int nEntriesRanges = treeRanges->GetEntries();
+    bcRanges += treeRanges->GetEntries();
     for (int iEntryRanges = 0; iEntryRanges < nEntriesRanges; ++iEntryRanges) {
       treeRanges->GetEntry(iEntryRanges);
       InteractionRecord irstart, irend;
       irstart.setFromLong(bcstart);
       irend.setFromLong(bcend);
+      if (irstart > irend) {
+        std::cerr << "Error: start BC " << irstart << " is larger than end BC " << irend << std::endl;
+      }
       IRFrame frame(irstart, irend);
       for (uint32_t i = 0; i < bcids.size(); i++) {
         auto& bcid = bcids[i];
@@ -82,8 +88,11 @@ void checkBCRange(const char* filename = "AO2D.root")
     for (uint32_t i = 0; i < bcids.size(); i++) {
       notFound += !found[i];
     }
+    totNotFound += notFound;
     std::cout << "Found " << notFound << " BCs not in ranges out of " << bcids.size() << std::endl;
   }
+  std::cout << "Tolal selected events: " << selectedEvs << ", total number of ranges: " << bcRanges << std::endl;
+  std::cout << totNotFound << " BCs not in ranges --> " << (!totNotFound ? "OK" : "NOT OK") << std::endl;
 }
 
 void checkBCRange(const char* filename, const char* rangeFileName)
@@ -158,4 +167,71 @@ void checkBCRange(const char* filename, const char* rangeFileName)
     notFound += !found[i];
   }
   std::cout << "Found " << notFound << " BCs not in ranges out of " << bcids.size() << std::endl;
+  if (!notFound) {
+    std::cout << "All BCs found in ranges --> OK" << std::endl;
+  }
+}
+
+void checkBCRangeInAO2D(const char* filename, const char* rangeFileName)
+{
+  // Open the ROOT file and get the trees
+  TFile inputFile(filename);
+  TFile rangeFile(rangeFileName);
+
+  std::vector<IRFrame> frames;
+  std::vector<int> counts;
+  for (auto key : *rangeFile.GetListOfKeys()) {
+    auto dir = dynamic_cast<TDirectory*>(rangeFile.Get(key->GetName()));
+    if (!dir) {
+      continue;
+    }
+    auto tree = dynamic_cast<TTree*>(dir->Get("O2bcranges"));
+    if (!tree) {
+      continue;
+    }
+    ULong64_t bcstart, bcend;
+    tree->SetBranchAddress("fBCstart", &bcstart);
+    tree->SetBranchAddress("fBCend", &bcend);
+    for (int i = 0; i < tree->GetEntries(); i++) {
+      tree->GetEntry(i);
+      InteractionRecord irstart, irend;
+      irstart.setFromLong(bcstart);
+      irend.setFromLong(bcend);
+      frames.emplace_back(irstart, irend);
+      counts.emplace_back(0);
+    }
+  }
+
+  for (auto key : *inputFile.GetListOfKeys()) {
+    auto dir = dynamic_cast<TDirectory*>(inputFile.Get(key->GetName()));
+    if (!dir) {
+      continue;
+    }
+    auto tree = dynamic_cast<TTree*>(dir->Get("O2bc"));
+    if (!tree) {
+      continue;
+    }
+    ULong64_t bcId;
+    tree->SetBranchAddress("fGlobalBC", &bcId);
+    for (int i = 0; i < tree->GetEntries(); i++) {
+      tree->GetEntry(i);
+      InteractionRecord ir;
+      ir.setFromLong(bcId);
+      for (uint32_t j{0}; j < frames.size(); j++) {
+        if (!frames[j].isOutside(ir)) {
+          counts[j]++;
+          break;
+        }
+      }
+    }
+  }
+
+  int missing = 0;
+  for (uint32_t j{0}; j < frames.size(); j++) {
+    if (counts[j] == 0) {
+      std::cout << "BC range " << j << " has no events" << std::endl;
+      missing++;
+    }
+  }
+  std::cout << "Found " << missing << " BC ranges with no events out of " << frames.size() << std::endl;
 }

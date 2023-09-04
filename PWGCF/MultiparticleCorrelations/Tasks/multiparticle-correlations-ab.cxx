@@ -36,14 +36,14 @@ using namespace std;
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
+// *) Configurables (cuts):
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
+
 // *) Data members:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-DataMembers.h"
 
 // *) Member functions:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-MemberFunctions.h"
-
-// *) Configurables (cuts):
-#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
   // -------------------------------------------
 
@@ -72,9 +72,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
     // *) Configure the task with setters and getters:
-    //TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
-    TH1D* phiWeights = GetHistogramWithWeights("/alice/cern.ch/user/a/abilandz/weights.root", "phi"); // both relative and abs path shell be fine
-    SetWeightsHist(phiWeights, "phi");
+    // TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
+    //   TH1D* phiWeights = GetHistogramWithWeights("/alice/cern.ch/user/a/abilandz/weights.root", "phi"); // both relative and abs path shell be fine
+    //   SetWeightsHist(phiWeights, "phi");
 
     // *) Book random generator:
     delete gRandom;
@@ -87,6 +87,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
+    BookNestedLoopsHistograms();
+    BookTest0Histograms();
     BookResultsHistograms();
 
     // *) Trick to avoid name clashes, part 2:
@@ -111,9 +113,10 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     FillEventHistograms(collision, tracks, eRec, eAfter);
 
     // *) Main loop over particles:
-    Double_t dPhi = 0.; //, dPt = 0., dEta = 0.;
-    // Double_t wPhi = 1., wPt = 1., wEta = 1.;
+    Double_t dPhi = 0.;      //, dPt = 0., dEta = 0.;
+    Double_t wPhi = 1.;      //, wPt = 1., wEta = 1.;
     Double_t wToPowerP = 1.; // final particle weight raised to power p
+    fSelectedTracks = 0;     // reset number of selected tracks
     for (auto& track : tracks) {
 
       // *) Fill particle histograms for reconstructed data before particle cuts:
@@ -140,6 +143,23 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
         } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
       }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
 
+      // *) Nested loops containers:
+      if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
+        if (nl_a.ftaNestedLoops[0]) {
+          nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
+        } // remember that the 2nd argument here must start from 0
+        if (nl_a.ftaNestedLoops[1]) {
+          nl_a.ftaNestedLoops[1]->AddAt(wPhi, fSelectedTracks);
+        } // remember that the 2nd argument here must start from 0
+      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
+
+      // *) Counter of selected tracks in the current event:
+      fSelectedTracks++;
+      if (fSelectedTracks > 100) {
+        break;
+      } // TBI 20220803 hardcoded 100
+
+      // *) tmp:
       fResultsHist->Fill(pw_a.fWeightsHist[wPHI]->GetBinContent(pw_a.fWeightsHist[wPHI]->FindBin(track.phi()))); // TBI 20220713 meaningless, only temporarily here to check if this is feasible
 
     } // for (auto& track : tracks)
@@ -147,6 +167,14 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
     if (fCalculateCorrelations) {
       CalculateCorrelations();
+    }
+
+    // *) Calculate nested loops:
+    if (fCalculateNestedLoops) {
+      CalculateNestedLoops();
+
+      // TBI 20220823 this shall be called after all events are processed, only temporarily here called for each event:
+      ComparisonNestedLoopsVsCorrelations();
     }
 
     // *) Reset event-by-event objects:

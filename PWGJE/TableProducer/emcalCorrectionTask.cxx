@@ -60,7 +60,7 @@ struct EmcalCorrectionTask {
 
   // Preslices
   Preslice<myGlobTracks> perCollision = o2::aod::track::collisionId;
-  // Preslice<collEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
+  PresliceUnsorted<collEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
   Preslice<aod::Collisions> collisionsPerBC = aod::collision::bcId;
   Preslice<filteredCells> cellsPerFoundBC = aod::calo::bcId;
   Preslice<filteredMCCells> mcCellsPerFoundBC = aod::calo::bcId;
@@ -222,28 +222,17 @@ struct EmcalCorrectionTask {
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
-      // Since aod::evsel::foundBCId is not sorted we can't use sliceBy anymore.
-      // Anton is working on a fix for sliceBy and soa::SmallGroups so that we can
-      // use them again. For now we need to do the following
-      int nColInBc = 0;
-      for (auto& col : collisions) {
-        if (col.foundBCId() == bc.globalIndex()) {
-          nColInBc++;
-        }
-      }
       // Get the collisions matched to the BC using foundBCId of the collision
-      // auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
+      auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
-        // countBC(collisionsInFoundBC.size(), false);
-        countBC(nColInBc, false);
+        countBC(collisionsInFoundBC.size(), false);
         continue;
       }
       // Counters for BCs with matched collisions
-      // countBC(collisionsInFoundBC.size(), true);
-      countBC(nColInBc, true);
+      countBC(collisionsInFoundBC.size(), true);
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
@@ -275,11 +264,9 @@ struct EmcalCorrectionTask {
       for (size_t iClusterizer = 0; iClusterizer < mClusterizers.size(); iClusterizer++) {
         cellsToCluster(iClusterizer, cellsBC);
 
-        // if (collisionsInFoundBC.size() == 1) {
-        if (nColInBc == 1) {
+        if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
-          // for (const auto& col : collisionsInFoundBC) {
-          for (const auto& col : collisions) {
+          for (const auto& col : collisionsInFoundBC) {
             if (col.foundBCId() == bc.globalIndex()) {
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
@@ -289,20 +276,18 @@ struct EmcalCorrectionTask {
               std::vector<std::vector<int>> trackToClusterIndexMap;
               std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> IndexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<collEventSels::iterator>(col, tracks, IndexMapPair, vertex_pos, trackGlobalIndex);
+              doTrackMatching<collEventSels::filtered_iterator>(col, tracks, IndexMapPair, vertex_pos, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              FillClusterTable<collEventSels::iterator>(col, vertex_pos, iClusterizer, cellIndicesBC, IndexMapPair, trackGlobalIndex);
+              FillClusterTable<collEventSels::filtered_iterator>(col, vertex_pos, iClusterizer, cellIndicesBC, IndexMapPair, trackGlobalIndex);
             }
           }
         } else { // ambiguous
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
           bool hasCollision = false;
-          // mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
-          mHistManager.fill(HIST("hCollPerBC"), nColInBc);
-          // if (collisionsInFoundBC.size() == 0) {
-          if (nColInBc == 0) {
+          mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
+          if (collisionsInFoundBC.size() == 0) {
             mHistManager.fill(HIST("hCollisionType"), 0);
           } else {
             hasCollision = true;
@@ -331,28 +316,17 @@ struct EmcalCorrectionTask {
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
-      // Since aod::evsel::foundBCId is not sorted we can't use sliceBy anymore.
-      // Anton is working on a fix for sliceBy and soa::SmallGroups so that we can
-      // use them again. For now we need to do the following
-      int nColInBc = 0;
-      for (auto& col : collisions) {
-        if (col.foundBCId() == bc.globalIndex()) {
-          nColInBc++;
-        }
-      }
       // Get the collisions matched to the BC using foundBCId of the collision
-      // auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
+      auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
-        // countBC(collisionsInFoundBC.size(), false);
-        countBC(nColInBc, false);
+        countBC(collisionsInFoundBC.size(), false);
         continue;
       }
       // Counters for BCs with matched collisions
-      // countBC(collisionsInFoundBC.size(), true);
-      countBC(nColInBc, true);
+      countBC(collisionsInFoundBC.size(), true);
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
@@ -389,11 +363,9 @@ struct EmcalCorrectionTask {
       for (size_t iClusterizer = 0; iClusterizer < mClusterizers.size(); iClusterizer++) {
         cellsToCluster(iClusterizer, cellsBC);
 
-        // if (collisionsInFoundBC.size() == 1) {
-        if (nColInBc == 1) {
+        if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
-          // for (const auto& col : collisionsInFoundBC) {
-          for (const auto& col : collisions) {
+          for (const auto& col : collisionsInFoundBC) {
             if (col.foundBCId() == bc.globalIndex()) {
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
@@ -403,20 +375,18 @@ struct EmcalCorrectionTask {
               std::vector<std::vector<int>> trackToClusterIndexMap;
               std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> IndexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<collEventSels::iterator>(col, tracks, IndexMapPair, vertex_pos, trackGlobalIndex);
+              doTrackMatching<collEventSels::filtered_iterator>(col, tracks, IndexMapPair, vertex_pos, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              FillClusterTable<collEventSels::iterator>(col, vertex_pos, iClusterizer, cellIndicesBC, IndexMapPair, trackGlobalIndex);
+              FillClusterTable<collEventSels::filtered_iterator>(col, vertex_pos, iClusterizer, cellIndicesBC, IndexMapPair, trackGlobalIndex);
             }
           }
         } else { // ambiguous
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
           bool hasCollision = false;
-          // mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
-          mHistManager.fill(HIST("hCollPerBC"), nColInBc);
-          // if (collisionsInFoundBC.size() == 0) {
-          if (nColInBc == 0) {
+          mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
+          if (collisionsInFoundBC.size() == 0) {
             mHistManager.fill(HIST("hCollisionType"), 0);
           } else {
             hasCollision = true;

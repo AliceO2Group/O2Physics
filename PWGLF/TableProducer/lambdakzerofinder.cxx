@@ -391,7 +391,7 @@ struct lambdakzerofinderQa {
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& fullV0s)
   {
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

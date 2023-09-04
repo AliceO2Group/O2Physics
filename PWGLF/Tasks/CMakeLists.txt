@@ -111,16 +111,6 @@ o2physics_add_dpl_workflow(lambda1520analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0qaanalysis
-                    SOURCES v0qaanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(cascqaanalysis
-                    SOURCES cascqaanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(nuclei-hist
                     SOURCES NucleiHistTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -141,6 +131,11 @@ o2physics_add_dpl_workflow(stqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(non-prompt-cascade
+                    SOURCES nonPromptCascade.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hyhefour-analysis
                     SOURCES hyhe4analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -155,3 +150,43 @@ o2physics_add_dpl_workflow(phianalysisrun3
                     SOURCES phianalysisrun3.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0980analysis
+                    SOURCES f0980analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0postprocessing
+                    SOURCES v0postprocessing.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(antimatter-abs-hmpid
+                    SOURCES AntimatterAbsorptionHMPID.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadecorrelations
+                    SOURCES cascadecorrelations.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kinkanalysis
+                    SOURCES kinkAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda1520spherocityanalysis
+                    SOURCES lambda1520_spherocity_analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodyanalysis
+                   SOURCES hypertriton3bodyanalysis.cxx
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodymcqa
+                   SOURCES hypertriton3bodyMCQA.cxx
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                   COMPONENT_NAME Analysis)

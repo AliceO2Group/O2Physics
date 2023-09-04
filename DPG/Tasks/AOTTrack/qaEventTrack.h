@@ -30,8 +30,27 @@ namespace dpgcollision
 {
 DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
+DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+DECLARE_SOA_COLUMN(NumTracksAll, numTracksAll, int);
+DECLARE_SOA_COLUMN(NumTracksFiltered, numTracksFiltered, int);
+DECLARE_SOA_COLUMN(GlobalBcInRun, globalBcInRun, uint64_t);
+DECLARE_SOA_COLUMN(Ft0PosZ, ft0PosZ, float);
+DECLARE_SOA_COLUMN(SignalFT0A, signalFT0A, float);
+DECLARE_SOA_COLUMN(SignalFT0C, signalFT0C, float);
+DECLARE_SOA_COLUMN(SignalFT0M, signalFT0M, float);
+DECLARE_SOA_COLUMN(SignalV0A, signalV0A, float);
+DECLARE_SOA_COLUMN(CollIDMC, collIDMC, int);
+DECLARE_SOA_COLUMN(PosXMC, posXMC, float);
+DECLARE_SOA_COLUMN(PosYMC, posYMC, float);
+DECLARE_SOA_COLUMN(PosZMC, posZMC, float);
+DECLARE_SOA_COLUMN(CollisionTimeMC, collisionTimeMC, float);
+DECLARE_SOA_COLUMN(RecoPVsPerMcColl, recoPVsPerMcColls, int);                       // from LF MCcollisionExtra
+DECLARE_SOA_COLUMN(IsPvHighestContribForMcColl, IsPvHighestContribForMcColls, int); // from LF MCcollisionExtra
+DECLARE_SOA_COLUMN(DpgCounterCollision, dpgCounterCollision, int);
+DECLARE_SOA_COLUMN(DpgCounterDF, dpgCounterDF, int);
+DECLARE_SOA_COLUMN(IsFakeCollision, isFakeCollision, int);
 } // namespace dpgcollision
 
 DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG collisions
@@ -39,6 +58,42 @@ DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG co
                   dpgcollision::IsEventReject,
                   dpgcollision::RunNumber,
                   dpgcollision::NumContrib);
+
+DECLARE_SOA_TABLE(DPGCollsBig, "AOD", "DPGCollsBig", //! Big table of the DPG collisions
+                  dpgcollision::IsEventSelected,
+                  dpgcollision::RunNumber,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::CovXX,
+                  collision::CovXY,
+                  collision::CovXZ,
+                  collision::CovYY,
+                  collision::CovYZ,
+                  collision::CovZZ,
+                  dpgcollision::NumContrib,
+                  dpgcollision::NumTracksAll,
+                  dpgcollision::NumTracksFiltered,
+                  collision::Chi2,
+                  dpgcollision::GlobalBcInRun,
+                  dpgcollision::Ft0PosZ,
+                  dpgcollision::SignalFT0A,
+                  dpgcollision::SignalFT0C,
+                  dpgcollision::SignalFT0M,
+                  dpgcollision::SignalV0A,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
+                  dpgcollision::DpgCounterCollision, /// counter to give a unique ID to each collision
+                  dpgcollision::DpgCounterDF,        /// counter to give a unique ID to data each dataframe
+                  /// MC info
+                  dpgcollision::CollIDMC, /// unique only if combined with DF counter (dpgcollision::DpgCounterDF)
+                  dpgcollision::PosXMC,
+                  dpgcollision::PosYMC,
+                  dpgcollision::PosZMC,
+                  dpgcollision::CollisionTimeMC,
+                  dpgcollision::IsFakeCollision, /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
+                  dpgcollision::RecoPVsPerMcColl,
+                  dpgcollision::IsPvHighestContribForMcColl);
 
 namespace dpgtrack
 {

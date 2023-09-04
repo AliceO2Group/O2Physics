@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -54,42 +54,42 @@ using FemtoFullCollisionMC = soa::Join<aod::Collisions,
                                        aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
-                                  aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                  aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
-                                  aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
 
 struct femtoDreamProducerReducedTask {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
-  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
+  Produces<aod::FDMCParticles> outputPartsMC;
+  Produces<aod::FDExtParticles> outputDebugParts;
+  Produces<aod::FDMCLabels> outputPartsMCLabels;
+  Produces<aod::FDExtMCParticles> outputDebugPartsMC;
 
-  Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or Run2"};    // Choose if running on converted data or Run3
+  Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or Run2"}; // Choose if running on converted data or Run3
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
+
+  Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   // Event cuts
   FemtoDreamCollisionSelection colCuts;
-  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
+  Configurable<bool> ConfEvtUseTPCmult{"ConfEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
-  Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
-  Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
+  Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
 
-  Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
+  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.4f, 0.6f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkEta{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{80.f, 70.f, 60.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCnClsMin, "Track selection: ")};
@@ -102,11 +102,12 @@ struct femtoDreamProducerReducedTask {
   Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "Conf"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   // off set the center of the nsigma distribution to deal with bad TPC/TOF calibration
-  Configurable<float> ConfPIDnSigmaOffsetTPC{"ConfPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
-  Configurable<float> ConfPIDnSigmaOffsetTOF{"ConfPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfPIDspecies{"ConfPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
+  Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
+  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry Registry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -114,7 +115,11 @@ struct femtoDreamProducerReducedTask {
 
   void init(InitContext&)
   {
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+
+    int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+
+    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -130,11 +135,11 @@ struct femtoDreamProducerReducedTask {
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-    trackCuts.setPIDSpecies(ConfPIDspecies);
-    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
+    trackCuts.setPIDSpecies(ConfTrkPIDspecies);
+    trackCuts.setnSigmaPIDOffset(ConfTrkPIDnSigmaOffsetTPC, ConfTrkPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack,
                    aod::femtodreamparticle::TrackType::kNoChild,
-                   aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+                   aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB
@@ -156,32 +161,27 @@ struct femtoDreamProducerReducedTask {
     auto timestamp = bc.timestamp();
     float output = -999;
 
-    if (ConfIsRun3 && !ConfIsMC) {
+    if (ConfIsRun3 && !ConfIsForceGRP) {
       static o2::parameters::GRPMagField* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
       // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
       auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
       output = 0.1 * (NominalL3Field);
-    }
 
-    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+    } else {
 
       static o2::parameters::GRPObject* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
       output = 0.1 * (grpo->getNominalL3Field());
     }
     mMagField = output;
@@ -199,7 +199,7 @@ struct femtoDreamProducerReducedTask {
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
-      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
+      if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
 
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
@@ -213,6 +213,7 @@ struct femtoDreamProducerReducedTask {
 
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
+
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
@@ -237,18 +238,16 @@ struct femtoDreamProducerReducedTask {
       mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
       multNtr = col.multTracklets();
     }
-    if (ConfUseTPCmult) {
+    if (ConfEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      }
+    /// That includes checking if there are any usable tracks in a collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
       return;
     }
 
@@ -278,12 +277,11 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
-
       if constexpr (isMC) {
         fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
 
-      if (ConfDebugOutput) {
+      if (ConfIsDebug) {
         outputDebugParts(track.sign(),
                          (uint8_t)track.tpcNClsFound(),
                          track.tpcNClsFindable(),
@@ -295,27 +293,23 @@ struct femtoDreamProducerReducedTask {
                          track.dcaXY(),
                          track.dcaZ(),
                          track.tpcSignal(),
-                         track.tpcNSigmaStoreEl(),
-                         track.tpcNSigmaStorePi(),
-                         track.tpcNSigmaStoreKa(),
-                         track.tpcNSigmaStorePr(),
-                         track.tpcNSigmaStoreDe(),
-                         track.tofNSigmaStoreEl(),
-                         track.tofNSigmaStorePi(),
-                         track.tofNSigmaStoreKa(),
-                         track.tofNSigmaStorePr(),
-                         track.tofNSigmaStoreDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);
+                         track.tpcNSigmaEl(),
+                         track.tpcNSigmaPi(),
+                         track.tpcNSigmaKa(),
+                         track.tpcNSigmaPr(),
+                         track.tpcNSigmaDe(),
+                         track.tofNSigmaEl(),
+                         track.tofNSigmaPi(),
+                         track.tofNSigmaKa(),
+                         track.tofNSigmaPr(),
+                         track.tofNSigmaDe(),
+                         -999., -999., -999., -999., -999., -999.);
       }
     }
   }
 
-  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  void
+    processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

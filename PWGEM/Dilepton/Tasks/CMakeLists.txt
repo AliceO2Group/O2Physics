@@ -17,7 +17,7 @@ o2physics_add_dpl_workflow(efficiency-ee
 
 o2physics_add_executable(lmee-lf-cocktail
                   SOURCES lmeeLFCocktail.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2::SimulationDataFormat
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2::SimulationDataFormat O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-templates

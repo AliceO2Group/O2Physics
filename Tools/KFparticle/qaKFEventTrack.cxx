@@ -67,7 +67,6 @@ struct qaKFEventTrack {
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -108,6 +107,8 @@ struct qaKFEventTrack {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
@@ -154,9 +155,6 @@ struct qaKFEventTrack {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
 
     const AxisSpec axisVertexPosX{100, -0.05, 0.05, "X [cm]"};
@@ -217,17 +215,6 @@ struct qaKFEventTrack {
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(4), "Wrong PV");
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(5), "DCA Z > 10cm");
   } /// End init
-
-  /// Function to select collisions
-  template <typename T>
-  bool isSelectedCollision(const T& collision)
-  {
-    /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
-    }
-    return true;
-  }
 
   /// Function for single track selection
   template <typename T>
@@ -294,7 +281,7 @@ struct qaKFEventTrack {
   }
 
   /// Process function for data
-  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Filtered<CollisionTableData>::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -312,10 +299,6 @@ struct qaKFEventTrack {
       histos.fill(HIST("Events/covYY"), collision.covYY());
       histos.fill(HIST("Events/covYZ"), collision.covYZ());
       histos.fill(HIST("Events/covZZ"), collision.covZZ());
-    }
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -382,7 +365,7 @@ struct qaKFEventTrack {
   using CollisionTableDataMult = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   // Preslice<aod::McCollisionLabels> perMcCollision = aod::mccollisionlabel::mcCollisionId;
-  void processMC(CollisionTableMC::iterator const& collision, CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
+  void processMC(soa::Filtered<CollisionTableMC>::iterator const& collision, soa::Filtered<CollisionTableMC> const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -405,11 +388,6 @@ struct qaKFEventTrack {
       histos.fill(HIST("Events/covYY"), collision.covYY());
       histos.fill(HIST("Events/covYZ"), collision.covYZ());
       histos.fill(HIST("Events/covZZ"), collision.covZZ());
-    }
-
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -597,9 +575,6 @@ struct qaKFEvent {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
 
   } /// End init

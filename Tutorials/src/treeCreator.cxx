@@ -39,22 +39,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename Tracks>
-auto meanPt(Tracks const& tracks)
-{
-  auto apt = 0.f;
-  auto npt = 0;
-  auto cm = 0;
-  for (auto& track : tracks) {
-    ++cm;
-    if (isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
-      ++npt;
-      apt += track.pt();
-    }
-  }
-  return apt;
-}
-
 struct CreateTree {
   Configurable<float> centralEtaCut{"centralEtaCut", 0.8, "central eta limit"};
 
@@ -63,14 +47,14 @@ struct CreateTree {
 
   void processRun2(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
   {
-    tt(collision.posZ(), collision.posX(), collision.posY(), meanPt(tracks), tracks.size(), collision.multFT0M(), collision.multFV0M());
+    tt(collision.posZ(), collision.posX(), collision.posY(), analysis::meanPt(tracks), tracks.size(), collision.multFT0M(), collision.multFV0M());
   }
 
   PROCESS_SWITCH(CreateTree, processRun2, "Use Run 2 parameters", false);
 
   void processRun3(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
   {
-    tt(collision.posZ(), collision.posX(), collision.posY(), meanPt(tracks), tracks.size(), collision.multFT0M(), collision.multFV0A());
+    tt(collision.posZ(), collision.posX(), collision.posY(), analysis::meanPt(tracks), tracks.size(), collision.multFT0M(), collision.multFV0A());
   }
 
   PROCESS_SWITCH(CreateTree, processRun3, "Use Run 3 parameters", true);

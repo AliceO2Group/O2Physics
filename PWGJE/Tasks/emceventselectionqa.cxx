@@ -44,15 +44,51 @@ struct EmcEventSelectionQA {
     o2Axis matchingAxis{3, -0.5, 2.5, "matchingStatus", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
       bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"};
 
-    mHistManager.add("hCollisionMatching", "hCollisionMatching", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingReadout", "hCollisionMatching", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatching", "Collision Status", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingReadout", "Collision Status EMCAL Readout", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingMB", "Collision Status EMCAL MB", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatching0EMC", "Collision Status EMCAL L0 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatching0DMC", "Collision Status DCAL L0 tr", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEG1", "Collision Status EG1 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDG1", "Collision Status DG1 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEG2", "Collision Status EG2 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDG2", "Collision Status DG2 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEJ1", "Collision Status EJ1 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDJ1", "Collision Status DJ1 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEJ2", "Collision Status EJ2 trigger", o2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDJ2", "Collision Status DJ2 trigger", o2HistType::kTH1F, {matchingAxis});
     mHistManager.add("hBCCollisions", "Bunch crossings of found collisions", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCEmcalReadout", "Bunch crossings with EMCAL trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalMB", "Bunch crossings with EMCAL MB from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcal0EMC", "Bunch crossings with EMCAL L0 from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcal0DMC", "Bunch crossings with DCAL L0 from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEG1", "Bunch crossings with EG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDG1", "Bunch crossings with DG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEG2", "Bunch crossings with EG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDG2", "Bunch crossings with DG2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEJ1", "Bunch crossings with EJ1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDJ1", "Bunch crossings with DJ1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEJ2", "Bunch crossings with EJ2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDJ2", "Bunch crossings with DJ2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCTVX", "Bunch crossings with FIT TVX trigger from CTP", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", o2HistType::kTH1F, {bcAxis});
+
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingReadout")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingMB")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching0EMC")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching0DMC")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingEG1")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDG1")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingEG2")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDG2")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingEJ1")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDJ1")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingEJ2")).get());
+    initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDJ2")).get());
   }
 
-  Preslice<collEventSels> perFoundBC = aod::evsel::foundBCId;
+  PresliceUnsorted<collEventSels> perFoundBC = aod::evsel::foundBCId;
 
   void process(bcEvSels const& bcs, collEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
@@ -76,13 +112,13 @@ struct EmcEventSelectionQA {
       if (bc.runNumber() > 300000) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
-        if (bc.alias()[kTVXinEMC] || bc.alias()[kEMC7] || bc.alias()[kEG1] || bc.alias()[kEG2] || bc.alias()[kEJ1] || bc.alias()[kEJ2]) {
+        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
           isEMCALreadout = true;
         }
       } else {
         // run1/2: rely on trigger cluster, runlist must contain only runs with EMCAL in readout
         // Select min. bias trigger and EMCAL L0/L1 triggers
-        if (bc.alias()[kINT7] || bc.alias()[kEMC7] || bc.alias()[kEG1] || bc.alias()[kEG2] || bc.alias()[kEJ1] || bc.alias()[kEJ2]) {
+        if (bc.alias_bit(kINT7) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2)) {
           isEMCALreadout = true;
         }
       }
@@ -90,9 +126,43 @@ struct EmcEventSelectionQA {
       // Monitoring BCs with EMCAL trigger / readout / FIT trigger
       if (isEMCALreadout) {
         mHistManager.fill(HIST("hBCEmcalReadout"), bcID);
+        // various triggers
+        if (bc.alias_bit(kTVXinEMC)) {
+          mHistManager.fill(HIST("hBCEmcalMB"), bcID);
+        }
+        if (bc.alias_bit(kEMC7)) {
+          mHistManager.fill(HIST("hBCEmcal0EMC"), bcID);
+        }
+        if (bc.alias_bit(kDMC7)) {
+          mHistManager.fill(HIST("hBCEmcal0DMC"), bcID);
+        }
+        if (bc.alias_bit(kEG1)) {
+          mHistManager.fill(HIST("hBCEmcalEG1"), bcID);
+        }
+        if (bc.alias_bit(kDG1)) {
+          mHistManager.fill(HIST("hBCEmcalDG1"), bcID);
+        }
+        if (bc.alias_bit(kEG2)) {
+          mHistManager.fill(HIST("hBCEmcalEG2"), bcID);
+        }
+        if (bc.alias_bit(kDG2)) {
+          mHistManager.fill(HIST("hBCEmcalDG2"), bcID);
+        }
+        if (bc.alias_bit(kEJ1)) {
+          mHistManager.fill(HIST("hBCEmcalEJ1"), bcID);
+        }
+        if (bc.alias_bit(kDJ1)) {
+          mHistManager.fill(HIST("hBCEmcalDJ1"), bcID);
+        }
+        if (bc.alias_bit(kEJ2)) {
+          mHistManager.fill(HIST("hBCEmcalEJ2"), bcID);
+        }
+        if (bc.alias_bit(kDJ2)) {
+          mHistManager.fill(HIST("hBCEmcalDJ2"), bcID);
+        }
       }
 
-      if (bc.selection()[kIsTriggerTVX]) {
+      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
         mHistManager.fill(HIST("hBCTVX"), bcID);
       }
 
@@ -119,12 +189,56 @@ struct EmcEventSelectionQA {
         mHistManager.fill(HIST("hCollisionMatching"), collisionStatus);
         if (isEMCALreadout) {
           mHistManager.fill(HIST("hCollisionMatchingReadout"), collisionStatus);
+          // various triggers
+          if (bc.alias_bit(kTVXinEMC)) {
+            mHistManager.fill(HIST("hCollisionMatchingMB"), collisionStatus);
+          }
+          if (bc.alias_bit(kEMC7)) {
+            mHistManager.fill(HIST("hCollisionMatching0EMC"), collisionStatus);
+          }
+          if (bc.alias_bit(kDMC7)) {
+            mHistManager.fill(HIST("hCollisionMatching0DMC"), collisionStatus);
+          }
+          if (bc.alias_bit(kEG1)) {
+            mHistManager.fill(HIST("hCollisionMatchingEG1"), collisionStatus);
+          }
+          if (bc.alias_bit(kDG1)) {
+            mHistManager.fill(HIST("hCollisionMatchingDG1"), collisionStatus);
+          }
+          if (bc.alias_bit(kEG2)) {
+            mHistManager.fill(HIST("hCollisionMatchingEG2"), collisionStatus);
+          }
+          if (bc.alias_bit(kDG2)) {
+            mHistManager.fill(HIST("hCollisionMatchingDG2"), collisionStatus);
+          }
+          if (bc.alias_bit(kEJ1)) {
+            mHistManager.fill(HIST("hCollisionMatchingEJ1"), collisionStatus);
+          }
+          if (bc.alias_bit(kDJ1)) {
+            mHistManager.fill(HIST("hCollisionMatchingDJ1"), collisionStatus);
+          }
+          if (bc.alias_bit(kEJ2)) {
+            mHistManager.fill(HIST("hCollisionMatchingEJ2"), collisionStatus);
+          }
+          if (bc.alias_bit(kDJ2)) {
+            mHistManager.fill(HIST("hCollisionMatchingDJ2"), collisionStatus);
+          }
         }
       }
       if (collisionStatus > 0) {
         mHistManager.fill(HIST("hBCCollisions"), bcID);
       }
     }
+  }
+
+  void initCollisionHistogram(TH1* hist)
+  {
+    // Beautify collision type lables
+    hist->GetXaxis()->SetTitle("Collision status");
+    hist->GetXaxis()->SetBinLabel(1, "No vertex");
+    hist->GetXaxis()->SetBinLabel(2, "1 vertex");
+    hist->GetXaxis()->SetBinLabel(3, "Pileup");
+    hist->GetYaxis()->SetTitle("Number of BCs");
   }
 };
 

@@ -8,34 +8,43 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
+#define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
 // Remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
 
 // a) Base list to hold all output objects ("grandmother" of all lists);
-// *) Task identity;
+// *) Task configuration;
 // *) QA;
 // *) Event histograms;
 // *) Particle histograms;
 // *) Q-vectors;
 // *) Multiparticle correlations (standard, isotropic, same harmonic);
 // *) Particle weights;
+// *) Nested loops;
+// *) Results;
 
 // a) Base list to hold all output objects ("grandmother" of all lists):
-OutputObj<TList> fBaseList{"Task => ...", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
+
+OutputObj<TList> fBaseList{"Default list name", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
 UInt_t fRandomSeed = 0;    // argument to TRandom3 constructor. By default is 0, use SetRandomSeed(...) to change it
 
-// *) Task identity:
-//TString fTaskName; // task name, for the time being, this is also used for the name of fHistList
+// *) Task configuration:
+TString fTaskName = "";   // task name - this one is used to get the right weights programatically for this analysis
 Bool_t fVerbose = kFALSE; // print additional info like Green(__PRETTY_FUNCTION__); etc., to be used during debugging
-//TString fModusOperandi; // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
-//UInt_t fRandomSeed; // argument to TRandom3 constructor. By default it is 0, use SetRandomSeed(...) to change it
-//Bool_t fUseFisherYates; // use SetUseFisherYates(kTRUE); in the steering macro to randomize particle indices
-//Bool_t fUseFixedNumberOfRandomlySelectedParticles; // use or not fixed number of randomly selected particles in each event. Use always in combination with SetUseFisherYates(kTRUE)
-//Int_t fFixedNumberOfRandomlySelectedParticles; // set here a fixed number of randomly selected particles in each event. Use always in combination with SetUseFisherYates(kTRUE)
-//Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1. Used both in OTF and internal val.
+// TString fModusOperandi; // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
+// UInt_t fRandomSeed; // argument to TRandom3 constructor. By default it is 0, use SetRandomSeed(...) to change it
+// Bool_t fUseFisherYates; // use SetUseFisherYates(kTRUE); in the steering macro to randomize particle indices
+// Bool_t fUseFixedNumberOfRandomlySelectedParticles; // use or not fixed number of randomly selected particles in each event. Use always in combination with SetUseFisherYates(kTRUE)
+// Int_t fFixedNumberOfRandomlySelectedParticles; // set here a fixed number of randomly selected particles in each event. Use always in combination with SetUseFisherYates(kTRUE)
+// Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1. Used both in OTF and internal val.
+
+// *) Event-by-event quantities:
+Int_t fSelectedTracks = 0; // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
+Double_t fCentrality = 0.; // event-by-event centrality from default estimator
 
 // *) QA:
 TList* fQAList = NULL; //!<! base list to hold all QA output object
@@ -74,7 +83,7 @@ TList* fCorrelationsList = NULL;        // list to hold all correlations objects
 TProfile* fCorrelationsFlagsPro = NULL; // profile to hold all flags for correlations
 Bool_t fCalculateCorrelations = kTRUE;  // calculate and store integrated correlations
 struct Correlations_Arrays {
-  TProfile* fCorrelationsPro[4][6][3] = {{{NULL}}}; //! multiparticle correlations [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs. multiplicity,2=vs. centrality]
+  TProfile* fCorrelationsPro[4][gMaxHarmonic][3] = {{{NULL}}}; //! multiparticle correlations [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs. multiplicity,2=vs. centrality]
 } c_a;
 
 // *) Particle weights:
@@ -84,7 +93,31 @@ struct ParticleWeights_Arrays {
   TH1D* fWeightsHist[eWeights_N] = {NULL}; //!<! particle weights
 } pw_a;                                    // "pw_a" labels an instance of this group of histograms, e.g. pw_a.fWeightsHist[0]
 
+// *) Nested loops:
+TList* fNestedLoopsList = NULL;             // list to hold all nested loops objects
+TProfile* fNestedLoopsFlagsPro = NULL;      // profile to hold all flags for nested loops
+Bool_t fCalculateNestedLoops = kTRUE;       // calculate and store correlations with nested loops, as a cross-check
+Bool_t fCalculateCustomNestedLoop = kFALSE; // validate e-b-e all correlations with custom nested loop
+struct NestedLoops_Arrays {
+  TProfile* fNestedLoopsPro[4][6][5] = {{{NULL}}}; //! multiparticle correlations from nested loops [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  TArrayD* ftaNestedLoops[2] = {NULL};             //! e-b-e container for nested loops [0=angles;1=product of all weights]
+  // TArrayD *ftaNestedLoopsKine[gKineDependenceVariables][gMaxNoBinsKine][2]; //! e-b-e container for nested loops [0=pT,1=eta][kine.bin][0=angles;1=product of all weights]
+} nl_a;
+
+// *) Test0:
+TList* fTest0List = NULL;        // list to hold all objects for Test0
+TProfile* fTest0FlagsPro = NULL; // store all flags for Test0
+Bool_t fCalculateTest0 = kFALSE; // calculate or not Test0
+struct Test0_Arrays {
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][5] = {{{NULL}}}; //! [gMaxCorrelator][gMaxIndex][3] [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};    // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
+} t0_a;
+TString fFileWithLabels = "";         // external ROOT file which specifies all labels of interest
+TH1I* fTest0LabelsPlaceholder = NULL; // store all Test0 labels in this histogram
+
 // *) Results:
 TList* fResultsList = NULL;        //!<! list to hold all results
 TProfile* fResultsFlagsPro = NULL; //!<! profile to hold all flags for results
 TH1D* fResultsHist = NULL;         //!<! example histogram to store some results
+
+#endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_

@@ -26,8 +26,6 @@
 #include "TProfile.h"
 #include <map>
 
-using namespace std;
-
 class multMCCalibrator : public TNamed
 {
 

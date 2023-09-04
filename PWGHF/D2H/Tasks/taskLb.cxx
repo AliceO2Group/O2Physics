@@ -16,10 +16,12 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/DataModel/Centrality.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -42,7 +44,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Λb0 analysis task
 struct HfTaskLb {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -71,21 +74,24 @@ struct HfTaskLb {
     registry.add("hInvMassLc", "#Lambda_{b}^{0} candidates;prong0, #Lambda_{c}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&, aod::BigTracks const&)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision,
+               soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi>> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               aod::Tracks const&)
   {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLb(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLb(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto candPi = candidate.prong1_as<aod::BigTracks>();
+      auto candPi = candidate.prong1();
 
       registry.fill(HIST("hMass"), invMassLbToLcPi(candidate), candidate.pt(), centrality);
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -113,7 +119,8 @@ struct HfTaskLb {
 /// Lb MC analysis and fill histograms
 struct HfTaskLbMc {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -174,21 +181,23 @@ struct HfTaskLbMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCand3Prong const&)
+               soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& particlesMC,
+               aod::TracksWMc const& tracks,
+               aod::HfCand3Prong const&)
   {
     // MC rec
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLb(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
       if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), pdg::Code::kLambdaB0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), pdg::Code::kLambdaB0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -233,20 +242,20 @@ struct HfTaskLbMc {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
+        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
           counter++;
         }
 

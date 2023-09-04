@@ -26,6 +26,8 @@
 // ROOT includes
 #include "Rtypes.h"
 #include "TMath.h"
+#include "TGraph.h"
+#include "TFile.h"
 
 // O2 includes
 #include "DataFormatsTOF/ParameterContainers.h"
@@ -180,6 +182,41 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       LOG(info) << "etaC" << i << ": " << mContent[i];
     }
   }
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool pos)
+  {
+    TFile f(filename.c_str(), "READ");
+    if (f.IsOpen()) {
+      if (pos) {
+        f.GetObject(objname.c_str(), gPosEtaTimeCorr);
+      } else {
+        f.GetObject(objname.c_str(), gNegEtaTimeCorr);
+      }
+      f.Close();
+    }
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (pos ? "positive" : "negative");
+  }
+  void setTimeShiftParameters(TGraph* g, bool pos)
+  {
+    if (pos) {
+      gPosEtaTimeCorr = g;
+    } else {
+      gNegEtaTimeCorr = g;
+    }
+    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (pos ? "positive" : "negative");
+  }
+  float getTimeShift(float eta, short sign) const
+  {
+    if (sign > 0) {
+      if (!gPosEtaTimeCorr) {
+        return 0.f;
+      }
+      return gPosEtaTimeCorr->Eval(eta);
+    }
+    if (!gNegEtaTimeCorr) {
+      return 0.f;
+    }
+    return gNegEtaTimeCorr->Eval(eta);
+  }
 
  private:
   int mEtaN = 0; // Number of eta bins, 0 means no correction
@@ -187,6 +224,8 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
   float mEtaStop = 0.f;
   float mInvEtaWidth = 9999.f;
   std::vector<float> mContent;
+  TGraph* gPosEtaTimeCorr = nullptr;
+  TGraph* gNegEtaTimeCorr = nullptr;
 };
 
 /// \brief Class to handle the the TOF detector response for the expected time
@@ -227,7 +266,7 @@ class ExpTimes
       return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
     }
     LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
-    return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
+    return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
   }
 
   /// Gets the expected resolution of the t-texp-t0
@@ -262,7 +301,7 @@ class ExpTimes
   /// Gets the expected resolution of the t-texp-t0
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()); }
+  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTimeErr()); }
 
   /// Gets the expected resolution of the time measurement, uses the expected time and no event time resolution
   /// \param parameters Parameters to use to compute the expected resolution
@@ -274,7 +313,12 @@ class ExpTimes
   /// \param track Track of interest
   /// \param collisionTime Collision time
   /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float collisionTime, const float collisionTimeRes) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / GetExpectedSigma(parameters, track, track.tofSignal(), collisionTimeRes) : defaultReturnValue; }
+  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float collisionTime, const float resolution) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / resolution : defaultReturnValue; }
+
+  /// Gets the number of sigmas with respect the expected time
+  /// \param parameters Detector response parameters
+  /// \param track Track of interest
+  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float resolution) { return GetSeparation(parameters, track, track.tofEvTime(), resolution); }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters

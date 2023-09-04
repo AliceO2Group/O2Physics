@@ -54,6 +54,13 @@ struct tofSignal {
 
   void init(o2::framework::InitContext& initContext)
   {
+    if (doprocessRun2 && doprocessRun3) {
+      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+    }
+    if (!doprocessRun2 && !doprocessRun3) {
+      LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
+    }
+
     // Checking that the table is requested in the workflow and enabling it
     enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
     if (enableTable) {
@@ -69,12 +76,6 @@ struct tofSignal {
     table.reserve(tracks.size());
     for (auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
-    }
-    if (doprocessRun2 && doprocessRun3) {
-      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
-    }
-    if (!doprocessRun2 && !doprocessRun3) {
-      LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
     }
   }
   PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
@@ -142,6 +143,7 @@ struct tofEventTime {
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   Configurable<bool> sel8TOFEvTime{"sel8TOFEvTime", false, "Flag to compute the ev. time only for events that pass the sel8 ev. selection"};
+  Configurable<int> maxNtracksInSet{"maxNtracksInSet", 10, "Size of the set to consider for the TOF ev. time computation"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -238,6 +240,8 @@ struct tofEventTime {
       }
     }
     mRespParamsV2.print();
+    o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
+    o2::tof::eventTimeContainer::printConfig();
   }
 
   ///

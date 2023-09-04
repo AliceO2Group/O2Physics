@@ -38,6 +38,16 @@ struct ParticlesToTracks {
   {
   }
 
+  void process(aod::McParticles const& particles)
+  {
+    if (doprocessIndexingCentral) {
+      p2t.reserve(particles.size());
+    }
+    if (doprocessIndexingFwd) {
+      p2tmft.reserve(particles.size());
+    }
+  }
+
   void processIndexingCentral(aod::McParticle const&, soa::SmallGroups<LabeledTracks> const& tracks)
   {
     trackIds.clear();

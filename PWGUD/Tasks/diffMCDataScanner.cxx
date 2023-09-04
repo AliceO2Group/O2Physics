@@ -116,7 +116,7 @@ struct collisionsInfo {
     std::vector<float> const lims{0.0, 0.0, 0.0, 0.0, 0.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
-      if (!udhelpers::cleanFIT(bc, lims)) {
+      if (!udhelpers::cleanFIT(bc, 4., lims)) {
         isDGcandidate = false;
         break;
       }
@@ -147,7 +147,6 @@ struct collisionsInfo {
 
     // update histograms with track information
     LOGF(debug, "Number of tracks: Vertex %d, total %d, global %d", collision.numContrib(), cntAll, cntGlobal);
-    LOGF(debug, "Number of SPD cluster: %d", collision.spdClusters());
     registry.get<TH1>(HIST("numberTracks"))->Fill(cntAll);
     registry.get<TH1>(HIST("numberVtxTracks"))->Fill(collision.numContrib());
     registry.get<TH1>(HIST("numberGlobalTracks"))->Fill(cntGlobal);
@@ -200,7 +199,7 @@ struct BCInfo {
     {{"numberCollisions", "#numberCollisions", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"numberCollisionsGT", "#numberCollisionsGT", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"Aliases", "#Aliases", {HistType::kTH1F, {{kNaliases, 0., kNaliases}}}},
-     {"Selection", "#Selection", {HistType::kTH1F, {{evsel::kNsel, 0., evsel::kNsel}}}},
+     {"Selection", "#Selection", {HistType::kTH1F, {{aod::evsel::kNsel, 0., aod::evsel::kNsel}}}},
      {"DetectorSignals", "#DetectorSignals", {HistType::kTH1F, {{6, 0., 6}}}}}};
 
   void init(o2::framework::InitContext&)
@@ -227,15 +226,13 @@ struct BCInfo {
     registry.get<TH1>(HIST("numberCollisionsGT"))->Fill(nColGT);
 
     // update Aliases
-    auto aliases = bc.alias();
     for (auto ii = 0; ii < kNaliases; ii++) {
-      registry.get<TH1>(HIST("Aliases"))->Fill(ii, aliases[ii]);
+      registry.get<TH1>(HIST("Aliases"))->Fill(ii, bc.alias_bit(ii));
     }
 
     // update Selection
-    auto selections = bc.selection();
-    for (auto ii = 0; ii < evsel::kNsel; ii++) {
-      registry.get<TH1>(HIST("Selection"))->Fill(ii, selections[ii]);
+    for (auto ii = 0; ii < aod::evsel::kNsel; ii++) {
+      registry.get<TH1>(HIST("Selection"))->Fill(ii, bc.selection_bit(ii));
     }
 
     // FIT detector signals

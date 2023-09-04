@@ -29,11 +29,6 @@ o2physics_add_dpl_workflow(validation
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(event-selection-qa
-                    SOURCES eventSelectionQa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(multiplicity-qa
                     SOURCES multiplicityQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -67,4 +62,9 @@ o2physics_add_dpl_workflow(ft0-qa
 o2physics_add_dpl_workflow(qa-cpv
                     SOURCES cpvQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qvectors-correction
+                    SOURCES qVectorsCorrection.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

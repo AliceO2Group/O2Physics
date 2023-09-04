@@ -39,6 +39,7 @@
 ///
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -210,42 +211,42 @@ struct phosPi0 {
       mHistManager.fill(HIST("vertex"), col.posZ());
       ir.setFromLong(col.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
-      if (col.alias()[kTVXinPHOS]) {
+      if (col.alias_bit(kTVXinPHOS)) {
         mHistManager.fill(HIST("evBCkTVXinPHOS"), ir.bc);
       }
       mHistManager.fill(HIST("eventsCol"), 0.);
-      if (col.alias()[kIsBBT0A] || col.alias()[kIsBBT0C]) {
+      if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsCol"), 1);
       }
-      if (col.alias()[kIsBBT0A] && col.alias()[kIsBBT0C]) {
+      if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsCol"), 2);
       }
-      if (col.alias()[kIsBBV0A]) {
+      if (col.selection_bit(kIsBBV0A)) {
         mHistManager.fill(HIST("eventsCol"), 3);
       }
-      if (col.alias()[kIsTriggerTVX]) {
+      if (col.selection_bit(kIsTriggerTVX)) {
         mHistManager.fill(HIST("eventsCol"), 4);
       }
-      if (col.alias()[kTVXinPHOS]) {
+      if (col.alias_bit(kTVXinPHOS)) {
         mHistManager.fill(HIST("eventsCol"), 5);
       }
     }
 
     for (const auto& bc : bcs) {
       mHistManager.fill(HIST("eventsBC"), 0);
-      if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
+      if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsBC"), 1);
       }
-      if (bc.selection()[kIsBBT0A] && bc.selection()[kIsBBT0C]) {
+      if (bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsBC"), 2);
       }
-      if (bc.selection()[kIsBBV0A]) {
+      if (bc.selection_bit(kIsBBV0A)) {
         mHistManager.fill(HIST("eventsBC"), 3);
       }
-      if (bc.selection()[kIsTriggerTVX]) {
+      if (bc.selection_bit(kIsTriggerTVX)) {
         mHistManager.fill(HIST("eventsBC"), 4);
       }
-      if (bc.alias()[kTVXinPHOS]) {
+      if (bc.alias_bit(kTVXinPHOS)) {
         mHistManager.fill(HIST("eventsBC"), 5);
       }
     }
@@ -256,7 +257,7 @@ struct phosPi0 {
         bcevent = clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
         ir.setFromLong(bcevent);
         mHistManager.fill(HIST("eventsCol"), 6.);
-        if (clu.collision_as<SelCollisions>().alias()[mEvSelTrig]) {
+        if (clu.collision_as<SelCollisions>().alias_bit(mEvSelTrig)) {
           mHistManager.fill(HIST("eventsCol"), 7.);
           if (mbcPatternB[ir.bc]) {
             mHistManager.fill(HIST("eventsCol"), 8.);
@@ -264,13 +265,13 @@ struct phosPi0 {
           }
         }
         mHistManager.fill(HIST("cluBCAll2"), ir.bc);
-        if (clu.collision_as<SelCollisions>().alias()[kTVXinPHOS]) {
+        if (clu.collision_as<SelCollisions>().alias_bit(kTVXinPHOS)) {
           mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
         }
       }
 
       if (mEventSelection) {
-        if (!clu.collision_as<SelCollisions>().alias()[mEvSelTrig] || !mbcPatternB[ir.bc]) {
+        if (!clu.collision_as<SelCollisions>().alias_bit(mEvSelTrig) || !mbcPatternB[ir.bc]) {
           continue;
         }
       }
@@ -333,7 +334,7 @@ struct phosPi0 {
             o2::InteractionRecord irMix;
             irMix.setFromLong(bcurrentMix);
             if (mEventSelection) {
-              skipMix = !clu2.collision_as<SelCollisions>().alias()[mEvSelTrig] || !mbcPatternB[irMix.bc];
+              skipMix = !clu2.collision_as<SelCollisions>().alias_bit(mEvSelTrig) || !mbcPatternB[irMix.bc];
             }
             if (!skipMix) {
               --nMix;
@@ -364,19 +365,19 @@ struct phosPi0 {
         bcevent = clu.bc_as<BCsWithBcSels>().globalBC();
         ir.setFromLong(bcevent);
         mHistManager.fill(HIST("eventsBC"), 6.);
-        if (clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig]) {
+        if (clu.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig)) {
           mHistManager.fill(HIST("eventsBC"), 7.);
           if (mbcPatternB[ir.bc]) {
             mHistManager.fill(HIST("eventsBC"), 8.);
           }
         }
         mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
-        if (clu.bc_as<BCsWithBcSels>().selection()[kIsTriggerTVX]) {
+        if (clu.bc_as<BCsWithBcSels>().selection_bit(kIsTriggerTVX)) {
           mHistManager.fill(HIST("ambCluBCkTVXinPHOS"), ir.bc);
         }
       }
 
-      if (mEventSelection && (!clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig] || !mbcPatternB[ir.bc])) {
+      if (mEventSelection && (!clu.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig) || !mbcPatternB[ir.bc])) {
         continue;
       }
 
@@ -437,7 +438,7 @@ struct phosPi0 {
             o2::InteractionRecord irMix;
             irMix.setFromLong(bcevent);
             if (mEventSelection) {
-              skipMix = !clu2.bc_as<BCsWithBcSels>().selection()[mEvSelTrig] || !mbcPatternB[irMix.bc];
+              skipMix = !clu2.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig) || !mbcPatternB[irMix.bc];
             }
             if (!skipMix) {
               --nMix;

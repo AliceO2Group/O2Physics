@@ -30,7 +30,7 @@ using namespace o2::math_utils::detail;
 
 struct TPCSpectraProviderTask {
 
-  //Produces<aod::LFCollisions> outputCollisions; //currently it seems in the spectraTPC task no loop over the collision is made. Leave this here in case it will be added
+  // Produces<aod::LFCollisions> outputCollisions; //currently it seems in the spectraTPC task no loop over the collision is made. Leave this here in case it will be added
   Produces<aod::LFTracks> outputTracks;
   Produces<aod::LFSmallTracks> outputSmallTracks;
   Produces<aod::LFSingleTracks> outputSingleTracks;
@@ -62,7 +62,7 @@ struct TPCSpectraProviderTask {
   template <typename T>
   float SpeciesNSigma(const T& track, int specie)
   {
-    uint32_t pNsigma = 0xFFFFFF00; //15 bit precision for Nsigma
+    uint32_t pNsigma = 0xFFFFFF00; // 15 bit precision for Nsigma
     if (specie == 0) {
       return track.tpcNSigmaEl();
     } else if (specie == 1) {
@@ -96,7 +96,7 @@ struct TPCSpectraProviderTask {
                                                   aod::TrackSelection>>;
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

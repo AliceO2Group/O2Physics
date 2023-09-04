@@ -44,22 +44,22 @@ struct Alice3LutMaker {
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030};
   static_assert(particle < nSpecies && "Maximum of particles reached");
   static constexpr int pdg = PDGs[particle];
-  Configurable<bool> addQA{"add-qa", false, "Flag to use add QA plots to show the covariance matrix elements"};
-  Configurable<bool> selPrim{"sel-prim", false, "If true selects primaries, if not select all particles"};
+  Configurable<bool> addQA{"addQA", false, "Flag to use add QA plots to show the covariance matrix elements"};
+  Configurable<bool> selPrim{"selPrim", false, "If true selects primaries, if not select all particles"};
 
-  Configurable<int> nchBins{"nch-bins", 20, "Number of multiplicity bins"};
-  Configurable<float> nchMin{"nch-min", 0.5f, "Lower limit in multiplicity"};
-  Configurable<float> nchMax{"nch-max", 3.5f, "Upper limit in multiplicity"};
-  Configurable<int> nchLog{"nch-log", 1, "Flag to use a logarithmic multiplicity axis, in this case the Nch limits are the expontents"};
+  Configurable<int> nchBins{"nchBins", 20, "Number of multiplicity bins"};
+  Configurable<float> nchMin{"nchMin", 0.5f, "Lower limit in multiplicity"};
+  Configurable<float> nchMax{"nchMax", 3.5f, "Upper limit in multiplicity"};
+  Configurable<int> nchLog{"nchLog", 1, "Flag to use a logarithmic multiplicity axis, in this case the Nch limits are the expontents"};
 
-  Configurable<int> etaBins{"eta-bins", 80, "Number of eta bins"};
-  Configurable<float> etaMin{"eta-min", -4.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 4.f, "Upper limit in eta"};
+  Configurable<int> etaBins{"etaBins", 80, "Number of eta bins"};
+  Configurable<float> etaMin{"etaMin", -4.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 4.f, "Upper limit in eta"};
 
-  Configurable<int> ptBins{"pt-bins", 200, "Number of pT bins"};
-  Configurable<float> ptMin{"pt-min", -2.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 2.f, "Upper limit in pT"};
-  Configurable<int> ptLog{"pt-log", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
+  Configurable<int> ptBins{"ptBins", 200, "Number of pT bins"};
+  Configurable<float> ptMin{"ptMin", -2.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 2.f, "Upper limit in pT"};
+  Configurable<int> ptLog{"ptLog", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -68,7 +68,19 @@ struct Alice3LutMaker {
     const TString commonTitle = Form(" PDG %i", pdg);
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} GeV/#it{c}"};
     if (ptLog) {
-      axisPt.makeLogarithmic();
+      if (axisPt.binEdges.size() > 2) {
+        LOG(fatal) << "Cannot make a variabled bin width axis logaritmic";
+      }
+      const double min = axisPt.binEdges[0];
+      const double max = axisPt.binEdges[1];
+      axisPt.binEdges.clear();
+      const int nbins = axisPt.nBins.value();
+      const double width = (max - min) / nbins;
+      for (int bin = 0; bin < nbins + 1; bin++) {
+        float val = min + (bin + 0.5) * width;
+        axisPt.binEdges.push_back(pow(10., val));
+      }
+      axisPt.nBins = std::nullopt;
     }
     AxisSpec axisNch{nchBins, nchMin, nchMax, "N_{Ch}"};
     if (nchLog) {
@@ -185,7 +197,7 @@ struct Alice3LutMaker {
     histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
   }
 
-  void process(const o2::aod::McParticles_000& mcParticles,
+  void process(const o2::aod::McParticles& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>&,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions&)
@@ -194,7 +206,9 @@ struct Alice3LutMaker {
     int ntrks = 0;
 
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
+      if (!track.has_mcParticle())
+        continue;
+      const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       if (mcParticle.pdgCode() != pdg) {
         continue;
       }

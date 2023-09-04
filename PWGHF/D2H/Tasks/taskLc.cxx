@@ -19,10 +19,10 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,12 +30,11 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
-#include "Framework/runDataProcessing.h"
-
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
@@ -235,11 +234,13 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(aod::Collision const& collision,
+               soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
-      for (auto const& track : tracks) {
+      for (const auto& track : tracks) {
         if (std::abs(track.eta()) > 4.0) {
           continue;
         }
@@ -251,11 +252,11 @@ struct HfTaskLc {
     }
     registry.fill(HIST("Data/hMultiplicity"), nTracks);
 
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLc(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
         continue;
       }
       auto pt = candidate.pt();
@@ -306,21 +307,22 @@ struct HfTaskLc {
 
   /// Fills MC histograms.
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const& /*tracks*/)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+                 aod::TracksWMc const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       /// Select Lc
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
       /// rapidity selection
-      if (yCandMax >= 0. && std::abs(yLc(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto mcParticleProng0 = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        auto mcParticleProng0 = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
         auto indexMother = RecoDecay::getMother(particlesMC, mcParticleProng0, pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
@@ -451,10 +453,10 @@ struct HfTaskLc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
-        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
         auto ptGen = particle.pt();

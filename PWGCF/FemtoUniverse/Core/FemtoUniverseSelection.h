@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -12,9 +12,12 @@
 /// \file FemtoUniverseSelection.h
 /// \brief FemtoUniverseSelection - small generic class to do selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
+
+#include <cmath>
 
 namespace o2::analysis::femtoUniverse
 {
@@ -105,6 +108,18 @@ class FemtoUniverseSelection
       cutContainer |= 1UL << counter;
     }
     ++counter;
+  }
+
+  template <typename T>
+  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer)
+  {
+    /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
+    if (isSelected(observable)) {
+      cutContainer |= 1UL;
+    } else {
+      cutContainer |= 0UL;
+    }
+    cutContainer <<= 1;
   }
 
  private:
