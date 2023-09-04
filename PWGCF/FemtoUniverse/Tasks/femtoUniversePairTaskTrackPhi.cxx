@@ -376,17 +376,17 @@ struct femtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      // Close Pair Rejection
-      if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-          continue;
-        }
-      }
+      // // Close Pair Rejection
+      // if (ConfIsCPR.value) {
+      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+      //     continue;
+      //   }
+      // }
 
-      // Track Cleaning
-      if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
-        continue;
-      }
+      // // Track Cleaning
+      // if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
+      //   continue;
+      // }
       sameEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
     }
@@ -465,10 +465,10 @@ struct femtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      // // if (ConfIsCPR.value) {
-      if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-        continue;
-      }
+      // if (ConfIsCPR.value) {
+      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+      //     continue;
+      //   }
       // }
 
       mixedEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
