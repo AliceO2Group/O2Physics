@@ -333,12 +333,12 @@ struct centralEventFilterTask {
     }
 
     int startCollision{0};
-    for (int iC{0}; iC < CollBCIdArray->length(); ++iC) {
-      if (o2::InteractionRecord::long2IR(GloBCArray->Value(CollBCIdArray->Value(iC))) > mEndOfITSramp) {
-        break;
-      }
-      startCollision = iC;
-    }
+    // for (int iC{0}; iC < CollBCIdArray->length(); ++iC) {
+    //   if (o2::InteractionRecord::long2IR(GloBCArray->Value(CollBCIdArray->Value(iC))) > mEndOfITSramp) {
+    //     break;
+    //   }
+    //   startCollision = iC;
+    // }
 
     auto mScalers{scalers.get<TH1>(HIST("mScalers"))};
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
