@@ -45,10 +45,10 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
+using std::complex;
 using std::cout;
 using std::endl;
 using std::string;
-using std::complex;
 
 using namespace o2;
 using namespace o2::framework;
