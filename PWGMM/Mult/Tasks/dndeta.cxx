@@ -198,8 +198,7 @@ struct MultiplicityCounter {
         registry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
         registry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
         if (responseStudy) {
-          registry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}; N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm)",
-                        {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis}}});
+          registry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}; N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis}}});
         }
       }
 
@@ -233,8 +232,7 @@ struct MultiplicityCounter {
         registry.add({"Events/Centrality/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         registry.add({"Events/Centrality/SplitMult", " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         if (responseStudy) {
-          registry.add({"Events/Centrality/Control/MultiResponse", " ; N_{gen}; N_{rec}, N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm); centrality",
-                        {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis, CentAxis}}});
+          registry.add({"Events/Centrality/Control/MultiResponse", " ; N_{gen}; N_{rec}, N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis, CentAxis}}});
         }
       }
 
@@ -929,10 +927,10 @@ struct MultiplicityCounter {
           auto ft0 = collision.foundFT0();
           float tA = 0;
           float tC = 0;
-          for (auto i=0u; i < ft0.amplitudeA().size(); ++i) {
+          for (auto i = 0u; i < ft0.amplitudeA().size(); ++i) {
             tA += ft0.amplitudeA()[i];
           }
-          for (auto i=0u; i < ft0.amplitudeC().size(); ++i) {
+          for (auto i = 0u; i < ft0.amplitudeC().size(); ++i) {
             tC += ft0.amplitudeC()[i];
           }
           NFT0APerCol.emplace_back(tA);
@@ -941,7 +939,6 @@ struct MultiplicityCounter {
           NFT0APerCol.emplace_back(-1);
           NFT0CPerCol.emplace_back(-1);
         }
-
 
         if constexpr (hasCentrality) {
           registry.fill(HIST("Events/Centrality/Efficiency"), 4., c_gen);
