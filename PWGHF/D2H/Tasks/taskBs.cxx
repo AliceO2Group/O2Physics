@@ -124,7 +124,7 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc+1;
+      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc + 1;
       TString labels[kNBinsDecayTypeMc];
       labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{-}_{s} #rightarrow K^{-} K^{+} #pi^{-}) #pi^{+}";
       labels[DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{+}_{s} #rightarrow K^{-} K^{+} #pi^{+}) #pi^{-}";
