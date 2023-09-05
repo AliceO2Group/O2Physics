@@ -89,6 +89,9 @@ struct LFNucleiBATask {
   Configurable<bool> enablePtShift{"enablePtShift", false, "Flag to enable Pt shift (for He only)"};
   Configurable<std::vector<float>> parShiftPt{"parShiftPt", {0.0f, 0.1f, 0.1f, 0.1f, 0.1f}, "Parameters for Pt shift (if enabled)."};
 
+  Configurable<bool> enablePtShiftAntiD{"enablePtShiftAntiD", true, "Flag to enable Pt shift (for antiDeuteron only)"};
+  Configurable<std::vector<float>> parShiftPtAntiD{"parShiftPtAntiD", {-0.0955412, 0.798164, -0.536111, 0.0887876, -1.11022e-13}, "Parameters for Pt shift (if enabled)."};
+
   Configurable<bool> makeDCABeforeCutPlots{"makeDCABeforeCutPlots", false, "Flag to enable plots of DCA before cuts"};
   Configurable<bool> makeDCAAfterCutPlots{"makeDCAAfterCutPlots", false, "Flag to enable plots of DCA after cuts"};
   Configurable<bool> enableDCACustomCut{"enableDCACustomCut", false, "Flag to enable DCA custom cuts - unflag to use standard isGlobalCut DCA cut"};
@@ -109,6 +112,7 @@ struct LFNucleiBATask {
   Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum"};
   Configurable<int> tritonSelConfig{"tritonSelConfig", 0, "Select tritons using (0) 3Sigma TPC triton (1) additional 3sigma TPC pi,K,p veto cut"};
   Configurable<int> helium3Pt{"helium3Pt", 0, "Select use default pT (0) or use instead 2*pT (1) for helium-3"};
+  Configurable<int> antiDeuteronPt{"antiDeuteronPt", 0, "Select use default pT (0) or use instead pT shift (1) for antideuteron"};
 
   Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
   Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
@@ -127,6 +131,7 @@ struct LFNucleiBATask {
   static constexpr float fMassAlpha = 3.72738f;
 
   TF1* fShift = 0;
+  TF1* fShiftAntiD = 0;
 
   void init(o2::framework::InitContext&)
   {
@@ -1169,6 +1174,9 @@ struct LFNucleiBATask {
       histos.add("spectraGen/deuteron/histGenPtDPrim", "generated particles", HistType::kTH1F, {ptAxis});
       histos.add("spectraGen/deuteron/histGenPtDSec", "generated particles", HistType::kTH1F, {ptAxis});
       histos.add("spectraGen/deuteron/histSecTransportPtD", "generated particles", HistType::kTH1F, {ptAxis});
+      histos.add("tracks/deuteron/histAntiDPtShiftRec", "histAntiDPtShiftRec", HistType::kTH1F, {ptAxis});
+      histos.add("tracks/deuteron/histAntiDPtRec", "histAntiDPtRec", HistType::kTH1F, {ptAxis});
+      histos.add("spectraGen/histPtShiftCorrection", "histPtShiftCorrection", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
 
       histos.add("spectraGen/deuteron/histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
       histos.add("spectraGen/deuteron/histGenPtantiDPrim", "generated particles", HistType::kTH1F, {ptAxis});
@@ -1230,7 +1238,7 @@ struct LFNucleiBATask {
     if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
       return;
 
-    float gamma = 0., massTOF = 0., hePt = 0.f;
+    float gamma = 0., massTOF = 0., hePt = 0.f, antiDPt = 0.f;
     bool isTriton = kFALSE;
     bool deRapCut = kFALSE;
     bool heRapCut = kFALSE;
@@ -1272,6 +1280,21 @@ struct LFNucleiBATask {
         fShift = new TF1("fShift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         auto par = (std::vector<float>)parShiftPt;
         fShift->SetParameters(par[0], par[1], par[2], par[3], par[4]);
+      }
+
+      if (enablePtShiftAntiD && !fShiftAntiD) {
+        fShiftAntiD = new TF1("fShiftAntiD", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        auto par = (std::vector<float>)parShiftPtAntiD;
+        fShiftAntiD->SetParameters(par[0], par[1], par[2], par[3], par[4]);
+      }
+
+      switch (antiDeuteronPt) {
+        case 0:
+          if (enablePtShiftAntiD && fShiftAntiD) {
+            auto shiftAntiD = fShiftAntiD->Eval(track.pt());
+            antiDPt = track.pt() - shiftAntiD;
+          }
+          break;
       }
 
       switch (helium3Pt) {
@@ -1441,6 +1464,14 @@ struct LFNucleiBATask {
                 if (isPhysPrim) {
                   histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronTruePrim"), track.pt(), track.dcaXY());
                   histos.fill(HIST("tracks/deuteron/dca/before/hDCAzVsPtantiDeuteronTruePrim"), track.pt(), track.dcaZ());
+                  if constexpr (!IsFilteredData) {
+                    histos.fill(HIST("spectraGen/histPtShift"), track.pt(), track.pt() - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPtShiftVsEta"), track.eta(), track.pt() - track.mcParticle().pt());
+                    histos.fill(HIST("spectraGen/histPShift"), track.p(), track.p() - track.mcParticle().p());
+                    histos.fill(HIST("tracks/deuteron/histAntiDPtShiftRec"), antiDPt);
+                    histos.fill(HIST("tracks/deuteron/histAntiDPtRec"), track.pt());
+                    histos.fill(HIST("spectraGen/histPtShiftCorrection"), antiDPt, antiDPt - track.mcParticle().pt());
+                  }
                 }
                 if (!isPhysPrim && isProdByGen) {
                   histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronTrueSec"), track.pt(), track.dcaXY());
