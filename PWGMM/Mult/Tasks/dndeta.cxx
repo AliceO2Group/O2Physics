@@ -86,6 +86,7 @@ struct MultiplicityCounter {
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
+  Configurable<bool> responseStudy{"responseStudy", false, "Fill multi-estimator response"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
 
@@ -103,8 +104,9 @@ struct MultiplicityCounter {
 
   void init(InitContext&)
   {
-    AxisSpec MultAxis = {multBinning, "N_{trk}"};
+    AxisSpec MultAxis = {multBinning};
     AxisSpec CentAxis = {centBinning, "centrality"};
+    AxisSpec FT0Axis = {1001, -0.5, 1000.5};
 
     auto hstat = registry.get<TH1>(HIST("Events/BCSelection"));
     auto* x = hstat->GetXaxis();
@@ -195,6 +197,9 @@ struct MultiplicityCounter {
         registry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis}}});
         registry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
         registry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
+        if (responseStudy) {
+          registry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}; N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis}}});
+        }
       }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
@@ -226,6 +231,9 @@ struct MultiplicityCounter {
         registry.add({"Events/Centrality/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
         registry.add({"Events/Centrality/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         registry.add({"Events/Centrality/SplitMult", " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        if (responseStudy) {
+          registry.add({"Events/Centrality/Control/MultiResponse", " ; N_{gen}; N_{rec}, N_{PV cont}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0Axis, FT0Axis, ZAxis, CentAxis}}});
+        }
       }
 
       auto heff = registry.get<TH2>(HIST("Events/Centrality/Efficiency"));
@@ -863,6 +871,9 @@ struct MultiplicityCounter {
     auto Nrec = 0;
     std::vector<int> NrecPerCol;
     std::vector<float> c_recPerCol;
+    std::vector<int> NPVPerCol;
+    std::vector<float> NFT0APerCol;
+    std::vector<float> NFT0CPerCol;
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -911,6 +922,23 @@ struct MultiplicityCounter {
           }
         }
         NrecPerCol.emplace_back(Nrec);
+        NPVPerCol.emplace_back(collision.numContrib());
+        if (collision.has_foundFT0()) {
+          auto ft0 = collision.foundFT0();
+          float tA = 0;
+          float tC = 0;
+          for (auto i = 0u; i < ft0.amplitudeA().size(); ++i) {
+            tA += ft0.amplitudeA()[i];
+          }
+          for (auto i = 0u; i < ft0.amplitudeC().size(); ++i) {
+            tC += ft0.amplitudeC()[i];
+          }
+          NFT0APerCol.emplace_back(tA);
+          NFT0CPerCol.emplace_back(tC);
+        } else {
+          NFT0APerCol.emplace_back(-1);
+          NFT0CPerCol.emplace_back(-1);
+        }
 
         if constexpr (hasCentrality) {
           registry.fill(HIST("Events/Centrality/Efficiency"), 4., c_gen);
@@ -940,9 +968,15 @@ struct MultiplicityCounter {
         if constexpr (hasCentrality) {
           registry.fill(HIST("Events/Centrality/Response"), NrecPerCol[i], nCharged, mcCollision.posZ(), c_recPerCol[i]);
           registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          if (responseStudy) {
+            registry.fill(HIST("Events/Centrality/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
+          }
         } else {
           registry.fill(HIST("Events/Response"), NrecPerCol[i], nCharged, mcCollision.posZ());
           registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
+          if (responseStudy) {
+            registry.fill(HIST("Events/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ());
+          }
         }
       }
       if (moreThanOne > 1) {
@@ -1007,7 +1041,7 @@ struct MultiplicityCounter {
   void processGen(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks, &atracks);
   }
@@ -1017,7 +1051,7 @@ struct MultiplicityCounter {
   void processGenNoAmb(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks, nullptr);
   }
@@ -1027,7 +1061,7 @@ struct MultiplicityCounter {
   void processGenFT0C(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, &atracks);
   }
@@ -1037,7 +1071,7 @@ struct MultiplicityCounter {
   void processGenFT0CNoAmb(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, nullptr);
   }
@@ -1047,7 +1081,7 @@ struct MultiplicityCounter {
   void processGenFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, &atracks);
   }
@@ -1057,7 +1091,7 @@ struct MultiplicityCounter {
   void processGenFT0MNoAmb(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&)
   {
     processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, nullptr);
   }
@@ -1069,7 +1103,7 @@ struct MultiplicityCounter {
   void processGenFT0Chi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&)
   {
     processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, &atracks);
   }
@@ -1079,7 +1113,7 @@ struct MultiplicityCounter {
   void processGenFT0ChiNoAmb(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&)
   {
     processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, nullptr);
   }
@@ -1089,7 +1123,7 @@ struct MultiplicityCounter {
   void processGenFT0Mhi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&)
   {
     processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, &atracks);
   }
@@ -1099,7 +1133,7 @@ struct MultiplicityCounter {
   void processGenFT0MhiNoAmb(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&)
   {
     processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, nullptr);
   }
