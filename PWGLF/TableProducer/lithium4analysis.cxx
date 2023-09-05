@@ -376,7 +376,7 @@ struct lithium4analysis {
           for (auto& mothertrack : mctrackHe3.mothers_as<aod::McParticles>()) {
             for (auto& mothertrackPr : mctrackPr.mothers_as<aod::McParticles>()) {
 
-              if (mothertrack != mothertrackPr || mothertrack.pdgCode() != lithium4PDG) {
+              if (mothertrack != mothertrackPr || std::abs(mothertrack.pdgCode()) != lithium4PDG) {
                 continue;
               }
 
@@ -401,7 +401,7 @@ struct lithium4analysis {
         continue;
       }
 
-      if (std::abs(mcParticle.y()) > 1) {
+      if (std::abs(mcParticle.y()) > 1 || mcParticle.isPhysicalPrimary() == false) {
         continue;
       }
 
