@@ -322,7 +322,7 @@ def main():
         basename = "_".join((tables if tables else []) + (workflows if workflows else []))
         # Set a short file name when the full name would be longer than 255 characters.
         if len(basename) > 251:
-            basename = "o2_dependencies_" + hashlib.sha1(basename.encode()).hexdigest()
+            basename = "o2_dependencies_" + hashlib.sha1(basename.encode(), usedforsecurity=False).hexdigest()
         ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph
