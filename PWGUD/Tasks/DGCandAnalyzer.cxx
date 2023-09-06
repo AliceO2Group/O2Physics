@@ -159,12 +159,12 @@ struct DGCandAnalyzer {
       registry.add("tracks/nSigmaTOFPPr", "nSigma TOF for protons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
 
       registry.add("tracks/trackHits", "Track hits in various detectors", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
-      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{800, -20., 20.}}});
+      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{200, -0.5, 0.5}}});
+      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
       registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
-      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
-      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
+      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {100, -0.5, 0.5}}});
+      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {200, -2., 2.}}});
 
       registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
       registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
@@ -193,7 +193,7 @@ struct DGCandAnalyzer {
       registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
       registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
       registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
-      registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 300.}, {300, 0., 300.}}});
+      registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 150.}, {300, 0., 150.}}});
       registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
       registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
       registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{1000, -5., 5.}, {1000, -5., 5.}}});
@@ -336,7 +336,7 @@ struct DGCandAnalyzer {
 
     // check bcnum
     if (bcnums.find(bcnum) != bcnums.end()) {
-      LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
+      LOGF(info, "candCase %d bcnum %d allready found! ", candCase, bcnum);
       registry.fill(HIST("stat/candCaseSel"), 4, 1.);
     } else {
       bcnums.insert(bcnum);
