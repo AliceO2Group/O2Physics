@@ -10,6 +10,10 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWPowerArray.h"
+
+using std::string;
+using std::vector;
+
 int GFWPowerArray::getHighestHarmonic(const HarSet& inhar)
 {
   // Highest possible harmonic: sum of same-sign harmonics
