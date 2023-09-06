@@ -11,17 +11,16 @@
 
 #ifndef PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
 #define PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
+
 #include <vector>
 #include <cmath>
 #include <string>
-using namespace std;
-using std::string;
-using std::vector;
-typedef vector<int> HarSet;
+
+typedef std::vector<int> HarSet;
 class GFWPowerArray
 {
  public:
-  static HarSet GetPowerArray(vector<HarSet> inHarmonics);
+  static HarSet GetPowerArray(std::vector<HarSet> inHarmonics);
   static void PowerArrayTest();
 
  private:

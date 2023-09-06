@@ -33,6 +33,7 @@
 #include "Framework/StaticFor.h"
 
 using namespace o2;
+using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
