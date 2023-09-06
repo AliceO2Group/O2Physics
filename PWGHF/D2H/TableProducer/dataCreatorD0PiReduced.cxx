@@ -46,7 +46,7 @@ struct HfDataCreatorD0PiReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision;
   Produces<aod::HfOrigColCounts> hfCollisionCounter;
-  Produces<aod::HfRedTracksBase> hfTrackPion;
+  Produces<aod::HfRedTrackBases> hfTrackPion;
   Produces<aod::HfRedTracksCov> hfTrackCovPion;
   Produces<aod::HfRedTracksPid> hfTrackPidPion;
   Produces<aod::HfRed2Prongs> hfCand2Prong;

@@ -121,7 +121,9 @@ DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                 //! Flag to check if t
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                 //! Flag to check if track has a TOF match
 } // namespace hf_track_index_reduced
 
-DECLARE_SOA_TABLE(HfRedTracksBase, "AOD", "HFREDTRACKBASE", //! Table with track information for reduced workflow
+// CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
+// to call DECLARE_SOA_INDEX_COLUMN_FULL later on
+DECLARE_SOA_TABLE(HfRedTrackBases, "AOD", "HFREDTRACKBASE", //! Table with track information for reduced workflow
                   soa::Index<>,
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
@@ -150,7 +152,7 @@ DECLARE_SOA_TABLE(HfRedTracksPid, "AOD", "HFREDTRACKPID", //! Table with PID tra
                   pidtof::TOFNSigmaKa,
                   pidtof::TOFNSigmaPr);
 
-DECLARE_SOA_EXTENDED_TABLE_USER(HfRedTracksExt, HfRedTracksBase, "HFREDTRACKEXT", //! Track parameters at collision vertex
+DECLARE_SOA_EXTENDED_TABLE_USER(HfRedTracksExt, HfRedTrackBases, "HFREDTRACKEXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
 
 using HfRedTracks = HfRedTracksExt;
@@ -171,7 +173,9 @@ auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
 }
 } // namespace hf_charm_cand_reduced
 
-DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONGS", //! Table with 2prong candidate information for reduced workflow
+// CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
+// to call DECLARE_SOA_INDEX_COLUMN_FULL later on
+DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong candidate information for reduced workflow
                   o2::soa::Index<>,
                   hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id,
                   hf_track_index_reduced::HfRedCollisionId,
@@ -187,6 +191,8 @@ DECLARE_SOA_TABLE(HfRed2ProngsCov, "AOD", "HFRED2PRONGSCOV", //! Table with 2pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<1>);
 
+// CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
+// to call DECLARE_SOA_INDEX_COLUMN_FULL later on
 DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong candidate information for reduced workflow
                   o2::soa::Index<>,
                   hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id,
@@ -219,10 +225,21 @@ DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's pro
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
 } // namespace hf_b0_mc
 
+namespace hf_cand_b0_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+} // namespace hf_cand_b0_reduced
+
+DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
+                  hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
+
+using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
+
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with reconstructed MC information on DPi(<-B0) pairs for reduced workflow
-                  hf_cand_b0::Prong0Id,
-                  hf_track_index::Prong1Id,
+                  hf_cand_b0_reduced::Prong0Id,
+                  hf_cand_b0_reduced::Prong1Id,
                   hf_cand_b0::FlagMcMatchRec,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
@@ -250,10 +267,12 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
 namespace hf_cand_b0_config
 {
 DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t); //! Flag to filter selected D+ mesons
+DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-width of the B0 invariant-mass window in GeV/c2
 } // namespace hf_cand_b0_config
 
 DECLARE_SOA_TABLE(HfCandB0Configs, "AOD", "HFCANDB0CONFIG", //! Table with configurables information for reduced workflow
-                  hf_cand_b0_config::MySelectionFlagD);
+                  hf_cand_b0_config::MySelectionFlagD,
+                  hf_cand_b0_config::MyInvMassWindowDPi);
 
 namespace hf_bplus_mc
 {
@@ -312,7 +331,7 @@ namespace soa
 {
 DECLARE_EQUIVALENT_FOR_INDEX(aod::HfCand2ProngBase, aod::HfRed2Prongs);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::HfCand3ProngBase, aod::HfRed3Prongs);
-DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfRedTracks);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfRedTrackBases);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::Collisions, aod::HfRedCollisions);
 } // namespace soa
 } // namespace o2
