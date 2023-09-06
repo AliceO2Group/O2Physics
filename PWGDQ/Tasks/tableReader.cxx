@@ -976,7 +976,6 @@ struct AnalysisSameEventPairing {
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
-                                                                                //        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
         VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(t1, t2);
