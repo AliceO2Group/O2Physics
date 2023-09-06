@@ -40,6 +40,7 @@ using namespace o2::framework::expressions;
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0Prongs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -313,8 +314,9 @@ struct HfCandidateCreatorB0 {
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaD.getY(), dcaPion.getY(),
                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           candD.globalIndex(), trackPion.globalIndex(),
                            hfFlag);
+
+          rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop
       }   // D loop
     }     // collision loop
@@ -331,10 +333,9 @@ struct HfCandidateCreatorB0Expressions {
 
   void processMc(aod::HfCand3Prong const& dplus,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& particlesMc,
+                 aod::HfCandB0Prongs const& candsB0)
   {
-    rowCandidateB0->bindExternalIndices(&tracks);
-    rowCandidateB0->bindExternalIndices(&dplus);
 
     int indexRec = -1;
     int8_t sign = 0;
@@ -343,8 +344,8 @@ struct HfCandidateCreatorB0Expressions {
     int8_t debug = 0;
 
     // Match reconstructed candidates.
-    // Spawned table can be used directly
-    for (const auto& candidate : *rowCandidateB0) {
+    for (const auto& candidate : candsB0) {
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;

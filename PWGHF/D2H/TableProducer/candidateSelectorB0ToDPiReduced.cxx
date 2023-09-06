@@ -91,7 +91,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
     }
   }
 
-  void process(HfCandB0 const& hfCandsB0,
+  void process(HfRedCandB0 const& hfCandsB0,
                TracksPion const&,
                HfCandB0Configs const& configs)
   {
