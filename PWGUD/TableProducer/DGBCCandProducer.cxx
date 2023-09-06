@@ -221,6 +221,7 @@ struct DGBCCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
@@ -228,6 +229,7 @@ struct DGBCCandProducer {
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
+  Produces<aod::UDTracksLabels> outputTracksLabel;
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
@@ -258,7 +260,7 @@ struct DGBCCandProducer {
 
   // update UDTables
   template <typename TTracks>
-  void updateUDTables(bool onlyPV, uint64_t bcnum, int rnum, float vx, float vy, float vz,
+  void updateUDTables(bool onlyPV, int64_t colID, uint64_t bcnum, int rnum, float vx, float vy, float vz,
                       uint16_t const& ntrks, int8_t const& ncharge, float const& rtrwTOF,
                       TTracks const& tracks, upchelpers::FITInfo const& fitInfo)
   {
@@ -271,6 +273,7 @@ struct DGBCCandProducer {
                          fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                          fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                          fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+    outputCollsLabels(colID);
 
     // update DGTracks tables
     for (auto const& track : tracks) {
@@ -327,6 +330,7 @@ struct DGBCCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
+    outputTracksLabel(track.globalIndex());
   }
 
   void init(InitContext& context)
@@ -393,7 +397,7 @@ struct DGBCCandProducer {
           rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
           nCharge = udhelpers::netCharge<true>(colTracks);
 
-          updateUDTables(false, bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(),
+          updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
       } else {
@@ -425,7 +429,7 @@ struct DGBCCandProducer {
           rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
           nCharge = udhelpers::netCharge<false>(tracksArray);
 
-          updateUDTables(false, bc.globalBC(), bc.runNumber(), -2., 2., -2,
+          updateUDTables(false, -1, bc.globalBC(), bc.runNumber(), -2., 2., -2,
                          tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
         }
       }
@@ -471,7 +475,7 @@ struct DGBCCandProducer {
         rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
         nCharge = udhelpers::netCharge<false>(tracksArray);
 
-        updateUDTables(false, bcnum, tibc.runNumber(), -3., 3., -3,
+        updateUDTables(false, -1, bcnum, tibc.runNumber(), -3., 3., -3,
                        tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
       }
     }
@@ -588,7 +592,7 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
-            updateUDTables(false, bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
+            updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
             if (bc.has_zdc()) {
@@ -656,7 +660,8 @@ struct DGBCCandProducer {
               vpos[2] = -3.;
             }
 
-            updateUDTables(false, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2],
+            int64_t colID = withCollision ? col.globalIndex() : -1;
+            updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2],
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
             // fill UDZdcs
             if (bc.globalBC() == bcnum) {
