@@ -32,7 +32,6 @@
 #include "TRandom.h"
 
 using namespace o2::framework;
-using namespace o2::constants::math;
 
 namespace o2::analysis::femtoWorld
 {
@@ -87,8 +86,8 @@ class FemtoWorldContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
-    mPhiHigh = 2 * PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
+    mPhiHigh = 2 * o2::constants::math::PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
@@ -154,10 +153,10 @@ class FemtoWorldContainer
     double delta_phi = part1.phi() - part2.phi();
 
     while (delta_phi < mPhiLow) {
-      delta_phi += TwoPI;
+      delta_phi += o2::constants::math::TwoPI;
     }
     while (delta_phi > mPhiHigh) {
-      delta_phi -= TwoPI;
+      delta_phi -= o2::constants::math::TwoPI;
     }
     TLorentzVector part1Vec;
     part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);

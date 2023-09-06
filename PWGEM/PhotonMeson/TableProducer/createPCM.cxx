@@ -373,8 +373,8 @@ struct createPCM {
   // Partition<MyFilteredTracks> orphan_negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::collisionId < int32_t(0);
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
-  vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
-  vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
+  std::vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
+  std::vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
 
   void processSA(MyFilteredTracks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
