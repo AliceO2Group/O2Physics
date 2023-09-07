@@ -1624,7 +1624,6 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       if constexpr (pairType == kDecayToEE && trackHasCov) {
         secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
-        bz = fgFitterTwoProngBarrel.getBz();
         covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
         auto chi2PCA = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
         auto trackParVar0 = fgFitterTwoProngBarrel.getTrack(0);
