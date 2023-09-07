@@ -1540,11 +1540,11 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   if (!values) {
     values = fgValues;
   }
-  float m1 = MassElectron;
-  float m2 = MassElectron;
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
   if constexpr (pairType == kDecayToMuMu && muonHasCov) {
-    m1 = MassMuon;
-    m2 = MassMuon;
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
@@ -1793,12 +1793,12 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
           auto geoMan1 = o2::base::GeometryManager::meanMaterialBudget(t1.x(), t1.y(), t1.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
           auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
-          auto x2x01 = (float)geoMan1.meanX2X0;
-          auto x2x02 = (float)geoMan2.meanX2X0;
+          auto x2x01 = static_cast<float>(geoMan1.meanX2X0);
+          auto x2x02 = static_cast<float>(geoMan2.meanX2X0);
           pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x01);
           pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x02);
-          v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), MassMuon};
-          v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), MassMuon};
+          v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
+          v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
           v12 = v1 + v2;
 
           values[kPt1] = pars1.getPt();
