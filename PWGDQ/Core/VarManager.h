@@ -1610,7 +1610,6 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     }
 
     Vec3D secondaryVertex;
-    float bz = 0;
 
     if constexpr (eventHasVtxCov) {
 
@@ -1631,11 +1630,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         auto trackParVar0 = fgFitterTwoProngBarrel.getTrack(0);
         auto trackParVar1 = fgFitterTwoProngBarrel.getTrack(1);
         values[kVertexingChi2PCA] = chi2PCA;
+        v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
+        v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
+        v12 = v1 + v2;
 
       } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
         // Get pca candidate from forward DCA fitter
         secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
-        bz = fgFitterTwoProngFwd.getBz();
         covMatrixPCA = fgFitterTwoProngFwd.calcPCACovMatrixFlat();
         auto chi2PCA = fgFitterTwoProngFwd.getChi2AtPCACandidate();
         auto trackParVar0 = fgFitterTwoProngFwd.getTrack(0);
