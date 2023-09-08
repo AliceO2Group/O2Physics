@@ -62,16 +62,6 @@ struct DGCandProducer {
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
-  // MC inputs
-  using MCCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using MCCC = MCCCs::iterator;
-  using MCTCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
-                          aod::McTrackLabels,
-                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                          aod::TOFSignal, aod::pidTOFbeta,
-                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using MCTC = MCTCs::iterator;
-
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
   void updateUDFwdTrackTables(TFwdTrack const& fwdtrack, uint64_t const& bcnum)
@@ -138,12 +128,6 @@ struct DGCandProducer {
                      track.isPVContributor());
     outputTracksLabel(track.globalIndex());
   }
-
-  SliceCache cache;
-  PresliceUnsorted<aod::McParticles> mcPartsPerMcCollision = aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<MCCCs> collisionsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  Preslice<MCTCs> tracksPerCollision = aod::track::collisionId;
-  Preslice<FWs> fwdTracksPerCollision = aod::fwdtrack::collisionId;
 
   void init(InitContext&)
   {
@@ -270,8 +254,6 @@ struct McDGCandProducer {
   // prepare slices
   SliceCache cache;
   PresliceUnsorted<aod::McParticles> mcPartsPerMcCollision = aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<CCs> collisionsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  Preslice<UDCCs> dgcandperCollision = aod::udcollision::collisionId;
   Preslice<UDTCs> udtracksPerUDCollision = aod::udtrack::udCollisionId;
 
   // initialize histogram registry

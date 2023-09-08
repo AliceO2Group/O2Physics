@@ -61,8 +61,6 @@ process(aod::McParticles const& mcTracks) {
 
 #include <vector>
 #include <iostream>
-using std::cout;
-using std::endl;
 
 class MCSignal : public TNamed
 {

@@ -961,7 +961,7 @@ struct qaKFParticle {
       int sourceD0 = 0;
       int sourceD0Bar = 0;
 
-      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{track1, track2}, 421, array{211, -321}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{track1, track2}, 421, std::array{211, -321}, true, &sign);
       if (indexRec > -1) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         flag = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
