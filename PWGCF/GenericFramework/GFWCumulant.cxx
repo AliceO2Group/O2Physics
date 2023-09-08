@@ -16,7 +16,12 @@ A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
+
 #include "GFWCumulant.h"
+
+using std::complex;
+using std::vector;
+
 GFWCumulant::GFWCumulant() : fQvector(0),
                              fUsed(kBlank),
                              fNEntries(-1),
