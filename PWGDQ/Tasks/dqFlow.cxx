@@ -45,6 +45,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
+using std::complex;
 using std::cout;
 using std::endl;
 using std::string;

@@ -690,6 +690,8 @@ struct femtoUniverseProducerTask {
       }
       if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
         continue;
+      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+        continue;
       }
 
       TLorentzVector part1Vec;
