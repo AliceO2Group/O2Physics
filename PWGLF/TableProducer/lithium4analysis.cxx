@@ -192,7 +192,7 @@ struct lithium4analysis {
   }
 
   template <typename T1, typename T2>
-  void FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix)
+  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix)
   {
     lithium4Candidate l4Cand;
 
@@ -202,7 +202,7 @@ struct lithium4analysis {
     float invMass = RecoDecay::m(array{l4Cand.momHe3, l4Cand.momPr}, array{he3Mass, protonMass});
 
     if (invMass < 3.74 || invMass > 3.85 || candidatePr.pt() > cfgCutMaxPrPT) {
-      return;
+      return false;
     }
 
     histos.fill(HIST("hHe3Pt"), l4Cand.recoPtHe3());
@@ -223,6 +223,7 @@ struct lithium4analysis {
     l4Cand.nTPCClustersHe3 = candidateHe3.tpcNClsFound();
     l4Cand.nSigmaHe3 = computeNSigmaHe3(candidateHe3);
     l4Candidates.push_back(l4Cand);
+    return true;
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -384,10 +385,13 @@ struct lithium4analysis {
                 continue;
               }
 
-              FillCandidateInfo(track1, track2, false);
+              if (!FillCandidateInfo(track1, track2, false)) {
+                continue;
+              }
               auto& l4Candidate = l4Candidates.back();
               l4Candidate.l4PtMC = mothertrack.pt();
-              l4Candidate.l4MassMC = std::sqrt(mothertrack.e() * mothertrack.e() - mothertrack.p() * mothertrack.p());
+              double eLit = mctrackHe3.e() + mctrackPr.e();
+              l4Candidate.l4MassMC = std::sqrt(eLit*eLit - mothertrack.p() * mothertrack.p());
               filledMothers.push_back(mothertrack.globalIndex());
             }
           }
@@ -412,18 +416,21 @@ struct lithium4analysis {
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       auto daughtHe3 = false;
       auto daughtPr = false;
+      double eLit = 0;
       for (auto kCurrentDaughter : kDaughters) {
         if (std::abs(kCurrentDaughter.pdgCode()) == he3PDG) {
           daughtHe3 = true;
+          eLit += kCurrentDaughter.e();
         } else if (std::abs(kCurrentDaughter.pdgCode()) == protonPDG) {
           daughtPr = true;
+          eLit += kCurrentDaughter.e();
         }
       }
       if (daughtHe3 && daughtPr) {
         lithium4Candidate l4Candidate;
         int sign = mcParticle.pdgCode() > 0 ? 1 : -1;
         l4Candidate.l4PtMC = mcParticle.pt() * sign;
-        l4Candidate.l4MassMC = std::sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p());
+        l4Candidate.l4MassMC = std::sqrt(eLit*eLit - mcParticle.p() * mcParticle.p());
         l4Candidates.push_back(l4Candidate);
       }
     }
