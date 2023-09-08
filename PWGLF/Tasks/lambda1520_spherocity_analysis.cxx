@@ -335,8 +335,10 @@ struct lambdaAnalysis {
 
             p = p1 + p2;
 
-            histos.fill(HIST("Analysis/hInvMassR"), p.M());
-            histos.fill(HIST("Analysis/h4InvMassR"), p.M(), p.Pt(), sph, mult);
+            if(p.Rapidity() < 0.5){
+              histos.fill(HIST("Analysis/hInvMassR"), p.M());
+              histos.fill(HIST("Analysis/h4InvMassR"), p.M(), p.Pt(), sph, mult);
+            }
           }
         } else {
           histos.fill(HIST("Analysis/hInvMassLS"), p.M());
