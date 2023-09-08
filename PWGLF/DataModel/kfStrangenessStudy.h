@@ -37,8 +37,6 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcazcasctopv, float);
 DECLARE_SOA_COLUMN(DCAZCascToPVKF, dcazcasctopvkf, float);
 DECLARE_SOA_COLUMN(DCACascDau, dcacascdau, float);
 DECLARE_SOA_COLUMN(DCACascDauKF, dcacascdaukf, float);
-// DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);
-// DECLARE_SOA_COLUMN(DCAV0ToPVKF, dcav0topvkf, float);
 DECLARE_SOA_COLUMN(DCAV0Dau, dcav0dau, float);
 DECLARE_SOA_COLUMN(DCAV0DauKF, dcav0daukf, float);
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);
@@ -51,11 +49,46 @@ DECLARE_SOA_COLUMN(CosPACascToPV, cospacasctopv, float);
 DECLARE_SOA_COLUMN(CosPACascToPVKF, cospacasctopvkf, float);
 DECLARE_SOA_COLUMN(CascRad, cascrad, float);
 DECLARE_SOA_COLUMN(CascRadKF, cascradkf, float);
+DECLARE_SOA_COLUMN(VtxX, vtxx, float);
+DECLARE_SOA_COLUMN(VtxY, vtxy, float);
+DECLARE_SOA_COLUMN(VtxZ, vtxz, float);
+DECLARE_SOA_COLUMN(VtxXErr, vtxxerr, float);
+DECLARE_SOA_COLUMN(VtxYErr, vtxyerr, float);
+DECLARE_SOA_COLUMN(VtxZErr, vtxzerr, float);
+DECLARE_SOA_COLUMN(VtxXKF, vtxxkf, float);
+DECLARE_SOA_COLUMN(VtxYKF, vtxykf, float);
+DECLARE_SOA_COLUMN(VtxZKF, vtxzkf, float);
+DECLARE_SOA_COLUMN(VtxXErrKF, vtxxerrkf, float);
+DECLARE_SOA_COLUMN(VtxYErrKF, vtxyerrkf, float);
+DECLARE_SOA_COLUMN(VtxZErrKF, vtxzerrkf, float);
 DECLARE_SOA_COLUMN(V0Rad, v0rad, float);
 DECLARE_SOA_COLUMN(V0RadKF, v0radkf, float);
 DECLARE_SOA_COLUMN(Charge, charge, float);
 DECLARE_SOA_COLUMN(IsDCAFitter, isdcafitter, int);
 DECLARE_SOA_COLUMN(IsKF, iskf, int);
+
+DECLARE_SOA_COLUMN(PtRec, ptrec, float);
+DECLARE_SOA_COLUMN(PtRecKF, ptreckf, float);
+DECLARE_SOA_COLUMN(PtGen, ptgen, float);
+DECLARE_SOA_COLUMN(VtxXrec, vtxxrec, float);
+DECLARE_SOA_COLUMN(VtxYrec, vtxyrec, float);
+DECLARE_SOA_COLUMN(VtxZrec, vtxzrec, float);
+DECLARE_SOA_COLUMN(VtxXrecErr, vtxxrecerr, float);
+DECLARE_SOA_COLUMN(VtxYrecErr, vtxyrecerr, float);
+DECLARE_SOA_COLUMN(VtxZrecErr, vtxzrecerr, float);
+DECLARE_SOA_COLUMN(VtxXrecKF, vtxxreckf, float);
+DECLARE_SOA_COLUMN(VtxYrecKF, vtxyreckf, float);
+DECLARE_SOA_COLUMN(VtxZrecKF, vtxzreckf, float);
+DECLARE_SOA_COLUMN(VtxXrecErrKF, vtxxrecerrkf, float);
+DECLARE_SOA_COLUMN(VtxYrecErrKF, vtxyrecerrkf, float);
+DECLARE_SOA_COLUMN(VtxZrecErrKF, vtxzrecerrkf, float);
+DECLARE_SOA_COLUMN(VtxXMC, vtxxmc, float);
+DECLARE_SOA_COLUMN(VtxYMC, vtxymc, float);
+DECLARE_SOA_COLUMN(VtxZMC, vtxzmc, float);
+DECLARE_SOA_COLUMN(IsTrueCasc, istruecasc, int);
+
+
+
 } // namespace kfStrangenessStudy
 
 DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
@@ -66,16 +99,33 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::MassXiKF,
                   kfStrangenessStudy::MassOmega,
                   kfStrangenessStudy::MassOmegaKF,
-                  kfStrangenessStudy::MassLambda,
-                  kfStrangenessStudy::MassLambdaKF,
+                  kfStrangenessStudy::CascRad,
+                  kfStrangenessStudy::CascRadKF,
+                  kfStrangenessStudy::VtxX,
+                  kfStrangenessStudy::VtxY,
+                  kfStrangenessStudy::VtxZ,
+                  kfStrangenessStudy::VtxXErr,
+                  kfStrangenessStudy::VtxYErr,
+                  kfStrangenessStudy::VtxZErr,
+                  kfStrangenessStudy::VtxXKF,
+                  kfStrangenessStudy::VtxYKF,
+                  kfStrangenessStudy::VtxZKF,
+                  kfStrangenessStudy::VtxXErrKF,
+                  kfStrangenessStudy::VtxYErrKF,
+                  kfStrangenessStudy::VtxZErrKF,
                   kfStrangenessStudy::DCAXYCascToPV,
                   kfStrangenessStudy::DCAXYCascToPVKF,
                   kfStrangenessStudy::DCAZCascToPV,
                   kfStrangenessStudy::DCAZCascToPVKF,
                   kfStrangenessStudy::DCACascDau,
                   kfStrangenessStudy::DCACascDauKF,
-                  // kfStrangenessStudy::DCAV0ToPV,
-                  // kfStrangenessStudy::DCAV0ToPVKF,
+                  kfStrangenessStudy::CosPACascToPV,
+                  kfStrangenessStudy::CosPACascToPVKF,
+                  kfStrangenessStudy::Charge,
+                  kfStrangenessStudy::MassLambda,
+                  kfStrangenessStudy::MassLambdaKF,
+                  kfStrangenessStudy::V0Rad,
+                  kfStrangenessStudy::V0RadKF,
                   kfStrangenessStudy::DCAV0Dau,
                   kfStrangenessStudy::DCAV0DauKF,
                   kfStrangenessStudy::DCAPosToPV,
@@ -84,15 +134,59 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::DCANegToPVKF,
                   kfStrangenessStudy::DCABachToPV,
                   kfStrangenessStudy::DCABachToPVKF,
-                  kfStrangenessStudy::CosPACascToPV,
-                  kfStrangenessStudy::CosPACascToPVKF,
-                  kfStrangenessStudy::CascRad,
-                  kfStrangenessStudy::CascRadKF,
-                  kfStrangenessStudy::V0Rad,
-                  kfStrangenessStudy::V0RadKF,
-                  kfStrangenessStudy::Charge, 
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF);
+
+DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
+                  kfStrangenessStudy::CollID,
+                  kfStrangenessStudy::PtRec,
+                  kfStrangenessStudy::PtRecKF,
+                  kfStrangenessStudy::PtGen,
+                  kfStrangenessStudy::MassXi,
+                  kfStrangenessStudy::MassXiKF,
+                  kfStrangenessStudy::MassOmega,
+                  kfStrangenessStudy::MassOmegaKF,
+                  kfStrangenessStudy::CascRad,
+                  kfStrangenessStudy::CascRadKF,
+                  kfStrangenessStudy::VtxXrec,
+                  kfStrangenessStudy::VtxYrec,
+                  kfStrangenessStudy::VtxZrec,
+                  kfStrangenessStudy::VtxXrecErr,
+                  kfStrangenessStudy::VtxYrecErr,
+                  kfStrangenessStudy::VtxZrecErr,
+                  kfStrangenessStudy::VtxXrecKF,
+                  kfStrangenessStudy::VtxYrecKF,
+                  kfStrangenessStudy::VtxZrecKF,
+                  kfStrangenessStudy::VtxXrecErrKF,
+                  kfStrangenessStudy::VtxYrecErrKF,
+                  kfStrangenessStudy::VtxZrecErrKF,
+                  kfStrangenessStudy::VtxXMC,
+                  kfStrangenessStudy::VtxYMC,
+                  kfStrangenessStudy::VtxZMC,
+                  kfStrangenessStudy::DCAXYCascToPV,
+                  kfStrangenessStudy::DCAXYCascToPVKF,
+                  kfStrangenessStudy::DCAZCascToPV,
+                  kfStrangenessStudy::DCAZCascToPVKF,
+                  kfStrangenessStudy::DCACascDau,
+                  kfStrangenessStudy::DCACascDauKF,
+                  kfStrangenessStudy::CosPACascToPV,
+                  kfStrangenessStudy::CosPACascToPVKF,
+                  kfStrangenessStudy::Charge,
+                  kfStrangenessStudy::MassLambda,
+                  kfStrangenessStudy::MassLambdaKF,
+                  kfStrangenessStudy::V0Rad,
+                  kfStrangenessStudy::V0RadKF,
+                  kfStrangenessStudy::DCAV0Dau,
+                  kfStrangenessStudy::DCAV0DauKF,
+                  kfStrangenessStudy::DCAPosToPV,
+                  kfStrangenessStudy::DCAPosToPVKF,
+                  kfStrangenessStudy::DCANegToPV,
+                  kfStrangenessStudy::DCANegToPVKF,
+                  kfStrangenessStudy::DCABachToPV,
+                  kfStrangenessStudy::DCABachToPVKF,
+                  kfStrangenessStudy::IsDCAFitter,
+                  kfStrangenessStudy::IsKF,
+                  kfStrangenessStudy::IsTrueCasc);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_KFSTRANGENESSSTUDY_H_

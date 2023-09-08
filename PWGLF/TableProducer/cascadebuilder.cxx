@@ -1272,11 +1272,19 @@ struct cascadeBuilder {
                  cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
 
       if (createCascCovMats) {
-        gpu::gpustd::array<float, 15> covmatrix;
+        // gpu::gpustd::array<float, 15> covmatrix;
         float trackCovariance[15];
-        covmatrix = lCascadeTrack.getCov();
-        for (int i = 0; i < 15; i++)
-          trackCovariance[i] = covmatrix[i];
+        // covmatrix = lCascadeTrack.getCov();
+        // for (int i = 0; i < 15; i++)
+        //   trackCovariance[i] = covmatrix[i];
+
+        std::array<float, 21> covCasc;
+        lCascadeTrack.getCovXYZPxPyPzGlo(covCasc);
+
+        // set covariance matrix elements (lower triangle)
+        for (int i =0; i < 15; i++) {
+          trackCovariance[i] = covCasc[i];
+        }
         kfcasccovs(trackCovariance);
       }
     }
