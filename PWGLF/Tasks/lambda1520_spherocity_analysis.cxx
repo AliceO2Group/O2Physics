@@ -335,7 +335,7 @@ struct lambdaAnalysis {
 
             p = p1 + p2;
 
-            if(p.Rapidity() < 0.5){
+            if (p.Rapidity() < 0.5) {
               histos.fill(HIST("Analysis/hInvMassR"), p.M());
               histos.fill(HIST("Analysis/h4InvMassR"), p.M(), p.Pt(), sph, mult);
             }
