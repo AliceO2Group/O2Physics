@@ -124,6 +124,8 @@ struct cascadeBuilder {
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", .01, "Distance from Lambda mass"};
   Configurable<float> dcaXYCascToPV{"dcaXYCascToPV", 1e+6, "dcaXYCascToPV"};
   Configurable<float> dcaZCascToPV{"dcaZCascToPV", 1e+6, "dcaZCascToPV"};
+  Configurable<bool> d_doPtDep_CosPaCut{"d_doPtDep_CosPaCut",false, "Enable pt dependent cos PA cut"};
+  Configurable<float> cas_cospaParameter{"cas_cospaParameter",0.341715,"Parameter for pt dependent cos PA cut"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -841,7 +843,14 @@ struct cascadeBuilder {
       array{collision.posX(), collision.posY(), collision.posZ()},
       array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
       array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzneg() + cascadecandidate.bachP[2]});
-    if (cascadecandidate.cosPA < casccospa) {
+    if (d_doPtDep_CosPaCut) {
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1]);
+      double ptdepCut =  cas_cospaParameter/lPt;
+      if (ptdepCut > 0.3 || lPt < 0.5) ptdepCut = 0.3;
+      if (cascadecandidate.cosPA < TMath::Cos(ptdepCut)) {
+        return false;
+      }
+    } else if (cascadecandidate.cosPA < casccospa) {
       return false;
     }
     statisticsRegistry.cascstats[kCascCosPA]++;
