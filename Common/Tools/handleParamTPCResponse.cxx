@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
         // Request interactive confirmation to upload
         LOG(info) << "Continue with object upload anyway? (Y/n)";
         std::string confirm;
-        cin >> confirm;
+        std::cin >> confirm;
         if (boost::iequals(confirm.substr(0, 1), "y")) {
           LOG(info) << "Continuing with object upload";
         } else {

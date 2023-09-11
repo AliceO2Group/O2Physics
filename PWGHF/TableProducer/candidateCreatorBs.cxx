@@ -353,7 +353,7 @@ struct HfCandidateCreatorBsExpressions {
                                          candDs.prong1_as<aod::TracksWMc>(),
                                          candDs.prong2_as<aod::TracksWMc>()};
 
-      // Checking Bs(bar) → Ds∓ π± → (K- K+ π∓) π±
+      // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
       indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // Checking Ds∓ → K- K+ π∓
@@ -372,6 +372,27 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
+      if (!flag) {
+        // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        if (indexRec > -1) {
+          // Checking Ds± → K- K+ π±
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+            if (arrDaughDsIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
+                auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
+            }
+          }
+        }
+      }
+
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
       if (!flag) {
@@ -380,7 +401,7 @@ struct HfCandidateCreatorBsExpressions {
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
         auto particleProng3 = arrayDaughtersBs[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 3> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBS, pdg::Code::kLambdaB0};
+        std::array<int, 4> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBPlus, pdg::Code::kBS, pdg::Code::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
           int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
@@ -405,9 +426,10 @@ struct HfCandidateCreatorBsExpressions {
     for (const auto& particle : particlesMc) {
       flag = 0;
       arrDaughDsIndex.clear();
-      // Bs(bar) → Ds∓ π±
+
+      // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, std::array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
-        // Match Ds∓ -> K- K+ π±
+        // Checking Ds∓ → K- K+ π∓
         auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
           RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
@@ -422,6 +444,27 @@ struct HfCandidateCreatorBsExpressions {
           }
         }
       }
+
+      if (!flag) {
+        // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{+pdg::Code::kDS, -kPiPlus}, true)) {
+          // Checking Ds± → K- K+ π±
+          auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
+            RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
+            if (arrDaughDsIndex.size() == 2) {
+              for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
+                auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);
+                arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
+              }
+              if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
+            }
+          }
+        }
+      }
+
       rowMcMatchGen(flag);
     } // gen
   }   // processMc

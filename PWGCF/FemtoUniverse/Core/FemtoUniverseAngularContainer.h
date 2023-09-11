@@ -120,8 +120,8 @@ class FemtoUniverseAngularContainer
     framework::AxisSpec mTAxis3D = {mTBins3D, "#it{m}_{T} (GeV/#it{c})"};
 
     // angular correlations
-    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
-    mPhiHigh = 2 * PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
+    mPhiHigh = 2 * o2::constants::math::PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
 
@@ -159,10 +159,10 @@ class FemtoUniverseAngularContainer
     delta_phi = part1.phi() - part2.phi();
 
     while (delta_phi < mPhiLow) {
-      delta_phi += TwoPI;
+      delta_phi += o2::constants::math::TwoPI;
     }
     while (delta_phi > mPhiHigh) {
-      delta_phi -= TwoPI;
+      delta_phi -= o2::constants::math::TwoPI;
     }
 
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta);

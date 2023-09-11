@@ -64,6 +64,13 @@ class FemtoUniversePairCleaner
         return false;
       }
       return part1.globalIndex() != part2.globalIndex();
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+      /// Track-Track combination
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+        LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide kMCTruthTrack,kMCTruthTrack candidates.";
+        return false;
+      }
+      return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
       /// Track-V0 combination
       if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0) {

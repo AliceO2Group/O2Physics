@@ -41,6 +41,7 @@ static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPl
 struct PureMcMultiplicityCounter {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
@@ -66,7 +67,7 @@ struct PureMcMultiplicityCounter {
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Y").c_str(), " ; y", {HistType::kTH1F, {RapidityAxis}}});
     }
 
-    AxisSpec MultAxis = {multBinning, "N_{p}"};
+    AxisSpec MultAxis = {multBinning};
     registry.add({"MCEvents/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
     registry.add({"MCEvents/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     if (doprocessReco) {
@@ -82,6 +83,7 @@ struct PureMcMultiplicityCounter {
       registry.add({"Events/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     }
     if (doprocessResponse) {
+      registry.add({"MCEvents/VertexCorrelation", " ; Z_{vtx}^{gen} (cm); Z_{vtx}^{rec} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}});
       registry.add({"MCEvents/Efficiency", "", {HistType::kTH1F, {{6, -0.5, 5.5}}}});
       registry.add({"MCEvents/Response", " ; N_{gen}; N_{rec}", {HistType::kTH2F, {MultAxis, MultAxis}}});
       auto eff = registry.get<TH1>(HIST("MCEvents/Efficiency"));
@@ -92,6 +94,24 @@ struct PureMcMultiplicityCounter {
       x->SetBinLabel(4, "Reconstructed INEL>0");
       x->SetBinLabel(5, "Selected");
       x->SetBinLabel(6, "Selected INEL>0");
+
+      registry.add({"MCEvents/EfficiencyMultiplicityN", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityNExtra", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityD", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+    }
+    if (doprocessEfficiency) {
+      registry.add({"Particles/Primaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Primaries/EfficiencyD", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Secondaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Particles/Primaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
+      registry.add({"Particles/Primaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+      registry.add({"Particles/Secondaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
+      registry.add({"Particles/Secondaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyN").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyD").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+      }
     }
   }
 
@@ -169,7 +189,7 @@ struct PureMcMultiplicityCounter {
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processReco, "Process smeared tracks", false);
 
-  void processResponse(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
+  void processResponse(aod::McCollision const& mccollision, soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>> const& collisions, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::TracksDCA, aod::McTrackLabels> const& tracks)
   {
     registry.fill(HIST("MCEvents/Efficiency"), 0);
     auto Np = 0;
@@ -193,8 +213,17 @@ struct PureMcMultiplicityCounter {
       }
       ++Np;
     }
+    registry.fill(HIST("MCEvents/EfficiencyMultiplicityD"), Np);
     if (Np > 0) {
       registry.fill(HIST("MCEvents/Efficiency"), 1);
+    }
+    if (collisions.size() > 0) {
+      registry.fill(HIST("MCEvents/EfficiencyMultiplicityN"), Np);
+    }
+    if (collisions.size() > 1) {
+      for (auto i = 1; i < collisions.size(); ++i) {
+        registry.fill(HIST("MCEvents/EfficiencyMultiplicityNExtra"), Np);
+      }
     }
     for (auto& collision : collisions) {
       auto Ntrk = 0;
@@ -209,10 +238,78 @@ struct PureMcMultiplicityCounter {
         registry.fill(HIST("MCEvents/Efficiency"), 3);
       }
       registry.fill(HIST("MCEvents/Response"), Np, Ntrk);
+      registry.fill(HIST("MCEvents/VertexCorrelation"), mccollision.posZ(), collision.posZ());
     }
   }
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processResponse, "Process response", false);
+
+  void processEfficiency(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, aod::McParticles const& particles, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    auto psample = particles.sliceBy(perMcCol, collision.mcCollisionId());
+
+    for (auto& particle : psample) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (!particle.producedByGenerator()) {
+        continue;
+      }
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      if (std::abs(particle.eta()) >= etaRange) {
+        continue;
+      }
+      registry.fill(HIST("Particles/Primaries/EfficiencyD"), particle.pt());
+      static_for<0, 3>(
+        [&](auto idx) {
+          constexpr int i = idx.value;
+          if (particle.pdgCode() == speciesIds[i]) {
+            registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyD"), particle.pt());
+          }
+        });
+    }
+
+    for (auto& track : tracks) {
+      if (std::abs(track.eta()) >= etaRange) {
+        continue;
+      }
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (particle.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
+        if (particle.isPhysicalPrimary()) {
+          registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
+          registry.fill(HIST("Particles/Primaries/PtCorrelation"), particle.pt(), track.pt());
+          registry.fill(HIST("Particles/Primaries/EtaCorrelation"), particle.eta(), track.eta());
+
+          static_for<0, 3>(
+            [&](auto idx) {
+              constexpr int i = idx.value;
+              if (particle.pdgCode() == speciesIds[i]) {
+                registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyN"), particle.pt());
+              }
+            });
+        } else {
+          registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
+          registry.fill(HIST("Particles/Secondaries/PtCorrelation"), particle.pt(), track.pt());
+          registry.fill(HIST("Particles/Secondaries/EtaCorrelation"), particle.eta(), track.eta());
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(PureMcMultiplicityCounter, processEfficiency, "Process efficiency", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

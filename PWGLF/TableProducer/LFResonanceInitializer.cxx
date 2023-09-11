@@ -28,6 +28,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
@@ -43,11 +44,24 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
-  float cXiMass = TDatabasePDG::Instance()->GetParticle(3312)->Mass();
+  enum {
+    kECbegin = 0,
+    kINEL = 1,
+    kINEL10,
+    kINELg0,
+    kINELg010,
+    kTrig,
+    kINELg0Trig,
+    kINELg010Trig,
+    kECend,
+  };
+  SliceCache cache;
+  float cXiMass;
   int mRunNumber;
   int multEstimator;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   Produces<aod::ResoCollisions> resoCollisions;
   Produces<aod::ResoTracks> reso2trks;
@@ -75,6 +89,10 @@ struct reso2initializer {
 
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+
+  // EventCorrection for MC
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1.0, 5.0, 10., 15., 20., 30., 40., 50., 70., 100.0, 105.}, "Binning of the centrality axis"};
+  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -20, -15, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3, 5, 7, 10, 15, 20}, "Mixing bins - z-vertex"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -731,6 +749,7 @@ struct reso2initializer {
 
   void init(InitContext&)
   {
+    cXiMass = pdg->GetParticle(3312)->Mass();
     mRunNumber = 0;
     d_bz = 0;
     // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
@@ -758,14 +777,22 @@ struct reso2initializer {
     }
 
     // QA histograms
+    AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (ConfFillQA) {
-      AxisSpec idxAxis = {8, 0, 8, "Index"};
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCV0Indices", "hGoodMCV0Indices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
+    }
+    // MC histograms
+    if (doprocessMCGenCount) {
+      AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "", "event class"};
+      AxisSpec ZAxis = {CfgVtxBins, "zaxis"};
+      AxisSpec CentAxis = {binsCent, "centrality"};
+      qaRegistry.add("Event/totalEventGenMC", "totalEventGenMC", {HistType::kTHnSparseF, {EvtClassAxis}});
+      qaRegistry.add("Event/hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseF, {EvtClassAxis, ZAxis, CentAxis}});
     }
   }
 
@@ -833,6 +860,61 @@ struct reso2initializer {
     fillTracks<false>(collision, tracks);
   }
   PROCESS_SWITCH(reso2initializer, processTrackData, "Process for data", true);
+
+  PresliceUnsorted<ResoEventsMC> perMcCol = aod::mccollisionlabel::mcCollisionId;
+  void processMCGenCount(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoEventsMC const& mcCols)
+  {
+    // Mainly referenced from dndeta_hi task in PWG-MM PAG-Multiplicity (Beomkyu Kim)
+    for (auto& mcCollision : mccollisions) { // Gen MC Event loop
+      auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      std::vector<Bool_t> bevtc(kECend, false);
+      bevtc[kINEL] = true;
+      auto posZ = mcCollision.posZ();
+      if (std::abs(posZ) < 10)
+        bevtc[kINEL10] = true;
+      for (auto& particle : particles) {
+        if (!particle.isPhysicalPrimary())
+          continue;
+        auto kp = pdg->GetParticle(particle.pdgCode());
+        if (kp != nullptr) {
+          if (std::abs(kp->Charge()) >= 3) {    // 3 quarks
+            if (std::abs(particle.eta()) < 1) { // INEL>0 definition
+              bevtc[kINELg0] = true;
+              break;
+            }
+          }
+        }
+      }
+      if (bevtc[kINELg0] && bevtc[kINEL10])
+        bevtc[kINELg010] = true;
+
+      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+        if (bevtc[ievtc])
+          qaRegistry.fill(HIST("Event/totalEventGenMC"), Double_t(ievtc));
+      }
+
+      auto collisionsample = mcCols.sliceBy(perMcCol, mcCollision.globalIndex());
+      float cent = -1.0;
+      if (collisionsample.size() != 1) { // Prevent no reconstructed collision case
+        cent = -1;
+      } else {
+        for (auto& collision : collisionsample) {
+          cent = CentEst(collision);
+          if (collision.sel8())
+            bevtc[kTrig] = true;
+        }
+      }
+      if (bevtc[kTrig] && bevtc[kINELg0])
+        bevtc[kINELg0Trig] = true;
+      if (bevtc[kINELg0Trig] && bevtc[kINEL10])
+        bevtc[kINELg010Trig] = true;
+      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+        if (bevtc[ievtc])
+          qaRegistry.fill(HIST("Event/hgenzvtx"), Double_t(ievtc), posZ, cent);
+      }
+    }
+  }
+  PROCESS_SWITCH(reso2initializer, processMCGenCount, "Process for MC", false);
 
   void processTrackV0Data(soa::Filtered<ResoEvents>::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
