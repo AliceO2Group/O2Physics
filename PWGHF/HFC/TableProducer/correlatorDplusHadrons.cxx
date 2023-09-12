@@ -68,14 +68,16 @@ BinningType corrBinning{{zBins, multBins}, true};
 
 // Code to select a Dmeson in a collision
 struct HfDplusSelection {
-  SliceCache cache;
   Produces<aod::DmesonSelection> dplusSel;
+
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
+  SliceCache cache;
+
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDplusCandidatesMc = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   void processDplusSelectionData(aod::Collision const& collision,
                                  soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
@@ -103,9 +105,9 @@ struct HfDplusSelection {
                                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     bool isDplusFound = 0;
-    if (recoFlagDplusCandidates.size() > 0) {
-      auto selectedDplusCandidatesGroupedMc = recoFlagDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
+    if (selectedDplusCandidatesMc.size() > 0) {
+      auto selectedDplusCandidatesMcGrouped = selectedDplusCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      for (const auto& candidate1 : selectedDplusCandidatesMcGrouped) {
         // check decay channel flag for candidate1
         if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
           continue;
@@ -149,11 +151,9 @@ struct HfDplusSelection {
 
 /// Dplus-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDplusHadrons {
-  SliceCache cache;
-  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
-
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
+
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -168,8 +168,28 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
 
+  SliceCache cache;
+
+  // Event Mixing for the Data Mode
+  using MySelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
+  using MyTracks = soa::Filtered<aod::TracksWDca>;
+  using MyCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  // Event Mixing for the MCRec Mode
+  using MyCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
+  // Event Mixing for the MCGen Mode
+  using McCollisionsSel = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
+  using McParticlesSel = soa::Filtered<aod::McParticles>;
+
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  Filter dplusFilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
+  Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+
+  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
+
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDplusCandidatesMc = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   HistogramRegistry registry{
     "registry",
@@ -306,7 +326,7 @@ struct HfCorrelatorDplusHadrons {
                     aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
-    if (recoFlagDplusCandidates.size() > 0) {
+    if (selectedDplusCandidatesMc.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
       if (collision.numContrib() > 1) {
@@ -327,10 +347,10 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDplusCandidatesGroupedMc = recoFlagDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      auto selectedDplusCandidatesMcGrouped = selectedDplusCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       // MC reco level
       bool flagDplusSignal = false;
-      for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
+      for (const auto& candidate1 : selectedDplusCandidatesMcGrouped) {
         // check decay channel flag for candidate1
         if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
           continue;
@@ -479,15 +499,6 @@ struct HfCorrelatorDplusHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcGen, "Process MC Gen mode", false);
 
-  // Event Mixing for the Data Mode
-  using MySelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
-  using MyTracks = soa::Filtered<aod::TracksWDca>;
-  using MyCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-
-  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
-  Filter dplusfilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
-
   void processDataMixedEvent(MySelCollisions const& collisions,
                              MyCandidatesData const& candidates,
                              MyTracks const& tracks)
@@ -510,15 +521,12 @@ struct HfCorrelatorDplusHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processDataMixedEvent, "Process Mixed Event Data", false);
 
-  // Event Mixing for the MCRec Mode
-  using myCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
-
   void processMcRecMixedEvent(MySelCollisions const& collisions,
-                              myCandidatesMcRec const& candidates,
+                              MyCandidatesMcRec const& candidates,
                               MyTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<MySelCollisions, myCandidatesMcRec, MyTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<MySelCollisions, MyCandidatesMcRec, MyTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
@@ -533,13 +541,6 @@ struct HfCorrelatorDplusHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
-
-  // Event Mixing for the MCGen Mode
-  using McCollisionsSel = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
-  using McParticlesSel = soa::Filtered<aod::McParticles>;
-
-  Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   void processMcGenMixedEvent(McCollisionsSel const& collisions,
                               McParticlesSel const& mcParticles)
