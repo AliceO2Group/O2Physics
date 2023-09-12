@@ -64,17 +64,16 @@ struct HfCandidateSelectorLcMl {
   Configurable<std::string> onnxFileLcToPiKPConf{"onnxFileLcToPiKPConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220818/PWGHF/o2/trigger/ModelHandler_onnx_LcToPKPi.onnx", "ONNX file for ML model for Lc+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
 
-  o2::ccdb::CcdbApi ccdbApi;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/Lc", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  int dataTypeML;
-  OnnxModel model;
 
+  int dataTypeML;
+  o2::ccdb::CcdbApi ccdbApi;
+  OnnxModel model;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
@@ -82,6 +81,8 @@ struct HfCandidateSelectorLcMl {
   using TracksSel = soa::Join<aod::TracksWDca,
                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext&)
   {
