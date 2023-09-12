@@ -185,7 +185,7 @@ struct HfCorrelatorDsHadrons {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                           // flagDsFilter applied
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                      // flagDsFilter applied
-  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                   // trackFilter applied
+  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                                          // trackFilter applied
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);

@@ -395,7 +395,7 @@ struct HfCandidateSigmac0plusplusMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return  WorkflowSpec{
+  return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorSigmac0plusplus>(cfgc),
     adaptAnalysisTask<HfCandidateSigmac0plusplusMc>(cfgc)};
 }

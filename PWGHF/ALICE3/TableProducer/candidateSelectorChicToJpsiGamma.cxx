@@ -93,7 +93,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // CPA check
     }
 
-    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
+    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) {   // adf: Warning: no cut on photon
       return false;                                                                  // DCA check on daughters
     }
 
