@@ -64,7 +64,6 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   HistogramRegistry histos;
 
-  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
   using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 
   /// Filter the candidate Λc+ used for the Σc0,++ creation
@@ -134,7 +133,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
   void process(aod::Collisions const& collisions,
                aod::TrackAssoc const& trackIndices,
-               TracksSigmac const& tracks,
+               aod::TracksWDcaExtra const& tracks,
                CandidatesLc const& candidates,
                aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -178,7 +177,7 @@ struct HfCandidateCreatorSigmac0plusplus {
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) {
 
-          auto trackSoftPi = trackId.track_as<TracksSigmac>();
+          auto trackSoftPi = trackId.track_as<aod::TracksWDcaExtra>();
           // auto trackSoftPi = tracks.rawIteratorAt(trackId.trackId());
           histos.fill(HIST("hCounter"), 4);
 
@@ -226,7 +225,7 @@ struct HfCandidateCreatorSigmac0plusplus {
           histos.fill(HIST("hCounter"), 5);
 
           /// determine the Σc candidate charge
-          int chargeLc = candLc.prong0_as<TracksSigmac>().sign() + candLc.prong1_as<TracksSigmac>().sign() + candLc.prong2_as<TracksSigmac>().sign();
+          int chargeLc = candLc.prong0_as<aod::TracksWDcaExtra>().sign() + candLc.prong1_as<aod::TracksWDcaExtra>().sign() + candLc.prong2_as<aod::TracksWDcaExtra>().sign();
           int chargeSoftPi = trackSoftPi.sign();
           int8_t chargeSigmac = chargeLc + chargeSoftPi;
           if (std::abs(chargeSigmac) != 0 && std::abs(chargeSigmac) != 2) {
@@ -265,7 +264,6 @@ struct HfCandidateSigmac0plusplusMc {
 
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
-  using TracksMC = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
   /// @brief init function
   void init(InitContext const&) {}
@@ -278,7 +276,7 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
-                 TracksMC const& tracks,
+                 aod::TracksWMc const& tracks,
                  LambdacMc const& /*, const LambdacMcGen&*/)
   {
 
@@ -308,10 +306,10 @@ struct HfCandidateSigmac0plusplusMc {
       }
 
       /// matching to MC
-      auto arrayDaughters = std::array{candLc.prong0_as<TracksMC>(),
-                                       candLc.prong1_as<TracksMC>(),
-                                       candLc.prong2_as<TracksMC>(),
-                                       candSigmac.prong1_as<TracksMC>()};
+      auto arrayDaughters = std::array{candLc.prong0_as<aod::TracksWMc>(),
+                                       candLc.prong1_as<aod::TracksWMc>(),
+                                       candLc.prong2_as<aod::TracksWMc>(),
+                                       candSigmac.prong1_as<aod::TracksWMc>()};
       chargeSigmac = candSigmac.charge();
       if (chargeSigmac == 0) {
         /// candidate Σc0
