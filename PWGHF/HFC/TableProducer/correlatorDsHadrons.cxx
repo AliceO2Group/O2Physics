@@ -132,7 +132,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
-  void processDsSelCollisionsMcGen(aod::McCollision const& mccollision,
+  void processDsSelCollisionsMcGen(aod::McCollision const& mcCollision,
                                    CandDsMcGen const& particlesMc)
   {
     bool isDsFound = false;
@@ -626,13 +626,13 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(SelCollisionsWithDsMc::iterator const& mccollision,
+  void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
                     CandDsMcGen const& particlesMc)
   {
     int counterDsHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mccollision) {
+    auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mcCollision) {
       int nTracks = 0;
       for (const auto& track : particlesMc) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
@@ -643,7 +643,7 @@ struct HfCorrelatorDsHadrons {
     };
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
-    int poolBin = corrBinningMcGen.getBin(std::make_tuple(mccollision.posZ(), getTracksSize(mccollision)));
+    int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
     bool isDsPrompt = false;
 

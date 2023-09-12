@@ -131,7 +131,7 @@ struct HfTaskMcValidationGen {
   }
 
   /// Primary-vertex selection
-  /// \param collision  mccollision table row
+  /// \param collision  mcCollision table row
   template <typename Col>
   bool selectVertex(const Col& collision)
   {
@@ -150,10 +150,10 @@ struct HfTaskMcValidationGen {
     return true;
   }
 
-  void process(aod::McCollision const& mccollision,
+  void process(aod::McCollision const& mcCollision,
                aod::McParticles const& particlesMC)
   {
-    if (!selectVertex(mccollision)) {
+    if (!selectVertex(mcCollision)) {
       return;
     }
 
@@ -245,7 +245,7 @@ struct HfTaskMcValidationGen {
 
         auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (origin == RecoDecay::OriginType::Prompt) {
           if (std::abs(particle.y()) < 0.5) {

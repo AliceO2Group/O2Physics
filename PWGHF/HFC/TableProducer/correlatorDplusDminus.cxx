@@ -372,7 +372,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcRec, "Process MC Reco mode", true);
 
   /// Dplus-Dminus correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mccollision,
+  void processMcGen(aod::McCollision const& mcCollision,
                     MCParticlesPlus3Prong const& particlesMC)
   {
     int counterDplusDminus = 0;
@@ -464,7 +464,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processCCbar(aod::McCollision const& mccollision,
+  void processCCbar(aod::McCollision const& mcCollision,
                     MCParticlesPlus2Prong const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
