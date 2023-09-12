@@ -14,6 +14,10 @@
 
 #include <cmath>
 
+using std::cout;
+using std::endl;
+using namespace o2::constants::physics;
+
 ClassImp(VarManager);
 
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};

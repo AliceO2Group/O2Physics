@@ -372,7 +372,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      if (indexRec < 0) {
+      if (!flag) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
@@ -426,9 +426,10 @@ struct HfCandidateCreatorBsExpressions {
     for (const auto& particle : particlesMc) {
       flag = 0;
       arrDaughDsIndex.clear();
-      // Bs(bar) → Ds∓ π±
+
+      // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, std::array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
-        // Match Ds∓ -> K- K+ π±
+        // Checking Ds∓ → K- K+ π∓
         auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
           RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
@@ -443,6 +444,27 @@ struct HfCandidateCreatorBsExpressions {
           }
         }
       }
+
+      if (!flag) {
+        // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{+pdg::Code::kDS, -kPiPlus}, true)) {
+          // Checking Ds± → K- K+ π±
+          auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
+            RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
+            if (arrDaughDsIndex.size() == 2) {
+              for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
+                auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);
+                arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
+              }
+              if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
+            }
+          }
+        }
+      }
+
       rowMcMatchGen(flag);
     } // gen
   }   // processMc

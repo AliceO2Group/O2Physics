@@ -17,7 +17,6 @@
 
 #include <iostream>
 #include <array>
-using namespace std;
 #include <TString.h>
 #include <THashList.h>
 #include <TObject.h>
