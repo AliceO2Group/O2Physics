@@ -230,7 +230,7 @@ struct HfTaskDs {
   }
 
   void processMc(candDsMcReco const& candidates,
-                 candDsMcGen const& particlesMC,
+                 candDsMcGen const& mcParticles,
                  aod::TracksWMc const&)
   {
     // MC rec.
@@ -240,8 +240,8 @@ struct HfTaskDs {
       }
 
       auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<candDsMcGen>();
-      auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
-      auto particleMother = particlesMC.iteratorAt(indexMother);
+      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, pdg::Code::kDS, true);
+      auto particleMother = mcParticles.iteratorAt(indexMother);
       registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
 
       // KKPi
@@ -267,7 +267,7 @@ struct HfTaskDs {
     // TODO: add histograms for reflections
 
     // MC gen.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() != decayChannel) {
           continue;

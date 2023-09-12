@@ -283,7 +283,7 @@ struct HfTaskXic {
   }
   // Fill MC histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles)
   {
 
     // MC rec.
@@ -366,7 +366,7 @@ struct HfTaskXic {
       }
     }
     // MC gen.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
         auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {

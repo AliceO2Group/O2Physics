@@ -197,7 +197,7 @@ struct HfTaskBplusReduced {
 
   /// B+ MC analysis and fill histograms
   void processMc(soa::Join<aod::HfCandBplus, aod::HfBpMcRecReduced> const& candidates,
-                 aod::HfBpMcGenReduced const& particlesMc,
+                 aod::HfBpMcGenReduced const& mcParticles,
                  aod::HfCand2ProngReduced const&)
   {
     // MC rec
@@ -256,8 +256,8 @@ struct HfTaskBplusReduced {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
-    for (const auto& particle : particlesMc) {
+    // Printf("MC Particles: %d", mcParticles.size());
+    for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();

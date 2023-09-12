@@ -425,7 +425,7 @@ struct HfTreeCreatorDsToKKPi {
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  candDsMcReco const& candidates,
-                 candDsMcGen const& particlesMC,
+                 candDsMcGen const& mcParticles,
                  TracksWPid const&)
   {
     // Filling event properties
@@ -500,8 +500,8 @@ struct HfTreeCreatorDsToKKPi {
     }
 
     // Filling particle properties
-    rowCandidateFullParticles.reserve(particlesMC.size());
-    for (const auto& particle : particlesMC) {
+    rowCandidateFullParticles.reserve(mcParticles.size());
+    for (const auto& particle : mcParticles) {
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),

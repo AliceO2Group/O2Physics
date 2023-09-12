@@ -325,10 +325,10 @@ struct HfCorrelatorDMesonPairs {
 
   // Common code to analyse D0's and D+'s at Gen level.
   template <typename T>
-  void analyseMcGen(const T& particlesMc)
+  void analyseMcGen(const T& mcParticles)
   {
     registry.fill(HIST("hMcEvtCount"), 0);
-    for (const auto& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0 && std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -352,7 +352,7 @@ struct HfCorrelatorDMesonPairs {
       int8_t matchedGen1 = particle1.flagMcMatchGen();
       registry.fill(HIST("hMatchedMcGen"), matchedGen1);
 
-      for (const auto& particle2 : particlesMc) {
+      for (const auto& particle2 : mcParticles) {
         // Candidate sign attribution.
         auto candidateType2 = assignCandidateTypeGen(particle2);
         if (!kinematicCutsGen(particle2)) {
@@ -524,9 +524,9 @@ struct HfCorrelatorDMesonPairs {
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenD0(aod::McCollision const&,
-                      McParticlesPlus2Prong const& particlesMc)
+                      McParticlesPlus2Prong const& mcParticles)
   {
-    analyseMcGen(particlesMc);
+    analyseMcGen(mcParticles);
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGenD0, "Process D0 Mc Gen mode", false);
@@ -674,9 +674,9 @@ struct HfCorrelatorDMesonPairs {
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenDPlus(aod::McCollision const&,
-                         McParticlesPlus3Prong const& particlesMc)
+                         McParticlesPlus3Prong const& mcParticles)
   {
-    analyseMcGen(particlesMc);
+    analyseMcGen(mcParticles);
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGenDPlus, "Process DPlus Mc Gen mode", false);

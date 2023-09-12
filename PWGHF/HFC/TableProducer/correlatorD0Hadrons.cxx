@@ -145,10 +145,10 @@ struct HfCorrelatorD0HadronsSelection {
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionMcRec, "Process D0 Selection MCRec", true);
 
   void processD0SelectionMcGen(aod::McCollision const& mcCollision,
-                               aod::McParticles const& particlesMc)
+                               aod::McParticles const& mcParticles)
   {
     bool isD0Found = 0;
-    for (const auto& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
@@ -558,11 +558,11 @@ struct HfCorrelatorD0Hadrons {
   // =================  Process starts for MCGen, same event ===================
 
   void processMcGen(aod::McCollision const& mcCollision,
-                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMc)
+                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles)
   {
     registry.fill(HIST("hEvtCountGen"), 0);
     // MC gen level
-    for (const auto& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
@@ -586,7 +586,7 @@ struct HfCorrelatorD0Hadrons {
       }
       registry.fill(HIST("hCountD0TriggersGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
 
-      for (const auto& particle2 : particlesMc) {
+      for (const auto& particle2 : mcParticles) {
         registry.fill(HIST("hTrackCounterGen"), 1); // total no. of tracks
         if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
@@ -602,16 +602,16 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounterGen"), 2); // fill before soft pi removal
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(particlesMc, particle2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(particlesMc, particle1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, pdg::Code::kDStar, true, nullptr, 1);
         if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
           continue;
 
         registry.fill(HIST("hTrackCounterGen"), 3); // fill after soft pion removal
 
-        auto getTracksSize = [&particlesMc](aod::McCollision const& collision) {
+        auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
           int nTracks = 0;
-          for (const auto& track : particlesMc) {
+          for (const auto& track : mcParticles) {
             if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
               nTracks++;
             }
@@ -801,12 +801,12 @@ struct HfCorrelatorD0Hadrons {
   // ====================== Implement Event mixing on McGen ===================================
 
   void processMcGenMixedEvent(SelectedCollisionsMcGen const& collisions,
-                              SelectedTracksMcGen const& particlesMc)
+                              SelectedTracksMcGen const& mcParticles)
   {
 
-    auto getTracksSize = [&particlesMc, this](SelectedCollisionsMcGen::iterator const& collision) {
+    auto getTracksSize = [&mcParticles, this](SelectedCollisionsMcGen::iterator const& collision) {
       int nTracks = 0;
-      auto associatedTracks = particlesMc.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
+      auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
       for (const auto& track : associatedTracks) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
@@ -818,7 +818,7 @@ struct HfCorrelatorD0Hadrons {
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
 
-    auto tracksTuple = std::make_tuple(particlesMc, particlesMc);
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelectedCollisionsMcGen, SelectedTracksMcGen, SelectedTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
@@ -847,8 +847,8 @@ struct HfCorrelatorD0Hadrons {
         // ==============================soft pion removal================================
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(particlesMc, t2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(particlesMc, t1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, t2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, t1, pdg::Code::kDStar, true, nullptr, 1);
         if (std::abs(t2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
           continue;
         }

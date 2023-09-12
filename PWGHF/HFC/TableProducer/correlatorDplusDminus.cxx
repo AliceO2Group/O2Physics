@@ -373,12 +373,12 @@ struct HfCorrelatorDplusDminus {
 
   /// Dplus-Dminus correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::McCollision const& mcCollision,
-                    MCParticlesPlus3Prong const& particlesMC)
+                    MCParticlesPlus3Prong const& mcParticles)
   {
     int counterDplusDminus = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (const auto& particle1 : particlesMC) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus or Dminus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -402,7 +402,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       registry.fill(HIST("hCountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus (for normalisation)
-      for (const auto& particle2 : particlesMC) {
+      for (const auto& particle2 : mcParticles) {
         if (particle2.pdgCode() != -pdg::Code::kDPlus) { // check that inner particle is a Dminus
           continue;
         }
@@ -465,13 +465,13 @@ struct HfCorrelatorDplusDminus {
 
   /// c-cbar correlator table builder - for MC gen-level analysis
   void processCCbar(aod::McCollision const& mcCollision,
-                    MCParticlesPlus2Prong const& particlesMC)
+                    MCParticlesPlus2Prong const& mcParticles)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
-    for (const auto& particle1 : particlesMC) {
+    for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
@@ -501,7 +501,7 @@ struct HfCorrelatorDplusDminus {
       }
       registry.fill(HIST("hCountCtriggersMCGen"), 0, particle1.pt()); // to count trigger c quark (for normalisation)
 
-      for (const auto& particle2 : particlesMC) {
+      for (const auto& particle2 : mcParticles) {
         if (particle2.pdgCode() != PDG_t::kCharmBar) {
           continue;
         }

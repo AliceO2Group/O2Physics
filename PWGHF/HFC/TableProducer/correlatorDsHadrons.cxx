@@ -133,10 +133,10 @@ struct HfCorrelatorDsHadronsSelCollision {
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
   void processDsSelCollisionsMcGen(aod::McCollision const& mcCollision,
-                                   CandDsMcGen const& particlesMc)
+                                   CandDsMcGen const& mcParticles)
   {
     bool isDsFound = false;
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
@@ -546,7 +546,7 @@ struct HfCorrelatorDsHadrons {
 
   /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
   void processMcEfficiencies(CandDsMcReco const& candidates,
-                             CandDsMcGen const& particlesMc,
+                             CandDsMcGen const& mcParticles,
                              MyTracksData const& tracksData,
                              aod::TracksWMc const&)
   {
@@ -592,7 +592,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for Ds meson reconstruction's efficiency
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -610,7 +610,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for particles associated reconstruction's efficiency
-    for (const auto& particleAssoc : particlesMc) {
+    for (const auto& particleAssoc : mcParticles) {
       if (std::abs(particleAssoc.eta()) > etaTrackMax) {
         continue;
       }
@@ -627,14 +627,14 @@ struct HfCorrelatorDsHadrons {
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
-                    CandDsMcGen const& particlesMc)
+                    CandDsMcGen const& mcParticles)
   {
     int counterDsHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mcCollision) {
+    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const& mcCollision) {
       int nTracks = 0;
-      for (const auto& track : particlesMc) {
+      for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -648,7 +648,7 @@ struct HfCorrelatorDsHadrons {
     bool isDsPrompt = false;
 
     // MC gen level
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -667,7 +667,7 @@ struct HfCorrelatorDsHadrons {
         isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
 
         // Ds Hadron correlation dedicated section
-        for (const auto& particleAssoc : particlesMc) {
+        for (const auto& particleAssoc : mcParticles) {
           if (std::abs(particleAssoc.eta()) > etaTrackMax) {
             continue;
           }

@@ -388,12 +388,12 @@ struct HfCorrelatorD0D0bar {
 
   /// D0-D0bar correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::McCollision const&,
-                    MCParticlesPlus const& particlesMC)
+                    MCParticlesPlus const& mcParticles)
   {
     int counterD0D0bar = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (const auto& particle1 : particlesMC) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
@@ -417,7 +417,7 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
-      for (const auto& particle2 : particlesMC) {
+      for (const auto& particle2 : mcParticles) {
         if (particle2.pdgCode() != pdg::Code::kD0Bar) { // check that inner particle is D0bar
           continue;
         }
@@ -480,13 +480,13 @@ struct HfCorrelatorD0D0bar {
 
   /// c-cbar correlator table builder - for MC gen-level analysis
   void processCCbar(aod::McCollision const&,
-                    MCParticlesPlus const& particlesMC)
+                    MCParticlesPlus const& mcParticles)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
-    for (const auto& particle1 : particlesMC) {
+    for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
@@ -516,7 +516,7 @@ struct HfCorrelatorD0D0bar {
       }
       registry.fill(HIST("hCountCtriggersMCGen"), 0, particle1.pt()); // to count trigger c quark (for normalisation)
 
-      for (const auto& particle2 : particlesMC) {
+      for (const auto& particle2 : mcParticles) {
         if (particle2.pdgCode() != PDG_t::kCharmBar) { // check that inner particle is a cbar
           continue;
         }

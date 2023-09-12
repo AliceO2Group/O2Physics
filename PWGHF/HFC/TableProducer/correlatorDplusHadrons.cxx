@@ -125,10 +125,10 @@ struct HfDplusSelection {
   PROCESS_SWITCH(HfDplusSelection, processDplusSelectionMcRec, "Process Dplus Selection MCRec", false);
 
   void processDplusSelectionMcGen(aod::McCollision const& mcCollision,
-                                  aod::McParticles const& particlesMc)
+                                  aod::McParticles const& mcParticles)
   {
     bool isDplusFound = 0;
-    for (const auto& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
@@ -402,14 +402,14 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
   /// Dplus-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::McCollision const& mcCollision,
-                    aod::McParticles const& particlesMc)
+                    aod::McParticles const& mcParticles)
   {
     int counterDplusHadron = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
 
-    auto getTracksSize = [&particlesMc](aod::McCollision const& collision) {
+    auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
       int nTracks = 0;
-      for (const auto& track : particlesMc) {
+      for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -420,7 +420,7 @@ struct HfCorrelatorDplusHadrons {
     BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
 
     // MC gen level
-    for (const auto& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -443,7 +443,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
-      for (const auto& particle2 : particlesMc) {
+      for (const auto& particle2 : mcParticles) {
 
         // Check Mother of particle 2
         bool flagMotherFound = false;
@@ -545,12 +545,12 @@ struct HfCorrelatorDplusHadrons {
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   void processMcGenMixedEvent(McCollisionsSel const& collisions,
-                              McParticlesSel const& particlesMc)
+                              McParticlesSel const& mcParticles)
   {
 
-    auto getTracksSize = [&particlesMc, this](McCollisionsSel::iterator const& collision) {
+    auto getTracksSize = [&mcParticles, this](McCollisionsSel::iterator const& collision) {
       int nTracks = 0;
-      auto associatedTracks = particlesMc.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
+      auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
       for (const auto& track : associatedTracks) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
@@ -562,7 +562,7 @@ struct HfCorrelatorDplusHadrons {
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
 
-    auto tracksTuple = std::make_tuple(particlesMc, particlesMc);
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
