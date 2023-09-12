@@ -405,7 +405,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataD0(aod::Collision const& collision,
-                     soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                     aod::TracksWDca const& tracks,
                      soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     // protection against empty tables to be sliced
@@ -452,7 +452,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecD0(aod::Collision const& collision,
-                      soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                      aod::TracksWDca const& tracks,
                       soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
     // protection against empty tables to be sliced
@@ -533,7 +533,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataDPlus(aod::Collision const& collision,
-                        soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                        aod::TracksWDca const& tracks,
                         soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&)
   {
     // protection against empty tables to be sliced
@@ -593,7 +593,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecDPlus(aod::Collision const& collision,
-                         soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                         aod::TracksWDca const& tracks,
                          soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&)
   {
     // protection against empty tables to be sliced

@@ -215,7 +215,7 @@ struct HfCorrelatorDplusHadrons {
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   aod::TracksWDca const& tracks,
                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     if (selectedDplusCandidates.size() > 0) {
@@ -304,7 +304,7 @@ struct HfCorrelatorDplusHadrons {
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     if (recoFlagDplusCandidates.size() > 0) {
@@ -482,7 +482,7 @@ struct HfCorrelatorDplusHadrons {
 
   // Event Mixing for the Data Mode
   using myCollisions = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
-  using fullTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
+  using fullTracks = aod::TracksWDca;
   using mySelCollisions = soa::Filtered<myCollisions>;
   using myTracks = soa::Filtered<fullTracks>;
   using myCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;

@@ -74,7 +74,7 @@ using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0
 BinningType corrBinning{{zBins, multBins}, true};
 
 using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
-using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
+using SelectedTracks = soa::Filtered<aod::TracksWDca>;
 using SelectedCandidatesData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 using SelectedCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using SelectedCollisionsMcGen = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
@@ -259,7 +259,7 @@ struct HfCorrelatorD0Hadrons {
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   aod::TracksWDca const& tracks,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     // protection against empty tables to be sliced
@@ -390,7 +390,7 @@ struct HfCorrelatorD0Hadrons {
   // ================  Process starts for MCRec, same event ========================
 
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
     // protection against empty tables to be sliced

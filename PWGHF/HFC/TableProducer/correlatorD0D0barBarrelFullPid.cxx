@@ -135,7 +135,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
-                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   aod::TracksWDca const& tracks,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel> const&)
   {
     int nTracks = 0;
@@ -246,7 +246,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
   /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(aod::Collision const& collision,
-                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec> const&)
   {
     int nTracks = 0;

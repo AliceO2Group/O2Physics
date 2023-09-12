@@ -76,7 +76,7 @@ struct HfTaskFlow {
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackAssocMax) &&
                        (aod::track::pt > ptTrackAssocMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
+  using aodTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
 
   //  HF candidate filter
   //  TODO: use Partition instead of filter

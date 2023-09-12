@@ -235,7 +235,7 @@ struct HfTaskLc {
   }
 
   void process(aod::Collision const& collision,
-               soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+               aod::TracksWDca const& tracks,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
     int nTracks = 0;

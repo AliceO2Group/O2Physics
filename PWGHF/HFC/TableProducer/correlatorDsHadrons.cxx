@@ -188,7 +188,7 @@ struct HfCorrelatorDsHadrons {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                           // flagDsFilter applied
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                      // flagDsFilter applied
-  using MyTracksData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;                                   // trackFilter applied
+  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                   // trackFilter applied
 
   HistogramRegistry registry{
     "registry",
