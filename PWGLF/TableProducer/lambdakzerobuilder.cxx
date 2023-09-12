@@ -732,11 +732,14 @@ struct lambdakzeroBuilder {
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", false);
 
-  void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
     // Fire up CCDB
-    auto collision = collisions.begin();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collisions.size() ? collisions.begin().bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+    if (!bcs.size()) {
+      LOGF(warn, "No BC found, skipping this DF.");
+      return;
+    }
     initCCDB(bc);
     buildStrangenessTables<FullTracksExtIU>(V0s);
   }
