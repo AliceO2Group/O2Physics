@@ -68,7 +68,6 @@ struct HfCandidateCreatorB0 {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
-
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
   double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
@@ -76,11 +75,11 @@ struct HfCandidateCreatorB0 {
   double bz{0.};
 
   using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
+  using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
-  using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
 
+  Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   OutputObj<TH1F> hMassDToPiKPi{TH1F("hMassDToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
