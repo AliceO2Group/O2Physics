@@ -62,7 +62,7 @@ struct cascqaanalysis {
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
-  // Switch between Data/MC-dedicated FT0M X-axes
+  // Switch between Data/MC-dedicated histograms
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   // QA histograms for the multiplicity estimation
@@ -75,6 +75,18 @@ struct cascqaanalysis {
 
   // Random number generator for event scaling
   TRandom2* fRand = new TRandom2();
+
+  // Struct to select on event type
+  typedef struct CollisionIndexAndType {
+    int64_t index;
+    uint8_t typeFlag;
+  } CollisionIndexAndType;
+
+  // Struct for counting charged particles in |eta| region
+  typedef struct EtaCharge {
+    double eta;
+    int charge;
+  } EtaCharge;
 
   void init(InitContext const&)
   {
@@ -239,8 +251,8 @@ struct cascqaanalysis {
     return evFlag;
   }
 
-  template <typename TCollision, typename TTracks>
-  bool AcceptEvent(TCollision const& collision, TTracks const& tracks, bool isFillEventSelectionQA)
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision, bool isFillEventSelectionQA)
   {
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 0.5);
@@ -259,11 +271,9 @@ struct cascqaanalysis {
     }
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 2.5);
-    }
-
-    if (isFillEventSelectionQA) {
       registry.fill(HIST("hZCollision"), collision.posZ());
     }
+
     return true;
   }
 
@@ -271,10 +281,6 @@ struct cascqaanalysis {
   bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection)
   {
     // INEL > N (at least N+1 charged particles in |eta| < 1.0)
-    typedef struct EtaCharge {
-      double eta;
-      int charge;
-    } EtaCharge;
     EtaCharge etaCharge;
     std::vector<EtaCharge> ParticlesEtaAndCharge(particles.size());
     unsigned int nParticles = 0;
@@ -317,9 +323,9 @@ struct cascqaanalysis {
                    soa::Filtered<aod::CascDataExt> const& Cascades,
                    aod::V0sLinked const&,
                    aod::V0Datas const&,
-                   DauTracks const& Tracks)
+                   DauTracks const&)
   {
-    if (!AcceptEvent(collision, Tracks, 1)) {
+    if (!AcceptEvent(collision, 1)) {
       return;
     }
 
@@ -352,46 +358,44 @@ struct cascqaanalysis {
       }
       registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
 
-      auto v0 = v0index.v0Data();
-      auto posdau = v0.posTrack_as<DauTracks>();
-      auto negdau = v0.negTrack_as<DauTracks>();
-      auto bachelor = casc.bachelor_as<DauTracks>();
-
-      // ITS N hits
-      int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
-      for (unsigned int i = 0; i < 7; i++) {
-        if (posdau.itsClusterMap() & (1 << i)) {
-          posITSNhits++;
-        }
-        if (negdau.itsClusterMap() & (1 << i)) {
-          negITSNhits++;
-        }
-        if (bachelor.itsClusterMap() & (1 << i)) {
-          bachITSNhits++;
-        }
-      }
-
-      uint8_t flags = 0;
-      flags |= o2::aod::mycascades::EvFlags::EvINEL;
-      if (collision.multNTracksPVeta1() > 0) {
-        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
-      }
-      if (collision.multNTracksPVeta1() > 1) {
-        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
-      }
-
-      // c x tau
-      float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
-      float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      //
-
-      float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
-
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
         // Fill table
         if (fRand->Rndm() < lEventScale) {
+          auto v0 = v0index.v0Data();
+          auto posdau = v0.posTrack_as<DauTracks>();
+          auto negdau = v0.negTrack_as<DauTracks>();
+          auto bachelor = casc.bachelor_as<DauTracks>();
+
+          // ITS N hits
+          int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
+          for (unsigned int i = 0; i < 7; i++) {
+            if (posdau.itsClusterMap() & (1 << i)) {
+              posITSNhits++;
+            }
+            if (negdau.itsClusterMap() & (1 << i)) {
+              negITSNhits++;
+            }
+            if (bachelor.itsClusterMap() & (1 << i)) {
+              bachITSNhits++;
+            }
+          }
+
+          uint8_t evFlag = 0;
+          evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
+          if (collision.multNTracksPVeta1() > 0) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
+          }
+          if (collision.multNTracksPVeta1() > 1) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
+          }
+
+          // c x tau
+          float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
+          float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
+          float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
+          float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
+
           mycascades(collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
@@ -402,7 +406,7 @@ struct cascqaanalysis {
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
+                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
         }
       }
     }
@@ -411,16 +415,17 @@ struct cascqaanalysis {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-                    soa::Filtered<LabeledCascades> const& Cascades,
-                    aod::V0sLinked const&,
                     aod::V0Datas const&,
-                    DauTracks const& Tracks,
+                    soa::Filtered<LabeledCascades> const& Cascades,
+                    DauTracks const&,
                     aod::McCollisions const&,
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& mcParticles,
+                    aod::V0sLinked const&)
   {
-    if (!AcceptEvent(collision, Tracks, 1)) {
+    if (!AcceptEvent(collision, 1)) {
       return;
     }
+
     int evType = GetEventTypeFlag(collision);
 
     auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -454,41 +459,6 @@ struct cascqaanalysis {
 
       registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
 
-      auto v0 = v0index.v0Data();
-      auto posdau = v0.posTrack_as<DauTracks>();
-      auto negdau = v0.negTrack_as<DauTracks>();
-      auto bachelor = casc.bachelor_as<DauTracks>();
-
-      // ITS N hits
-      int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
-      for (unsigned int i = 0; i < 7; i++) {
-        if (posdau.itsClusterMap() & (1 << i)) {
-          posITSNhits++;
-        }
-        if (negdau.itsClusterMap() & (1 << i)) {
-          negITSNhits++;
-        }
-        if (bachelor.itsClusterMap() & (1 << i)) {
-          bachITSNhits++;
-        }
-      }
-
-      uint8_t flags = 0;
-      flags |= o2::aod::mycascades::EvFlags::EvINEL;
-      if (collision.multNTracksPVeta1() > 0) {
-        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
-      }
-      if (collision.multNTracksPVeta1() > 1) {
-        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
-      }
-
-      // c x tau
-      float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
-      float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      //
-      float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
-
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
         // Check mc association
@@ -503,8 +473,43 @@ struct cascqaanalysis {
             isPrimary = cascmc.isPhysicalPrimary() ? 1 : 0;
           }
         }
-        // Fill table
         if (fRand->Rndm() < lEventScale) {
+          // Fill table
+          auto v0 = v0index.v0Data();
+          auto posdau = v0.posTrack_as<DauTracks>();
+          auto negdau = v0.negTrack_as<DauTracks>();
+          auto bachelor = casc.bachelor_as<DauTracks>();
+
+          // ITS N hits
+          int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
+          for (unsigned int i = 0; i < 7; i++) {
+            if (posdau.itsClusterMap() & (1 << i)) {
+              posITSNhits++;
+            }
+            if (negdau.itsClusterMap() & (1 << i)) {
+              negITSNhits++;
+            }
+            if (bachelor.itsClusterMap() & (1 << i)) {
+              bachITSNhits++;
+            }
+          }
+
+          // Event type flag
+          uint8_t evFlag = 0;
+          evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
+          if (collision.multNTracksPVeta1() > 0) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
+          }
+          if (collision.multNTracksPVeta1() > 1) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
+          }
+
+          // c x tau
+          float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
+          float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
+          float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
+          float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
+
           mycascades(collision.posZ(), nchFT0, collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
@@ -515,7 +520,7 @@ struct cascqaanalysis {
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
+                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
         }
       }
     }
@@ -524,7 +529,7 @@ struct cascqaanalysis {
   void processMCgen(aod::McCollision const& mcCollision,
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions,
-                    DauTracks const& Tracks)
+                    DauTracks const&)
   {
     // All generated collisions
     registry.fill(HIST("hNEventsMC"), 0.5);
@@ -559,18 +564,13 @@ struct cascqaanalysis {
     registry.fill(HIST("hNchFT0MGenEvType"), nchFT0, evType);
     registry.fill(HIST("hNchFV0AGenEvType"), nchFV0, evType);
 
-    typedef struct CollisionIndexAndType {
-      int64_t index;
-      uint8_t typeFlag;
-    } CollisionIndexAndType;
-
     std::vector<CollisionIndexAndType> SelectedEvents(collisions.size());
     std::vector<int64_t> NumberOfContributors;
     int nevts = 0;
     int nAssocColl = 0;
     for (const auto& collision : collisions) {
       CollisionIndexAndType collWithType = {0, 0x0};
-      if (!AcceptEvent(collision, Tracks, 0)) {
+      if (!AcceptEvent(collision, 0)) {
         continue;
       }
       collWithType.index = collision.mcCollision_as<aod::McCollisions>().globalIndex();
