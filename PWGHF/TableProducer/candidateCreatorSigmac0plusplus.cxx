@@ -38,7 +38,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_3prong;
 
 struct HfCandidateCreatorSigmac0plusplus {
-
   /// Table with Σc0,++ info
   Produces<aod::HfCandScBase> rowScCandidates;
 
@@ -47,14 +46,12 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
   Configurable<double> mPKPiCandLcMax{"mPKPiCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(pKpi)"};
   Configurable<double> mPiKPCandLcMax{"mPiKPCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(piKp)"};
-
   /// Selections on candidate soft π-,+
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
   Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
-
   // CCDB
   Configurable<bool> isRun2Ccdb{"isRun2Ccdb", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -62,7 +59,14 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HistogramRegistry histos;
+  /// Cut selection object for soft π-,+
+  TrackSelection softPiCuts;
+
+  // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  int runNumber;
 
   using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 
@@ -74,14 +78,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   // Preslice<CandidatesLc> hf3ProngPerCollision = aod::track_association::collisionId;
   Preslice<CandidatesLc> hf3ProngPerCollision = aod::hf_cand::collisionId;
 
-  /// Cut selection object for soft π-,+
-  TrackSelection softPiCuts;
-
-  // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  HistogramRegistry histos;
 
   /// @brief init function, to define the soft pion selections and histograms
   /// @param
@@ -257,7 +254,6 @@ struct HfCandidateCreatorSigmac0plusplus {
 /// Extends the base table with expression columns.
 
 struct HfCandidateSigmac0plusplusMc {
-
   Spawns<aod::HfCandScExt> candidatesSigmac;
   Produces<aod::HfCandScMcRec> rowMCMatchScRec;
   Produces<aod::HfCandScMcGen> rowMCMatchScGen;
@@ -399,8 +395,7 @@ struct HfCandidateSigmac0plusplusMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return  WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorSigmac0plusplus>(cfgc),
     adaptAnalysisTask<HfCandidateSigmac0plusplusMc>(cfgc)};
-  return workflow;
 }
