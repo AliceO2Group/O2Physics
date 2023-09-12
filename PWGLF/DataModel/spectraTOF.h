@@ -373,6 +373,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; }); // Dummy
 
 } // namespace spectra
 
@@ -442,6 +444,8 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
                   spectra::TRDPattern<track::TOFChi2>,
+                  spectra::IsQualityTrackITS<track::TOFChi2>,
+                  spectra::IsQualityTrackTPC<track::TOFChi2>,
                   track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
                   track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,

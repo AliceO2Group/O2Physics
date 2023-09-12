@@ -308,6 +308,12 @@ struct tofSpectra {
     histos.add("Data/pos/pt/its_trd", "pos ITS-TRD", kTH1D, {ptAxis});
     histos.add("Data/neg/pt/its_trd", "neg ITS-TRD", kTH1D, {ptAxis});
 
+    // 1 detectors
+    histos.add("Data/pos/pt/its", "pos ITS", kTH1D, {ptAxis});
+    histos.add("Data/neg/pt/its", "neg ITS", kTH1D, {ptAxis});
+    histos.add("Data/pos/pt/tpc", "pos TPC", kTH1D, {ptAxis});
+    histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
+
     if (doprocessMC) {
       histos.add("MC/fake/pos", "Fake positive tracks", kTH1D, {ptAxis});
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
@@ -927,6 +933,20 @@ struct tofSpectra {
           } else {
             histos.fill(HIST("track/TRD/lengthnotrd"), track.length());
           }
+        }
+      }
+      if (track.hasITS() && track.isQualityTrackITS()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its"), track.pt());
+        }
+      }
+      if (track.hasTPC() && track.isQualityTrackTPC()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
+        } else {
+          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
         }
       }
     }
