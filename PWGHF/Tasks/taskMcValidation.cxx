@@ -118,7 +118,7 @@ struct HfTaskMcValidationGen {
      {"hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
      {"hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
       registry.get<TH2>(HIST("hPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
@@ -358,7 +358,7 @@ struct HfTaskMcValidationRec {
     return stdev;
   }
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
     histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision

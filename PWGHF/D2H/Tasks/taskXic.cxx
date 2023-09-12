@@ -72,7 +72,7 @@ struct HfTaskXic {
 
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     AxisSpec axisPPid = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     AxisSpec axisNSigmaPr = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};

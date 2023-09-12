@@ -197,7 +197,7 @@ struct HfTaskCorrelationDMesonPairs {
      {"hDeltaPtDDbarMCGen", stringMCParticles + stringDeltaPt + "entries", hTH1DeltaPtDDbar},
      {"hDeltaPtMaxMinMCGen", stringMCParticles + stringDeltaPtMaxMin + "entries", hTH1DeltaPtMaxMin}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;

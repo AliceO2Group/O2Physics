@@ -109,7 +109,7 @@ struct HfTaskFlow {
   //  =========================
   //      init()
   //  =========================
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     //  EVENT HISTOGRAMS
     constexpr int kNBinsEvents = 3;

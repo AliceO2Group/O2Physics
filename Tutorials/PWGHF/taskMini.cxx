@@ -71,7 +71,7 @@ struct HfTagSelTracks {
     "registry",
     {}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     const TString strTitle = "D^{0} candidates";
     const TString strPt = "#it{p}_{T}^{track} (GeV/#it{c})";
@@ -163,7 +163,7 @@ struct HfTrackIndexSkimCreator {
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
   }
 
@@ -566,7 +566,7 @@ struct HfTaskD0 {
     "registry",
     {}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     const TString strTitle = "D^{0} candidates";
     const TString strPt = "#it{p}_{T} (GeV/#it{c})";

@@ -139,7 +139,7 @@ struct HfCorrelatorDMesonPairs {
      {"hMatchedMcGen", "D Meson pair candidates - MC gen;MC Matched;entries", hTH1Matched},
      {"hOriginMcGen", "D Meson pair candidates - MC gen;prompt vs. non-prompt;entries", hTH1Origin}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     constexpr int kNBinsSelStatus = 6;

@@ -44,7 +44,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // Initialize the histograms
     hPartPerEvent[0] = registry.add<TH2>("hPartPerEventAll", "All events;;number of particles", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
