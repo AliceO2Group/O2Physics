@@ -238,7 +238,7 @@ struct lithium4analysis {
   Preslice<TrackCandidatesMC> perColMC = aod::track::collisionId;
 
   // binning for EM background
-  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "vertex axis for bin"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
   BinningType binningOnPositions{{axisVertex}, true};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
@@ -292,10 +292,9 @@ struct lithium4analysis {
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates& collisions, TrackCandidates const& tracks)
   {
     l4Candidates.clear();
-
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
         continue;
@@ -391,7 +390,7 @@ struct lithium4analysis {
               auto& l4Candidate = l4Candidates.back();
               l4Candidate.l4PtMC = mothertrack.pt();
               double eLit = mctrackHe3.e() + mctrackPr.e();
-              l4Candidate.l4MassMC = std::sqrt(eLit*eLit - mothertrack.p() * mothertrack.p());
+              l4Candidate.l4MassMC = std::sqrt(eLit * eLit - mothertrack.p() * mothertrack.p());
               filledMothers.push_back(mothertrack.globalIndex());
             }
           }
@@ -430,7 +429,7 @@ struct lithium4analysis {
         lithium4Candidate l4Candidate;
         int sign = mcParticle.pdgCode() > 0 ? 1 : -1;
         l4Candidate.l4PtMC = mcParticle.pt() * sign;
-        l4Candidate.l4MassMC = std::sqrt(eLit*eLit - mcParticle.p() * mcParticle.p());
+        l4Candidate.l4MassMC = std::sqrt(eLit * eLit - mcParticle.p() * mcParticle.p());
         l4Candidates.push_back(l4Candidate);
       }
     }
