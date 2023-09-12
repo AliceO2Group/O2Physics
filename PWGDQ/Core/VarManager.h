@@ -208,6 +208,7 @@ class VarManager : public TObject
 
     // Barrel track variables
     kPin,
+    kSignedPin,
     kTOFExpMom,
     kTrackTime,
     kTrackTimeRes,
@@ -905,6 +906,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the barrel tables
   if constexpr ((fillMap & TrackExtra) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
     values[kPin] = track.tpcInnerParam();
+    values[kSignedPin] = track.tpcInnerParam() * track.sign();
     if (fgUsedVars[kIsITSrefit]) {
       values[kIsITSrefit] = (track.flags() & o2::aod::track::ITSrefit) > 0; // NOTE: This is just for Run-2
     }
