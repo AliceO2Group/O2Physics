@@ -32,15 +32,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::aod;
-//::singletrackselector; // the namespace defined in .h
 
 struct singleTrackSelector {
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<float> cutDcaXy{"cutDcaXy", 0.12, ""};
-  Configurable<float> cutTPCNSigmaPr{"cutTPCNSigmaPr", 3.f, "Cut on the TPC nsigma for protons"};
-  Configurable<float> cutTPCNSigmaDe{"cutTPCNSigmaDe", 3.f, "Cut on the TPC nsigma for deuteron"};
-  // Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<float> cutPtMin{"cutPtMin", 0.4, "Minimum cut in pT"};
+  Configurable<float> cutTPCNSigmaPr{"cutTPCNSigmaPr", 5.f, "Cut on the TPC nsigma for protons"};
+  Configurable<float> cutTPCNSigmaDe{"cutTPCNSigmaDe", 5.f, "Cut on the TPC nsigma for deuteron"};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -66,6 +65,9 @@ struct singleTrackSelector {
                  collision.posZ());
 
     for (auto& track : tracks) {
+      if (track.pt() < cutPtMin) {
+        continue;
+      }
       if (abs(track.dcaXY()) > cutDcaXy) {
         continue;
       }
@@ -96,7 +98,7 @@ struct singleTrackSelector {
                track.sign(),
                track.eta(),
                track.phi(),
-               singletrackselector::packInTableInt<singletrackselector::storedcrossedrows::binning>(track.tpcNClsCrossedRows()),
+               singletrackselector::packInTableOffset<singletrackselector::storedcrossedrows::binning>(track.tpcNClsCrossedRows()),
                singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
                singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()),
                singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
