@@ -26,6 +26,9 @@
 #include <array>
 #include <cstdlib>
 
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -55,7 +58,6 @@ namespace
 {
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-static const std::vector<std::string> particleNames{"He3"};
 
 constexpr float he3Mass = o2::constants::physics::MassHelium3;
 constexpr float protonMass = o2::constants::physics::MassProton;
@@ -78,6 +80,10 @@ struct lithium4Candidate {
   std::array<float, 3> momPr;
 
   float nSigmaHe3 = -10;
+  float nSigmaPr = -10;
+  float massTOFHe3 = -10;
+  float massTOFPr = -10;
+
   float he3DCAXY = -10;
   float he3DCAZ = -10;
   float protonDCAXY = -10;
@@ -118,7 +124,7 @@ struct lithium4analysis {
 
   // bethe bloch parameters
   std::array<float, 6> mBBparamsHe;
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, {"He3"}, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
@@ -192,7 +198,7 @@ struct lithium4analysis {
   }
 
   template <typename T1, typename T2>
-  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix)
+  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix, bool isMC = false)
   {
     lithium4Candidate l4Cand;
 
@@ -222,6 +228,8 @@ struct lithium4analysis {
     l4Cand.momHe3TPC = candidateHe3.tpcInnerParam();
     l4Cand.nTPCClustersHe3 = candidateHe3.tpcNClsFound();
     l4Cand.nSigmaHe3 = computeNSigmaHe3(candidateHe3);
+    l4Cand.nSigmaPr = candidatePr.tpcNSigmaPr();
+
     l4Candidates.push_back(l4Cand);
     return true;
   }
@@ -231,8 +239,10 @@ struct lithium4analysis {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime>>;
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>>;
+  o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
+  o2::pid::tof::Beta<TrackCandidatesMC::iterator> responseBetaMC;
 
   Preslice<TrackCandidates> perCol = aod::track::collisionId;
   Preslice<TrackCandidatesMC> perColMC = aod::track::collisionId;
@@ -277,7 +287,21 @@ struct lithium4analysis {
             continue;
           }
 
-          FillCandidateInfo(track1, track2, false);
+          if (!FillCandidateInfo(track1, track2, false)) {
+            continue;
+          }
+          // fill TOF info outside to avoide responseBeta crash
+          auto& cand = l4Candidates.back();
+          if (track1.hasTOF()) {
+            float beta = responseBeta.GetBeta(track1);
+            beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+            cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+          }
+          if (track2.hasTOF()) {
+            float beta = responseBeta.GetBeta(track2);
+            beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+            cand.massTOFPr = track2.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+          }
         }
       }
     }
@@ -287,6 +311,7 @@ struct lithium4analysis {
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                       l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                      l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
@@ -310,8 +335,35 @@ struct lithium4analysis {
         if (!selectionTrack(t2)) {
           continue;
         }
-        if ((selectionPIDHe3(t1) && selectionPIDProton(t2)) || (selectionPIDHe3(t2) && selectionPIDProton(t1))) {
-          FillCandidateInfo(t1, t2, true);
+
+        TrackCandidates::iterator he3Cand, protonCand;
+        bool passPID = false;
+        if (selectionPIDHe3(t1) && selectionPIDProton(t2)) {
+          he3Cand = t1, protonCand = t2;
+          passPID = true;
+        };
+        if (selectionPIDHe3(t2) && selectionPIDProton(t1)) {
+          he3Cand = t2, protonCand = t1;
+          passPID = true;
+        };
+        if (!passPID) {
+          continue;
+        }
+
+        if (!FillCandidateInfo(he3Cand, protonCand, false)) {
+          continue;
+        }
+        // fill TOF info outside to avoide responseBeta crash
+        auto& cand = l4Candidates.back();
+        if (he3Cand.hasTOF()) {
+          float beta = responseBeta.GetBeta(he3Cand);
+          beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+          cand.massTOFHe3 = he3Cand.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+        }
+        if (protonCand.hasTOF()) {
+          float beta = responseBeta.GetBeta(protonCand);
+          beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+          cand.massTOFPr = protonCand.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
         }
       }
     }
@@ -321,6 +373,7 @@ struct lithium4analysis {
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                       l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                      l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
@@ -384,9 +437,23 @@ struct lithium4analysis {
                 continue;
               }
 
-              if (!FillCandidateInfo(track1, track2, false)) {
+              if (!FillCandidateInfo(track1, track2, false, true)) {
                 continue;
               }
+
+              // fill TOF info outside to avoide responseBeta crash
+              auto& cand = l4Candidates.back();
+              if (track1.hasTOF()) {
+                float beta = responseBetaMC.GetBeta(track1);
+                beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+                cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+              }
+              if (track2.hasTOF()) {
+                float beta = responseBetaMC.GetBeta(track2);
+                beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+                cand.massTOFPr = track2.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+              }
+
               auto& l4Candidate = l4Candidates.back();
               l4Candidate.l4PtMC = mothertrack.pt();
               double eLit = mctrackHe3.e() + mctrackPr.e();
@@ -439,6 +506,7 @@ struct lithium4analysis {
                     l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                     l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                     l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                    l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                     l4Cand.isBkgUS, l4Cand.isBkgEM,
                     l4Cand.l4PtMC, l4Cand.l4MassMC);
     }
