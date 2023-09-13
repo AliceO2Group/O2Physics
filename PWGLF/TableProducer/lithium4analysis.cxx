@@ -341,11 +341,11 @@ struct lithium4analysis {
         if (selectionPIDHe3(t1) && selectionPIDProton(t2)) {
           he3Cand = t1, protonCand = t2;
           passPID = true;
-        };
+        }
         if (selectionPIDHe3(t2) && selectionPIDProton(t1)) {
           he3Cand = t2, protonCand = t1;
           passPID = true;
-        };
+        }
         if (!passPID) {
           continue;
         }
