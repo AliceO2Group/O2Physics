@@ -246,14 +246,9 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-<<<<<<< HEAD
-  template <int ReconstructionType, typename THfCand2Prong>
-  void processSel(THfCand2Prong const& candidates, TracksSel const&)
-=======
 
   void process(aod::HfCand2Prong const& candidates,
                TracksSel const&)
->>>>>>> 76acd5f6ff94b2fa82fd234526cf84f09daf68a9
   {
     // looping over 2-prong candidates
     for (const auto& candidate : candidates) {
