@@ -262,7 +262,7 @@ struct HfTreeCreatorLcToK0sP {
   }
 
   void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mccollisions,
+                 aod::McCollisions const& mcCollisions,
                  soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
                  TracksWPid const& tracks)

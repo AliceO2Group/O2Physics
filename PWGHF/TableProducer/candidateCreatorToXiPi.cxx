@@ -437,7 +437,7 @@ struct HfCandidateCreatorToXiPiMc {
 
   void processMc(aod::HfCandToXiPi const& candidates,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int8_t sign = -9;
@@ -476,21 +476,21 @@ struct HfCandidateCreatorToXiPiMc {
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
         // Printf("Checking Omegac → pi pi pi p");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         if (indexRec == -1) {
           debug = 1;
         }
         if (indexRec > -1) {
           // cascade → lambda pi
           // Printf("Checking cascade → pi pi p");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // v0 → p pi
             // Printf("Checking v0 → p pi");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
             if (indexRec == -1) {
               debug = 3;
             }
@@ -505,21 +505,21 @@ struct HfCandidateCreatorToXiPiMc {
       if (matchXicMc) {
         // Xic → pi pi pi p
         // Printf("Checking Xic → pi pi pi p");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         if (indexRec == -1) {
           debug = 1;
         }
         if (indexRec > -1) {
           // cascade → lambda pi
           // Printf("Checking cascade → pi pi p");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // v0 → p pi
             // Printf("Checking v0 → p pi");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
             if (indexRec == -1) {
               debug = 3;
             }
@@ -538,7 +538,7 @@ struct HfCandidateCreatorToXiPiMc {
     } // close loop over candidates
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       // Printf("New gen. candidate");
       flag = -9;
       sign = -9;
@@ -548,16 +548,16 @@ struct HfCandidateCreatorToXiPiMc {
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           // Match Xi -> lambda pi
-          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
-          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
             debugGenXi = 1;
             // lambda -> p pi
-            auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+            auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
+            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               debugGenLambda = 1;
               flag = sign * (1 << DecayType::OmegaczeroToXiPi);
             }
@@ -566,16 +566,16 @@ struct HfCandidateCreatorToXiPiMc {
       }
       if (matchXicMc) {
         //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           // Match Xi -> lambda pi
-          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
-          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
             debugGenXi = 1;
             // lambda -> p pi
-            auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+            auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
+            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               debugGenLambda = 1;
               flag = sign * (1 << DecayType::XiczeroToXiPi);
             }

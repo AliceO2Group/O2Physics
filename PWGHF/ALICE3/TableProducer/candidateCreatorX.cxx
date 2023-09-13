@@ -265,7 +265,7 @@ struct HfCandidateCreatorXMc {
   void process(aod::HfCandX const& candidates,
                aod::HfCand2Prong const&,
                aod::TracksWMc const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;
@@ -292,18 +292,18 @@ struct HfCandidateCreatorXMc {
 
       // X → J/ψ π+ π-
       // Printf("Checking X → J/ψ π+ π-");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
       if (indexRec > -1) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
         if (indexRec > -1) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
       }
 
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
@@ -312,15 +312,15 @@ struct HfCandidateCreatorXMc {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(flag, origin, channel);
     }
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
@@ -328,17 +328,17 @@ struct HfCandidateCreatorXMc {
 
       // X → J/ψ π+ π-
       // Printf("Checking X → J/ψ π+ π-");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, std::array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeX, std::array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particle, &arrDaughter, std::array{pdgCodeJpsi}, 1);
-        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, std::array{+kElectron, -kElectron}, true)) {
+        auto jpsiCandMC = mcParticles.rawIteratorAt(arrDaughter[0]);
+        if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
         }
@@ -346,7 +346,7 @@ struct HfCandidateCreatorXMc {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchGen(flag, origin, channel);
