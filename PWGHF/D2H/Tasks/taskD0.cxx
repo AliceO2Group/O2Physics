@@ -26,6 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// D0 analysis task
@@ -163,9 +164,10 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  template <int ReconstructionType, typename THfCand2ProngSel>
+  void processData(THfCand2ProngSel& selectedD0CandidatesSets)
   {
-    for (const auto& candidate : selectedD0Candidates) {
+    for (auto& candidate : selectedD0CandidatesSets) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -174,7 +176,7 @@ struct HfTaskD0 {
       }
 
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+      if constexpr (ReconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -225,17 +227,24 @@ struct HfTaskD0 {
   }
   void processWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
-    processData<0>(selectedD0Candidates);
+    processData<VertexerType::DCAFitter>(selectedD0Candidates);
   }
   PROCESS_SWITCH(HfTaskD0, processWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
-  void processMc(soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates,
+  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const&)
+  {
+    processData<VertexerType::KfParticle>(selectedD0CandidatesKF);
+  }
+  PROCESS_SWITCH(HfTaskD0, processWithKFParticle, "process taskD0 with KFParticle", false);
+
+  template <int ReconstructionType, typename THfCand2Prong>
+  void processMc(THfCand2Prong const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (const auto& candidate : recoFlag2Prong) {
+    for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -243,7 +252,7 @@ struct HfTaskD0 {
         continue;
       }
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == o2::aod::hf_cand::useKFParticle) {
+      if constexpr (ReconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -252,7 +261,7 @@ struct HfTaskD0 {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         auto ptGen = particleMother.pt();                                                                                                                // gen. level pT
         auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
@@ -425,13 +434,13 @@ struct HfTaskD0 {
 
   void processMcWithDCAFitterN(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    processMc<0>(recoFlag2Prong, particlesMC, tracks);
+    processMc<VertexerType::DCAFitter>(recoFlag2Prong, particlesMC, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticle(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    processMc<1>(recoFlag2ProngKF, particlesMC, tracks);
+    processMc<VertexerType::KfParticle>(recoFlag2ProngKF, particlesMC, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 };
