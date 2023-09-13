@@ -71,29 +71,30 @@ BinningType corrBinning{{zBins, multBins}, true};
 
 /// Code to select collisions with at least one Ds meson
 struct HfCorrelatorDsHadronsSelCollision {
-  SliceCache cache;
   Produces<aod::DmesonSelection> collisionsWithSelDs;
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-  Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0); // filter in HfCand3Prong
+  SliceCache cache;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  Partition<CandDsData> selectedDsAllCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<CandDsMcReco> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Filter dsFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0); // filter in HfCand3Prong
+
+  Partition<CandDsData> selectedDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Partition<CandDsMcReco> selectedDsCandidatesMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
   /// Code to select collisions with at least one Ds meson - for real data and data-like analysis
   void processDsSelCollisionsData(aod::Collision const& collision,
                                   CandDsData const& candidates)
   {
     bool isDsFound = false;
-    if (selectedDsAllCand.size() > 0) {
-      auto selectedDsAllCandGrouped = selectedDsAllCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    if (selectedDsCandidates.size() > 0) {
+      auto selectedDsAllCandGrouped = selectedDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate : selectedDsAllCandGrouped) {
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
@@ -114,8 +115,8 @@ struct HfCorrelatorDsHadronsSelCollision {
                                    CandDsMcReco const& candidates)
   {
     bool isDsFound = false;
-    if (recoFlagDsCandidates.size() > 0) {
-      auto selectedDsCandidatesGroupedMc = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    if (selectedDsCandidatesMc.size() > 0) {
+      auto selectedDsCandidatesGroupedMc = selectedDsCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate : selectedDsCandidatesGroupedMc) {
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
@@ -132,11 +133,11 @@ struct HfCorrelatorDsHadronsSelCollision {
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
-  void processDsSelCollisionsMcGen(aod::McCollision const& mccollision,
-                                   CandDsMcGen const& particlesMc)
+  void processDsSelCollisionsMcGen(aod::McCollision const& mcCollision,
+                                   CandDsMcGen const& mcParticles)
   {
     bool isDsFound = false;
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
@@ -157,8 +158,6 @@ struct HfCorrelatorDsHadronsSelCollision {
 
 /// Ds-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDsHadrons {
-  SliceCache cache;
-  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
   Produces<aod::DsHadronPair> entryDsHadronPair;
   Produces<aod::DsHadronRecoInfo> entryDsHadronRecoInfo;
   Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
@@ -179,16 +178,20 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for Ds meson"};
 
-  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
-  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  SliceCache cache;
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;      // collisionFilter applied
   using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;              // collisionFilter applied
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                           // flagDsFilter applied
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                      // flagDsFilter applied
-  using MyTracksData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;                                   // trackFilter applied
+  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                                          // trackFilter applied
+
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
+  Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+
+  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
 
   HistogramRegistry registry{
     "registry",
@@ -244,7 +247,7 @@ struct HfCorrelatorDsHadrons {
      {"hDsPoolBin", "Ds selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {axisPoolBin}}},
      {"hTracksPoolBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {axisPoolBin}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMassDsVsPt", "Ds candidates", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -357,7 +360,7 @@ struct HfCorrelatorDsHadrons {
                    CandDsData const& candidates,
                    MyTracksData const& tracks)
   {
-    // if (selectedDsAllCand.size() > 0) {
+    // if (selectedDsCandidates.size() > 0) {
     if (candidates.size() > 0) {
       registry.fill(HIST("hZVtx"), collision.posZ());
       registry.fill(HIST("hMultV0M"), collision.multFV0M());
@@ -546,7 +549,7 @@ struct HfCorrelatorDsHadrons {
 
   /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
   void processMcEfficiencies(CandDsMcReco const& candidates,
-                             CandDsMcGen const& particlesMc,
+                             CandDsMcGen const& mcParticles,
                              MyTracksData const& tracksData,
                              aod::TracksWMc const&)
   {
@@ -592,7 +595,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for Ds meson reconstruction's efficiency
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -610,7 +613,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for particles associated reconstruction's efficiency
-    for (const auto& particleAssoc : particlesMc) {
+    for (const auto& particleAssoc : mcParticles) {
       if (std::abs(particleAssoc.eta()) > etaTrackMax) {
         continue;
       }
@@ -626,15 +629,15 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(SelCollisionsWithDsMc::iterator const& mccollision,
-                    CandDsMcGen const& particlesMc)
+  void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
+                    CandDsMcGen const& mcParticles)
   {
     int counterDsHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mccollision) {
+    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const& mcCollision) {
       int nTracks = 0;
-      for (const auto& track : particlesMc) {
+      for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -643,12 +646,12 @@ struct HfCorrelatorDsHadrons {
     };
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
-    int poolBin = corrBinningMcGen.getBin(std::make_tuple(mccollision.posZ(), getTracksSize(mccollision)));
+    int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
     bool isDsPrompt = false;
 
     // MC gen level
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -667,7 +670,7 @@ struct HfCorrelatorDsHadrons {
         isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
 
         // Ds Hadron correlation dedicated section
-        for (const auto& particleAssoc : particlesMc) {
+        for (const auto& particleAssoc : mcParticles) {
           if (std::abs(particleAssoc.eta()) > etaTrackMax) {
             continue;
           }

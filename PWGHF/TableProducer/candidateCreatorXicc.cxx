@@ -205,7 +205,7 @@ struct HfCandidateCreatorXiccMc {
   void process(aod::HfCandXicc const& candidates,
                aod::HfCand3Prong const&,
                aod::TracksWMc const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -229,11 +229,11 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
       // Printf("Checking Ξcc±± → p± K∓ π± π±");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
         // Printf("Checking Ξc± → p± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << DecayType::XiccToXicPi;
         } else {
@@ -245,16 +245,16 @@ struct HfCandidateCreatorXiccMc {
     }
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // Xicc → Xic + π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCCPlusPlus, std::array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCCPlusPlus, std::array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
         // Match Xic -> pKπ
-        auto XicCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+        auto XicCandMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }
       }

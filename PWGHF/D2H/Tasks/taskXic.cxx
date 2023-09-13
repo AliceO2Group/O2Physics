@@ -46,7 +46,7 @@ struct HfTaskXic {
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-  using TracksWPid = soa::Join<aod::Tracks,
+  using TracksWPid = soa::Join<aod::TracksWDca,
                                aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -72,9 +72,8 @@ struct HfTaskXic {
 
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
-
     AxisSpec axisPPid = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     AxisSpec axisNSigmaPr = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
     AxisSpec axisNSigmaPi = {100, -6.f, 6.f, "n#it{#sigma}_{#pi}"};
@@ -185,7 +184,7 @@ struct HfTaskXic {
   }
 
   void process(aod::Collision const& collision,
-               soa::Join<TracksWPid, aod::TracksDCA> const& tracks,
+               TracksWPid const& tracks,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates)
   {
     int nTracks = 0;
@@ -283,7 +282,7 @@ struct HfTaskXic {
   }
   // Fill MC histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles)
   {
 
     // MC rec.
@@ -366,7 +365,7 @@ struct HfTaskXic {
       }
     }
     // MC gen.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
         auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
@@ -397,7 +396,6 @@ struct HfTaskXic {
       }
     }
   }
-
   PROCESS_SWITCH(HfTaskXic, processMc, "Process MC", false);
 };
 
