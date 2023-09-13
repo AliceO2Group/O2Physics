@@ -270,7 +270,6 @@ struct HfCandidateCreator3ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng3) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       swapping = 0;
@@ -279,7 +278,6 @@ struct HfCandidateCreator3ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
@@ -287,7 +285,6 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
@@ -311,12 +308,11 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Flagging the different Λc± → p± K∓ π± decay channels
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -339,7 +335,6 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
@@ -357,21 +352,18 @@ struct HfCandidateCreator3ProngExpressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
@@ -391,11 +383,10 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Flagging the different Λc± → p± K∓ π± decay channels
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
@@ -415,7 +406,6 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }

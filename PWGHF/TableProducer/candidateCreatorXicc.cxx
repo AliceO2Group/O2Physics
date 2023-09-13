@@ -215,7 +215,6 @@ struct HfCandidateCreatorXiccMc {
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -228,11 +227,9 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong1_as<aod::TracksWMc>(),
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
-      // Printf("Checking Ξcc±± → p± K∓ π± π±");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
-        // Printf("Checking Ξc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << DecayType::XiccToXicPi;
@@ -246,15 +243,13 @@ struct HfCandidateCreatorXiccMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
-      // Xicc → Xic + π+
+      // Ξcc±± → Ξc± + π±
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCCPlusPlus, std::array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
-        // Match Xic -> pKπ
-        auto XicCandMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(mcParticles, XicCandMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        // Ξc± → p± K∓ π±
+        auto candXicMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+        if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XiccToXicPi);
         }
       }
