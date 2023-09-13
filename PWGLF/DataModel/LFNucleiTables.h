@@ -30,6 +30,7 @@ namespace fullEvent
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(MultFV0M, multFV0M, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   o2::soa::Index<>,
@@ -38,6 +39,7 @@ DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   collision::PosY,
                   collision::PosZ,
                   fullEvent::MultFV0M,
+                  fullEvent::CentFT0M,
                   fullEvent::IsEventReject,
                   fullEvent::RunNumber);
 using LfNuclEvent = LfNuclEvents::iterator;
@@ -97,6 +99,7 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
+
 } // namespace full
 namespace dummy
 {
@@ -226,7 +229,10 @@ DECLARE_SOA_TABLE(LfCandNucleusExtra, "AOD", "LFNUCLEXTRA",
 DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,
                   full::IsPhysicalPrimary,
-                  full::ProducedByGenerator);
+                  full::ProducedByGenerator,
+                  mcparticle::Px,
+                  mcparticle::Py,
+                  mcparticle::Pz);
 
 using LfCandNucleusFull = soa::Join<LfCandNucleus, LfCandNucleusExtra>;
 

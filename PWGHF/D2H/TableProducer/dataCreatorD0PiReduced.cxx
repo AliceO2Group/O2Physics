@@ -377,7 +377,7 @@ struct HfDataCreatorD0PiReducedMc {
   void processMc(aod::HfCand2ProngReduced const& candsD0,
                  aod::HfTracksReduced const& tracksPion,
                  aod::TracksWMc const&,
-                 aod::McParticles const& particlesMc)
+                 aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -398,35 +398,35 @@ struct HfDataCreatorD0PiReducedMc {
                                               trackPion.track_as<aod::TracksWMc>()};
         // B+ → D0(bar) π+ → (K+ π-) π+
         // Printf("Checking B+ → D0bar π+");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           // D0bar → K+ π-
           // Printf("Checking D0bar → K+ π-");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
           if (indexRec > -1) {
             flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
           } else {
             LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
           }
         }
-        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::TracksWMc>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
-        auto particleMother = particlesMc.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(mcParticles, trackPion.track_as<aod::TracksWMc>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
+        auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         rowHfD0PiMcRecReduced(candD0.globalIndex(), trackPion.globalIndex(), flag, origin, particleMother.pt());
       }
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // B+ → D0bar π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBPlus, std::array{static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBPlus, std::array{static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
         // Match D0bar -> π- K+
-        auto candD0MC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+        auto candD0MC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D0bar -> π- K+");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, static_cast<int>(pdg::Code::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, candD0MC, static_cast<int>(pdg::Code::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
         }
       }
@@ -444,7 +444,7 @@ struct HfDataCreatorD0PiReducedMc {
       std::array<float, 2> yProngs;
       std::array<float, 2> etaProngs;
       int counter = 0;
-      for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+      for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
         yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

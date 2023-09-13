@@ -83,7 +83,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
     }
 
     // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
-    if (TMath::Abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
+    if (std::abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
       // Printf("X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
@@ -97,9 +97,9 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
-        (TMath::Abs(hfCandX.impactParameter1()) > cuts->get(pTBin, "d0 Pi")) ||
-        (TMath::Abs(hfCandX.impactParameter2()) > cuts->get(pTBin, "d0 Pi"))) {
+    if ((std::abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
+        (std::abs(hfCandX.impactParameter1()) > cuts->get(pTBin, "d0 Pi")) ||
+        (std::abs(hfCandX.impactParameter2()) > cuts->get(pTBin, "d0 Pi"))) {
       return false; // DCA check on daughters
     }
 
@@ -115,7 +115,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
+    if (std::abs(track.pt()) < ptPidTpcMin || std::abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
     // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
@@ -129,7 +129,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTofPid(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
+    if (std::abs(track.pt()) < ptPidTofMin || std::abs(track.pt()) >= ptPidTofMax) {
       return false;
     }
     return true;
@@ -189,9 +189,11 @@ struct HfCandidateSelectorXToJpsiPiPi {
     // }
   }
 
-  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, TracksSel const& tracks)
+  void process(aod::HfCandX const& hfCandXs,
+               aod::HfCand2Prong const&,
+               TracksSel const& tracks)
   {
-    for (auto& hfCandX : hfCandXs) { // looping over X candidates
+    for (const auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandX.prong0();
       auto trackPos = hfCandX.prong1_as<TracksSel>(); // positive daughter

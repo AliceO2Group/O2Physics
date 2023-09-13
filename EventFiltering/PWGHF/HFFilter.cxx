@@ -169,7 +169,7 @@ struct HfFilter { // Main struct for HF triggers
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     cutsSingleTrack = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong, cutsTrackCharmBaryonBachelor};
 
@@ -545,7 +545,7 @@ struct HfFilter { // Main struct for HF triggers
 
         // 2-prong with Gamma (conversion photon)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
-        for (auto& v0 : v0sThisCollision) {
+        for (const auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
@@ -861,7 +861,7 @@ struct HfFilter { // Main struct for HF triggers
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massPi});
         auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massK, massK, massPi});
         auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massK});
-        for (auto& v0 : v0sThisCollision) {
+        for (const auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK || isGoodDPlus)) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
@@ -936,7 +936,7 @@ struct HfFilter { // Main struct for HF triggers
 
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
-        for (auto const& casc : cascThisColl) {
+        for (const auto& casc : cascThisColl) {
           if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
             continue;
           }

@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 struct HfTaskMuonCharmBeautySeparation {
   HistogramRegistry registry{"registry"};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
@@ -51,7 +51,8 @@ struct HfTaskMuonCharmBeautySeparation {
     registry.add("hForwardMultiplicity", "Multiplicity in forward direction", {HistType::kTH1F, {{20, 0, 20}}});
   }
 
-  void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
+  void process(aod::Collisions::iterator const& collision,
+               soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
   {
     auto pt = 0.;
     auto dcax = 0.;
@@ -64,7 +65,7 @@ struct HfTaskMuonCharmBeautySeparation {
 
     registry.fill(HIST("hZvtx"), zvtx);
 
-    for (auto const& muon : tracks) {
+    for (const auto& muon : tracks) {
       registry.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {

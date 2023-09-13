@@ -43,7 +43,7 @@ DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::Trac
 struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::FRICHTracksIndex> indF;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
@@ -174,10 +174,14 @@ struct HfCandidateSelectorD0Alice3Forward {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksSel const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const& forwardtracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusHFFlag = 0;

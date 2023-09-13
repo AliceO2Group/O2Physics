@@ -74,7 +74,7 @@ using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0
 BinningType corrBinning{{zBins, multBins}, true};
 
 using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
-using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
+using SelectedTracks = soa::Filtered<aod::TracksWDca>;
 using SelectedCandidatesData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 using SelectedCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using SelectedCollisionsMcGen = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
@@ -95,13 +95,14 @@ struct HfCorrelatorD0HadronsSelection {
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  void processD0SelectionData(aod::Collision const& collision, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processD0SelectionData(aod::Collision const& collision,
+                              soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     bool isD0Found = 0;
     if (selectedD0Candidates.size() > 0) {
       auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-      for (auto const& candidate1 : selectedD0CandidatesGrouped) {
+      for (const auto& candidate1 : selectedD0CandidatesGrouped) {
         // check decay channel flag for candidate1
         if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
           continue;
@@ -119,12 +120,13 @@ struct HfCorrelatorD0HadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionData, "Process D0 Selection Data", false);
 
-  void processD0SelectionMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+  void processD0SelectionMcRec(aod::Collision const& collision,
+                               soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
     bool isD0Found = 0;
     if (selectedD0candidatesMc.size() > 0) {
       auto selectedD0CandidatesGroupedMc = selectedD0candidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      for (auto const& candidate1 : selectedD0CandidatesGroupedMc) {
+      for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
         // check decay channel flag for candidate1
         if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
           continue;
@@ -142,14 +144,15 @@ struct HfCorrelatorD0HadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionMcRec, "Process D0 Selection MCRec", true);
 
-  void processD0SelectionMcGen(aod::McCollision const& mcCollision, aod::McParticles const& particlesMc)
+  void processD0SelectionMcGen(aod::McCollision const& mcCollision,
+                               aod::McParticles const& mcParticles)
   {
     bool isD0Found = 0;
-    for (auto const& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -230,7 +233,7 @@ struct HfCorrelatorD0Hadrons {
      {"hD0Bin", "D0 selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}},
      {"hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)bins;
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -255,7 +258,9 @@ struct HfCorrelatorD0Hadrons {
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
+                   aod::TracksWDca const& tracks,
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() == 0) {
@@ -282,7 +287,7 @@ struct HfCorrelatorD0Hadrons {
 
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-    for (auto const& candidate1 : selectedD0CandidatesGrouped) {
+    for (const auto& candidate1 : selectedD0CandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
         continue;
       }
@@ -384,7 +389,9 @@ struct HfCorrelatorD0Hadrons {
 
   // ================  Process starts for MCRec, same event ========================
 
-  void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+  void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
+                    aod::TracksWDca const& tracks,
+                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
     // protection against empty tables to be sliced
     if (selectedD0candidatesMc.size() == 0) {
@@ -414,7 +421,7 @@ struct HfCorrelatorD0Hadrons {
     bool flagD0 = false;
     bool flagD0bar = false;
 
-    for (auto const& candidate1 : selectedD0CandidatesGroupedMc) {
+    for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
       // check decay channel flag for candidate1
       if (!TESTBIT(candidate1.hfflag(), DecayType::D0ToPiK)) {
         continue;
@@ -550,17 +557,17 @@ struct HfCorrelatorD0Hadrons {
 
   // =================  Process starts for MCGen, same event ===================
 
-  void processMcGen(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMc)
+  void processMcGen(aod::McCollision const& mcCollision,
+                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles)
   {
-
     registry.fill(HIST("hEvtCountGen"), 0);
     // MC gen level
-    for (auto const& particle1 : particlesMc) {
+    for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -579,7 +586,7 @@ struct HfCorrelatorD0Hadrons {
       }
       registry.fill(HIST("hCountD0TriggersGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
 
-      for (auto const& particle2 : particlesMc) {
+      for (const auto& particle2 : mcParticles) {
         registry.fill(HIST("hTrackCounterGen"), 1); // total no. of tracks
         if (std::abs(particle2.eta()) > etaTrackMax) {
           continue;
@@ -595,16 +602,16 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounterGen"), 2); // fill before soft pi removal
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(particlesMc, particle2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(particlesMc, particle1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, pdg::Code::kDStar, true, nullptr, 1);
         if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
           continue;
 
         registry.fill(HIST("hTrackCounterGen"), 3); // fill after soft pion removal
 
-        auto getTracksSize = [&particlesMc](aod::McCollision const& collision) {
+        auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
           int nTracks = 0;
-          for (auto const& track : particlesMc) {
+          for (const auto& track : mcParticles) {
             if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
               nTracks++;
             }
@@ -629,15 +636,17 @@ struct HfCorrelatorD0Hadrons {
 
   // ====================== Implement Event mixing on Data ===================================
 
-  void processDataMixedEvent(SelectedCollisions& collisions, SelectedCandidatesData const& candidates, SelectedTracks const& tracks)
+  void processDataMixedEvent(SelectedCollisions const& collisions,
+                             SelectedCandidatesData const& candidates,
+                             SelectedTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto const& [c1, tracks1, c2, tracks2] : pairData) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M())),corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()))); // For debug
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
-      for (auto const& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (yCandMax >= 0. && std::abs(yD0(t1)) > yCandMax) {
           continue;
@@ -690,16 +699,18 @@ struct HfCorrelatorD0Hadrons {
 
   // ====================== Implement Event mixing on McRec ===================================
 
-  void processMcRecMixedEvent(SelectedCollisions& collisions, SelectedCandidatesMcRec const& candidates, SelectedTracks const& tracks)
+  void processMcRecMixedEvent(SelectedCollisions const& collisions,
+                              SelectedCandidatesMcRec const& candidates,
+                              SelectedTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
     bool flagD0 = false;
     bool flagD0bar = false;
-    for (auto const& [c1, tracks1, c2, tracks2] : pairMcRec) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
 
-      for (auto const& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (yCandMax >= 0. && std::abs(yD0(t1)) > yCandMax) {
           continue;
@@ -789,13 +800,14 @@ struct HfCorrelatorD0Hadrons {
 
   // ====================== Implement Event mixing on McGen ===================================
 
-  void processMcGenMixedEvent(SelectedCollisionsMcGen& collisions, SelectedTracksMcGen const& particlesMc)
+  void processMcGenMixedEvent(SelectedCollisionsMcGen const& collisions,
+                              SelectedTracksMcGen const& mcParticles)
   {
 
-    auto getTracksSize = [&particlesMc, this](SelectedCollisionsMcGen::iterator const& collision) {
+    auto getTracksSize = [&mcParticles, this](SelectedCollisionsMcGen::iterator const& collision) {
       int nTracks = 0;
-      auto associatedTracks = particlesMc.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
-      for (auto const& track : associatedTracks) {
+      auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
+      for (const auto& track : associatedTracks) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -806,18 +818,18 @@ struct HfCorrelatorD0Hadrons {
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
 
-    auto tracksTuple = std::make_tuple(particlesMc, particlesMc);
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelectedCollisionsMcGen, SelectedTracksMcGen, SelectedTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto const& [c1, tracks1, c2, tracks2] : pairMcGen) {
-      for (auto const& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         // Check track t1 is D0
         if (std::abs(t1.pdgCode()) != pdg::Code::kD0) {
           continue;
         }
 
-        double yD = RecoDecay::y(array{t1.px(), t1.py(), t1.pz()}, RecoDecay::getMassPDG(t1.pdgCode()));
+        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, RecoDecay::getMassPDG(t1.pdgCode()));
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
@@ -835,8 +847,8 @@ struct HfCorrelatorD0Hadrons {
         // ==============================soft pion removal================================
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(particlesMc, t2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(particlesMc, t1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, t2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, t1, pdg::Code::kDStar, true, nullptr, 1);
         if (std::abs(t2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
           continue;
         }

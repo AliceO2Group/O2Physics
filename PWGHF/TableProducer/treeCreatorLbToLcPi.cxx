@@ -182,7 +182,7 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Writes the full information in an output TTree
@@ -200,7 +200,7 @@ struct HfTreeCreatorLbToLcPi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto fillTable = [&](int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,

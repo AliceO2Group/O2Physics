@@ -42,7 +42,7 @@ DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackI
 
 struct HfCandidateSelectorD0ParametrizedPidRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
@@ -174,10 +174,14 @@ struct HfCandidateSelectorD0ParametrizedPid {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksSel const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const& barreltracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusD0NoPid = 0;

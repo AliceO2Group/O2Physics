@@ -328,7 +328,7 @@ struct TableMaker {
     // store the selection decisions
     uint64_t tag = collision.selection_raw();
     if (collision.sel7()) {
-      tag |= (uint64_t(1) << kNsel); //! SEL7 stored at position kNsel in the tag bit map
+      tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
     }
     // TODO: Add the event level decisions from the filtering task into the tag
 
@@ -688,7 +688,7 @@ struct TableMaker {
     // store the selection decisions
     uint64_t tag = collision.selection_raw();
     if (collision.sel7()) {
-      tag |= (uint64_t(1) << kNsel); //! SEL7 stored at position kNsel in the tag bit map
+      tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
     }
     // TODO: Add the event level decisions from the filtering task into the tag
 

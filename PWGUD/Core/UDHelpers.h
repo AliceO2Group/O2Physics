@@ -106,65 +106,8 @@ T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
 template <typename I, typename T>
 T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
 
-// In this variant of compatibleBCs the range of compatible BCs is calculated from the
-// collision time and the time resolution dt. Typically the range is +- 4*dt.
-template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
-{
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  // return if collisions has no associated BC
-  if (!collision.has_foundBC()) {
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-  }
-
-  // get associated BC
-  auto bcIter = collision.foundBC_as<T>();
-
-  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-
-  // enforce minimum number for deltaBC
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  if (deltaBC < nMinBCs) {
-    deltaBC = nMinBCs;
-  }
-  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
-
-  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-}
-
-// same as above but with an other collision iterator as input
-template <typename T>
-T compatibleBCs1(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
-{
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  // return if collisions has no associated BC
-  if (!collision.has_foundBC()) {
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-  }
-
-  // get associated BC
-  auto bcIter = collision.foundBC_as<T>();
-
-  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-
-  // enforce minimum number for deltaBC
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  if (deltaBC < nMinBCs) {
-    deltaBC = nMinBCs;
-  }
-  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
-
-  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-}
-
 // In this variant of compatibleBCs the bcIter is ideally placed within
-// [minBC, maxBC], but it does not need to be. The range is given by +- delatBC.
+// [minBC, maxBC], but it does not need to be. The range is given by meanBC +- delatBC.
 template <typename I, typename T>
 T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 {
@@ -224,6 +167,35 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   bcs.copyIndexBindings(slice);
   LOGF(debug, "  size of slice %d", slice.size());
   return slice;
+}
+
+// In this variant of compatibleBCs the range of compatible BCs is calculated from the
+// collision time and the time resolution dt. Typically the range is +- 4*dt.
+template <typename C, typename T>
+T compatibleBCs(C const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC() || ndt < 0) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.template foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
 
 // In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
@@ -472,25 +444,25 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 
     // 0 <= bit <= 31
     auto bit = bc2u.globalBC() - minbc;
-    if (!bc2u.selection_bit(evsel::kNoBGT0A))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0A))
       SETBIT(info.BGFT0Apf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGT0C))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0C))
       SETBIT(info.BGFT0Cpf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBT0A))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0A))
       SETBIT(info.BBFT0Apf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBT0C))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0C))
       SETBIT(info.BBFT0Cpf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGV0A))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGV0A))
       SETBIT(info.BGFV0Apf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBV0A))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBV0A))
       SETBIT(info.BBFV0Apf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGFDA))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDA))
       SETBIT(info.BGFDDApf, bit);
-    if (!bc2u.selection_bit(evsel::kNoBGFDC))
+    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDC))
       SETBIT(info.BGFDDCpf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBFDA))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDA))
       SETBIT(info.BBFDDApf, bit);
-    if (bc2u.selection_bit(evsel::kIsBBFDC))
+    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDC))
       SETBIT(info.BBFDDCpf, bit);
   }
 }
@@ -630,6 +602,12 @@ bool isPythiaCDE(T MCparts)
 template <typename T>
 bool isGraniittiCDE(T MCparts)
 {
+
+  for (auto MCpart : MCparts) {
+    LOGF(debug, " MCpart.pdgCode() %d", MCpart.pdgCode());
+  }
+  LOGF(debug, "");
+
   if (MCparts.size() < 7) {
     return false;
   } else {
@@ -665,11 +643,13 @@ TLorentzVector ivmGraniittiCDE(T MCparts)
 
     for (int ii = 7; ii < MCparts.size(); ii++) {
       auto mcPart = MCparts.iteratorAt(ii);
+      LOGF(debug, "  part %d / %d", mcPart.pdgCode(), mcPart.getGenStatusCode());
       if (mcPart.getGenStatusCode() == 0) {
         lvtmp.SetXYZT(mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
         ivm += lvtmp;
       }
     }
+    LOGF(debug, "");
   }
 
   return ivm;

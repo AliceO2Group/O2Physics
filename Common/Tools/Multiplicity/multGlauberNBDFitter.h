@@ -20,7 +20,6 @@
 #include "TH2.h"
 #include "TProfile.h"
 
-using namespace std;
 class multGlauberNBDFitter : public TNamed
 {
 

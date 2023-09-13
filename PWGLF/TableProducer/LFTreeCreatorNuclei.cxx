@@ -94,7 +94,7 @@ struct LfTreeCreatorNuclei {
                        (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||
                        (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
                                     aod::pidTPCLfFullPi, aod::pidTOFFullPi,
@@ -140,6 +140,7 @@ struct LfTreeCreatorNuclei {
                 collision.posY(),
                 collision.posZ(),
                 collision.multFV0M(),
+                collision.centFT0M(),
                 collision.sel8(),
                 collision.bc().runNumber());
 
@@ -205,10 +206,13 @@ struct LfTreeCreatorNuclei {
           const auto& particle = track.mcParticle();
           tableCandidateMC(particle.pdgCode(),
                            particle.isPhysicalPrimary(),
-                           particle.producedByGenerator());
+                           particle.producedByGenerator(),
+                           particle.px(),
+                           particle.py(),
+                           particle.pz());
           continue;
         }
-        tableCandidateMC(0, -1, -1);
+        tableCandidateMC(0, -1, -1, 0, 0, 0);
       }
     }
   }

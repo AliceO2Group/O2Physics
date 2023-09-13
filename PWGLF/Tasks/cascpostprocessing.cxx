@@ -23,6 +23,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
@@ -77,6 +78,9 @@ struct cascpostprocessing {
   Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
 
   HistogramRegistry registry{"registryts"};
+
+  // Necessary for particle charges
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
   {
@@ -269,14 +273,14 @@ struct cascpostprocessing {
       }
 
       if (isXi) {
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) > masswin)
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapxi()) > rap)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
       } else {
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) > masswin)
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapomega()) > rap)
@@ -318,7 +322,7 @@ struct cascpostprocessing {
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (TMath::Abs(candidate.masslambdadau() - RecoDecay::getMassPDG(3122)) > lambdamasswin)
+      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3122)) > lambdamasswin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
@@ -366,7 +370,7 @@ struct cascpostprocessing {
         if (candidate.ctauxi() > proplifetime * ctauxiPDG)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < rejcomp)
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapxi();
@@ -382,7 +386,7 @@ struct cascpostprocessing {
         if (candidate.ctauomega() > proplifetime * ctauomegaPDG)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < rejcomp)
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapomega();
@@ -441,12 +445,12 @@ struct cascpostprocessing {
 
       if (isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc) {
+        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < masswintpc) {
           isCandidate = 1;
         }
       } else if (!isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc) {
+        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < masswintpc) {
           isCandidate = 1;
         }
       }

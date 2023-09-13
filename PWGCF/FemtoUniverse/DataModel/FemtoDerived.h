@@ -49,6 +49,7 @@ namespace femtouniverseparticle
 /// Distinuishes the different particle types
 enum ParticleType {
   kTrack,           //! Track
+  kMCTruthTrack,    //! MC Truth Track
   kV0,              //! V0
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
@@ -58,8 +59,8 @@ enum ParticleType {
   kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "kPhi", "kPhiChild"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "Phi", "PhiChild"}; //! Naming of the different particle types
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 

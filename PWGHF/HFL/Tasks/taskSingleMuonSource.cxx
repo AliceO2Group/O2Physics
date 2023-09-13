@@ -14,7 +14,6 @@
 // \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
 #include <TDatabasePDG.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -94,7 +93,7 @@ struct HfTaskSingleMuonSource {
 
     HistogramConfigSpec h3PtDCAChi2{HistType::kTH3F, {axisPt, axisDCA, axisChi2}};
 
-    for (auto const& src : muonSources) {
+    for (const auto& src : muonSources) {
       registry.add(Form("h3%sPtDCAChi2", src.Data()), "", h3PtDCAChi2);
     }
   }
@@ -145,7 +144,7 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       // compute the flavor of constituent quark
-      const int flv(pdgRem / TMath::Power(10, static_cast<int>(TMath::Log10(pdgRem))));
+      const int flv(pdgRem / std::pow(10, static_cast<int>(std::log10(pdgRem))));
       if (flv > 6) {
         // no more than 6 flavors
         continue;
@@ -249,7 +248,9 @@ struct HfTaskSingleMuonSource {
     }
   }
 
-  void process(MyCollisions::iterator const& collision, McMuons const& muons, aod::McParticles const&)
+  void process(MyCollisions::iterator const& collision,
+               McMuons const& muons,
+               aod::McParticles const&)
   {
     // event selections
     if (!collision.sel8()) {

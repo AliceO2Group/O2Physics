@@ -120,7 +120,7 @@ struct HfTaskCorrelationDplusHadrons {
       {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;
@@ -144,7 +144,7 @@ struct HfTaskCorrelationDplusHadrons {
 
   void processData(aod::DplusHadronPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -191,7 +191,7 @@ struct HfTaskCorrelationDplusHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRec(aod::DplusHadronPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -244,7 +244,7 @@ struct HfTaskCorrelationDplusHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(aod::DplusHadronPair const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();

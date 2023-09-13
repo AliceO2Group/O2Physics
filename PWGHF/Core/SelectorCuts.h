@@ -91,13 +91,21 @@ constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   1000.0};
 auto vecBinsPtTrack = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
-// default values for the cuts
+// default values for the cuts of displaced tracks
 constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
                                                            {0.0025, 10.},  /* 0.5 < pt < 1 */
                                                            {0.0025, 10.},  /* 1   < pt < 1.5 */
                                                            {0.0025, 10.},  /* 1.5 < pt < 2 */
                                                            {0.0000, 10.},  /* 2   < pt < 3 */
                                                            {0.0000, 10.}}; /* 3   < pt < 1000 */
+
+// default values for the cuts of primary tracks (e.g. D* soft pions)
+constexpr double cutsTrackPrimary[nBinsPtTrack][nCutVarsTrack] = {{0.0000, 2.},  /* 0   < pt < 0.5 */
+                                                                  {0.0000, 2.},  /* 0.5 < pt < 1 */
+                                                                  {0.0000, 2.},  /* 1   < pt < 1.5 */
+                                                                  {0.0000, 2.},  /* 1.5 < pt < 2 */
+                                                                  {0.0000, 2.},  /* 2   < pt < 3 */
+                                                                  {0.0000, 2.}}; /* 3   < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{};
@@ -137,12 +145,17 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
-static constexpr int nBinsPt = 1;
+static constexpr int nBinsPt = 6;
 static constexpr int nCutScores = 3;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
-  1000};
+  1.,
+  2.,
+  4.,
+  6.,
+  10.,
+  50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the ML model paths, one model per pT bin
@@ -154,11 +167,23 @@ constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {{0.5, 0.5, 0.5}};
+constexpr double cuts[nBinsPt][nCutScores] = {
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
-  "pT bin 0"};
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+};
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
@@ -211,6 +236,29 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
+
+namespace hf_cuts_presel_dstar
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 2;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.,
+  5.,
+  1000.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.17, 0.05},  /* 1 < pt < 5 */
+                                            {0.17, 0.08}}; /* 5 < pt < 1000 */
+
+// row labels
+static const std::vector<std::string> labelsPt{};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"deltaMassMax", "deltaMassD0"};
+} // namespace hf_cuts_presel_dstar
 
 namespace hf_cuts_d0_to_pi_k
 {

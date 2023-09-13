@@ -57,14 +57,13 @@ struct HfCandidateSelectorD0 {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
-  Configurable<std::vector<std::string>> modelPathsMl{"modelPathsMl", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
-  Configurable<std::vector<std::string>> onnxFilesCCDB{"onnxFilesCCDB", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names on CCDB, for each pT bin"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -79,8 +78,21 @@ struct HfCandidateSelectorD0 {
   using cand2ProngKF = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF>;
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
+  // Define histograms
+  AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
+  AxisSpec axisBdtScore{100, 0.f, 1.f};
+  AxisSpec axisSelStatus{2, -0.5f, 1.5f};
+  HistogramRegistry registry{"registry"};
+
   void init(InitContext& initContext)
   {
+    if (applyMl) {
+      registry.add("DebugBdt/hBdtScore1VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
+      registry.add("DebugBdt/hBdtScore2VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
+      registry.add("DebugBdt/hBdtScore3VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
+      registry.add("DebugBdt/hMassDmesonSel", ";#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassDmeson}});
+    }
+
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -90,10 +102,12 @@ struct HfCandidateSelectorD0 {
     selectorKaon = selectorPion;
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl, modelPathsMl);
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFilesCCDB, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
       outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
@@ -232,11 +246,17 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
+<<<<<<< HEAD
   template <int ReconstructionType, typename THfCand2Prong>
   void processSel(THfCand2Prong const& candidates, TracksSel const&)
+=======
+
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const&)
+>>>>>>> 76acd5f6ff94b2fa82fd234526cf84f09daf68a9
   {
     // looping over 2-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;
@@ -348,7 +368,6 @@ struct HfCandidateSelectorD0 {
                                          candidate.cpaXY(),
                                          candidate.decayLength(),
                                          candidate.decayLengthXY(),
-                                         candidate.decayLengthXYNormalised(),
                                          candidate.impactParameter0(),
                                          candidate.impactParameter1(),
                                          candidate.impactParameterProduct()};
@@ -359,6 +378,15 @@ struct HfCandidateSelectorD0 {
         if (!isSelectedMl) {
           statusD0 = 0;
           statusD0bar = 0;
+        }
+        registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0);
+        registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0bar);
+        registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0);
+        registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
+        registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
+        registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
+        if (statusD0 != 0 || statusD0bar != 0) {
+          registry.fill(HIST("DebugBdt/hMassDmesonSel"), invMassD0ToPiK(candidate));
         }
       }
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);

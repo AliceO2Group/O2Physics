@@ -72,6 +72,18 @@ class FemtoUniverseDetaDphiStar
         }
       }
     }
+    if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+      for (int i = 0; i < 2; i++) {
+        std::string dirName = static_cast<std::string>(dirNames[2]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        if (plotForEveryRadii) {
+          for (int j = 0; j < 9; j++) {
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          }
+        }
+      }
+    }
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
@@ -118,6 +130,28 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+      /// Track-Phi combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kPhi candidates.";
+        return false;
+      }
+
+      bool pass = false;
+      for (int i = 0; i < 2; i++) {
+        auto indexOfDaughter = part2.index() - 2 + i;
+        auto daughter = particles.begin() + indexOfDaughter;
+        auto deta = part1.eta() - daughter.eta();
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
+        histdetadpi[i][0]->Fill(deta, dphiAvg);
+        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          pass = true;
+        } else {
+          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        }
+      }
+      return pass;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -127,7 +161,7 @@ class FemtoUniverseDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
-  static constexpr std::string_view dirNames[2] = {"kTrack_kTrack/", "kTrack_kV0/"};
+  static constexpr std::string_view dirNames[3] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kPhi/"};
 
   static constexpr std::string_view histNames[2][2] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1"},
                                                        {"detadphidetadphi0After_0", "detadphidetadphi0After_1"}};

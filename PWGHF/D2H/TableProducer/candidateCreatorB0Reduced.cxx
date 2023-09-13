@@ -134,7 +134,7 @@ struct HfCandidateCreatorB0Reduced {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
           // compute invariant
-          massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
+          massDPi = RecoDecay::m(std::array{pVecD, pVecPion}, std::array{massD, massPi});
 
           if (std::abs(massDPi - massB0) > invMassWindowB0) {
             continue;
@@ -150,7 +150,7 @@ struct HfCandidateCreatorB0Reduced {
           // get uncertainty of the decay length
           double phi, theta;
           // getPointDirection modifies phi and theta
-          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
+          getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
