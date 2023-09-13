@@ -45,7 +45,7 @@ float unPack(const typename binningType::binned_t& b)
 }
 
 template <typename binningType>
-typename binningType::binned_t packInTableInt(const float& valueToBin)
+typename binningType::binned_t packInTableOffset(const float& valueToBin)
 {
   if (valueToBin <= binningType::binned_min) {
     return binningType::underflowBin;
@@ -57,7 +57,7 @@ typename binningType::binned_t packInTableInt(const float& valueToBin)
 }
 
 template <typename binningType>
-float unPackInt(const typename binningType::binned_t& b)
+float unPackOffset(const typename binningType::binned_t& b)
 {
   return static_cast<float>((binningType::binned_max - binningType::binned_min) * 0.5 + binningType::bin_width * b);
 }
@@ -120,7 +120,7 @@ DECLARE_SOA_COLUMN(StoredTOFNSigmaDe, storedTofNSigmaDe, nsigma::binning::binned
 DECLARE_SOA_COLUMN(StoredTPCNSigmaDe, storedTpcNSigmaDe, nsigma::binning::binned_t);
 
 DECLARE_SOA_DYNAMIC_COLUMN(CrossedRows, tpcNClsCrossedRows,
-                           [](storedcrossedrows::binning::binned_t binned) -> float { return singletrackselector::unPackInt<storedcrossedrows::binning>(binned); });
+                           [](storedcrossedrows::binning::binned_t binned) -> float { return singletrackselector::unPackOffset<storedcrossedrows::binning>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
                            [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr,
