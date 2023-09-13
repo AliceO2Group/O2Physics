@@ -16,6 +16,7 @@
 #ifndef PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 #define PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 
+#include <sys/_types/_int8_t.h>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -110,7 +111,7 @@ DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls,
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float); // TPC chi2
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, float);       // Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float); // ITS chi2
-DECLARE_SOA_COLUMN(Sign, sign, short);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(StoredCrossedRows, storedCrossedRows, storedcrossedrows::binning::binned_t);
