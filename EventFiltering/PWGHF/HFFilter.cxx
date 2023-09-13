@@ -169,7 +169,7 @@ struct HfFilter { // Main struct for HF triggers
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     cutsSingleTrack = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong, cutsTrackCharmBaryonBachelor};
 

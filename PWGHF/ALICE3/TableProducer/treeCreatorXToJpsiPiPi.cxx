@@ -151,7 +151,7 @@ struct HfTreeCreatorXToJpsiPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const& mcCollisions,
                soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
                TracksWPid const& tracks)

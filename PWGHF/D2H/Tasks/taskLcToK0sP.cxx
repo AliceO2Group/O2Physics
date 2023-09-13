@@ -351,7 +351,7 @@ struct HfTaskLcToK0sP {
   }
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
+                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
                  aod::TracksWMc const& tracks,
                  TracksWPid const&)
   {
@@ -515,8 +515,8 @@ struct HfTaskLcToK0sP {
       }
     }
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (const auto& particle : particlesMC) {
+    // Printf("MC Particles: %d", mcParticles.size());
+    for (const auto& particle : mcParticles) {
       if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;

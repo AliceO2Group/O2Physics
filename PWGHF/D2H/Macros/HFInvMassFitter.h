@@ -30,7 +30,6 @@
 #include <TFitResult.h>
 #include <TH1.h>
 #include <TH1F.h>
-#include <TMath.h>
 #include <TNamed.h>
 #include <TPaveText.h>
 #include <TStyle.h>

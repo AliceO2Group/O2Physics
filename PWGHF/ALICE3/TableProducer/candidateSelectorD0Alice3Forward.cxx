@@ -43,7 +43,7 @@ DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::Trac
 struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::FRICHTracksIndex> indF;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts

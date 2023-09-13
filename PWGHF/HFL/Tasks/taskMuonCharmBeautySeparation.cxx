@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 struct HfTaskMuonCharmBeautySeparation {
   HistogramRegistry registry{"registry"};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
