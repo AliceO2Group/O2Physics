@@ -16,23 +16,26 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Pengzhong Lu <pengzhong.lu@cern.ch>, GSI Darmstadt, USTC
 
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
+
+#include <KFParticleBase.h>
+#include <KFParticle.h>
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFVertex.h>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-
-/// includes KFParticle
-#include "Tools/KFparticle/KFUtilities.h"
-#include <KFPTrack.h>
-#include <KFParticleBase.h>
-#include <KFPVertex.h>
-#include <KFParticle.h>
-#include <KFVertex.h>
 
 using namespace o2;
 using namespace o2::framework;
