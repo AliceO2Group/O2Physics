@@ -59,7 +59,7 @@ struct PureMcMultiplicityCounter {
       {"Particles/Primaries/Eta", " ; #eta", {HistType::kTH1F, {EtaAxis}}},
       {"Particles/Primaries/Y", " ; y", {HistType::kTH1F, {RapidityAxis}}},
       {"Particles/Primaries/EtaZvtx", " ; #eta; Z_{vtx} (cm); particles", {HistType::kTH2F, {EtaAxis, ZAxis}}},
-      {"MCEvents/Properties/ProcessID","; process ID",{HistType::kTH1F, {ProcAxis}}},
+      {"MCEvents/Properties/ProcessID", "; process ID", {HistType::kTH1F, {ProcAxis}}},
       {"MCEvents/Properties/ScalePerProcessID", " ; scale (GeV); process ID", {HistType::kTH2F, {ScaleAxis, ProcAxis}}},
       {"MCEvents/Properties/NMPIsPerProcessID", " ; N_{MPI}; process ID", {HistType::kTH2F, {MPIAxis, ProcAxis}}},
       {"MCEvents/Properties/ScaleVsNMPIsPerProcessID", " ;scale (GeV); N_{MPI}; process ID", {HistType::kTHnSparseF, {MPIAxis, ScaleAxis, ProcAxis}}},
@@ -77,7 +77,7 @@ struct PureMcMultiplicityCounter {
     AxisSpec MultAxis = {multBinning};
     registry.add({"MCEvents/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"MCEvents/Properties/MultiplicityPerProcessID", " ; N_{p}; process ID; events", {HistType::kTH2F, {MultAxis, ProcAxis}}});
-    registry.add({"MCEvents/Properties/MultiplicityVsScalePerProcessID"," ; scale; N_{p}; process ID",{HistType::kTHnSparseF, {ScaleAxis, MultAxis, ProcAxis}}});
+    registry.add({"MCEvents/Properties/MultiplicityVsScalePerProcessID", " ; scale; N_{p}; process ID", {HistType::kTHnSparseF, {ScaleAxis, MultAxis, ProcAxis}}});
     registry.add({"MCEvents/Properties/MultiplicityVsMPIsPerProcessID", " ; N_{MPI}; N_{p}; process ID", {HistType::kTHnSparseF, {MPIAxis, MultAxis, ProcAxis}}});
 
     if (doprocessReco) {
