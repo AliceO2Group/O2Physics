@@ -20,6 +20,6 @@ o2physics_add_dpl_workflow(dptdpt-filter
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(single-track-selector
-                    SOURCES singleTrackSelector.cxx
+                    SOURCES singletrackselector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
