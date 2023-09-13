@@ -140,30 +140,32 @@ void EventPlaneHelper::DoCorrections(float& qx, float& qy,
   qy = (qy - corrections[2] * qx) / (1.0 - corrections[3] * corrections[2]);
 
   // Rescaling of the Qx-Qy into a circle.
-  if (corrections[4] != 0 ) {
+  if (corrections[4] != 0) {
     qx /= corrections[4];
   }
-  if (corrections[5] != 0 ) {
+  if (corrections[5] != 0) {
     qy /= corrections[5];
   }
 }
 
 void EventPlaneHelper::DoRecenter(float& qx, float& qy, float x0, float y0)
 {
- qx -= x0;
- qy -= y0;
+  qx -= x0;
+  qy -= y0;
 }
 
 void EventPlaneHelper::DoTwist(float& qx, float& qy, float lp, float lm)
 {
- qx = (qx - lm*qy) / (1.0 - lm*lp );
- qy = (qy - lp*qx) / (1.0 - lm*lp );
+  qx = (qx - lm * qy) / (1.0 - lm * lp);
+  qy = (qy - lp * qx) / (1.0 - lm * lp);
 }
 
 void EventPlaneHelper::DoRescale(float& qx, float& qy, float ap, float am)
 {
- if( ap!= 0 ) qx /= ap;
- if( am!= 0 ) qy /= am;
+  if (ap != 0)
+    qx /= ap;
+  if (am != 0)
+    qy /= am;
 }
 
 void EventPlaneHelper::GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY)
@@ -208,5 +210,5 @@ double EventPlaneHelper::GetResolution(const std::shared_ptr<TProfile> prof)
   double avgAC = prof->GetBinContent(2);
   double avgBC = prof->GetBinContent(3);
 
-  return TMath::Sqrt( avgAB*avgAC / avgBC );
+  return TMath::Sqrt(avgAB * avgAC / avgBC);
 }

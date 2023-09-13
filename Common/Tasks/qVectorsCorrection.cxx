@@ -169,7 +169,7 @@ struct qVectorsCorrection {
           break;
       } // End switch(centBin)
 
-    } // Go to the next qVec.
+    }   // Go to the next qVec.
   }     // End void process(...)
 };
 
