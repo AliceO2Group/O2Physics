@@ -84,10 +84,10 @@ struct evtPlanesTable {
 
     const AxisSpec axisEP{200, -TMath::Pi() / 2., TMath::Pi() / 2.};
 
-    for(int i=0;i<8;i++){
+    for (int i = 0; i < 8; i++) {
       histosQA.add(("Centrality_0-5/histEP" + (std::string)ep::detNames[i]).c_str(),
-                 ("#Psi_{2} for " + (std::string)ep::detNames[i] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1F, {axisEP});
+                   ("#Psi_{2} for " + (std::string)ep::detNames[i] + (std::string)cfgCorrStep).c_str(),
+                   HistType::kTH1F, {axisEP});
     }
 
     for (int iBin = 1; iBin < 8; iBin++) {
@@ -126,7 +126,7 @@ struct evtPlanesTable {
     evtPlaneValues[6] = helperEP.GetEventPlane(qVec.qvecFT0CRectrRe(), qVec.qvecFT0CRectrIm());
     evtPlaneValues[7] = helperEP.GetEventPlane(qVec.qvecFT0CTwistRe(), qVec.qvecFT0CTwistIm());
 
-   static_for<0, 7>([&](auto iDet) {
+    static_for<0, 7>([&](auto iDet) {
       constexpr int indexDet = iDet.value;
       switch (centBin) {
         case 0:

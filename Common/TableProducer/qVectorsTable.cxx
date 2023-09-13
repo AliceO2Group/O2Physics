@@ -67,7 +67,7 @@ struct qVectorsTable {
   // LOKI: We have here all centrality estimators for Run 3 (except FDDM and NTPV),
   // but the Q-vectors are calculated only for some of them.
 
-//  Configurable<bool> cfgDoAnaTPC{"cfgDoAnaTPC", false, "flag for TPC track analysis"};
+  //  Configurable<bool> cfgDoAnaTPC{"cfgDoAnaTPC", false, "flag for TPC track analysis"};
 
   struct : ConfigurableGroup {
     Configurable<std::vector<float>> cfgFT0ACentBin0{"cfgFT0ACentBin0", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 0"};
@@ -155,7 +155,7 @@ struct qVectorsTable {
     // In the meantime, call upon the external files with all the configurables.
   }
 
-//  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
+  //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
   void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
     // Get the centrality value for all subscribed estimators and takes the one
@@ -179,8 +179,8 @@ struct qVectorsTable {
     float qVectFT0C_rectr[2] = {0.};
     float qVectFT0C_twist[2] = {0.};
 
-//    float qVectBPos[2] = {0.};
-//    float qVectBNeg[2] = {0.};
+    //    float qVectBPos[2] = {0.};
+    //    float qVectBNeg[2] = {0.};
 
     TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
     double sumAmplDet = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
@@ -225,7 +225,7 @@ struct qVectorsTable {
         helperEP.SumQvectors(0, iChC + 96, ampl, QvecDet, sumAmplDet);
       }
 
-      printf("Total amp = %.3f \n",sumAmplDet);
+      printf("Total amp = %.3f \n", sumAmplDet);
 
       if (sumAmplDet != 0) {
         QvecDet /= sumAmplDet;
@@ -268,22 +268,21 @@ struct qVectorsTable {
       qVectFV0A[0] = -999.;
       qVectFV0A[1] = -999.;
     }
-/*
-    if( cfgDoAnaTPC ){
-      for (auto& trk : tracks) {
-        if( !trk.isGlobalTrack() ) continue;
-        if( abs( trk.eta() ) < 0.1 || abs( trk.eta() ) > 0.8 ) continue;
-        if( trk.eta() > 0 ){
-          qVectBPos[0] = trk.pt() * TMath::Cos( 2*trk.phi());
-          qVectBPos[1] = trk.pt() * TMath::Sin( 2*trk.phi());
-        } else if( trk.eta() < 0 ){
-          qVectBNeg[0] = trk.pt() * TMath::Cos( 2*trk.phi());
-          qVectBNeg[1] = trk.pt() * TMath::Sin( 2*trk.phi());
+    /*
+        if( cfgDoAnaTPC ){
+          for (auto& trk : tracks) {
+            if( !trk.isGlobalTrack() ) continue;
+            if( abs( trk.eta() ) < 0.1 || abs( trk.eta() ) > 0.8 ) continue;
+            if( trk.eta() > 0 ){
+              qVectBPos[0] = trk.pt() * TMath::Cos( 2*trk.phi());
+              qVectBPos[1] = trk.pt() * TMath::Sin( 2*trk.phi());
+            } else if( trk.eta() < 0 ){
+              qVectBNeg[0] = trk.pt() * TMath::Cos( 2*trk.phi());
+              qVectBNeg[1] = trk.pt() * TMath::Sin( 2*trk.phi());
+            }
+          }
         }
-      }
-    }
-*/
-
+    */
 
     /// TODO: Repeat here the procedure for any other Qvector columns.
     /// Do not forget to add the configurable for the correction constants.
@@ -339,7 +338,7 @@ struct qVectorsTable {
         break;
     }
 
-    for(int i=0;i<2;i++){
+    for (int i = 0; i < 2; i++) {
       qVectFT0C_uncor[i] = qVectFT0C[i];
       qVectFT0C_rectr[i] = qVectFT0C[i];
       qVectFT0C_twist[i] = qVectFT0C[i];
@@ -349,8 +348,8 @@ struct qVectorsTable {
     helperEP.DoCorrections(qVectFT0C[0], qVectFT0C[1], corrConstFT0C);
     helperEP.DoCorrections(qVectFV0A[0], qVectFV0A[1], corrConstFV0A);
 
-    helperEP.DoRecenter( qVectFT0C_rectr[0], qVectFT0C_rectr[1], corrConstFT0A[0], corrConstFT0A[1] );
-    helperEP.DoTwist( qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0A[2], corrConstFT0A[3] );
+    helperEP.DoRecenter(qVectFT0C_rectr[0], qVectFT0C_rectr[1], corrConstFT0A[0], corrConstFT0A[1]);
+    helperEP.DoTwist(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0A[2], corrConstFT0A[3]);
 
     std::vector<float>().swap(corrConstFT0A);
     std::vector<float>().swap(corrConstFT0C);
