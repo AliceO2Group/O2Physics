@@ -83,8 +83,6 @@ struct singleTrackSelector {
                track.px(),
                track.py(),
                track.pz(),
-               track.p(),
-               track.pt(),
                track.tpcInnerParam(),
                track.tpcSignal(),
                track.beta(),
