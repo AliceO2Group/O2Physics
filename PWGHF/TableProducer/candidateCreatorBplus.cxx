@@ -239,7 +239,7 @@ struct HfCandidateCreatorBplus {
 
           // Select D0pi- and D0(bar)pi+ pairs only
           if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
-            // Printf("D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
+            // LOGF(debug, "D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
             continue;
           }
 
@@ -345,8 +345,6 @@ struct HfCandidateCreatorBplusExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateBPlus) {
-      // Printf("New rec. candidate");
-
       flag = 0;
       origin = 0;
       auto candDaughterD0 = candidate.prong0_as<aod::HfCand2Prong>();
@@ -354,7 +352,6 @@ struct HfCandidateCreatorBplusExpressions {
       auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
-      // Printf("Checking B± → D0(bar) π±");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
       indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -pdg::Code::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
@@ -366,7 +363,6 @@ struct HfCandidateCreatorBplusExpressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       signB = 0;
@@ -374,11 +370,9 @@ struct HfCandidateCreatorBplusExpressions {
       int indexGenD0 = -1;
 
       // B± → D0bar(D0) π± → (K± π∓) π±
-      // Printf("Checking B± → D0(bar) π±");
       std::vector<int> arrayDaughterB;
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
         // D0(bar) → π± K∓
-        // Printf("Checking D0(bar) → π± K∓");
         for (auto iD : arrayDaughterB) {
           auto candDaughterMC = mcParticles.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {

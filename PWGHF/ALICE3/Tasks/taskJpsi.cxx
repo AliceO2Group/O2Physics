@@ -196,7 +196,6 @@ struct HfTaskJpsiMc {
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
     for (const auto& candidate : candidates) {
@@ -274,7 +273,6 @@ struct HfTaskJpsiMc {
       }
     }
     // MC gen.
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {

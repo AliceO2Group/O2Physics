@@ -160,7 +160,7 @@ struct HfDataCreatorD0PiReduced {
     }
     // reject pion not compatible with D0/D0bar hypothesis
     if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
-      // Printf("D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
+      // LOGF(debug, "D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
       return false;
     }
     // reject pions that are D daughters
@@ -397,11 +397,9 @@ struct HfDataCreatorD0PiReducedMc {
                                               candD0.prong1_as<aod::TracksWMc>(),
                                               trackPion.track_as<aod::TracksWMc>()};
         // B+ → D0(bar) π+ → (K+ π-) π+
-        // Printf("Checking B+ → D0bar π+");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           // D0bar → K+ π-
-          // Printf("Checking D0bar → K+ π-");
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
           if (indexRec > -1) {
             flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
@@ -418,14 +416,12 @@ struct HfDataCreatorD0PiReducedMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // B+ → D0bar π+
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBPlus, std::array{static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
-        // Match D0bar -> π- K+
+        // D0bar → π- K+
         auto candD0MC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking D0bar -> π- K+");
         if (RecoDecay::isMatchedMCGen(mcParticles, candD0MC, static_cast<int>(pdg::Code::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
         }

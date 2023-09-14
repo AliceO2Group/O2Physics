@@ -177,7 +177,6 @@ struct HfTaskXiccMc {
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
@@ -258,7 +257,6 @@ struct HfTaskXiccMc {
       }
     } // end of loop over reconstructed candidates
     // MC gen.
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
