@@ -160,7 +160,7 @@ struct HfDataCreatorD0PiReduced {
     }
     // reject pion not compatible with D0/D0bar hypothesis
     if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
-      // Printf("D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
+      // LOGF(debug, "D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
       return false;
     }
     // reject pions that are D daughters
