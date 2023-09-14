@@ -16,7 +16,6 @@
 #ifndef PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 #define PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 
-#include <sys/_types/_int8_t.h>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
