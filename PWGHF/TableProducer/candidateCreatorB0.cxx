@@ -345,7 +345,6 @@ struct HfCandidateCreatorB0Expressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateB0) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -359,11 +358,9 @@ struct HfCandidateCreatorB0Expressions {
                                         candD.prong2_as<aod::TracksWMc>()};
 
       // B0 → D- π+ → (π- K+ π-) π+
-      // Printf("Checking B0 → D- π+");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // D- → π- K+ π-
-        // Printf("Checking D- → π- K+ π-");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, pdg::Code::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
@@ -416,14 +413,12 @@ struct HfCandidateCreatorB0Expressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // B0 → D- π+
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kB0, std::array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
-        // Match D- -> π- K+ π-
+        // D- → π- K+ π-
         auto candDMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking D- -> π- K+ π-");
         if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(pdg::Code::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }

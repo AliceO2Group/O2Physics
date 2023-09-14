@@ -264,7 +264,6 @@ struct HfTaskB0 {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 

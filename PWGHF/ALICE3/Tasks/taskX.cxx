@@ -159,7 +159,6 @@ struct HfTaskXMc {
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
@@ -206,12 +205,10 @@ struct HfTaskXMc {
       }
     } // rec
     // MC gen.
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
-          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());

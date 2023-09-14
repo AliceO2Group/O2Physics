@@ -187,7 +187,6 @@ struct HfTaskLbMc {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      // Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
@@ -241,7 +240,6 @@ struct HfTaskLbMc {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
