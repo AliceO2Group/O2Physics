@@ -227,7 +227,7 @@ bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
 
   // B0 mass cut
   if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
-    // Printf("B0 topol selection failed at mass diff check");
+    // LOGF(debug, "B0 topol selection failed at mass diff check");
     return false;
   }
 

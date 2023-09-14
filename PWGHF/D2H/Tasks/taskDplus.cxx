@@ -133,7 +133,6 @@ struct HfTaskDplus {
                  aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : recoFlagDPlusCandidates) {
       // not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
@@ -191,7 +190,6 @@ struct HfTaskDplus {
       }
     }
     // MC gen.
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();

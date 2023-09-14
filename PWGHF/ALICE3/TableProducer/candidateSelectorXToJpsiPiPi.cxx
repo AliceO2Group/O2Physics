@@ -73,23 +73,23 @@ struct HfCandidateSelectorXToJpsiPiPi {
     auto candpT = hfCandX.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
-      // Printf("X topol selection failed at getpTBin");
+      // LOGF(debug, "X topol selection failed at getpTBin");
       return false;
     }
 
     if (candpT < ptCandMin || candpT >= ptCandMax) {
-      // Printf("X topol selection failed at cand pT check");
+      // LOGF(debug, "X topol selection failed at cand pT check");
       return false; // check that the candidate pT is within the analysis range
     }
 
     // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
     if (std::abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
-      // Printf("X topol selection failed at mass diff check");
+      // LOGF(debug, "X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
 
     if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
-      // Printf("X topol selection failed at daughter pT check");
+      // LOGF(debug, "X topol selection failed at daughter pT check");
       return false; // cut on daughter pT
     }
 
@@ -219,7 +219,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       // daughter track validity selection
       if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at daughter selection");
+        // LOGF(debug, "X candidate selection failed at daughter selection");
         continue;
       }
 
@@ -228,18 +228,18 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
       if (!selectionTopol(hfCandX, candJpsi, trackPos, trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at selection topology");
+        // LOGF(debug, "X candidate selection failed at selection topology");
         continue;
       }
 
       if (selectionPID(trackPos) == 0 || selectionPID(trackNeg) == 0) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at selection PID");
+        // LOGF(debug, "X candidate selection failed at selection PID");
         continue;
       }
 
       hfSelXToJpsiPiPiCandidate(selJpsiToEE, selJpsiToMuMu);
-      // Printf("X candidate selection successful, candidate should be selected");
+      // LOGF(debug, "X candidate selection successful, candidate should be selected");
     }
   }
 };

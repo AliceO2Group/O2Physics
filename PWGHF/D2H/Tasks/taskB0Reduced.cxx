@@ -218,7 +218,6 @@ struct HfTaskB0Reduced {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", mcParticles.size());
     for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
