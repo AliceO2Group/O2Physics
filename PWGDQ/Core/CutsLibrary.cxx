@@ -400,7 +400,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("TPCaloneprefilter")) {
     cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-    //cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
     return cut;
   }
 
