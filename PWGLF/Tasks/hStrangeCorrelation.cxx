@@ -562,7 +562,7 @@ struct correlateStrangeness {
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index) && (!doMCassociation || v0.mcTrue(index)) && bitcheck(doCorrelation, index)) {
-          if(std::abs(v0Data.rapidity(index))<0.5){
+          if (std::abs(v0Data.rapidity(index)) < 0.5) {
             histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index));
           }
           if (v0.invMassRegionCheck(index, 2))
@@ -609,7 +609,7 @@ struct correlateStrangeness {
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
         if (casc.compatible(index) && (!doMCassociation || casc.mcTrue(index)) && bitcheck(doCorrelation, index + 3)) {
-          if(std::abs(cascData.rapidity(index))<0.5){
+          if (std::abs(cascData.rapidity(index)) < 0.5) {
             histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index));
           }
           if (casc.invMassRegionCheck(index, 2))
@@ -791,22 +791,22 @@ struct correlateStrangeness {
     // determine best collision properties
     int biggestNContribs = -1;
     int bestCollisionFT0Mpercentile = -1;
-    float bestCollisionVtxZ = 0.0f; 
+    float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     for (auto& collision : collisions) {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCollisionFT0Mpercentile = collision.centFT0M();
-        bestCollisionSel8 = collision.sel8(); 
-        bestCollisionVtxZ = collision.posZ(); 
+        bestCollisionSel8 = collision.sel8();
+        bestCollisionVtxZ = collision.posZ();
       }
     }
 
-    if (collisions.size() > 1){
+    if (collisions.size() > 1) {
       for (auto const& mcParticle : mcParticles) {
         if (!mcParticle.isPhysicalPrimary())
           continue;
-        if (abs(mcParticle.y()) < 0.5){
+        if (abs(mcParticle.y()) < 0.5) {
           if (abs(mcParticle.pdgCode()) == 211)
             histos.fill(HIST("GeneratedWithPV/hPion_MidYVsMult_TwoPVsOrMore"), mcParticle.pt(), bestCollisionFT0Mpercentile);
           if (abs(mcParticle.pdgCode()) == 310)
@@ -828,11 +828,11 @@ struct correlateStrangeness {
     }
 
     // do selections on best collision
-    // WARNING: if 2 PV case large, this will not necessarily be fine! 
-    //          caution advised! 
-    if(!bestCollisionSel8) 
+    // WARNING: if 2 PV case large, this will not necessarily be fine!
+    //          caution advised!
+    if (!bestCollisionSel8)
       return;
-    if(std::abs(bestCollisionVtxZ)>10.0f) 
+    if (std::abs(bestCollisionVtxZ) > 10.0f)
       return;
 
     for (auto const& mcParticle : mcParticles) {
@@ -855,7 +855,7 @@ struct correlateStrangeness {
       if (mcParticle.pdgCode() == -3334)
         histos.fill(HIST("GeneratedWithPV/hOmegaPlus"), mcParticle.pt(), mcParticle.eta());
 
-      if (abs(mcParticle.y()) < 0.5){
+      if (abs(mcParticle.y()) < 0.5) {
         if (abs(mcParticle.pdgCode()) == 211)
           histos.fill(HIST("Generated/hPion_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (abs(mcParticle.pdgCode()) == 310)
