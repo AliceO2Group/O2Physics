@@ -18,39 +18,27 @@
 // 3. https://github.com/AliceO2Group/O2Physics/blob/master/PWGLF/Mult/Tasks/puremc-dndeta.cxx
 // 4. O2 analysis tutorial: https://indico.cern.ch/event/1267433/
 
-#include <Math/Vector4D.h>
-#include <array>
 #include <cmath>
-#include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
 
 #include "bestCollisionTable.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
-#include "Index.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 
@@ -81,26 +69,24 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
+AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
+AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
+AxisSpec axisDCA = {601, -3.01, 3.01};
+AxisSpec axisPT = {1000, -0.05, 49.95};
+AxisSpec axisMult{2000, -0.5, 1999.5, "Multiplicity"};
+AxisSpec axisEta{200, -5, 5, "#eta"};
+AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
+
 struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-  
-  Configurable<bool> isMC{"isMC", true, "only for MC"};
-  Configurable<bool> isData{"isData", true, "only for Data"};
 
   void init(InitContext const&){
-    const AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
-    const AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
-    const AxisSpec axisDCA = {601, -3.01, 3.01};
-    const AxisSpec axisPT = {1000, -0.05, 49.95};
-    const AxisSpec axisMult{2000, -0.5, 1999.5, "Multiplicity"};
-    const AxisSpec axisEta{200, -5, 5, "#eta"};
-    
     histos.add("EventHist","EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);
     
-    if(isData){
+    if(doprocessData){
       histos.add("MultHist","MultHist", kTH1D, {axisMult}, true);
       histos.add("MultHist_Inelgt0","MultHist_Inelgt0", kTH1D, {axisMult}, true);
       histos.add("EtaHist","EtaHist", kTH1D, {axisEta}, true);
@@ -110,22 +96,17 @@ struct HeavyIonMultiplicity {
       histos.add("EtaVsVtxZHist","EtaVsVtxZHist", kTH2D, {axisEta, axisVtxZ}, true);
     }
         
-    if(isMC){
-      const AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
+    if(doprocessMC){
       histos.add("MCEventHist_ambiguity","MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false); // log the number of collisions that were reconstructed for a MC collision
-
       histos.add("DCAXYMCRecHist","DCAXYMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("DCAZMCRecHist","DCAZMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("pTMCRecHist","pTMCRecHist", kTH1D, {axisPT}, true);
-      histos.add("EtaVsVtxZMCRecHist","EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);
-      
+      histos.add("EtaVsVtxZMCRecHist","EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);      
       histos.add("MCRecEtaHist","MCRecEtaHist", kTH1D, {axisEta}, true);
       histos.add("MCGenEtaHist","MCGenEtaHist", kTH1D, {axisEta}, true);
-
       histos.add("MCRecMultHist","MCRecMultHist", kTH1D, {axisMult}, true);
       histos.add("MCGenMultHist","MCGenMultHist", kTH1D, {axisMult}, true);
-      histos.add("MCGenVsRecMultHist","MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);
-      
+      histos.add("MCGenVsRecMultHist","MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);      
       histos.add("MCRecMultHist_Inelgt0","MCRecMultHist_Inelgt0", kTH1D, {axisMult}, true);
       histos.add("MCGenMultHist_Inelgt0","MCGenMultHist_Inelgt0", kTH1D, {axisMult}, true);
       histos.add("MCGenVsRecMultHist_Inelgt0","MCGenVsRecMultHist_Inelgt0", kTH2D, {axisMult, axisMult}, true);
@@ -154,7 +135,9 @@ struct HeavyIonMultiplicity {
 	  }	
 	}
 	histos.fill(HIST("MultHist"), NchTracks);
-	if(NchTracks > 0) Inelgt0 = true;
+	if(NchTracks > 0){
+	  Inelgt0 = true;
+	}
 	if(Inelgt0){
 	  histos.fill(HIST("EventHist"),3);
 	  histos.fill(HIST("MultHist_Inelgt0"), NchTracks);
@@ -168,17 +151,25 @@ struct HeavyIonMultiplicity {
   void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTable const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks){
     histos.fill(HIST("MCEventHist_ambiguity"), RecCollisions.size());
 
-    if(RecCollisions.size() == 0 || RecCollisions.size() > 1) return;
-    
+    if(RecCollisions.size() == 0 || RecCollisions.size() > 1){
+      return;
+    }
     auto NchGenTracks = 0;
     bool Inelgt0Gen = false;
     auto NchRecTracks = 0;
     bool Inelgt0Rec = false;
       
     for (auto& particle : GenParticles) {
-      if (!particle.isPhysicalPrimary()) continue;
-      if (!particle.producedByGenerator()) continue;
+      if (!particle.isPhysicalPrimary()){
+        continue;
+      }
+      if (!particle.producedByGenerator()){
+        continue;
+      }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if(pdgParticle = nullptr){
+        continue;
+      }
       if(std::abs(pdgParticle->Charge()) >= 3){
 	if(std::abs(particle.eta()) < 1) {
 	  NchGenTracks++;
@@ -187,9 +178,12 @@ struct HeavyIonMultiplicity {
       }
     }
     histos.fill(HIST("MCGenMultHist"), NchGenTracks);
-    if(NchGenTracks>0) Inelgt0Gen = true;
-    if(Inelgt0Gen) histos.fill(HIST("MCGenMultHist_Inelgt0"), NchGenTracks);
-
+    if(NchGenTracks>0){
+      Inelgt0Gen = true;
+    }
+    if(Inelgt0Gen){
+      histos.fill(HIST("MCGenMultHist_Inelgt0"), NchGenTracks);
+    }
     for (auto& RecCollision : RecCollisions) {
       histos.fill(HIST("EventHist"),0);
       if (RecCollision.sel8()) {
@@ -215,8 +209,12 @@ struct HeavyIonMultiplicity {
 	    Inelgt0Rec = true;
 	    histos.fill(HIST("EventHist"),3);
 	  }
-	  if(Inelgt0Rec) histos.fill(HIST("MCRecMultHist_Inelgt0"), NchRecTracks);
-	  if(Inelgt0Gen && Inelgt0Rec) histos.fill(HIST("MCGenVsRecMultHist_Inelgt0"), NchRecTracks, NchGenTracks);
+	  if(Inelgt0Rec){
+	    histos.fill(HIST("MCRecMultHist_Inelgt0"), NchRecTracks);
+	  }
+	  if(Inelgt0Gen && Inelgt0Rec){
+	    histos.fill(HIST("MCGenVsRecMultHist_Inelgt0"), NchRecTracks, NchGenTracks);
+	  }
 	}
       }
     }
