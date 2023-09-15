@@ -73,136 +73,139 @@ struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-  void init(InitContext const&){
-    histos.add("EventHist","EventHist", kTH1D, {axisEvent}, false);
-    histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);
-    if(doprocessData){
-      histos.add("MultHist","MultHist", kTH1D, {axisMult}, true);
-      histos.add("MultHist_Inelgt0","MultHist_Inelgt0", kTH1D, {axisMult}, true);
-      histos.add("EtaHist","EtaHist", kTH1D, {axisEta}, true);
-      histos.add("DCAXYHist","DCAXYHist", kTH1D, {axisDCA}, false);
-      histos.add("DCAZHist","DCAZHist", kTH1D, {axisDCA}, false);
-      histos.add("pTHist","pTHist", kTH1D, {axisPT}, true);
-      histos.add("EtaVsVtxZHist","EtaVsVtxZHist", kTH2D, {axisEta, axisVtxZ}, true);
+  void init(InitContext const&)
+  {
+    histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
+    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
+    if (doprocessData) {
+      histos.add("MultHist", "MultHist", kTH1D, {axisMult}, true);
+      histos.add("MultHist_Inelgt0", "MultHist_Inelgt0", kTH1D, {axisMult}, true);
+      histos.add("EtaHist", "EtaHist", kTH1D, {axisEta}, true);
+      histos.add("DCAXYHist", "DCAXYHist", kTH1D, {axisDCA}, false);
+      histos.add("DCAZHist", "DCAZHist", kTH1D, {axisDCA}, false);
+      histos.add("pTHist", "pTHist", kTH1D, {axisPT}, true);
+      histos.add("EtaVsVtxZHist", "EtaVsVtxZHist", kTH2D, {axisEta, axisVtxZ}, true);
     }
-    if(doprocessMC){
-      histos.add("MCEventHist_ambiguity","MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false);
-      histos.add("DCAXYMCRecHist","DCAXYMCRecHist", kTH1D, {axisDCA}, false);
-      histos.add("DCAZMCRecHist","DCAZMCRecHist", kTH1D, {axisDCA}, false);
-      histos.add("pTMCRecHist","pTMCRecHist", kTH1D, {axisPT}, true);
-      histos.add("EtaVsVtxZMCRecHist","EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);
-      histos.add("MCRecEtaHist","MCRecEtaHist", kTH1D, {axisEta}, true);
-      histos.add("MCGenEtaHist","MCGenEtaHist", kTH1D, {axisEta}, true);
-      histos.add("MCRecMultHist","MCRecMultHist", kTH1D, {axisMult}, true);
-      histos.add("MCGenMultHist","MCGenMultHist", kTH1D, {axisMult}, true);
-      histos.add("MCGenVsRecMultHist","MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);
-      histos.add("MCRecMultHist_Inelgt0","MCRecMultHist_Inelgt0", kTH1D, {axisMult}, true);
-      histos.add("MCGenMultHist_Inelgt0","MCGenMultHist_Inelgt0", kTH1D, {axisMult}, true);
-      histos.add("MCGenVsRecMultHist_Inelgt0","MCGenVsRecMultHist_Inelgt0", kTH2D, {axisMult, axisMult}, true);
+    if (doprocessMC) {
+      histos.add("MCEventHist_ambiguity", "MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false);
+      histos.add("DCAXYMCRecHist", "DCAXYMCRecHist", kTH1D, {axisDCA}, false);
+      histos.add("DCAZMCRecHist", "DCAZMCRecHist", kTH1D, {axisDCA}, false);
+      histos.add("pTMCRecHist", "pTMCRecHist", kTH1D, {axisPT}, true);
+      histos.add("EtaVsVtxZMCRecHist", "EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);
+      histos.add("MCRecEtaHist", "MCRecEtaHist", kTH1D, {axisEta}, true);
+      histos.add("MCGenEtaHist", "MCGenEtaHist", kTH1D, {axisEta}, true);
+      histos.add("MCRecMultHist", "MCRecMultHist", kTH1D, {axisMult}, true);
+      histos.add("MCGenMultHist", "MCGenMultHist", kTH1D, {axisMult}, true);
+      histos.add("MCGenVsRecMultHist", "MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);
+      histos.add("MCRecMultHist_Inelgt0", "MCRecMultHist_Inelgt0", kTH1D, {axisMult}, true);
+      histos.add("MCGenMultHist_Inelgt0", "MCGenMultHist_Inelgt0", kTH1D, {axisMult}, true);
+      histos.add("MCGenVsRecMultHist_Inelgt0", "MCGenVsRecMultHist_Inelgt0", kTH2D, {axisMult, axisMult}, true);
     }
   }
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) && ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC, (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC, true) && ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
-  void processData(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks){
+  void processData(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
+  {
     auto NchTracks = 0;
     bool Inelgt0 = false;
-    histos.fill(HIST("EventHist"),0);
+    histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
-      histos.fill(HIST("EventHist"),1);
-      if (std::abs(collision.posZ()) < 10){
-	histos.fill(HIST("EventHist"),2);
-	histos.fill(HIST("VtxZHist"),collision.posZ());
-	for(auto& track : tracks){
-	    if (std::abs(track.eta()) < 1){
+      histos.fill(HIST("EventHist"), 1);
+      if (std::abs(collision.posZ()) < 10) {
+        histos.fill(HIST("EventHist"), 2);
+        histos.fill(HIST("VtxZHist"), collision.posZ());
+        for (auto& track : tracks) {
+          if (std::abs(track.eta()) < 1) {
             NchTracks++;
-	    histos.fill(HIST("EtaHist"), track.eta());
-	    histos.fill(HIST("EtaVsVtxZHist"), track.eta(), collision.posZ());
-	    histos.fill(HIST("DCAXYHist"), track.dcaXY());
-	    histos.fill(HIST("DCAZHist"), track.dcaZ());
-	    histos.fill(HIST("pTHist"), track.pt());
-	  }	
-	}
-	histos.fill(HIST("MultHist"), NchTracks);
-	if(NchTracks > 0){
-	  Inelgt0 = true;
-	}
-	if(Inelgt0){
-	  histos.fill(HIST("EventHist"),3);
-	  histos.fill(HIST("MultHist_Inelgt0"), NchTracks);
-	}
+            histos.fill(HIST("EtaHist"), track.eta());
+            histos.fill(HIST("EtaVsVtxZHist"), track.eta(), collision.posZ());
+            histos.fill(HIST("DCAXYHist"), track.dcaXY());
+            histos.fill(HIST("DCAZHist"), track.dcaZ());
+            histos.fill(HIST("pTHist"), track.pt());
+          }
+        }
+        histos.fill(HIST("MultHist"), NchTracks);
+        if (NchTracks > 0) {
+          Inelgt0 = true;
+        }
+        if (Inelgt0) {
+          histos.fill(HIST("EventHist"), 3);
+          histos.fill(HIST("MultHist_Inelgt0"), NchTracks);
+        }
       }
     }
-  }    
-    
+  }
+
   PROCESS_SWITCH(HeavyIonMultiplicity, processData, "process data", false);
-  void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTable const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks){
+  void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTable const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
     histos.fill(HIST("MCEventHist_ambiguity"), RecCollisions.size());
-    if(RecCollisions.size() == 0 || RecCollisions.size() > 1){
+    if (RecCollisions.size() == 0 || RecCollisions.size() > 1) {
       return;
     }
     auto NchGenTracks = 0;
     bool Inelgt0Gen = false;
     auto NchRecTracks = 0;
-    bool Inelgt0Rec = false;      
+    bool Inelgt0Rec = false;
     for (auto& particle : GenParticles) {
-      if (!particle.isPhysicalPrimary()){
+      if (!particle.isPhysicalPrimary()) {
         continue;
       }
-      if (!particle.producedByGenerator()){
+      if (!particle.producedByGenerator()) {
         continue;
       }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if(pdgParticle = nullptr){
+      if (pdgParticle = nullptr) {
         continue;
       }
-      if(std::abs(pdgParticle->Charge()) >= 3){
-	if(std::abs(particle.eta()) < 1) {
-	  NchGenTracks++;
-	  histos.fill(HIST("MCGenEtaHist"), particle.eta());
-	}
+      if (std::abs(pdgParticle->Charge()) >= 3) {
+        if (std::abs(particle.eta()) < 1) {
+          NchGenTracks++;
+          histos.fill(HIST("MCGenEtaHist"), particle.eta());
+        }
       }
     }
     histos.fill(HIST("MCGenMultHist"), NchGenTracks);
-    if(NchGenTracks>0){
+    if (NchGenTracks > 0) {
       Inelgt0Gen = true;
     }
-    if(Inelgt0Gen){
+    if (Inelgt0Gen) {
       histos.fill(HIST("MCGenMultHist_Inelgt0"), NchGenTracks);
     }
     for (auto& RecCollision : RecCollisions) {
-      histos.fill(HIST("EventHist"),0);
+      histos.fill(HIST("EventHist"), 0);
       if (RecCollision.sel8()) {
-	histos.fill(HIST("EventHist"),1);
-	if (std::abs(RecCollision.posZ()) < 10){
-	  histos.fill(HIST("EventHist"),2);
-	  histos.fill(HIST("VtxZHist"),RecCollision.posZ());
+        histos.fill(HIST("EventHist"), 1);
+        if (std::abs(RecCollision.posZ()) < 10) {
+          histos.fill(HIST("EventHist"), 2);
+          histos.fill(HIST("VtxZHist"), RecCollision.posZ());
 
-	  auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
-	  for(auto& Rectrack : Rectrackspart){
-	    if (std::abs(Rectrack.eta()) < 1){
-	      NchRecTracks++;
-	      histos.fill(HIST("MCRecEtaHist"), Rectrack.eta());
-	      histos.fill(HIST("EtaVsVtxZMCRecHist"), Rectrack.eta(), RecCollision.posZ());
-	      histos.fill(HIST("DCAXYMCRecHist"), Rectrack.dcaXY());
-	      histos.fill(HIST("DCAZMCRecHist"), Rectrack.dcaZ());
-	      histos.fill(HIST("pTMCRecHist"), Rectrack.pt());
-	    }
-	  }
-	  histos.fill(HIST("MCRecMultHist"), NchRecTracks);
-	  histos.fill(HIST("MCGenVsRecMultHist"), NchRecTracks, NchGenTracks);
-	  if(NchRecTracks>0){
-	    Inelgt0Rec = true;
-	    histos.fill(HIST("EventHist"),3);
-	  }
-	  if(Inelgt0Rec){
-	    histos.fill(HIST("MCRecMultHist_Inelgt0"), NchRecTracks);
-	  }
-	  if(Inelgt0Gen && Inelgt0Rec){
-	    histos.fill(HIST("MCGenVsRecMultHist_Inelgt0"), NchRecTracks, NchGenTracks);
-	  }
-	}
+          auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
+          for (auto& Rectrack : Rectrackspart) {
+            if (std::abs(Rectrack.eta()) < 1) {
+              NchRecTracks++;
+              histos.fill(HIST("MCRecEtaHist"), Rectrack.eta());
+              histos.fill(HIST("EtaVsVtxZMCRecHist"), Rectrack.eta(), RecCollision.posZ());
+              histos.fill(HIST("DCAXYMCRecHist"), Rectrack.dcaXY());
+              histos.fill(HIST("DCAZMCRecHist"), Rectrack.dcaZ());
+              histos.fill(HIST("pTMCRecHist"), Rectrack.pt());
+            }
+          }
+          histos.fill(HIST("MCRecMultHist"), NchRecTracks);
+          histos.fill(HIST("MCGenVsRecMultHist"), NchRecTracks, NchGenTracks);
+          if (NchRecTracks > 0) {
+            Inelgt0Rec = true;
+            histos.fill(HIST("EventHist"), 3);
+          }
+          if (Inelgt0Rec) {
+            histos.fill(HIST("MCRecMultHist_Inelgt0"), NchRecTracks);
+          }
+          if (Inelgt0Gen && Inelgt0Rec) {
+            histos.fill(HIST("MCGenVsRecMultHist_Inelgt0"), NchRecTracks, NchGenTracks);
+          }
+        }
       }
     }
-  }  
+  }
   PROCESS_SWITCH(HeavyIonMultiplicity, processMC, "process MC", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
