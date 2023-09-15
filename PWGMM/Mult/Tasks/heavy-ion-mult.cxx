@@ -41,34 +41,27 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
-
 using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using FilTrackDataTable = soa::Filtered<TrackDataTable>;
-
 using CollisionMCTrueTable = aod::McCollisions;
 using TrackMCTrueTable = aod::McParticles;
 using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
-
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
   TrackSelectionFlags::kITSHits;
-
 static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
   TrackSelectionFlags::kTPCNCls |
   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   TrackSelectionFlags::kTPCChi2NDF;
-
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-
 AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
@@ -76,16 +69,13 @@ AxisSpec axisPT = {1000, -0.05, 49.95};
 AxisSpec axisMult{2000, -0.5, 1999.5, "Multiplicity"};
 AxisSpec axisEta{200, -5, 5, "#eta"};
 AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
-
 struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-
   void init(InitContext const&){
     histos.add("EventHist","EventHist", kTH1D, {axisEvent}, false);
-    histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);
-    
+    histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);    
     if(doprocessData){
       histos.add("MultHist","MultHist", kTH1D, {axisMult}, true);
       histos.add("MultHist_Inelgt0","MultHist_Inelgt0", kTH1D, {axisMult}, true);
@@ -94,10 +84,9 @@ struct HeavyIonMultiplicity {
       histos.add("DCAZHist","DCAZHist", kTH1D, {axisDCA}, false);
       histos.add("pTHist","pTHist", kTH1D, {axisPT}, true);
       histos.add("EtaVsVtxZHist","EtaVsVtxZHist", kTH2D, {axisEta, axisVtxZ}, true);
-    }
-        
+    }        
     if(doprocessMC){
-      histos.add("MCEventHist_ambiguity","MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false); // log the number of collisions that were reconstructed for a MC collision
+      histos.add("MCEventHist_ambiguity","MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false);
       histos.add("DCAXYMCRecHist","DCAXYMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("DCAZMCRecHist","DCAZMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("pTMCRecHist","pTMCRecHist", kTH1D, {axisPT}, true);
@@ -112,9 +101,7 @@ struct HeavyIonMultiplicity {
       histos.add("MCGenVsRecMultHist_Inelgt0","MCGenVsRecMultHist_Inelgt0", kTH2D, {axisMult, axisMult}, true);
     }
   }
-  
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) && ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC, (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC, true) && ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
-
   void processData(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks){
     auto NchTracks = 0;
     bool Inelgt0 = false;
@@ -147,18 +134,15 @@ struct HeavyIonMultiplicity {
   }    
     
   PROCESS_SWITCH(HeavyIonMultiplicity, processData, "process data", false);
-
   void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTable const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks){
     histos.fill(HIST("MCEventHist_ambiguity"), RecCollisions.size());
-
     if(RecCollisions.size() == 0 || RecCollisions.size() > 1){
       return;
     }
     auto NchGenTracks = 0;
     bool Inelgt0Gen = false;
     auto NchRecTracks = 0;
-    bool Inelgt0Rec = false;
-      
+    bool Inelgt0Rec = false;      
     for (auto& particle : GenParticles) {
       if (!particle.isPhysicalPrimary()){
         continue;
@@ -218,11 +202,9 @@ struct HeavyIonMultiplicity {
 	}
       }
     }
-  }
-  
+  }  
   PROCESS_SWITCH(HeavyIonMultiplicity, processMC, "process MC", false);
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HeavyIonMultiplicity>(cfgc)};
