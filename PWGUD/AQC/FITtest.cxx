@@ -173,6 +173,32 @@ registry.add("collisions/FV0AFDDC", "Correlation FV0 vs FDD C side; FV0A Amplitu
 
 
       }
+      
+      if (context.mOptions.get<bool>("processInclusiveC")) {
+          
+          registry.add("colInclusiveC/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 20.5}}});
+          registry.add("colInclusiveC/GlobalBC", "Relative BC no. in FIT; Relative BC; Collisions", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+          registry.add("colInclusiveC/RelativeBC", "Relative BC number; Relative BC; Collisions", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+          registry.add("colInclusiveC/trkmultiplicity", "Multiplicity of all tracks; Multiplicity; Tracks", {HistType::kTH1F, {{300, -0.5, 299.5}}});
+          registry.add("colInclusiveC/PVCFT0", "PV contributors with FIT; PV contributors; Tracks", {HistType::kTH1F, {{100, -0.5, 99.5}}});
+          registry.add("colInclusiveC/vtxTracks", "Number of vertex tracks; Number of contributors; Collisions", {HistType::kTH1F, {{300, -0.5, 299.5}}});
+          registry.add("colInclusiveC/PVTracks", "Number of PV tracks; Number of PV tracks; Tracks", {HistType::kTH1F, {{300, -0.5, 299.5}}});
+    
+          registry.add("colInclusiveC/FV0Amp", "FV0A Amplitude", {HistType::kTH1F, {{2000, 0., 2000.}}});
+          registry.add("colInclusiveC/FT0ACCorr", "FT0 amp correlation; FT0A Amplitude; FT0C Amplitude", {HistType::kTH2F, {{2000, -4.5, 1995.5}, {2000, -4.5, 1995.5}}});
+          
+          registry.add("colInclusiveC/FDDAamp", "#FDDA Amplitude; FDDA Amplitude", {HistType::kTH1F, {{2000, -0.5, 1999.5}}});
+          registry.add("colInclusiveC/FDDCamp", "#FDDC Amplitude; FDDC Amplitude", {HistType::kTH1F, {{2000, -0.5, 1999.5}}});
+          registry.add("colInclusiveC/FT0DDAPVtrk", "Number of PV tracks; Number of PV tracks; Tracks", {HistType::kTH1F, {{300, -0.5, 299.5}}});
+          
+     registry.add("colInclusiveC/FT0DDAtrk", "Multiplicity of all tracks; Multiplicity; Tracks", {HistType::kTH1F, {{300, -0.5, 299.5}}});
+     registry.add("colInclusiveC/hFDDAC", "Time Correlation FDD; FDDA time (ns); FDDC time (ns)", {HistType::kTH2F, {{500, -50.0, 50.0},{500, -50.0, 50.0}}});
+     registry.add("colInclusiveC/FDDACCorr", "#FDD amp correlation; FDDA Amplitude; FDDC Amplitude", {HistType::kTH2F, {{2000, -4.5, 1995.5}, {2000, -4.5, 1995.5}}});
+     registry.add("colInclusiveC/FT0DDCCorr", "Correlation FT0 vs FDD C side; FT0C Amplitude; FDDC Amplitude", {HistType::kTH2F, {{2000, -4.5, 1995.5}, {2000, -4.5, 1995.5}}});
+     registry.add("colInclusiveC/FV0AFDDC", "Correlation FV0 vs FDD C side; FV0A Amplitude; FDDC Amplitude", {HistType::kTH2F, {{2000, -4.5, 1995.5}, {2000, -4.5, 1995.5}}});
+
+
+      }
   }
 
 //...............................................................................................................
@@ -576,162 +602,123 @@ void processInclusiveA(CC const& collision, BCs const& bct0s,TCs const& tracks,a
         }
     }
     
-    PROCESS_SWITCH(FITtest, processInclusiveA, "Process Inclusive veto A side", true);
+PROCESS_SWITCH(FITtest, processInclusiveA, "Process Inclusive veto A side", true);
     
-/*void processInclusiveC(CC const& collision, BCs const& bct0s,TCs const& tracks,aod::FT0s const& ft0s, aod::FV0As const& fv0as,aod::FDDs const& fdds, aod::Zdcs& zdcs,aod::V0s const& v0s)
+void processInclusiveC(CC const& collision, BCs const& bct0s,TCs const& tracks,aod::FT0s const& ft0s, aod::FV0As const& fv0as,aod::FDDs const& fdds, aod::Zdcs& zdcs,aod::V0s const& v0s)
     {
       
-      LOGF(debug, "<FITtest. Collision %d", collision.globalIndex());
-        
-        uint64_t bcnum = 0;
-        //auto bc = collision.foundBC_as<BCs>();
-        registry.get<TH1>(HIST("collisions/Stat"))->Fill(0.);
-        if (collision.has_foundBC()) {
-          auto collbc = collision.foundBC_as<BCs>();
-          bcnum = collbc.globalBC() % o2::constants::lhc::LHCMaxBunches;
-        }
-        
-        if (!collision.has_foundBC()) return;
-        if (collision.numContrib()<10) return;
-        registry.get<TH1>(HIST("collisions/Stat"))->Fill(1.);
-        registry.get<TH1>(HIST("collisions/RelativeBC"))->Fill(bcnum, 1.);
-        registry.get<TH1>(HIST("collisions/trkmultiplicity"))->Fill(tracks.size(), 1.);
-        registry.get<TH1>(HIST("collisions/vtxTracks"))->Fill(collision.numContrib());
-        
-        // PV contributors
-        int nPVcont = 0;
-        for (auto const& trk : tracks) {
-          if (trk.isPVContributor()) {
-                  if(trk.pt() > 1){
-                      if (trk.eta() > -0.5 && trk.eta() < 0.5) {nPVcont++;}
-                  }
-              }
-        }
-        registry.get<TH1>(HIST("collisions/PVTracks"))->Fill(nPVcont);
-        
-  float totAmplitudeA = 0; float totAmplitudeC = 0; float totalAmplitudefv0 = 0; float totAmpFddA = 0; float totAmpFddC = 0;
-    
-  if(collision.has_foundFT0()) {
-      registry.get<TH1>(HIST("collisions/Stat"))->Fill(2.);
-        auto ft0 = collision.foundFT0();
-      // side A
-      for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
-              registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
-            }
-            
-      // side C
-      for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
-             registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
-            }
-        
-      for (auto ampa : ft0.amplitudeA()) {
-                totAmplitudeA += ampa;
-            }
-        
-      for (auto ampc : ft0.amplitudeC()) {
-                totAmplitudeC +=ampc;
-            }
+    LOGF(debug, "<FITtest. Collision %d", collision.globalIndex());
       
-      registry.get<TH1>(HIST("hT0A"))->Fill(ft0.timeA());
-      registry.get<TH1>(HIST("hT0C"))->Fill(ft0.timeC());
-      registry.get<TH2>(HIST("hT0AC"))->Fill(ft0.timeA(),ft0.timeC());
-          
-  } else {
-      if(!collision.has_foundFT0()) {
-          totAmplitudeA=0;
-          totAmplitudeC=0;
-          }
-      }//ends collsion
-                      
-        if(totAmplitudeA>0){registry.get<TH1>(HIST("FT0Aamp"))->Fill(totAmplitudeA,nPVcont);}
-        if(totAmplitudeC>0){registry.get<TH1>(HIST("FT0Camp"))->Fill(totAmplitudeC,nPVcont);}
-        if((totAmplitudeA>0) && (totAmplitudeC>0))registry.get<TH2>(HIST("FT0ACCorr"))->Fill(totAmplitudeA,totAmplitudeC,nPVcont);
-        
-        //FV0 information
-      if (collision.has_foundFV0()) {
-          registry.get<TH1>(HIST("collisions/Stat"))->Fill(3.);
-         
-          auto fv0 = collision.foundFV0();
-            
-                registry.get<TH1>(HIST("hV0A"))->Fill(fv0.time());
-               
-          for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
-                    registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
-            }
-            
-          for (auto ampfv0a : fv0.amplitude()) {
-                 totalAmplitudefv0 +=ampfv0a;
-             }
-            
-      } else {
-          if(!collision.has_foundFV0()) {
-              totalAmplitudefv0 = 0;
-          }
+      uint64_t bcnum = 0;
+      registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(0.);
+  
+  if (collision.has_foundBC()) {
+        auto collbc = collision.foundBC_as<BCs>();
+        bcnum = collbc.globalBC() % o2::constants::lhc::LHCMaxBunches;
       }
-        registry.get<TH1>(HIST("FV0Amp"))->Fill(totalAmplitudefv0,nPVcont);
-        
-     // if(collision.has_foundFT0() && collision.has_foundFV0()){
-            registry.get<TH2>(HIST("FV0T0ACorr"))->Fill(totAmplitudeA, totalAmplitudefv0,nPVcont);
-            registry.get<TH2>(HIST("FV0T0CCorr"))->Fill(totAmplitudeC, totalAmplitudefv0,nPVcont);
-       // }
-        
-  //FDD information
-  if (collision.has_foundFDD()) {
-      auto fdd = collision.foundFDD();
-      registry.get<TH1>(HIST("collisions/Stat"))->Fill(4.);
-          registry.get<TH1>(HIST("hFDDA"))->Fill(fdd.timeA());
-          registry.get<TH1>(HIST("hFDDC"))->Fill(fdd.timeC());
-          registry.get<TH1>(HIST("hFDDAC"))->Fill(fdd.timeA()-fdd.timeC());
-          
-          // side A
-          for (auto ind = 0; ind < 8; ind++) {
-              registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
-          }
-          
-          // side C
-          for (auto ind = 0; ind < 8; ind++) {
-              registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
-          }
       
-      for (auto ampfdd : fdd.chargeA()) {
-          totAmpFddA += ampfdd;
+  if (!collision.has_foundBC()) return;
+      registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(1.);
+      
+  if (collision.numContrib()>100) return;
+      registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(2.);
+      
+      // PV contributors
+  int nPVcont = 0; int ntrks = 0;
+      for (auto const& trk : tracks) {
+          if (trk.eta() > -0.5 && trk.eta() < 0.5) {
+                if(trk.pt() < 10) {
+                    if (trk.isPVContributor()) {nPVcont++;}
+                    ntrks++;
+                }
+            }
       }
     
-     for (auto ampfddc : fdd.chargeC()) {
-              totAmpFddC +=ampfddc;
-          }
-      registry.get<TH2>(HIST("FDDACCorr"))->Fill(totAmpFddA, totAmpFddC,nPVcont);
-      
-  } else {
-      if (!collision.has_foundFDD()) {
-          totAmpFddA=0;
-          totAmpFddC=0;
-      }
-  }//fdd
+ float totAmplitudeA = 0; float totAmplitudeC = 0; float totalAmplitudefv0 = 0; float totAmpFddA = 0; float totAmpFddC = 0;
 
-      //if(collision.has_foundFT0() && collision.has_foundFDD()){
-            registry.get<TH2>(HIST("FT0DDACorr"))->Fill(totAmplitudeA, totAmpFddA,nPVcont);
-            registry.get<TH2>(HIST("FT0DDCCorr"))->Fill(totAmplitudeC, totAmpFddC,nPVcont);
-            registry.get<TH2>(HIST("FT0CFDDA"))->Fill(totAmplitudeC, totAmpFddA,nPVcont);
-            registry.get<TH2>(HIST("FT0AFDDC"))->Fill(totAmplitudeA, totAmpFddC,nPVcont);
-        //}
+  //FT0 information
+  if(collision.has_foundFT0()) {
+    registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(3.);
+      auto ft0 = collision.foundFT0();
+    
+    for (auto ampa : ft0.amplitudeA()) {
+              totAmplitudeA += ampa;
+          }
+      
+    for (auto ampc : ft0.amplitudeC()) {
+              totAmplitudeC +=ampc;
+          }
         
-        //if(collision.has_foundFV0() && collision.has_foundFDD()){
-            registry.get<TH2>(HIST("FV0AFDDA"))->Fill(totalAmplitudefv0, totAmpFddA,nPVcont);
-            registry.get<TH2>(HIST("FV0AFDDC"))->Fill(totalAmplitudefv0, totAmpFddC,nPVcont);
-        //}
-        
-if(collision.has_foundFT0() && collision.has_foundFDD() && collision.has_foundFV0()){
-  registry.get<TH1>(HIST("collisions/PVCFT0"))->Fill(nPVcont);
-  registry.get<TH1>(HIST("collisions/GlobalBC"))->Fill(bcnum, 1.);
-  registry.get<TH2>(HIST("ACorr"))->Fill((totalAmplitudefv0+totAmplitudeA+totAmpFddA),(totAmpFddC+totalAmplitudefv0+totAmplitudeC));
-  registry.get<TH1>(HIST("ACDiff"))->Fill((totalAmplitudefv0+totAmplitudeA+totAmpFddA)-(totAmpFddC+totalAmplitudefv0+totAmplitudeC));
+  } else {
+    if(!collision.has_foundFT0()) {
+        totAmplitudeA=0;
+        totAmplitudeC=0;
         }
+    }//ends collsion
+    
+    if(totAmplitudeC==0){registry.get<TH1>(HIST("colInclusiveC/RelativeBC"))->Fill(bcnum, 1.);}
+    if(totAmplitudeC==0){registry.get<TH1>(HIST("colInclusiveC/vtxTracks"))->Fill(collision.numContrib());}
+    if(totAmplitudeC==0){registry.get<TH1>(HIST("colInclusiveC/PVTracks"))->Fill(nPVcont);}
+    if(totAmplitudeC==0){registry.get<TH1>(HIST("colInclusiveC/trkmultiplicity"))->Fill(ntrks);}
+     
+    if((totAmplitudeA>5) && ((totAmplitudeC<5)))registry.get<TH2>(HIST("colInclusiveC/FT0ACCorr"))->Fill(totAmplitudeA,totAmplitudeC);
+      
+  //FV0 information
+  if(collision.has_foundFV0()) {
+        registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(4.);
+       
+    auto fv0 = collision.foundFV0();
+    for (auto ampfv0a : fv0.amplitude()) {
+               totalAmplitudefv0 +=ampfv0a;
+           }
+          
+     } else {
+        if(!collision.has_foundFV0()) {
+            totalAmplitudefv0 = 0;
+        }
+    }
+   
+  if((totAmplitudeC==0)&&(nPVcont<100)){registry.get<TH1>(HIST("colInclusiveC/FV0Amp"))->Fill(nPVcont);}
+      
+//FDD information
+  if (collision.has_foundFDD()) {
+    auto fdd = collision.foundFDD();
+        registry.get<TH1>(HIST("colInclusiveC/Stat"))->Fill(4.);
+        registry.get<TH2>(HIST("colInclusiveC/hFDDAC"))->Fill(fdd.timeA(),fdd.timeC());
+      
+    for (auto ampfdd : fdd.chargeA()) {
+        totAmpFddA += ampfdd;
+    }
+  
+   for (auto ampfddc : fdd.chargeC()) {
+            totAmpFddC +=ampfddc;
+        }
+} else {
+    if (!collision.has_foundFDD()) {
+        totAmpFddA=0;
+        totAmpFddC=0;
+    }
+}//fdd
+  
+       if(totAmpFddC==0){registry.get<TH1>(HIST("colInclusiveC/FDDAamp"))->Fill(nPVcont);}
+       if(totAmpFddC==0){registry.get<TH1>(HIST("colInclusiveC/FDDCamp"))->Fill(ntrks);}
+       if(totAmpFddA>5 && totAmpFddC<5){registry.get<TH2>(HIST("colInclusiveC/FDDACCorr"))->Fill(totAmpFddA, totAmpFddC);}
+    
+       if((totAmplitudeC==0) && (totAmpFddC==0)){registry.get<TH1>(HIST("colInclusiveC/FT0DDAPVtrk"))->Fill(nPVcont);}
+       if((totAmplitudeC==0) && (totAmpFddC==0)){registry.get<TH1>(HIST("colInclusiveC/FT0DDAtrk"))->Fill(ntrks);}
+       if((totAmplitudeC==0) && (totAmpFddC==0)){registry.get<TH2>(HIST("colInclusiveC/FT0DDCCorr"))->Fill(totAmplitudeA, totAmpFddA);}
+         
+  if((totalAmplitudefv0>5) && (totAmpFddC==0)){registry.get<TH2>(HIST("colInclusiveC/FV0AFDDC"))->Fill(totalAmplitudefv0, totAmpFddA);}
+  
+  if(collision.has_foundFT0() && collision.has_foundFDD() && collision.has_foundFV0()){
+        if((totAmplitudeC==0) && (totAmpFddC==0)&&(totalAmplitudefv0>5)){registry.get<TH1>(HIST("colInclusiveC/PVCFT0"))->Fill(nPVcont);}
+        if((totAmplitudeC==0) && (totAmpFddC==0)&&(totalAmplitudefv0>5)){registry.get<TH1>(HIST("colInclusiveC/GlobalBC"))->Fill(bcnum, 1.);}
+      }
     }
     
     PROCESS_SWITCH(FITtest, processInclusiveC, "Process Inclusive veto C side", true);
     
-void processUPC(CC const& collision, BCs const& bct0s,TCs const& tracks,aod::FT0s const& ft0s, aod::FV0As const& fv0as,aod::FDDs const& fdds, aod::Zdcs& zdcs,aod::V0s const& v0s)
+/*void processUPC(CC const& collision, BCs const& bct0s,TCs const& tracks,aod::FT0s const& ft0s, aod::FV0As const& fv0as,aod::FDDs const& fdds, aod::Zdcs& zdcs,aod::V0s const& v0s)
     {
       
       LOGF(debug, "<FITtest. Collision %d", collision.globalIndex());
