@@ -390,6 +390,84 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("ITSaloneprefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("TPCaloneprefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("ITSTPCprefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("ITSTPC_TPCPID_prefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("electronPIDOnly"));
+    return cut;
+  }
+
+  if (!nameStr.compare("ITSTPC_TPCPIDCorr_prefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("electronPIDOnly_Corr"));
+    return cut;
+  }
+
+  if (!nameStr.compare("ITS_ifTPC_TPCPID_prefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_notpc = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+    cut_notpc->AddCut(GetAnalysisCut("noTPC"));
+
+    AnalysisCompositeCut* cut_tpcpid = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+    cut_tpcpid->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut_tpcpid->AddCut(GetAnalysisCut("electronPIDOnly"));
+
+    AnalysisCompositeCut* cut_OR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+    cut_OR->AddCut(cut_notpc);
+    cut_OR->AddCut(cut_tpcpid);
+    cut->AddCut(cut_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("ITS_ifTPC_TPCPIDCorr_prefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+
+    AnalysisCompositeCut* cut_notpc = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+    cut_notpc->AddCut(GetAnalysisCut("noTPC"));
+
+    AnalysisCompositeCut* cut_tpcpid = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+    cut_tpcpid->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut_tpcpid->AddCut(GetAnalysisCut("electronPIDOnly_Corr"));
+
+    AnalysisCompositeCut* cut_OR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+    cut_OR->AddCut(cut_notpc);
+    cut_OR->AddCut(cut_tpcpid);
+    cut->AddCut(cut_OR);
+    return cut;
+  }
+
   //---------------------------------------------------------------
   // Cuts for the selection of legs from dalitz decay
   //
@@ -1703,6 +1781,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmeePrefilterKine")) {
+    cut->AddCut(VarManager::kPt, 0., 10.0);
+    cut->AddCut(VarManager::kEta, -1.2, 1.2);
+    return cut;
+  }
+
   if (!nameStr.compare("lmeeStandardKine")) {
     cut->AddCut(VarManager::kPt, 0.2, 20.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
@@ -1860,6 +1944,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("SPDfirst")) {
     cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("noTPC")) {
+    cut->AddCut(VarManager::kHasTPC, -0.5, 0.5);
     return cut;
   }
 
