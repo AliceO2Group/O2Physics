@@ -116,9 +116,10 @@ struct HfCandidateSelectorD0 {
   }
 
   /// Conjugate-independent topological cuts
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <int ReconstructionType, typename T>
+  template <int reconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -151,7 +152,7 @@ struct HfCandidateSelectorD0 {
     // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
     // candidate topological chi2 over ndf when using KFParticle, need to add this selection to the SelectorCuts.h
-    // if constexpr (ReconstructionType == VertexerType::KfParticle) {
+    // if constexpr (reconstructionType == VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
 
@@ -177,12 +178,13 @@ struct HfCandidateSelectorD0 {
   }
 
   /// Conjugate-dependent topological cuts
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidate is candidate
   /// \param trackPion is the track with the pion hypothesis
   /// \param trackKaon is the track with the kaon hypothesis
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <int ReconstructionType, typename T1, typename T2>
+  template <int reconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
     auto candpT = candidate.pt();
@@ -193,7 +195,7 @@ struct HfCandidateSelectorD0 {
 
     // invariant-mass cut
     float massD0, massD0bar;
-    if constexpr (ReconstructionType == VertexerType::KfParticle) {
+    if constexpr (reconstructionType == VertexerType::KfParticle) {
       massD0 = candidate.kfGeoMassD0();
       massD0bar = candidate.kfGeoMassD0bar();
     } else {
@@ -246,7 +248,7 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-  template <int ReconstructionType, typename THfCand2Prong>
+  template <int reconstructionType, typename THfCand2Prong>
   void processSel(THfCand2Prong const& candidates,
                   TracksSel const&)
   {
@@ -275,7 +277,7 @@ struct HfCandidateSelectorD0 {
       auto trackNeg = candidate.template prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
-      if (!selectionTopol<ReconstructionType>(candidate)) {
+      if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMl);
@@ -288,9 +290,9 @@ struct HfCandidateSelectorD0 {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate<ReconstructionType>(candidate, trackPos, trackNeg);
+      bool topolD0 = selectionTopolConjugate<reconstructionType>(candidate, trackPos, trackNeg);
       // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate<ReconstructionType>(candidate, trackNeg, trackPos);
+      bool topolD0bar = selectionTopolConjugate<reconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
@@ -394,7 +396,7 @@ struct HfCandidateSelectorD0 {
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
 
-  void processWithKFParticle(cand2ProngKF const& candidates, TracksSel const& tracks)
+  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
   {
     processSel<VertexerType::KfParticle>(candidates, tracks);
   }

@@ -88,7 +88,7 @@ struct HfCandidateCreator2Prong {
   OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "2-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH1F> hUseKForDCAFitter{TH1F("hUseKForDCAFitter", ";Use KF or DCAFitterN;entries", 2, -0.5, 1.5)}; // 0 for KF, 1 for DCAFitterN
+  OutputObj<TH1F> hVertexerType{TH1F("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", 2, -0.5, 1.5)}; // See o2::aod::hf_cand::VertexerType
 
   void init(InitContext const&)
   {
@@ -98,10 +98,10 @@ struct HfCandidateCreator2Prong {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
-      hUseKForDCAFitter->Fill(1.0);
+      hVertexerType->Fill(VertexerType::DCAFitter);
     }
     if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) {
-      hUseKForDCAFitter->Fill(0.0);
+      hVertexerType->Fill(VertexerType::KfParticle);
     }
 
     ccdb->setURL(ccdbUrl);
@@ -111,7 +111,7 @@ struct HfCandidateCreator2Prong {
     runNumber = 0;
   }
 
-  template <bool doPvRefit = false, typename Cand, typename TTracks>
+  template <bool doPvRefit, typename Cand, typename TTracks>
   void runCreator2ProngWithDCAFitterN(aod::Collisions const& collisions,
                                       Cand const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
@@ -234,7 +234,7 @@ struct HfCandidateCreator2Prong {
     }
   }
 
-  template <bool doPvRefit = false, typename Cand, typename TTracks>
+  template <bool doPvRefit, typename Cand, typename TTracks>
   void runCreator2ProngWithKFParticle(aod::Collisions const& collisions,
                                       Cand const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
@@ -373,7 +373,7 @@ struct HfCandidateCreator2Prong {
                                       aod::TracksWCov const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator2ProngWithDCAFitterN(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
+    runCreator2ProngWithDCAFitterN<false>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
 
   PROCESS_SWITCH(HfCandidateCreator2Prong, processNoPvRefitWithDCAFitterN, "Run candidate creator without PV refit", true);
@@ -392,7 +392,7 @@ struct HfCandidateCreator2Prong {
                                       soa::Join<aod::TracksWCov, aod::TracksExtra> const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator2ProngWithKFParticle(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
+    runCreator2ProngWithKFParticle<false>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreator2Prong, processNoPvRefitWithKFParticle, "Run candidate creator without PV refit", false);
 };

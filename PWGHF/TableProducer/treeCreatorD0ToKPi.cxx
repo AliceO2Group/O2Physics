@@ -334,7 +334,7 @@ struct HfTreeCreatorD0ToKPi {
     }
   }
 
-  template <int ReconstructionType, typename THfCand2Prong>
+  template <int reconstructionType, typename THfCand2Prong>
   void processData(aod::Collisions const& collisions,
                    THfCand2Prong const& candidates,
                    TracksWPid const&, aod::BCs const&)
@@ -365,7 +365,7 @@ struct HfTreeCreatorD0ToKPi {
       double ctD = ctD0(candidate);
       float massD0, massD0bar;
       float topolChi2PerNdf = -999.;
-      if constexpr (ReconstructionType == VertexerType::KfParticle) {
+      if constexpr (reconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
         topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
@@ -384,7 +384,8 @@ struct HfTreeCreatorD0ToKPi {
 
   void processDataWithDCAFitterN(aod::Collisions const& collisions,
                                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks, aod::BCs const& BCs)
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& BCs)
   {
     processData<VertexerType::DCAFitter>(collisions, candidates, tracks, BCs);
   }
@@ -392,13 +393,14 @@ struct HfTreeCreatorD0ToKPi {
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
                                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks, aod::BCs const& BCs)
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& BCs)
   {
     processData<VertexerType::KfParticle>(collisions, candidates, tracks, BCs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
-  template <int ReconstructionType, bool onlyBkg = false, typename THfCand2Prong>
+  template <int reconstructionType, bool onlyBkg = false, typename THfCand2Prong>
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  THfCand2Prong const& candidates,
@@ -431,7 +433,7 @@ struct HfTreeCreatorD0ToKPi {
       double ctD = ctD0(candidate);
       float massD0, massD0bar;
       float topolChi2PerNdf = -999.;
-      if constexpr (ReconstructionType == VertexerType::KfParticle) {
+      if constexpr (reconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
         topolChi2PerNdf = candidate.kfTopolChi2OverNdf();

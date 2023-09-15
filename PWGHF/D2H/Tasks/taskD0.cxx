@@ -43,8 +43,8 @@ struct HfTaskD0 {
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> recoFlag2Prong = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>> recoFlag2ProngKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramRegistry registry{
     "registry",
@@ -164,10 +164,10 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  template <int ReconstructionType, typename THfCand2ProngSel>
-  void processData(THfCand2ProngSel& selectedD0CandidatesSets)
+  template <int reconstructionType, typename CandType>
+  void processData(CandType& candidates)
   {
-    for (auto& candidate : selectedD0CandidatesSets) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -176,7 +176,7 @@ struct HfTaskD0 {
       }
 
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == VertexerType::KfParticle) {
+      if constexpr (reconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -225,20 +225,20 @@ struct HfTaskD0 {
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
     }
   }
-  void processWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
+  void processDataWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     processData<VertexerType::DCAFitter>(selectedD0Candidates);
   }
-  PROCESS_SWITCH(HfTaskD0, processWithDCAFitterN, "process taskD0 with DCAFitterN", true);
+  PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
-  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const&)
+  void processDataWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const&)
   {
     processData<VertexerType::KfParticle>(selectedD0CandidatesKF);
   }
-  PROCESS_SWITCH(HfTaskD0, processWithKFParticle, "process taskD0 with KFParticle", false);
+  PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
 
-  template <int ReconstructionType, typename THfCand2Prong>
-  void processMc(THfCand2Prong const& candidates,
+  template <int reconstructionType, typename CandType>
+  void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  aod::TracksWMc const& tracks)
   {
@@ -251,7 +251,7 @@ struct HfTaskD0 {
         continue;
       }
       float massD0, massD0bar;
-      if constexpr (ReconstructionType == VertexerType::KfParticle) {
+      if constexpr (reconstructionType == VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -432,13 +432,13 @@ struct HfTaskD0 {
 
   void processMcWithDCAFitterN(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    processMc<VertexerType::DCAFitter>(recoFlag2Prong, particlesMC, tracks);
+    processMc<VertexerType::DCAFitter>(selectedD0CandidatesMc, particlesMC, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticle(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    processMc<VertexerType::KfParticle>(recoFlag2ProngKF, particlesMC, tracks);
+    processMc<VertexerType::KfParticle>(selectedD0CandidatesMcKF, particlesMC, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 };
