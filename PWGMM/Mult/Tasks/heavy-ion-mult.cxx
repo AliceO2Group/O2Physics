@@ -75,7 +75,7 @@ struct HeavyIonMultiplicity {
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
   void init(InitContext const&){
     histos.add("EventHist","EventHist", kTH1D, {axisEvent}, false);
-    histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);    
+    histos.add("VtxZHist","VtxZHist", kTH1D, {axisVtxZ}, false);
     if(doprocessData){
       histos.add("MultHist","MultHist", kTH1D, {axisMult}, true);
       histos.add("MultHist_Inelgt0","MultHist_Inelgt0", kTH1D, {axisMult}, true);
@@ -84,18 +84,18 @@ struct HeavyIonMultiplicity {
       histos.add("DCAZHist","DCAZHist", kTH1D, {axisDCA}, false);
       histos.add("pTHist","pTHist", kTH1D, {axisPT}, true);
       histos.add("EtaVsVtxZHist","EtaVsVtxZHist", kTH2D, {axisEta, axisVtxZ}, true);
-    }        
+    }
     if(doprocessMC){
       histos.add("MCEventHist_ambiguity","MCEventHist_ambiguity", kTH1D, {axisMCEvent_ambiguity}, false);
       histos.add("DCAXYMCRecHist","DCAXYMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("DCAZMCRecHist","DCAZMCRecHist", kTH1D, {axisDCA}, false);
       histos.add("pTMCRecHist","pTMCRecHist", kTH1D, {axisPT}, true);
-      histos.add("EtaVsVtxZMCRecHist","EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);      
+      histos.add("EtaVsVtxZMCRecHist","EtaVsVtxZMCRecHist", kTH2D, {axisEta, axisVtxZ}, true);
       histos.add("MCRecEtaHist","MCRecEtaHist", kTH1D, {axisEta}, true);
       histos.add("MCGenEtaHist","MCGenEtaHist", kTH1D, {axisEta}, true);
       histos.add("MCRecMultHist","MCRecMultHist", kTH1D, {axisMult}, true);
       histos.add("MCGenMultHist","MCGenMultHist", kTH1D, {axisMult}, true);
-      histos.add("MCGenVsRecMultHist","MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);      
+      histos.add("MCGenVsRecMultHist","MCGenVsRecMultHist", kTH2D, {axisMult, axisMult}, true);
       histos.add("MCRecMultHist_Inelgt0","MCRecMultHist_Inelgt0", kTH1D, {axisMult}, true);
       histos.add("MCGenMultHist_Inelgt0","MCGenMultHist_Inelgt0", kTH1D, {axisMult}, true);
       histos.add("MCGenVsRecMultHist_Inelgt0","MCGenVsRecMultHist_Inelgt0", kTH2D, {axisMult, axisMult}, true);
@@ -112,8 +112,8 @@ struct HeavyIonMultiplicity {
 	histos.fill(HIST("EventHist"),2);
 	histos.fill(HIST("VtxZHist"),collision.posZ());
 	for(auto& track : tracks){
-	  if (std::abs(track.eta()) < 1){
-	    NchTracks++;
+	    if (std::abs(track.eta()) < 1){
+            NchTracks++;
 	    histos.fill(HIST("EtaHist"), track.eta());
 	    histos.fill(HIST("EtaVsVtxZHist"), track.eta(), collision.posZ());
 	    histos.fill(HIST("DCAXYHist"), track.dcaXY());
