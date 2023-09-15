@@ -82,7 +82,6 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 struct HeavyIonMultiplicity {
-
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
@@ -91,7 +90,6 @@ struct HeavyIonMultiplicity {
   Configurable<bool> isData{"isData", true, "only for Data"};
 
   void init(InitContext const&){
-
     const AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
     const AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
     const AxisSpec axisDCA = {601, -3.01, 3.01};
@@ -137,7 +135,6 @@ struct HeavyIonMultiplicity {
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) && ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC, (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC, true) && ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
 
   void processData(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks){
-
     auto NchTracks = 0;
     bool Inelgt0 = false;
     histos.fill(HIST("EventHist"),0);
@@ -169,7 +166,6 @@ struct HeavyIonMultiplicity {
   PROCESS_SWITCH(HeavyIonMultiplicity, processData, "process data", false);
 
   void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTable const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks){
-
     histos.fill(HIST("MCEventHist_ambiguity"), RecCollisions.size());
 
     if(RecCollisions.size() == 0 || RecCollisions.size() > 1) return;
