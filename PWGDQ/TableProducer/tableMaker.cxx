@@ -1115,7 +1115,7 @@ struct TableMaker {
 
   // Produce barrel only tables, with V0Bits and produce maps ------------------------------------------------------------------------------
   void processBarrelOnlyWithV0BitsAndMaps(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                          soa::Filtered<MyBarrelTracksWithV0BitsForMaps> const& tracksBarrel)
+                                          MyBarrelTracksWithV0BitsForMaps const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0BitsForMaps, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
