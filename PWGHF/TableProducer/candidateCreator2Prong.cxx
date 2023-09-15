@@ -419,13 +419,11 @@ struct HfCandidateCreator2ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
-      // Printf("Checking D0(bar) → π± K∓");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
@@ -433,7 +431,6 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        // Printf("Checking J/ψ → e+ e−");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
@@ -442,7 +439,6 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        // Printf("Checking J/ψ → μ+ μ−");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
@@ -460,19 +456,16 @@ struct HfCandidateCreator2ProngExpressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
 
       // D0(bar) → π± K∓
-      // Printf("Checking D0(bar) → π± K∓");
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        // Printf("Checking J/ψ → e+ e−");
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -480,7 +473,6 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        // Printf("Checking J/ψ → μ+ μ−");
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }

@@ -265,7 +265,6 @@ struct HfCandidateCreatorChicMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;

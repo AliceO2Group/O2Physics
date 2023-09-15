@@ -277,7 +277,6 @@ struct HfCandidateCreatorXMc {
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
@@ -290,9 +289,11 @@ struct HfCandidateCreatorXMc {
                                        daughterPosJpsi,
                                        daughterNegJpsi};
 
-      // X → J/ψ π+ π-
-      // Printf("Checking X → J/ψ π+ π-");
+      // X → J/ψ π+ π−
+
+      // J/ψ → e+ e−
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+      // X → π+ π− e+ e−
       if (indexRec > -1) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
         if (indexRec > -1) {
@@ -300,8 +301,10 @@ struct HfCandidateCreatorXMc {
         }
       }
 
+      // J/ψ → μ+ μ−
       if (flag == 0) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        // X → π+ π− μ+ μ−
         if (indexRec > -1) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
           if (indexRec > -1) {
@@ -321,22 +324,21 @@ struct HfCandidateCreatorXMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
 
-      // X → J/ψ π+ π-
-      // Printf("Checking X → J/ψ π+ π-");
+      // X → J/ψ π+ π−
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeX, std::array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
-        // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particle, &arrDaughter, std::array{pdgCodeJpsi}, 1);
         auto jpsiCandMC = mcParticles.rawIteratorAt(arrDaughter[0]);
+        // J/ψ → e+ e−
         if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
+        // J/ψ → μ+ μ−
         if (flag == 0) {
           if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;

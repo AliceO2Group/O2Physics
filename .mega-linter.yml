@@ -17,6 +17,7 @@ DISABLE_LINTERS:
   - YAML_V8R
   - YAML_PRETTIER
   - REPOSITORY_DEVSKIM
+  - REPOSITORY_KICS
   - REPOSITORY_SECRETLINT
   - REPOSITORY_TRIVY
 DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be considered as non blocking.
