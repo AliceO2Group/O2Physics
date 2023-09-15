@@ -71,7 +71,7 @@ AxisSpec axisEta{200, -5, 5, "#eta"};
 AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
 struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
   void init(InitContext const&)
   {
