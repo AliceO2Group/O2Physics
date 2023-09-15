@@ -358,18 +358,18 @@ struct MultiplicityCounter {
   }
 
   // require ITS+TPC tracks
-  expressions::Filter trackSelectionProperGlobalOnly =  ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                                        ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
-                                                        ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                                        ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
-                                                        ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
+  expressions::Filter trackSelectionProperGlobalOnly = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                                       ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
 
   // require a mix of ITS+TPC and ITS-only tracks
-//  expressions::Filter trackSelectionProperMixed     =  ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-//                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-//                                                       ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
-//                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-//                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
+  //  expressions::Filter trackSelectionProperMixed     =  ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+  //                                                       ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+  //                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
+  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
