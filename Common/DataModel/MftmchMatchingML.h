@@ -13,6 +13,7 @@
 #define COMMON_DATAMODEL_MFTMCHMATCHINGML_H_
 
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 namespace o2::aod
 {
