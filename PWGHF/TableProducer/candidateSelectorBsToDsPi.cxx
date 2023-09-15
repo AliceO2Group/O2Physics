@@ -192,7 +192,7 @@ struct HfCandidateSelectorBsToDsPi {
         if (!hf_sel_candidate_bs::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyMl) {
-          hfMlBsToDsPiCandidate(outputMl);
+            hfMlBsToDsPiCandidate(outputMl);
           }
           continue;
         }
