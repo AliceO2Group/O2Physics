@@ -88,7 +88,6 @@ struct createEMReducedEvent {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
         ng_pcm = v0photons_coll.size();
         registry.fill(HIST("hNGammas_PCM"), ng_pcm);
-        // for (auto& v0 : v0photons_coll) {
         for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
           v0kfeventid(event.lastIndex() + 1);
         }
@@ -97,11 +96,17 @@ struct createEMReducedEvent {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
         ng_phos = phos_coll.size();
         registry.fill(HIST("hNGammas_PHOS"), ng_phos);
+        for (int iphos = 0; iphos < phos_coll.size(); iphos++) {
+          phoseventid(event.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kEMC)) {
         auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
         ng_emc = emc_coll.size();
         registry.fill(HIST("hNGammas_EMC"), ng_emc);
+        for (int iemc = 0; iemc < emc_coll.size(); iemc++) {
+          emceventid(event.lastIndex() + 1);
+        }
       }
       if (ng_pcm >= minN_PCM) {
         minN_any = true;

@@ -290,17 +290,26 @@ struct MultiplicityTableTaskIndexed {
 
       if (populateMultExtra) {
         int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
+        int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
         for (auto track : pvAllContribsGrouped) {
-          if (track.hasITS())
+          if (track.hasITS()) {
             nHasITS++;
-          if (track.hasTPC())
+            if (track.hasTPC())
+              nITSTPC++;
+            if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD())
+              nITSonly++;
+          }
+          if (track.hasTPC()) {
             nHasTPC++;
+            if (!track.hasITS() && !track.hasTOF() && !track.hasTRD())
+              nTPConly++;
+          }
           if (track.hasTOF())
             nHasTOF++;
           if (track.hasTRD())
             nHasTRD++;
         };
-        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD);
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC);
       }
     }
   }

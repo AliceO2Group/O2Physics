@@ -241,7 +241,6 @@ struct HfCandidateCreatorLbMc {
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -254,11 +253,9 @@ struct HfCandidateCreatorLbMc {
                                          lcCand.prong1_as<aod::TracksWMc>(),
                                          lcCand.prong2_as<aod::TracksWMc>()};
       // Λb → Λc+ π-
-      // Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Λb → Λc+ π-
-        // Printf("Checking Λb → Λc+ π-");
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
@@ -272,14 +269,12 @@ struct HfCandidateCreatorLbMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // Λb → Λc+ π-
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaB0, std::array{static_cast<int>(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
-        // Match Λc+ -> pKπ
+        // Λc+ → p K- π+
         auto LcCandMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        // Printf("Checking Λc+ → p K- π+");
         if (RecoDecay::isMatchedMCGen(mcParticles, LcCandMC, static_cast<int>(pdg::Code::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }
