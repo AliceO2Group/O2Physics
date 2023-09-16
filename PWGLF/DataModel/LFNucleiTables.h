@@ -29,7 +29,7 @@ namespace fullEvent
 { // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(MultFV0M, multFV0M, float);
+DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
@@ -38,7 +38,7 @@ DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  fullEvent::MultFV0M,
+                  fullEvent::CentFV0M,
                   fullEvent::CentFT0M,
                   fullEvent::IsEventReject,
                   fullEvent::RunNumber);

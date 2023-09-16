@@ -357,11 +357,19 @@ struct MultiplicityCounter {
     usedTracksIdsDFMCEff.clear();
   }
 
-  expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
-                                             ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                                    ncheckbit(aod::track::trackCutFlag, trackSelectionTPC),
-                                                    true) &&
-                                             ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
+  // require ITS+TPC tracks
+  expressions::Filter trackSelectionProperGlobalOnly = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                                       ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
+                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
+
+  // require a mix of ITS+TPC and ITS-only tracks
+  //  expressions::Filter trackSelectionProperMixed     =  ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+  //                                                       ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+  //                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
+  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
@@ -405,6 +413,19 @@ struct MultiplicityCounter {
       if (atracks != nullptr) {
         for (auto& track : *atracks) {
           auto otrack = track.track_as<FiTracks>();
+          // same filtering for ambiguous as for general
+          if (!otrack.hasITS()) {
+            continue;
+          }
+          if ((otrack.trackCutFlag() & trackSelectionITS) == 0) {
+            continue;
+          }
+          if (!otrack.hasTPC()) {
+            continue;
+          }
+          if ((otrack.trackCutFlag() & trackSelectionTPC) == 0) {
+            continue;
+          }
           usedTracksIds.emplace_back(track.trackId());
           if (std::abs(otrack.eta()) < estimatorEta) {
             ++Ntrks;
