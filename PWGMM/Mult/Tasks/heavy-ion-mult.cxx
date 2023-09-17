@@ -72,6 +72,7 @@ struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
+  Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
   ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
   void init(InitContext const&)
   {
@@ -115,7 +116,7 @@ struct HeavyIonMultiplicity {
         histos.fill(HIST("EventHist"), 2);
         histos.fill(HIST("VtxZHist"), collision.posZ());
         for (auto& track : tracks) {
-          if (std::abs(track.eta()) < 1) {
+          if (std::abs(track.eta()) < etaRange) {
             NchTracks++;
             histos.fill(HIST("EtaHist"), track.eta());
             histos.fill(HIST("EtaVsVtxZHist"), track.eta(), collision.posZ());
@@ -159,7 +160,7 @@ struct HeavyIonMultiplicity {
         continue;
       }
       if (std::abs(pdgParticle->Charge()) >= 3) {
-        if (std::abs(particle.eta()) < 1) {
+        if (std::abs(particle.eta()) < etaRange) {
           NchGenTracks++;
           histos.fill(HIST("MCGenEtaHist"), particle.eta());
         }
@@ -182,7 +183,7 @@ struct HeavyIonMultiplicity {
 
           auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
           for (auto& Rectrack : Rectrackspart) {
-            if (std::abs(Rectrack.eta()) < 1) {
+            if (std::abs(Rectrack.eta()) < etaRange) {
               NchRecTracks++;
               histos.fill(HIST("MCRecEtaHist"), Rectrack.eta());
               histos.fill(HIST("EtaVsVtxZMCRecHist"), Rectrack.eta(), RecCollision.posZ());
