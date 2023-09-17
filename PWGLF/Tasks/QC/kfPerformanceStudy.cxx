@@ -44,7 +44,7 @@ struct kfPerformanceStudy {
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.222f, 1.422f}, ""};
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.572f, 1.772f}, ""};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1.0f, 1.0f}, ""};
-  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {200, 0.0f, 0.5f}, ""};
+  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {800, 0.0f, 3.5f}, ""};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -62,6 +62,9 @@ struct kfPerformanceStudy {
     histos.add("hKFMassXiPlus", "hKFMassXiPlus", kTH2F, {axisPt, axisXiMass});
     histos.add("hKFMassOmegaMinus", "hKFMassOmegaMinus", kTH2F, {axisPt, axisOmegaMass});
     histos.add("hKFMassOmegaPlus", "hKFMassOmegaPlus", kTH2F, {axisPt, axisOmegaMass});
+
+    histos.add("hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+    histos.add("hKFPointingAngle", "hKFPointingAngle", kTH1F, {axisPointingAngle});
 
     histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPt, axisXiMass, axisXiMass});
     histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPt, axisXiMass, axisXiMass});
@@ -124,6 +127,8 @@ struct kfPerformanceStudy {
       histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
       histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);                // <- implicit pT choice, beware
       histos.fill(HIST("h3dPointingAngle"), pt, pointingAngle, pointingAngleKF); // <- implicit pT choice, beware
+      histos.fill(HIST("hPointingAngle"), pointingAngle);
+      histos.fill(HIST("hKFPointingAngle"), pointingAngleKF);
       if (charge < 0) {
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);

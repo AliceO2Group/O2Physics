@@ -235,6 +235,7 @@ struct cascadeBuilder {
     float kfMLambda;
     float kfV0Chi2;
     float kfCascadeChi2;
+    std::array<float, 15> kfCascadeCov;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -1191,6 +1192,14 @@ struct cascadeBuilder {
     cascadecandidate.mOmega = KFOmega.GetMass();
     cascadecandidate.yXi = KFXi.GetRapidity();
     cascadecandidate.yOmega = KFOmega.GetRapidity();
+
+    // KF Cascade covariance matrix
+    o2::gpu::gpustd::array<float, 15> covKF;
+    for (int i = 0; i < 15; i++) { // get covariance matrix elements (lower triangle)
+      covKF[i] = KFXi.GetCovariance(i);
+      cascadecandidate.kfCascadeCov[i] = covKF[i];
+    }
+
     registry.fill(HIST("hKFParticleStatistics"), 1.0f);
     return true;
   }
@@ -1288,12 +1297,8 @@ struct cascadeBuilder {
         // for (int i = 0; i < 15; i++)
         //   trackCovariance[i] = covmatrix[i];
 
-        std::array<float, 21> covCasc;
-        lCascadeTrack.getCovXYZPxPyPzGlo(covCasc);
-
-        // set covariance matrix elements (lower triangle)
         for (int i =0; i < 15; i++) {
-          trackCovariance[i] = covCasc[i];
+          trackCovariance[i] = cascadecandidate.kfCascadeCov[i];
         }
         kfcasccovs(trackCovariance);
       }

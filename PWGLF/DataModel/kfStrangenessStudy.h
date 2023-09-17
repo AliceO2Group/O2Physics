@@ -45,8 +45,8 @@ DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);
 DECLARE_SOA_COLUMN(DCANegToPVKF, dcanegtopvkf, float);
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
 DECLARE_SOA_COLUMN(DCABachToPVKF, dcabachtopvkf, float);
-DECLARE_SOA_COLUMN(CosPACascToPV, cospacasctopv, float);
-DECLARE_SOA_COLUMN(CosPACascToPVKF, cospacasctopvkf, float);
+DECLARE_SOA_COLUMN(PACascToPV, pacasctopv, float);
+DECLARE_SOA_COLUMN(PACascToPVKF, pacasctopvkf, float);
 DECLARE_SOA_COLUMN(CascRad, cascrad, float);
 DECLARE_SOA_COLUMN(CascRadKF, cascradkf, float);
 DECLARE_SOA_COLUMN(VtxX, vtxx, float);
@@ -119,8 +119,8 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::DCAZCascToPVKF,
                   kfStrangenessStudy::DCACascDau,
                   kfStrangenessStudy::DCACascDauKF,
-                  kfStrangenessStudy::CosPACascToPV,
-                  kfStrangenessStudy::CosPACascToPVKF,
+                  kfStrangenessStudy::PACascToPV,
+                  kfStrangenessStudy::PACascToPVKF,
                   kfStrangenessStudy::Charge,
                   kfStrangenessStudy::MassLambda,
                   kfStrangenessStudy::MassLambdaKF,
@@ -169,8 +169,8 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::DCAZCascToPVKF,
                   kfStrangenessStudy::DCACascDau,
                   kfStrangenessStudy::DCACascDauKF,
-                  kfStrangenessStudy::CosPACascToPV,
-                  kfStrangenessStudy::CosPACascToPVKF,
+                  kfStrangenessStudy::PACascToPV,
+                  kfStrangenessStudy::PACascToPVKF,
                   kfStrangenessStudy::Charge,
                   kfStrangenessStudy::MassLambda,
                   kfStrangenessStudy::MassLambdaKF,
