@@ -66,7 +66,7 @@ AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
 AxisSpec axisPT = {1000, -0.05, 49.95};
-AxisSpec axisMult{2000, -0.5, 1999.5, "Multiplicity"};
+AxisSpec axisMult{2000, -0.5, 9999.5, "Multiplicity"};
 AxisSpec axisEta{200, -5, 5, "#eta"};
 AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
 struct HeavyIonMultiplicity {
@@ -154,7 +154,7 @@ struct HeavyIonMultiplicity {
         continue;
       }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle = nullptr) {
+      if (pdgParticle == nullptr) {
         continue;
       }
       if (std::abs(pdgParticle->Charge()) >= 3) {
