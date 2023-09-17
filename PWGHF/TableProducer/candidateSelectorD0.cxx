@@ -248,8 +248,8 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-  template <int reconstructionType, typename THfCand2Prong>
-  void processSel(THfCand2Prong const& candidates,
+  template <int reconstructionType, typename CandType>
+  void processSel(CandType const& candidates,
                   TracksSel const&)
   {
     // looping over 2-prong candidates

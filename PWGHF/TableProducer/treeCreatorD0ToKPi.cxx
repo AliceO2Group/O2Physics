@@ -334,9 +334,9 @@ struct HfTreeCreatorD0ToKPi {
     }
   }
 
-  template <int reconstructionType, typename THfCand2Prong>
+  template <int reconstructionType, typename CandType>
   void processData(aod::Collisions const& collisions,
-                   THfCand2Prong const& candidates,
+                   CandType const& candidates,
                    TracksWPid const&, aod::BCs const&)
   {
     // Filling event properties
@@ -385,27 +385,28 @@ struct HfTreeCreatorD0ToKPi {
   void processDataWithDCAFitterN(aod::Collisions const& collisions,
                                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
                                  TracksWPid const& tracks,
-                                 aod::BCs const& BCs)
+                                 aod::BCs const& bcs)
   {
-    processData<VertexerType::DCAFitter>(collisions, candidates, tracks, BCs);
+    processData<VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
                                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
                                  TracksWPid const& tracks,
-                                 aod::BCs const& BCs)
+                                 aod::BCs const& bcs)
   {
-    processData<VertexerType::KfParticle>(collisions, candidates, tracks, BCs);
+    processData<VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
-  template <int reconstructionType, bool onlyBkg = false, typename THfCand2Prong>
+  template <int reconstructionType, bool onlyBkg = false, typename CandType>
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 THfCand2Prong const& candidates,
-                 MatchedGenCandidatesMc const& particles,
-                 TracksWPid const&, aod::BCs const&)
+                 CandType const& candidates,
+                 MatchedGenCandidatesMc const& mcParticles,
+                 TracksWPid const&,
+                 aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -450,8 +451,8 @@ struct HfTreeCreatorD0ToKPi {
     }
 
     // Filling particle properties
-    rowCandidateFullParticles.reserve(particles.size());
-    for (const auto& particle : particles) {
+    rowCandidateFullParticles.reserve(mcParticles.size());
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
@@ -467,58 +468,64 @@ struct HfTreeCreatorD0ToKPi {
   }
 
   void processMcWithDCAFitterOnlySig(aod::Collisions const& collisions,
-                                     aod::McCollisions const& McCollisions,
-                                     MatchedGenCandidatesMc const& particles,
-                                     TracksWPid const& tracks, aod::BCs const& BCs)
+                                     aod::McCollisions const& mcCollisions,
+                                     MatchedGenCandidatesMc const& mcParticles,
+                                     TracksWPid const& tracks,
+                                     aod::BCs const& bcs)
   {
-    processMc<VertexerType::DCAFitter>(collisions, McCollisions, reconstructedCandSig, particles, tracks, BCs);
+    processMc<VertexerType::DCAFitter>(collisions, mcCollisions, reconstructedCandSig, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
 
   void processMcWithDCAFitterOnlyBkg(aod::Collisions const& collisions,
-                                     aod::McCollisions const& McCollisions,
-                                     MatchedGenCandidatesMc const& particles,
-                                     TracksWPid const& tracks, aod::BCs const& BCs)
+                                     aod::McCollisions const& mcCollisions,
+                                     MatchedGenCandidatesMc const& mcParticles,
+                                     TracksWPid const& tracks,
+                                     aod::BCs const& bcs)
   {
-    processMc<VertexerType::DCAFitter, true>(collisions, McCollisions, reconstructedCandBkg, particles, tracks, BCs);
+    processMc<VertexerType::DCAFitter, true>(collisions, mcCollisions, reconstructedCandBkg, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterOnlyBkg, "Process MC with DCAFitterN only for background", false);
 
   void processMcWithDCAFitterAll(aod::Collisions const& collisions,
-                                 aod::McCollisions const& McCollisions,
+                                 aod::McCollisions const& mcCollisions,
                                  SelectedCandidatesMc const& candidates,
-                                 MatchedGenCandidatesMc const& particles,
-                                 TracksWPid const& tracks, aod::BCs const& BCs)
+                                 MatchedGenCandidatesMc const& mcParticles,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
   {
-    processMc<VertexerType::DCAFitter>(collisions, McCollisions, candidates, particles, tracks, BCs);
+    processMc<VertexerType::DCAFitter>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticleOnlySig(aod::Collisions const& collisions,
-                                      aod::McCollisions const& McCollisions,
-                                      MatchedGenCandidatesMc const& particles,
-                                      TracksWPid const& tracks, aod::BCs const& BCs)
+                                      aod::McCollisions const& mcCollisions,
+                                      MatchedGenCandidatesMc const& mcParticles,
+                                      TracksWPid const& tracks,
+                                      aod::BCs const& bcs)
   {
-    processMc<VertexerType::KfParticle>(collisions, McCollisions, reconstructedCandSigKF, particles, tracks, BCs);
+    processMc<VertexerType::KfParticle>(collisions, mcCollisions, reconstructedCandSigKF, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleOnlySig, "Process MC with KFParticle only for signals", false);
 
   void processMcWithKFParticleOnlyBkg(aod::Collisions const& collisions,
-                                      aod::McCollisions const& McCollisions,
-                                      MatchedGenCandidatesMc const& particles,
-                                      TracksWPid const& tracks, aod::BCs const& BCs)
+                                      aod::McCollisions const& mcCollisions,
+                                      MatchedGenCandidatesMc const& mcParticles,
+                                      TracksWPid const& tracks,
+                                      aod::BCs const& bcs)
   {
-    processMc<VertexerType::KfParticle, true>(collisions, McCollisions, reconstructedCandBkgKF, particles, tracks, BCs);
+    processMc<VertexerType::KfParticle, true>(collisions, mcCollisions, reconstructedCandBkgKF, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleOnlyBkg, "Process MC with KFParticle only for background", false);
 
   void processMcWithKFParticleAll(aod::Collisions const& collisions,
-                                  aod::McCollisions const& McCollisions,
+                                  aod::McCollisions const& mcCollisions,
                                   SelectedCandidatesMcKf const& candidates,
-                                  MatchedGenCandidatesMc const& particles,
-                                  TracksWPid const& tracks, aod::BCs const& BCs)
+                                  MatchedGenCandidatesMc const& mcParticles,
+                                  TracksWPid const& tracks,
+                                  aod::BCs const& bcs)
   {
-    processMc<VertexerType::KfParticle>(collisions, McCollisions, candidates, particles, tracks, BCs);
+    processMc<VertexerType::KfParticle>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
 };

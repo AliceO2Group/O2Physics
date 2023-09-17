@@ -111,9 +111,9 @@ struct HfCandidateCreator2Prong {
     runNumber = 0;
   }
 
-  template <bool doPvRefit, typename Cand, typename TTracks>
+  template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreator2ProngWithDCAFitterN(aod::Collisions const& collisions,
-                                      Cand const& rowsTrackIndexProng2,
+                                      CandType const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -234,9 +234,9 @@ struct HfCandidateCreator2Prong {
     }
   }
 
-  template <bool doPvRefit, typename Cand, typename TTracks>
+  template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreator2ProngWithKFParticle(aod::Collisions const& collisions,
-                                      Cand const& rowsTrackIndexProng2,
+                                      CandType const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
