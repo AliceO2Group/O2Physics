@@ -66,15 +66,17 @@ AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
 AxisSpec axisPT = {1000, -0.05, 49.95};
-AxisSpec axisMult{2000, -0.5, 1999.5, "Multiplicity"};
 AxisSpec axisEta{200, -5, 5, "#eta"};
 AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
 struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
+  Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
+  ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
   void init(InitContext const&)
   {
+    AxisSpec axisMult = {multHistBin};
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
     if (doprocessData) {
@@ -114,7 +116,7 @@ struct HeavyIonMultiplicity {
         histos.fill(HIST("EventHist"), 2);
         histos.fill(HIST("VtxZHist"), collision.posZ());
         for (auto& track : tracks) {
-          if (std::abs(track.eta()) < 1) {
+          if (std::abs(track.eta()) < etaRange) {
             NchTracks++;
             histos.fill(HIST("EtaHist"), track.eta());
             histos.fill(HIST("EtaVsVtxZHist"), track.eta(), collision.posZ());
@@ -154,11 +156,11 @@ struct HeavyIonMultiplicity {
         continue;
       }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle = nullptr) {
+      if (pdgParticle == nullptr) {
         continue;
       }
       if (std::abs(pdgParticle->Charge()) >= 3) {
-        if (std::abs(particle.eta()) < 1) {
+        if (std::abs(particle.eta()) < etaRange) {
           NchGenTracks++;
           histos.fill(HIST("MCGenEtaHist"), particle.eta());
         }
@@ -181,7 +183,7 @@ struct HeavyIonMultiplicity {
 
           auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
           for (auto& Rectrack : Rectrackspart) {
-            if (std::abs(Rectrack.eta()) < 1) {
+            if (std::abs(Rectrack.eta()) < etaRange) {
               NchRecTracks++;
               histos.fill(HIST("MCRecEtaHist"), Rectrack.eta());
               histos.fill(HIST("EtaVsVtxZMCRecHist"), Rectrack.eta(), RecCollision.posZ());
