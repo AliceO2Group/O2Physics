@@ -66,15 +66,16 @@ AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
 AxisSpec axisPT = {1000, -0.05, 49.95};
-AxisSpec axisMult{2000, -0.5, 9999.5, "Multiplicity"};
 AxisSpec axisEta{200, -5, 5, "#eta"};
 AxisSpec axisMCEvent_ambiguity{6, -0.5, 5.5, "reco collisions per true collision"};
 struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
+  ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
   void init(InitContext const&)
   {
+    AxisSpec axisMult = {multHistBin};
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
     if (doprocessData) {
