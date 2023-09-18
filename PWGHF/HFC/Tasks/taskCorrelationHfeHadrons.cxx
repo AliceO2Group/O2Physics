@@ -180,7 +180,7 @@ struct HfCorrelatorElHadrons {
     if (fclusterinfo) {
       for (const auto& clusterbf : mAnalysisClusters) {
         registry.fill(HIST("fSprsClusterInfoBe"), clusterbf.energy(), clusterbf.eta(), clusterbf.phi(), clusterbf.nCells(), clusterbf.time());
-       }
+      }
     }
     int PassEMCal;
     Double_t phiTrack = -999;
@@ -207,7 +207,7 @@ struct HfCorrelatorElHadrons {
       if ((phiTrack > phiTrackMinEM && phiTrack < phiTrackMaxEM) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
         PassEMCal = 1; // EMcal acceptance passed
       if ((phiTrack > phiTrackMinDc && phiTrack < phiTrackMaxDC) && ((etaTrack > etaTrackMinDcright && etaTrack < etaTrackMaxDcright) || (etaTrack > etaTrackMinDcleft && etaTrack < etaTrackMaxDcleft)))
-        PassEMCal = 2; // Dcal acceptance passed
+        PassEMCal = 2;                                                                                                                                    // Dcal acceptance passed
       registry.fill(HIST("fSprsdEdxnSigmaPt"), Track.tpcSignal(), tpcnsigmaTrack, pTrack, ptTrack, etaTrack, phiTrack, dcaxyTrack, dcazTrack, PassEMCal); // track infor after filter bit
 
       // Apply Track cut
