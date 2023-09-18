@@ -306,7 +306,8 @@ struct cascadeBuilder {
       registry.add("MassHistograms/h2dOmegaMinusMass", "h2dOmegaMinusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
       registry.add("MassHistograms/h2dOmegaPlusMass", "h2dOmegaPlusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
 
-      if(d_doPtDep_CosPaCut) registry.addClone("MassHistograms/", "MassHistograms_BefPAcut/");
+      if (d_doPtDep_CosPaCut)
+        registry.addClone("MassHistograms/", "MassHistograms_BefPAcut/");
 
       // bit packed ITS cluster map
       const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
@@ -841,7 +842,7 @@ struct cascadeBuilder {
       cascadecandidate.pos[i] = vtx[i];
     }
 
-    if (d_doQA&&d_doPtDep_CosPaCut) {
+    if (d_doQA && d_doPtDep_CosPaCut) {
       bool mcUnchecked = !d_QA_checkMC;
       bool dEdxUnchecked = !d_QA_checkdEdx;
 
@@ -858,7 +859,7 @@ struct cascadeBuilder {
         registry.fill(HIST("MassHistograms_BefPAcut/h2dOmegaMinusMass"), lPt, RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda}));
       if ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && cascadecandidate.charge > 0)
         registry.fill(HIST("MassHistograms_BefPAcut/h2dOmegaPlusMass"), lPt, RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda}));
-      }
+    }
 
     cascadecandidate.cosPA = RecoDecay::cpa(
       array{collision.posX(), collision.posY(), collision.posZ()},
