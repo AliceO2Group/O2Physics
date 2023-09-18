@@ -865,21 +865,21 @@ struct correlateStrangeness {
 
       if (abs(mcParticle.y()) < 0.5) {
         if (abs(mcParticle.pdgCode()) == 211)
-          histos.fill(HIST("Generated/hPion_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hPion_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (abs(mcParticle.pdgCode()) == 310)
-          histos.fill(HIST("Generated/hK0Short_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hK0Short_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == 3122)
-          histos.fill(HIST("Generated/hLambda_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hLambda_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == -3122)
-          histos.fill(HIST("Generated/hAntiLambda_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hAntiLambda_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == 3312)
-          histos.fill(HIST("Generated/hXiMinus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hXiMinus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == -3312)
-          histos.fill(HIST("Generated/hXiPlus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hXiPlus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == 3334)
-          histos.fill(HIST("Generated/hOmegaMinus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hOmegaMinus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         if (mcParticle.pdgCode() == -3334)
-          histos.fill(HIST("Generated/hOmegaPlus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hOmegaPlus_MidYVsMult"), mcParticle.pt(), bestCollisionFT0Mpercentile);
       }
     }
   }
