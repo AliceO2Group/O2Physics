@@ -113,6 +113,8 @@ struct HfCandidateSelectorBsToDsPi {
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
         hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
       outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
