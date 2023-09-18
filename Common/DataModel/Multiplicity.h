@@ -59,7 +59,7 @@ DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
 
-DECLARE_SOA_COLUMN(BCNumber, bcNumber, int);   //!
+DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector

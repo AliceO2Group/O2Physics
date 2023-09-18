@@ -310,7 +310,7 @@ struct MultiplicityTableTaskIndexed {
             nHasTRD++;
         };
 
-        int bcNumber = bc.globalBC()%3564;
+        int bcNumber = bc.globalBC() % 3564;
 
         multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
       }
