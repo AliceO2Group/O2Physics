@@ -120,7 +120,7 @@ struct HfTaskCorrelationDplusHadrons {
       {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;

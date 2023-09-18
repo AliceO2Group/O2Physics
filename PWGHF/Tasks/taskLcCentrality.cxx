@@ -54,7 +54,7 @@ struct HfTaskLcCentrality {
      {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; centrality", {HistType::kTH3F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
@@ -130,7 +130,7 @@ struct HfTaskLcCentralityMc {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hPtRecSig", "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -144,11 +144,10 @@ struct HfTaskLcCentralityMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
@@ -158,8 +157,8 @@ struct HfTaskLcCentralityMc {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kLambdaCPlus, true);
-        auto particleMother = particlesMC.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
@@ -177,8 +176,7 @@ struct HfTaskLcCentralityMc {
       }
     }
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

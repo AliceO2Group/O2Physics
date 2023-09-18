@@ -327,7 +327,7 @@ struct HfCandidateCreatorBsExpressions {
 
   void processMc(aod::HfCand3Prong const& ds,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& particlesMc)
+                 aod::McParticles const& mcParticles)
   {
     rowCandidateBs->bindExternalIndices(&tracks);
     rowCandidateBs->bindExternalIndices(&ds);
@@ -354,15 +354,15 @@ struct HfCandidateCreatorBsExpressions {
                                          candDs.prong2_as<aod::TracksWMc>()};
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
-      indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, pdg::Code::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // Checking Ds∓ → K- K+ π∓
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
-              auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+              auto daughI = mcParticles.rawIteratorAt(arrDaughDsIndex[iProng]);
               arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
@@ -374,15 +374,15 @@ struct HfCandidateCreatorBsExpressions {
 
       if (!flag) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
           // Checking Ds± → K- K+ π±
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
-            RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
             if (arrDaughDsIndex.size() == 2) {
               for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
-                auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                auto daughI = mcParticles.rawIteratorAt(arrDaughDsIndex[iProng]);
                 arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
@@ -404,10 +404,10 @@ struct HfCandidateCreatorBsExpressions {
         std::array<int, 4> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBPlus, pdg::Code::kBS, pdg::Code::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-          int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
-          int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
-          int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
-          int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+          int index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
+          int index1Mother = RecoDecay::getMother(mcParticles, particleProng1, bHadronMotherHypo, true);
+          int index2Mother = RecoDecay::getMother(mcParticles, particleProng2, bHadronMotherHypo, true);
+          int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
           if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
@@ -423,19 +423,19 @@ struct HfCandidateCreatorBsExpressions {
     } // rec
 
     // Match generated particles.
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       flag = 0;
       arrDaughDsIndex.clear();
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, std::array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBS, std::array{+pdg::Code::kDSBar, +kPiPlus}, true)) {
         // Checking Ds∓ → K- K+ π∓
-        auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
+        auto candDsMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+        if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, pdg::Code::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
           RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
-              auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughDsIndex[jProng]);
               arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
@@ -447,14 +447,14 @@ struct HfCandidateCreatorBsExpressions {
 
       if (!flag) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-        if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, std::array{+pdg::Code::kDS, -kPiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kB0, std::array{+pdg::Code::kDS, -kPiPlus}, true)) {
           // Checking Ds± → K- K+ π±
-          auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
+          auto candDsMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, pdg::Code::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
             RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
             if (arrDaughDsIndex.size() == 2) {
               for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
-                auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughDsIndex[jProng]);
                 arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {

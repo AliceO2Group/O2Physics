@@ -91,6 +91,10 @@ struct createPCM {
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
   Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
   Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> max_diff_tgl{"max_diff_tgl", 999.0, "max difference in track iu tgl between ele and pos"};
+  Configurable<float> max_diff_z_itstpc{"max_diff_z_itstpc", 999.0, "max difference in track iu z between ele and pos for ITS-TPC tracks"};
+  Configurable<float> max_diff_z_itsonly{"max_diff_z_itsonly", 999.0, "max difference in track iu z between ele and pos for ITSonly tracks"};
+  Configurable<float> max_diff_z_tpconly{"max_diff_z_tpconly", 999.0, "max difference in track iu z between ele and pos for TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
@@ -206,9 +210,29 @@ struct createPCM {
     bool isITSonly_ele = ele.hasITS() & !ele.hasTPC();
     bool isTPConly_pos = !pos.hasITS() & pos.hasTPC();
     bool isTPConly_ele = !ele.hasITS() & ele.hasTPC();
+    bool isITSTPC_pos = pos.hasITS() & pos.hasTPC();
+    bool isITSTPC_ele = ele.hasITS() & ele.hasTPC();
 
     if ((isITSonly_pos && isTPConly_ele) || (isITSonly_ele && isTPConly_pos)) {
       return false;
+    }
+
+    if (abs(ele.tgl() - pos.tgl()) > max_diff_tgl) {
+      return false;
+    }
+
+    if (isITSTPC_pos && isITSTPC_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itstpc) {
+        return false;
+      }
+    } else if (isTPConly_pos && isTPConly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_tpconly) {
+        return false;
+      }
+    } else if (isITSonly_pos && isITSonly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itsonly) {
+        return false;
+      }
     }
 
     // fitter is memeber variable.

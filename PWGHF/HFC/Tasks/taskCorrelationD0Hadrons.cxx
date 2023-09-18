@@ -168,7 +168,7 @@ struct HfTaskCorrelationD0Hadrons {
      {"hDeltaEtaPtIntGen", stringMcParticles + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}}},
      {"hDeltaPhiPtIntGen", stringMcParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     int nBinsPtAxis = binsCorrelations->size() - 1;
     const double* valuesPtAxis = binsCorrelations->data();

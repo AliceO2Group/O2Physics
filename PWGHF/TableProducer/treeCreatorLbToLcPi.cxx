@@ -182,7 +182,7 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Writes the full information in an output TTree

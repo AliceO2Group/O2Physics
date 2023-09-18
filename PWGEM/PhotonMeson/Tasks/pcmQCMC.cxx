@@ -214,6 +214,7 @@ struct PCMQCMC {
 
             nv0++;
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hV0R_minTrackX"))->Fill(v0.recalculatedVtxR(), std::min(pos.x(), ele.x()));
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffZ"))->Fill(pos.z() - ele.z());
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }

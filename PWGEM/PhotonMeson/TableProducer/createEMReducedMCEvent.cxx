@@ -95,14 +95,23 @@ struct createEMReducedMCEvent {
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
         ng_pcm = v0photons_coll.size();
+        for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
+          v0kfeventid(events.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
         ng_phos = phos_coll.size();
+        for (int iphos = 0; iphos < phos_coll.size(); iphos++) {
+          phoseventid(events.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kEMC)) {
         auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
         ng_emc = emc_coll.size();
+        for (int iemc = 0; iemc < emc_coll.size(); iemc++) {
+          emceventid(events.lastIndex() + 1);
+        }
       }
 
       // store event selection decisions

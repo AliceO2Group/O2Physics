@@ -61,7 +61,7 @@ struct HfTaskBplusReduced {
      {"hPtGenSig", bPlusCandMatch + "candidate #it{p}_{T}^{gen.} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGen", mcParticleMatched + "candidate #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     const AxisSpec axisMass{150, 4.5, 6.0};
     const AxisSpec axisCPA{120, -1.1, 1.1};
@@ -197,7 +197,7 @@ struct HfTaskBplusReduced {
 
   /// B+ MC analysis and fill histograms
   void processMc(soa::Join<aod::HfCandBplus, aod::HfBpMcRecReduced> const& candidates,
-                 aod::HfBpMcGenReduced const& particlesMc,
+                 aod::HfBpMcGenReduced const& mcParticles,
                  aod::HfCand2ProngReduced const&)
   {
     // MC rec
@@ -256,8 +256,7 @@ struct HfTaskBplusReduced {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();

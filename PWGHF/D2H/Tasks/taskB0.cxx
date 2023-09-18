@@ -188,7 +188,7 @@ struct HfTaskB0 {
 
   /// B0 MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMc,
+                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& mcParticles,
                  aod::TracksWMc const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
@@ -207,8 +207,8 @@ struct HfTaskB0 {
       int flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
-        auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
-        auto particleMother = particlesMc.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
+        auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandB0);
@@ -264,8 +264,7 @@ struct HfTaskB0 {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto ptParticle = particle.pt();

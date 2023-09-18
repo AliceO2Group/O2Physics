@@ -31,7 +31,7 @@
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
 /PWGHF @alibuild @vkucera @fcolamar @adubla
-/PWGHF/D2H @alibuild @vkucera @fcolamar @adubla @fcatalan92 @lvermunt
+/PWGHF/D2H @alibuild @vkucera @fcolamar @adubla @fcatalan92 @lvermunt @mfaggin
 /PWGHF/HFC @alibuild @vkucera @fcolamar @adubla @mmazzilli @deepathoms
 /PWGHF/HFJ @alibuild @vkucera @fcolamar @adubla @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @vkucera @fcolamar @adubla @NicoleBastid @gtaillepied
