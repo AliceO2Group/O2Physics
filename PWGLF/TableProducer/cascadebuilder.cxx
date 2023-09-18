@@ -1187,9 +1187,13 @@ struct cascadeBuilder {
       return false;
 
     // Calculate masses a priori
-    cascadecandidate.kfMLambda = KFV0.GetMass();
-    cascadecandidate.mXi = KFXi.GetMass();
-    cascadecandidate.mOmega = KFOmega.GetMass();
+    float MLambda, SigmaLambda, MXi, SigmaXi, MOmega, SigmaOmega;
+    KFV0.GetMass(MLambda, SigmaLambda);
+    KFXi.GetMass(MXi, SigmaXi);
+    KFOmega.GetMass(MOmega, SigmaOmega);
+    cascadecandidate.kfMLambda = MLambda;
+    cascadecandidate.mXi = MXi;
+    cascadecandidate.mOmega = MOmega;
     cascadecandidate.yXi = KFXi.GetRapidity();
     cascadecandidate.yOmega = KFOmega.GetRapidity();
 
