@@ -48,7 +48,7 @@ struct HfCorrelatorElHadrons {
   Configurable<float> etaTrackMin{"etaTrackMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackMinDcright{"etaTrackMinDcright", 0.22f, "Eta range for electron tracks"};
   Configurable<float> etaTrackMinDcleft{"etaTrackMinDcleft", -0.6f, "Eta range for electron tracks"};
-  Configurable<float> ptTrackMin{"ptTrackMin", 2.0f, "Transverse MOmentum range for  electron tracks"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 2.0f, "Transverse MOmentum range for electron tracks"};
   Configurable<float> phiTrackMaxEM{"phiTrackMaxEM", 5.708f, "phi range for electron tracks associated Emcal"};
   Configurable<float> phiTrackMinEM{"phiTrackMinEM", 4.5355f, "phi range for electron tracks associated Emcal"};
   Configurable<float> phiTrackMaxDC{"phiTrackMaxDC", 3.3621f, "phi range for electron tracks associated Dcal"};
@@ -75,7 +75,7 @@ struct HfCorrelatorElHadrons {
 
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
-  HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD,{{30, 0., 30.}, {20, 0., 20.}, {fNDelPhiBins, -TMath::Pi() / 2, 3 * TMath::Pi() / 2}, {50, -1.8, 1.8}}};
+  HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{30, 0., 30.}, {20, 0., 20.}, {fNDelPhiBins, -TMath::Pi() / 2, 3 * TMath::Pi() / 2}, {50, -1.8, 1.8}}};
   HistogramConfigSpec hTrackInfoSpec{HistType::kTHnSparseD, {{500, 0, 160}, {300, -15, 15}, {500, 0., 50.}, {500, 0., 50.}, {100, -1.5, 1.5}, {100, 0, 7}}};
   HistogramConfigSpec hTrackallInfoSpec{HistType::kTHnSparseD, {{500, 0, 160}, {300, -15, 15}, {500, 0., 50.}, {500, 0., 50.}, {100, -1.5, 1.5}, {100, 0, 7}, {2000, -1, 1}, {2000, -1, 1}, {3, 0, 3}}};
   HistogramConfigSpec hClusterInfoSpec{HistType::kTHnSparseD, {{300, 0.0, 30.0}, {100, -0.9, 0.9}, {200, 0, 6.3}, {50, 0, 50}, {1800, -900, 900}}};
@@ -132,7 +132,8 @@ struct HfCorrelatorElHadrons {
     Double_t etaHad = -999;
 
     for (const auto& aTrack : assotrks) {
-      if (aTrack.globalIndex() == eTrack.globalIndex()) continue;
+      if (aTrack.globalIndex() == eTrack.globalIndex())
+        continue;
 
       ptHad = aTrack.pt();
       ptEle = eTrack.pt();
@@ -142,14 +143,19 @@ struct HfCorrelatorElHadrons {
       etaHad = aTrack.eta();
 
       // Apply Hadron cuts
-      if (abs(etaHad) > etaAssocTrack) continue;
-      if (ptHad < ptAssocMin) continue;
-      if (abs(aTrack.dcaXY()) > dcaXYTrackMax || abs(eTrack.dcaZ()) > dcaZTrackMax) continue;
-      if (!aTrack.isGlobalTrackWoDCA()) continue;
+      if (abs(etaHad) > etaAssocTrack)
+        continue;
+      if (ptHad < ptAssocMin)
+        continue;
+      if (abs(aTrack.dcaXY()) > dcaXYTrackMax || abs(eTrack.dcaZ()) > dcaZTrackMax)
+        continue;
+      if (!aTrack.isGlobalTrackWoDCA())
+        continue;
 
       registry.fill(HIST("fSprshadroninformation"), aTrack.tpcSignal(), aTrack.tpcNSigmaEl(), aTrack.p(), ptHad, etaHad, phiHad);
 
-      if (pTcondition && (ptEle > ptHad)) continue;
+      if (pTcondition && (ptEle > ptHad))
+        continue;
 
       Dphi = RecoDecay::constrainAngle(phiEle - phiHad, -o2::constants::math::PIHalf);
       Deta = etaEle - etaHad;
@@ -162,19 +168,19 @@ struct HfCorrelatorElHadrons {
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>::iterator;
   void process(aodCollisions const& collision, aod::EMCALClusters const& mAnalysisClusters, o2::aod::EMCALMatchedTracks const& MatchedTracks, GTrks const& tracks)
   {
-    if (!(Isrun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) return;
+    if (!(Isrun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+      return;
 
     registry.fill(HIST("hNevents"), 1);
     registry.fill(HIST("zvertex"), collision.posZ());
 
     /////////////////////////////////
-    // cluster info before match  ///
+    // cluster info before match ///
     ///////////////////////////////
     if (fclusterinfo) {
-      for (const auto& clusterbf : mAnalysisClusters)
-      {
-         registry.fill(HIST("fSprsClusterInfoBe"), clusterbf.energy(), clusterbf.eta(), clusterbf.phi(), clusterbf.nCells(), clusterbf.time());
-      }
+      for (const auto& clusterbf : mAnalysisClusters) {
+        registry.fill(HIST("fSprsClusterInfoBe"), clusterbf.energy(), clusterbf.eta(), clusterbf.phi(), clusterbf.nCells(), clusterbf.time());
+       }
     }
     int PassEMCal;
     Double_t phiTrack = -999;
@@ -185,8 +191,7 @@ struct HfCorrelatorElHadrons {
     Double_t dcazTrack = -999;
     Double_t tpcnsigmaTrack = -999;
 
-    for (auto& Track : tracks)
-    {
+    for (auto& Track : tracks) {
 
       phiTrack = Track.phi();
       etaTrack = Track.eta();
@@ -196,16 +201,20 @@ struct HfCorrelatorElHadrons {
       dcazTrack = Track.dcaZ();
       tpcnsigmaTrack = Track.tpcNSigmaEl();
 
-      if (!Track.isGlobalTrackWoDCA()) continue;
+      if (!Track.isGlobalTrackWoDCA())
+        continue;
       PassEMCal = 0;
-      if ((phiTrack > phiTrackMinEM && phiTrack < phiTrackMaxEM) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax)) PassEMCal = 1; // EMcal acceptance passed
-      if ((phiTrack > phiTrackMinDc && phiTrack < phiTrackMaxDC) && ((etaTrack > etaTrackMinDcright && etaTrack < etaTrackMaxDcright) || (etaTrack > etaTrackMinDcleft && etaTrack < etaTrackMaxDcleft))) PassEMCal = 2; // Dcal acceptance passed
-
+      if ((phiTrack > phiTrackMinEM && phiTrack < phiTrackMaxEM) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
+        PassEMCal = 1; // EMcal acceptance passed
+      if ((phiTrack > phiTrackMinDc && phiTrack < phiTrackMaxDC) && ((etaTrack > etaTrackMinDcright && etaTrack < etaTrackMaxDcright) || (etaTrack > etaTrackMinDcleft && etaTrack < etaTrackMaxDcleft)))
+        PassEMCal = 2; // Dcal acceptance passed
       registry.fill(HIST("fSprsdEdxnSigmaPt"), Track.tpcSignal(), tpcnsigmaTrack, pTrack, ptTrack, etaTrack, phiTrack, dcaxyTrack, dcazTrack, PassEMCal); // track infor after filter bit
 
       // Apply Track cut
-      if (ptTrack < ptTrackMin) continue;
-      if (abs(dcaxyTrack) > dcaXYTrackMax || abs(dcazTrack) > dcaZTrackMax) continue;
+      if (ptTrack < ptTrackMin)
+        continue;
+      if (abs(dcaxyTrack) > dcaXYTrackMax || abs(dcazTrack) > dcaZTrackMax)
+        continue;
 
       auto tracksofcluster = MatchedTracks.sliceBy(perClusterMatchedTracks, Track.globalIndex());
       Double_t phiMatchTrack = -999;
@@ -219,10 +228,10 @@ struct HfCorrelatorElHadrons {
       Double_t m02MatchCluster = -999;
       Double_t m20MatchCluster = -999;
       Double_t timeMatchCluster = -999;
-      for (const auto& emtrack : tracksofcluster)
-      {
+      for (const auto& emtrack : tracksofcluster) {
 
-        if (Track.globalIndex() != emtrack.trackId()) continue;
+        if (Track.globalIndex() != emtrack.trackId())
+          continue;
         auto mtrack = emtrack.track_as<GTrks>();
         auto cluster = emtrack.emcalcluster_as<aod::EMCALClusters>();
 
@@ -239,7 +248,8 @@ struct HfCorrelatorElHadrons {
         timeMatchCluster = cluster.time();
         Correlation(mtrack, tracks, 0); //"0" stands for filling Di-hadron
 
-        if (etaMatchTrack < etaTrackMin || etaMatchTrack > etaTrackMax) continue;
+        if (etaMatchTrack < etaTrackMin || etaMatchTrack > etaTrackMax)
+          continue;
         double deltaPhiEMT = -999.;
         double deltaEtaEMT = -999.;
 
@@ -249,8 +259,10 @@ struct HfCorrelatorElHadrons {
         registry.fill(HIST("ClsTrkEtaPhiDiffTime"), deltaEtaEMT, deltaPhiEMT, timeMatchCluster);
 
         // Track and cluster Matching
-        if (TMath::Abs(deltaPhiEMT) > deltaphiMinEMC || TMath::Abs(deltaEtaEMT) > deltaetaMinEMC) continue;
-        if (timeMatchCluster > timeEMCClsCut) continue;
+        if (TMath::Abs(deltaPhiEMT) > deltaphiMinEMC || TMath::Abs(deltaEtaEMT) > deltaetaMinEMC)
+          continue;
+        if (timeMatchCluster > timeEMCClsCut)
+          continue;
 
         if (fclusterinfo)
           registry.fill(HIST("fSprsClusterInfoAf"), EMatchCluster, etaMatchCluster, phiMatchCluster, cluster.nCells(), timeMatchCluster);
@@ -261,8 +273,8 @@ struct HfCorrelatorElHadrons {
 
         // Apply Electron Identification cuts
 
-        if ((tpcnsigmaMatchTrack < tpcnSigElMin || tpcnsigmaMatchTrack > tpcnSigElMax) || (eop < eopElMin || eop > eopElMax) || (m02MatchCluster < m02ElMin || m02MatchCluster > m02ElMax) || (m20MatchCluster < m20ElMin || m20MatchCluster > m20ElMax)) continue;
-
+        if ((tpcnsigmaMatchTrack < tpcnSigElMin || tpcnsigmaMatchTrack > tpcnSigElMax) || (eop < eopElMin || eop > eopElMax) || (m02MatchCluster < m02ElMin || m02MatchCluster > m02ElMax) || (m20MatchCluster < m20ElMin || m20MatchCluster > m20ElMax))
+          continue;
         registry.fill(HIST("fSprsPIDafterPIDcuts"), pMatchTrack, ptMatchTrack, tpcnsigmaMatchTrack, EMatchCluster, m02MatchCluster, m20MatchCluster);
 
         Correlation(mtrack, tracks, 1); //"1" stands for filling Electron-hadron
