@@ -142,3 +142,11 @@ o2physics_add_dpl_workflow(evtplane-table
                                           O2::CCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(mftmchmatchingml
+                    SOURCES mftmchMatchingML.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                                          O2Physics::AnalysisCore
+                                          ONNXRuntime::ONNXRuntime
+                                          O2::CCDB O2Physics::MLCore
+                                          O2::ReconstructionDataFormats
+                    COMPONENT_NAME Analysis)
