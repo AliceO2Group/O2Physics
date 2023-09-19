@@ -348,8 +348,9 @@ struct qVectorsTable {
     helperEP.DoCorrections(qVectFT0C[0], qVectFT0C[1], corrConstFT0C);
     helperEP.DoCorrections(qVectFV0A[0], qVectFV0A[1], corrConstFV0A);
 
-    helperEP.DoRecenter(qVectFT0C_rectr[0], qVectFT0C_rectr[1], corrConstFT0A[0], corrConstFT0A[1]);
-    helperEP.DoTwist(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0A[2], corrConstFT0A[3]);
+    helperEP.DoRecenter(qVectFT0C_rectr[0], qVectFT0C_rectr[1], corrConstFT0C[0], corrConstFT0C[1]);
+    helperEP.DoRecenter(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0C[0], corrConstFT0C[1]);
+    helperEP.DoTwist(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0C[2], corrConstFT0C[3]);
 
     std::vector<float>().swap(corrConstFT0A);
     std::vector<float>().swap(corrConstFT0C);
