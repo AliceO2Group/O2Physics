@@ -50,7 +50,7 @@ struct HfTaskXicc {
      {"hPtProng0", "#Xi^{++}_{cc}-candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"hPtProng1", "#Xi^{++}_{cc}-candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "#Xi^{++}_{cc} candidates;inv. mass (p K #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -121,7 +121,7 @@ struct HfTaskXiccMc {
      {"hYGen", "#Xi^{++}_{cc} MC particles (matched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});#it{#eta};#it{y}", {HistType::kTH3F, {{360, 0., 36.}, {250, -5., 5.}, {20, -5., 5.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMassVsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;inv. mass (p K #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -173,11 +173,10 @@ struct HfTaskXiccMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particlesMC,
+               soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& mcParticles,
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
@@ -187,14 +186,14 @@ struct HfTaskXiccMc {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMcGen>>(), 4422, true);
-        auto particleXicc = particlesMC.rawIteratorAt(indexMother);
-        auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMcGen>>(), 4422, true);
+        auto particleXicc = mcParticles.rawIteratorAt(indexMother);
+        auto particleXic = mcParticles.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
-        auto daughter1 = particlesMC.rawIteratorAt(particleXicc.daughtersIds().back());
-        auto p0xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front());
-        auto p1xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front()+1);
-        auto p2xic = particlesMC.rawIteratorAt(particleXic.daughterIds().back());
+        auto daughter1 = mcParticles.rawIteratorAt(particleXicc.daughtersIds().back());
+        auto p0xic = mcParticles.rawIteratorAt(particleXic.daughtersIds().front());
+        auto p1xic = mcParticles.rawIteratorAt(particleXic.daughtersIds().front()+1);
+        auto p2xic = mcParticles.rawIteratorAt(particleXic.daughterIds().back());
         LOGF(info, "mother pdg %d", particleXicc.pdgCode());
         LOGF(info, "Xic pdg %d", particleXic.pdgCode());
         LOGF(info, "Xic prong 0 pdg %d", p0xic.pdgCode());
@@ -258,8 +257,7 @@ struct HfTaskXiccMc {
       }
     } // end of loop over reconstructed candidates
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

@@ -285,6 +285,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("ePrimaryFromPromptPi0")) {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "All prompt charm hadrons (not from beauty)", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromEta")) {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from eta decays", {prong}, {-1});
@@ -346,6 +352,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromHc")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charmed hadron decays", {prong}, {-1});
     return signal;
   }
@@ -357,6 +364,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromHb")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open beauty hadron decays", {prong}, {-1});
     return signal;
   }
@@ -368,36 +376,43 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromHbc")) {
     MCProng prong(2, {11, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charm or beauty hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromMc")) {
     MCProng prong(2, {11, 401}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charmed meson decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromMb")) {
     MCProng prong(2, {11, 501}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open beauty meson decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromBc")) {
     MCProng prong(2, {11, 4001}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charmed baryon decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromBb")) {
     MCProng prong(2, {11, 5001}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open beauty baryon decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromPromptHc")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charmed hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbtoHc")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from open charmed hadron decays with b hadron in decay history", {prong}, {-1});
     return signal;
   }
@@ -577,6 +592,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // c->e and c->e (no check)
   if (!nameStr.compare("eeFromCCNoCheck")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from c->e and c->e without check", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
@@ -584,6 +600,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // ee from HF in general
   if (!nameStr.compare("eeFromHF")) {
     MCProng prong(2, {11, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b,c->e and b,c->e without check", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
@@ -591,6 +608,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // Any c in history but no b -> c -> e
   if (!nameStr.compare("eeFromPromptCandPromptC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true}); // check if mother pdg code is in history
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs with any charm but no beauty in decay chain", {prong, prong}, {-1, -1});   // signal at pair level
     return signal;
   }
@@ -598,6 +616,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // Any b to any c in history b -> c -> e
   if (!nameStr.compare("eeFromBtoCandBtoC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1});        // signal at pair level
     return signal;
   }
@@ -605,7 +624,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // Any b->e and Any b->c->e
   if (!nameStr.compare("eeFromBandBtoC")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});                           // check if mother pdg code is in history
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1});                         // signal at pair level
     return signal;
   }
@@ -613,7 +634,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // Any b->e and Any b->c->e
   if (!nameStr.compare("eeFromBandBtoCBis")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});                           // check if mother pdg code is in history
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongBtoC, prongB}, {-1, -1});                         // signal at pair level
     return signal;
   }
@@ -621,6 +644,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // b->e and b->e
   if (!nameStr.compare("eeFromBB")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and b->e", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
@@ -628,7 +652,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // b->e and c->e no check
   if (!nameStr.compare("eeFromBandFromC")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and c->e", {prongB, prongC}, {-1, -1}); // signal at pair level
     return signal;
   }
@@ -636,7 +662,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // b->e and c->e no check
   if (!nameStr.compare("eeFromBandFromCBis")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and c->e", {prongC, prongB}, {-1, -1}); // signal at pair level
     return signal;
   }
@@ -644,7 +672,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // b->e and b->c->e (single b)
   if (!nameStr.compare("eeFromSingleBandBtoC")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and b->c->e (single b)", {prongB, prongBtoC}, {1, 2}); // signal at pair level
     return signal;
   }

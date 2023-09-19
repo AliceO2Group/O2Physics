@@ -62,16 +62,16 @@ struct HfTaskBs {
     registry.add("hEta", "B^{0}_{s} candidates;B^{0}_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hRapidity", "B^{0}_{s} candidates;B^{0}_{s} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hCPA", "B^{0}_{s} candidates;B^{0}_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hMass", "B^{0}_{s} candidates;inv. mass D^{-}_{s}#pi^{+} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassBs, axisPt}});
+    registry.add("hMass", "B^{0}_{s} candidates;inv. mass D^{#mp}_{s} #pi^{#pm} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassBs, axisPt}});
     registry.add("hDecLength", "B^{0}_{s} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, axisPt}});
     registry.add("hDecLenErr", "B^{0}_{s} candidates;B^{0}_{s} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
     registry.add("hDecLengthXY", "B^{0}_{s} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, axisPt}});
     registry.add("hDecLenXYErr", "B^{0}_{s} candidates;B^{0}_{s} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
-    registry.add("hd0Prong0", "B^{0}_{s} candidates;prong 0 (D^{-}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
-    registry.add("hd0Prong1", "B^{0}_{s} candidates;prong 1 (#pi^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
+    registry.add("hd0Prong0", "B^{0}_{s} candidates;prong 0 (D^{#pm}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
+    registry.add("hd0Prong1", "B^{0}_{s} candidates;prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
     registry.add("hImpParErr", "B^{0}_{s} candidates;B^{0}_{s} candidate impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
     registry.add("hIPProd", "B^{0}_{s} candidates;B^{0}_{s} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, axisPt}});
-    registry.add("hInvMassDs", "B^{0}_{s} candidates;prong0, D^{-}_{s} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, axisPt}});
+    registry.add("hInvMassDs", "B^{0}_{s} candidates;prong 0 (D^{#pm}_{s}) inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, axisPt}});
 
     registry.add("hPtGenSig", "B^{0}_{s} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecSig", "B^{0}_{s} candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -84,8 +84,8 @@ struct HfTaskBs {
     registry.add("hCPARecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
     registry.add("hCPAxyRecSig", "B^{0}_{s} candidates (matched);B^{0}_{s} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
     registry.add("hCPAxyRecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
-    registry.add("hMassRecSig", "B^{0}_{s} candidates (matched);inv. mass D^{-}_{s}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.00}, axisPt}});
-    registry.add("hMassRecBg", "B^{0}_{s} candidates (unmatched);inv. mass D^{-}_{s}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.0}, axisPt}});
+    registry.add("hMassRecSig", "B^{0}_{s} candidates (matched);inv. mass D^{#mp}_{s} #pi^{#pm} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.00}, axisPt}});
+    registry.add("hMassRecBg", "B^{0}_{s} candidates (unmatched);inv. mass D^{#mp}_{s} #pi^{#pm} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.0}, axisPt}});
     registry.add("hDecLengthRecSig", "B^{0}_{s} candidates (matched);B^{0}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hDecLengthRecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hDecLengthXYRecSig", "B^{0}_{s} candidates (matched);B^{0}_{s} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
@@ -94,27 +94,27 @@ struct HfTaskBs {
     registry.add("hDecLengthNormRecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hImpParProdBsRecSig", "B^{0}_{s} candidates (matched);B^{0}_{s} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.01, 0.01}, axisPt}});
     registry.add("hImpParProdBsRecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.01, 0.01}, axisPt}});
-    registry.add("hPtProng0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{-}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hPtProng0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{-}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hPtProng1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{-}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hPtProng1RecBg", "B^{0}_{s} candidates (unmatched);prong 1 (#pi^{-}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hd0Prong0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{-}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
-    registry.add("hd0Prong0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{-}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
-    registry.add("hd0Prong1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{-}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
-    registry.add("hd0Prong1RecBg", "B^{0}_{s} candidates (unmatched);prong 1 (#pi^{-}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
-    registry.add("hCPADsRecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{-}_{s}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
-    registry.add("hCPADsRecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{-}_{s}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
-    registry.add("hDecLengthDsRecSig", "B^{0}_{s} candidates (matched);D^{-}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
-    registry.add("hDecLengthDsRecBg", "B^{0}_{s} candidates (unmatched);D^{-}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
+    registry.add("hPtProng0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{#pm}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hPtProng0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{#pm}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hPtProng1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hPtProng1RecBg", "B^{0}_{s} candidates (unmatched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hd0Prong0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{#pm}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
+    registry.add("hd0Prong0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{#pm}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
+    registry.add("hd0Prong1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
+    registry.add("hd0Prong1RecBg", "B^{0}_{s} candidates (unmatched);prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
+    registry.add("hCPADsRecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{#pm}_{s}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
+    registry.add("hCPADsRecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{#pm}_{s}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
+    registry.add("hDecLengthDsRecSig", "B^{0}_{s} candidates (matched);D^{#pm}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
+    registry.add("hDecLengthDsRecBg", "B^{0}_{s} candidates (unmatched);D^{#pm}_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hChi2PCARecSig", "B^{0}_{s} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, axisPt}});
     registry.add("hChi2PCARecBg", "B^{0}_{s} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, axisPt}});
 
-    registry.add("hPtProng0Gen", "MC particles (generated);prong 0 (D^{-}_{s}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hPtProng1Gen", "MC particles (generated);prong 1 (#pi^{-}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hEtaProng0Gen", "MC particles (generated);prong 0 (D^{-}_{s}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
-    registry.add("hEtaProng1Gen", "MC particles (generated);prong 1 (#pi^{-}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
-    registry.add("hYProng0Gen", "MC particles (generated);prong 0 (D^{-}_{s}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
-    registry.add("hYProng1Gen", "MC particles (generated);prong 1 (#pi^{-}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
+    registry.add("hPtProng0Gen", "MC particles (generated);prong 0 (D_{s}^{#pm}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hPtProng1Gen", "MC particles (generated);prong 1 (#pi^{#pm}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
+    registry.add("hEtaProng0Gen", "MC particles (generated);prong 0 (D^{#pm}_{s}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
+    registry.add("hEtaProng1Gen", "MC particles (generated);prong 1 (#pi^{#pm}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
+    registry.add("hYProng0Gen", "MC particles (generated);prong 0 (D^{#pm}_{s}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
+    registry.add("hYProng1Gen", "MC particles (generated);prong 1 (#pi^{#pm}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, axisPt}});
     registry.add("hPtGen", "MC particles (generated);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hEtaGen", "MC particles (generated);B^{0}_{s} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hYGen", "MC particles (generated);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
@@ -124,11 +124,12 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc;
+      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc + 1;
       TString labels[kNBinsDecayTypeMc];
-      labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{-}_{s} #rightarrow K^{-} K^{+} #pi^{-}) #pi^{+}";
+      labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
+      labels[DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
       labels[DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
-      labels[DecayTypeMc::OtherDecay] = "Other decays";
+      labels[DecayTypeMc::NDecayTypeMc] = "Other decays";
       static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
       registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassBs, axisPt}});
       for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
@@ -185,7 +186,7 @@ struct HfTaskBs {
 
   /// Bs MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi, aod::HfCandBsMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandBsMcGen> const& particlesMc,
+                 soa::Join<aod::McParticles, aod::HfCandBsMcGen> const& mcParticles,
                  aod::TracksWMc const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
@@ -204,8 +205,8 @@ struct HfTaskBs {
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
-        auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), pdg::Code::kBS, true);
-        auto particleMother = particlesMc.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), pdg::Code::kBS, true);
+        auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandBs);
@@ -249,19 +250,19 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::BsToDsPiToKKPiPi)) { // Bs → Ds- π+ → (K- K+ π-) π+
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandBs, ptCandBs);
           } else if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
-          } else {
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::OtherDecay, invMassCandBs, ptCandBs);
+          } else { // Other decay
+            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::NDecayTypeMc, invMassCandBs, ptCandBs);
           }
         }
       }
     } // rec
 
     // MC gen. level
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
 
         auto ptParticle = particle.pt();

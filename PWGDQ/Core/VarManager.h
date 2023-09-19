@@ -53,12 +53,9 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-using std::cout;
-using std::endl;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
-using namespace o2::constants::physics;
 
 //_________________________________________________________________________
 class VarManager : public TObject
@@ -211,6 +208,7 @@ class VarManager : public TObject
 
     // Barrel track variables
     kPin,
+    kSignedPin,
     kTOFExpMom,
     kTrackTime,
     kTrackTimeRes,
@@ -908,6 +906,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the barrel tables
   if constexpr ((fillMap & TrackExtra) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
     values[kPin] = track.tpcInnerParam();
+    values[kSignedPin] = track.tpcInnerParam() * track.sign();
     if (fgUsedVars[kIsITSrefit]) {
       values[kIsITSrefit] = (track.flags() & o2::aod::track::ITSrefit) > 0; // NOTE: This is just for Run-2
     }
@@ -1227,20 +1226,20 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = MassElectron;
-  float m2 = MassElectron;
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = MassMuon;
-    m2 = MassMuon;
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   if constexpr (pairType == kDecayToPiPi) {
-    m1 = MassPionCharged;
-    m2 = MassPionCharged;
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -1433,20 +1432,20 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = MassElectron;
-  float m2 = MassElectron;
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = MassMuon;
-    m2 = MassMuon;
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   if constexpr (pairType == kDecayToPiPi) {
-    m1 = MassPionCharged;
-    m2 = MassPionCharged;
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -1466,20 +1465,20 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     values = fgValues;
   }
 
-  float m1 = MassElectron;
-  float m2 = MassElectron;
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
   if (pairType == kDecayToMuMu) {
-    m1 = MassMuon;
-    m2 = MassMuon;
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   if (pairType == kDecayToPiPi) {
-    m1 = MassPionCharged;
-    m2 = MassPionCharged;
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
   }
 
   if (pairType == kElectronMuon) {
-    m2 = MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   // TODO : implement resolution smearing.
@@ -1564,8 +1563,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       return;
     }
 
-    float m1 = MassElectron;
-    float m2 = MassElectron;
+    float m1 = o2::constants::physics::MassElectron;
+    float m2 = o2::constants::physics::MassElectron;
     Vec3D secondaryVertex;
     float bz = 0;
     std::array<float, 3> pvec0;
@@ -1597,8 +1596,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
       } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
         // Get pca candidate from forward DCA fitter
-        m1 = MassMuon;
-        m2 = MassMuon;
+        m1 = o2::constants::physics::MassMuon;
+        m2 = o2::constants::physics::MassMuon;
 
         secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
         bz = fgFitterTwoProngFwd.getBz();
@@ -1749,8 +1748,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   int procCodeJpsi = 0;
 
   if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
-    mlepton = MassMuon;
-    mtrack = MassMuon;
+    mlepton = o2::constants::physics::MassMuon;
+    mtrack = o2::constants::physics::MassMuon;
 
     double chi21 = lepton1.chi2();
     double chi22 = lepton2.chi2();
@@ -1778,8 +1777,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
   } else if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
-    mlepton = MassElectron;
-    mtrack = MassKaonCharged;
+    mlepton = o2::constants::physics::MassElectron;
+    mtrack = o2::constants::physics::MassKaonCharged;
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                          lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -1931,20 +1930,20 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values = fgValues;
   }
 
-  float m1 = MassElectron;
-  float m2 = MassElectron;
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
   if constexpr (pairType == kDecayToMuMu) {
-    m1 = MassMuon;
-    m2 = MassMuon;
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   if constexpr (pairType == kDecayToPiPi) {
-    m1 = MassPionCharged;
-    m2 = MassPionCharged;
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m2 = MassMuon;
+    m2 = o2::constants::physics::MassMuon;
   }
 
   // Fill dilepton information
