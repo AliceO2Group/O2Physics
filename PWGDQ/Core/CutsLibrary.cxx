@@ -2694,22 +2694,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("Chi2MCHMIDCut1")) {
+  if (!nameStr.compare("Chi2MCHMFTCut1")) {
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 30);
     return cut;
   }
 
-  if (!nameStr.compare("Chi2MCHMIDCut2")) {
+  if (!nameStr.compare("Chi2MCHMFTCut2")) {
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 40);
     return cut;
   }
 
-  if (!nameStr.compare("Chi2MCHMIDCut3")) {
+  if (!nameStr.compare("Chi2MCHMFTCut3")) {
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 50);
     return cut;
   }
 
-  if (!nameStr.compare("Chi2MCHMIDCut4")) {
+  if (!nameStr.compare("Chi2MCHMFTCut4")) {
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 60);
     return cut;
   }
