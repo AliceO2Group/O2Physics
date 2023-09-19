@@ -140,10 +140,10 @@ void EventPlaneHelper::DoCorrections(float& qx, float& qy,
   qy = (qy - corrections[2] * qx) / (1.0 - corrections[3] * corrections[2]);
 
   // Rescaling of the Qx-Qy into a circle.
-  if (corrections[4] != 0) {
+  if (fabs(corrections[4]) > 1e-8) {
     qx /= corrections[4];
   }
-  if (corrections[5] != 0) {
+  if (fabs(corrections[5]) > 1e-8) {
     qy /= corrections[5];
   }
 }
@@ -162,9 +162,9 @@ void EventPlaneHelper::DoTwist(float& qx, float& qy, float lp, float lm)
 
 void EventPlaneHelper::DoRescale(float& qx, float& qy, float ap, float am)
 {
-  if (ap != 0)
+  if (fabs(ap) > 1e-8)
     qx /= ap;
-  if (am != 0)
+  if (fabs(am) > 1e-8)
     qy /= am;
 }
 
