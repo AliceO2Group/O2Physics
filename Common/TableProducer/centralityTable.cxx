@@ -12,15 +12,15 @@
 /// \file centrality.cxx
 /// \brief Task to produce the centrality tables associated to each of the required centrality estimators
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TH1F.h>
+#include <TFormula.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
-#include <TFormula.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -99,7 +99,7 @@ struct CentralityTable {
     TH1* mhMultSelCalib = nullptr;
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
-    calibrationInfo(std::string name)
+    explicit calibrationInfo(std::string name)
       : name(name),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
@@ -181,11 +181,11 @@ struct CentralityTable {
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = (TH1*)callst->FindObject(ccdbhname);
+          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = (TFormula*)callst->FindObject(ccdbhname);
+          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
         if (estRun2V0M == 1) {
@@ -383,8 +383,8 @@ struct CentralityTable {
         if (callst != nullptr) {
           LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-            estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
-            estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
+            estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+            estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
             if (estimator.mhMultSelCalib != nullptr) {
               if (generatorName->length() != 0) {
                 if (estimator.mMCScale != nullptr) {

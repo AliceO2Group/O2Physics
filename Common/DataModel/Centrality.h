@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_CENTRALITY_H_
-#define O2_ANALYSIS_CENTRALITY_H_
+#ifndef COMMON_DATAMODEL_CENTRALITY_H_
+#define COMMON_DATAMODEL_CENTRALITY_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -56,4 +56,4 @@ using CentFDDM = CentFDDMs::iterator;
 using CentNTPV = CentNTPVs::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CENTRALITY_H_
+#endif // COMMON_DATAMODEL_CENTRALITY_H_
