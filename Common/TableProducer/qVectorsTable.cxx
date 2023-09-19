@@ -204,7 +204,7 @@ struct qVectorsTable {
 
       // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
       // amplitudes is non-zero. Otherwise, set it to a dummy 999.
-      if (sumAmplDet != 0) {
+      if (sumAmplDet > 1e-8) {
         QvecDet /= sumAmplDet;
         qVectFT0A[0] = QvecDet.Re();
         qVectFT0A[1] = QvecDet.Im();
@@ -227,7 +227,7 @@ struct qVectorsTable {
 
       printf("Total amp = %.3f \n", sumAmplDet);
 
-      if (sumAmplDet != 0) {
+      if (sumAmplDet > 1e-8) {
         QvecDet /= sumAmplDet;
         qVectFT0C[0] = QvecDet.Re();
         qVectFT0C[1] = QvecDet.Im();
@@ -255,7 +255,7 @@ struct qVectorsTable {
         helperEP.SumQvectors(1, iCh, ampl, QvecDet, sumAmplDet);
       }
 
-      if (sumAmplDet != 0) {
+      if (sumAmplDet > 1e-8) {
         QvecDet /= sumAmplDet;
         qVectFV0A[0] = QvecDet.Re();
         qVectFV0A[1] = QvecDet.Im();
