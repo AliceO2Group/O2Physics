@@ -1378,6 +1378,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("Chi2MCHMFTCut1")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut2")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut3")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut4")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut4"));
+    return cut;
+  }
+
   // -----------------------------------------------------------
   // Pair cuts
   if (!nameStr.compare("pairNoCut")) {
