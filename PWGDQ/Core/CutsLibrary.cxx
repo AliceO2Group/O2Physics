@@ -1429,6 +1429,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("Chi2MCHMFTCut1")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut2")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut3")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut4")) {
+    cut->AddCut(GetAnalysisCut("Chi2MCHMFTCut4"));
+    return cut;
+  }
+
   // -----------------------------------------------------------
   // Pair cuts
   if (!nameStr.compare("pairNoCut")) {
@@ -2795,6 +2815,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("matchedGlobal")) {
     cut->AddCut(VarManager::kMuonTrackType, -0.5, 0.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut1")) {
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 30);
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut2")) {
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 40);
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut3")) {
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 50);
+    return cut;
+  }
+
+  if (!nameStr.compare("Chi2MCHMFTCut4")) {
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 60);
     return cut;
   }
 
