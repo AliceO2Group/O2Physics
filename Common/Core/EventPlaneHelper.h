@@ -74,6 +74,10 @@ class EventPlaneHelper
   // to the calculated Q-vectors.
   void DoCorrections(float& qx, float& qy, const std::vector<float>& corrections);
 
+  void DoRecenter(float& qx, float& qy, float x0, float y0);
+  void DoTwist(float& qx, float& qy, float lp, float lm);
+  void DoRescale(float& qx, float& qy, float ap, float am);
+
   // Method to get the recentering correction on the Qx-Qy distribution.
   void GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY);
 
@@ -101,7 +105,7 @@ class EventPlaneHelper
   double mOffsetFV0rightX = 0.; // X-coordinate of the offset of FV0-A right.
   double mOffsetFV0rightY = 0.; // Y-coordinate of the offset of FV0-A right.
 
-  ClassDefNV(EventPlaneHelper, 1)
+  ClassDefNV(EventPlaneHelper, 2)
 };
 
 #endif // COMMON_CORE_EVENTPLANEHELPER_H_
