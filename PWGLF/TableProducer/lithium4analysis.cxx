@@ -150,20 +150,7 @@ struct lithium4analysis {
   }
 
   template <typename T>
-  bool selectionTrackProton(const T& candidate)
-  {
-    if (!candidate.isGlobalTrack()) {
-      return false;
-    }
-    if (!candidate.isGlobalTrackWoDCA() || std::abs(candidate.dcaXY()) > cfgCutDCAxy || std::abs(candidate.dcaZ()) > cfgCutDCAz) {
-      return false;
-    }
-
-    return true;
-  }
-
-  template <typename T>
-  bool selectionTrackHe3(const T& candidate)
+  bool selectionTrack(const T& candidate)
   {
     if (!candidate.isGlobalTrack()) {
       return false;
@@ -210,7 +197,6 @@ struct lithium4analysis {
   {
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
     if (std::abs(nSigmaHe3) < nsigmaCutTPC) {
-      histos.fill(HIST("h2NsigmaHe3TPC"), candidate.tpcInnerParam() * candidate.sign(), nSigmaHe3);
       return true;
     }
     return false;
@@ -288,11 +274,13 @@ struct lithium4analysis {
       TrackTable_thisCollision.bindExternalIndices(&tracks);
 
       for (auto track1 : TrackTable_thisCollision) {
-        if (!selectionTrackHe3(track1) || !selectionPIDHe3(track1)) {
+        if (!selectionTrack(track1) || !selectionPIDHe3(track1)) {
           continue;
         }
         histos.fill(HIST("hHe3Dcaxy"), track1.dcaXY());
         histos.fill(HIST("hHe3Dcaz"), track1.dcaZ());
+        float nSigmaHe3 = computeNSigmaHe3(track1);
+        histos.fill(HIST("h2NsigmaHe3TPC"), track1.tpcInnerParam() * track1.sign(), nSigmaHe3);
 
         for (auto track2 : TrackTable_thisCollision) {
 
@@ -302,7 +290,7 @@ struct lithium4analysis {
             }
           }
 
-          if (!selectionTrackProton(track2) || !selectionPIDProton(track2)) {
+          if (!selectionTrack(track2) || !selectionPIDProton(track2)) {
             continue;
           }
 
@@ -349,14 +337,7 @@ struct lithium4analysis {
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        bool passTrackSel = false;
-        if (selectionTrackHe3(t1) && selectionTrackProton(t2)) {
-          passTrackSel = true;
-        }
-        if (selectionTrackHe3(t2) && selectionTrackProton(t1)) {
-          passTrackSel = true;
-        }
-        if (!passTrackSel) {
+        if (!selectionTrack(t1) || selectionTrack(t2)) {
           continue;
         }
 
@@ -427,7 +408,7 @@ struct lithium4analysis {
         if (!track1.has_mcParticle()) {
           continue;
         }
-        if (!selectionTrackHe3(track1) || !selectionPIDHe3(track1)) {
+        if (!selectionTrack(track1) || !selectionPIDHe3(track1)) {
           continue;
         }
 
@@ -435,7 +416,7 @@ struct lithium4analysis {
           if (!track2.has_mcParticle()) {
             continue;
           }
-          if (!selectionTrackProton(track2) || !selectionPIDProton(track2)) {
+          if (!selectionTrack(track2) || !selectionPIDProton(track2)) {
             continue;
           }
 
