@@ -340,38 +340,38 @@ class HfFilterHelper
   int findBin(T1 const& binsPt, T2 value);
 
   // selections
-  std::vector<double> mPtBinsTracks{};                        // vector of pT bins for single track cuts
+  std::vector<double> mPtBinsTracks{};                                       // vector of pT bins for single track cuts
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
-  float mPtMinSoftPionForDstar{0.1};                          // minimum pt for the D*+ soft pion
-  float mPtMinBeautyBachelor{0.5};                            // minimum pt for the b-hadron pion daughter
-  float mPtMinProtonForFemto{0.8};                            // minimum pt for the proton for femto
-  float mPtThresholdPidStrategyForFemto{8.};                  // pt threshold to change strategy for proton PID for femto
-  std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};     // cut values for Nsigma TPC, TOF, combined for femto protons
-  float mNSigmaTpcPrCutForCharmBaryons{3.};                   // maximum Nsigma TPC for protons in Lc and Xic decays
-  float mNSigmaTofPrCutForCharmBaryons{3.};                   // maximum Nsigma TOF for protons in Lc and Xic decays
-  float mNSigmaTpcKaCutFor3Prongs{3.};                        // maximum Nsigma TPC for kaons in 3-prong decays
-  float mNSigmaTofKaCutFor3Prongs{3.};                        // maximum Nsigma TOF for kaons in 3-prong decays
-  float mNSigmaTpcPiKaCutForDzero{3.};                        // maximum Nsigma TPC for pions/kaons in D0 decays
-  float mNSigmaTofPiKaCutForDzero{3.};                        // maximum Nsigma TOF for pions/kaons in D0 decays
-  float mDeltaMassCharmHadForBeauty{0.04};                    // delta mass cut for charm hadrons in B and charm excited decays
-  float mMinGammaCosinePa{0.85};                              // minimum cosp for gammas
-  float mMinK0sLambdaCosinePa{0.97};                          // minimum cosp for K0S and Lambda in charm excited decays
-  float mMinK0sLambdaRadius{0.5};                             // minimum radius for K0S and Lambda in charm excited decays
-  float mMaxNsigmaPrForLambda{4.};                            // maximum Nsigma TPC and TOF for protons in Lambda decays
-  float mDeltaMassK0s{0.02};                                  // delta mass cut for K0S in charm excited decays
-  float mDeltaMassLambda{0.01};                               // delta mass cut for Lambda in charm excited decays
-  float mMinPtXiBachelor{0.1};                                // minimum pt for Xi bachelor
-  float mDeltaMassXi{0.01};                                   // delta mass cut for Xi in Xic/Omegac decays
-  float mDeltaMassLambdaFromXi{0.01};                         // delta mass cut for Lambda <- Xi in Xic/Omegac decays
-  float mCosPaXi{0.99};                                       // minimum cosp for Xi in Xic/Omegac decays
-  float mCosPaLambdaFromXi{0.99};                             // minimum cosp for Xi in Xic/Omegac decays
-  float mMaxDcaXyXi{0.3};                                     // maximum dca for Xi in Xic/Omegac decays
-  float mMaxNsigmaXiDau{3.};                                  // maximum Nsigma TPC and TOF for Xi daughter tracks
-  float mMinPtCharmBaryonBachelor{0.};                        // minimum pt for the bachelor pion from Xic/Omegac decays
+  float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
+  float mPtMinBeautyBachelor{0.5};                                           // minimum pt for the b-hadron pion daughter
+  float mPtMinProtonForFemto{0.8};                                           // minimum pt for the proton for femto
+  float mPtThresholdPidStrategyForFemto{8.};                                 // pt threshold to change strategy for proton PID for femto
+  std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                    // cut values for Nsigma TPC, TOF, combined for femto protons
+  float mNSigmaTpcPrCutForCharmBaryons{3.};                                  // maximum Nsigma TPC for protons in Lc and Xic decays
+  float mNSigmaTofPrCutForCharmBaryons{3.};                                  // maximum Nsigma TOF for protons in Lc and Xic decays
+  float mNSigmaTpcKaCutFor3Prongs{3.};                                       // maximum Nsigma TPC for kaons in 3-prong decays
+  float mNSigmaTofKaCutFor3Prongs{3.};                                       // maximum Nsigma TOF for kaons in 3-prong decays
+  float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
+  float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
+  float mDeltaMassCharmHadForBeauty{0.04};                                   // delta mass cut for charm hadrons in B and charm excited decays
+  float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
+  float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
+  float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
+  float mMaxNsigmaPrForLambda{4.};                                           // maximum Nsigma TPC and TOF for protons in Lambda decays
+  float mDeltaMassK0s{0.02};                                                 // delta mass cut for K0S in charm excited decays
+  float mDeltaMassLambda{0.01};                                              // delta mass cut for Lambda in charm excited decays
+  float mMinPtXiBachelor{0.1};                                               // minimum pt for Xi bachelor
+  float mDeltaMassXi{0.01};                                                  // delta mass cut for Xi in Xic/Omegac decays
+  float mDeltaMassLambdaFromXi{0.01};                                        // delta mass cut for Lambda <- Xi in Xic/Omegac decays
+  float mCosPaXi{0.99};                                                      // minimum cosp for Xi in Xic/Omegac decays
+  float mCosPaLambdaFromXi{0.99};                                            // minimum cosp for Xi in Xic/Omegac decays
+  float mMaxDcaXyXi{0.3};                                                    // maximum dca for Xi in Xic/Omegac decays
+  float mMaxNsigmaXiDau{3.};                                                 // maximum Nsigma TPC and TOF for Xi daughter tracks
+  float mMinPtCharmBaryonBachelor{0.};                                       // minimum pt for the bachelor pion from Xic/Omegac decays
   o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
-  float mNSigmaTpcPiCharmBaryonBachelor{3.};                  // maximum Nsigma TPC for pions in Xic/Omegac decays
-  float mNSigmaTofPiCharmBaryonBachelor{3.};                  // maximum Nsigma TOF for pions in Xic/Omegac decays
+  float mNSigmaTpcPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TPC for pions in Xic/Omegac decays
+  float mNSigmaTofPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TOF for pions in Xic/Omegac decays
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
