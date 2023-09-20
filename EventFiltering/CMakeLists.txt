@@ -35,22 +35,22 @@ o2physics_add_dpl_workflow(diffraction-bcfilter
     COMPONENT_NAME Analysis)
 
 o2physics_add_header_only_library(HFFilterHelpers
-                                  HEADERS PWGHF/HFFilterHelpers.h)
+    HEADERS PWGHF/HFFilterHelpers.h)
 
 o2physics_add_dpl_workflow(hf-filter
-                           SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
-                           COMPONENT_NAME Analysis)
+    SOURCES PWGHF/HFFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-qc
-                           SOURCES PWGHF/HFFilterQC.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
-                           COMPONENT_NAME Analysis)
+    SOURCES PWGHF/HFFilterQC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
-                           SOURCES PWGHF/HFFilterPrepareMLSamples.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
-                           COMPONENT_NAME Analysis)
+    SOURCES PWGHF/HFFilterPrepareMLSamples.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-filter
     SOURCES PWGCF/CFFilterAll.cxx

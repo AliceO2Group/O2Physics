@@ -49,11 +49,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::constants::math;
-
 namespace o2::aod
 {
 
@@ -157,17 +152,17 @@ constexpr float massBs = 5.3663;
 constexpr float massLb = 5.6202;
 constexpr float massXib = 5.7924;
 
-static const AxisSpec ptAxis{50, 0.f, 50.f};
-static const AxisSpec pAxis{50, 0.f, 10.f};
-static const AxisSpec kstarAxis{100, 0.f, 1.f};
-static const AxisSpec etaAxis{30, -1.5f, 1.5f};
-static const AxisSpec nSigmaAxis{100, -10.f, 10.f};
-static const AxisSpec alphaAxis{100, -1.f, 1.f};
-static const AxisSpec qtAxis{100, 0.f, 0.25f};
-static const AxisSpec bdtAxis{100, 0.f, 1.f};
-static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 8> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 0.139f, 0.159f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 1.1f, 1.4f}, AxisSpec{100, 2.3f, 2.9f}, AxisSpec{100, 2.3f, 2.9f}};
-static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
+static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
+static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
+static const o2::framework::AxisSpec kstarAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec etaAxis{30, -1.5f, 1.5f};
+static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
+static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
+static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
+static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec phiAxis{36, 0., TwoPI};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 8> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
+static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
 // channels to trigger on for femto
@@ -227,7 +222,7 @@ class HfFilterHelper
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
   void setMinPtBeautyBachelor(float minPt) { mPtMinBeautyBachelor = minPt; }
   void setMinPtDstarSoftPion(float minPt) { mPtMinSoftPionForDstar = minPt; }
-  void setCutsSingleTrackBeauty(LabeledArray<double> cutsSingleTrack3P, LabeledArray<double> cutsSingleTrack4P)
+  void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
@@ -270,7 +265,7 @@ class HfFilterHelper
     mMaxDcaXyXi = maxDcaxyXi;
     mMaxNsigmaXiDau = nSigma;
   }
-  void setCutsSingleTrackCharmBaryonBachelor(LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
+  void setCutsSingleTrackCharmBaryonBachelor(o2::framework::LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
   void setMinPtCharmBaryonBachelor(float minPt) { mPtMinBeautyBachelor = minPt; }
   void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
   {
@@ -346,8 +341,8 @@ class HfFilterHelper
 
   // selections
   std::vector<double> mPtBinsTracks{};                        // vector of pT bins for single track cuts
-  LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
-  LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
+  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
+  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
   float mPtMinSoftPionForDstar{0.1};                          // minimum pt for the D*+ soft pion
   float mPtMinBeautyBachelor{0.5};                            // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                            // minimum pt for the proton for femto
@@ -374,7 +369,7 @@ class HfFilterHelper
   float mMaxDcaXyXi{0.3};                                     // maximum dca for Xi in Xic/Omegac decays
   float mMaxNsigmaXiDau{3.};                                  // maximum Nsigma TPC and TOF for Xi daughter tracks
   float mMinPtCharmBaryonBachelor{0.};                        // minimum pt for the bachelor pion from Xic/Omegac decays
-  LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
+  o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
   float mNSigmaTpcPiCharmBaryonBachelor{3.};                  // maximum Nsigma TPC for pions in Xic/Omegac decays
   float mNSigmaTofPiCharmBaryonBachelor{3.};                  // maximum Nsigma TOF for pions in Xic/Omegac decays
 

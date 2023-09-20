@@ -61,7 +61,7 @@ struct HfFilterPrepareMlSamples { // Main struct
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int currentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
