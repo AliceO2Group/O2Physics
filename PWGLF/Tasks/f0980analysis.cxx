@@ -101,7 +101,6 @@ struct f0980analysis {
     histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
 
-
     histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
     histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {PIDqaAxis, PIDqaAxis}});
@@ -122,12 +121,12 @@ struct f0980analysis {
 
   int RTIndex(double pairphi, double lhphi)
   {
-    double dphi = std::fabs(TVector2::Phi_mpi_pi(lhphi-pairphi));
-    if (dphi < constants::math::PI/3.0 )
+    double dphi = std::fabs(TVector2::Phi_mpi_pi(lhphi - pairphi));
+    if (dphi < constants::math::PI / 3.0)
       return 0;
-    if (dphi < 2.0*constants::math::PI/3.0 && dphi > constants::math::PI/3.0 )
+    if (dphi < 2.0 * constants::math::PI / 3.0 && dphi > constants::math::PI / 3.0)
       return 1;
-    if (dphi > 2.0*constants::math::PI/3.0 )
+    if (dphi > 2.0 * constants::math::PI / 3.0)
       return 2;
 
     return -1;
@@ -179,7 +178,7 @@ struct f0980analysis {
     double LHpt = 0.;
     double LHphi;
     for (auto& trk : dTracks) {
-      if (trk.pt()>LHpt) {
+      if (trk.pt() > LHpt) {
         LHpt = trk.pt();
         LHphi = trk.phi();
       }
@@ -212,7 +211,7 @@ struct f0980analysis {
 
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(),LHphi), LHpt);
+                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
         if constexpr (IsMC) {
           if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
             continue;
@@ -225,10 +224,10 @@ struct f0980analysis {
         }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
         histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(),LHphi), LHpt);
+                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(),LHphi), LHpt);
+                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
       }
     }
   }
