@@ -178,7 +178,7 @@ struct f0980analysis {
   {
     double LHpt = 0.;
     double LHphi;
-    for (auto& trk : dTracks) { 
+    for (auto& trk : dTracks) {
       if (trk.pt()>LHpt) {
         LHpt = trk.pt();
         LHphi = trk.phi();
