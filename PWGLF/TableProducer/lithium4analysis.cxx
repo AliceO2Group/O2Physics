@@ -152,13 +152,19 @@ struct lithium4analysis {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() || candidate.isPVContributor())) {
+    if (!candidate.isGlobalTrack()) {
       return false;
-    } else {
-      if (!candidate.isGlobalTrackWoDCA() || std::abs(candidate.dcaXY()) > cfgCutDCAxy || std::abs(candidate.dcaZ()) > cfgCutDCAz || !candidate.isPVContributor()) {
-        return false;
-      }
     }
+
+    if (candidate.itsNCls() < 5 ||
+        candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsCrossedRows() < 70 ||
+        candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
+        candidate.tpcChi2NCl() > 4.f ||
+        candidate.itsChi2NCl() > 36.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -191,7 +197,6 @@ struct lithium4analysis {
   {
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
     if (std::abs(nSigmaHe3) < nsigmaCutTPC) {
-      histos.fill(HIST("h2NsigmaHe3TPC"), candidate.tpcInnerParam() * candidate.sign(), nSigmaHe3);
       return true;
     }
     return false;
@@ -274,6 +279,8 @@ struct lithium4analysis {
         }
         histos.fill(HIST("hHe3Dcaxy"), track1.dcaXY());
         histos.fill(HIST("hHe3Dcaz"), track1.dcaZ());
+        float nSigmaHe3 = computeNSigmaHe3(track1);
+        histos.fill(HIST("h2NsigmaHe3TPC"), track1.tpcInnerParam() * track1.sign(), nSigmaHe3);
 
         for (auto track2 : TrackTable_thisCollision) {
 
@@ -329,10 +336,8 @@ struct lithium4analysis {
       }
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!selectionTrack(t1)) {
-          continue;
-        }
-        if (!selectionTrack(t2)) {
+
+        if (!selectionTrack(t1) || selectionTrack(t2)) {
           continue;
         }
 

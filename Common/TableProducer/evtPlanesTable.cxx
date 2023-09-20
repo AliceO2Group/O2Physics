@@ -54,7 +54,8 @@ static constexpr std::string_view centClasses[] = {
   "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/", "Centrality_60-80/"};
 
 static constexpr std::string_view detNames[] = {
-  "FT0A", "FT0C", "FV0A", "BPos", "BNeg"};
+  "FT0A", "FT0C", "FV0A", "BPos", "BNeg",
+  "FT0CUC", "FT0CRC", "FT0CTW"};
 } // namespace ep
 
 struct evtPlanesTable {
@@ -82,21 +83,12 @@ struct evtPlanesTable {
                  HistType::kTH1F, {axisCent});
 
     const AxisSpec axisEP{200, -TMath::Pi() / 2., TMath::Pi() / 2.};
-    histosQA.add("Centrality_0-5/histEPFT0A",
-                 ("#Psi_{2} for " + (std::string)ep::detNames[0] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1D, {axisEP});
-    histosQA.add("Centrality_0-5/histEPFT0C",
-                 ("#Psi_{2} for " + (std::string)ep::detNames[1] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1D, {axisEP});
-    histosQA.add("Centrality_0-5/histEPFV0A",
-                 ("#Psi_{2} for " + (std::string)ep::detNames[2] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1D, {axisEP});
-    histosQA.add("Centrality_0-5/histEPBNeg",
-                 ("#Psi_{2} for " + (std::string)ep::detNames[3] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1D, {axisEP});
-    histosQA.add("Centrality_0-5/histEPBPos",
-                 ("#Psi_{2} for " + (std::string)ep::detNames[4] + (std::string)cfgCorrStep).c_str(),
-                 HistType::kTH1D, {axisEP});
+
+    for (int i = 0; i < 8; i++) {
+      histosQA.add(("Centrality_0-5/histEP" + (std::string)ep::detNames[i]).c_str(),
+                   ("#Psi_{2} for " + (std::string)ep::detNames[i] + (std::string)cfgCorrStep).c_str(),
+                   HistType::kTH1F, {axisEP});
+    }
 
     for (int iBin = 1; iBin < 8; iBin++) {
       histosQA.addClone("Centrality_0-5/", ep::centClasses[iBin].data());
@@ -123,14 +115,18 @@ struct evtPlanesTable {
     // Calculate the event plane for each detector, then save them in the
     // corresponding distribution. The order is the same as in detNames[].
     // TODO: Update the calculation of the event plane for the central barrel.
-    float evtPlaneValues[5] = {0.};
+    float evtPlaneValues[8] = {0.};
     evtPlaneValues[0] = helperEP.GetEventPlane(qVec.qvecFT0ARe(), qVec.qvecFT0AIm());
     evtPlaneValues[1] = helperEP.GetEventPlane(qVec.qvecFT0CRe(), qVec.qvecFT0CIm());
     evtPlaneValues[2] = helperEP.GetEventPlane(qVec.qvecFV0ARe(), qVec.qvecFV0AIm());
     evtPlaneValues[3] = helperEP.GetEventPlane(1., 2.);
     evtPlaneValues[4] = helperEP.GetEventPlane(2., 1.);
 
-    static_for<0, 4>([&](auto iDet) {
+    evtPlaneValues[5] = helperEP.GetEventPlane(qVec.qvecFT0CUncorRe(), qVec.qvecFT0CUncorIm());
+    evtPlaneValues[6] = helperEP.GetEventPlane(qVec.qvecFT0CRectrRe(), qVec.qvecFT0CRectrIm());
+    evtPlaneValues[7] = helperEP.GetEventPlane(qVec.qvecFT0CTwistRe(), qVec.qvecFT0CTwistIm());
+
+    static_for<0, 7>([&](auto iDet) {
       constexpr int indexDet = iDet.value;
       switch (centBin) {
         case 0:
@@ -159,11 +155,11 @@ struct evtPlanesTable {
           break;
       }
     });
-
     // Fill the columns of the evtPlane table.
     evPlane(qVec.cent(),
             evtPlaneValues[0], evtPlaneValues[1], evtPlaneValues[2],
-            evtPlaneValues[3], evtPlaneValues[4]);
+            evtPlaneValues[3], evtPlaneValues[4],
+            evtPlaneValues[5], evtPlaneValues[6], evtPlaneValues[7]);
   } // void process(aod::Qvector const& qVec)
 };
 

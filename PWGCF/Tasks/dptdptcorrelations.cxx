@@ -737,6 +737,7 @@ struct DptDptCorrelationsTask {
     fGlobalOutputList->Add(new TParameter<int>("NoBinsPt", ptbins, 'f'));
     fGlobalOutputList->Add(new TParameter<int>("NoBinsEta", etabins, 'f'));
     fGlobalOutputList->Add(new TParameter<int>("NoBinsPhi", phibins, 'f'));
+    fGlobalOutputList->Add(new TParameter<int>("NoBinsVertexZ", zvtxbins, 'f'));
     fGlobalOutputList->Add(new TParameter<float>("MinVertexZ", zvtxlow, 'f'));
     fGlobalOutputList->Add(new TParameter<float>("MaxVertexZ", zvtxup, 'f'));
     fGlobalOutputList->Add(new TParameter<float>("MinPt", ptlow, 'f'));
