@@ -176,7 +176,7 @@ struct cascadeCorrelations {
     },
   };
 
-  Filter Selector = aod::cascadeflags::isSelected > 0; 
+  Filter Selector = aod::cascadeflags::isSelected > 0;
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
@@ -188,15 +188,15 @@ struct cascadeCorrelations {
         continue; // reject if no v0data
       }
 
-      if (casc.isSelected() != 2){ // not exclusively an Omega --> consistent with Xi or both
-        if (casc.sign() < 0) { 
+      if (casc.isSelected() != 2) { // not exclusively an Omega --> consistent with Xi or both
+        if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt());
         } else {
           registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt());
         }
       }
-      if (casc.isSelected() >= 2){ // consistent with Omega or both
-        if (casc.sign() < 0) { 
+      if (casc.isSelected() >= 2) { // consistent with Omega or both
+        if (casc.sign() < 0) {
           registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt());
         } else {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt());
@@ -228,7 +228,7 @@ struct cascadeCorrelations {
       }
       auto trigger = *triggerAddress;
       auto assoc = *assocAddress;
-      
+
       auto lambdaTrigg = trigger.v0_as<o2::aod::V0sLinked>();
       auto lambdaAssoc = assoc.v0_as<o2::aod::V0sLinked>();
       if (!(lambdaTrigg.has_v0Data()) || !(lambdaAssoc.has_v0Data())) {
