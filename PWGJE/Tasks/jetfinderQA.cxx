@@ -208,12 +208,12 @@ struct JetFinderQATask {
   template <typename T>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
-    for (auto& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>()) {
+    for (auto& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>()) {
 
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_pt"), mcdjet.r() / 100.0, mcpjet.pt(), mcdjet.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_eta_part_jet_eta"), mcdjet.r() / 100.0, mcpjet.eta(), mcdjet.eta(), weight);
       registry.fill(HIST("h3_jet_r_jet_phi_part_jet_phi"), mcdjet.r() / 100.0, mcpjet.phi(), mcdjet.phi(), weight);
-      registry.fill(HIST("h3_jet_r_jet_ntracks_part_jet_ntracks"), mcdjet.r() / 100.0, mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size(), weight);
+      registry.fill(HIST("h3_jet_r_jet_ntracks_part_jet_ntracks"), mcdjet.r() / 100.0, mcpjet.tracks().size(), mcdjet.tracks().size(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_pt_diff"), mcdjet.r() / 100.0, mcpjet.pt(), (mcpjet.pt() - mcdjet.pt()) / mcpjet.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_eta_diff"), mcdjet.r() / 100.0, mcpjet.pt(), (mcpjet.eta() - mcdjet.eta()) / mcpjet.eta(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_phi_diff"), mcdjet.r() / 100.0, mcpjet.pt(), (mcpjet.phi() - mcdjet.phi()) / mcpjet.phi(), weight);
@@ -221,7 +221,7 @@ struct JetFinderQATask {
       if (mcdjet.r() == round(selectedJetsRadius * 100.0f)) {
         registry.fill(HIST("h3_jet_pt_part_jet_eta_part_jet_eta"), mcpjet.pt(), mcpjet.eta(), mcdjet.eta(), weight);
         registry.fill(HIST("h3_jet_pt_part_jet_phi_part_jet_phi"), mcpjet.pt(), mcpjet.phi(), mcdjet.phi(), weight);
-        registry.fill(HIST("h3_jet_pt_part_jet_ntracks_part_jet_ntracks"), mcpjet.pt(), mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size(), weight);
+        registry.fill(HIST("h3_jet_pt_part_jet_ntracks_part_jet_ntracks"), mcpjet.pt(), mcpjet.tracks().size(), mcdjet.tracks().size(), weight);
       }
     }
   }
