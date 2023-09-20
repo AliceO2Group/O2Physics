@@ -157,7 +157,16 @@ class UPCCutparHolder
 
  private:
   bool fUseFwdCuts{true}; // Use cuts for forward tracks
-  int fTrackType{3};      // Filter by Fwd. track type: -1 -> no filter, 0 -> MFT-MCH-MID, 2 -> MFT-MCH, 3 -> MCH-MID. See ForwardTrackTypeEnum
+
+  // Filter by Fwd. track type:
+  //   -1 -> no filter,
+  //   0  -> MFT-MCH-MID,
+  //   2  -> MFT-MCH,
+  //   3  -> MCH-MID,
+  //   4  -> MCH
+  //   5  -> MCH-MID and MCH
+  // See ForwardTrackTypeEnum
+  int fTrackType{3};
 
   // basic
   float fFwdPtLow{0.5};    // Minimal Pt for forward tracks

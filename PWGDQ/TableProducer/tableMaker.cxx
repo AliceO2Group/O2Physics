@@ -30,6 +30,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/MftmchMatchingML.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
@@ -216,7 +217,8 @@ struct TableMaker {
                              context.mOptions.get<bool>("processMuonOnlyWithMults") || context.mOptions.get<bool>("processMuonOnlyWithCentAndMults") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter") ||
-                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
+                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly") ||
+                             context.mOptions.get<bool>("processMuonMLOnly") || context.mOptions.get<bool>("processMuonMLOnly"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
@@ -1243,6 +1245,13 @@ struct TableMaker {
   }
 
   // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
+  void processMuonMLOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                         soa::Filtered<aod::FwdTracksML> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+  }
+
+  // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
   void processMuonOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon)
   {
@@ -1395,6 +1404,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
+  PROCESS_SWITCH(TableMaker, processMuonMLOnly, "Build muon-only DQ skimmed data model with global muon track by ML matching", false);
   PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
   PROCESS_SWITCH(TableMaker, processAmbiguousMuonOnly, "Build muon-only DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMaker, processAmbiguousMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model with QA plots for ambiguous muons", false);

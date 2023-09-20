@@ -59,6 +59,8 @@ DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
 
+DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
+
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
@@ -86,7 +88,7 @@ using Mult = Mults::iterator;
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
-                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC);
+                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, mult::BCNumber);
 using MultExtra = MultsExtra::iterator;
 
 namespace multZeq
