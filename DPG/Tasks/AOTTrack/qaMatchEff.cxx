@@ -1078,7 +1078,7 @@ struct qaMatchEff {
           if (enableMonitorVsTime && timeMonitorSetUp) {
             if (track.has_collision()) {
               const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
-              histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp / 1000.);
+              histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
             }
           }
           //
@@ -1445,7 +1445,7 @@ struct qaMatchEff {
             if (enableMonitorVsTime && timeMonitorSetUp) {
               if (track.has_collision()) {
                 const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
-                histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp / 1000.);
+                histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
               }
             }
             //
@@ -1845,9 +1845,9 @@ struct qaMatchEff {
       headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
       tsSOR = atol(headers["SOR"].c_str());
       tsEOR = atol(headers["EOR"].c_str());
-      double minSec = floor(tsSOR / 1000.); /// round tsSOR to the highest integer lower than tsSOR
-      double maxSec = ceil(tsEOR / 1000.);  /// round tsEOR to the lowest integer higher than tsEOR
-      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds (from January 1st, 1970 at UTC)"};
+      double minMilliSec = floor(tsSOR); /// round tsSOR to the highest integer lower than tsSOR
+      double maxMilliSec = ceil(tsEOR);  /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxMilliSec - minMilliSec) * 1. / 10.), minMilliSec, maxMilliSec, "time from January 1st, 1970 at UTC (unit: 10 ms)"};
 
       /// add histograms now
       histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});    // TPC tracks
