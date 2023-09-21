@@ -514,8 +514,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int varsMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int binspT[4] = {10, 10, 10, 10};
-        int binsMul[4] = {10, 10, 10, 10};
+        int binspT[4] = {100, 20, 20, 20};
+        int binsMul[4] = {100, 10, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
