@@ -23,6 +23,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
+#include "CCDB/BasicCCDBManager.h"
 //
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -37,6 +38,13 @@ using namespace o2::framework::expressions;
 using std::array;
 //
 struct qaMatchEff {
+  int lastRunNumber = -1;
+  bool timeMonitorSetUp = false;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  using BCsWithTimeStamp = soa::Join<aod::BCs, aod::Timestamps>;
+
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> enableMonitorVsTime{"enableMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
   //
   // histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -887,8 +895,8 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
-  template <bool IS_MC, typename T, typename P>
-  void fillHistograms(T& tracks, P& mcParticles)
+  template <bool IS_MC, typename T, typename P, typename B>
+  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;
@@ -1065,6 +1073,14 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(track.eta());
+          //
+          // monitoring vs. time (debug reasons)
+          if (enableMonitorVsTime && timeMonitorSetUp) {
+            if (track.has_collision()) {
+              const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+              histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp / 1000.);
+            }
+          }
           //
           // with TOF tag
           if (trkWTOF) {
@@ -1424,6 +1440,14 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(track.eta());
+            //
+            // monitoring vs. time (debug reasons)
+            if (enableMonitorVsTime && timeMonitorSetUp) {
+              if (track.has_collision()) {
+                const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+                histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp / 1000.);
+              }
+            }
             //
             // not identified
             if (!isPion && !isKaon && !isProton) {
@@ -1795,12 +1819,51 @@ struct qaMatchEff {
     }
   }
 
+  /// Function to add histograms for time-based monitoring of matching efficiency (debug purposes)
+  /// BEWARE: these hitograms are ok only if looked run-by-run
+  void setUpTimeMonitoring(BCsWithTimeStamp const& bcs)
+  {
+    int runNumber = bcs.rawIteratorAt(0).runNumber();
+    if (lastRunNumber != runNumber) {
+      /// execute the code in this scope only once, i.e. when the current run is considered for the first time in this DF
+      lastRunNumber = runNumber;
+      int64_t tsSOR = 0;
+      int64_t tsEOR = 0;
+
+      /// reject AO2Ds for which no CCDB access is possible
+      if (runNumber < 500000) {
+        LOG(warning) << ">>> run number " << runNumber << " < 500000. access to CCDB not possible. Exiting";
+        return;
+      }
+
+      /// If we are here, the current run was never considered before.
+      /// Let's add the TH2 that we need for the monitoring
+      /// Let's define the x-axis according to the start-of-run (SOR) and end-of-run (EOR) times
+      o2::ccdb::CcdbApi ccdb_api;
+      ccdb_api.init(ccdburl);
+      std::map<string, string> metadataRCT, headers;
+      headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
+      tsSOR = atol(headers["SOR"].c_str());
+      tsEOR = atol(headers["EOR"].c_str());
+      double minSec = floor(tsSOR / 1000.); /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = ceil(tsEOR / 1000.);  /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds (from January 1st, 1970 at UTC)"};
+
+      /// add histograms now
+      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});    // TPC tracks
+      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds}); // ITS-TPC tracks
+
+      /// time monitoring correctly set up
+      timeMonitorSetUp = true;
+    }
+  }
+
   //////////////////////////////////////////////
   ///   Process MC with collision grouping   ///
   //////////////////////////////////////////////
   void processMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
@@ -1810,7 +1873,7 @@ struct qaMatchEff {
   ////////////////////////////////////////////////////////////
   void processTrkIUMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUMC, "process MC for IU tracks", false);
@@ -1820,16 +1883,20 @@ struct qaMatchEff {
   /////////////////////////////////////////////
   void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
   }
   PROCESS_SWITCH(qaMatchEff, processMCNoColl, "process MC - no collision grouping", false);
 
   ////////////////////////////////////////////////
   ///   Process data with collision grouping   ///
   ////////////////////////////////////////////////
-  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    if (enableMonitorVsTime) {
+      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
@@ -1839,7 +1906,7 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////////////
   void processTrkIUData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUData, "process data", false);
@@ -1847,9 +1914,12 @@ struct qaMatchEff {
   ///////////////////////////////////////////////
   ///   Process data w/o collision grouping   ///
   ///////////////////////////////////////////////
-  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    if (enableMonitorVsTime) {
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
   }
   PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", true);
 
