@@ -248,7 +248,6 @@ DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's pro
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
 } // namespace hf_b0_mc
 
-
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with reconstructed MC information on DPi(<-B0) pairs for reduced workflow
                   hf_cand_b0_reduced::Prong0Id,
