@@ -355,7 +355,7 @@ struct lithium4analysis {
           continue;
         }
 
-        if (!FillCandidateInfo(he3Cand, protonCand, false)) {
+        if (!FillCandidateInfo(he3Cand, protonCand, true)) {
           continue;
         }
         // fill TOF info outside to avoide responseBeta crash
