@@ -116,7 +116,7 @@ struct HfTaskMcValidationGen {
      {"hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
      {"hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
       registry.get<TH2>(HIST("hPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
@@ -129,7 +129,7 @@ struct HfTaskMcValidationGen {
   }
 
   /// Primary-vertex selection
-  /// \param collision  mccollision table row
+  /// \param collision  mcCollision table row
   template <typename Col>
   bool selectVertex(const Col& collision)
   {
@@ -148,10 +148,10 @@ struct HfTaskMcValidationGen {
     return true;
   }
 
-  void process(aod::McCollision const& mccollision,
-               aod::McParticles const& particlesMC)
+  void process(aod::McCollision const& mcCollision,
+               aod::McParticles const& mcParticles)
   {
-    if (!selectVertex(mccollision)) {
+    if (!selectVertex(mcCollision)) {
       return;
     }
 
@@ -162,7 +162,7 @@ struct HfTaskMcValidationGen {
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
     bool hasSignal = false;
 
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (!particle.has_mothers()) {
         continue;
       }
@@ -209,7 +209,7 @@ struct HfTaskMcValidationGen {
         double sumPzDau = 0.;
         bool momentumCheck = true;
         for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
-          auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau) - particlesMC.offset());
+          auto daughter = mcParticles.rawIteratorAt(listDaughters.at(iDau) - mcParticles.offset());
           sumPxDau += daughter.px();
           sumPyDau += daughter.py();
           sumPzDau += daughter.pz();
@@ -234,7 +234,7 @@ struct HfTaskMcValidationGen {
         }
 
         hasSignal = true;
-        int origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         if (origin == RecoDecay::OriginType::Prompt) {
           counterPrompt[iD]++;
         } else if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -243,7 +243,7 @@ struct HfTaskMcValidationGen {
 
         auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (origin == RecoDecay::OriginType::Prompt) {
           if (std::abs(particle.y()) < 0.5) {
@@ -356,7 +356,7 @@ struct HfTaskMcValidationRec {
     return stdev;
   }
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
     histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
@@ -404,7 +404,7 @@ struct HfTaskMcValidationRec {
   void process(HfCand2ProngWithMCRec const& cand2Prongs,
                HfCand3ProngWithMCRec const& cand3Prongs,
                TracksWithSel const& tracks,
-               aod::McParticles const& particlesMC,
+               aod::McParticles const& mcParticles,
                McCollisionWithHFSignalInfo const& mcCollisions,
                CollisionsWithMCLabels const& collisions,
                aod::BCs const&)
@@ -452,7 +452,7 @@ struct HfTaskMcValidationRec {
           for (const auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
               auto particleColl1 = trackColl1.mcParticle();
-              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl1, true);
+              auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleColl1, true);
               if (origin == RecoDecay::NonPrompt) {
                 nFromBeautyColl1++;
               }
@@ -462,7 +462,7 @@ struct HfTaskMcValidationRec {
           for (const auto& trackColl2 : tracksColl2) {
             if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
               auto particleColl2 = trackColl2.mcParticle();
-              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl2, true);
+              auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleColl2, true);
               if (origin == RecoDecay::NonPrompt) {
                 nFromBeautyColl2++;
               }
@@ -493,7 +493,7 @@ struct HfTaskMcValidationRec {
             continue;
           }
         }
-        auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
+        auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         histTracks->Fill(origin, track.pt());
         bool isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
@@ -567,9 +567,9 @@ struct HfTaskMcValidationRec {
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
         if (cand2Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
-        auto mother = particlesMC.rawIteratorAt(indexParticle);
+        auto mother = mcParticles.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
         histDeltaPx[whichHad]->Fill(cand2Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand2Prong.py() - mother.py());
@@ -632,9 +632,9 @@ struct HfTaskMcValidationRec {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand3Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
-        auto mother = particlesMC.rawIteratorAt(indexParticle);
+        auto mother = mcParticles.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
         histDeltaPx[whichHad]->Fill(cand3Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand3Prong.py() - mother.py());

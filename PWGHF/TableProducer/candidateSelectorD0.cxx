@@ -363,9 +363,9 @@ struct HfCandidateSelectorD0 {
         registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
         registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
         registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
-      }
-      if (statusD0 != 0 || statusD0bar != 0) {
-        registry.fill(HIST("hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
+        if (statusD0 != 0 || statusD0bar != 0) {
+          registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
+        }
       }
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
     }

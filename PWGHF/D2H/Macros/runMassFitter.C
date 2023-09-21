@@ -540,7 +540,7 @@ int runMassFitter(TString configFileName)
       hRawYieldsSignificance->SetBinContent(iPt + 1, significance);
       hRawYieldsSignificance->SetBinError(iPt + 1, significanceErr);
       hRawYieldsSgnOverBkg->SetBinContent(iPt + 1, rawYield / bkg);
-      hRawYieldsSgnOverBkg->SetBinError(iPt + 1, rawYield / bkg * TMath::Sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
+      hRawYieldsSgnOverBkg->SetBinError(iPt + 1, rawYield / bkg * std::sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
       hRawYieldsSignal->SetBinContent(iPt + 1, rawYield);
       hRawYieldsSignal->SetBinError(iPt + 1, rawYieldErr);
       hRawYieldsBkg->SetBinContent(iPt + 1, bkg);

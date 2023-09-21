@@ -56,7 +56,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check i
 
 DECLARE_SOA_TABLE(SkimmedTOFColl, "AOD", "SKIMMEDTOFCOL", //! Table of the skimmed TOF data format. One entry per collision.
                   o2::soa::Index<>,
-                  tofskims::CollisionId,
                   pidtofevtime::EvTimeTOF,
                   pidtofevtime::EvTimeTOFErr,
                   pidtofevtime::EvTimeTOFMult,

@@ -38,25 +38,26 @@ using namespace o2::framework::expressions;
 struct GenericFramework {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 3.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for reference tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for reference tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "Number of chi2 per TPC cluster")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.1f, "Maximum DCA xy")
+  O2_DEFINE_CONFIGURABLE(cfgEtaSep, float, 0.4f, "Eta gap for flow calculations")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
 
   ConfigurableAxis axisVertex{"axisVertex", {22, -11, 11}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::dcaXY < cfgCutDCAxy);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::dcaXY < cfgCutDCAxy);
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   // Connect to ccdb
@@ -81,7 +82,6 @@ struct GenericFramework {
 
   void init(InitContext const&)
   {
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -102,27 +102,59 @@ struct GenericFramework {
     if (doprocessData) {
       registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
       registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
+      registry.add("hPt", "", {HistType::kTH1D, {axisPt}});
       registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
       registry.add("hPhiEtaVtxZ_corrected", "", {HistType::kTH3D, {axisPhi, axisEta, axisVertex}});
-      registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+      registry.add("hCent", "", {HistType::kTH1D, {axisMultiplicity}});
 
       TObjArray* oba = new TObjArray();
       // Reference flow
-      oba->Add(new TNamed("ChGap22", "ChGap22"));     // for gap (|eta|>0.4) case
-      oba->Add(new TNamed("ChGap32", "ChGap32"));     //
-      oba->Add(new TNamed("ChGap42", "ChGap42"));     //
-      oba->Add(new TNamed("ChFull22", "ChFull22"));   // no-gap case
-      oba->Add(new TNamed("ChFull24", "ChFull24"));   // no-gap case
+      oba->Add(new TNamed("ChGapP22", "ChGapP22")); // for positive gap case
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapP22_pt_%i", i + 1), "ChGapP22_pTDiff"));
+      oba->Add(new TNamed("ChGapP32", "ChGapP32"));
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapP32_pt_%i", i + 1), "ChGapP32_pTDiff"));
+      oba->Add(new TNamed("ChGapP42", "ChGapP42"));
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapP42_pt_%i", i + 1), "ChGapP42_pTDiff"));
+
+      oba->Add(new TNamed("ChGapN22", "ChGapN22")); // for negative gap case
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapN22_pt_%i", i + 1), "ChGapN22_pTDiff"));
+      oba->Add(new TNamed("ChGapN32", "ChGapN32"));
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapN32_pt_%i", i + 1), "ChGapN32_pTDiff"));
+      oba->Add(new TNamed("ChGapN42", "ChGapN42"));
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChGapN42_pt_%i", i + 1), "ChGapN42_pTDiff"));
+
+      oba->Add(new TNamed("ChFull22", "ChFull22")); // no-gap case
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+      oba->Add(new TNamed("ChFull24", "ChFull24")); // no-gap case
+      for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
       oba->Add(new TNamed("ChFull26", "ChFull26"));   // no-gap case
       oba->Add(new TNamed("ChFull28", "ChFull28"));   // no-gap case
       oba->Add(new TNamed("ChFull210", "ChFull210")); // no-gap case
       fFC->SetName("FlowContainer");
+      fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
       delete oba;
 
-      fGFW->AddRegion("refN", -0.8, -0.4, 1, 1);
-      fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
-      fGFW->AddRegion("full", -0.8, 0.8, 1, 2);
+      fGFW->AddRegion("refN", -cfgCutEta, cfgEtaSep, 1, 1);
+      fGFW->AddRegion("refP", cfgEtaSep, cfgCutEta, 1, 1);
+      fGFW->AddRegion("refFull", -cfgCutEta, cfgCutEta, 1, 1);
+
+      fGFW->AddRegion("poiN", -cfgCutEta, -cfgEtaSep, nPtBins + 1, 2);
+      fGFW->AddRegion("poiP", cfgEtaSep, cfgCutEta, nPtBins + 1, 2);
+      fGFW->AddRegion("poiFull", -cfgCutEta, cfgCutEta, nPtBins + 1, 2);
+
+      fGFW->AddRegion("olN", -cfgCutEta, -cfgEtaSep, nPtBins + 1, 4);
+      fGFW->AddRegion("olP", cfgEtaSep, cfgCutEta, nPtBins + 1, 4);
+      fGFW->AddRegion("olFull", -cfgCutEta, cfgCutEta, nPtBins + 1, 4);
+
       CreateCorrConfigs();
       fGFW->CreateRegions();
     }
@@ -151,14 +183,26 @@ struct GenericFramework {
 
   void CreateCorrConfigs()
   {
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {4} refN {-4}", "ChGap42", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2 -2 -2 -2 -2}", "ChFull28", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2 2 -2 -2 -2 -2 -2}", "ChFull210", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGapP22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiP refP | olP {2} refN {-2}", "ChGapP22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGapN22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {2} refP {-2}", "ChGapN22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGapP32", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiP refP | olP {3} refN {-3}", "ChGapP32", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {3} refP {-3}", "ChGapN32", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {3} refP {-3}", "ChGapN32", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {4} refN {-4}", "ChGapP42", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiP refP | olP {4} refN {-4}", "ChGapP42", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {4} refP {-4}", "ChGapN42", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {4} refP {-4}", "ChGapN42", kTRUE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refFull {2 -2}", "ChFull22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiFull refFull | olFull {2 -2}", "ChFull22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refFull {2 2 -2 -2}", "ChFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiFull refFull | olFull {2 2 -2 -2}", "ChFull24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refFull {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refFull {2 2 2 2 -2 -2 -2 -2}", "ChFull28", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refFull {2 2 2 2 2 -2 -2 -2 -2 -2}", "ChFull210", kFALSE));
   }
 
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
@@ -172,6 +216,14 @@ struct GenericFramework {
       if (TMath::Abs(val) < 1)
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       return;
+    }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
   }
@@ -197,15 +249,12 @@ struct GenericFramework {
     float weff = 1, wacc = 1;
 
     for (auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < 70)
-        continue;
-      if (track.dcaXY() > 7 * (0.0026 + 0.0050 / pow(track.pt(), 1.01)))
-        continue;
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hEta"), track.eta());
 
+      double pt = track.pt();
       if (cfg.mEfficiency)
-        weff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+        weff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(pt));
       else
         weff = 1.0;
       if (weff == 0)
@@ -216,7 +265,15 @@ struct GenericFramework {
       else
         wacc = 1;
       registry.fill(HIST("hPhiEtaVtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
-      fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
+      registry.fill(HIST("hPt"), pt);
+      bool WithinPtPOI = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within POI pT range
+      bool WithinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
+      if (WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
+      if (WithinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 2);
+      if (WithinPtPOI && WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 4);
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), centrality, l_Random);

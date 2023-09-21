@@ -143,7 +143,7 @@ struct HfCandidateSelectorLcToK0sP {
   TrackSelectorPr selectorProtonHighP;
 
   o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<bool> selectedInputFeatures{vector<bool>(MLInputFeatures::NInputFeatures, false)};
+  std::vector<bool> selectedInputFeatures{std::vector<bool>(MLInputFeatures::NInputFeatures, false)};
 
   o2::ccdb::CcdbApi ccdbApi;
 

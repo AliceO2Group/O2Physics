@@ -25,13 +25,16 @@ using namespace o2::framework::expressions;
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {601, -3.01, 3.01};
-AxisSpec EtaAxis = {22, -2.2, 2.2};
+AxisSpec EtaAxis = {62, -6.2, 6.2};
 AxisSpec RapidityAxis = {102, -10.2, 10.2};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
 AxisSpec PtAxisEff = {{0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
                        1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}};
+AxisSpec ScaleAxis = {121, -0.5, 120.5};
+AxisSpec MPIAxis = {51, -0.5, 50.5};
+AxisSpec ProcAxis = {21, 89.5, 110.5};
 
 auto static constexpr mincharge = 3.f;
 
@@ -44,7 +47,7 @@ struct PureMcMultiplicityCounter {
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
-  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
+  ConfigurableAxis multBinning{"multiplicity-binning", {301, -0.5, 300.5}, ""};
 
   HistogramRegistry registry{
     "registry",
@@ -56,6 +59,10 @@ struct PureMcMultiplicityCounter {
       {"Particles/Primaries/Eta", " ; #eta", {HistType::kTH1F, {EtaAxis}}},
       {"Particles/Primaries/Y", " ; y", {HistType::kTH1F, {RapidityAxis}}},
       {"Particles/Primaries/EtaZvtx", " ; #eta; Z_{vtx} (cm); particles", {HistType::kTH2F, {EtaAxis, ZAxis}}},
+      {"MCEvents/Properties/ProcessID", "; process ID", {HistType::kTH1F, {ProcAxis}}},
+      {"MCEvents/Properties/ScalePerProcessID", " ; scale (GeV); process ID", {HistType::kTH2F, {ScaleAxis, ProcAxis}}},
+      {"MCEvents/Properties/NMPIsPerProcessID", " ; N_{MPI}; process ID", {HistType::kTH2F, {MPIAxis, ProcAxis}}},
+      {"MCEvents/Properties/ScaleVsNMPIsPerProcessID", " ;scale (GeV); N_{MPI}; process ID", {HistType::kTHnSparseF, {MPIAxis, ScaleAxis, ProcAxis}}},
     } //
   };
 
@@ -67,9 +74,12 @@ struct PureMcMultiplicityCounter {
       registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/Y").c_str(), " ; y", {HistType::kTH1F, {RapidityAxis}}});
     }
 
-    AxisSpec MultAxis = {multBinning, "N_{p}"};
-    registry.add({"MCEvents/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
+    AxisSpec MultAxis = {multBinning};
     registry.add({"MCEvents/NtrkZvtx", " ; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+    registry.add({"MCEvents/Properties/MultiplicityPerProcessID", " ; N_{p}; process ID; events", {HistType::kTH2F, {MultAxis, ProcAxis}}});
+    registry.add({"MCEvents/Properties/MultiplicityVsScalePerProcessID", " ; scale; N_{p}; process ID", {HistType::kTHnSparseF, {ScaleAxis, MultAxis, ProcAxis}}});
+    registry.add({"MCEvents/Properties/MultiplicityVsMPIsPerProcessID", " ; N_{MPI}; N_{p}; process ID", {HistType::kTHnSparseF, {MPIAxis, MultAxis, ProcAxis}}});
+
     if (doprocessReco) {
       registry.add({"Events/Properties/Multiplicity", " ; N_{p}; events", {HistType::kTH1F, {MultAxis}}});
       registry.add({"Events/Vertex/X", "; X (cm); events", {HistType::kTH1F, {ZAxis}}});
@@ -94,6 +104,10 @@ struct PureMcMultiplicityCounter {
       x->SetBinLabel(4, "Reconstructed INEL>0");
       x->SetBinLabel(5, "Selected");
       x->SetBinLabel(6, "Selected INEL>0");
+
+      registry.add({"MCEvents/EfficiencyMultiplicityN", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityNExtra", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+      registry.add({"MCEvents/EfficiencyMultiplicityD", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
     }
     if (doprocessEfficiency) {
       registry.add({"Particles/Primaries/EfficiencyN", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
@@ -103,14 +117,24 @@ struct PureMcMultiplicityCounter {
       registry.add({"Particles/Primaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
       registry.add({"Particles/Secondaries/PtCorrelation", " ; p_{T}^{gen} (GeV/c); p_{T}^{rec} (GeV/c)", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}});
       registry.add({"Particles/Secondaries/EtaCorrelation", " ; #eta^{gen}; #eta^{rec}", {HistType::kTH2F, {EtaAxis, EtaAxis}}});
+
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyN").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+        registry.add({(std::string("Particles/Primaries/") + std::string(species[i]) + "/EfficiencyD").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis_wide}}});
+      }
     }
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& particles)
+  void process(soa::Join<aod::McCollisions, aod::HepMCXSections, aod::HepMCPdfInfos>::iterator const& collision, aod::McParticles const& particles)
   {
     registry.fill(HIST("MCEvents/Vertex/X"), collision.posX());
     registry.fill(HIST("MCEvents/Vertex/Y"), collision.posY());
     registry.fill(HIST("MCEvents/Vertex/Z"), collision.posZ());
+
+    registry.fill(HIST("MCEvents/Properties/ProcessID"), collision.processId());
+    registry.fill(HIST("MCEvents/Properties/ScalePerProcessID"), collision.ptHard(), collision.processId());
+    registry.fill(HIST("MCEvents/Properties/NMPIsPerProcessID"), collision.nMPI(), collision.processId());
+    registry.fill(HIST("MCEvents/Properties/ScaleVsNMPIsPerProcessID"), collision.ptHard(), collision.nMPI(), collision.processId());
 
     auto Np = 0;
     for (auto const& particle : particles) {
@@ -154,7 +178,9 @@ struct PureMcMultiplicityCounter {
           }
         });
     }
-    registry.fill(HIST("MCEvents/Properties/Multiplicity"), Np);
+    registry.fill(HIST("MCEvents/Properties/MultiplicityVsMPIsPerProcessID"), collision.nMPI(), Np, collision.processId());
+    registry.fill(HIST("MCEvents/Properties/MultiplicityVsScalePerProcessID"), collision.ptHard(), Np, collision.processId());
+    registry.fill(HIST("MCEvents/Properties/MultiplicityPerProcessID"), Np, collision.processId());
     registry.fill(HIST("MCEvents/NtrkZvtx"), Np, collision.posZ());
   }
 
@@ -204,8 +230,17 @@ struct PureMcMultiplicityCounter {
       }
       ++Np;
     }
+    registry.fill(HIST("MCEvents/EfficiencyMultiplicityD"), Np);
     if (Np > 0) {
       registry.fill(HIST("MCEvents/Efficiency"), 1);
+    }
+    if (collisions.size() > 0) {
+      registry.fill(HIST("MCEvents/EfficiencyMultiplicityN"), Np);
+    }
+    if (collisions.size() > 1) {
+      for (auto i = 1; i < collisions.size(); ++i) {
+        registry.fill(HIST("MCEvents/EfficiencyMultiplicityNExtra"), Np);
+      }
     }
     for (auto& collision : collisions) {
       auto Ntrk = 0;
@@ -252,6 +287,13 @@ struct PureMcMultiplicityCounter {
         continue;
       }
       registry.fill(HIST("Particles/Primaries/EfficiencyD"), particle.pt());
+      static_for<0, 3>(
+        [&](auto idx) {
+          constexpr int i = idx.value;
+          if (particle.pdgCode() == speciesIds[i]) {
+            registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyD"), particle.pt());
+          }
+        });
     }
 
     for (auto& track : tracks) {
@@ -267,6 +309,14 @@ struct PureMcMultiplicityCounter {
           registry.fill(HIST("Particles/Primaries/EfficiencyN"), particle.pt());
           registry.fill(HIST("Particles/Primaries/PtCorrelation"), particle.pt(), track.pt());
           registry.fill(HIST("Particles/Primaries/EtaCorrelation"), particle.eta(), track.eta());
+
+          static_for<0, 3>(
+            [&](auto idx) {
+              constexpr int i = idx.value;
+              if (particle.pdgCode() == speciesIds[i]) {
+                registry.fill(HIST("Particles/Primaries/") + HIST(species[i]) + HIST("/EfficiencyN"), particle.pt());
+              }
+            });
         } else {
           registry.fill(HIST("Particles/Secondaries/EfficiencyN"), particle.pt());
           registry.fill(HIST("Particles/Secondaries/PtCorrelation"), particle.pt(), track.pt());

@@ -1418,7 +1418,6 @@ enum DecayType { BsToDsPi };
 enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
                              B0ToDsPiToKKPiPi,     // B0(bar) → Ds± π∓ → (Phi π±) π∓ → (K- K+ π±) π∓
                              PartlyRecoDecay,      // 4 final state particles have another common b-hadron ancestor
-                             OtherDecay,           // other decay
                              NDecayTypeMc };       // counter of differentiated MC decay types
 
 } // namespace hf_cand_bs

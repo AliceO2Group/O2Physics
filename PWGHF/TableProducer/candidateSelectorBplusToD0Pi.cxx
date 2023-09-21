@@ -145,7 +145,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       // check if flagged as B+ --> D0bar Pi
       if (!(hfCandB.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
         hfSelBplusToD0PiCandidate(statusBplus);
-        // Printf("B+ candidate selection failed at hfflag check");
+        // LOGF(debug, "B+ candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusBplus, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBplus = 1
@@ -159,7 +159,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       // topological cuts
       if (!hfHelper.selectionBplusToD0PiTopol(hfCandB, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
-        // Printf("B+ candidate selection failed at topology selection");
+        // LOGF(debug, "B+ candidate selection failed at topology selection");
         continue;
       }
       SETBIT(statusBplus, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusBplus = 3

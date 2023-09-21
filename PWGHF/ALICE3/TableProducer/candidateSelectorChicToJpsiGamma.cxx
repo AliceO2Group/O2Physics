@@ -77,8 +77,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
     }
 
     auto mchic = hfHelper.mass(20443); // chi_c1(1p)
-    if (TMath::Abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
-      // Printf("Chic topol selection failed at mass diff check");
+    if (std::abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
+      // LOGF(debug, "Chic topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
 
@@ -94,7 +94,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
+    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) {   // adf: Warning: no cut on photon
       return false;                                                                  // DCA check on daughters
     }
 
@@ -110,7 +110,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
+    if (std::abs(track.pt()) < ptPidTpcMin || std::abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
     // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
@@ -124,7 +124,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   template <typename T>
   bool validTofPid(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
+    if (std::abs(track.pt()) < ptPidTofMin || std::abs(track.pt()) >= ptPidTofMax) {
       return false;
     }
     return true;
@@ -225,7 +225,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       }
 
       hfSelChicToJpsiGammaCandidate(selJpsiToEE, selJpsiToMuMu);
-      // Printf("Chi_c candidate selection successful, candidate should be selected");
+      // LOGF(debug, "Chi_c candidate selection successful, candidate should be selected");
     }
   }
 };

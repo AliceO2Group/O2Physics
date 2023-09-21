@@ -44,7 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct Pi0EtaToGammaGammaMC {
@@ -221,7 +221,7 @@ struct Pi0EtaToGammaGammaMC {
     return is_selected_pair;
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::emreducedeventId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TV0Legs, typename TMCParticles, typename TMCEvents>
   void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TV0Legs const& v0legs, TMCParticles const& mcparticles, TMCEvents const& mcevents)

@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
@@ -108,6 +109,9 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
   Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", true, "Activate filling of Phi into femtouniverse tables"};
+  Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
+  Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
@@ -508,6 +512,43 @@ struct femtoUniverseProducerTask {
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
   }
 
+  template <typename CollisionType, typename TrackType>
+  void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
+  {
+    const auto vtxZ = col.posZ();
+    const auto spher = 0; // colCuts.computeSphericity(col, tracks);
+    int mult = 0;
+    int multNtr = 0;
+    if (ConfIsRun3) {
+      mult = col.multFV0M();
+      multNtr = col.multNTracksPV();
+    } else {
+      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in
+                                     /// FemtoUniverseRun2 is defined V0M/2
+      multNtr = col.multTracklets();
+    }
+    if (ConfEvtUseTPCmult) {
+      multNtr = col.multTPC();
+    }
+
+    // check whether the basic event selection criteria are fulfilled
+    // if the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any
+    // particle candidates for such collisions
+
+    // CHECK WHAT CUTS SHOULD BE USED FOR MC TRUTH
+    //  if (!colCuts.isSelected(col)) {
+    //    if (ConfIsTrigger) {
+    //      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    //    }
+    //    return;
+    //  }
+
+    colCuts.fillQA(col);
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+  }
+
   template <bool isMC, typename TrackType>
   void fillTracks(TrackType const& tracks)
   {
@@ -649,6 +690,8 @@ struct femtoUniverseProducerTask {
       }
       if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
         continue;
+      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+        continue;
       }
 
       TLorentzVector part1Vec;
@@ -681,9 +724,9 @@ struct femtoUniverseProducerTask {
       }
       float phiM = sumVec.M();
 
-      // if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
-      //   continue;
-      // }
+      if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
+        continue;
+      }
 
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
@@ -751,6 +794,57 @@ struct femtoUniverseProducerTask {
     }
   }
 
+  template <typename TrackType>
+  void fillParticles(TrackType const& tracks)
+  {
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+
+    for (auto& particle : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no
+      /// point looking further at the track
+      if (!particle.isPhysicalPrimary())
+        continue;
+
+      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+
+      if (ConfMCTruthAnalysisWithPID) {
+        bool pass = false;
+        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
+        for (uint32_t pdg : tmpPDGCodes) {
+          if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
+            pass = true;
+          }
+        }
+        if (!pass)
+          continue;
+      }
+
+      // we cannot use isSelectedMinimal since it takes Ncls
+      // if (!trackCuts.isSelectedMinimal(track)) {
+      //   continue;
+      // }
+
+      // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
+      //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
+      //  the bit-wise container of the systematic variations is obtained
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      // instead of the bitmask, the PDG of the particle is stored as uint32_t
+
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  0,
+                  pdgCode,
+                  pdgCode,
+                  childIDs,
+                  0,
+                  0);
+    }
+  }
+
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
   void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
@@ -799,7 +893,7 @@ struct femtoUniverseProducerTask {
                    aod::BCsWithTimestamps const&,
                    soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                    aod::McCollisions const& mcCollisions,
-                   aod::McParticles const& mcParticles)
+                   aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -837,6 +931,19 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiData,
                  "Provide experimental data for track phi", false);
+
+  void
+    processTrackMCTruth(aod::FemtoFullCollisionMC const& col,
+                        aod::BCsWithTimestamps const&,
+                        aod::McCollisions const& mcCollisions,
+                        aod::McParticles const& mcParticles)
+  {
+    // magnetic field for run not needed for mc truth
+    // fill the tables
+    fillMCTruthCollisions(col, mcParticles);
+    fillParticles(mcParticles);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
