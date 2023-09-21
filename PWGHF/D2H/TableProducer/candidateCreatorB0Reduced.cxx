@@ -47,7 +47,7 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
   Configurable<double> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
-  // variable that will store the value of invMassWindowB0 (defined in dataCreatorDplusPiReduced.cxx)
+  // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
   float myInvMassWindowDPi{1.};
 
   // O2DatabasePDG service
@@ -57,8 +57,6 @@ struct HfCandidateCreatorB0Reduced {
   double massD{0.};
   double massB0{0.};
   double invMass2DPi{0.};
-  double invMass2DPiMin{0.};
-  double invMass2DPiMax{0.};
   double bz{0.};
 
   // Fitter for B vertex (2-prong vertex filter)
@@ -98,14 +96,14 @@ struct HfCandidateCreatorB0Reduced {
                aod::HfOrigColCounts const& collisionsCounter,
                aod::HfCandB0Configs const& configs)
   {
-    // B0 invariant-mass window cut
+    // DPi invariant-mass window cut
     for (const auto& config : configs) {
       myInvMassWindowDPi = config.myInvMassWindowDPi();
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    double invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    double invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -142,7 +140,7 @@ struct HfCandidateCreatorB0Reduced {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
 
-          // compute invariant
+          // compute invariant mass square and apply selection
           invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;

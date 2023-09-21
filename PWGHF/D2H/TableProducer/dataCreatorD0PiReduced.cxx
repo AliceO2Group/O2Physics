@@ -14,8 +14,11 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
+#include <map>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -69,7 +72,7 @@ struct HfDataCreatorD0PiReduced {
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
   Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
   Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
-  Configurable<double> invMassWindowBplus{"invMassWindowBplus", 0.3, "invariant-mass window for B+ candidates"};
+  Configurable<double> invMassWindowD0Pi{"invMassWindowD0Pi", 0.3, "invariant-mass window for D0Pi pair preselections (GeV/c2)"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   // magnetic field setting from CCDB
@@ -80,16 +83,21 @@ struct HfDataCreatorD0PiReduced {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-  double massBplus = RecoDecay::getMassPDG(pdg::Code::kBPlus);
-  double massD0Pi{0.};
-  double invMassD0{0.};
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  double massPi{0.};
+  double massD0{0.};
+  double massBplus{0.};
+  double invMass2D0Pi{0.};
+  double invMass2D0PiMin{0.};
+  double invMass2D0PiMax{0.};
   double bz{0.};
 
   bool isHfCandBplusConfigFilled = false;
@@ -144,6 +152,13 @@ struct HfDataCreatorD0PiReduced {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    // invariant-mass window cut
+    massPi = pdg->Mass(kPiPlus);
+    massD0 = pdg->Mass(pdg::Code::kD0);
+    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    invMass2D0PiMin = (massBplus - invMassWindowD0Pi) * (massBplus - invMassWindowD0Pi);
+    invMass2D0PiMax = (massBplus + invMassWindowD0Pi) * (massBplus + invMassWindowD0Pi);
   }
 
   /// Pion selection (D0 Pi <-- B+)
@@ -196,7 +211,7 @@ struct HfDataCreatorD0PiReduced {
     return true;
   }
 
-  template <bool doMC = false, typename P, typename T>
+  template <bool doMc = false, typename P, typename T>
   void runDataCreation(aod::Collisions const& collisions,
                        CandsDFiltered const& candsD0,
                        aod::TrackAssoc const& trackIndices,
@@ -206,12 +221,9 @@ struct HfDataCreatorD0PiReduced {
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBplusConfigFilled) {
-      rowCandidateConfig(selectionFlagD0.value, selectionFlagD0bar.value);
+      rowCandidateConfig(selectionFlagD0.value, selectionFlagD0bar.value, invMassWindowD0Pi.value);
       isHfCandBplusConfigFilled = true;
     }
-
-    static int aodNumber = 0;
-    aodNumber++;
 
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
@@ -219,9 +231,8 @@ struct HfDataCreatorD0PiReduced {
     for (const auto& collision : collisions) {
 
       // helpers for ReducedTables filling
-      int hfReducedCollisionIndex = hfReducedCollision.lastIndex() + 1;
-      std::vector<int64_t> selectedTracksPion;
-      selectedTracksPion.reserve(trackIndices.size());
+      int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
+      std::map<int64_t, int64_t> selectedTracksPion;
       bool fillHfReducedCollision = false;
 
       auto primaryVertex = getPrimaryVertex(collision);
@@ -241,6 +252,7 @@ struct HfDataCreatorD0PiReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsDPerCollision, thisCollId);
       for (const auto& candD0 : candsDThisColl) {
+        int indexHfCand2Prong = hfCand2Prong.lastIndex() + 1;
         bool fillHfCand2Prong = false;
         float invMassD0{-1.f}, invMassD0bar{-1.f};
 
@@ -304,16 +316,16 @@ struct HfDataCreatorD0PiReduced {
           }
           registry.fill(HIST("hPtPion"), trackPion.pt());
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-          // compute invariant mass and apply selection
-          massD0Pi = RecoDecay::m(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});
-          if (std::abs(massD0Pi - massBplus) > invMassWindowBplus) {
+          // compute invariant mass square and apply selection
+          invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});
+          if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }
 
           // fill Pion tracks table
           // if information on track already stored, go to next track
-          if (!std::count(selectedTracksPion.begin(), selectedTracksPion.end(), trackPion.globalIndex())) {
-            hfTrackPion(trackPion.globalIndex(), hfReducedCollisionIndex,
+          if (!selectedTracksPion.count(trackPion.globalIndex())) {
+            hfTrackPion(trackPion.globalIndex(), indexHfReducedCollision,
                         trackPion.x(), trackPion.alpha(),
                         trackPion.y(), trackPion.z(), trackPion.snp(),
                         trackPion.tgl(), trackPion.signed1Pt());
@@ -328,11 +340,11 @@ struct HfDataCreatorD0PiReduced {
                            trackPion.tofNSigmaEl(), trackPion.tofNSigmaMu(), trackPion.tofNSigmaPi(), trackPion.tofNSigmaKa(), trackPion.tofNSigmaPr());
             // add trackPion.globalIndex() to a list
             // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another D candidate
-            selectedTracksPion.emplace_back(trackPion.globalIndex());
+            // and keep track of their index in hfTrackPion for McRec purposes
+            selectedTracksPion[trackPion.globalIndex()] = hfTrackPion.lastIndex();
           }
-          fillHfCand2Prong = true;
 
-          if constexpr (doMC) {
+          if constexpr (doMc) {
             // we check the MC matching to be stored
             auto arrayDaughtersD0 = std::array{track0, track1};
             auto arrayDaughtersBplus = std::array{track0, track1, trackPion};
@@ -354,12 +366,13 @@ struct HfDataCreatorD0PiReduced {
             auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), pdg::Code::kBPlus, true);
             auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
-            rowHfD0PiMcRecReduced(candD0.globalIndex(), trackPion.globalIndex(), flag, particleMother.pt());
+            rowHfD0PiMcRecReduced(indexHfCand2Prong, selectedTracksPion[trackPion.globalIndex()], flag, particleMother.pt());
           }
+          fillHfCand2Prong = true;
         }                       // pion loop
         if (fillHfCand2Prong) { // fill candD0 table only once per D0 candidate
           hfCand2Prong(track0.globalIndex(), track1.globalIndex(),
-                       hfReducedCollisionIndex,
+                       indexHfReducedCollision,
                        trackParCovD0.getX(), trackParCovD0.getAlpha(),
                        trackParCovD0.getY(), trackParCovD0.getZ(), trackParCovD0.getSnp(),
                        trackParCovD0.getTgl(), trackParCovD0.getQ2Pt(),
@@ -386,7 +399,7 @@ struct HfDataCreatorD0PiReduced {
                          bz);
     } // collision
 
-    if constexpr (doMC) {
+    if constexpr (doMc) {
       // Match generated particles.
       for (const auto& particle : particlesMc) {
         int8_t sign{0};
@@ -407,7 +420,7 @@ struct HfDataCreatorD0PiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massBplus);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -417,7 +430,7 @@ struct HfDataCreatorD0PiReduced {
         for (const auto& daught : particle.template daughters_as<P>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
           counter++;
         }
         rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,
@@ -427,7 +440,7 @@ struct HfDataCreatorD0PiReduced {
     }
   }
 
-  void process(aod::Collisions const& collisions,
+  void processData(aod::Collisions const& collisions,
                CandsDFiltered const& candsD0,
                aod::TrackAssoc const& trackIndices,
                TracksPIDWithSel const& tracks,
@@ -435,7 +448,7 @@ struct HfDataCreatorD0PiReduced {
   {
     runDataCreation<false>(collisions, candsD0, trackIndices, tracks, tracks, bcs);
   }
-  PROCESS_SWITCH(HfDataCreatorD0PiReduced, process, "Process without MC info", true);
+  PROCESS_SWITCH(HfDataCreatorD0PiReduced, processData, "Process without MC info", true);
 
   void processMc(aod::Collisions const& collisions,
                  CandsDFiltered const& candsD0,

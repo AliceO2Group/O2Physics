@@ -17,6 +17,7 @@
 
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -69,11 +70,22 @@ struct HfCandidateCreatorB0 {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
-  double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
-  double massDPi{0.};
+
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  double massPi{0.};
+  double massD{0.};
+  double massB0{0.};
+  double invMass2DPi{0.};
+  double invMass2DPiMin{0.};
+  double invMass2DPiMax{0.};
   double bz{0.};
+
+  // Fitter for B vertex (2-prong vertex filter)
+  o2::vertexing::DCAFitterN<2> df2;
+  // Fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
+  o2::vertexing::DCAFitterN<3> df3;
 
   using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -87,17 +99,43 @@ struct HfCandidateCreatorB0 {
   OutputObj<TH1F> hPtD{TH1F("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAD{TH1F("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
-  OutputObj<TH1F> hMassB0ToDPi{TH1F("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
+  OutputObj<TH1F> hMass2B0ToDPi{TH1F("hMass2B0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) square (GeV^{2}/#it{c}^{4});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
   void init(InitContext const&)
   {
+    // Initialise fitter for B vertex (2-prong vertex filter)
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Initial fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCA);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Configure CCDB access
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    // invariant-mass window cut
+    massPi = pdg->Mass(kPiPlus);
+    massD = pdg->Mass(pdg::Code::kDMinus);
+    massB0 = pdg->Mass(pdg::Code::kB0);
+    invMass2DPiMin = (massB0 - invMassWindowB0) * (massB0 - invMassWindowB0);
+    invMass2DPiMax = (massB0 + invMassWindowB0) * (massB0 + invMassWindowB0);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -126,27 +164,6 @@ struct HfCandidateCreatorB0 {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-    // Initialise fitter for B vertex (2-prong vertex filter)
-    o2::vertexing::DCAFitterN<2> df2;
-    // df2.setBz(bz);
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
-    // Initial fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
-    o2::vertexing::DCAFitterN<3> df3;
-    // df3.setBz(bz);
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     static int ncol = 0;
 
@@ -282,12 +299,12 @@ struct HfCandidateCreatorB0 {
           df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
-          // calculate invariant mass and apply selection
-          massDPi = RecoDecay::m(std::array{pVecD, pVecPion}, std::array{massD, massPi});
-          if (std::abs(massDPi - massB0) > invMassWindowB0) {
+          // calculate invariant mass square and apply selection
+          invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
-          hMassB0ToDPi->Fill(massDPi);
+          hMass2B0ToDPi->Fill(invMass2DPi);
 
           // compute impact parameters of D and Pi
           o2::dataformats::DCA dcaD;

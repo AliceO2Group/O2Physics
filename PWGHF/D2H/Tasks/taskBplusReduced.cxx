@@ -157,7 +157,7 @@ struct HfTaskBplusReduced {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
+  void process(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
                aod::HfRed2Prongs const&,
                aod::HfRedTracks const&)
   {
@@ -198,7 +198,7 @@ struct HfTaskBplusReduced {
   }   // process
 
   /// B+ MC analysis and fill histograms
-  void processMc(soa::Join<aod::HfCandBplus, aod::HfMcRecRedBps> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandBplus, aod::HfMcRecRedBps> const& candidates,
                  aod::HfMcGenRedBps const& particlesMc,
                  aod::HfRed2Prongs const&)
   {
