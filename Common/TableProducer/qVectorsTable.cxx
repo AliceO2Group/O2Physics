@@ -264,7 +264,7 @@ struct qVectorsTable {
 
     for (auto& trk : tracks) {
       if( !trk.isGlobalTrack() ) continue;
-      histosQA.fill(HIST("CHTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
+      histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
       if( abs( trk.eta() ) < 0.1 || abs( trk.eta() ) > 0.8 ) continue;
       if( trk.eta() > 0 ){
         qVectBPos[0] += trk.pt() * TMath::Cos( 2.*trk.phi());
