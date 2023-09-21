@@ -441,10 +441,10 @@ struct HfDataCreatorD0PiReduced {
   }
 
   void processData(aod::Collisions const& collisions,
-               CandsDFiltered const& candsD0,
-               aod::TrackAssoc const& trackIndices,
-               TracksPIDWithSel const& tracks,
-               aod::BCsWithTimestamps const& bcs)
+                   CandsDFiltered const& candsD0,
+                   aod::TrackAssoc const& trackIndices,
+                   TracksPIDWithSel const& tracks,
+                   aod::BCsWithTimestamps const& bcs)
   {
     runDataCreation<false>(collisions, candsD0, trackIndices, tracks, tracks, bcs);
   }

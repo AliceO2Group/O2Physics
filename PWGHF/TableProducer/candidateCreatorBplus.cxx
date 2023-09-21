@@ -43,7 +43,7 @@ using namespace o2::aod::hf_cand_bplus;
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
-  Produces<aod::HfCandBplusBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBplusBase> rowCandidateBase;     // table defined in CandidateReconstructionTables.h
   Produces<aod::HfCandBplusProngs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing parameters
