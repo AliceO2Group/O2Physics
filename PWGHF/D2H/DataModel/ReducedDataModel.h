@@ -209,6 +209,29 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<2>);
 
+// Beauty candidates prongs
+namespace hf_cand_b0_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+} // namespace hf_cand_b0_reduced
+
+DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
+                  hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
+
+using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
+
+namespace hf_cand_bplus_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+} // namespace hf_cand_bplus_reduced
+
+DECLARE_SOA_TABLE(HfRedBplusProngs, "AOD", "HFREDBPPRONG",
+                  hf_cand_bplus_reduced::Prong0Id, hf_cand_bplus_reduced::Prong1Id);
+
+using HfRedCandBplus = soa::Join<HfCandBplusExt, HfRedBplusProngs>;
+
 namespace hf_b0_mc
 {
 // MC Rec
@@ -225,16 +248,6 @@ DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's pro
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
 } // namespace hf_b0_mc
 
-namespace hf_cand_b0_reduced
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-} // namespace hf_cand_b0_reduced
-
-DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
-                  hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
-
-using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with reconstructed MC information on DPi(<-B0) pairs for reduced workflow
@@ -292,8 +305,8 @@ DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with reconstructed MC information on D0Pi(<-B+) pairs for reduced workflow
-                  hf_cand_bplus::Prong0Id,
-                  hf_track_index::Prong1Id,
+                  hf_cand_bplus_reduced::Prong0Id,
+                  hf_cand_bplus_reduced::Prong1Id,
                   hf_cand_bplus::FlagMcMatchRec,
                   hf_bplus_mc::PtMother);
 
@@ -320,11 +333,13 @@ namespace hf_cand_bplus_config
 {
 DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int8_t);       //! Flag to filter selected D0 mesons
 DECLARE_SOA_COLUMN(MySelectionFlagD0bar, mySelectionFlagD0bar, int8_t); //! Flag to filter selected D0 mesons
+DECLARE_SOA_COLUMN(MyInvMassWindowD0Pi, myInvMassWindowD0Pi, float);    //! Half-width of the Bplus invariant-mass window in GeV/c2
 } // namespace hf_cand_bplus_config
 
 DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with configurables information for reduced workflow
                   hf_cand_bplus_config::MySelectionFlagD0,
-                  hf_cand_bplus_config::MySelectionFlagD0bar);
+                  hf_cand_bplus_config::MySelectionFlagD0bar,
+                  hf_cand_bplus_config::MyInvMassWindowD0Pi);
 } // namespace aod
 
 namespace soa

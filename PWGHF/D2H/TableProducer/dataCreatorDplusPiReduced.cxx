@@ -94,7 +94,6 @@ struct HfDataCreatorDplusPiReduced {
   double massPi{0.};
   double massD{0.};
   double massB0{0.};
-  double invMassD{0.};
   double invMass2DPi{0.};
   double invMass2DPiMin{0.};
   double invMass2DPiMax{0.};
@@ -320,7 +319,7 @@ struct HfDataCreatorDplusPiReduced {
           }
           registry.fill(HIST("hPtPion"), trackPion.pt());
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-          // compute invariant mass and apply selection
+          // compute invariant mass square and apply selection
           invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
