@@ -31,8 +31,8 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity
-DECLARE_SOA_COLUMN(MultTPCtemp, multTPCtemp, float); //! TPC multiplicity (temporal)
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity percentile (run2: V0M, run3: FT0A/C/M)
+DECLARE_SOA_COLUMN(MultFT0, multFT0, int);           //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float);   //! Spherocity of the event
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);     //! Magnetic field
 } // namespace resocollision
@@ -42,7 +42,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   collision::PosY,
                   collision::PosZ,
                   resocollision::MultV0M,
-                  resocollision::MultTPCtemp,
+                  resocollision::MultFT0,
                   resocollision::Spherocity,
                   resocollision::BMagField,
                   timestamp::Timestamp);
@@ -108,6 +108,7 @@ DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first D
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 DECLARE_SOA_COLUMN(DaughterID1, daughterId1, int);   //! Id of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterID2, daughterId2, int);   //! Id of the second Daughter particle
+DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles with the same mother
 DECLARE_SOA_COLUMN(BachTrkID, bachtrkID, int);       //! Id of the bach track from cascade
 DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
 } // namespace resodaughter
@@ -191,6 +192,7 @@ DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
                   mcparticle::PdgCode,
                   resodaughter::MothersId,
                   resodaughter::MotherPDG,
+                  resodaughter::SiblingIds,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator);
 using ResoMCTrack = ResoMCTracks::iterator;

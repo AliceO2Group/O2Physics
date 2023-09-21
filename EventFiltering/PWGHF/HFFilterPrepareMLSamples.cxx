@@ -57,7 +57,7 @@ struct HfFilterPrepareMlSamples { // Main struct
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int currentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -70,7 +70,7 @@ struct HfFilterPrepareMlSamples { // Main struct
 
   void process(aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
-               aod::McParticles const& particlesMC,
+               aod::McParticles const& mcParticles,
                soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
                BigTracksMCPID const&,
                aod::BCsWithTimestamps const&)
@@ -116,10 +116,10 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       // D0(bar) → π± K∓
       bool isInCorrectColl{false};
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        flag = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         isInCorrectColl = (collision.mcCollisionId() == particle.mcCollisionId());
         if (flag < RecoDecay::OriginType::Prompt) {
           continue;
@@ -197,27 +197,27 @@ struct HfFilterPrepareMlSamples { // Main struct
       int8_t channel = -1;
 
       // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec >= 0) {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kDs;
         }
       }
       if (indexRec < 0) {
         // Λc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kLc;
         }
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kXic;
         }
@@ -225,8 +225,8 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       bool isInCorrectColl{false};
       if (indexRec > -1) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        flag = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         isInCorrectColl = (collision.mcCollisionId() == particle.mcCollisionId());
         if (flag < RecoDecay::OriginType::Prompt) {
           continue;

@@ -17,7 +17,6 @@
 
 #include <iostream>
 #include <array>
-using namespace std;
 #include <TString.h>
 #include <THashList.h>
 #include <TObject.h>
@@ -88,20 +87,16 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PsiPair"))->Fill(abs(obj.psipair()), obj.mGammaKFSV());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PhiV"))->Fill(obj.phiv(), obj.mGammaKFSV());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_PsiPair_PhiV"))->Fill(obj.phiv(), abs(obj.psipair()));
-
-    float phi_recalc = atan2(obj.recalculatedVtxY(), obj.recalculatedVtxX());
-    float r3d = sqrt(pow(obj.recalculatedVtxX(), 2) + pow(obj.recalculatedVtxY(), 2) + pow(obj.recalculatedVtxZ(), 2));
-    float eta_cp = std::atanh(obj.recalculatedVtxZ() / r3d);
-    double value_cp[3] = {obj.recalculatedVtxR(), phi_recalc < 0 ? phi_recalc + TMath::TwoPi() : phi_recalc, eta_cp}; // r, phi, eta
-    reinterpret_cast<THnSparseF*>(list->FindObject("hs_conv_point"))->Fill(value_cp);
   } else if constexpr (htype == EMHistType::kV0Leg) {
 
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXY(), obj.dcaZ());
-    reinterpret_cast<TH1F*>(list->FindObject("hNclsTPC"))->Fill(obj.tpcNClsFound());
+    reinterpret_cast<TH2F*>(list->FindObject("hNclsTPC_Pt"))->Fill(obj.pt(), obj.tpcNClsFound());
+    reinterpret_cast<TH2F*>(list->FindObject("hNcrTPC_Pt"))->Fill(obj.pt(), obj.tpcNClsCrossedRows());
     reinterpret_cast<TH1F*>(list->FindObject("hNclsITS"))->Fill(obj.itsNCls());
+    reinterpret_cast<TH1F*>(list->FindObject("hNclsTPC"))->Fill(obj.tpcNClsFound());
     reinterpret_cast<TH1F*>(list->FindObject("hNcrTPC"))->Fill(obj.tpcNClsCrossedRows());
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcr2Nf"))->Fill(obj.tpcCrossedRowsOverFindableCls());
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcls2Nf"))->Fill(obj.tpcFoundOverFindableCls());

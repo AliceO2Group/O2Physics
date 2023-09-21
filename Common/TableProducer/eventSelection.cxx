@@ -10,9 +10,6 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/ConfigParamSpec.h"
-using namespace o2;
-using namespace o2::framework;
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -27,7 +24,9 @@ using namespace o2::framework;
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "TH1D.h"
 
-using namespace evsel;
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::aod::evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;

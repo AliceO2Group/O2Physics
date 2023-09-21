@@ -34,9 +34,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// using McTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
 using McTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 using McDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>;
+// using MatchedMcDJets = soa::Filtered<soa::Join<McDJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 using McPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>;
 
 struct JetFragmentation {
@@ -44,6 +44,9 @@ struct JetFragmentation {
 
   std::vector<int> pdgVector = {211, 321, 2212, 111, 130, 310, 311, 3122};
   std::vector<std::string> hadronVector = {"#pi^{#pm}", "#it{K}^{#pm}", "#it{p}^{#pm}", "#pi^{0}", "#it{K}^{0}_{L}", "#it{K}^{0}_{S}", "#it{K}^{0}", "#Lambda^{0}"};
+
+  Configurable<float> matchedDetJetEtaMin{"matchedDetJetEtaMin", -0.5, "minimum matchedDetJet eta"};
+  Configurable<float> matchedDetJetEtaMax{"matchedDetJetEtaMax", 0.5, "maximum matchedDetJet eta"};
 
   // Binning
   ConfigurableAxis binJetPt{"binJetPt", {40, 0.f, 200.f}, ""};
@@ -55,8 +58,8 @@ struct JetFragmentation {
   ConfigurableAxis binPDG{"binPDG", {static_cast<double>(pdgVector.size()), -0.5f, static_cast<double>(pdgVector.size()) - 0.5f}, ""};
   ConfigurableAxis binVtxZ{"binVtxZ", {200, -20, 20}, ""};
 
-  ConfigurableAxis binDiff{"binDiff", {50, -5.f, 5.f}, ""};
-  ConfigurableAxis binRatio{"binRatio", {100, 0.f, 10.f}, ""};        // Ratio of pt, eta, phi
+  ConfigurableAxis binDiff{"binDiff", {51, -5.5f, 5.5f}, ""};
+  ConfigurableAxis binRatio{"binRatio", {100, -0.5f, 9.5f}, ""};      // Ratio of pt, eta, phi
   ConfigurableAxis binMatchDist{"binMatchDist", {10, 0.f, 0.5f}, ""}; // Distance between matched jets
 
   ConfigurableAxis binCount{"binCount", {1, .5f, 1.5f}, ""};
@@ -64,6 +67,7 @@ struct JetFragmentation {
   ConfigurableAxis trackCount{"trackCount", {100, -.5f, 99.5f}, ""};
 
   Preslice<McPJets> perMcPJet = aod::jet::mcCollisionId;
+  // Filter matchedDetJetFilter = (aod::chargedmcdetectorleveljets::eta >= matchedDetJetEtaMin && aod::chargedmcdetectorleveljets::eta <= matchedDetJetEtaMax);
 
   void init(InitContext& initContext)
   {
@@ -89,82 +93,82 @@ struct JetFragmentation {
     AxisSpec matchDistAxis = {binMatchDist, "#Delta"};
 
     // Data
-    registry.add("collision/collisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
+    registry.add("data/collision/collisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
 
-    registry.add("tracks/trackPtEtaPhi", "trackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("data/tracks/trackPtEtaPhi", "trackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
 
-    registry.add("jets/jetPtEtaPhi", "Jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {jetPtAxis, etaAxis, phiAxis});
-    registry.add("jets/jetPtTrackPt", "Jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {jetPtAxis, trackPtAxis});
-    registry.add("jets/jetTrackPtEtaPhi", "Tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
-    registry.add("jets/jetPtTrackProj", "Jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {jetPtAxis, zAxis});
-    registry.add("jets/jetPtFrag", "Jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {jetPtAxis, zAxis});
+    registry.add("data/jets/jetPtEtaPhi", "Jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {jetPtAxis, etaAxis, phiAxis});
+    registry.add("data/jets/jetPtTrackPt", "Jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {jetPtAxis, trackPtAxis});
+    registry.add("data/jets/jetTrackPtEtaPhi", "Tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("data/jets/jetPtTrackProj", "Jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {jetPtAxis, zAxis});
+    registry.add("data/jets/jetPtFrag", "Jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {jetPtAxis, zAxis});
 
     // MC particle level
-    registry.add("collision/partCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
+    registry.add("particle-level/collision/partCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
 
-    registry.add("tracks/partTrackPtEtaPhi", "partTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("particle-level/tracks/partTrackPtEtaPhi", "partTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
 
-    registry.add("jets/partJetPtEtaPhi", "Particle level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {partJetPtAxis, partEtaAxis, partPhiAxis});
-    registry.add("jets/partJetPtTrackPt", "Particle level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {partJetPtAxis, trackPtAxis});
-    registry.add("jets/partJetTrackPtEtaPhi", "Particle level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, partEtaAxis, partPhiAxis});
-    registry.add("jets/partJetPtTrackProj", "Particle level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {partJetPtAxis, partZAxis});
-    registry.add("jets/partJetPtFrag", "Particle level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("particle-level/jets/partJetPtEtaPhi", "Particle level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {partJetPtAxis, partEtaAxis, partPhiAxis});
+    registry.add("particle-level/jets/partJetPtTrackPt", "Particle level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {partJetPtAxis, trackPtAxis});
+    registry.add("particle-level/jets/partJetTrackPtEtaPhi", "Particle level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, partEtaAxis, partPhiAxis});
+    registry.add("particle-level/jets/partJetPtTrackProj", "Particle level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("particle-level/jets/partJetPtFrag", "Particle level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {partJetPtAxis, partZAxis});
 
     // MC detector level
-    registry.add("collision/detCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
+    registry.add("detector-level/collision/detCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
 
-    registry.add("tracks/detTrackPtEtaPhi", "detTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("detector-level/tracks/detTrackPtEtaPhi", "detTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
 
-    registry.add("jets/detJetPtEtaPhi", "Detector level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {detJetPtAxis, detEtaAxis, detPhiAxis});
-    registry.add("jets/detJetPtTrackPt", "Detector level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {detJetPtAxis, trackPtAxis});
-    registry.add("jets/detJetTrackPtEtaPhi", "Detector level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, detEtaAxis, detPhiAxis});
-    registry.add("jets/detJetPtTrackProj", "Detector level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {detJetPtAxis, detZAxis});
-    registry.add("jets/detJetPtFrag", "Detector level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("detector-level/jets/detJetPtEtaPhi", "Detector level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {detJetPtAxis, detEtaAxis, detPhiAxis});
+    registry.add("detector-level/jets/detJetPtTrackPt", "Detector level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {detJetPtAxis, trackPtAxis});
+    registry.add("detector-level/jets/detJetTrackPtEtaPhi", "Detector level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, detEtaAxis, detPhiAxis});
+    registry.add("detector-level/jets/detJetPtTrackProj", "Detector level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("detector-level/jets/detJetPtFrag", "Detector level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {detJetPtAxis, detZAxis});
 
     // MC particle-detector level matching
-    registry.add("collision/matchCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
+    registry.add("matching/collision/matchCollisionVtxZ", "Collision vertex z (cm)", HistType::kTH1F, {binVtxZ});
 
-    registry.add("tracks/matchDetTrackPtEtaPhi", "matchDetTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
-    registry.add("tracks/matchPartTrackPtEtaPhi", "matchPartTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
-    registry.add("tracks/matchDetTrackPtPartTrackPt", "matchDetTrackPtPartTrackPt", HistType::kTH2F, {trackPtAxis, trackPtAxis});
-    registry.add("tracks/matchDetTrackEtaPartTrackEta", "matchDetTrackEtaPartTrackEta", HistType::kTH2F, {etaAxis, etaAxis});
-    registry.add("tracks/matchDetTrackPhiPartTrackPhi", "matchDetTrackPhiPartTrackPhi", HistType::kTH2F, {phiAxis, phiAxis});
-    registry.add("tracks/trackResolutionPt", "trackResolutionPt; #Delta #it{p}_{T}^{tr}", HistType::kTH2F, {trackPtAxis, diffAxis});
-    registry.add("tracks/trackResolutionEta", "trackResolutionEta; #Delta #eta", HistType::kTH2F, {etaAxis, diffAxis});
-    registry.add("tracks/trackResolutionPhi", "trackResolutionPhi; #Delta #phi", HistType::kTH2F, {phiAxis, diffAxis});
+    registry.add("matching/tracks/matchDetTrackPtEtaPhi", "matchDetTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("matching/tracks/matchPartTrackPtEtaPhi", "matchPartTrackPtEtaPhi", HistType::kTH3F, {trackPtAxis, etaAxis, phiAxis});
+    registry.add("matching/tracks/matchDetTrackPtPartTrackPt", "matchDetTrackPtPartTrackPt", HistType::kTH2F, {trackPtAxis, trackPtAxis});
+    registry.add("matching/tracks/matchDetTrackEtaPartTrackEta", "matchDetTrackEtaPartTrackEta", HistType::kTH2F, {etaAxis, etaAxis});
+    registry.add("matching/tracks/matchDetTrackPhiPartTrackPhi", "matchDetTrackPhiPartTrackPhi", HistType::kTH2F, {phiAxis, phiAxis});
+    registry.add("matching/tracks/trackResolutionPt", "trackResolutionPt; #Delta #it{p}_{T}^{tr}", HistType::kTH2F, {trackPtAxis, diffAxis});
+    registry.add("matching/tracks/trackResolutionEta", "trackResolutionEta; #Delta #eta", HistType::kTH2F, {etaAxis, diffAxis});
+    registry.add("matching/tracks/trackResolutionPhi", "trackResolutionPhi; #Delta #phi", HistType::kTH2F, {phiAxis, diffAxis});
 
     // Detector level jets with a match
-    registry.add("jets/matchDetJetPtEtaPhi", "Matched detector level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {detJetPtAxis, detEtaAxis, detPhiAxis});
-    registry.add("jets/matchDetJetPtTrackPt", "Matched detector level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {detJetPtAxis, trackPtAxis});
-    registry.add("jets/matchDetJetTrackPtEtaPhi", "Matched detector level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, detEtaAxis, detPhiAxis});
-    registry.add("jets/matchDetJetPtTrackProj", "Matched detector level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {detJetPtAxis, detZAxis});
-    registry.add("jets/matchDetJetPtFrag", "Matched detector level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("matching/jets/matchDetJetPtEtaPhi", "Matched detector level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {detJetPtAxis, detEtaAxis, detPhiAxis});
+    registry.add("matching/jets/matchDetJetPtTrackPt", "Matched detector level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {detJetPtAxis, trackPtAxis});
+    registry.add("matching/jets/matchDetJetTrackPtEtaPhi", "Matched detector level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, detEtaAxis, detPhiAxis});
+    registry.add("matching/jets/matchDetJetPtTrackProj", "Matched detector level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("matching/jets/matchDetJetPtFrag", "Matched detector level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {detJetPtAxis, detZAxis});
     // Particle level jets with a match
-    registry.add("jets/matchPartJetPtEtaPhi", "Matched particle level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {partJetPtAxis, partEtaAxis, partPhiAxis});
-    registry.add("jets/matchPartJetPtTrackPt", "Matched particle level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {partJetPtAxis, trackPtAxis});
-    registry.add("jets/matchPartJetTrackPtEtaPhi", "Matched particle level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, partEtaAxis, partPhiAxis});
-    registry.add("jets/matchPartJetPtTrackProj", "Matched particle level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {partJetPtAxis, partZAxis});
-    registry.add("jets/matchPartJetPtFrag", "Matched particle level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("matching/jets/matchPartJetPtEtaPhi", "Matched particle level jet #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {partJetPtAxis, partEtaAxis, partPhiAxis});
+    registry.add("matching/jets/matchPartJetPtTrackPt", "Matched particle level jet #it{p}_{T}, track #it{p}_{T};#it{p}_{T}^{jet};#it{p}_{T}^{track}", HistType::kTH2F, {partJetPtAxis, trackPtAxis});
+    registry.add("matching/jets/matchPartJetTrackPtEtaPhi", "Matched particle level tracks in jets #it{p}_{T}, #eta, #phi;#it{p}_{T};#eta;#phi", HistType::kTH3F, {trackPtAxis, partEtaAxis, partPhiAxis});
+    registry.add("matching/jets/matchPartJetPtTrackProj", "Matched particle level jet #it{p}_{T}, #it{z}; #it{p}_{T}; #it{z}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("matching/jets/matchPartJetPtFrag", "Matched particle level jet #it{p}_{T}, #it{p}_{T,jet}/#it{p}_{T,tr}; #it{p}_{T}; #it{p}_{T,jet}/#it{p}_{T,tr}", HistType::kTH2F, {partJetPtAxis, partZAxis});
     // Combined information of matched jets
-    registry.add("jets/matchDetJetPtPartJetPt", "matchDetJetPtPartJetPt; #it{p}_{T}^{jet, det}; #it{p}_{T}^{jet, part}", HistType::kTH2F, {detJetPtAxis, partJetPtAxis});
-    registry.add("jets/matchDetJetEtaPartJetEta", "matchDetJetEtaPartJetEta; #eta^{jet, det}; #eta^{jet, part}", HistType::kTH2F, {detEtaAxis, partEtaAxis});
-    registry.add("jets/matchDetJetPhiPartJetPhi", "matchDetJetPhiPartJetPhi; #phi^{jet, det}; #phi^{jet, part}", HistType::kTH2F, {detPhiAxis, partPhiAxis});
-    registry.add("jets/matchPartJetPtResolutionPt", "#Delta = (#it{p}_{T}^{jet, part} - #it{p}_{T}^{jet, det}) / #it{p}_{T}^{jet, part}; #it{p}_{T}^{jet, part}; #Delta", HistType::kTH2F, {partJetPtAxis, diffAxis});
-    registry.add("jets/matchPartJetPtResolutionEta", "(#eta^{jet, part} - #eta^{jet, det}) / #eta^{jet, part}; #eta^{jet, part}; #Delta", HistType::kTH3F, {partJetPtAxis, partEtaAxis, diffAxis});
-    registry.add("jets/matchPartJetPtResolutionPhi", "(#phi^{jet, part} - #phi^{jet, det}) / #phi^{jet, part}; #phi^{jet, part}; #Delta", HistType::kTH3F, {partJetPtAxis, partPhiAxis, diffAxis});
-    registry.add("jets/matchPartJetPtResolutionTrackProj", "Resolution #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTH3F, {partJetPtAxis, partZAxis, diffAxis});
-    registry.add("jets/matchPartJetPtResolutionChargeFrag", "Resolution #it{p}_{T}^{tr, part} / #it{p}_{T}^{jet, part}", HistType::kTH3F, {partJetPtAxis, partZAxis, diffAxis});
-    registry.add("jets/matchPartJetPtMatchDist", "matchJetMatchDist; #it{p}_{T}^{part}; #Delta", HistType::kTH2F, {partJetPtAxis, matchDistAxis});
-    registry.add("jets/matchPartJetPtEnergyScale", "jetEnergyScale; #it{p}_{T}^{part}; #it{p}_{T}^{part}/#it{p}_{T}^{det}", HistType::kTH2F, {partJetPtAxis, ratioAxis});
+    registry.add("matching/jets/matchDetJetPtPartJetPt", "matchDetJetPtPartJetPt; #it{p}_{T}^{jet, det}; #it{p}_{T}^{jet, part}", HistType::kTH2F, {detJetPtAxis, partJetPtAxis});
+    registry.add("matching/jets/matchPartJetPtDetJetEtaPartJetEta", "matchPartJetPtDetJetEtaPartJetEta; #it{p}_{T}^{jet, part}; #eta^{jet, det}; #eta^{jet, part}", HistType::kTH3F, {partJetPtAxis, detEtaAxis, partEtaAxis});
+    registry.add("matching/jets/matchPartJetPtDetJetPhiPartJetPhi", "matchPartJetPtDetJetPhiPartJetPhi; #it{p}_{T}^{jet, part}; #phi^{jet, det}; #phi^{jet, part}", HistType::kTH3F, {partJetPtAxis, detPhiAxis, partPhiAxis});
+    registry.add("matching/jets/matchPartJetPtResolutionPt", "#Delta = (#it{p}_{T}^{jet, part} - #it{p}_{T}^{jet, det}) / #it{p}_{T}^{jet, part}; #it{p}_{T}^{jet, part}; #Delta", HistType::kTH2F, {partJetPtAxis, diffAxis});
+    registry.add("matching/jets/matchPartJetPtResolutionEta", "(#eta^{jet, part} - #eta^{jet, det}); #eta^{jet, part}; #Delta", HistType::kTH3F, {partJetPtAxis, partEtaAxis, diffAxis});
+    registry.add("matching/jets/matchPartJetPtResolutionPhi", "(#phi^{jet, part} - #phi^{jet, det}); #phi^{jet, part}; #Delta", HistType::kTH3F, {partJetPtAxis, partPhiAxis, diffAxis});
+    registry.add("matching/jets/matchPartJetPtResolutionTrackProj", "Resolution #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTH3F, {partJetPtAxis, partZAxis, diffAxis});
+    registry.add("matching/jets/matchPartJetPtResolutionChargeFrag", "Resolution #it{p}_{T}^{tr, part} / #it{p}_{T}^{jet, part}", HistType::kTH3F, {partJetPtAxis, partZAxis, diffAxis});
+    registry.add("matching/jets/matchPartJetPtMatchDist", "matchJetMatchDist; #it{p}_{T}^{part}; #Delta", HistType::kTH2F, {partJetPtAxis, matchDistAxis});
+    registry.add("matching/jets/matchPartJetPtEnergyScale", "jetEnergyScale; #it{p}_{T}^{part}; #it{p}_{T}^{part}/#it{p}_{T}^{det}", HistType::kTH2F, {partJetPtAxis, ratioAxis});
 
     // Response matrix, fakes, misses
-    registry.add("jets/matchDetJetPtTrackProjPartJetPtTrackProj", "Matched; #it{p}_{T}^{jet, det}; #it{p}^{proj, det} / #it{p}^{jet, det}; #it{p}_{T}^{jet, part}; #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTHnSparseF, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis});
-    registry.add("jets/fakeDetJetPtTrackProj", "Fakes; #it{p}_{T}^{jet, det}; #it{p}^{proj, det} / #it{p}^{jet, det}", HistType::kTH2F, {detJetPtAxis, detZAxis});
-    registry.add("jets/missPartJetPtTrackProj", "Misses; #it{p}_{T}^{jet, part}; #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("matching/jets/matchDetJetPtTrackProjPartJetPtTrackProj", "Matched; #it{p}_{T}^{jet, det}; #it{p}^{proj, det} / #it{p}^{jet, det}; #it{p}_{T}^{jet, part}; #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTHnSparseF, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis});
+    registry.add("matching/jets/fakeDetJetPtTrackProj", "Fakes; #it{p}_{T}^{jet, det}; #it{p}^{proj, det} / #it{p}^{jet, det}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("matching/jets/missPartJetPtTrackProj", "Misses; #it{p}_{T}^{jet, part}; #it{p}^{proj, part} / #it{p}^{jet, part}", HistType::kTH2F, {partJetPtAxis, partZAxis});
 
-    registry.add("jets/matchDetJetPtFragPartJetPtFrag", "Matched; #it{p}_{T}^{jet, det}; #it{p}_{T}^{det} / #it{p}_{T}^{jet, det}; #it{p}_{T}^{jet, part}; #it{p}_{T}^{part} / #it{p}_{T}^{jet, part}", HistType::kTHnSparseF, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis});
-    registry.add("jets/fakeDetJetPtFrag", "Fakes; #it{p}_{T}^{jet, det}; #it{p}_{T}^{det} / #it{p}_{T}^{jet, det}", HistType::kTH2F, {detJetPtAxis, detZAxis});
-    registry.add("jets/missPartJetPtFrag", "Misses; #it{p}_{T}^{jet, part}; #it{p}_{T}^{part} / #it{p}_{T}^{jet, part}", HistType::kTH2F, {partJetPtAxis, partZAxis});
+    registry.add("matching/jets/matchDetJetPtFragPartJetPtFrag", "Matched; #it{p}_{T}^{jet, det}; #it{p}_{T}^{det} / #it{p}_{T}^{jet, det}; #it{p}_{T}^{jet, part}; #it{p}_{T}^{part} / #it{p}_{T}^{jet, part}", HistType::kTHnSparseF, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis});
+    registry.add("matching/jets/fakeDetJetPtFrag", "Fakes; #it{p}_{T}^{jet, det}; #it{p}_{T}^{det} / #it{p}_{T}^{jet, det}", HistType::kTH2F, {detJetPtAxis, detZAxis});
+    registry.add("matching/jets/missPartJetPtFrag", "Misses; #it{p}_{T}^{jet, part}; #it{p}_{T}^{part} / #it{p}_{T}^{jet, part}", HistType::kTH2F, {partJetPtAxis, partZAxis});
 
     // Bookkeeping
     registry.add("partCount", "partCount", HistType::kTH1I, {binCount});
@@ -197,21 +201,21 @@ struct JetFragmentation {
     registry.fill(HIST("detnJetnTrack"), nJets, nTracks);
     for (const auto& track : tracks) {
       if (track.pt() > 0.1) {
-        registry.fill(HIST("tracks/detTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("detector-level/tracks/detTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
       }
     }
     for (const auto& jet : jets) {
-      registry.fill(HIST("jets/detJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+      registry.fill(HIST("detector-level/jets/detJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
       for (const auto& track : jet.tracks_as<aod::Tracks>()) {
         double chargeFrag = -1., trackProj = -1.;
         trackProj = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         trackProj /= (jet.p() * jet.p());
         chargeFrag = track.pt() / jet.pt();
 
-        registry.fill(HIST("jets/detJetPtTrackPt"), jet.pt(), track.pt());
-        registry.fill(HIST("jets/detJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
-        registry.fill(HIST("jets/detJetPtFrag"), jet.pt(), chargeFrag);
-        registry.fill(HIST("jets/detJetPtTrackProj"), jet.pt(), trackProj);
+        registry.fill(HIST("detector-level/jets/detJetPtTrackPt"), jet.pt(), track.pt());
+        registry.fill(HIST("detector-level/jets/detJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("detector-level/jets/detJetPtFrag"), jet.pt(), chargeFrag);
+        registry.fill(HIST("detector-level/jets/detJetPtTrackProj"), jet.pt(), trackProj);
       }
     }
   }
@@ -226,21 +230,21 @@ struct JetFragmentation {
     registry.fill(HIST("partnJetnTrack"), nJets, nTracks);
     for (const auto& particle : particles) {
       if (particle.pt() > 0.1) {
-        registry.fill(HIST("tracks/partTrackPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
+        registry.fill(HIST("particle-level/tracks/partTrackPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
       }
     }
     for (const auto& jet : jets) {
-      registry.fill(HIST("jets/partJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+      registry.fill(HIST("particle-level/jets/partJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
       for (const auto& track : jet.tracks_as<aod::McParticles>()) {
         double chargeFrag = -1., trackProj = -1.;
         trackProj = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         trackProj /= (jet.p() * jet.p());
         chargeFrag = track.pt() / jet.pt();
 
-        registry.fill(HIST("jets/partJetPtTrackPt"), jet.pt(), track.pt());
-        registry.fill(HIST("jets/partJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
-        registry.fill(HIST("jets/partJetPtFrag"), jet.pt(), chargeFrag);
-        registry.fill(HIST("jets/partJetPtTrackProj"), jet.pt(), trackProj);
+        registry.fill(HIST("particle-level/jets/partJetPtTrackPt"), jet.pt(), track.pt());
+        registry.fill(HIST("particle-level/jets/partJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("particle-level/jets/partJetPtFrag"), jet.pt(), chargeFrag);
+        registry.fill(HIST("particle-level/jets/partJetPtTrackProj"), jet.pt(), trackProj);
       }
     }
   }
@@ -256,21 +260,21 @@ struct JetFragmentation {
     registry.fill(HIST("nJetnTrack"), nJets, nTracks);
     for (const auto& track : tracks) {
       if (track.pt() > 0.1) {
-        registry.fill(HIST("tracks/trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("data/tracks/trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
       }
     }
     for (const auto& jet : jets) {
-      registry.fill(HIST("jets/jetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+      registry.fill(HIST("data/jets/jetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
       for (const auto& track : jet.tracks_as<aod::Tracks>()) {
         double chargeFrag = -1., trackProj = -1.;
         trackProj = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         trackProj /= (jet.p() * jet.p());
         chargeFrag = track.pt() / jet.pt();
 
-        registry.fill(HIST("jets/jetPtTrackPt"), jet.pt(), track.pt());
-        registry.fill(HIST("jets/jetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
-        registry.fill(HIST("jets/jetPtFrag"), jet.pt(), chargeFrag);
-        registry.fill(HIST("jets/jetPtTrackProj"), jet.pt(), trackProj);
+        registry.fill(HIST("data/jets/jetPtTrackPt"), jet.pt(), track.pt());
+        registry.fill(HIST("data/jets/jetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("data/jets/jetPtFrag"), jet.pt(), chargeFrag);
+        registry.fill(HIST("data/jets/jetPtTrackProj"), jet.pt(), trackProj);
       }
     }
   }
@@ -278,7 +282,7 @@ struct JetFragmentation {
 
   // Taken from jet-validation
   void processMcDP(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
-                   //  McDJets const& mcDetJets,
+                   //  MatchedMcDJets const& mcDetJets,
                    soa::Join<McDJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcDetJets,
                    McTracks const& tracks,
                    aod::McCollisions const& mcCollisions,
@@ -286,23 +290,25 @@ struct JetFragmentation {
                    aod::McParticles const& mcParticles)
   {
     for (const auto& detJet : mcDetJets) {
-      if (detJet.has_matchedJetGeo()) {
-        const auto& partJet = detJet.template matchedJetGeo_as<McPJets>();
+      if (detJet.eta() < matchedDetJetEtaMin || detJet.eta() > matchedDetJetEtaMax) {
+        continue; // TODO: should be done in filter
+      }
+      for (auto& partJet : detJet.template matchedJetGeo_as<McPJets>()) {
         double deltaEta = partJet.eta() - detJet.eta();
         double deltaPhi = partJet.phi() - detJet.phi();
         deltaPhi = CheckDphi(deltaPhi);
 
-        registry.fill(HIST("jets/matchDetJetPtEtaPhi"), detJet.pt(), detJet.eta(), detJet.phi());
-        registry.fill(HIST("jets/matchPartJetPtEtaPhi"), partJet.pt(), partJet.eta(), partJet.phi());
+        registry.fill(HIST("matching/jets/matchDetJetPtEtaPhi"), detJet.pt(), detJet.eta(), detJet.phi());
+        registry.fill(HIST("matching/jets/matchPartJetPtEtaPhi"), partJet.pt(), partJet.eta(), partJet.phi());
 
-        registry.fill(HIST("jets/matchPartJetPtMatchDist"), partJet.pt(), TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi));
-        registry.fill(HIST("jets/matchPartJetPtEnergyScale"), partJet.pt(), detJet.pt() / partJet.pt());
-        registry.fill(HIST("jets/matchDetJetPtPartJetPt"), detJet.pt(), partJet.pt());
-        registry.fill(HIST("jets/matchDetJetEtaPartJetEta"), detJet.eta(), partJet.eta());
-        registry.fill(HIST("jets/matchDetJetPhiPartJetPhi"), detJet.phi(), partJet.phi());
-        registry.fill(HIST("jets/matchPartJetPtResolutionPt"), partJet.pt(), (partJet.pt() - detJet.pt()) / partJet.pt());
-        registry.fill(HIST("jets/matchPartJetPtResolutionEta"), partJet.pt(), partJet.eta(), (partJet.eta() - detJet.eta()) / partJet.eta());
-        registry.fill(HIST("jets/matchPartJetPtResolutionPhi"), partJet.pt(), partJet.phi(), CheckDphi(partJet.phi() - detJet.phi()) / partJet.phi());
+        registry.fill(HIST("matching/jets/matchPartJetPtMatchDist"), partJet.pt(), TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi));
+        registry.fill(HIST("matching/jets/matchPartJetPtEnergyScale"), partJet.pt(), detJet.pt() / partJet.pt());
+        registry.fill(HIST("matching/jets/matchDetJetPtPartJetPt"), detJet.pt(), partJet.pt());
+        registry.fill(HIST("matching/jets/matchPartJetPtDetJetEtaPartJetEta"), partJet.pt(), detJet.eta(), partJet.eta());
+        registry.fill(HIST("matching/jets/matchPartJetPtDetJetPhiPartJetPhi"), partJet.pt(), detJet.phi(), partJet.phi());
+        registry.fill(HIST("matching/jets/matchPartJetPtResolutionPt"), partJet.pt(), (partJet.pt() - detJet.pt()));
+        registry.fill(HIST("matching/jets/matchPartJetPtResolutionEta"), partJet.pt(), partJet.eta(), (partJet.eta() - detJet.eta()));
+        registry.fill(HIST("matching/jets/matchPartJetPtResolutionPhi"), partJet.pt(), partJet.phi(), CheckDphi(partJet.phi() - detJet.phi()));
 
         for (const auto& track : detJet.tracks_as<McTracks>()) {
           bool isTrackMatched = false;
@@ -311,10 +317,10 @@ struct JetFragmentation {
           detTrackProj /= (detJet.p() * detJet.p());
           detChargeFrag = track.pt() / detJet.pt();
 
-          registry.fill(HIST("jets/matchDetJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
-          registry.fill(HIST("jets/matchDetJetPtTrackPt"), detJet.pt(), track.pt());
-          registry.fill(HIST("jets/matchDetJetPtTrackProj"), detJet.pt(), detTrackProj);
-          registry.fill(HIST("jets/matchDetJetPtFrag"), detJet.pt(), detChargeFrag);
+          registry.fill(HIST("matching/jets/matchDetJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("matching/jets/matchDetJetPtTrackPt"), detJet.pt(), track.pt());
+          registry.fill(HIST("matching/jets/matchDetJetPtTrackProj"), detJet.pt(), detTrackProj);
+          registry.fill(HIST("matching/jets/matchDetJetPtFrag"), detJet.pt(), detChargeFrag);
 
           for (const auto& particle : partJet.tracks_as<aod::McParticles>()) {
             if (track.has_mcParticle() && particle.globalIndex() == track.template mcParticle_as<aod::McParticles>().globalIndex()) {
@@ -324,32 +330,33 @@ struct JetFragmentation {
               partTrackProj /= (partJet.p() * partJet.p());
               partChargeFrag = particle.pt() / partJet.pt();
 
-              registry.fill(HIST("jets/matchPartJetTrackPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
-              registry.fill(HIST("jets/matchPartJetPtTrackPt"), partJet.pt(), particle.pt());
-              registry.fill(HIST("jets/matchPartJetPtTrackProj"), partJet.pt(), partTrackProj);
-              registry.fill(HIST("jets/matchPartJetPtFrag"), partJet.pt(), partChargeFrag);
+              registry.fill(HIST("matching/jets/matchPartJetTrackPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
+              registry.fill(HIST("matching/jets/matchPartJetPtTrackPt"), partJet.pt(), particle.pt());
+              registry.fill(HIST("matching/jets/matchPartJetPtTrackProj"), partJet.pt(), partTrackProj);
+              registry.fill(HIST("matching/jets/matchPartJetPtFrag"), partJet.pt(), partChargeFrag);
 
-              registry.fill(HIST("jets/matchPartJetPtResolutionTrackProj"), partJet.pt(), partTrackProj, (partTrackProj - detTrackProj) / partTrackProj);
-              registry.fill(HIST("jets/matchPartJetPtResolutionChargeFrag"), partJet.pt(), partChargeFrag, (partChargeFrag - detChargeFrag) / partChargeFrag);
+              registry.fill(HIST("matching/jets/matchPartJetPtResolutionTrackProj"), partJet.pt(), partTrackProj, (partTrackProj - detTrackProj));
+              registry.fill(HIST("matching/jets/matchPartJetPtResolutionChargeFrag"), partJet.pt(), partChargeFrag, (partChargeFrag - detChargeFrag));
               // Response
-              registry.fill(HIST("jets/matchDetJetPtTrackProjPartJetPtTrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj);
-              registry.fill(HIST("jets/matchDetJetPtFragPartJetPtFrag"), detJet.pt(), detChargeFrag, partJet.pt(), partChargeFrag);
+              registry.fill(HIST("matching/jets/matchDetJetPtTrackProjPartJetPtTrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj);
+              registry.fill(HIST("matching/jets/matchDetJetPtFragPartJetPtFrag"), detJet.pt(), detChargeFrag, partJet.pt(), partChargeFrag);
               break; // No need to inspect other particles
             }        // if track has mcParticle and particle is in matched jet
           }          // for particle in matched partJet
           if (!isTrackMatched) {
-            registry.fill(HIST("jets/fakeDetJetPtTrackProj"), detJet.pt(), detTrackProj);
-            registry.fill(HIST("jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
+            registry.fill(HIST("matching/jets/fakeDetJetPtTrackProj"), detJet.pt(), detTrackProj);
+            registry.fill(HIST("matching/jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
           } // if track is not matched
         }   // for detJet tracks
-      } else if (!detJet.has_matchedJetGeo()) {
+      }
+      if (!detJet.has_matchedJetGeo()) {
         for (const auto& track : detJet.tracks_as<McTracks>()) {
           double detChargeFrag = -1., detTrackProj = -1.;
           detTrackProj = track.px() * detJet.px() + track.py() * detJet.py() + track.pz() * detJet.pz();
           detTrackProj /= (detJet.p() * detJet.p());
           detChargeFrag = track.pt() / detJet.pt();
-          registry.fill(HIST("jets/fakeDetJetPtTrackProj"), detJet.pt(), detTrackProj);
-          registry.fill(HIST("jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
+          registry.fill(HIST("matching/jets/fakeDetJetPtTrackProj"), detJet.pt(), detTrackProj);
+          registry.fill(HIST("matching/jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
         }
       } // if detJet does not have a match
     }   // for det jet

@@ -43,7 +43,7 @@ o2physics_add_dpl_workflow(lambdakzerotofpid
 
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascadelabelbuilder
@@ -80,6 +80,11 @@ o2physics_add_dpl_workflow(nucleustreecreator
 o2physics_add_dpl_workflow(nuclei-spectra
                     SOURCES nucleiSpectra.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lithium4analysis
+                    SOURCES lithium4analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Hypernuclei

@@ -28,6 +28,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
@@ -43,10 +44,24 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
-  float cXiMass = RecoDecay::getMassPDG(3312);
+  enum {
+    kECbegin = 0,
+    kINEL = 1,
+    kINEL10,
+    kINELg0,
+    kINELg010,
+    kTrig,
+    kINELg0Trig,
+    kINELg010Trig,
+    kECend,
+  };
+  SliceCache cache;
+  float cXiMass;
   int mRunNumber;
+  int multEstimator;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   Produces<aod::ResoCollisions> resoCollisions;
   Produces<aod::ResoTracks> reso2trks;
@@ -64,12 +79,20 @@ struct reso2initializer {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
-  Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null"};
+  Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
 
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
+  Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", false, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
+
+  // Track filter from tpcSkimsTableCreator
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+
+  // EventCorrection for MC
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1.0, 5.0, 10., 15., 20., 30., 40., 50., 70., 100.0, 105.}, "Binning of the centrality axis"};
+  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -20, -15, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3, 5, 7, 10, 15, 20}, "Mixing bins - z-vertex"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -116,8 +139,14 @@ struct reso2initializer {
 
   // Pre-filters for efficient process
   // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
+  Filter trackFilter = (trackSelection.node() == 0) || // from tpcSkimsTableCreator
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
-  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
+  Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                 // Eta cut
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
@@ -137,7 +166,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
@@ -286,21 +315,44 @@ struct reso2initializer {
     return true;
   }
 
+  // Centralicity estimator selection
+  template <typename ResoColl>
+  float CentEst(ResoColl ResoEvents)
+  {
+    float returnValue = -999.0;
+    switch (multEstimator) {
+      case 0:
+        returnValue = ResoEvents.centFT0M();
+      case 1:
+        returnValue = ResoEvents.centFT0C();
+      case 2:
+        returnValue = ResoEvents.centFT0A();
+      case 99:
+        returnValue = ResoEvents.centFV0A();
+      default:
+        returnValue = ResoEvents.centFT0M();
+    }
+    return returnValue;
+  }
+
   // Multiplicity estimator selection
   template <typename ResoColl>
   float MultEst(ResoColl ResoEvents)
   {
-    if (cfgMultName.value == "FT0M") {
-      return ResoEvents.centFT0M();
-    } else if (cfgMultName.value == "FT0C") {
-      return ResoEvents.centFT0C();
-    } else if (cfgMultName.value == "FT0A") {
-      return ResoEvents.centFT0A();
-    } else if (cfgMultName.value == "FV0M") {
-      return ResoEvents.multFV0M();
-    } else {
-      return ResoEvents.centFT0M();
+    float returnValue = -999.0;
+    switch (multEstimator) {
+      case 0:
+        returnValue = ResoEvents.multFT0M();
+      case 1:
+        returnValue = ResoEvents.multFT0C();
+      case 2:
+        returnValue = ResoEvents.multFT0A();
+      case 99:
+        returnValue = ResoEvents.multFV0A();
+      default:
+        returnValue = ResoEvents.multFT0M();
     }
+    return returnValue;
   }
 
   // Filter for all tracks
@@ -442,9 +494,24 @@ struct reso2initializer {
       }
       return lMothersPDGs;
     };
+    auto getSiblingsIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lSiblingsIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+        for (auto& lDaughter : lMother.template daughters_as<aod::McParticles>()) {
+          LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
+          if (lDaughter.globalIndex() != 0 && lDaughter.globalIndex() != theMcParticle.globalIndex()) {
+            lSiblingsIndeces.push_back(lDaughter.globalIndex());
+          }
+        }
+      }
+      return lSiblingsIndeces;
+    };
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
+    int siblings[2] = {0, 0};
+    std::vector<int> siblings_temp = {-1, -1};
     if (track.has_mcParticle()) {
       //
       // Get the MC particle
@@ -452,14 +519,20 @@ struct reso2initializer {
       if (particle.has_mothers()) {
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
+        siblings_temp = getSiblingsIndeces(particle);
       }
       while (mothers.size() > 2) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
+      if (siblings_temp.size() > 0)
+        siblings[0] = siblings_temp[0];
+      if (siblings_temp.size() > 1)
+        siblings[1] = siblings_temp[1];
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else {
@@ -467,6 +540,7 @@ struct reso2initializer {
       reso2mctracks(0,
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     0,
                     0);
     }
@@ -675,21 +749,36 @@ struct reso2initializer {
 
   void init(InitContext&)
   {
+    cXiMass = pdg->GetParticle(3312)->Mass();
     mRunNumber = 0;
     d_bz = 0;
+    // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
+    if (cfgMultName.value == "FT0M") {
+      multEstimator = 0;
+    } else if (cfgMultName.value == "FT0C") {
+      multEstimator = 1;
+    } else if (cfgMultName.value == "FT0A") {
+      multEstimator = 2;
+    } else if (cfgMultName.value == "FV0A") {
+      multEstimator = 99;
+    } else {
+      multEstimator = 0;
+    }
+
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
-
-    ccdb->setURL(ccdburl.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(cfgFatalWhenNull);
-    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+    if (!ConfBypassCCDB) {
+      ccdb->setURL(ccdburl.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(cfgFatalWhenNull);
+      uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+      ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+    }
 
     // QA histograms
+    AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (ConfFillQA) {
-      AxisSpec idxAxis = {8, 0, 8, "Index"};
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
@@ -697,10 +786,20 @@ struct reso2initializer {
       qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
     }
+    // MC histograms
+    if (doprocessMCGenCount) {
+      AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "", "event class"};
+      AxisSpec ZAxis = {CfgVtxBins, "zaxis"};
+      AxisSpec CentAxis = {binsCent, "centrality"};
+      qaRegistry.add("Event/totalEventGenMC", "totalEventGenMC", {HistType::kTHnSparseF, {EvtClassAxis}});
+      qaRegistry.add("Event/hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseF, {EvtClassAxis, ZAxis, CentAxis}});
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
   {
+    if (ConfBypassCCDB)
+      return;
     if (mRunNumber == bc.runNumber()) {
       return;
     }
@@ -753,14 +852,69 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
   }
   PROCESS_SWITCH(reso2initializer, processTrackData, "Process for data", true);
+
+  PresliceUnsorted<ResoEventsMC> perMcCol = aod::mccollisionlabel::mcCollisionId;
+  void processMCGenCount(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoEventsMC const& mcCols)
+  {
+    // Mainly referenced from dndeta_hi task in PWG-MM PAG-Multiplicity (Beomkyu Kim)
+    for (auto& mcCollision : mccollisions) { // Gen MC Event loop
+      auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      std::vector<Bool_t> bevtc(kECend, false);
+      bevtc[kINEL] = true;
+      auto posZ = mcCollision.posZ();
+      if (std::abs(posZ) < 10)
+        bevtc[kINEL10] = true;
+      for (auto& particle : particles) {
+        if (!particle.isPhysicalPrimary())
+          continue;
+        auto kp = pdg->GetParticle(particle.pdgCode());
+        if (kp != nullptr) {
+          if (std::abs(kp->Charge()) >= 3) {    // 3 quarks
+            if (std::abs(particle.eta()) < 1) { // INEL>0 definition
+              bevtc[kINELg0] = true;
+              break;
+            }
+          }
+        }
+      }
+      if (bevtc[kINELg0] && bevtc[kINEL10])
+        bevtc[kINELg010] = true;
+
+      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+        if (bevtc[ievtc])
+          qaRegistry.fill(HIST("Event/totalEventGenMC"), Double_t(ievtc));
+      }
+
+      auto collisionsample = mcCols.sliceBy(perMcCol, mcCollision.globalIndex());
+      float cent = -1.0;
+      if (collisionsample.size() != 1) { // Prevent no reconstructed collision case
+        cent = -1;
+      } else {
+        for (auto& collision : collisionsample) {
+          cent = CentEst(collision);
+          if (collision.sel8())
+            bevtc[kTrig] = true;
+        }
+      }
+      if (bevtc[kTrig] && bevtc[kINELg0])
+        bevtc[kINELg0Trig] = true;
+      if (bevtc[kINELg0Trig] && bevtc[kINEL10])
+        bevtc[kINELg010Trig] = true;
+      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+        if (bevtc[ievtc])
+          qaRegistry.fill(HIST("Event/hgenzvtx"), Double_t(ievtc), posZ, cent);
+      }
+    }
+  }
+  PROCESS_SWITCH(reso2initializer, processMCGenCount, "Process for MC", false);
 
   void processTrackV0Data(soa::Filtered<ResoEvents>::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
@@ -775,9 +929,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -799,9 +953,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -822,9 +976,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -848,9 +1002,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -876,9 +1030,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks

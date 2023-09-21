@@ -64,23 +64,40 @@ struct HfCandidateSelectorLcMl {
   Configurable<std::string> onnxFileLcToPiKPConf{"onnxFileLcToPiKPConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220818/PWGHF/o2/trigger/ModelHandler_onnx_LcToPKPi.onnx", "ONNX file for ML model for Lc+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
 
-  o2::ccdb::CcdbApi ccdbApi;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/Lc", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA)"};
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
+
   int dataTypeML;
+  o2::ccdb::CcdbApi ccdbApi;
   OnnxModel model;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
 
-  using TrksPID = soa::Join<aod::BigTracksPIDExtended, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+  using TracksSel = soa::Join<aod::TracksWDca,
+                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
+                              aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
-  void init(o2::framework::InitContext&)
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  void init(InitContext&)
   {
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorKaon = selectorPion;
+    selectorProton = selectorPion;
+
     AxisSpec bdtAxis{100, 0.f, 1.f};
-    if (applyML && activateQA != 0) {
+    if (applyML && activateQA) {
       registry.add<TH1>("hLcBDTScoreBkg", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("hLcBDTScorePrompt", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("hLcBDTScoreNonPrompt", "BDT nonprompt score distribution for Lc;BDT nonprompt score;counts", HistType::kTH1F, {bdtAxis});
@@ -121,41 +138,11 @@ struct HfCandidateSelectorLcMl {
     }
   }
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  void process(aod::HfCand3Prong const& candidates,
+               TracksSel const&)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
-
-  void
-    process(aod::HfCand3Prong const& candidates, TrksPID const&)
-  {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
-    TrackSelectorPID selectorProton(selectorPion);
-    selectorProton.setPDG(kProton);
-
     // looping over 3-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusLcToPKPi = 0;
@@ -166,17 +153,9 @@ struct HfCandidateSelectorLcMl {
         continue;
       }
 
-      auto trackPos1 = candidate.prong0_as<TrksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<TrksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<TrksPID>(); // positive daughter (negative for the antiparticles)
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-        continue;
-      }
-      */
+      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
@@ -191,28 +170,28 @@ struct HfCandidateSelectorLcMl {
         pidLcToPiKP = 1;
       } else {
         // track-level PID selection
-        int pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
-        int pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
-        int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-        int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-        int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        int pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+        int pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+        int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
 
-        if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidLcToPKPi = 0; // exclude LcToPKPi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidLcToPiKP = 0; // exclude LcToPiKP
         }
       }
@@ -222,28 +201,28 @@ struct HfCandidateSelectorLcMl {
         pidBayesLcToPKPi = 1;
         pidBayesLcToPiKP = 1;
       } else {
-        int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
-        int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
-        int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos1);
-        int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
-        int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
+        int pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
+        int pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
+        int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
+        int pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
+        int pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
-        if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidBayesTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidBayesTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidBayesLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidBayesTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidBayesLcToPKPi = 0; // exclude LcToPKPi
         }
-        if (pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidBayesTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidBayesTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidBayesLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidBayesTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidBayesLcToPiKP = 0; // exclude LcToPiKP
         }
       }
@@ -330,7 +309,7 @@ struct HfCandidateSelectorLcMl {
           // non-prompt
           // NOTE: Can be both prompt and non-prompt!
         }
-        if (activateQA != 0) {
+        if (activateQA) {
           registry.fill(HIST("hLcBDTScoreBkg"), scores[0]);
           registry.fill(HIST("hLcBDTScorePrompt"), scores[1]);
           registry.fill(HIST("hLcBDTScoreNonPrompt"), scores[2]);

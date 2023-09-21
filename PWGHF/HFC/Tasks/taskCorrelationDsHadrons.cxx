@@ -55,7 +55,7 @@ const TString stringMCParticles = "MC gen - D,Hadron particles;";
 const TString stringMCReco = "MC reco - D,Hadron candidates ";
 
 // histogram axes definition
-AxisSpec axisDetlaEta = {200, -4., 4., ""};
+AxisSpec axisDetlaEta = {100, -2., 2., ""};
 AxisSpec axisDetlaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf, ""};
 AxisSpec axisPtD = {10, 0., 10., ""};
 AxisSpec axisPtHadron = {11, 0., 11., ""};
@@ -124,7 +124,7 @@ struct HfTaskCorrelationDsHadrons {
      {"hCorrel2DVsPtMcGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + stringPoolBin + "entries", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
      {"hCorrel2DVsPtMcGenPromptDivision", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringDsPrompt + stringPoolBin + "entries", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinsPtAxis = binsPtCorrelations->size() - 1;
@@ -144,11 +144,13 @@ struct HfTaskCorrelationDsHadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMcRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPromptDivision"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPromptDivision"))->Sumw2();
   }
 
   void processData(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -189,7 +191,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRec(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -241,7 +243,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();

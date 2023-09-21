@@ -48,7 +48,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQCMC {
@@ -63,10 +63,8 @@ struct PCMQCMC {
   OutputObj<THashList> fOutputGen{"Generated"};
   THashList* fMainList = new THashList();
 
-  // static constexpr std::string_view ambtracktypes[2] = {"NonAmb", "Amb"};
   void addhistograms()
   {
-
     fMainList->SetOwner(true);
     fMainList->SetName("fMainList");
 
@@ -84,7 +82,6 @@ struct PCMQCMC {
     o2::aod::emphotonhistograms::AddHistClass(fMainList, "Generated");
     THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
     o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "Photon");
-    o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "ConversionStudy");
 
     for (const auto& cut : fPCMCuts) {
       const char* cutname = cut.GetName();
@@ -132,7 +129,7 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photon::emreducedeventId;
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
@@ -217,6 +214,7 @@ struct PCMQCMC {
 
             nv0++;
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hV0R_minTrackX"))->Fill(v0.recalculatedVtxR(), std::min(pos.x(), ele.x()));
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffZ"))->Fill(pos.z() - ele.z());
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }
@@ -259,18 +257,6 @@ struct PCMQCMC {
       for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY) {
           continue;
-        }
-
-        int photonid = IsEleFromPC(mctrack, mcparticles);
-        if (photonid > 0) {
-          auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (!IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
-            continue;
-          }
-          float rxy = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2));
-          reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hPhotonRZ"))->Fill(mctrack.vz(), rxy);
-          reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hPhotonRxy"))->Fill(mctrack.vx(), mctrack.vy());
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhotonPhivsRxy"))->Fill(mctrack.phi(), rxy);
         }
 
         if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {

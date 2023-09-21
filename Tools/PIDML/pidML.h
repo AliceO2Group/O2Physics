@@ -20,8 +20,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
 
-using namespace o2;
-
 namespace o2::aod
 {
 namespace pidtracks

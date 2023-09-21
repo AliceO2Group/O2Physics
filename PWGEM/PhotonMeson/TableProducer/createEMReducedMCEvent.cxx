@@ -45,6 +45,9 @@ struct createEMReducedMCEvent {
   Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
+  Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
+  Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
+  Produces<o2::aod::EMCEMReducedEventIds> emceventid;
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -59,7 +62,7 @@ struct createEMReducedMCEvent {
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs, aod::McCollisionLabels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::McCollisionLabels>;
 
   template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs>
   void skimmingMC(MyCollisions const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const&, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters)
@@ -92,14 +95,23 @@ struct createEMReducedMCEvent {
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
         ng_pcm = v0photons_coll.size();
+        for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
+          v0kfeventid(events.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
         ng_phos = phos_coll.size();
+        for (int iphos = 0; iphos < phos_coll.size(); iphos++) {
+          phoseventid(events.lastIndex() + 1);
+        }
       }
       if constexpr (static_cast<bool>(system & kEMC)) {
         auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
         ng_emc = emc_coll.size();
+        for (int iemc = 0; iemc < emc_coll.size(); iemc++) {
+          emceventid(events.lastIndex() + 1);
+        }
       }
 
       // store event selection decisions
@@ -111,7 +123,7 @@ struct createEMReducedMCEvent {
              collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
              collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
              collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(),
-             collision.centFV0A(), collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centFDDM(), collision.centNTPV(),
+             collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV(),
              ng_pcm, ng_phos, ng_emc);
 
       // make an entry for this MC event only if it was not already added to the table

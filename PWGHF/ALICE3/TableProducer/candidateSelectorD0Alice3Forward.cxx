@@ -43,7 +43,7 @@ DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::Trac
 struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::FRICHTracksIndex> indF;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
@@ -66,22 +66,7 @@ struct HfCandidateSelectorD0Alice3Forward {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
-
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
-  {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
+  using TracksSel = soa::Join<aod::TracksWDca, aod::FRICHTracksIndex>;
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -189,10 +174,14 @@ struct HfCandidateSelectorD0Alice3Forward {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, Trks const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const& forwardtracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusHFFlag = 0;
@@ -211,8 +200,8 @@ struct HfCandidateSelectorD0Alice3Forward {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<Trks>();
-      auto trackNeg = candidate.prong1_as<Trks>();
+      auto trackPos = candidate.prong0_as<TracksSel>();
+      auto trackNeg = candidate.prong1_as<TracksSel>();
 
       // auto momentumPosTrack = trackPos.p();
       // auto momentumNegTrack = trackNeg.p();

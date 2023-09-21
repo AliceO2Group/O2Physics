@@ -14,6 +14,10 @@
 
 #include <cmath>
 
+using std::cout;
+using std::endl;
+using namespace o2::constants::physics;
+
 ClassImp(VarManager);
 
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
@@ -24,6 +28,8 @@ float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
+float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
+float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -169,6 +175,23 @@ float VarManager::GetRunIndex(double Runnumber)
 }
 
 //__________________________________________________________________
+void VarManager::SetCollisionSystem(TString system, float energy)
+{
+  //
+  // Set the collision system and the center of mass energy
+  //
+  fgCenterOfMassEnergy = energy;
+
+  if (system.Contains("PbPb")) {
+    fgMassofCollidingParticle = MassProton * 208;
+  }
+  if (system.Contains("pp")) {
+    fgMassofCollidingParticle = MassProton;
+  }
+  // TO Do: add more systems
+}
+
+//__________________________________________________________________
 void VarManager::FillEventDerived(float* values)
 {
   //
@@ -304,6 +327,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
+  fgVariableNames[kSignedPin] = "p_{IN} x charge";
+  fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
   fgVariableUnits[kTOFExpMom] = "GeV/c";
   fgVariableNames[kTrackTime] = "Track time wrt collision().bc()";

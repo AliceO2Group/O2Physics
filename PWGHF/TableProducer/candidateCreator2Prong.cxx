@@ -90,7 +90,7 @@ struct HfCandidateCreator2Prong {
   template <bool doPvRefit = false, typename Cand>
   void runCreator2Prong(aod::Collisions const& collisions,
                         Cand const& rowsTrackIndexProng2,
-                        aod::BigTracks const& tracks,
+                        aod::TracksWCov const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 2-prong vertex fitter
@@ -106,8 +106,8 @@ struct HfCandidateCreator2Prong {
 
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
-      auto track0 = rowTrackIndexProng2.template prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng2.template prong1_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng2.template prong0_as<aod::TracksWCov>();
+      auto track1 = rowTrackIndexProng2.template prong1_as<aod::TracksWCov>();
       auto trackParVarPos1 = getTrackParCov(track0);
       auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = rowTrackIndexProng2.collision();
@@ -141,8 +141,8 @@ struct HfCandidateCreator2Prong {
       auto trackParVar1 = df.getTrack(1);
 
       // get track momenta
-      array<float, 3> pvec0;
-      array<float, 3> pvec1;
+      std::array<float, 3> pvec0;
+      std::array<float, 3> pvec1;
       trackParVar0.getPxPyPzGlo(pvec0);
       trackParVar1.getPxPyPzGlo(pvec1);
 
@@ -181,7 +181,7 @@ struct HfCandidateCreator2Prong {
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+      getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -201,9 +201,9 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant masses
-        auto arrayMomenta = array{pvec0, pvec1};
-        massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
-        massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
+        auto arrayMomenta = std::array{pvec0, pvec1};
+        massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
+        massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
         hMass2->Fill(massPiK);
         hMass2->Fill(massKPi);
       }
@@ -212,7 +212,7 @@ struct HfCandidateCreator2Prong {
 
   void processPvRefit(aod::Collisions const& collisions,
                       soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
-                      aod::BigTracks const& tracks,
+                      aod::TracksWCov const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2Prong<true>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -222,7 +222,7 @@ struct HfCandidateCreator2Prong {
 
   void processNoPvRefit(aod::Collisions const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexProng2,
-                        aod::BigTracks const& tracks,
+                        aod::TracksWCov const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2Prong(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -240,8 +240,8 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMc(aod::BigTracksMC const& tracks,
-                 aod::McParticles const& particlesMC)
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
 
@@ -252,23 +252,20 @@ struct HfCandidateCreator2ProngExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto& candidate : *rowCandidateProng2) {
-      // Printf("New rec. candidate");
+    for (const auto& candidate : *rowCandidateProng2) {
       flag = 0;
       origin = 0;
-      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
-      // Printf("Checking D0(bar) → π± K∓");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        // Printf("Checking J/ψ → e+ e−");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -276,8 +273,7 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        // Printf("Checking J/ψ → μ+ μ−");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -285,44 +281,40 @@ struct HfCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(flag, origin);
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
-      // Printf("New gen. candidate");
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
 
       // D0(bar) → π± K∓
-      // Printf("Checking D0(bar) → π± K∓");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        // Printf("Checking J/ψ → e+ e−");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
       }
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        // Printf("Checking J/ψ → μ+ μ−");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
       }
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchGen(flag, origin);

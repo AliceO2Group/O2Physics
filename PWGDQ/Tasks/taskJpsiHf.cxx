@@ -62,7 +62,7 @@ struct taskJPsiHf {
 
   SliceCache cache;
   Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
-  Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
+  Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
   Preslice<MyPairCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;

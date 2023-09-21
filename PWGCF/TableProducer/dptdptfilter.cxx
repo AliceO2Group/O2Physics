@@ -145,7 +145,7 @@ using namespace dptdptfilter;
 
 struct DptDptFilter {
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NOCM: none. Default V0M"};
+  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
@@ -199,17 +199,18 @@ struct DptDptFilter {
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
       /* TODO: proper axes and axes titles according to the system; still incomplete */
+      std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
       if (fSystem > kPbp) {
         fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
         fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", 100, 0, 100);
-        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
-        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
+        fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 4001, -0.5, 4000.5);
+        fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 4001, -0.5, 4000.5);
       } else {
         /* for pp, pPb and Pbp systems use multiplicity instead */
         fhCentMultB = new TH1F("MultiplicityB", "Multiplicity before cut; multiplicity (%)", 100, 0, 100);
         fhCentMultA = new TH1F("MultiplicityA", "Multiplicity; multiplicity (%)", 100, 0, 100);
-        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
-        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
+        fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 601, -0.5, 600.5);
+        fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 601, -0.5, 600.5);
       }
 
       fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
@@ -327,7 +328,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
   LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processReconstructed(). New collision with %d tracks", ftracks.size());
 
-  float mult = extractMultiplicity(collision);
+  float mult = extractMultiplicity(collision, fCentMultEstimator);
 
   fhCentMultB->Fill(tentativecentmult);
   fhMultB->Fill(mult);
@@ -354,12 +355,12 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
 void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks)
@@ -369,12 +370,12 @@ void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptD
 
 void DptDptFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks)
@@ -384,12 +385,12 @@ void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, D
 
 void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
@@ -399,12 +400,12 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 
 void DptDptFilter::processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
@@ -549,14 +550,9 @@ struct DptDptFilterTracks {
         particleMaxDCAZ = cfgTrackSelection->mDCAz;
       }
       ownTrackSelection.ResetITSRequirements();
-      ownTrackSelection.SetRequireITSRefit(false);
-      ownTrackSelection.SetRequireTPCRefit(false);
-      ownTrackSelection.SetRequireGoldenChi2(false);
       ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
       ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
-      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(0);
-      ownTrackSelection.SetMaxChi2PerClusterITS(1e6f);
-      ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
+      ownTrackSelection.SetMaxDcaXYPtDep([&](float) { return cfgTrackSelection->mDCAxy; });
       ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
       ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
       o2::aod::track::TrackTypeEnum ttype;

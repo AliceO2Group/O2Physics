@@ -23,13 +23,16 @@
 
 #include "filterTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "CommonConstants/LHCConstants.h"
 #include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsCTP/Scalers.h"
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -211,7 +214,9 @@ struct centralEventFilterTask {
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
   Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);
@@ -223,8 +228,16 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(FullJetFilters);
   FILTER_CONFIGURABLE(PhotFilters);
 
+  int mRunNumber{-1};
+  o2::InteractionRecord mEndOfITSramp{0, 0};
+
   void init(o2::framework::InitContext& initc)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(true);
+
     LOG(debug) << "Start init";
     int nCols{0};
     for (auto& table : mDownscaling) {
@@ -261,8 +274,72 @@ struct centralEventFilterTask {
     }
   }
 
+  void initCCDB(int runNumber)
+  {
+    if (mRunNumber == runNumber) {
+      return;
+    }
+    mRunNumber = runNumber;
+    auto rd = ccdb->getRunDuration(mRunNumber);
+    ccdb->setTimestamp((rd.first + rd.second) / 2);
+    auto* scl = ccdb->get<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers");
+    scl->convertRawToO2();
+    auto svec = scl->getScalerRecordO2();
+    mEndOfITSramp = svec[0].intRecord;
+
+    auto* itsRamp = ccdb->get<std::vector<float>>("ITS/Calib/RampDuration");
+    uint64_t toleranceInBC = (itsRamp->at(0) + itsRamp->at(1)) * 1.e9 / constants::lhc::LHCBunchSpacingNS;
+    mEndOfITSramp += toleranceInBC;
+  }
+
   void run(ProcessingContext& pc)
   {
+
+    // Filling output table
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcTabPtr{bcTabConsumer->asArrowTable()};
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto collTabPtr{collTabConsumer->asArrowTable()};
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelTabPtr{evSelConsumer->asArrowTable()};
+
+    auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};
+    auto columnCollBCId{collTabPtr->GetColumnByName(aod::Collision::BCId::mLabel)};
+    auto columnCollTime{collTabPtr->GetColumnByName(aod::Collision::CollisionTime::mLabel)};
+    auto columnCollTimeRes{collTabPtr->GetColumnByName(aod::Collision::CollisionTimeRes::mLabel)};
+    auto columnFoundBC{evSelTabPtr->GetColumnByName(o2::aod::evsel::FoundBCId::mLabel)};
+    auto columnRunNumber{bcTabPtr->GetColumnByName(aod::BC::RunNumber::mLabel)};
+
+    auto chunkCollBCid{columnCollBCId->chunk(0)};
+    auto chunkCollTime{columnCollTime->chunk(0)};
+    auto chunkCollTimeRes{columnCollTimeRes->chunk(0)};
+    auto chunkGloBC{columnGloBCId->chunk(0)};
+    auto chunkFoundBC{columnFoundBC->chunk(0)};
+    auto chunkRunNumber{columnRunNumber->chunk(0)};
+
+    auto CollBCIdArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkCollBCid);
+    auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTime);
+    auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTimeRes);
+    auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::UInt64Type>>(chunkGloBC);
+    auto FoundBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkFoundBC);
+    auto RunNumberArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkRunNumber);
+
+    if (RunNumberArray->length()) {
+      initCCDB(RunNumberArray->Value(0));
+    }
+
+    if (CollTimeArray->length() == 0) {
+      LOG(warn) << "The collision table in the current folder is empty.";
+    }
+
+    int startCollision{0};
+    // for (int iC{0}; iC < CollBCIdArray->length(); ++iC) {
+    //   if (o2::InteractionRecord::long2IR(GloBCArray->Value(CollBCIdArray->Value(iC))) > mEndOfITSramp) {
+    //     break;
+    //   }
+    //   startCollision = iC;
+    // }
+
     auto mScalers{scalers.get<TH1>(HIST("mScalers"))};
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
     auto mCovariance{scalers.get<TH2>(HIST("mCovariance"))};
@@ -299,7 +376,7 @@ struct centralEventFilterTask {
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
             auto chunk{column->chunk(iC)};
             auto boolArray = std::static_pointer_cast<arrow::BooleanArray>(chunk);
-            for (int64_t iS{0}; iS < chunk->length(); ++iS) {
+            for (int64_t iS{startCollision}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
                 outTrigger[entry] |= triggerBit;
@@ -315,8 +392,8 @@ struct centralEventFilterTask {
         }
       }
     }
-    mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
-    mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
+    mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents - startCollision);
+    mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents - startCollision);
 
     for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
       for (int iB{0}; iB < 64; ++iB) {
@@ -337,42 +414,16 @@ struct centralEventFilterTask {
       }
     }
 
-    // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
-    auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
-    auto collTabPtr{collTabConsumer->asArrowTable()};
-    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
-    auto evSelTabPtr{evSelConsumer->asArrowTable()};
-
+    /// Filling the output table
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
     }
     if (outDecision.size() != static_cast<uint64_t>(evSelTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across EvSel table and CEFP decision vector.";
     }
-
-    auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};
-    auto columnBCId{collTabPtr->GetColumnByName(aod::Collision::BCId::mLabel)};
-    auto columnCollTime{collTabPtr->GetColumnByName(aod::Collision::CollisionTime::mLabel)};
-    auto columnCollTimeRes{collTabPtr->GetColumnByName(aod::Collision::CollisionTimeRes::mLabel)};
-    auto columnFoundBC{evSelTabPtr->GetColumnByName(o2::aod::evsel::FoundBCId::mLabel)};
-
-    auto chunkBC{columnBCId->chunk(0)};
-    auto chunkCollTime{columnCollTime->chunk(0)};
-    auto chunkCollTimeRes{columnCollTimeRes->chunk(0)};
-    auto chunkGloBC{columnGloBCId->chunk(0)};
-    auto chunkFoundBC{columnFoundBC->chunk(0)};
-
-    auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
-    auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTime);
-    auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTimeRes);
-    auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::UInt64Type>>(chunkGloBC);
-    auto FoundBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkFoundBC);
-
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
-      tags(BCArray->Value(iD), GloBCArray->Value(BCArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
+      tags(CollBCIdArray->Value(iD), GloBCArray->Value(CollBCIdArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
     }
   }
 

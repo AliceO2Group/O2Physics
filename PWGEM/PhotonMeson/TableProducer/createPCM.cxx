@@ -84,10 +84,17 @@ struct createPCM {
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
+  Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.5, "max pT for ITSonly tracks"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
+  Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> max_diff_tgl{"max_diff_tgl", 999.0, "max difference in track iu tgl between ele and pos"};
+  Configurable<float> max_diff_z_itstpc{"max_diff_z_itstpc", 999.0, "max difference in track iu z between ele and pos for ITS-TPC tracks"};
+  Configurable<float> max_diff_z_itsonly{"max_diff_z_itsonly", 999.0, "max difference in track iu z between ele and pos for ITSonly tracks"};
+  Configurable<float> max_diff_z_tpconly{"max_diff_z_tpconly", 999.0, "max difference in track iu z between ele and pos for TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
@@ -199,6 +206,35 @@ struct createPCM {
   template <typename TTrack>
   bool reconstructV0(TTrack const& ele, TTrack const& pos)
   {
+    bool isITSonly_pos = pos.hasITS() & !pos.hasTPC();
+    bool isITSonly_ele = ele.hasITS() & !ele.hasTPC();
+    bool isTPConly_pos = !pos.hasITS() & pos.hasTPC();
+    bool isTPConly_ele = !ele.hasITS() & ele.hasTPC();
+    bool isITSTPC_pos = pos.hasITS() & pos.hasTPC();
+    bool isITSTPC_ele = ele.hasITS() & ele.hasTPC();
+
+    if ((isITSonly_pos && isTPConly_ele) || (isITSonly_ele && isTPConly_pos)) {
+      return false;
+    }
+
+    if (abs(ele.tgl() - pos.tgl()) > max_diff_tgl) {
+      return false;
+    }
+
+    if (isITSTPC_pos && isITSTPC_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itstpc) {
+        return false;
+      }
+    } else if (isTPConly_pos && isTPConly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_tpconly) {
+        return false;
+      }
+    } else if (isITSonly_pos && isITSonly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itsonly) {
+        return false;
+      }
+    }
+
     // fitter is memeber variable.
     auto pTrack = getTrackParCov(pos); // positive
     auto nTrack = getTrackParCov(ele); // negative
@@ -239,7 +275,10 @@ struct createPCM {
       return false;
     }
 
-    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
+    if (recalculatedVtxR < max_r_req_its && (!pos.hasITS() || !ele.hasITS())) {
+      return false;
+    }
+    if (recalculatedVtxR < min_r_tpconly && (!pos.hasITS() && !ele.hasITS())) {
       return false;
     }
 
@@ -320,6 +359,10 @@ struct createPCM {
       return false;
     }
 
+    if (track.hasITS() & !track.hasTPC() & (track.hasTRD() | track.hasTOF())) { // remove unrealistic track. this should not happen.
+      return false;
+    }
+
     if (track.hasTPC()) {
       if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
         return false;
@@ -329,10 +372,18 @@ struct createPCM {
       }
     }
 
-    bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTRD() & !track.hasTOF();
-    if (isITSonly && track.itsChi2NCl() > maxchi2its) {
-      return false;
+    if (track.hasITS()) {
+      if (track.itsChi2NCl() > maxchi2its) {
+        return false;
+      }
+      bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTRD() & !track.hasTOF();
+      if (isITSonly) {
+        if (track.pt() > maxpt_itsonly) {
+          return false;
+        }
+      }
     }
+
     return true;
   }
 
@@ -346,8 +397,8 @@ struct createPCM {
   // Partition<MyFilteredTracks> orphan_negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::collisionId < int32_t(0);
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
-  vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
-  vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
+  std::vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
+  std::vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
 
   void processSA(MyFilteredTracks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {

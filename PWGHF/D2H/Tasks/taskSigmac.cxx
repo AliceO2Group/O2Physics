@@ -216,12 +216,13 @@ struct HfTaskSigmac {
   /// @brief process function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  void process(const aod::HfCandSc& candidatesSc,
-               const RecoLc&, const aod::BigTracksExtended&)
+  void process(aod::HfCandSc const& candidatesSc,
+               RecoLc const&,
+               aod::Tracks const&)
   {
 
     /// loop over the candidate Σc0,++
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       const int8_t chargeSc = candSc.charge(); // either Σc0 or Σc++
 
@@ -235,7 +236,7 @@ struct HfTaskSigmac {
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
       double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-      double ptSoftPi(candSc.prong1_as<aod::BigTracksExtended>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksExtended>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksExtended>().phi());
+      double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
         massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
@@ -349,17 +350,18 @@ struct HfTaskSigmac {
 
   /// @brief process function to fill the histograms needed in analysis (MC)
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
-  /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
+  /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  void processMc(const soa::Join<aod::HfCandSc, aod::HfCandScMcRec>& candidatesSc,
-                 aod::McParticles const& particlesMc,
-                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMcSc,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLc,
-                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::BigTracksMC&)
+  void processMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
+                 aod::McParticles const& mcParticles,
+                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
+                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&,
+                 aod::TracksWMc const&)
   {
 
     /// MC generated particles
-    for (auto& particle : particlesMcSc) {
+    for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
       bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
@@ -378,7 +380,7 @@ struct HfTaskSigmac {
          OR
          consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
       */
-      if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
         continue;
       }
 
@@ -399,8 +401,8 @@ struct HfTaskSigmac {
       int8_t channel = -1;
       if (std::abs(arrayDaughtersIds[0]) == pdg::Code::kLambdaCPlus) {
         /// daughter 0 is the Λc+, daughter 1 the soft π
-        auto daugLc = particlesMcLc.rawIteratorAt(arrayDaughtersIds[0]);
-        auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[1]);
+        auto daugLc = mcParticlesLc.rawIteratorAt(arrayDaughtersIds[0]);
+        auto daugSoftPi = mcParticles.rawIteratorAt(arrayDaughtersIds[1]);
         ptGenLc = daugLc.pt();
         etaGenLc = daugLc.eta();
         phiGenLc = daugLc.phi();
@@ -411,8 +413,8 @@ struct HfTaskSigmac {
         phiGenSoftPi = daugSoftPi.phi();
       } else if (std::abs(arrayDaughtersIds[0]) == kPiPlus) {
         /// daughter 0 is the soft π, daughter 1 the Λc+
-        auto daugLc = particlesMcLc.rawIteratorAt(arrayDaughtersIds[1]);
-        auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[0]);
+        auto daugLc = mcParticlesLc.rawIteratorAt(arrayDaughtersIds[1]);
+        auto daugSoftPi = mcParticles.rawIteratorAt(arrayDaughtersIds[0]);
         ptGenLc = daugLc.pt();
         etaGenLc = daugLc.eta();
         phiGenLc = daugLc.phi();
@@ -471,7 +473,7 @@ struct HfTaskSigmac {
     } /// end loop over generated particles
 
     /// reconstructed Σc0,++ matched to MC
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       /// Candidate selected as Σc0 and/or Σc++
       if (!(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi)) {
@@ -495,15 +497,15 @@ struct HfTaskSigmac {
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmaC0, true);
-        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaC0, true);
+        auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::BigTracksMC>(), candidateLc.prong1_as<aod::BigTracksMC>(), candidateLc.prong2_as<aod::BigTracksMC>()};
+        auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
 
         // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
         // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
@@ -511,13 +513,13 @@ struct HfTaskSigmac {
         double ptSc(candSc.pt()), ptLc(candidateLc.pt());
         double etaSc(candSc.eta()), etaLc(candidateLc.eta());
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-        double ptSoftPi(candSc.prong1_as<aod::BigTracksMC>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksMC>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksMC>().phi());
+        double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
         int origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -564,7 +566,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
@@ -614,15 +616,15 @@ struct HfTaskSigmac {
       } else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
-        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
+        auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
-        auto arrayDaughtersLc = array{candidateLc.prong0_as<aod::BigTracksMC>(), candidateLc.prong1_as<aod::BigTracksMC>(), candidateLc.prong2_as<aod::BigTracksMC>()};
+        auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
-        auto particleSoftPi = candSc.prong1_as<aod::BigTracksMC>().mcParticle();
+        auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
 
         // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
         // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
@@ -630,13 +632,13 @@ struct HfTaskSigmac {
         double ptSc(candSc.pt()), ptLc(candidateLc.pt());
         double etaSc(candSc.eta()), etaLc(candidateLc.eta());
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-        double ptSoftPi(candSc.prong1_as<aod::BigTracksMC>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksMC>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksMC>().phi());
+        double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
         int origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kProton) {
+        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -683,7 +685,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::BigTracksMC>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;

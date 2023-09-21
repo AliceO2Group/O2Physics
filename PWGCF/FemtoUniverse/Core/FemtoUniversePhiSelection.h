@@ -287,7 +287,7 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisPhi = {600, 0.0f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisPhi = {6000, 0.9f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
     AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
     AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
                                    "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
@@ -635,6 +635,12 @@ void FemtoUniversePhiSelection::fillQA(C const& col, V const& phi, T const& posT
     float phiPt = sumVec.Pt();
     // float phiP = sumVec.P();
     float phiPhi = sumVec.Phi();
+    if (sumVec.Phi() < 0) {
+      phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+    } else if (sumVec.Phi() >= 0) {
+      phiPhi = sumVec.Phi();
+    }
+
     float phiM = sumVec.M();
 
     mHistogramRegistry->fill(

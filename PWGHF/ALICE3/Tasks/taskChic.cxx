@@ -54,7 +54,7 @@ struct HfTaskChic {
      {"hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     registry.add("hMass", "2-prong candidates;inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaMass", "2-prong candidates;inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass^{PDG} (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -73,7 +73,7 @@ struct HfTaskChic {
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma>> const& candidates)
   {
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -116,7 +116,7 @@ struct HfTaskChicMc {
      {"hPtGen", "2-prong candidates (gen. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}},
      {"hPtGenSig", "2-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     registry.add("hCPARecSig", "2-prong candidates (rec. matched);cosine of pointing angle;entries", {HistType::kTH2F, {{500, 0.9, 1.0}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPARecBg", "2-prong candidates (rec. unmatched);cosine of pointing angle;entries", {HistType::kTH2F, {{500, 0.9, 1.0}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -151,12 +151,12 @@ struct HfTaskChicMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& mcParticles,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -165,8 +165,8 @@ struct HfTaskChicMc {
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
         // FIXME the access to the MC particle gen not yet functional
-        // int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles>().globalIndex()), 20443);
-        // auto particleMother = particlesMC.rawIteratorAt(indexMother);
+        // int indexMother = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles>().globalIndex()), 20443);
+        // auto particleMother = mcParticles.rawIteratorAt(indexMother);
         // registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
@@ -198,12 +198,10 @@ struct HfTaskChicMc {
       }
     } // rec
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(pdg::Code::kChiC1); // chi_c1(1p)
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
-          // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
           continue;
         }
 
@@ -213,7 +211,7 @@ struct HfTaskChicMc {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& dau : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = dau.pt();
           counter++;
         }
