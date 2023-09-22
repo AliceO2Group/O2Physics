@@ -341,7 +341,7 @@ struct HfTreeCreatorLcToPKPi {
     for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.globalIndex(),
-        0,
+        -1,
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
