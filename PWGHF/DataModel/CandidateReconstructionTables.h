@@ -33,6 +33,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2::analysis;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -53,6 +54,92 @@ using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;
 using TracksPidPi = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>;
 using TracksPidKa = soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>;
 using TracksPidPr = soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>;
+
+using TracksPidTinyEl = soa::Join<aod::pidTPCEl, aod::pidTOFEl>;
+using TracksPidTinyMu = soa::Join<aod::pidTPCMu, aod::pidTOFMu>;
+using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
+using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
+using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
+
+namespace pidtpctof_utils
+{
+// Function to combine TPC and TOF NSigma (for ML purposes)
+template <bool tiny = false, typename T1 = Node, typename T2>
+T1 combineNSigma(const T2& tpcNSigma, const T2& tofNSigma)
+{
+  float defaultNSigmaTolerance = .1f;
+  float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  if constexpr (tiny) {
+    auto tpcBinWidth = 1.f * pidtpc_tiny::binning::bin_width;
+    auto tofBinWidth = 1.f * pidtof_tiny::binning::bin_width;
+
+    return ifnode((tpcNSigma * tpcBinWidth > defaultNSigma) && (tofNSigma * tofBinWidth > defaultNSigma), nsqrt(.5f * tpcNSigma * tpcNSigma * tpcBinWidth * tpcBinWidth + .5f * tofNSigma * tofNSigma * tofBinWidth * tofBinWidth), // TPC and TOF
+                  ifnode(tpcNSigma * tpcBinWidth > defaultNSigma, nabs(tpcNSigma * tpcBinWidth),                                                                                                                                    // only TPC
+                         ifnode(tofNSigma * tofBinWidth > defaultNSigma, nabs(tofNSigma * tofBinWidth),                                                                                                                             // only TOF
+                                1.f * tofNSigma * tofBinWidth)));                                                                                                                                                                   // no TPC nor TOF
+  }
+
+  return ifnode((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma), nsqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma), // TPC and TOF
+                ifnode(tpcNSigma > defaultNSigma, nabs(tpcNSigma),                                                                            // only TPC
+                       ifnode(tofNSigma > defaultNSigma, nabs(tofNSigma),                                                                     // only TOF
+                              1.f * tofNSigma)));                                                                                             // no TPC nor TOF
+}
+} // namespace pidtpctof_utils
+
+namespace pidtpctof
+{
+// Combined TPC and TOF NSigma
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaEl, tpctofNSigmaEl, //! Combined Nsigma separation with the TPC & TOF detectors for electron
+                              float, pidtpctof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaEl, o2::aod::pidtof::tofNSigmaEl));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaMu, tpctofNSigmaMu, //! Combined Nsigma separation with the TPC & TOF detectors for muon
+                              float, pidtpctof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaMu, o2::aod::pidtof::tofNSigmaMu));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaPi, tpctofNSigmaPi, //! Combined Nsigma separation with the TPC & TOF detectors for pion
+                              float, pidtpctof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPi, o2::aod::pidtof::tofNSigmaPi));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaKa, tpctofNSigmaKa, //! Combined Nsigma separation with the TPC & TOF detectors for kaon
+                              float, pidtpctof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaKa, o2::aod::pidtof::tofNSigmaKa));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaPr, tpctofNSigmaPr, //! Combined Nsigma separation with the TPC & TOF detectors for proton
+                              float, pidtpctof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPr, o2::aod::pidtof::tofNSigmaPr));
+} // namespace pidtpctof
+
+namespace pidtpctof_tiny
+{
+// Combined binned TPC and TOF NSigma
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaEl, tpctofNSigmaEl, //! Combined binned Nsigma separation with the TPC & TOF detectors for electron
+                              float, pidtpctof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreEl, o2::aod::pidtof_tiny::tofNSigmaStoreEl));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaMu, tpctofNSigmaMu, //! Combined binned Nsigma separation with the TPC & TOF detectors for muon
+                              float, pidtpctof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreMu, o2::aod::pidtof_tiny::tofNSigmaStoreMu));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaPi, tpctofNSigmaPi, //! Combined binned Nsigma separation with the TPC & TOF detectors for pion
+                              float, pidtpctof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePi, o2::aod::pidtof_tiny::tofNSigmaStorePi));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaKa, tpctofNSigmaKa, //! Combined binned Nsigma separation with the TPC & TOF detectors for kaon
+                              float, pidtpctof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreKa, o2::aod::pidtof_tiny::tofNSigmaStoreKa));
+DECLARE_SOA_EXPRESSION_COLUMN(TPCTOFNSigmaPr, tpctofNSigmaPr, //! Combined binned Nsigma separation with the TPC & TOF detectors for proton
+                              float, pidtpctof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePr, o2::aod::pidtof_tiny::tofNSigmaStorePr));
+} // namespace pidtpctof_tiny
+
+// Extension of per particle tables
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidElExt, TracksPidEl, "PIDELEXT", //! Table of the TPC & TOF combined Nsigma for electron
+                                pidtpctof::TPCTOFNSigmaEl);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidMuExt, TracksPidMu, "PIDMUEXT", //! Table of the TPC & TOF combined Nsigma for muon
+                                pidtpctof::TPCTOFNSigmaMu);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPiExt, TracksPidPi, "PIDPIEXT", //! Table of the TPC & TOF combined Nsigma for pion
+                                pidtpctof::TPCTOFNSigmaPi);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidKaExt, TracksPidKa, "PIDKAEXT", //! Table of the TPC & TOF combined Nsigma for kaon
+                                pidtpctof::TPCTOFNSigmaKa);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPrExt, TracksPidPr, "PIDPREXT", //! Table of the TPC & TOF combined Nsigma for proton
+                                pidtpctof::TPCTOFNSigmaPr);
+
+// Extension of tiny size tables
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyElExt, TracksPidTinyEl, "PIDTINYELEXT", //! Table of the TPC & TOF combined binned Nsigma for electron
+                                pidtpctof_tiny::TPCTOFNSigmaEl);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyMuExt, TracksPidTinyMu, "PIDTINYMUEXT", //! Table of the TPC & TOF combined binned Nsigma for muon
+                                pidtpctof_tiny::TPCTOFNSigmaMu);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyPiExt, TracksPidTinyPi, "PIDTINYPIEXT", //! Table of the TPC & TOF combined binned Nsigma for pion
+                                pidtpctof_tiny::TPCTOFNSigmaPi);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyKaExt, TracksPidTinyKa, "PIDTINYKAEXT", //! Table of the TPC & TOF combined binned Nsigma for kaon
+                                pidtpctof_tiny::TPCTOFNSigmaKa);
+DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyPrExt, TracksPidTinyPr, "PIDTINYPREXT", //! Table of the TPC & TOF combined binned Nsigma for proton
+                                pidtpctof_tiny::TPCTOFNSigmaPr);
 
 namespace hf_sel_collision
 {
