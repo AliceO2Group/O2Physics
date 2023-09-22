@@ -349,7 +349,7 @@ struct HfCandidateCreatorB0Expressions {
 
   void processMc(aod::HfCand3Prong const& dplus,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& particlesMc,
+                 aod::McParticles const& mcParticles,
                  aod::HfCandB0Prongs const& candsB0)
   {
 

@@ -199,7 +199,7 @@ struct HfTaskBplusReduced {
 
   /// B+ MC analysis and fill histograms
   void processMc(soa::Join<aod::HfRedCandBplus, aod::HfMcRecRedBps> const& candidates,
-                 aod::HfMcGenRedBps const& particlesMc,
+                 aod::HfMcGenRedBps const& mcParticles,
                  aod::HfRed2Prongs const&)
   {
     // MC rec

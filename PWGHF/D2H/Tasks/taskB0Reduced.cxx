@@ -163,7 +163,7 @@ struct HfTaskB0Reduced {
 
   /// B0 MC analysis and fill histograms
   void processMc(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s> const& candidates,
-                 aod::HfMcGenRedB0s const& particlesMc,
+                 aod::HfMcGenRedB0s const& mcParticles,
                  aod::HfRed3Prongs const&)
   {
     // MC rec
