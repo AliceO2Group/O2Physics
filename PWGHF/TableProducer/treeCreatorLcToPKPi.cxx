@@ -80,7 +80,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 // Events
-DECLARE_SOA_INDEX_COLUMN(McCollision, mccollision);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
@@ -205,13 +205,12 @@ struct HfTreeCreatorLcToPKPi {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      auto mcCollisionId = 0;
-      if (collision.has_mcCollision()) {
-        mcCollisionId = collision.mcCollisionId();
+      if (!collision.has_mcCollision()) {
+      continue;
       }
       rowCandidateFullEvents(
         collision.globalIndex(),
-        mcCollisionId,
+        collision.mcCollisionId(),
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
