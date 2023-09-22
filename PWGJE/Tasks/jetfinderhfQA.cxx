@@ -59,6 +59,7 @@ struct JetFinderHFQATask {
   Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   std::string trackSelection;
   std::vector<bool> filledJetR;

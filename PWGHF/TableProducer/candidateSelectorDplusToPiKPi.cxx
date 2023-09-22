@@ -70,6 +70,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidKa>;

@@ -112,6 +112,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;

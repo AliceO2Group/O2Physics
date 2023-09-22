@@ -47,6 +47,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], hf_cuts_xicc_to_p_k_pi_pi::nBinsPt, hf_cuts_xicc_to_p_k_pi_pi::nCutVars, hf_cuts_xicc_to_p_k_pi_pi::labelsPt, hf_cuts_xicc_to_p_k_pi_pi::labelsCutVar}, "Xicc candidate selection per pT bin"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 

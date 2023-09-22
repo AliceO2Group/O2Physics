@@ -47,6 +47,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], hf_cuts_chic_to_jpsi_gamma::nBinsPt, hf_cuts_chic_to_jpsi_gamma::nCutVars, hf_cuts_chic_to_jpsi_gamma::labelsPt, hf_cuts_chic_to_jpsi_gamma::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   /// Selection on goodness of daughter tracks

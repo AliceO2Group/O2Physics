@@ -217,6 +217,7 @@ struct femtoWorldProducerTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  // Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   void init(InitContext&)

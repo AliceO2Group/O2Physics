@@ -45,6 +45,7 @@ struct HfTaskX {
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
@@ -108,6 +109,7 @@ struct HfTaskXMc {
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);

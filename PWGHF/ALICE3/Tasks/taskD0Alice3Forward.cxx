@@ -31,6 +31,7 @@ using namespace o2::framework::expressions;
 struct HfTaskD0Alice3Forward {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHfFlag >= 1);
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   HistogramRegistry registry{

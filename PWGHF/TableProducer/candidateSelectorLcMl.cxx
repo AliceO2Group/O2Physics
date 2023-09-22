@@ -72,6 +72,7 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   o2::ccdb::CcdbApi ccdbApi;
   OnnxModel model;
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;

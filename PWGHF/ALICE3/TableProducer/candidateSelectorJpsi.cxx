@@ -82,6 +82,7 @@ struct HfCandidateSelectorJpsi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], hf_cuts_jpsi_to_e_e::nBinsPt, hf_cuts_jpsi_to_e_e::nCutVars, hf_cuts_jpsi_to_e_e::labelsPt, hf_cuts_jpsi_to_e_e::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;

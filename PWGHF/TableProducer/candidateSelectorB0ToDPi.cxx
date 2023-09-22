@@ -57,6 +57,7 @@ struct HfCandidateSelectorB0ToDPi {
 
   bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPi selectorPion;
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;

@@ -59,6 +59,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 

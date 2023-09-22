@@ -188,6 +188,7 @@ struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
