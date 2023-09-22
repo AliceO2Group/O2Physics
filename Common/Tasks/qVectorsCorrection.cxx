@@ -101,7 +101,6 @@ struct qVectorsCorrection {
   void fillHistosQvec(const T& vec)
   {
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histCent"), vec.cent());
-/*
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histCent"), vec.cent());
 
     // Fill the (Qx,Qy) distributions for each detector, after removing dummy values.
@@ -121,7 +120,6 @@ struct qVectorsCorrection {
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegRectr"), vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm());
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegTwist"), vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm());
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegFinal"), vec.qvecBNegFinalRe(), vec.qvecBNegFinalIm());
-*/
   }
 
   void process(aod::Qvector const& qVec)
