@@ -206,7 +206,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
-      continue;
+        continue;
       }
       rowCandidateFullEvents(
         collision.globalIndex(),
