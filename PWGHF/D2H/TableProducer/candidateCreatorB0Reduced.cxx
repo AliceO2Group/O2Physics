@@ -47,7 +47,7 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
   Configurable<double> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
-  // variable that will store the value of invMassWindowB0 (defined in dataCreatorDplusPiReduced.cxx)
+  // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
   float myInvMassWindowDPi{1.};
 
   // O2DatabasePDG service
@@ -56,9 +56,6 @@ struct HfCandidateCreatorB0Reduced {
   double massPi{0.};
   double massD{0.};
   double massB0{0.};
-  double invMass2DPi{0.};
-  double invMass2DPiMin{0.};
-  double invMass2DPiMax{0.};
   double bz{0.};
 
   // Fitter for B vertex (2-prong vertex filter)
@@ -72,7 +69,7 @@ struct HfCandidateCreatorB0Reduced {
   void init(InitContext const&)
   {
     // histograms
-    registry.add("hMass2B0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) square (GeV^{2}/#it{c}^{4});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -98,14 +95,14 @@ struct HfCandidateCreatorB0Reduced {
                aod::HfOrigColCounts const& collisionsCounter,
                aod::HfCandB0Configs const& configs)
   {
-    // B0 invariant-mass window cut
+    // DPi invariant-mass window cut
     for (const auto& config : configs) {
       myInvMassWindowDPi = config.myInvMassWindowDPi();
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    double invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    double invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -142,8 +139,8 @@ struct HfCandidateCreatorB0Reduced {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
 
-          // compute invariant
-          invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          // compute invariant mass square and apply selection
+          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
@@ -167,7 +164,7 @@ struct HfCandidateCreatorB0Reduced {
           df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
-          registry.fill(HIST("hMass2B0ToDPi"), invMass2DPi);
+          registry.fill(HIST("hMassB0ToDPi"), std::sqrt(invMass2DPi));
 
           // compute impact parameters of D and Pi
           o2::dataformats::DCA dcaD;

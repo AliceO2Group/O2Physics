@@ -94,8 +94,6 @@ struct HfDataCreatorDplusPiReduced {
   double massPi{0.};
   double massD{0.};
   double massB0{0.};
-  double invMassD{0.};
-  double invMass2DPi{0.};
   double invMass2DPiMin{0.};
   double invMass2DPiMax{0.};
   double bz{0.};
@@ -320,8 +318,8 @@ struct HfDataCreatorDplusPiReduced {
           }
           registry.fill(HIST("hPtPion"), trackPion.pt());
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-          // compute invariant mass and apply selection
-          invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          // compute invariant mass square and apply selection
+          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
@@ -340,8 +338,7 @@ struct HfDataCreatorDplusPiReduced {
                            trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
                            trackPion.c1PtTgl(), trackPion.c1Pt21Pt2());
             hfTrackPidPion(trackPion.hasTPC(), trackPion.hasTOF(),
-                           trackPion.tpcNSigmaEl(), trackPion.tpcNSigmaMu(), trackPion.tpcNSigmaPi(), trackPion.tpcNSigmaKa(), trackPion.tpcNSigmaPr(),
-                           trackPion.tofNSigmaEl(), trackPion.tofNSigmaMu(), trackPion.tofNSigmaPi(), trackPion.tofNSigmaKa(), trackPion.tofNSigmaPr());
+                           trackPion.tpcNSigmaPi(), trackPion.tofNSigmaPi());
             // add trackPion.globalIndex() to a list
             // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another D candidate
             // and keep track of their index in hfTrackPion for McRec purposes

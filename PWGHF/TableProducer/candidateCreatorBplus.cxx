@@ -20,6 +20,7 @@
 
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -42,7 +43,8 @@ using namespace o2::aod::hf_cand_bplus;
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
-  Produces<aod::HfCandBplusBase> rowCandidateBase;
+  Produces<aod::HfCandBplusBase> rowCandidateBase;     // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBplusProngs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing parameters
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -75,11 +77,20 @@ struct HfCandidateCreatorBplus {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-  double massBplus = RecoDecay::getMassPDG(pdg::Code::kBPlus);
-  double massD0Pi = 0.;
-  double bz = 0.;
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  double massPi{0.};
+  double massD0{0.};
+  double massBplus{0.};
+  double invMass2D0PiMin{0.};
+  double invMass2D0PiMax{0.};
+  double bz{0.};
+
+  // Fitter for B vertex
+  o2::vertexing::DCAFitterN<2> dfB;
+  // Fitter to redo D-vertex to get extrapolated daughter tracks
+  o2::vertexing::DCAFitterN<2> df;
 
   using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
@@ -96,11 +107,35 @@ struct HfCandidateCreatorBplus {
 
   void init(InitContext const&)
   {
+    // Initialise fitter for B vertex
+    dfB.setPropagateToPCA(propagateToPCA);
+    dfB.setMaxR(maxR);
+    dfB.setMinParamChange(minParamChange);
+    dfB.setMinRelChi2Change(minRelChi2Change);
+    dfB.setUseAbsDCA(true);
+    dfB.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Initial fitter to redo D-vertex to get extrapolated daughter tracks
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Configure CCDB access
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    // invariant-mass window cut
+    massPi = pdg->Mass(kPiPlus);
+    massD0 = pdg->Mass(pdg::Code::kD0);
+    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
+    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -129,24 +164,6 @@ struct HfCandidateCreatorBplus {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-
-    // Initialise fitter for B vertex
-    o2::vertexing::DCAFitterN<2> dfB;
-    dfB.setPropagateToPCA(propagateToPCA);
-    dfB.setMaxR(maxR);
-    dfB.setMinParamChange(minParamChange);
-    dfB.setMinRelChi2Change(minRelChi2Change);
-    dfB.setUseAbsDCA(true);
-    dfB.setWeightedFinalPCA(useWeightedFinalPCA);
-
-    // Initial fitter to redo D-vertex to get extrapolated daughter tracks
-    o2::vertexing::DCAFitterN<2> df;
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
 
     static int nCol = 0;
 
@@ -296,12 +313,12 @@ struct HfCandidateCreatorBplus {
 
           int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
 
-          // calculate invariant mass and fill the Invariant Mass control plot
-          massD0Pi = RecoDecay::m(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
-          if (std::abs(massD0Pi - massBplus) > invMassWindowBplus) {
+          // compute invariant mass square and apply selection
+          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
+          if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }
-          hMassBplusToD0Pi->Fill(massD0Pi);
+          hMassBplusToD0Pi->Fill(std::sqrt(invMass2D0Pi));
 
           // fill candidate table rows
           rowCandidateBase(collision.globalIndex(),
@@ -313,8 +330,9 @@ struct HfCandidateCreatorBplus {
                            pVecBach[0], pVecBach[1], pVecBach[2],
                            impactParameter0.getY(), impactParameter1.getY(),
                            std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                           candD0.globalIndex(), trackPion.globalIndex(), // index D0 and bachelor
                            hfFlag);
+
+          rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
         } // track loop
       }   // D0 cand loop
     }     // collision
@@ -331,10 +349,9 @@ struct HfCandidateCreatorBplusExpressions {
 
   void processMc(aod::HfCand2Prong const& dzero,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles const& particlesMC,
+                 aod::HfCandBplusProngs const& candsBplus)
   {
-    rowCandidateBPlus->bindExternalIndices(&tracks);
-    rowCandidateBPlus->bindExternalIndices(&dzero);
 
     int indexRec = -1, indexRecD0 = -1;
     int8_t signB = 0, signD0 = 0;
@@ -344,12 +361,12 @@ struct HfCandidateCreatorBplusExpressions {
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (const auto& candidate : *rowCandidateBPlus) {
+    for (const auto& candidate : candsBplus) {
       // Printf("New rec. candidate");
 
       flag = 0;
       origin = 0;
-      auto candDaughterD0 = candidate.prong0_as<aod::HfCand2Prong>();
+      auto candDaughterD0 = candidate.prong0();
       auto arrayDaughtersD0 = std::array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
       auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
