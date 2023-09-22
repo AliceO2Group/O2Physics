@@ -89,7 +89,6 @@ struct qVectorsTable {
 
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-
   void init(InitContext const&)
   {
     // Setup the access to the CCDB objects of interest.
@@ -121,16 +120,16 @@ struct qVectorsTable {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
 
-    if (cfgCorr->size() < 48){
+    if (cfgCorr->size() < 48) {
       LOGF(fatal, "No proper correction factor assigned");
     }
-    if (cfgBPosCorr->size() < 48){
+    if (cfgBPosCorr->size() < 48) {
       LOGF(fatal, "No proper correction factor assigned");
     }
-    if (cfgBNegCorr->size() < 48){
+    if (cfgBNegCorr->size() < 48) {
       LOGF(fatal, "No proper correction factor assigned");
     }
-//|| cfgBPosCent.size() != 48 || cfgBNegCent.size() != 48) {
+    //|| cfgBPosCent.size() != 48 || cfgBNegCent.size() != 48) {
     /*  // Debug printing.
       printf("Offset for FT0A: x = %.3f y = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
       printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
@@ -150,7 +149,7 @@ struct qVectorsTable {
   }
 
   void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
-//  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+                                                                                                                          //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
     // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
@@ -263,15 +262,17 @@ struct qVectorsTable {
     qVectBNeg[1] = 0.;
 
     for (auto& trk : tracks) {
-      if( !trk.isGlobalTrack() ) continue;
+      if (!trk.isGlobalTrack())
+        continue;
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
-      if( abs( trk.eta() ) < 0.1 || abs( trk.eta() ) > 0.8 ) continue;
-      if( trk.eta() > 0 ){
-        qVectBPos[0] += trk.pt() * TMath::Cos( 2.*trk.phi());
-        qVectBPos[1] += trk.pt() * TMath::Sin( 2.*trk.phi());
-      } else if( trk.eta() < 0 ){
-        qVectBNeg[0] += trk.pt() * TMath::Cos( 2.*trk.phi());
-        qVectBNeg[1] += trk.pt() * TMath::Sin( 2.*trk.phi());
+      if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
+        continue;
+      if (trk.eta() > 0) {
+        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi());
+        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi());
+      } else if (trk.eta() < 0) {
+        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi());
+        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi());
       }
     }
 
@@ -310,7 +311,7 @@ struct qVectorsTable {
     float qVectBNeg_twist[2];
     float qVectBNeg_final[2];
 
-    for(int i=0;i<2;i++){
+    for (int i = 0; i < 2; i++) {
       qVector_uncor[i] = qVector_final[i];
       qVector_rectr[i] = qVector_final[i];
       qVector_twist[i] = qVector_final[i];
@@ -326,35 +327,32 @@ struct qVectorsTable {
       qVectBNeg_final[i] = qVectBNeg[i];
     }
 
-    helperEP.DoRecenter( qVector_rectr[0], qVector_rectr[1], cfgCorr->at(cBin*6), cfgCorr->at(cBin*6+1) );
+    helperEP.DoRecenter(qVector_rectr[0], qVector_rectr[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
 
-    helperEP.DoRecenter( qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin*6+2), cfgCorr->at(cBin*6+3) );
-    helperEP.DoTwist( qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin*6+4), cfgCorr->at(cBin*6+5) );
+    helperEP.DoRecenter(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
+    helperEP.DoTwist(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 4), cfgCorr->at(cBin * 6 + 5));
 
-    helperEP.DoRecenter( qVector_final[0], qVector_final[1], cfgCorr->at(cBin*6), cfgCorr->at(cBin*6+1) );
-    helperEP.DoTwist( qVector_final[0], qVector_final[1], cfgCorr->at(cBin*6+2), cfgCorr->at(cBin*6+3) );
-    helperEP.DoRescale( qVector_final[0], qVector_final[1], cfgCorr->at(cBin*6+4), cfgCorr->at(cBin*6+5) );
+    helperEP.DoRecenter(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6 + 4), cfgCorr->at(cBin * 6 + 5));
 
+    helperEP.DoRecenter(qVectBPos_rectr[0], qVectBPos_rectr[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
 
-    helperEP.DoRecenter( qVectBPos_rectr[0], qVectBPos_rectr[1], cfgBPosCorr->at(cBin*6), cfgBPosCorr->at(cBin*6+1) );
+    helperEP.DoRecenter(qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin * 6 + 2), cfgBPosCorr->at(cBin * 6 + 3));
 
-    helperEP.DoRecenter( qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin*6), cfgBPosCorr->at(cBin*6+1) );
-    helperEP.DoTwist( qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin*6+2), cfgBPosCorr->at(cBin*6+3) );
+    helperEP.DoRecenter(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6 + 2), cfgBPosCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6 + 4), cfgBPosCorr->at(cBin * 6 + 5));
 
-    helperEP.DoRecenter( qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin*6), cfgBPosCorr->at(cBin*6+1) );
-    helperEP.DoTwist( qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin*6+2), cfgBPosCorr->at(cBin*6+3) );
-    helperEP.DoRescale( qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin*6+4), cfgBPosCorr->at(cBin*6+5) );
+    helperEP.DoRecenter(qVectBNeg_rectr[0], qVectBNeg_rectr[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
 
+    helperEP.DoRecenter(qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin * 6 + 2), cfgBNegCorr->at(cBin * 6 + 3));
 
-    helperEP.DoRecenter( qVectBNeg_rectr[0], qVectBNeg_rectr[1], cfgBNegCorr->at(cBin*6), cfgBNegCorr->at(cBin*6+1) );
-
-    helperEP.DoRecenter( qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin*6), cfgBNegCorr->at(cBin*6+1) );
-    helperEP.DoTwist( qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin*6+2), cfgBNegCorr->at(cBin*6+3) );
-
-    helperEP.DoRecenter( qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin*6), cfgBNegCorr->at(cBin*6+1) );
-    helperEP.DoTwist( qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin*6+2), cfgBNegCorr->at(cBin*6+3) );
-    helperEP.DoRescale( qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin*6+4), cfgBNegCorr->at(cBin*6+5) );
-
+    helperEP.DoRecenter(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6 + 2), cfgBNegCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6 + 4), cfgBNegCorr->at(cBin * 6 + 5));
 
     // Fill the columns of the Qvectors table.
     qVector(cent, cBin,
