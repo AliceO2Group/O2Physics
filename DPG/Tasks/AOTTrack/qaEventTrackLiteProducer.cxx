@@ -315,6 +315,7 @@ struct qaEventTrackLiteProducer {
       if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
         return;
       }
+      nTableEventCounter++;
 
       const auto tracksFilteredPerColl = tracksFiltered.sliceBy(perRecoCollision, collision.globalIndex());
       const auto tracksAllPerColl = tracksAll.sliceBy(perRecoCollision, collision.globalIndex());

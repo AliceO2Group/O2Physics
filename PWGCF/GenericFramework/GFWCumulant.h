@@ -18,11 +18,11 @@ If used, modified, or distributed, please aknowledge the author of this code.
 */
 #ifndef PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
 #define PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+
 #include <cmath>
 #include <complex>
 #include <vector>
-using std::complex;
-using std::vector;
+
 class GFWCumulant
 {
  public:
@@ -42,22 +42,22 @@ class GFWCumulant
   int GetN() { return fNEntries; }
   bool IsPtBinFilled(int ptb);
   void CreateComplexVectorArray(int N = 1, int P = 1, int Pt = 1);
-  void CreateComplexVectorArrayVarPower(int N = 1, vector<int> Pvec = {1}, int Pt = 1);
+  void CreateComplexVectorArrayVarPower(int N = 1, std::vector<int> Pvec = {1}, int Pt = 1);
   int PW(int ind) { return fPowVec.at(ind); }; // No checks to speed up, be carefull!!!
   void DestroyComplexVectorArray();
-  complex<double> Vec(int, int, int ptbin = 0); // envelope class to summarize pt-dif. Q-vec getter
+  std::complex<double> Vec(int, int, int ptbin = 0); // envelope class to summarize pt-dif. Q-vec getter
  protected:
-  complex<double>*** fQvector;
+  std::complex<double>*** fQvector;
   uint fUsed;
   int fNEntries;
   // Q-vectors. Could be done recursively, but maybe defining each one of them explicitly is easier to read
   int fN;              //! Harmonics
   int fPow;            //! Power
-  vector<int> fPowVec; //! Powers array
+  std::vector<int> fPowVec; //! Powers array
   int fPt;             //! fPt bins
   bool* fFilledPts;
   bool fInitialized; // Arrays are initialized
-  complex<double> fNullQ = 0;
+  std::complex<double> fNullQ = 0;
 };
 
 #endif // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_

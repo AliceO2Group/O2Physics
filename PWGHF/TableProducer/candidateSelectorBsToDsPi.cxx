@@ -21,6 +21,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -35,6 +36,7 @@ using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 
 struct HfCandidateSelectorBsToDsPi {
   Produces<aod::HfSelBsToDsPi> hfSelBsToDsPiCandidate; // table defined in CandidateSelectionTables.h
+  Produces<aod::HfMlBsToDsPi> hfMlBsToDsPiCandidate;   // table defined in CandidateSelectionTables.h
 
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
@@ -54,9 +56,26 @@ struct HfCandidateSelectorBsToDsPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bs_to_ds_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Bs candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTBs", "Path on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFilesCCDB", std::vector<std::string>{"ModelHandler_onnx_BsToDsPi.onnx"}, "ONNX file names on CCDB for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // check if selectionFlagDs (defined in candidateCreatorBs.cxx) and usePid configurables are in sync
   bool selectionFlagDsAndUsePidInSync = true;
+
+  o2::analysis::HfMlResponse<float> hfMlResponse;
+  std::vector<float> outputMl = {};
+
+  o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
 
@@ -87,6 +106,18 @@ struct HfCandidateSelectorBsToDsPi {
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
+    }
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.init();
+      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
 
     int selectionFlagDs = -1;
@@ -122,6 +153,9 @@ struct HfCandidateSelectorBsToDsPi {
       // check if flagged as Bs → Ds π
       if (!TESTBIT(hfCandBs.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
+        if (applyMl) {
+          hfMlBsToDsPiCandidate(outputMl);
+        }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandBs);
         }
@@ -135,6 +169,9 @@ struct HfCandidateSelectorBsToDsPi {
       // topological cuts
       if (!hf_sel_candidate_bs::selectionTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
+        if (applyMl) {
+          hfMlBsToDsPiCandidate(outputMl);
+        }
         continue;
       }
       SETBIT(statusBsToDsPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusBsToDsPi = 3
@@ -145,6 +182,9 @@ struct HfCandidateSelectorBsToDsPi {
       // checking if selectionFlagDs and usePid are in sync
       if (!selectionFlagDsAndUsePidInSync) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
+        if (applyMl) {
+          hfMlBsToDsPiCandidate(outputMl);
+        }
         continue;
       }
       // track-level PID selection
@@ -153,11 +193,39 @@ struct HfCandidateSelectorBsToDsPi {
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_bs::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
+          if (applyMl) {
+            hfMlBsToDsPiCandidate(outputMl);
+          }
           continue;
         }
         SETBIT(statusBsToDsPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusBsToDsPi = 7
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandBs);
+        }
+      }
+
+      // ML selections
+      if (applyMl) {
+        std::vector<float> inputFeatures{hfCandBs.cpa(),
+                                         hfCandBs.cpaXY(),
+                                         hfCandBs.decayLength(),
+                                         hfCandBs.decayLengthXY(),
+                                         hfCandBs.chi2PCA(),
+                                         hfCandBs.impactParameter0(),
+                                         hfCandBs.impactParameter1(),
+                                         hfCandBs.maxNormalisedDeltaIP(),
+                                         hfCandBs.impactParameterProduct()};
+
+        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
+        hfMlBsToDsPiCandidate(outputMl);
+
+        if (!isSelectedMl) {
+          hfSelBsToDsPiCandidate(statusBsToDsPi);
+          continue;
+        }
+        SETBIT(statusBsToDsPi, aod::SelectionStep::RecoMl);
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, ptCandBs);
         }
       }
 

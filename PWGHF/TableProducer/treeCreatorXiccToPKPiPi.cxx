@@ -169,7 +169,7 @@ struct HfTreeCreatorXiccToPKPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const& mcCollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
                TracksWPid const& tracks,

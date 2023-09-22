@@ -297,7 +297,7 @@ struct bbParams {
 
     // Check the TFile/CCDB configuration
     if (cfg.value.size() != 4) {
-      LOG(fatal) << "bbParams `" << name << "` :: The input configurable has the wrong size " << cfg.value.size() << " while expecting 3";
+      LOG(fatal) << "bbParams `" << name << "` :: The input configurable has the wrong size " << cfg.value.size() << " while expecting 4";
     }
     const std::string bb = cfg.value.at(0);
     const std::string post = cfg.value.at(1);

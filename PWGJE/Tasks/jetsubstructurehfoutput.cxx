@@ -64,7 +64,7 @@ struct JetSubstructureHFOutputTask {
     jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
   }
 
-  void processDummy(typename CollisionTable::iterator const& collision)
+  void processDummy(aod::Collision const& collision)
   {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processDummy, "Dummy process function turned on by default", true);

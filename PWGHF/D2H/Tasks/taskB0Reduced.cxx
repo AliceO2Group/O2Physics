@@ -48,7 +48,7 @@ struct HfTaskB0Reduced {
      {"hPtProng1", "B0 candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{300, 4.5, 6.0}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "B^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -163,7 +163,7 @@ struct HfTaskB0Reduced {
 
   /// B0 MC analysis and fill histograms
   void processMc(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s> const& candidates,
-                 aod::HfMcGenRedB0s const& particlesMc,
+                 aod::HfMcGenRedB0s const& mcParticles,
                  aod::HfRed3Prongs const&)
   {
     // MC rec
@@ -224,8 +224,7 @@ struct HfTaskB0Reduced {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();

@@ -50,8 +50,9 @@ struct TrackSelectionFlags {
   static constexpr flagtype kDCAxy = 1 << 13;
   static constexpr flagtype kDCAz = 1 << 14;
   // Combo masks
-  static constexpr flagtype kQualityTracks = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
   static constexpr flagtype kQualityTracksITS = kTrackType | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
+  static constexpr flagtype kQualityTracksTPC = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit;
+  static constexpr flagtype kQualityTracks = kTrackType | kQualityTracksITS | kQualityTracksTPC;
   static constexpr flagtype kQualityTracksWoTPCCluster = kQualityTracksITS | kTPCChi2NDF | kTPCRefit;
   static constexpr flagtype kPrimaryTracks = kGoldenChi2 | kDCAxy | kDCAz;
   static constexpr flagtype kInAcceptanceTracks = kPtRange | kEtaRange;
@@ -103,6 +104,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CheckFlag, checkFlag,
 // Combo selections
 DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                                          //! Passed the combined track cut: kQualityTracks
 DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrackITS, isQualityTrackITS, TrackSelectionFlags::kQualityTracksITS);                                 //! Passed the combined track cut: kQualityTracksITS
+DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, TrackSelectionFlags::kQualityTracksTPC);                                 //! Passed the combined track cut: kQualityTracksTPC
 DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                                          //! Passed the combined track cut: kPrimaryTracks
 DECLARE_DYN_TRKSEL_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, TrackSelectionFlags::kInAcceptanceTracks);                           //! Passed the combined track cut: kInAcceptanceTracks
 DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                              //! Passed the combined track cut: kGlobalTrack
@@ -155,6 +157,7 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::TrackCutFlagFb5,
                   track::IsQualityTrack<track::TrackCutFlag>,
                   track::IsQualityTrackITS<track::TrackCutFlag>,
+                  track::IsQualityTrackTPC<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,
                   track::IsGlobalTrack<track::TrackCutFlag>,
