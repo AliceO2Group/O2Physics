@@ -141,16 +141,8 @@ DECLARE_SOA_TABLE(HfRedTracksPid, "AOD", "HFREDTRACKPID", //! Table with PID tra
                   o2::soa::Index<>,
                   hf_track_index_reduced::HasTPC,
                   hf_track_index_reduced::HasTOF,
-                  pidtpc::TPCNSigmaEl,
-                  pidtpc::TPCNSigmaMu,
                   pidtpc::TPCNSigmaPi,
-                  pidtpc::TPCNSigmaKa,
-                  pidtpc::TPCNSigmaPr,
-                  pidtof::TOFNSigmaEl,
-                  pidtof::TOFNSigmaMu,
-                  pidtof::TOFNSigmaPi,
-                  pidtof::TOFNSigmaKa,
-                  pidtof::TOFNSigmaPr);
+                  pidtof::TOFNSigmaPi);
 
 DECLARE_SOA_EXTENDED_TABLE_USER(HfRedTracksExt, HfRedTrackBases, "HFREDTRACKEXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
