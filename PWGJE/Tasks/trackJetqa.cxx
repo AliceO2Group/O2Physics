@@ -73,10 +73,10 @@ struct TrackJetQa {
     histos.add("TrackPar/dcaXY", "distance of closest approach in #it{xy} plane;#it{p}_{T} [GeV/c];#it{dcaXY} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/dcaZ", "distance of closest approach in #it{z};#it{p}_{T} [GeV/c];#it{dcaZ} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/length", "track length in cm;#it{p}_{T} [GeV/c];#it{Length} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, 0, 1000}}});
-    histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_firstLayerActive", "uncertainty over #it{p}_{T} with first ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_secondLayerActive", "uncertainty over #it{p}_{T} with second ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_bothLayersActive", "uncertainty over #it{p}_{T} with first and second ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_firstLayerActive", "uncertainty over #it{p}_{T} with first ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_secondLayerActive", "uncertainty over #it{p}_{T} with second ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_bothLayersActive", "uncertainty over #it{p}_{T} with first and second ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
 
     // event property histograms
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
@@ -168,19 +168,19 @@ struct TrackJetQa {
         histos.fill(HIST("TrackPar/dcaXY"), track.pt(), track.dcaXY());
         histos.fill(HIST("TrackPar/dcaZ"), track.pt(), track.dcaZ());
         histos.fill(HIST("TrackPar/length"), track.pt(), track.length());
-        histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+        histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt() * track.pt());
 
         //// check the uncertainty over pT activating first, second and first & second ITS layers
         bool firstLayerActive = track.itsClusterMap() & (1 << 0);
         bool secondLayerActive = track.itsClusterMap() & (1 << 1);
         if (firstLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_firstLayerActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_firstLayerActive"), track.pt(), track.sigma1Pt() * track.pt());
         }
         if (secondLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_secondLayerActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_secondLayerActive"), track.pt(), track.sigma1Pt() * track.pt());
         }
         if (firstLayerActive && secondLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_bothLayersActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_bothLayersActive"), track.pt(), track.sigma1Pt() * track.pt());
         }
 
         // fill ITS variables
