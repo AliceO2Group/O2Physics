@@ -77,7 +77,6 @@ struct HfCandidateCreatorB0 {
   double massPi{0.};
   double massD{0.};
   double massB0{0.};
-  double invMass2DPi{0.};
   double invMass2DPiMin{0.};
   double invMass2DPiMax{0.};
   double bz{0.};
@@ -99,7 +98,7 @@ struct HfCandidateCreatorB0 {
   OutputObj<TH1F> hPtD{TH1F("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAD{TH1F("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
-  OutputObj<TH1F> hMass2B0ToDPi{TH1F("hMass2B0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) square (GeV^{2}/#it{c}^{4});entries", 500, 3., 8.)};
+  OutputObj<TH1F> hMassB0ToDPi{TH1F("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
@@ -300,11 +299,11 @@ struct HfCandidateCreatorB0 {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
           // calculate invariant mass square and apply selection
-          invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
-          hMass2B0ToDPi->Fill(invMass2DPi);
+          hMassB0ToDPi->Fill(std::sqrt(invMass2DPi));
 
           // compute impact parameters of D and Pi
           o2::dataformats::DCA dcaD;

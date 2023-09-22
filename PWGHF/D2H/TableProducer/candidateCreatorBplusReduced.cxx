@@ -57,7 +57,6 @@ struct HfCandidateCreatorBplusReduced {
   double massPi{0.};
   double massD0{0.};
   double massBplus{0.};
-  double invMass2D0Pi{0.};
   double bz{0.};
 
   // Fitter for B vertex (2-prong vertex filter)
@@ -71,7 +70,7 @@ struct HfCandidateCreatorBplusReduced {
   void init(InitContext const&)
   {
     // histograms
-    registry.add("hMass2BplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #overline{D^{0}}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#plus}) square (GeV^{2}/#it{c}^{4});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #overline{D^{0}}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -137,7 +136,7 @@ struct HfCandidateCreatorBplusReduced {
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
 
           // compute invariant mass square and apply selection
-          invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});
+          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }
@@ -161,7 +160,7 @@ struct HfCandidateCreatorBplusReduced {
           df2.getTrack(0).getPxPyPzGlo(pVecD0);   // momentum of D0 at the B+ vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B+ vertex
 
-          registry.fill(HIST("hMass2BplusToD0Pi"), invMass2D0Pi);
+          registry.fill(HIST("hMassBplusToD0Pi"), std::sqrt(invMass2D0Pi));
 
           // compute impact parameters of D0 and Pi
           o2::dataformats::DCA dcaD0;

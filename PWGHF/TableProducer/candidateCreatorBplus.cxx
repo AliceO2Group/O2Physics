@@ -83,7 +83,6 @@ struct HfCandidateCreatorBplus {
   double massPi{0.};
   double massD0{0.};
   double massBplus{0.};
-  double invMass2D0Pi{0.};
   double invMass2D0PiMin{0.};
   double invMass2D0PiMax{0.};
   double bz{0.};
@@ -104,7 +103,7 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, -2., 2.)};
-  OutputObj<TH1F> hMass2BplusToD0Pi{TH1F("hMass2BplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) square (GeV^{2}/#it{c}^{4});entries", 500, 3., 8.)};
+  OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
 
   void init(InitContext const&)
   {
@@ -315,11 +314,11 @@ struct HfCandidateCreatorBplus {
           int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
 
           // compute invariant mass square and apply selection
-          invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
+          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }
-          hMass2BplusToD0Pi->Fill(invMass2D0Pi);
+          hMassBplusToD0Pi->Fill(std::sqrt(invMass2D0Pi));
 
           // fill candidate table rows
           rowCandidateBase(collision.globalIndex(),
