@@ -28,7 +28,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "EventFiltering/filterTables.h"
-#include "HFFilterHelpers.h"
+#include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
 using namespace o2::aod;

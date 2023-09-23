@@ -55,13 +55,14 @@ struct createEMReducedEvent {
 
   void init(o2::framework::InitContext&)
   {
-    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
+    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has > minN_PCM");
     hEventCounter->GetXaxis()->SetBinLabel(3, "has > minN_PHOS");
     hEventCounter->GetXaxis()->SetBinLabel(4, "has > minN_EMC");
     hEventCounter->GetXaxis()->SetBinLabel(5, "has > minN_any");
     hEventCounter->GetXaxis()->SetBinLabel(6, "sel8");
+    hEventCounter->GetXaxis()->SetBinLabel(7, "sel8 & minN");
     registry.add<TH1>("hNGammas_PCM", ";#it{N}_{#gamma,PCM};#it{count}", kTH1I, {{21, -0.5, 20.5}});
     registry.add<TH1>("hNGammas_PHOS", ";#it{N}_{#gamma,PHOS};#it{count}", kTH1I, {{21, -0.5, 20.5}});
     registry.add<TH1>("hNGammas_EMC", ";#it{N}_{#gamma,EMC};#it{count}", kTH1I, {{21, -0.5, 20.5}});
@@ -125,6 +126,9 @@ struct createEMReducedEvent {
       }
       if (collision.sel8()) {
         registry.fill(HIST("hEventCounter"), 6);
+      }
+      if (collision.sel8() && ng_emc >= minN_EMC && ng_phos >= minN_PHOS && ng_pcm >= minN_PCM) {
+        registry.fill(HIST("hEventCounter"), 7);
       }
 
       // store event selection decisions
