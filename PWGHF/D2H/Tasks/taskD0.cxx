@@ -267,9 +267,9 @@ struct HfTaskD0 {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt();                                                                                                                // gen. level pT
+        auto ptGen = particleMother.pt();                                                                                                                     // gen. level pT
         auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
-        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                         // gen. level pT
+        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                              // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
@@ -436,7 +436,7 @@ struct HfTaskD0 {
   }
 
   void processMcWithDCAFitterN(soa::Join<aod::McParticles,
-                               aod::HfCand2ProngMcGen> const& particlesMC,
+                                         aod::HfCand2ProngMcGen> const& particlesMC,
                                aod::TracksWMc const& tracks)
   {
     processMc<VertexerType::DCAFitter>(selectedD0CandidatesMc, particlesMC, tracks);
@@ -444,7 +444,7 @@ struct HfTaskD0 {
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticle(soa::Join<aod::McParticles,
-                               aod::HfCand2ProngMcGen> const& particlesMC,
+                                         aod::HfCand2ProngMcGen> const& particlesMC,
                                aod::TracksWMc const& tracks)
   {
     processMc<VertexerType::KfParticle>(selectedD0CandidatesMcKF, particlesMC, tracks);
