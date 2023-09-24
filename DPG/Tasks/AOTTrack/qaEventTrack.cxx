@@ -133,7 +133,7 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-    const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
+    const AxisSpec axisVertexNumContrib{500, 0, 500, "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
@@ -167,6 +167,7 @@ struct qaEventTrack {
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+    histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -1359,6 +1360,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     }
   }
   histos.fill(HIST("Events/nContribWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
+  histos.fill(HIST("Events/nContribAllvsWithTRD"), collision.numContrib(), nPvContrWithTRD);
 
   // track related histograms
   for (const auto& track : tracks) {
