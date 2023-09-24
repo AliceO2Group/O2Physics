@@ -124,6 +124,11 @@ struct HfTaskD0 {
 
   void init(InitContext&)
   {
+    std::array<bool, 4> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function can be enabled at a time.");
+    }
+
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPhi", "2-prong candidates vs phi;inv. mass (#pi K) (GeV/#it{c}^{2});phi (rad);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {32, 0, o2::constants::math::TwoPI}}});
@@ -165,7 +170,7 @@ struct HfTaskD0 {
   }
 
   template <int reconstructionType, typename CandType>
-  void processData(CandType& candidates)
+  void processData(CandType const& candidates)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
@@ -430,13 +435,17 @@ struct HfTaskD0 {
     }
   }
 
-  void processMcWithDCAFitterN(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+  void processMcWithDCAFitterN(soa::Join<aod::McParticles,
+                               aod::HfCand2ProngMcGen> const& particlesMC,
+                               aod::TracksWMc const& tracks)
   {
     processMc<VertexerType::DCAFitter>(selectedD0CandidatesMc, particlesMC, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
-  void processMcWithKFParticle(soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+  void processMcWithKFParticle(soa::Join<aod::McParticles,
+                               aod::HfCand2ProngMcGen> const& particlesMC,
+                               aod::TracksWMc const& tracks)
   {
     processMc<VertexerType::KfParticle>(selectedD0CandidatesMcKF, particlesMC, tracks);
   }

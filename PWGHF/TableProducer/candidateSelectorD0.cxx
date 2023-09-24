@@ -76,7 +76,6 @@ struct HfCandidateSelectorD0 {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using cand2ProngKF = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF>;
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   // Define histograms
@@ -87,6 +86,11 @@ struct HfCandidateSelectorD0 {
 
   void init(InitContext& initContext)
   {
+    std::array<bool, 2> doprocess{doprocessWithDCAFitterN, doprocessWithKFParticle};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function can be enabled at a time.");
+    }
+
     if (applyMl) {
       registry.add("DebugBdt/hBdtScore1VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
       registry.add("DebugBdt/hBdtScore2VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});

@@ -469,6 +469,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processMcWithDCAFitterOnlySig(aod::Collisions const& collisions,
                                      aod::McCollisions const& mcCollisions,
+                                     SelectedCandidatesMc const&,
                                      MatchedGenCandidatesMc const& mcParticles,
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
@@ -479,6 +480,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processMcWithDCAFitterOnlyBkg(aod::Collisions const& collisions,
                                      aod::McCollisions const& mcCollisions,
+                                     SelectedCandidatesMc const&,
                                      MatchedGenCandidatesMc const& mcParticles,
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
@@ -500,6 +502,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processMcWithKFParticleOnlySig(aod::Collisions const& collisions,
                                       aod::McCollisions const& mcCollisions,
+                                      SelectedCandidatesMcKf const&,
                                       MatchedGenCandidatesMc const& mcParticles,
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
@@ -510,6 +513,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processMcWithKFParticleOnlyBkg(aod::Collisions const& collisions,
                                       aod::McCollisions const& mcCollisions,
+                                      SelectedCandidatesMcKf const&,
                                       MatchedGenCandidatesMc const& mcParticles,
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
