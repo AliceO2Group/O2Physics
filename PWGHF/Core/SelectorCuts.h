@@ -22,39 +22,6 @@
 
 namespace o2::analysis
 {
-namespace pdg
-{
-/// \brief Declarations of named PDG codes of HF particles missing in ROOT PDG_t.
-/// \note Follow kCamelCase naming convention
-/// \link https://root.cern/doc/master/TPDGCode_8h.html
-enum Code {
-  kB0 = 511,
-  kB0Bar = -511,
-  kBPlus = 521,
-  kBS = 531,
-  kBSBar = -531,
-  kD0 = 421,
-  kD0Bar = -421,
-  kDMinus = -411,
-  kDPlus = 411,
-  kDS = 431,
-  kDSBar = -431,
-  kDStar = 413,
-  kChiC1 = 20443,
-  kJPsi = 443,
-  kLambdaB0 = 5122,
-  kLambdaCPlus = 4122,
-  kOmegaC0 = 4332,
-  kPhi = 333,
-  kSigmaC0 = 4112,
-  kSigmaCPlusPlus = 4222,
-  kX3872 = 9920443,
-  kXiCCPlusPlus = 4422,
-  kXiCPlus = 4232,
-  kXiCZero = 4132
-};
-} // namespace pdg
-
 /// Finds pT bin in an array.
 /// \param bins  array of pT bins
 /// \param value  pT

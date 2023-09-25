@@ -27,6 +27,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/PDG.h"
 #include "PWGHF/Core/SelectorCuts.h"
 
 class HfHelper
