@@ -21,9 +21,6 @@
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
 
-#include "Framework/AnalysisHelpers.h" // declares o2::framework::Service
-#include "Framework/O2DatabasePDGPlugin.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
@@ -38,13 +35,6 @@ class HfHelper
 
   /// Default destructor
   ~HfHelper() = default;
-
-  o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
-
-  auto mass(int pdgCode)
-  {
-    return pdg->Mass(pdgCode);
-  }
 
   // 2-prong
 
