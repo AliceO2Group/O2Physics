@@ -36,6 +36,8 @@
 
 #include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -160,7 +162,7 @@ static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
 static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
-static const o2::framework::AxisSpec phiAxis{36, 0., TwoPI};
+static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
 static const std::array<o2::framework::AxisSpec, kNCharmParticles + 8> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
 static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
@@ -299,9 +301,9 @@ class HfFilterHelper
   template <typename T, typename H2>
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename V0, typename Coll, typename T, typename H2>
-  int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
+  int8_t isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc, typename V0, typename T, typename Coll>
-  bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision);
+  bool isSelectedCascade(const Casc& casc, const V0& v0, const std::array<T, 3>& dauTracks, const Coll& collision);
   template <typename T, typename T2>
   int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <typename T, typename U>
@@ -778,7 +780,7 @@ inline int8_t HfFilterHelper::isSelectedXicInMassRange(const T& pTrackSameCharge
 /// \param hArmPod is the pointer to an array of QA histo AP plot before selection
 /// \return an integer passes all cuts
 template <typename V0, typename Coll, typename T, typename H2>
-inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
   int8_t isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
 
@@ -928,7 +930,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const array<T, 2>& dauT
 /// \param collision is the collision
 /// \return true if cascade passes all cuts
 template <typename Casc, typename V0, typename T, typename Coll>
-inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision)
+inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const V0& v0, const std::array<T, 3>& dauTracks, const Coll& collision)
 {
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
