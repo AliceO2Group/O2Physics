@@ -9,7 +9,7 @@ import ROOT
 from ctypes import c_bool
 from enum import Enum
 
-class Pdg_ROOT(Enum):
+class PdgROOT(Enum):
     kGluon = ROOT.kGluon
     kElectron = ROOT.kElectron
     kPositron = ROOT.kPositron
@@ -86,16 +86,18 @@ def mass(code):
     success = c_bool(True)
     return ROOT.o2.O2DatabasePDG.Mass(code, success)
 
+type = "double"
+
 str_enum = "enum Code {\n"
 str_mass = ""
-
-for c in Pdg_ROOT:
-# for c in Pdg:
-    # print(f"{c.name} = {c.value}, {mass(c.value)}")
+for c in Pdg:
     str_enum += f"  {c.name} = {c.value},\n"
-    str_mass += f"constexpr float Mass{c.name[1:]} = {mass(c.value)};\n"
-
+    str_mass += f"constexpr {type} Mass{c.name[1:]} = {mass(c.value)};\n"
 str_enum += "};\n"
-
 print(str_enum)
 print(str_mass)
+
+str_mass_root = ""
+for c in PdgROOT:
+    str_mass_root += f"constexpr {type} Mass{c.name[1:]} = {mass(c.value)};\n"
+print(str_mass_root)

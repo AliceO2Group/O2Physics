@@ -47,7 +47,7 @@ enum Code {
   kXiCZero = 4132
 };
 
-/// \brief Declarations of particle massed from o2::O2DatabasePDG
+/// \brief Declarations of particle masses from o2::O2DatabasePDG
 /// \note Generated with root -b -l -q PWGHF/Core/listMasses.C
 constexpr double MassB0 = 5.27953;
 constexpr double MassB0Bar = 5.27953;
@@ -74,25 +74,50 @@ constexpr double MassXiCCPlusPlus = 3.59798;
 constexpr double MassXiCPlus = 2.4679;
 constexpr double MassXiCZero = 2.471;
 
-// constexpr double massPi = o2::constants::physics::MassPionCharged;
-// constexpr double massKa = o2::constants::physics::MassKaonCharged;
-// constexpr double massProton = o2::constants::physics::MassProton;
-// constexpr double massGamma = o2::constants::physics::MassPhoton;
-// constexpr double massK0S = o2::constants::physics::MassKaonNeutral;
-// constexpr double massLambda = o2::constants::physics::MassLambda;
-// constexpr double massXi = o2::constants::physics::MassXiMinus;
-// constexpr double massPhi = 1.019455;
-// constexpr double massD0 = 1.86484;
-// constexpr double massDPlus = 1.86962;
-// constexpr double massDS = 1.9685;
-// constexpr double massLambdaCPlus = 2.28646;
-// constexpr double massXiCPlus = 2.4679;
-// constexpr double massDStar = 2.01027;
-// constexpr double massBPlus = 5.27915;
-// constexpr double massB0 = 5.27953;
-// constexpr double massBs = 5.3663;
-// constexpr double massLb = 5.6202;
-// constexpr double massXib = 5.7924;
+/// \brief Masses for particles in the ROOT enum
+constexpr double MassGluon = 0.0;
+constexpr double MassElectron = 0.00051099891;
+constexpr double MassPositron = 0.00051099891;
+constexpr double MassNuE = 0.0;
+constexpr double MassNuEBar = 0.0;
+constexpr double MassMuonMinus = 0.105658;
+constexpr double MassMuonPlus = 0.105658;
+constexpr double MassNuMu = 0.0;
+constexpr double MassNuMuBar = 0.0;
+constexpr double MassTauMinus = 1.77684;
+constexpr double MassTauPlus = 1.77684;
+constexpr double MassNuTau = 0.0;
+constexpr double MassNuTauBar = 0.0;
+constexpr double MassGamma = 0.0;
+constexpr double MassZ0 = 91.187;
+constexpr double MassWPlus = 80.398;
+constexpr double MassWMinus = 80.398;
+constexpr double MassPi0 = 0.134977;
+constexpr double MassK0Long = 0.497614;
+constexpr double MassPiPlus = 0.13957;
+constexpr double MassPiMinus = 0.13957;
+constexpr double MassProton = 0.938272;
+constexpr double MassProtonBar = 0.938272;
+constexpr double MassNeutron = 0.939565;
+constexpr double MassNeutronBar = 0.939565;
+constexpr double MassK0Short = 0.497614;
+constexpr double MassK0 = 0.497614;
+constexpr double MassK0Bar = 0.497614;
+constexpr double MassKPlus = 0.493677;
+constexpr double MassKMinus = 0.493677;
+constexpr double MassLambda0 = 1.11568;
+constexpr double MassLambda0Bar = 1.11568;
+constexpr double MassLambda1520 = 1.5195;
+constexpr double MassSigmaMinus = 1.19744;
+constexpr double MassSigmaBarPlus = 1.19744;
+constexpr double MassSigmaPlus = 1.18937;
+constexpr double MassSigmaBarMinus = 1.18937;
+constexpr double MassSigma0 = 1.192642;
+constexpr double MassSigma0Bar = 1.192642;
+constexpr double MassXiMinus = 1.32171;
+constexpr double MassXiPlusBar = 1.32171;
+constexpr double MassOmegaMinus = 1.67245;
+constexpr double MassOmegaPlusBar = 1.67245;
 } // namespace o2::analysis::pdg
 
 #endif // PWGHF_CORE_PDG_H_
