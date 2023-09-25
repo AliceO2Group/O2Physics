@@ -53,19 +53,19 @@ class HfHelper
   template <typename T>
   auto ctD0(const T& candidate)
   {
-    return candidate.ct(mass(o2::analysis::pdg::kD0));
+    return candidate.ct(o2::analysis::pdg::MassD0);
   }
 
   template <typename T>
   auto yD0(const T& candidate)
   {
-    return candidate.y(mass(o2::analysis::pdg::kD0));
+    return candidate.y(o2::analysis::pdg::MassD0);
   }
 
   template <typename T>
   auto eD0(const T& candidate)
   {
-    return candidate.e(mass(o2::analysis::pdg::kD0));
+    return candidate.e(o2::analysis::pdg::MassD0);
   }
 
   template <typename T>
@@ -83,13 +83,13 @@ class HfHelper
   template <typename T>
   auto cosThetaStarD0(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(kPiPlus), mass(kKPlus)}, mass(o2::analysis::pdg::kD0), 1);
+    return candidate.cosThetaStar(std::array{mass(kPiPlus), mass(kKPlus)}, o2::analysis::pdg::MassD0, 1);
   }
 
   template <typename T>
   auto cosThetaStarD0bar(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(kKPlus), mass(kPiPlus)}, mass(o2::analysis::pdg::kD0), 0);
+    return candidate.cosThetaStar(std::array{mass(kKPlus), mass(kPiPlus)}, o2::analysis::pdg::MassD0, 0);
   }
 
   // J/ψ
@@ -175,13 +175,13 @@ class HfHelper
   template <typename T>
   auto invMassBplusToD0Pi(const T& candidate)
   {
-    return candidate.m(std::array{mass(o2::analysis::pdg::kD0), mass(kPiPlus)});
+    return candidate.m(std::array{o2::analysis::pdg::MassD0, mass(kPiPlus)});
   }
 
   template <typename T>
   auto cosThetaStarBplus(const T& candidate)
   {
-    return candidate.cosThetaStar(std::array{mass(o2::analysis::pdg::kD0), mass(kPiPlus)}, mass(o2::analysis::pdg::kBPlus), 1);
+    return candidate.cosThetaStar(std::array{o2::analysis::pdg::MassD0, mass(kPiPlus)}, mass(o2::analysis::pdg::kBPlus), 1);
   }
 
   // 3-prong
