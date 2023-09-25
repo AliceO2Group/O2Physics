@@ -395,12 +395,14 @@ struct hypertriton3bodyLabelCheck {
     for (auto& vtx : vtx3bodydatas) {
       registry.fill(HIST("hLabeledVtxCounter"), 0.5);
       if (vtx.mcParticleId() != -1) {
-        registry.fill(HIST("hLabeledVtxCounter"), 1.5);
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
-        if (mcparticle.pdgCode() > 0) {
+        if (mcparticle.pdgCode() == 1010010030) {
+          registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
-        } else {
+        } 
+        else if (mcparticle.pdgCode() == -1010010030) {
+          registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
         }
@@ -871,13 +873,12 @@ struct hypertriton3bodyMcParticleCount {
       {"h3dMCHypertriton", "h3dMCHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
       {"h3dMCDecayedHypertriton", "h3dMCDecayedHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
       {"hMcHypertritonCheck", "hMcHypertritonCheck", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-      {"hMcParticleCount", "hMcParticleCount", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
+      {"hMcPhysicalPrimaryParticleCount", "hMcPhysicalPrimaryParticleCount", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
 
       {"hMcHypertritonCount", "hMcHypertritonCount", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hMcHypertritonDecayCount", "hMcHypertritonDecayCount", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hMcHypertritonPt", "hMcHypertritonPt", {HistType::kTH1F, {{300, 0.0f, 15.0f}}}},
       {"hMcHypertritonLifeTime", "hMcHypertritonLifeTime", {HistType::kTH1F, {{500, 0.0f, 500.0f}}}},
-      {"hMcHypertritonDaughterPionCount", "hMcHypertritonDaughterPionCount", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
       {"hMcProtonPt", "hMcProtonPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hMcPionPt", "hMcPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hMcDeuteronPt", "hMcDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -896,14 +897,14 @@ struct hypertriton3bodyMcParticleCount {
     registry.get<TH1>(HIST("hMcHypertritonCheck"))->GetXaxis()->SetBinLabel(3, "Lifetime");
     registry.get<TH1>(HIST("hMcHypertritonCheck"))->GetXaxis()->SetBinLabel(4, "PtCut");
 
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(1, "ReadinAfterEvtRecSelCut(off)");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(2, "y<0.9(off)");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(3, "IsPhysicalPrimary");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(4, "(Anti)Proton");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(5, "(Anti)Pion");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(6, "(Anti)Deuteron");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(7, "(Anti)Hypertriton");
-    registry.get<TH1>(HIST("hMcParticleCount"))->GetXaxis()->SetBinLabel(8, "HasDaughter");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(1, "ReadinAfterEvtRecSelCut(off)");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(2, "IsPhysicalPrimary");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(3, "y<0.9(off)");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(4, "(Anti)Proton");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(5, "(Anti)Pion");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(6, "(Anti)Deuteron");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(7, "(Anti)Hypertriton");
+    registry.get<TH1>(HIST("hMcPhysicalPrimaryParticleCount"))->GetXaxis()->SetBinLabel(8, "HasDaughter");
     registry.get<TH1>(HIST("hMcHypertritonCount"))->GetXaxis()->SetBinLabel(1, "Generated number");
     registry.get<TH1>(HIST("hMcHypertritonCount"))->GetXaxis()->SetBinLabel(2, "primary Hypertriton mothers");
     registry.get<TH1>(HIST("hMcHypertritonDecayCount"))->GetXaxis()->SetBinLabel(1, "confirm to 3-body decay");
@@ -1039,30 +1040,32 @@ struct hypertriton3bodyMcParticleCount {
         }
       }
 
-      registry.fill(HIST("hMcParticleCount"), 0.5);
-      // if (TMath::Abs(mcparticle.y()) > rapidityMCcut) {continue;}
-      registry.fill(HIST("hMcParticleCount"), 1.5);
+      registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 0.5);
       if (!mcparticle.isPhysicalPrimary()) {
         continue;
       }
-      registry.fill(HIST("hMcParticleCount"), 2.5);
+      registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 1.5);
+      // if (TMath::Abs(mcparticle.y()) > rapidityMCcut) {continue;}
+      registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 2.5);
+
       if (mcparticle.pdgCode() == 211 || mcparticle.pdgCode() == -211) {
-        registry.fill(HIST("hMcParticleCount"), 3.5);
+        registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 3.5);
       }
-      if (mcparticle.pdgCode() == 2212 || mcparticle.pdgCode() == -2212) {
-        registry.fill(HIST("hMcParticleCount"), 4.5);
+      else if (mcparticle.pdgCode() == 2212 || mcparticle.pdgCode() == -2212) {
+        registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 4.5);
       }
-      if (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) {
-        registry.fill(HIST("hMcParticleCount"), 5.5);
+      else if (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) {
+        registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 5.5);
       }
-      if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
-        registry.fill(HIST("hMcParticleCount"), 6.5);
+      else if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
+        registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 6.5);
         registry.fill(HIST("hMcHypertritonCount"), 1.5);
       }
+
       if (!mcparticle.has_daughters()) {
         continue;
       }
-      registry.fill(HIST("hMcParticleCount"), 7.5);
+      registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 7.5);
     }
   }
 };
