@@ -25,7 +25,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/PDG.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 class HfHelper
 {

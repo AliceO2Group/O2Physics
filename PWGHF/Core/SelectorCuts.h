@@ -15,29 +15,11 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <algorithm> // std::upper_bound
-#include <iterator>  // std::distance
 #include <string>    // std::string
 #include <vector>    // std::vector
 
 namespace o2::analysis
 {
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
-/// \return index of the pT bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
-template <typename T1, typename T2>
-int findBin(T1 const& binsPt, T2 value)
-{
-  if (value < binsPt->front()) {
-    return -1;
-  }
-  if (value >= binsPt->back()) {
-    return -1;
-  }
-  return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
-}
 
 // namespace per channel
 
