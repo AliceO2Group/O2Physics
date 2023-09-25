@@ -81,8 +81,10 @@ class Pdg(Enum):
     kXiCZero = 4132
 
 def mass(code):
-    if code == 0:
-        return 0
+    if abs(code) == Pdg.kXiCCPlusPlus.value:
+        return 3.62155  # https://pdg.lbl.gov/ (2021)
+    if abs(code) == Pdg.kOmegaC0.value:
+        return 2.6952  # https://pdg.lbl.gov/ (2022)
     success = c_bool(True)
     return ROOT.o2.O2DatabasePDG.Mass(code, success)
 
