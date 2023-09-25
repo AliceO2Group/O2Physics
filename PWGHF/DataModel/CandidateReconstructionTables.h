@@ -31,6 +31,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Core/PDG.h"
 
 using namespace o2::analysis;
 
