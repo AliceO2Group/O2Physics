@@ -83,6 +83,8 @@ struct cascadeSelector {
       }
       auto v0data = v0.v0Data();
 
+      // TODO: inv mass selection, other cuts.
+
       // Let's try to do some PID
       // these are the tracks:
       auto bachTrack = casc.bachelor_as<FullTracksExtIUWithPID>();
@@ -139,6 +141,7 @@ struct cascadeCorrelations {
   AxisSpec deltaEtaAxis = {40, -2, 2, "#Delta#eta"};
   AxisSpec ptAxis = {200, 0, 15, "#it{p}_{T}"};
   AxisSpec selectionFlagAxis = {4, -0.05f, 3.5f, "Selection flag of casc candidate"};
+  AxisSpec vertexAxis = {1000, -10.0f, 10.0f, "cm"};
 
   HistogramRegistry registry{
     "registry",
@@ -154,10 +157,10 @@ struct cascadeCorrelations {
       {"hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
       {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
       {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
-      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
-      {"hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
-      {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
+      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {vertexAxis}}},
+      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {vertexAxis}}},
+      {"hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {vertexAxis}}},
+      {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
       {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
       {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -170,9 +173,9 @@ struct cascadeCorrelations {
       // correlation histos
       {"hDeltaPhiSS", "hDeltaPhiSS", {HistType::kTH1F, {deltaPhiAxis}}},
       {"hDeltaPhiOS", "hDeltaPhiOS", {HistType::kTH1F, {deltaPhiAxis}}},
-      // THnSparses containing all relevant dimensions, to be extended with e.g. V_z, multiplicity
-      {"hSparseOS", "hSparseOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis}}},
-      {"hSparseSS", "hSparseSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis}}},
+      // THnSparses containing all relevant dimensions, to be extended with e.g. multiplicity
+      {"hSparseOS", "hSparseOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis}}},
+      {"hSparseSS", "hSparseSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis}}},
     },
   };
 
@@ -244,7 +247,7 @@ struct cascadeCorrelations {
       // Fill the correct histograms based on same-sign or opposite-sign
       if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
         registry.fill(HIST("hDeltaPhiOS"), dphi);
-        registry.fill(HIST("hSparseOS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected());
+        registry.fill(HIST("hSparseOS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected(), collision.posZ());
       } else { // same-sign
         // make sure to check for autocorrelations - only possible in same-sign correlations
         if (v0dataTrigg.v0Id() == v0dataAssoc.v0Id()) {
@@ -283,7 +286,7 @@ struct cascadeCorrelations {
           }
         }
         registry.fill(HIST("hDeltaPhiSS"), dphi);
-        registry.fill(HIST("hSparseSS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected());
+        registry.fill(HIST("hSparseSS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected(), collision.posZ());
       }
     } // correlations
   }   // process
