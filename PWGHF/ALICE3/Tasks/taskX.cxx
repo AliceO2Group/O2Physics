@@ -209,8 +209,7 @@ struct HfTaskXMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
-        // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassX3872)) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
