@@ -109,8 +109,8 @@ using MultZeq = MultZeqs::iterator;
 
 namespace multDebug
 {
-DECLARE_SOA_COLUMN(MultDebugFT0A, multDebugFT0A, float);           //!
-DECLARE_SOA_COLUMN(MultDebugFT0C, multDebugFT0C, float);           //!
+DECLARE_SOA_COLUMN(MultDebugFT0A, multDebugFT0A, float); //!
+DECLARE_SOA_COLUMN(MultDebugFT0C, multDebugFT0C, float); //!
 } // namespace multDebug
 DECLARE_SOA_TABLE(MultsDebug, "AOD", "MULTDEBUG", //!
                   multDebug::MultDebugFT0A,

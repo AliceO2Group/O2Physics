@@ -325,7 +325,7 @@ struct MultiplicityTableTaskIndexed {
   {
     // process function to acquire FT0A/C derived table for posterior study
     for (auto const& ft0 : ft0s) {
-      if(bitcheck(ft0.triggerMask(), 4)){ 
+      if (bitcheck(ft0.triggerMask(), 4)) {
         float multFT0A = 0, multFT0C = 0;
         for (auto amplitude : ft0.amplitudeA()) {
           multFT0A += amplitude;
@@ -334,7 +334,7 @@ struct MultiplicityTableTaskIndexed {
           multFT0C += amplitude;
         }
 
-        multDebug( multFT0A, multFT0C );
+        multDebug(multFT0A, multFT0C);
       }
     }
   }
