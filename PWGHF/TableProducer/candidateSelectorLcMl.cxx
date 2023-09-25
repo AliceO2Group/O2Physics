@@ -253,9 +253,9 @@ struct HfCandidateSelectorLcMl {
       std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
-      const float massPi = hfHelper.mass(kPiPlus);
-      const float massK = hfHelper.mass(kKPlus);
-      const float massProton = hfHelper.mass(kProton);
+      const float massPi = o2::analysis::pdg::MassPiPlus;
+      const float massK = o2::analysis::pdg::MassKPlus;
+      const float massProton = o2::analysis::pdg::MassProton;
       const float massLc = hfHelper.mass(o2::analysis::pdg::kLambdaCPlus);
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});

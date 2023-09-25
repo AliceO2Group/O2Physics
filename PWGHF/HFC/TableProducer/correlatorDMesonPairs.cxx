@@ -189,14 +189,14 @@ struct HfCorrelatorDMesonPairs {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(hfHelper.mass(pdg::Code::kD0))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassD0)) > yCandMax) {
         return false;
       }
     } else {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(hfHelper.mass(pdg::Code::kDPlus))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassDPlus)) > yCandMax) {
         return false;
       }
     }
@@ -234,9 +234,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEtaMcRec"), candidate.eta());
       registry.fill(HIST("hPhiMcRec"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hYMcRec"), candidate.y(hfHelper.mass(pdg::Code::kD0)));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassD0));
       } else {
-        registry.fill(HIST("hYMcRec"), candidate.y(hfHelper.mass(pdg::Code::kDPlus)));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassDPlus));
       }
     } else {
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -245,9 +245,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hY"), candidate.y(hfHelper.mass(pdg::Code::kD0)));
+        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassD0));
       } else {
-        registry.fill(HIST("hY"), candidate.y(hfHelper.mass(pdg::Code::kDPlus)));
+        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassDPlus));
       }
     }
   }
@@ -371,8 +371,8 @@ struct HfCorrelatorDMesonPairs {
                       particle2.pt(),
                       particle1.y(),
                       particle2.y(),
-                      hfHelper.mass(pdg::Code::kD0),
-                      hfHelper.mass(pdg::Code::kD0),
+                      o2::analysis::pdg::MassD0,
+                      o2::analysis::pdg::MassD0,
                       candidateType1,
                       candidateType2,
                       2);
@@ -388,8 +388,8 @@ struct HfCorrelatorDMesonPairs {
                          particle2.pt(),
                          particle1.y(),
                          particle2.y(),
-                         hfHelper.mass(pdg::Code::kDPlus),
-                         hfHelper.mass(pdg::Code::kDPlus),
+                         o2::analysis::pdg::MassDPlus,
+                         o2::analysis::pdg::MassDPlus,
                          candidateType1,
                          candidateType2,
                          2);

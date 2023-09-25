@@ -92,10 +92,10 @@ struct HfCandidateCreatorCascade {
 
   void init(InitContext const&)
   {
-    massP = hfHelper.mass(kProton);
-    massK0s = hfHelper.mass(kK0Short);
-    massPi = hfHelper.mass(kPiPlus);
-    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+    massP = o2::analysis::pdg::MassProton;
+    massK0s = o2::analysis::pdg::MassK0Short;
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massLc = o2::analysis::pdg::MassLambdaCPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

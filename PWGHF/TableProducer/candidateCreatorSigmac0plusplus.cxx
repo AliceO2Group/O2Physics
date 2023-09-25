@@ -162,10 +162,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
         auto statusSpreadMinvPKPiFromPDG = 0;
         auto statusSpreadMinvPiKPFromPDG = 0;
-        if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - hfHelper.mass(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
+        if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPKPiCandLcMax) {
           statusSpreadMinvPKPiFromPDG = 1;
         }
-        if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - hfHelper.mass(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
+        if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPiKPCandLcMax) {
           statusSpreadMinvPiKPFromPDG = 1;
         }
         if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

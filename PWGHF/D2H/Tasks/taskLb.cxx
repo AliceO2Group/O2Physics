@@ -244,7 +244,7 @@ struct HfTaskLbMc {
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(pdg::Code::kLambdaB0));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaB0);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }

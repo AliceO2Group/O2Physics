@@ -1035,11 +1035,11 @@ struct HfTrackIndexSkimCreator {
       return;
     }
 
-    massPi = hfHelper.mass(kPiPlus);
-    massK = hfHelper.mass(kKPlus);
-    massProton = hfHelper.mass(kProton);
-    massElectron = hfHelper.mass(kElectron);
-    massMuon = hfHelper.mass(kMuonPlus);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
+    massProton = o2::analysis::pdg::MassProton;
+    massElectron = o2::analysis::pdg::MassElectron;
+    massMuon = o2::analysis::pdg::MassMuonPlus;
     massDzero = hfHelper.mass(o2::analysis::pdg::kD0);
 
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{std::array{massPi, massK},
@@ -2549,10 +2549,10 @@ struct HfTrackIndexSkimCreatorCascades {
       etaMinV0Daugh.value = -etaMaxV0Daugh;
     }
 
-    massP = hfHelper.mass(kProton);
-    massK0s = hfHelper.mass(kK0Short);
-    massPi = hfHelper.mass(kPiPlus);
-    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+    massP = o2::analysis::pdg::MassProton;
+    massK0s = o2::analysis::pdg::MassK0Short;
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massLc = o2::analysis::pdg::MassLambdaCPlus;
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -2851,12 +2851,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
       return;
     }
 
-    massP = hfHelper.mass(kProton);
-    massPi = hfHelper.mass(kPiPlus);
-    massXi = hfHelper.mass(kXiMinus);
-    massOmega = hfHelper.mass(kOmegaMinus);
-    massXiczero = hfHelper.mass(pdg::Code::kXiCZero);
-    massXicplus = hfHelper.mass(pdg::Code::kXiCPlus);
+    massP = o2::analysis::pdg::MassProton;
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massXi = o2::analysis::pdg::MassXiMinus;
+    massOmega = o2::analysis::pdg::MassOmegaMinus;
+    massXiczero = o2::analysis::pdg::MassXiCZero;
+    massXicplus = o2::analysis::pdg::MassXiCPlus;
 
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroToXiPi] = std::array{std::array{massXi, massPi},
                                                                                  std::array{massPi, massXi}};

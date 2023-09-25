@@ -201,7 +201,7 @@ struct HfTaskOmegacSt {
           LOG(debug) << "cascade with PDG code: " << pdgCode;
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
-            std::array<double, 2> masses{hfHelper.mass(kOmegaMinus), hfHelper.mass(kPiPlus)};
+            std::array<double, 2> masses{o2::analysis::pdg::MassOmegaMinus, o2::analysis::pdg::MassPiPlus};
             std::array<std::array<float, 3>, 2> momenta;
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();

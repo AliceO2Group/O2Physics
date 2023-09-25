@@ -267,7 +267,7 @@ struct HfTaskB0 {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(pdg::Code::kB0));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassB0);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }

@@ -78,7 +78,7 @@ struct HfCandidateCreatorX {
 
   void init(InitContext const&)
   {
-    massPi = hfHelper.mass(kPiPlus);
+    massPi = o2::analysis::pdg::MassPiPlus;
     massJpsi = hfHelper.mass(443);
   }
 

@@ -70,9 +70,9 @@ struct HfCandidateCreatorB0Reduced {
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
 
-    massPi = hfHelper.mass(kPiPlus);
-    massD = hfHelper.mass(pdg::Code::kDMinus);
-    massB0 = hfHelper.mass(pdg::Code::kB0);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massD = o2::analysis::pdg::MassDMinus;
+    massB0 = o2::analysis::pdg::MassB0;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);

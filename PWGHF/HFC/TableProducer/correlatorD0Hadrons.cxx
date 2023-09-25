@@ -236,9 +236,9 @@ struct HfCorrelatorD0Hadrons {
 
   void init(InitContext&)
   {
-    massD0 = hfHelper.mass(pdg::Code::kD0);
-    massPi = hfHelper.mass(kPiPlus);
-    massK = hfHelper.mass(kKPlus);
+    massD0 = o2::analysis::pdg::MassD0;
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
 
     auto vbins = (std::vector<double>)bins;
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});

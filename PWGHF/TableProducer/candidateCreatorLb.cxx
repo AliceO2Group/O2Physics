@@ -75,8 +75,8 @@ struct HfCandidateCreatorLb {
 
   void init(InitContext const&)
   {
-    massPi = hfHelper.mass(kPiMinus);
-    massLc = hfHelper.mass(pdg::Code::kLambdaCPlus);
+    massPi = o2::analysis::pdg::MassPiMinus;
+    massLc = o2::analysis::pdg::MassLambdaCPlus;
   }
 
   void process(aod::Collision const& collision,

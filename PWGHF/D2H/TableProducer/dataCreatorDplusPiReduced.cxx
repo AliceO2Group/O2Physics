@@ -106,9 +106,9 @@ struct HfDataCreatorDplusPiReduced {
 
   void init(InitContext const&)
   {
-    massPi = hfHelper.mass(kPiPlus);
-    massD = hfHelper.mass(pdg::Code::kDMinus);
-    massB0 = hfHelper.mass(pdg::Code::kB0);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massD = o2::analysis::pdg::MassDMinus;
+    massB0 = o2::analysis::pdg::MassB0;
 
     // histograms
     constexpr int kNBinsEvents = kNEvent;
@@ -448,7 +448,7 @@ struct HfDataCreatorDplusPiReducedMc {
       }
 
       auto ptParticle = particle.pt();
-      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(pdg::Code::kB0));
+      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassB0);
       auto etaParticle = particle.eta();
 
       std::array<float, 2> ptProngs;

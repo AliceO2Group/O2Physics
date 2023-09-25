@@ -78,7 +78,7 @@ struct HfCandidateCreatorChic {
 
   void init(InitContext const&)
   {
-    massJpsi = hfHelper.mass(pdg::Code::kJPsi);
+    massJpsi = o2::analysis::pdg::MassJPsi;
   }
 
   void process(aod::Collision const& collision,

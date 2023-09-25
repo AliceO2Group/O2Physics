@@ -212,7 +212,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
         std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
-        auto mass2Prong = RecoDecay::m(arrMom, std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
+        auto mass2Prong = RecoDecay::m(arrMom, std::array{o2::analysis::pdg::MassPiPlus, o2::analysis::pdg::MassKPlus});
         registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
       }
     }
@@ -358,8 +358,8 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       // calculate invariant masses
       auto arrayMomenta = std::array{pVec0, pVec1};
-      massPiK = RecoDecay::m(arrayMomenta, std::array{hfHelper.mass(kPiPlus), hfHelper.mass(kKPlus)});
-      massKPi = RecoDecay::m(arrayMomenta, std::array{hfHelper.mass(kKPlus), hfHelper.mass(kPiPlus)});
+      massPiK = RecoDecay::m(arrayMomenta, std::array{o2::analysis::pdg::MassPiPlus, o2::analysis::pdg::MassKPlus});
+      massKPi = RecoDecay::m(arrayMomenta, std::array{o2::analysis::pdg::MassKPlus, o2::analysis::pdg::MassPiPlus});
       hMass->Fill(massPiK);
       // hMass->Fill(massKPi);
     }
@@ -447,11 +447,11 @@ struct HfCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - hfHelper.mass(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) > massWindow) {
         return false;
       }
     }

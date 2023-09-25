@@ -91,9 +91,9 @@ struct HfCandidateCreatorB0 {
 
   void init(InitContext const&)
   {
-    massPi = hfHelper.mass(kPiPlus);
-    massD = hfHelper.mass(pdg::Code::kDMinus);
-    massB0 = hfHelper.mass(pdg::Code::kB0);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massD = o2::analysis::pdg::MassDMinus;
+    massB0 = o2::analysis::pdg::MassB0;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
