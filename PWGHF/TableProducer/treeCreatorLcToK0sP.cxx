@@ -297,7 +297,7 @@ struct HfTreeCreatorLcToK0sP {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
-                       hfHelper.mass(particle.pdgCode())),
+                       o2::analysis::pdg::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

@@ -447,7 +447,7 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode())),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDPlus),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

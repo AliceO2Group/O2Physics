@@ -138,7 +138,7 @@ struct HfCorrelatorDsHadronsSelCollision {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -599,7 +599,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
+        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
@@ -655,7 +655,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, hfHelper.mass(particle.pdgCode()));
+        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
@@ -685,7 +685,7 @@ struct HfCorrelatorDsHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(hfHelper.mass(particle.pdgCode()), true);
+          entryDsHadronRecoInfo(o2::analysis::pdg::MassDS, true);
           entryDsHadronGenInfo(isDsPrompt);
         }
       }
