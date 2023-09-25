@@ -127,6 +127,7 @@ struct MultiplicityQa {
     if (doprocessFIT){
       histos.add("multiplicityQa/hIsolatedFT0A", "isolated FT0A", kTH1D, {axisMultFT0});
       histos.add("multiplicityQa/hIsolatedFT0C", "isolated FT0C", kTH1D, {axisMultFT0});
+      histos.add("multiplicityQa/hIsolatedFT0M", "isolated FT0M", kTH1D, {axisMultFT0});
     }
   }
 
@@ -389,6 +390,7 @@ struct MultiplicityQa {
     for (auto& mult : multsdebug) {
       histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multDebugFT0A());
       histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multDebugFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multDebugFT0A() + mult.multDebugFT0C());
     }
   }
 
