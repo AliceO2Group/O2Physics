@@ -74,7 +74,6 @@ struct HfCorrelatorDsHadronsSelCollision {
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
   SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -176,7 +175,6 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for Ds meson"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   SliceCache cache;
 

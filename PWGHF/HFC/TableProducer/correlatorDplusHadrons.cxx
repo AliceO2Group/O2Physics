@@ -71,7 +71,6 @@ struct HfDplusSelection {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -167,7 +166,6 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   SliceCache cache;
 

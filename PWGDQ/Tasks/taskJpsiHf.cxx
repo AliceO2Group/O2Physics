@@ -61,7 +61,6 @@ struct taskJPsiHf {
   Configurable<bool> configDebug{"configDebug", true, "If true, fill D0 - J/psi histograms separately"};
 
   SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;

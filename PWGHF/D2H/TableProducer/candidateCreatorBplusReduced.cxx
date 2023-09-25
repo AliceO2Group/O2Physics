@@ -48,7 +48,6 @@ struct HfCandidateCreatorBplusReduced {
   // selection
   Configurable<double> invMassWindowBplus{"invMassWindowBplus", 0.3, "invariant-mass window for B+ candidates"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;

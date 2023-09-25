@@ -59,7 +59,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 

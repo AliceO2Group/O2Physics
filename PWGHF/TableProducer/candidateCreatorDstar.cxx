@@ -27,7 +27,6 @@ using namespace o2::framework;
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};

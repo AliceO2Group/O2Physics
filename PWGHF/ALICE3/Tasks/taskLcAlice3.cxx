@@ -31,7 +31,6 @@ using namespace o2::framework::expressions;
 struct HfTaskLcAlice3 {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_alice3::isSelLcToPKPiNoPid == 1 || aod::hf_sel_candidate_lc_alice3::isSelLcToPiKPNoPid == 1);
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   HistogramRegistry registry{

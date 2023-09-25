@@ -36,7 +36,6 @@ struct HfTaskLcToK0sP {
   Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);

@@ -76,7 +76,6 @@ struct HfCandidateSelectorBsToDsPi {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;

@@ -32,7 +32,6 @@ struct HfTaskD0ParametrizedPid {
   // Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
   // Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;

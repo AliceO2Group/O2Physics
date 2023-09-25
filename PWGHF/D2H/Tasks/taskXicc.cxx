@@ -41,7 +41,6 @@ struct HfTaskXicc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);
@@ -107,7 +106,6 @@ struct HfTaskXiccMc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);

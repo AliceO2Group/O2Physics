@@ -62,7 +62,6 @@ struct HfTaskFlow {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   SliceCache cache;
 

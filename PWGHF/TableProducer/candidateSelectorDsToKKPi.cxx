@@ -61,7 +61,6 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
   o2::analysis::HfMlResponse<float> hfMlResponse;
   std::vector<float> outputMl = {};

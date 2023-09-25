@@ -59,7 +59,6 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   double massPi{0.};

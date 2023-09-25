@@ -39,7 +39,6 @@ struct HfTaskB0Reduced {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);

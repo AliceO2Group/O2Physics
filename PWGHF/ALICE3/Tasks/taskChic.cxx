@@ -44,7 +44,6 @@ struct HfTaskChic {
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_sel_candidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
@@ -108,7 +107,6 @@ struct HfTaskChicMc {
   Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_sel_candidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);

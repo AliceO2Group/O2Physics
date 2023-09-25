@@ -57,7 +57,6 @@ struct HfCandidateCreatorLb {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   double massPi{0.};

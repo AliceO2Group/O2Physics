@@ -169,7 +169,6 @@ struct HfTreeCreatorLcToK0sP {
   Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};

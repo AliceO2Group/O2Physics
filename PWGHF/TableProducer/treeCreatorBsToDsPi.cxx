@@ -164,7 +164,6 @@ struct HfTreeCreatorBsToDsPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBs, aod::HfCandBsMcRec, aod::HfSelBsToDsPi>>;

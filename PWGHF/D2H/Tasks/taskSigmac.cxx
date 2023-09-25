@@ -37,7 +37,6 @@ struct HfTaskSigmac {
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandMax{"yCandMax", -1, "Sc rapidity"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   /// analysis histograms

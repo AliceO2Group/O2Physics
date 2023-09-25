@@ -83,7 +83,6 @@ struct HfCorrelatorD0HadronsSelection {
   Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
@@ -182,7 +181,6 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   double massD0{0.};

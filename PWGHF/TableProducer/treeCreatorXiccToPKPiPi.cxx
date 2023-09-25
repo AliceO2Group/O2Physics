@@ -161,7 +161,6 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;

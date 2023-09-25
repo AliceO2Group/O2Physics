@@ -60,7 +60,6 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   double massJpsi{0.};
@@ -213,7 +212,6 @@ struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMcRec> rowMcMatchRec;
   Produces<aod::HfCandChicMcGen> rowMcMatchGen;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
