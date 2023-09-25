@@ -329,10 +329,12 @@ struct HfCorrelatorDMesonPairs {
     registry.fill(HIST("hMcEvtCount"), 0);
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0 && std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      auto pdgCode = std::abs(particle1.pdgCode());
+      if (pdgCode != pdg::Code::kD0 && pdgCode != pdg::Code::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, hfHelper.mass(particle1.pdgCode()));
+      auto massD = pdgCode == pdg::Code::kD0 ? o2::analysis::pdg::MassD0 : o2::analysis::pdg::MassDPlus;
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, massD);
       if (!kinematicCutsGen(particle1)) {
         continue;
       }

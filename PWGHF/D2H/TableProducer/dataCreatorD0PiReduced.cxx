@@ -16,6 +16,7 @@
 
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -376,7 +377,7 @@ struct HfDataCreatorD0PiReducedMc {
   Produces<aod::HfD0PiMcRecReduced> rowHfD0PiMcRecReduced;
   Produces<aod::HfBpMcGenReduced> rowHfBPMcGenReduced;
 
-  HfHelper hfHelper;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   void init(InitContext const&) {}
 
@@ -449,7 +450,7 @@ struct HfDataCreatorD0PiReducedMc {
       for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
-        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, hfHelper.mass(daught.pdgCode()));
+        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
         counter++;
       }
       rowHfBPMcGenReduced(flag, origin,

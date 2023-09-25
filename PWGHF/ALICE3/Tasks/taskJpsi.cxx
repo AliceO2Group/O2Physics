@@ -254,7 +254,7 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
         registry.fill(HIST("hCtSig"), hfHelper.ctJpsi(candidate), candidate.pt());
         registry.fill(HIST("hYSig"), hfHelper.yJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, hfHelper.mass(particleMother.pdgCode())), particleMother.pt());
+        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::analysis::pdg::MassJPsi), particleMother.pt());
 
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());

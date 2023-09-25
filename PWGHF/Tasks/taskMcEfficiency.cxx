@@ -16,6 +16,7 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -41,6 +42,7 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
   enum HFStep { kHFStepMC = 0,
@@ -392,7 +394,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) {
-      auto mass = hfHelper.mass(pdgCode);
+      auto mass = pdg->Mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() != pdgCode) {
@@ -505,7 +507,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) { /// loop over PDG codes
-      auto mass = hfHelper.mass(pdgCode);
+      auto mass = pdg->Mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) { /// loop over MC particles
 
