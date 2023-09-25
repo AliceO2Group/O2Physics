@@ -10,6 +10,18 @@ from ctypes import c_bool
 from enum import Enum
 
 class PdgROOT(Enum):
+    kDown = ROOT.kDown
+    kDownBar = ROOT.kDownBar
+    kUp = ROOT.kUp
+    kUpBar = ROOT.kUpBar
+    kStrange = ROOT.kStrange
+    kStrangeBar = ROOT.kStrangeBar
+    kCharm = ROOT.kCharm
+    kCharmBar = ROOT.kCharmBar
+    kBottom = ROOT.kBottom
+    kBottomBar = ROOT.kBottomBar
+    kTop = ROOT.kTop
+    kTopBar = ROOT.kTopBar
     kGluon = ROOT.kGluon
     kElectron = ROOT.kElectron
     kPositron = ROOT.kPositron

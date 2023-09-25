@@ -75,6 +75,18 @@ constexpr double MassXiCPlus = 2.4679;
 constexpr double MassXiCZero = 2.471;
 
 /// \brief Masses for particles in the ROOT enum
+constexpr double MassDown = 0.0048;
+constexpr double MassDownBar = 0.0048;
+constexpr double MassUp = 0.0024;
+constexpr double MassUpBar = 0.0024;
+constexpr double MassStrange = 0.104;
+constexpr double MassStrangeBar = 0.104;
+constexpr double MassCharm = 1.27;
+constexpr double MassCharmBar = 1.27;
+constexpr double MassBottom = 4.68;
+constexpr double MassBottomBar = 4.68;
+constexpr double MassTop = 171.2;
+constexpr double MassTopBar = 171.2;
 constexpr double MassGluon = 0.0;
 constexpr double MassElectron = 0.00051099891;
 constexpr double MassPositron = 0.00051099891;
