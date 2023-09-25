@@ -256,7 +256,7 @@ struct HfCandidateSelectorLcMl {
       const float massPi = o2::analysis::pdg::MassPiPlus;
       const float massK = o2::analysis::pdg::MassKPlus;
       const float massProton = o2::analysis::pdg::MassProton;
-      const float massLc = hfHelper.mass(o2::analysis::pdg::kLambdaCPlus);
+      const float massLc = o2::analysis::pdg::MassLambdaCPlus;
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
         if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {

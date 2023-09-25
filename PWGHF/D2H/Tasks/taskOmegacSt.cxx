@@ -124,7 +124,7 @@ struct HfTaskOmegacSt {
         std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
         std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
       }
     }
   }
@@ -231,9 +231,9 @@ struct HfTaskOmegacSt {
                 if (df2.process(trackParCovTrk, trackParCovPion)) {
                   const auto& secondaryVertex = df2.getPCACandidate();
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                  if (std::abs(RecoDecay::m(momenta, masses) - hfHelper.mass(analysis::pdg::Code::kOmegaC0)) < 0.02) {
+                  if (std::abs(RecoDecay::m(momenta, masses) - o2::analysis::pdg::MassOmegaC0) < 0.02) {
                     registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                    registry.fill(HIST("hDecayLengthScaled"), decayLength * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                    registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   }
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
@@ -242,8 +242,8 @@ struct HfTaskOmegacSt {
                         std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
                         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                         registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * hfHelper.mass(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                         registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
                         registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
                       }

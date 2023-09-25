@@ -76,7 +76,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    auto mchic = hfHelper.mass(20443); // chi_c1(1p)
+    auto mchic = o2::analysis::pdg::MassChiC1; // chi_c1(1p)
     if (std::abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "Chic topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds

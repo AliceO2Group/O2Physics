@@ -1040,7 +1040,7 @@ struct HfTrackIndexSkimCreator {
     massProton = o2::analysis::pdg::MassProton;
     massElectron = o2::analysis::pdg::MassElectron;
     massMuon = o2::analysis::pdg::MassMuonPlus;
-    massDzero = hfHelper.mass(o2::analysis::pdg::kD0);
+    massDzero = o2::analysis::pdg::MassD0;
 
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{std::array{massPi, massK},
                                                                    std::array{massK, massPi}};
