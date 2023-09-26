@@ -228,6 +228,8 @@ struct HfDataCreatorDplusPiReduced {
 
       // helpers for ReducedTables filling
       int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
+      // std::map where the key is the track.globalIndex() and
+      // the value is the track index in the table of the selected pions
       std::map<int64_t, int64_t> selectedTracksPion;
       bool fillHfReducedCollision = false;
 
