@@ -54,28 +54,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-uint8_t getBinnedValue(double val, double max)
-{
-  if (val >= max) {
-    return 255u;
-  } else if (val < -max) {
-    return 0u;
-  } else {
-    return 1u + static_cast<uint8_t>(254 * (val - max) / (2 * max));
-  }
-}
-
-float getBinCenter(uint8_t bin, double max)
-{
-  if (bin == 0u) {
-    return -max;
-  } else if (bin == 255u) {
-    return max;
-  } else {
-    return -max + (bin + 0.5) / (2 * max);
-  }
-}
-
 struct NucleusCandidate {
   int globalIndex;
   float pt;
@@ -98,67 +76,66 @@ struct NucleusCandidate {
 
 namespace nuclei
 {
-constexpr double bbMomScalingDefault[4][2]{
+constexpr double bbMomScalingDefault[5][2]{
+  {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.}};
-constexpr double betheBlochDefault[4][6]{
+constexpr double betheBlochDefault[5][6]{
+  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-constexpr double nSigmaTPCdefault[4][2]{
+constexpr double nSigmaTPCdefault[5][2]{
+  {-5., 5.},
   {-5., 5.},
   {-5., 5.},
   {-5., 5.},
   {-5., 5.}};
-// constexpr double nSigmaTOFdefault[4][2]{
+// constexpr double nSigmaTOFdefault[5][2]{
+//   {-5., 5.},
 //   {-5., 5.},
 //   {-5., 5.},
 //   {-5., 5.},
 //   {-5., 5.}};
-constexpr double DCAcutDefault[4][2]{
+constexpr double DCAcutDefault[5][2]{
+  {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.}};
-constexpr int TreeConfigDefault[4][2]{
+constexpr int TreeConfigDefault[5][2]{
+  {0, 0},
   {0, 0},
   {0, 0},
   {0, 0},
   {0, 0}};
-constexpr double BinnedVariablesDefaultMax[5][1]{
-  {1.27},
-  {1.27},
-  {5.08},
-  {5.08},
-  {5.08}};
-// constexpr bool storeTreesDefault[4]{false, false, false, false};
-constexpr int species{4};
-constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
-constexpr float charges[4]{1.f, 1.f, 2.f, 2.f};
-constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
+// constexpr bool storeTreesDefault[5]{false, false, false, false, false};
+constexpr int species{5};
+constexpr int codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};
+constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};
+constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};
 static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
-static const std::vector<std::string> names{"deuteron", "triton", "He3", "alpha"};
+static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> binnedVariableNames{"DCAxy", "DCAz", "TPCnsigma", "TOFnsigma", "TOFmass"};
-static const std::vector<std::string> binnedLabelNames{"Maximum value of binned variables"};
 static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
 
-float pidCuts[2][4][2];
-std::shared_ptr<TH3> hNsigma[2][4][2];
-std::shared_ptr<TH3> hTOFmass[4][2];
-std::shared_ptr<TH2> hGenNuclei[4][2];
-std::shared_ptr<TH3> hMomRes[4][2];
-std::shared_ptr<TH3> hNsigmaEta[2][4][2];
-std::shared_ptr<TH3> hTOFmassEta[4][2];
-std::shared_ptr<TH3> hDCAxy[2][4][2];
-std::shared_ptr<TH3> hDCAz[2][4][2];
+float pidCuts[2][5][2];
+std::shared_ptr<TH3> hNsigma[2][5][2];
+std::shared_ptr<TH3> hTOFmass[5][2];
+std::shared_ptr<TH2> hGenNuclei[5][2];
+std::shared_ptr<TH3> hMomRes[5][2];
+std::shared_ptr<TH3> hNsigmaEta[2][5][2];
+std::shared_ptr<TH3> hTOFmassEta[5][2];
+std::shared_ptr<TH3> hDCAxy[2][5][2];
+std::shared_ptr<TH3> hDCAz[2][5][2];
 std::shared_ptr<TH2> hGloTOFtracks[2];
 o2::base::MatLayerCylSet* lut = nullptr;
 
@@ -167,17 +144,18 @@ std::vector<NucleusCandidate> candidates;
 
 struct nucleiSpectra {
   enum {
-    kDeuteron = BIT(0),
-    kTriton = BIT(1),
-    kHe3 = BIT(2),
-    kHe4 = BIT(3),
-    kHasTOF = BIT(4),
-    kIsReconstructed = BIT(5),
-    kIsAmbiguous = BIT(6), /// just a placeholder now
-    kPositive = BIT(7),
-    kIsPhysicalPrimary = BIT(8), /// MC flags starting from the second half of the short
-    kIsSecondaryFromMaterial = BIT(9),
-    kIsSecondaryFromWeakDecay = BIT(10)
+    kProton = BIT(0),
+    kDeuteron = BIT(1),
+    kTriton = BIT(2),
+    kHe3 = BIT(3),
+    kHe4 = BIT(4),
+    kHasTOF = BIT(5),
+    kIsReconstructed = BIT(6),
+    kIsAmbiguous = BIT(7), /// just a placeholder now
+    kPositive = BIT(8),
+    kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
+    kIsSecondaryFromMaterial = BIT(10),
+    kIsSecondaryFromWeakDecay = BIT(11)
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
@@ -194,18 +172,19 @@ struct nucleiSpectra {
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 5, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
 
-  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 4, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 4, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
-  Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
-  Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 4, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
-  Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 4, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
-  Configurable<LabeledArray<double>> cfgBinnedVariables{"cfgBinnedVariables", {nuclei::BinnedVariablesDefaultMax[0], 5, 1, nuclei::binnedVariableNames, nuclei::binnedLabelNames}, "Maximum value for the binned variables"};
+  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+  Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
 
+  ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {1500, -1.5f, 1.5f}, "DCAxy binning for Deuterons"};
   ConfigurableAxis cfgDCAxyBinsTritons{"cfgDCAxyBinsTritons", {1500, -1.5f, 1.5f}, "DCAxy binning for Tritons"};
   ConfigurableAxis cfgDCAxyBinsHe3{"cfgDCAxyBinsHe3", {1500, -1.5f, 1.5f}, "DCAxy binning for He3"};
   ConfigurableAxis cfgDCAxyBinsAlpha{"cfgDCAxyBinsAlpha", {1500, -1.5f, 1.5f}, "DCAxy binning for Alpha"};
 
+  ConfigurableAxis cfgPtBinsProtons{"cfgPtBinsProtons", {100, 0., 10.}, "Pt binning for Protons"};
   ConfigurableAxis cfgPtBinsDeuterons{"cfgPtBinsDeuterons", {100, 0., 10.}, "Pt binning for Deuterons"};
   ConfigurableAxis cfgPtBinsTritons{"cfgPtBinsTritons", {100, 0., 10.}, "Pt binning for Tritons"};
   ConfigurableAxis cfgPtBinsHe3{"cfgPtBinsHe3", {100, 0., 10.}, "Pt binning for He3"};
@@ -274,17 +253,20 @@ struct nucleiSpectra {
     const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
     const AxisSpec ptResAxis{cfgMomResBins, "#Delta#it{p}_{T}/#it{p}_{T}"};
 
-    const AxisSpec ptAxes[4]{
+    const AxisSpec ptAxes[5]{
+      {cfgPtBinsProtons, "#it{p}_{T} (GeV/#it{c})"},
       {cfgPtBinsDeuterons, "#it{p}_{T} (GeV/#it{c})"},
       {cfgPtBinsTritons, "#it{p}_{T} (GeV/#it{c})"},
       {cfgPtBinsHe3, "#it{p}_{T} (GeV/#it{c})"},
       {cfgPtBinsAlpha, "#it{p}_{T} (GeV/#it{c})"}};
-    const AxisSpec dcaxyAxes[4]{
+    const AxisSpec dcaxyAxes[5]{
+      {cfgDCAxyBinsProtons, "DCA_{xy} (cm)"},
       {cfgDCAxyBinsDeuterons, "DCA_{xy} (cm)"},
       {cfgDCAxyBinsTritons, "DCA_{xy} (cm)"},
       {cfgDCAxyBinsHe3, "DCA_{xy} (cm)"},
       {cfgDCAxyBinsAlpha, "DCA_{xy} (cm)"}};
-    const AxisSpec dcazAxes[4]{
+    const AxisSpec dcazAxes[5]{
+      {cfgDCAxyBinsProtons, "DCA_{z} (cm)"},
       {cfgDCAxyBinsDeuterons, "DCA_{z} (cm)"},
       {cfgDCAxyBinsTritons, "DCA_{z} (cm)"},
       {cfgDCAxyBinsHe3, "DCA_{z} (cm)"},
@@ -313,7 +295,7 @@ struct nucleiSpectra {
       }
     }
 
-    for (int iS{0}; iS < 4; ++iS) {
+    for (int iS{0}; iS < nuclei::species; ++iS) {
       for (int iMax{0}; iMax < 2; ++iMax) {
         nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
       }
@@ -337,11 +319,12 @@ struct nucleiSpectra {
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
-    const double bgScalings[4][2]{
+    const double bgScalings[5][2]{
       {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
       {nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / nuclei::masses[1], nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / nuclei::masses[1]},
       {nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / nuclei::masses[2], nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / nuclei::masses[2]},
-      {nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[3], nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[3]}};
+      {nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[3], nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[3]},
+      {nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[4], nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[4]}};
 
     int nGloTracks[2]{0, 0}, nTOFTracks[2]{0, 0};
     for (auto& track : tracks) { // start loop over tracks
@@ -354,9 +337,9 @@ struct nucleiSpectra {
         continue;
       }
       spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
-      float nSigma[2][4]{
-        {-10., -10., -10., -10.},
-        {0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
+      float nSigma[2][5]{
+        {-10., -10., -10., -10., -10.},
+        {0.f, 0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
       const int iC{track.sign() < 0};
 
       /// Checking if we have outliers in the TPC-TOF correlation
@@ -365,7 +348,7 @@ struct nucleiSpectra {
         nTOFTracks[iC]++;
       }
 
-      bool selectedTPC[4]{false}, goodToAnalyse{false};
+      bool selectedTPC[5]{false}, goodToAnalyse{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
@@ -432,7 +415,7 @@ struct nucleiSpectra {
           flag |= BIT(iS);
         }
       }
-      if (flag & (kDeuteron | kTriton | kHe3 | kHe4)) {
+      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
         nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
                                                          track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
       }
