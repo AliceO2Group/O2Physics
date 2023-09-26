@@ -263,12 +263,12 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          candidate.cpa(),
                                          candidate.cpaXY(),
                                          candidate.maxNormalisedDeltaIP(),
-                                         trackPos1.tpctofNSigmaPi(),
-                                         trackPos1.tpctofNSigmaKa(),
-                                         trackNeg.tpctofNSigmaPi(),
-                                         trackNeg.tpctofNSigmaKa(),
-                                         trackPos2.tpctofNSigmaPi(),
-                                         trackPos2.tpctofNSigmaKa()};
+                                         trackPos1.tpcTofNSigmaPi(),
+                                         trackPos1.tpcTofNSigmaKa(),
+                                         trackNeg.tpcTofNSigmaPi(),
+                                         trackNeg.tpcTofNSigmaKa(),
+                                         trackPos2.tpcTofNSigmaPi(),
+                                         trackPos2.tpcTofNSigmaKa()};
 
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);

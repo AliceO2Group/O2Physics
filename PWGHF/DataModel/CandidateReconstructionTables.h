@@ -92,30 +92,30 @@ T1 combineNSigma(const T2& tpcNSigma, const T2& tofNSigma)
 namespace pid_tpc_tof
 {
 // Combined TPC and TOF NSigma
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpctofNSigmaEl, //! Combined NSigma separation with the TPC & TOF detectors for electron
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, //! Combined NSigma separation with the TPC & TOF detectors for electron
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaEl, o2::aod::pidtof::tofNSigmaEl));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpctofNSigmaMu, //! Combined NSigma separation with the TPC & TOF detectors for muon
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpcTofNSigmaMu, //! Combined NSigma separation with the TPC & TOF detectors for muon
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaMu, o2::aod::pidtof::tofNSigmaMu));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpctofNSigmaPi, //! Combined NSigma separation with the TPC & TOF detectors for pion
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpcTofNSigmaPi, //! Combined NSigma separation with the TPC & TOF detectors for pion
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPi, o2::aod::pidtof::tofNSigmaPi));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpctofNSigmaKa, //! Combined NSigma separation with the TPC & TOF detectors for kaon
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, //! Combined NSigma separation with the TPC & TOF detectors for kaon
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaKa, o2::aod::pidtof::tofNSigmaKa));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpctofNSigmaPr, //! Combined NSigma separation with the TPC & TOF detectors for proton
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined NSigma separation with the TPC & TOF detectors for proton
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPr, o2::aod::pidtof::tofNSigmaPr));
 } // namespace pid_tpc_tof
 
 namespace pid_tpc_tof_tiny
 {
 // Combined binned TPC and TOF NSigma
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpctofNSigmaEl, //! Combined binned NSigma separation with the TPC & TOF detectors for electron
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, //! Combined binned NSigma separation with the TPC & TOF detectors for electron
                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreEl, o2::aod::pidtof_tiny::tofNSigmaStoreEl));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpctofNSigmaMu, //! Combined binned NSigma separation with the TPC & TOF detectors for muon
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpcTofNSigmaMu, //! Combined binned NSigma separation with the TPC & TOF detectors for muon
                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreMu, o2::aod::pidtof_tiny::tofNSigmaStoreMu));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpctofNSigmaPi, //! Combined binned NSigma separation with the TPC & TOF detectors for pion
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpcTofNSigmaPi, //! Combined binned NSigma separation with the TPC & TOF detectors for pion
                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePi, o2::aod::pidtof_tiny::tofNSigmaStorePi));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpctofNSigmaKa, //! Combined binned NSigma separation with the TPC & TOF detectors for kaon
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, //! Combined binned NSigma separation with the TPC & TOF detectors for kaon
                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreKa, o2::aod::pidtof_tiny::tofNSigmaStoreKa));
-DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpctofNSigmaPr, //! Combined binned NSigma separation with the TPC & TOF detectors for proton
+DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined binned NSigma separation with the TPC & TOF detectors for proton
                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePr, o2::aod::pidtof_tiny::tofNSigmaStorePr));
 } // namespace pid_tpc_tof_tiny
 
