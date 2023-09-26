@@ -93,6 +93,9 @@ struct qaMatchEff {
   // histo axes
   //
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
+  ConfigurableAxis ptBinsVsTime{"ptBinsVsTime", {VARIABLE_WIDTH, 0.1, 0.5, 1.0, 2.0, 5.0}, "pT binning for monitorning vs time"};
+  ConfigurableAxis etaBinsVsTime{"etaBinsVsTime", {14, -1.4, 1.4}, "eta binning for monitoring vs time"};
+  ConfigurableAxis posZBinsVsTime{"posZBinsVsTime", {2, -100, 100}, "posZ primary vertex binning for monitoring vs time"};
   //
   AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
   //
@@ -1079,6 +1082,7 @@ struct qaMatchEff {
             if (track.has_collision()) {
               const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
               histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
+              histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ());
             }
           }
           //
@@ -1446,6 +1450,7 @@ struct qaMatchEff {
               if (track.has_collision()) {
                 const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
                 histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
+                histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ());
               }
             }
             //
@@ -1850,8 +1855,15 @@ struct qaMatchEff {
       const AxisSpec axisSeconds{static_cast<int>((maxMilliSec - minMilliSec) * 1. / 10.), minMilliSec, maxMilliSec, "time from January 1st, 1970 at UTC (unit: 10 ms)"};
 
       /// add histograms now
-      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});    // TPC tracks
-      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds}); // ITS-TPC tracks
+      const AxisSpec axisPtVsTime{ptBinsVsTime, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisEtaVsTime{etaBinsVsTime, "#eta"};
+      const AxisSpec axisPosZVsTime{posZBinsVsTime, "posZ (cm)"};
+      // TPC tracks
+      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});
+      histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime});
+      // ITS-TPC tracks
+      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds});
+      histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime});
 
       /// time monitoring correctly set up
       timeMonitorSetUp = true;
