@@ -92,7 +92,6 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   }
 
   void process(HfRedCandBplus const& hfCandBs,
-               HfRed2Prongs const&,
                TracksPion const&,
                HfCandBpConfigs const& configs)
   {
@@ -114,8 +113,6 @@ struct HfCandidateSelectorBplusToD0PiReduced {
     for (const auto& hfCandBp : hfCandBs) {
       int statusBplus = 0;
       auto ptCandBplus = hfCandBp.pt();
-      // auto candD0 = hfCandBp.prong0_as<HfRed2Prongs>();
-      // auto trackPi = hfCandBp.prong1_as<HfRedTracksPid>();
 
       // check if flagged as B+ → D π
       if (!TESTBIT(hfCandBp.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
