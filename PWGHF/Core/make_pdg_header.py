@@ -5,7 +5,7 @@ Generates a C++ header with PDG codes and particle masses.
 Author: Vít Kučera <vit.kucera@cern.ch>
 """
 
-import ROOT
+import ROOT  # pylint: disable=import-error
 from ctypes import c_bool
 from enum import Enum
 
