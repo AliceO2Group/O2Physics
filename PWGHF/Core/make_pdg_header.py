@@ -5,9 +5,11 @@ Generates the body of a C++ header with PDG codes and particle masses.
 Author: Vít Kučera <vit.kucera@cern.ch>
 """
 
-import ROOT  # pylint: disable=import-error
 from ctypes import c_bool
 from enum import Enum
+
+import ROOT  # pylint: disable=import-error
+
 
 # Enum of PDG_t particles
 class PdgROOT(Enum):
@@ -67,6 +69,7 @@ class PdgROOT(Enum):
     kOmegaMinus = ROOT.kOmegaMinus
     kOmegaPlusBar = ROOT.kOmegaPlusBar
 
+
 # Enum of additional particles
 class Pdg(Enum):
     kB0 = 511
@@ -94,9 +97,12 @@ class Pdg(Enum):
     kXiCPlus = 4232
     kXiCZero = 4132
 
+
 """
 Returns particle mass from o2::O2DatabasePDG except for special cases.
 """
+
+
 def mass(code):
     # Special cases (present in TDatabasePDG but with wrong values)
     # Missing particles should be added in O2DatabasePDG.h.
@@ -108,11 +114,15 @@ def mass(code):
     success = c_bool(True)
     return ROOT.o2.O2DatabasePDG.Mass(code, success)
 
+
 """
 Returns a C++ declaration of a particle mass constant.
 """
+
+
 def declare_mass(pdg, type="double") -> str:
     return f"constexpr {type} Mass{pdg.name[1:]} = {mass(pdg.value)};\n"
+
 
 # Start of enum declarations of additional particles
 str_enum_head = """/// \\brief Declarations of named PDG codes of particles missing in ROOT PDG_t
