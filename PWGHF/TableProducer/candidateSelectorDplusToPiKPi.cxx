@@ -220,8 +220,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
-      LOG(info) << "Combined PID = " << trackPos1.tpctofNSigmaPi();
-
       // topological selection
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
@@ -253,14 +251,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
 
       if (applyMl) {
-        // tracks without TPC nor TOF already rejected at PID selection level
-        auto combinedNSigmaPiPos1 = trackPos1.tpctofNSigmaPi();
-        auto combinedNSigmaKaPos1 = trackPos1.tpctofNSigmaKa();
-        auto combinedNSigmaPiNeg = trackNeg.tpctofNSigmaPi();
-        auto combinedNSigmaKaNeg = trackNeg.tpctofNSigmaKa();
-        auto combinedNSigmaPiPos2 = trackPos2.tpctofNSigmaPi();
-        auto combinedNSigmaKaPos2 = trackPos2.tpctofNSigmaKa();
-
         // ML selections
         std::vector<float> inputFeatures{candidate.ptProng0(),
                                          candidate.impactParameter0(),
@@ -273,12 +263,12 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          candidate.cpa(),
                                          candidate.cpaXY(),
                                          candidate.maxNormalisedDeltaIP(),
-                                         combinedNSigmaPiPos1,
-                                         combinedNSigmaKaPos1,
-                                         combinedNSigmaPiNeg,
-                                         combinedNSigmaKaNeg,
-                                         combinedNSigmaPiPos2,
-                                         combinedNSigmaKaPos2};
+                                         trackPos1.tpctofNSigmaPi(),
+                                         trackPos1.tpctofNSigmaKa(),
+                                         trackNeg.tpctofNSigmaPi(),
+                                         trackNeg.tpctofNSigmaKa(),
+                                         trackPos2.tpctofNSigmaPi(),
+                                         trackPos2.tpctofNSigmaKa()};
 
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
