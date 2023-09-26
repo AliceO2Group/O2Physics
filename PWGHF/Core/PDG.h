@@ -10,14 +10,15 @@
 // or submit itself to any jurisdiction.
 
 /// \file PDG.h
-/// \brief PDG features for HF
+/// \brief PDG features
+/// \note Use PWGHF/Core/make_pdg_header.py to generate the enums and mass declarations.
 
 #ifndef PWGHF_CORE_PDG_H_
 #define PWGHF_CORE_PDG_H_
 
 namespace o2::analysis::pdg
 {
-/// \brief Declarations of named PDG codes of HF particles missing in ROOT PDG_t.
+/// \brief Declarations of named PDG codes of particles missing in ROOT PDG_t
 /// \note Follow kCamelCase naming convention
 /// \link https://root.cern/doc/master/TPDGCode_8h.html
 enum Code {
@@ -26,7 +27,6 @@ enum Code {
   kBPlus = 521,
   kBS = 531,
   kBSBar = -531,
-  kChiC1 = 20443,
   kD0 = 421,
   kD0Bar = -421,
   kDMinus = -411,
@@ -34,6 +34,7 @@ enum Code {
   kDS = 431,
   kDSBar = -431,
   kDStar = 413,
+  kChiC1 = 20443,
   kJPsi = 443,
   kLambdaB0 = 5122,
   kLambdaCPlus = 4122,
@@ -47,8 +48,7 @@ enum Code {
   kXiCZero = 4132
 };
 
-/// \brief Declarations of particle masses from o2::O2DatabasePDG
-/// \note Generated with root -b -l -q PWGHF/Core/listMasses.C
+/// \brief Declarations of masses for additional particles
 constexpr double MassB0 = 5.27953;
 constexpr double MassB0Bar = 5.27953;
 constexpr double MassBPlus = 5.27915;
@@ -74,7 +74,7 @@ constexpr double MassXiCCPlusPlus = 3.62155;
 constexpr double MassXiCPlus = 2.4679;
 constexpr double MassXiCZero = 2.471;
 
-/// \brief Masses for particles in the ROOT enum
+/// \brief Declarations of masses for particles in ROOT PDG_t
 constexpr double MassDown = 0.0048;
 constexpr double MassDownBar = 0.0048;
 constexpr double MassUp = 0.0024;
