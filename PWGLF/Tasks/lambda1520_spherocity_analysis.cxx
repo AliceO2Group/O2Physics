@@ -328,10 +328,10 @@ struct lambdaAnalysis {
           if (doRotate) {
             float theta = rn->Uniform(1.5, 3.0);
             p1.RotateZ(theta);
-
+            
             p = p1 + p2;
-
-            if (std::abs(p1.Rapidity()) < 0.5) {
+            
+            if (std::abs(p.Rapidity()) < 0.5) {
               histos.fill(HIST("Analysis/hInvMassR"), p.M());
               histos.fill(HIST("Analysis/h4InvMassR"), p.M(), p.Pt(), sph, mult);
             }
