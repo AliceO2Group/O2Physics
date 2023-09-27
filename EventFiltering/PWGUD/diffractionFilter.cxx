@@ -110,7 +110,8 @@ struct DGFilterRun3 {
 
     // tracks
     registry.add("tracks/etavsptAll", "eta versus pt of PV tracks of all collisions", {HistType::kTH2F, {{401, -2.005, 2.005}, {1000, 0., 10.}}});
-    registry.add("tracks/etavsptDG", "eta versus pt of PV tracks in DG collisions", {HistType::kTH2F, {{401, -2.005, 2.005}, {1000, 0., 10.}}});
+    registry.add("tracks/etavsptDGwT", "eta versus pt of PV tracks with TOF hit in DG collisions", {HistType::kTH2F, {{401, -2.005, 2.005}, {1000, 0., 10.}}});
+    registry.add("tracks/etavsptDGnT", "eta versus pt of PV tracks without TOF hit in DG collisions", {HistType::kTH2F, {{401, -2.005, 2.005}, {1000, 0., 10.}}});
 
     // forwardTracks
     registry.add("forwardTracks/timeResolution", "Time resolution of forward tracks as function of track type [ns]", {HistType::kTH2F, {{5, -0.5, 4.5}, {10001, -0.005, 100.005}}});
@@ -227,7 +228,11 @@ struct DGFilterRun3 {
       if (track.isPVContributor()) {
         registry.fill(HIST("tracks/etavsptAll"), track.eta(), track.pt());
         if (ccs) {
-          registry.fill(HIST("tracks/etavsptDG"), track.eta(), track.pt());
+          if (track.hasTOF()) {
+            registry.fill(HIST("tracks/etavsptDGwT"), track.eta(), track.pt());
+          } else {
+            registry.fill(HIST("tracks/etavsptDGnT"), track.eta(), track.pt());
+          }
         }
       }
     }

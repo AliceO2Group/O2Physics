@@ -113,6 +113,9 @@ struct MultiplicityQa {
       histos.add("multiplicityQa/h2dPVsVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFDD", "FDD", kTH2F, {axisMultFDD, axisNumberOfPVs});
+
+      // correlate T0 and V0
+      histos.add("multiplicityQa/h2dFT0VsFV0", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
     }
 
     if (doprocessMCCollisions) {
@@ -195,6 +198,9 @@ struct MultiplicityQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multFT0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
+
+      // 2d FT0 vs FV0 fill
+      histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFT0A(), col.multFT0A() + col.multFT0C());
     }
   }
 
