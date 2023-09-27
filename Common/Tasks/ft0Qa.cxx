@@ -34,9 +34,12 @@ struct ft0QaTask {
                                "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
   HistogramRegistry histos{
-      "Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "Histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext &) {
+  void init(InitContext&)
+  {
 
     const AxisSpec axisTime{500, -5., 5., "collision time (ns)"};
     const AxisSpec axisColTimeRes{isLowFlux ? 500 : 2000, -0.5, 0.5,
@@ -227,9 +230,10 @@ struct ft0QaTask {
   }
 
   void
-  processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
-                              aod::FT0sCorrected>::iterator const &collision,
-                    aod::FT0s const &ft0s, aod::FV0As const &fv0s) {
+    processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
+                                aod::FT0sCorrected>::iterator const& collision,
+                      aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  {
 
     if (selection == 8 && !collision.sel8()) {
       return;
@@ -395,8 +399,9 @@ struct ft0QaTask {
   // soa::Join<aod::BCs, aod::BcSels, aod::Mults >::iterator const &collision,
   // aod::FT0s const &ft0s, aod::FV0As const &fv0s
 
-  void processBCs(BCsWithRun3Matchings::iterator const &bc, aod::FV0As const &,
-                  aod::FT0s const &) {
+  void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&,
+                  aod::FT0s const&)
+  {
 
     histos.fill(HIST("hBcCounterAll"), 1);
 
@@ -509,6 +514,7 @@ struct ft0QaTask {
 
 }; // end of struct
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<ft0QaTask>(cfgc, TaskName{"ft0-qa"})};
 }
