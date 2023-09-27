@@ -77,12 +77,12 @@ multGlauberNBDFitter::multGlauberNBDFitter() : TNamed(),
   fGlauberNBD->SetParameter(1, fk);
   fGlauberNBD->SetParameter(2, ff);
   fGlauberNBD->SetParameter(3, fnorm);
-  
-  fGlauberNBD->SetParName(0,"mu");
-  fGlauberNBD->SetParName(1,"k");
-  fGlauberNBD->SetParName(2,"f");
-  fGlauberNBD->SetParName(3,"norm");
-  fGlauberNBD->SetParName(4,"dMu/dNanc");
+
+  fGlauberNBD->SetParName(0, "mu");
+  fGlauberNBD->SetParName(1, "k");
+  fGlauberNBD->SetParName(2, "f");
+  fGlauberNBD->SetParName(3, "norm");
+  fGlauberNBD->SetParName(4, "dMu/dNanc");
 }
 
 multGlauberNBDFitter::multGlauberNBDFitter(const char* name, const char* title) : TNamed(name, title),
@@ -124,12 +124,12 @@ multGlauberNBDFitter::multGlauberNBDFitter(const char* name, const char* title) 
   fGlauberNBD->SetParameter(1, fk);
   fGlauberNBD->SetParameter(2, ff);
   fGlauberNBD->SetParameter(3, fnorm);
-  
-  fGlauberNBD->SetParName(0,"mu");
-  fGlauberNBD->SetParName(1,"k");
-  fGlauberNBD->SetParName(2,"f");
-  fGlauberNBD->SetParName(3,"norm");
-  fGlauberNBD->SetParName(4,"dMu/dNanc");
+
+  fGlauberNBD->SetParName(0, "mu");
+  fGlauberNBD->SetParName(1, "k");
+  fGlauberNBD->SetParName(2, "f");
+  fGlauberNBD->SetParName(3, "norm");
+  fGlauberNBD->SetParName(4, "dMu/dNanc");
 }
 //________________________________________________________________
 multGlauberNBDFitter::~multGlauberNBDFitter()
@@ -200,7 +200,7 @@ Double_t multGlauberNBDFitter::ProbDistrib(Double_t* x, Double_t* par)
     //if(lNancestorCount<1e-12&&lNancestors>10) break;
 
     // allow for variable mu in case requested
-    Double_t lThisMu = (((Double_t)lNancestors)) * (par[0] + par[4]*lNancestors);
+    Double_t lThisMu = (((Double_t)lNancestors)) * (par[0] + par[4] * lNancestors);
     Double_t lThisk = (((Double_t)lNancestors)) * par[1];
     Double_t lpval = TMath::Power(1.0 + lThisMu / lThisk, -1);
     fNBD->SetParameter(1, lThisk);

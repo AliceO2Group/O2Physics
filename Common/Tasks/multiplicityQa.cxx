@@ -127,7 +127,7 @@ struct MultiplicityQa {
     // Contributors correlation
     histos.add("h2dNContribCorrAll", "h2dNContribCorrAll", kTH2D, {axisContributors, axisContributors});
 
-    if (doprocessFIT){
+    if (doprocessFIT) {
       histos.add("multiplicityQa/hIsolatedFT0A", "isolated FT0A", kTH1D, {axisMultFT0});
       histos.add("multiplicityQa/hIsolatedFT0C", "isolated FT0C", kTH1D, {axisMultFT0});
       histos.add("multiplicityQa/hIsolatedFT0M", "isolated FT0M", kTH1D, {axisMultFT0});
