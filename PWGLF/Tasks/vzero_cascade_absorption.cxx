@@ -26,6 +26,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -73,8 +75,8 @@ struct vzero_cascade_absorption {
   Configurable<float> pMin_k0negtrack{"pMin_k0negtrack", 0.3f, "Min Momentum K0 neg track"};
   Configurable<float> pMax_k0negtrack{"pMax_k0negtrack", 5.0f, "Max Momentum K0 neg track"};
   Configurable<bool> requireITShits{"requireITShits", true, "require ITS hits for daughters"};
-  Configurable<std::vector<int>> ITShitsBeforeTarget{"ITShitsBeforeTarget", {0, 0, 0, 1, 1, 1, 1}, "ITS Hits before target"};
-  Configurable<std::vector<int>> ITShitsAfterTarget{"ITShitsAfterTarget", {0, 0, 0, 0, 0, 1, 1}, "ITS Hits after target"};
+  Configurable<std::vector<float>> hit_requirement_before_target{"hit_requirement_before_target", {0, 0, 0, 1, 1, 1, 1}, "ITS Hits before target"};
+  Configurable<std::vector<float>> hit_requirement_after_target{"hit_requirement_after_target", {0, 0, 0, 0, 0, 1, 1}, "ITS Hits after target"};
   Configurable<bool> useTOF{"useTOF", true, "use TOF for PID"};
   Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
@@ -289,6 +291,9 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       const auto& posTrack = v0.posTrack_as<FullTracks>();
       const auto& negTrack = v0.negTrack_as<FullTracks>();
 
+      auto hit_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
+      auto hit_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+
       // K0 Short
       if (passedK0Selection(v0, negTrack, posTrack, collision)) {
 
@@ -296,9 +301,9 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
         if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
           if (requireITShits) {
             for (int i = 0; i < 7; i++) {
-              if (ITShitsBeforeTarget[i] > 0 && !hasHitOnITSlayer(posTrack, i))
+              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(posTrack, i))
                 continue;
-              if (ITShitsBeforeTarget[i] > 0 && !hasHitOnITSlayer(negTrack, i))
+              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(negTrack, i))
                 continue;
             }
           }
@@ -311,9 +316,9 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
 
           if (requireITShits) {
             for (int i = 0; i < 7; i++) {
-              if (ITShitsAfterTarget[i] > 0 && !hasHitOnITSlayer(posTrack, i))
+              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(posTrack, i))
                 continue;
-              if (ITShitsAfterTarget[i] > 0 && !hasHitOnITSlayer(negTrack, i))
+              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(negTrack, i))
                 continue;
             }
           }
