@@ -39,7 +39,6 @@ struct lambdaAnalysis {
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms"};
-  Configurable<int> nTracksSph{"nTracksSph", 3, "min #tracks for spherocity distribution"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -72,6 +71,7 @@ struct lambdaAnalysis {
   Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
   ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis cfgSphBins{"cfgSphBins", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f}, "Mixing bins - spherocity"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -126,14 +126,14 @@ struct lambdaAnalysis {
     histos.add("Analysis/hEtaKaon", "Kaons #eta", kTH1F, {axisEta});
 
     // Lambda Invariant Mass
-    histos.add("Analysis/hInvMass", "#Lambda(1520) M_{inv}", kTH1F, {axisInvM});
-    histos.add("Analysis/hInvMassLS", "Like Signs M_{inv}", kTH1F, {axisInvM});
-    histos.add("Analysis/hInvMassR", "Rotated Spectra", kTH1F, {axisInvM});
-    histos.add("Analysis/hInvMassMix", "Mixed Events M_{inv}", kTH1F, {axisInvM});
-    histos.add("Analysis/h4InvMass", "THn #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
-    histos.add("Analysis/h4InvMassLS", "THn Like Signs", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
-    histos.add("Analysis/h4InvMassR", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
-    histos.add("Analysis/h4InvMassMix", "THn Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/hInvMass", "#Lambda(1520) M_{inv}", kTH1D, {axisInvM});
+    histos.add("Analysis/hInvMassLS", "Like Signs M_{inv}", kTH1D, {axisInvM});
+    histos.add("Analysis/hInvMassR", "Rotated Spectra", kTH1D, {axisInvM});
+    histos.add("Analysis/hInvMassMix", "Mixed Events M_{inv}", kTH1D, {axisInvM});
+    histos.add("Analysis/h4InvMass", "THn #Lambda(1520)", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/h4InvMassLS", "THn Like Signs", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/h4InvMassR", "THn Rotated", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/h4InvMassMix", "THn Mixed Events", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
 
     // MC
     if (doprocessMC) {
@@ -141,14 +141,14 @@ struct lambdaAnalysis {
       histos.add("QAMCTrue/DcaZ_ka", "dca_{z}^{MC} Kaons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaXY_pr", "dca_{xy}^{MC} Protons", kTH2F, {axisPtQA, axisDCAxy});
       histos.add("QAMCTrue/DcaXY_ka", "dca_{xy}^{MC} Kaons", kTH2F, {axisPtQA, axisDCAxy});
-      histos.add("Analysis/hLambdaGen", "Generated #Lambda(1520) p_{T}", kTH1F, {axisPt});
-      histos.add("Analysis/hLambdaGenAnti", "Generated #bar{#Lambda}(1520) p_{T}", kTH1F, {axisPt});
-      histos.add("Analysis/hLambdaRec", "Reconstructed #Lambda(1520) p_{T}", kTH1F, {axisPt});
-      histos.add("Analysis/hLambdaRecAnti", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTH1F, {axisPt});
-      histos.add("Analysis/hInvMassLambdaRec", "Recostructed #Lambda(1520)", kTH1F, {axisInvM});
-      histos.add("Analysis/hInvMassLambdaRecAnti", "Recostructed #bar{#Lambda}(1520)", kTH1F, {axisInvM});
-      histos.add("Analysis/h4InvMassLambdaRec", "Recostructed #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
-      histos.add("Analysis/h4InvMassLambdaRecAnti", "Recostructed #bar{#Lambda}(1520)", kTHnSparseF, {axisInvM, axisPt, axisSp, axisCent});
+      histos.add("Analysis/hLambdaGen", "Generated #Lambda(1520) p_{T}", kTH1D, {axisPt});
+      histos.add("Analysis/hLambdaGenAnti", "Generated #bar{#Lambda}(1520) p_{T}", kTH1D, {axisPt});
+      histos.add("Analysis/hLambdaRec", "Reconstructed #Lambda(1520) p_{T}", kTH1D, {axisPt});
+      histos.add("Analysis/hLambdaRecAnti", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTH1D, {axisPt});
+      histos.add("Analysis/hInvMassLambdaRec", "Recostructed #Lambda(1520)", kTH1D, {axisInvM});
+      histos.add("Analysis/hInvMassLambdaRecAnti", "Recostructed #bar{#Lambda}(1520)", kTH1D, {axisInvM});
+      histos.add("Analysis/h4InvMassLambdaRec", "Recostructed #Lambda(1520)", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+      histos.add("Analysis/h4InvMassLambdaRecAnti", "Recostructed #bar{#Lambda}(1520)", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
     }
   }
 
@@ -326,16 +326,12 @@ struct lambdaAnalysis {
           histos.fill(HIST("Analysis/hInvMass"), p.M());
           histos.fill(HIST("Analysis/h4InvMass"), p.M(), p.Pt(), sph, mult);
           if (doRotate) {
-            float theta = rn->Uniform(0.1, 3.1);
-            p1.RotateX(theta);
-            theta = rn->Uniform(0.1, 3.1);
-            p1.RotateY(theta);
-            theta = rn->Uniform(0.1, 3.1);
+            float theta = rn->Uniform(1.5, 3.0);
             p1.RotateZ(theta);
 
             p = p1 + p2;
 
-            if (std::abs(p.Rapidity()) < 0.5) {
+            if (std::abs(p1.Rapidity()) < 0.5) {
               histos.fill(HIST("Analysis/hInvMassR"), p.M());
               histos.fill(HIST("Analysis/h4InvMassR"), p.M(), p.Pt(), sph, mult);
             }
@@ -379,9 +375,6 @@ struct lambdaAnalysis {
         if (trkPr.sign() * trkKa.sign() < 0) {
           histos.fill(HIST("Analysis/hInvMassMix"), p.M());
           histos.fill(HIST("Analysis/h4InvMassMix"), p.M(), p.Pt(), sph, mult);
-        } else {
-          histos.fill(HIST("Analysis/hInvMassMix"), p.M());
-          histos.fill(HIST("Analysis/h4InvMassMix"), p.M(), p.Pt(), sph, mult);
         }
       }
     }
@@ -394,11 +387,8 @@ struct lambdaAnalysis {
   {
 
     histos.fill(HIST("Event/hCent"), collision.multV0M());
-
-    if (tracks.size() >= nTracksSph) {
-      histos.fill(HIST("Event/hSph"), collision.spherocity());
-      histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
-    }
+    histos.fill(HIST("Event/hSph"), collision.spherocity());
+    histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
 
     fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
@@ -446,8 +436,8 @@ struct lambdaAnalysis {
 
   // Processing Event Mixing
   SliceCache cache;
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningType binningPositions{{cfgVtxBins, cfgMultBins}, true};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
+  BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
 
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
