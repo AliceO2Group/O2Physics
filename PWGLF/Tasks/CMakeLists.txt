@@ -191,7 +191,7 @@ o2physics_add_dpl_workflow(hypertriton3bodymcqa
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(vzero_cascade_absorption
+o2physics_add_dpl_workflow(vzero-cascade-absorption
                     SOURCES vzero_cascade_absorption.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
