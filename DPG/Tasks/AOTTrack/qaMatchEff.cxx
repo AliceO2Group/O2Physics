@@ -93,6 +93,12 @@ struct qaMatchEff {
   // histo axes
   //
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
+  ConfigurableAxis ptBinsVsTime{"ptBinsVsTime", {VARIABLE_WIDTH, 0.1, 0.5, 1.0, 2.0, 5.0}, "pT binning for monitorning vs time"};
+  ConfigurableAxis ptInvserseBinsVsTime{"ptInverseBinsVsTime", {VARIABLE_WIDTH, 0, 0.2, 0.5, 1, 2, 10}, "1/pT binning for monitorning vs time"};
+  ConfigurableAxis etaBinsVsTime{"etaBinsVsTime", {14, -1.4, 1.4}, "eta binning for monitoring vs time"};
+  ConfigurableAxis posZBinsVsTime{"posZBinsVsTime", {2, -100, 100}, "posZ primary vertex binning for monitoring vs time"};
+  ConfigurableAxis tpcClstBinsVsTime{"tpcClstBinsVsTime", {40, 0, 160}, "TPC cluster binning for monitoring vs time"};
+  ConfigurableAxis itsClstBinsVsTime{"itsClstBinsVsTime", {9, 0, 9}, "ITS cluster binning for monitoring vs time"};
   //
   AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
   //
@@ -1079,6 +1085,7 @@ struct qaMatchEff {
             if (track.has_collision()) {
               const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
               histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
+              histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
             }
           }
           //
@@ -1446,6 +1453,7 @@ struct qaMatchEff {
               if (track.has_collision()) {
                 const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
                 histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
+                histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
               }
             }
             //
@@ -1850,8 +1858,19 @@ struct qaMatchEff {
       const AxisSpec axisSeconds{static_cast<int>((maxMilliSec - minMilliSec) * 1. / 10.), minMilliSec, maxMilliSec, "time from January 1st, 1970 at UTC (unit: 10 ms)"};
 
       /// add histograms now
-      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});    // TPC tracks
-      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds}); // ITS-TPC tracks
+      const AxisSpec axisPtVsTime{ptBinsVsTime, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axis1overPtVsTime{ptInvserseBinsVsTime, "1/#it{p}_{T} (#it{c}/GeV)"};
+      const AxisSpec axisChargeVsTime{2, -1, 1, "charge"};
+      const AxisSpec axisEtaVsTime{etaBinsVsTime, "#eta"};
+      const AxisSpec axisPosZVsTime{posZBinsVsTime, "posZ (cm)"};
+      const AxisSpec axisTpcClstVsTime{tpcClstBinsVsTime, "TPC clusters"};
+      const AxisSpec axisItsClstVsTime{itsClstBinsVsTime, "TPC clusters"};
+      // TPC tracks
+      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});
+      histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      // ITS-TPC tracks
+      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds});
+      histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
 
       /// time monitoring correctly set up
       timeMonitorSetUp = true;

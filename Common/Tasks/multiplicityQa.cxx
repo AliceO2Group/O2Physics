@@ -113,6 +113,9 @@ struct MultiplicityQa {
       histos.add("multiplicityQa/h2dPVsVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFDD", "FDD", kTH2F, {axisMultFDD, axisNumberOfPVs});
+
+      // correlate T0 and V0
+      histos.add("multiplicityQa/h2dFT0VsFV0", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
     }
 
     if (doprocessMCCollisions) {
@@ -123,6 +126,12 @@ struct MultiplicityQa {
 
     // Contributors correlation
     histos.add("h2dNContribCorrAll", "h2dNContribCorrAll", kTH2D, {axisContributors, axisContributors});
+
+    if (doprocessFIT) {
+      histos.add("multiplicityQa/hIsolatedFT0A", "isolated FT0A", kTH1D, {axisMultFT0});
+      histos.add("multiplicityQa/hIsolatedFT0C", "isolated FT0C", kTH1D, {axisMultFT0});
+      histos.add("multiplicityQa/hIsolatedFT0M", "isolated FT0M", kTH1D, {axisMultFT0});
+    }
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
@@ -189,6 +198,9 @@ struct MultiplicityQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multFT0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
+
+      // 2d FT0 vs FV0 fill
+      histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFT0A(), col.multFT0A() + col.multFT0C());
     }
   }
 
@@ -379,11 +391,21 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/h2dFT0MVsNchT0M"), nchFT0, biggestFT0);
   }
 
+  void processFIT(aod::MultsDebug const& multsdebug)
+  {
+    for (auto& mult : multsdebug) {
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multDebugFT0A());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multDebugFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multDebugFT0A() + mult.multDebugFT0C());
+    }
+  }
+
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsPVChecks, "do PV contributors check", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsWithMCInfo, "analyse collisions + correlate with MC info", false);
   PROCESS_SWITCH(MultiplicityQa, processMCCollisions, "analyse MC collisions", false);
+  PROCESS_SWITCH(MultiplicityQa, processFIT, "analyse FIT table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
