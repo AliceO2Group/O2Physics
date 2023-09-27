@@ -125,8 +125,11 @@ struct HfTaskD0 {
   void init(InitContext&)
   {
     std::array<bool, 4> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle};
-    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
-      LOGP(fatal, "Only one process function can be enabled at a time.");
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
+      LOGP(fatal, "At least one process function should be enabled at a time.");
+    }
+    if ((doprocessDataWithDCAFitterN || doprocessMcWithDCAFitterN) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle)) {
+      LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
 
     auto vbins = (std::vector<double>)binsPt;
@@ -435,19 +438,19 @@ struct HfTaskD0 {
     }
   }
 
-  void processMcWithDCAFitterN(soa::Join<aod::McParticles,
-                                         aod::HfCand2ProngMcGen> const& particlesMC,
+  void processMcWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&,
+                               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<VertexerType::DCAFitter>(selectedD0CandidatesMc, particlesMC, tracks);
+    processMc<VertexerType::DCAFitter>(selectedD0CandidatesMc, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
-  void processMcWithKFParticle(soa::Join<aod::McParticles,
-                                         aod::HfCand2ProngMcGen> const& particlesMC,
+  void processMcWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec> const&,
+                               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<VertexerType::KfParticle>(selectedD0CandidatesMcKF, particlesMC, tracks);
+    processMc<VertexerType::KfParticle>(selectedD0CandidatesMcKF, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 };
