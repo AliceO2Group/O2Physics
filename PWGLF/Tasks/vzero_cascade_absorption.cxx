@@ -121,11 +121,11 @@ struct vzero_cascade_absorption {
     registryData.add("AntiOmega_after_target", "AntiOmega_after_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.6, 1.75, "m (GeV/c)"}});*/
   }
 
-  bool hasHitOnITSlayer(FullTrack& track, int layer)
+  bool hasHitOnITSlayer(uint8_t itsClsmap, int layer)
   {
 
     unsigned char test_bit = 1 << layer;
-    return (track.itsClusterMap() & test_bit);
+    return (itsClsmap & test_bit);
   }
 
   // Single-Track Selection
@@ -301,9 +301,9 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
         if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
           if (requireITShits) {
             for (int i = 0; i < 7; i++) {
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(posTrack, i))
+              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
                 continue;
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(negTrack, i))
+              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
                 continue;
             }
           }
@@ -316,9 +316,9 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
 
           if (requireITShits) {
             for (int i = 0; i < 7; i++) {
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(posTrack, i))
+              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
                 continue;
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(negTrack, i))
+              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
                 continue;
             }
           }
