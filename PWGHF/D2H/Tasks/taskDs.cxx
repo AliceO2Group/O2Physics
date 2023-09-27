@@ -64,6 +64,7 @@ struct HfTaskDs {
   {
     auto vbins = (std::vector<double>)binsPt;
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
+    registry.add("hMass1D", "3-prong candidates;inv. mass (KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 1.77, 2.17}}});
     registry.add("hMass", "3-prong candidates;inv. mass (KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{400, 1.77, 2.17}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -144,6 +145,7 @@ struct HfTaskDs {
   {
     auto pt = candidate.pt();
     registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), pt);
+    registry.fill(HIST("hMass1D"), invMassDsToKKPi(candidate));
     registry.fill(HIST("hCos3PiK"), cos3PiKDsToKKPi(candidate), pt);
     registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToKKPi(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToKKPi(candidate), pt);
@@ -157,6 +159,7 @@ struct HfTaskDs {
   {
     auto pt = candidate.pt();
     registry.fill(HIST("hMass"), invMassDsToPiKK(candidate), pt);
+    registry.fill(HIST("hMass1D"), invMassDsToPiKK(candidate));
     registry.fill(HIST("hCos3PiK"), cos3PiKDsToPiKK(candidate), pt);
     registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToPiKK(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToPiKK(candidate), pt);
