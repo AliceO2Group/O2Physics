@@ -134,7 +134,7 @@ struct HfTaskCorrelationHfeHadrons {
   void correlation(GTrk const& eTrack, GTrks const& assotrks, int sparseNo = -1)
   {
     if (sparseNo < 0 || sparseNo > 1) {
-      LOGF(info, "Error: pass sparse value from '0' to 'N'");
+      LOGF(info, "Error: pass sparse value either '0' or '1'");
       return;
     }
     std::shared_ptr<THnSparse> hEHCorrArray[2] = {
@@ -184,7 +184,6 @@ struct HfTaskCorrelationHfeHadrons {
         hEHCorrArray[sparseNo]->Fill(ptElectron, ptHadron, deltaPhi, deltaEta);
     }
   }
-
 
   void process(aodCollisions const& collision, aod::EMCALClusters const& mAnalysisClusters, o2::aod::EMCALMatchedTracks const& MatchedTracks, GTrks const& tracks)
   {
