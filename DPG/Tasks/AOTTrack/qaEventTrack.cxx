@@ -81,7 +81,7 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {500, 0, 500}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -346,6 +346,8 @@ struct qaEventTrack {
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
+    histos.add("Tracks/TPC/tpcNClsSharedVsFilteredTracks", "number of shared TPC clusters vs. filtered tracks", kTH2D, {{165, -0.5, 164.5, "# shared clusters TPC"}, axisTrackMultiplicity});
+    histos.add("Tracks/TPC/tpcFractionSharedClsVsFilteredTracks", "fraction of shared TPC clusters vs. filtered tracks", kTH2D, {{100, 0., 1., "fraction shared clusters TPC"}, axisTrackMultiplicity});
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
@@ -1451,6 +1453,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
     histos.fill(HIST("Tracks/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls());
+    histos.fill(HIST("Tracks/TPC/tpcNClsSharedVsFilteredTracks"), track.tpcNClsShared(), nFilteredTracks);
+    histos.fill(HIST("Tracks/TPC/tpcFractionSharedClsVsFilteredTracks"), track.tpcFractionSharedCls(), nFilteredTracks);
     histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
 
     if constexpr (IS_MC) {
