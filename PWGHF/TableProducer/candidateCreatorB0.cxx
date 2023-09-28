@@ -361,7 +361,6 @@ struct HfCandidateCreatorB0Expressions {
 
     // Match reconstructed candidates.
     for (const auto& candidate : candsB0) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
