@@ -56,7 +56,7 @@ auto printMatrix(Array2D<T> const& m)
 
 static constexpr float defaultm[3][4] = {{1.1, 1.2, 1.3, 1.4}, {2.1, 2.2, 2.3, 2.4}, {3.1, 3.2, 3.3, 3.4}};
 static LabeledArray<float> la{&defaultm[0][0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}};
-static constexpr std::string defaultmS[3][4] = {{"One.One", "One.Two", "One.Three", "One.Four"}, {"Two.One", "Two.Two", "Two.Three", "Two.Four"}, {"Three.One", "Three.Two", "Three.Three", "Three.Four"}};
+static constexpr std::string_view defaultmS[3][4] = {{"One.One", "One.Two", "One.Three", "One.Four"}, {"Two.One", "Two.Two", "Two.Three", "Two.Four"}, {"Three.One", "Three.Two", "Three.Three", "Three.Four"}};
 static LabeledArray<std::string> laS{&defaultmS[0][0], 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}};
 
 struct ConfigurableObjectDemo {
