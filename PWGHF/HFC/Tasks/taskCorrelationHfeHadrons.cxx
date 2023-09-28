@@ -32,7 +32,6 @@
 
 #include "PWGJE/DataModel/EMCALClusters.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -142,7 +141,6 @@ struct HfTaskCorrelationHfeHadrons {
       registry.get<THnSparse>(HIST("hInclusiveEHCorrel"))};
 
     // Construct Deta Phi between electrons and hadrons
-
     double deltaPhi = -999;
     double deltaEta = -999;
     double ptHadron = -999;
@@ -151,11 +149,9 @@ struct HfTaskCorrelationHfeHadrons {
     double phiHadron = -999;
     double etaElectron = -999;
     double etaHadron = -999;
-
     for (const auto& aTrack : assotrks) {
       if (aTrack.globalIndex() == eTrack.globalIndex())
         continue;
-
       ptHadron = aTrack.pt();
       ptElectron = eTrack.pt();
       phiElectron = eTrack.phi();
