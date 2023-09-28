@@ -197,6 +197,6 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(vertexqa
-                   SOURCES vertexQA.cxx
+	           SOURCES QC/vertexQA.cxx
                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
