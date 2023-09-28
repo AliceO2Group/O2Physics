@@ -66,8 +66,8 @@ namespace pid_tpc_tof_utils
 /// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
 /// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
 /// \return Node containing the combined NSigma of TPC and TOF
-template <bool tiny = false, typename T1 = o2::framework::expressions::Node, typename T2>
-T1 combineNSigma(const T2& tpcNSigma, const T2& tofNSigma)
+template <bool tiny = false, typename T1>
+o2::framework::expressions::Node combineNSigma(const T1& tpcNSigma, const T1& tofNSigma)
 {
   float defaultNSigmaTolerance = .1f;
   float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
