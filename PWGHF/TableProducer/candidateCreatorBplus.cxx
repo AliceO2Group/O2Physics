@@ -362,7 +362,6 @@ struct HfCandidateCreatorBplusExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : candsBplus) {
-      // Printf("New rec. candidate");
 
       flag = 0;
       origin = 0;
