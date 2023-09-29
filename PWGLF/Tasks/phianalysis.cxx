@@ -241,9 +241,9 @@ struct phianalysis {
           histos.fill(HIST("QAMCTrue/trkDCAz"), trk2.dcaZ());
 
           // MC histograms
-            histos.fill(HIST("phiRec"), lResonance.Pt());
-            histos.fill(HIST("phiRecinvmass"), lResonance.M());
-            histos.fill(HIST("h3Recphiinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("phiRec"), lResonance.Pt());
+          histos.fill(HIST("phiRecinvmass"), lResonance.M());
+          histos.fill(HIST("h3Recphiinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
         }
       } else {
         if constexpr (!IsMix)
