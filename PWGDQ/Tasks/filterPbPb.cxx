@@ -48,7 +48,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses);
 struct DQFilterPbPbTask {
   Produces<aod::DQEventFilter> eventFilter;
   OutputObj<TH1I> fStats{"Statistics"};
-  OutputObj<TH1F> fIsEventDGOutcome{TH1F("Filter outcome", "Filter outcome", 14, -0.5, 13.5)};
+  OutputObj<TH1F> fIsEventDGOutcome{TH1F("Filter outcome", "Filter outcome", 14, -1.5, 6.5)};
 
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:2:5", "<track-cut>:<nmin>:<nmax>,[<track-cut>:<nmin>:<nmax>],..."};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
@@ -237,20 +237,20 @@ struct DQFilterPbPbTask {
     }
     if (doVetoBarrel) {
       if (tracks.size() > 0) {
-        return 13;
+        return 3;
       }
     }
 
     // No global tracks which are not vtx tracks
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
-        return 3;
+        return 4;
       }
     }
 
     // Number of primary vertex contributors
     if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
-      return 7;
+      return 5;
     }
 
     // If we made it here, the event passed
