@@ -1743,7 +1743,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("eventExclusivePair")) {
-    cut->AddCut(VarManager::kMultTPC, 2, 2);
+    cut->AddCut(VarManager::kVtxNcontrib, 2, 2);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventVtxNContrib")) {
+    cut->AddCut(VarManager::kVtxNcontrib, 0, 10);
     return cut;
   }
 
@@ -1823,8 +1828,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("rho0TrackCut")) {
-    cut->AddCut(VarManager::kPt, 0.15, 1000.0);
-    cut->AddCut(VarManager::kTPCncls, 50.0, 159);
+    cut->AddCut(VarManager::kPt, 0.1, 1000.0);
+    cut->AddCut(VarManager::kEta, -1.1, 1.1);
+    cut->AddCut(VarManager::kTPCncls, 50.0, 1000.);
+    cut->AddCut(VarManager::kPVContributor, 0.5, 1.5);
     return cut;
   }
 
