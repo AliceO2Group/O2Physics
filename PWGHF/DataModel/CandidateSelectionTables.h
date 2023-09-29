@@ -420,7 +420,7 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   }
 
   // B+ mass cut
-  if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+  if (std::abs(o2::aod::hf_cand_bplus::invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
     return false;
   }
 
