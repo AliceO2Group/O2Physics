@@ -376,7 +376,7 @@ struct reso2initializer {
     float ptSum = 0.;
     for (auto const& track : tracks) {
       if (ConfFillQA) {
-        qaRegistry.fill(HIST("Track/Phi"), track.phi());
+        qaRegistry.fill(HIST("Phi"), track.phi());
       }
       if (spdef == 0) {
         ptSum += 1.;
