@@ -9,16 +9,31 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(VtxQAtable, "AOD", "VTXQATABLE",
+                  bc::GlobalBC,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::CollisionTime,
+                  collision::NumContrib)
+}
 struct vertexQA {
+  Produces<o2::aod::VtxQAtable> vtxQAtable;
+
+  Configurable<bool> storeTree{"storeTree", false, "Store tree for in-depth analysis"};
 
   ConfigurableAxis xVtxAxis{"xVtxBins", {100, -0.1f, 0.1f}, "Binning for the vertex x (y) in cm"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -29,7 +44,7 @@ struct vertexQA {
   ConfigurableAxis zDiffVtxAxis{"zDiffVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z distance in cm"};
   ConfigurableAxis tDiffVtxAxis{"tDiffVtxBins", {100, -50.f, 50.f}, "Binning for the vertex t distance in ns"};
 
-  ConfigurableAxis nVtxAxis{"nVtxBins", {10, 0, 10}, "Binning for the number of reconstructed vertices per BC"};
+  ConfigurableAxis nVtxAxis{"nVtxBins", {11, -0.5, 10.5}, "Binning for the number of reconstructed vertices per BC"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -61,6 +76,7 @@ struct vertexQA {
     std::vector<double> collPosY;
     std::vector<double> collPosZ;
     std::vector<double> collPosT;
+    std::vector<uint16_t> collContribs;
 
     for (auto& collision : collisions) {
       auto posX{collision.posX()};
@@ -72,6 +88,7 @@ struct vertexQA {
       collPosY.push_back(posY);
       collPosZ.push_back(posZ);
       collPosT.push_back(posT);
+      collContribs.push_back(collision.numContrib());
 
       histos.fill(HIST("xVtxHistogram"), posX);
       histos.fill(HIST("yVtxHistogram"), posY);
@@ -82,7 +99,7 @@ struct vertexQA {
     if (collSize == 2) {
       histos.fill(HIST("xDistVtxHistogram"), collPosX[0] - collPosX[1]);
       histos.fill(HIST("yDistVtxHistogram"), collPosY[0] - collPosY[1]);
-      histos.fill(HIST("xyDistVtxHistogram"), TMath::Hypot(collPosX[0] - collPosX[1], collPosY[0] - collPosY[1]));
+      histos.fill(HIST("xyDistVtxHistogram"), std::hypot(collPosX[0] - collPosX[1], collPosY[0] - collPosY[1]));
       histos.fill(HIST("zDistVtxHistogram"), collPosZ[0] - collPosZ[1]);
       histos.fill(HIST("tDistVtxHistogram"), collPosT[0] - collPosT[1]);
 
@@ -93,6 +110,11 @@ struct vertexQA {
     }
 
     histos.fill(HIST("nVtxHistogram"), collSize);
+    if (storeTree && collSize > 1) {
+      for (int i{0}; i < collSize; ++i) {
+        vtxQAtable(bc.globalBC(), collPosX[i], collPosY[i], collPosZ[i], collPosT[i], collContribs[i]);
+      }
+    }
   }
 };
 
