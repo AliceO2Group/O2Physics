@@ -41,6 +41,7 @@ struct HfTaskB0 {
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
+  // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 

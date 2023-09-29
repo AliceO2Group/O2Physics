@@ -51,6 +51,7 @@ struct HfTaskBplus {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
+  // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
