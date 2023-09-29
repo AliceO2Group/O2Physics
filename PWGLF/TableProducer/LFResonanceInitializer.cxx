@@ -908,9 +908,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
