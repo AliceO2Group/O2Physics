@@ -17,6 +17,7 @@
 
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -40,6 +41,7 @@ using namespace o2::framework::expressions;
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0Prongs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -68,11 +70,21 @@ struct HfCandidateCreatorB0 {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
-  double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
-  double massDPi{0.};
+
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  double massPi{0.};
+  double massD{0.};
+  double massB0{0.};
+  double invMass2DPiMin{0.};
+  double invMass2DPiMax{0.};
   double bz{0.};
+
+  // Fitter for B vertex (2-prong vertex filter)
+  o2::vertexing::DCAFitterN<2> df2;
+  // Fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
+  o2::vertexing::DCAFitterN<3> df3;
 
   using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -92,11 +104,37 @@ struct HfCandidateCreatorB0 {
 
   void init(InitContext const&)
   {
+    // Initialise fitter for B vertex (2-prong vertex filter)
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Initial fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCA);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Configure CCDB access
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    // invariant-mass window cut
+    massPi = pdg->Mass(kPiPlus);
+    massD = pdg->Mass(pdg::Code::kDMinus);
+    massB0 = pdg->Mass(pdg::Code::kB0);
+    invMass2DPiMin = (massB0 - invMassWindowB0) * (massB0 - invMassWindowB0);
+    invMass2DPiMax = (massB0 + invMassWindowB0) * (massB0 + invMassWindowB0);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -125,27 +163,6 @@ struct HfCandidateCreatorB0 {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-    // Initialise fitter for B vertex (2-prong vertex filter)
-    o2::vertexing::DCAFitterN<2> df2;
-    // df2.setBz(bz);
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
-    // Initial fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
-    o2::vertexing::DCAFitterN<3> df3;
-    // df3.setBz(bz);
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     static int ncol = 0;
 
@@ -281,12 +298,12 @@ struct HfCandidateCreatorB0 {
           df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
-          // calculate invariant mass and apply selection
-          massDPi = RecoDecay::m(std::array{pVecD, pVecPion}, std::array{massD, massPi});
-          if (std::abs(massDPi - massB0) > invMassWindowB0) {
+          // calculate invariant mass square and apply selection
+          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
-          hMassB0ToDPi->Fill(massDPi);
+          hMassB0ToDPi->Fill(std::sqrt(invMass2DPi));
 
           // compute impact parameters of D and Pi
           o2::dataformats::DCA dcaD;
@@ -313,8 +330,9 @@ struct HfCandidateCreatorB0 {
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaD.getY(), dcaPion.getY(),
                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           candD.globalIndex(), trackPion.globalIndex(),
                            hfFlag);
+
+          rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop
       }   // D loop
     }     // collision loop
@@ -331,10 +349,9 @@ struct HfCandidateCreatorB0Expressions {
 
   void processMc(aod::HfCand3Prong const& dplus,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::HfCandB0Prongs const& candsB0)
   {
-    rowCandidateB0->bindExternalIndices(&tracks);
-    rowCandidateB0->bindExternalIndices(&dplus);
 
     int indexRec = -1;
     int8_t sign = 0;
@@ -343,8 +360,7 @@ struct HfCandidateCreatorB0Expressions {
     int8_t debug = 0;
 
     // Match reconstructed candidates.
-    // Spawned table can be used directly
-    for (const auto& candidate : *rowCandidateB0) {
+    for (const auto& candidate : candsB0) {
       flag = 0;
       origin = 0;
       debug = 0;
