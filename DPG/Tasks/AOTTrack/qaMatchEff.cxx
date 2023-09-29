@@ -1867,10 +1867,10 @@ struct qaMatchEff {
       const AxisSpec axisItsClstVsTime{itsClstBinsVsTime, "TPC clusters"};
       // TPC tracks
       histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});
-      histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
       // ITS-TPC tracks
       histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds});
-      histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
 
       /// time monitoring correctly set up
       timeMonitorSetUp = true;
