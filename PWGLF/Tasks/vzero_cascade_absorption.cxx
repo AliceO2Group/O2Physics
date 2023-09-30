@@ -134,8 +134,6 @@ struct vzero_cascade_absorption {
       return false;
     if (!track.hasTPC())
       return false;
-    if (!track.passedTPCRefit())
-      return false;
     if (track.tpcNClsFound() < minTPCnClsFound)
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
@@ -287,6 +285,12 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       // Positive and Negative Tracks
       const auto& posTrack = v0.posTrack_as<FullTracks>();
       const auto& negTrack = v0.negTrack_as<FullTracks>();
+
+      // Require TPC Refit
+      if (!posTrack.passedTPCRefit())
+        continue;
+      if (!negTrack.passedTPCRefit())
+        continue;
 
       auto hit_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
       auto hit_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
