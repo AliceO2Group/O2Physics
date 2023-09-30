@@ -33,8 +33,7 @@ using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using FullTrack = FullTracks::iterator;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct vzero_cascade_absorption {
 
