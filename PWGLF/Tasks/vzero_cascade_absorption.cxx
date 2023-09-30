@@ -33,8 +33,7 @@ using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using FullTrack = FullTracks::iterator;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct vzero_cascade_absorption {
 
@@ -134,8 +133,6 @@ struct vzero_cascade_absorption {
     if (!track.hasITS())
       return false;
     if (!track.hasTPC())
-      return false;
-    if (!track.passedTPCRefit())
       return false;
     if (track.tpcNClsFound() < minTPCnClsFound)
       return false;
@@ -288,6 +285,12 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       // Positive and Negative Tracks
       const auto& posTrack = v0.posTrack_as<FullTracks>();
       const auto& negTrack = v0.negTrack_as<FullTracks>();
+
+      // Require TPC Refit
+      if (!posTrack.passedTPCRefit())
+        continue;
+      if (!negTrack.passedTPCRefit())
+        continue;
 
       auto hit_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
       auto hit_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
