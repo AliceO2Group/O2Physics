@@ -41,10 +41,15 @@ struct HfTaskD0 {
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+  using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
+  using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
+  using D0CandidatesMcKF = soa::Join<D0CandidatesKF, aod::HfCand2ProngMcRec>;
+
+  Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesKF> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesMc> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<D0CandidatesMcKF> selectedD0CandidatesMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramRegistry registry{
     "registry",
@@ -233,13 +238,13 @@ struct HfTaskD0 {
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
     }
   }
-  void processDataWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
+  void processDataWithDCAFitterN(D0Candidates const&)
   {
     processData<VertexerType::DCAFitter>(selectedD0Candidates);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
-  void processDataWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0> const&)
+  void processDataWithKFParticle(D0CandidatesKF const&)
   {
     processData<VertexerType::KfParticle>(selectedD0CandidatesKF);
   }
@@ -438,7 +443,7 @@ struct HfTaskD0 {
     }
   }
 
-  void processMcWithDCAFitterN(soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&,
+  void processMcWithDCAFitterN(D0CandidatesMc const&,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
@@ -446,7 +451,7 @@ struct HfTaskD0 {
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
-  void processMcWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec> const&,
+  void processMcWithKFParticle(D0CandidatesMcKF const&,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
