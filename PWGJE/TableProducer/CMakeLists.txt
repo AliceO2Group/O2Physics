@@ -55,7 +55,7 @@ o2physics_add_dpl_workflow(jet-eventweight-mcp
                     SOURCES jeteventweightmcp.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-                    
+
 o2physics_add_dpl_workflow(jet-track-derived
                     SOURCES jettrackderived.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
