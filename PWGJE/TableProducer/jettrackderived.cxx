@@ -104,8 +104,8 @@ struct spectraDerivedMaker {
     if (abs(collision.posZ()) > ValVtx) {
       return false;
     }
-    histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ()); // test fill
-                                                                    //  Last thing, check the sampling
+    histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());                                                              // test fill
+                                                                                                                                 //  Last thing, check the sampling
     if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return false;
     }
