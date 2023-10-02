@@ -1268,8 +1268,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kOpeningAngle] = 0.;
     } else {
       double arg = scalar / Ptot12;
-      if(arg > 1.) arg = 1.;
-      if(arg < -1) arg = -1;
+      if (arg > 1.)
+        arg = 1.;
+      if (arg < -1)
+        arg = -1;
       values[kOpeningAngle] = TMath::ACos(arg);
     }
   }
