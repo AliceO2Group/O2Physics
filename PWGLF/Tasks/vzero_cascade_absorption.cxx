@@ -265,8 +265,7 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
 */
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision,
-                   aod::V0Datas const& fullV0s, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
   {
 
     // Event Counter (before event sel)
@@ -292,43 +291,19 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       if (!negTrack.passedTPCRefit())
         continue;
 
-      auto hit_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
-      auto hit_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
-
       // K0 Short
       if (passedK0Selection(v0, negTrack, posTrack, collision)) {
 
         // Before Target
-        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
-          if (requireITShits) {
-            for (int i = 0; i < 7; i++) {
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
-                continue;
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
-                continue;
-            }
-          }
-
+        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs)
           registryData.fill(HIST("K0_before_target"), v0.p(), v0.mK0Short());
-        }
 
         // After Target
-        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
-
-          if (requireITShits) {
-            for (int i = 0; i < 7; i++) {
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
-                continue;
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
-                continue;
-            }
-          }
-
+        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("K0_after_target"), v0.p(), v0.mK0Short());
-        }
-      }
-    } // end loop on V0s
-  }
+      } // end loop on K0s
+    }   // end loop on V0s
+  }     // end processData
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
