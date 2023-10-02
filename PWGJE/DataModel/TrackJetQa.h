@@ -164,4 +164,4 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
 } // namespace o2::aod
 
-#endif
+#endif // PWGJE_DATAMODEL_TRACKJETQA_H_
