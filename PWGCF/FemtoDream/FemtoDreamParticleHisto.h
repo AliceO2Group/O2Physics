@@ -226,7 +226,7 @@ class FemtoDreamParticleHisto
   }
 
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void fillQA_debug(T const& part, int MomentumType)
+  void fillQA_debug(T const& part, aod::femtodreamparticle::MomentumType MomentumType)
   {
     float momentum;
     switch (MomentumType) {
@@ -377,7 +377,7 @@ class FemtoDreamParticleHisto
   /// \tparam isMC fills the additional histograms for Monte Carlo truth
   /// \param part particle for which the histograms should be filled
   template <bool isMC, bool isDebug, typename T>
-  void fillQA(T const& part, int MomemtumType)
+  void fillQA(T const& part, aod::femtodreamparticle::MomentumType MomemtumType)
   {
     std::string tempFitVarName;
     if (mHistogramRegistry) {
