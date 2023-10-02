@@ -39,14 +39,14 @@ using namespace o2::framework::expressions;
 
 struct TrackJetQa {
   HistogramRegistry histos{"JetQAHistograms"};
-  //Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks"}; --not in use
+  // Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks"}; --not in use
   Configurable<bool> enable{"selectTrack", true, "false = disable track selection, true = enable track selection"};
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
 
   Configurable<double> ValVtx{"ValVtx", 10, "Value of the vertex position"};
   Configurable<float> ValCutEta{"ValCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> ValCutY{"ValCutY", 0.5f, "Y range for tracks"};
-  
+
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
   Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
@@ -86,7 +86,7 @@ struct TrackJetQa {
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
     customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
-    customTrackCuts.print(); 
+    customTrackCuts.print();
     // kinetic histograms
     histos.add("Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c];number of entries", HistType::kTH1F, {{nBins, 0, 200}});
     histos.add("Kine/pt_TRD", "#it{p}_{T} if track has a TRD match;#it{p}_{T} [GeV/c];number of entries", HistType::kTH1F, {{nBins, 0, 200}});
@@ -149,7 +149,7 @@ struct TrackJetQa {
 
   // @Alice, please make these blocks where you fill histograms templates that we can call in both process functions. Thank you !
   void processFull(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-               soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
+                   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {
 
     for (auto& collision : collisions) {
@@ -278,7 +278,6 @@ struct TrackJetQa {
     }
   }
   PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
-  
 
   Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
   SliceCache cacheTrk;
@@ -299,22 +298,21 @@ struct TrackJetQa {
       }
       histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
 
-      //Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
-      //groupedTracks.bindTable(tracks);
+      // Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
+      // groupedTracks.bindTable(tracks);
 
       const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
       for (const auto& track : tracksInCollision) {
         if (enable && !track.isGlobalTrackWoPtEta()) {
           continue;
         }
-        //filling all your histos.... please put them into templates and call the templates in the process functions.
-        // else you really just duplicate code and we want to save line here :)
+        // filling all your histos.... please put them into templates and call the templates in the process functions.
+        //  else you really just duplicate code and we want to save line here :)
       }
     }
   } // end of the process function
   PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

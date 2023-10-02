@@ -30,12 +30,10 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGJE/DataModel/TrackJetQa.h"
 
-
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
 
 struct spectraDerivedMaker {
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
@@ -57,7 +55,6 @@ struct spectraDerivedMaker {
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -87,7 +84,7 @@ struct spectraDerivedMaker {
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
     customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
-    customTrackCuts.print(); 
+    customTrackCuts.print();
 
     // event property histograms
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
@@ -99,7 +96,7 @@ struct spectraDerivedMaker {
   template <typename CollisionType, typename TrackType>
   bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
   {
-    //here we could already fill some histos fo cross checks
+    // here we could already fill some histos fo cross checks
     if (!collision.sel8()) {
       return false;
     }
@@ -107,23 +104,22 @@ struct spectraDerivedMaker {
     if (abs(collision.posZ()) > ValVtx) {
       return false;
     }
-    histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());//test fill
-      // Last thing, check the sampling
+    histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ()); // test fill
+                                                                    //  Last thing, check the sampling
     if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return false;
     }
     histos.fill(HIST("EventProp/sampledvertexz"), collision.posZ());
     return true;
   }
-    
 
   template <typename TrackType>
-  bool isTrackSelected(TrackType const& track)//add trackselections and corresponding histos for cross checks to derived table
+  bool isTrackSelected(TrackType const& track) // add trackselections and corresponding histos for cross checks to derived table
   {
-    if (!track.isGlobalTrackWoPtEta()) {// in principle we would liek to check all these cuts
-        return false;
-      }  
-      return true;
+    if (!track.isGlobalTrackWoPtEta()) { // in principle we would liek to check all these cuts
+      return false;
+    }
+    return true;
   }
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
@@ -171,7 +167,6 @@ struct spectraDerivedMaker {
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);
-  };
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<spectraDerivedMaker>(cfgc)}; }
-

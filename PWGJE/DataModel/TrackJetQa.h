@@ -32,12 +32,10 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 
-
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
 
 // Derived data model for cut variation
 namespace o2::aod
@@ -81,19 +79,19 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision h
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
-//DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
-// Track info
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
-DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);                                   //! Pt (signed) of the track
-DECLARE_SOA_COLUMN(Eta, eta, float);                                             //! Eta of the track
-DECLARE_SOA_COLUMN(Phi, phi, float);                                             //! Phi of the track
-//DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                               //! Event time of the track computed with the T0AC
-//DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);                         //! Resolution of the event time of the track computed with the T0AC
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);                      //! IsPVContributor
-//DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);                      //! Index of the last cluster in the TRD, -1 if no TRD information
-DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                                        //! Has or not the TRD match
+// DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+//  Track info
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
+DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);  //! Pt (signed) of the track
+DECLARE_SOA_COLUMN(Eta, eta, float);            //! Eta of the track
+DECLARE_SOA_COLUMN(Phi, phi, float);            //! Phi of the track
+// DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                               //! Event time of the track computed with the T0AC
+// DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);                         //! Resolution of the event time of the track computed with the T0AC
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
+// DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);                      //! Index of the last cluster in the TRD, -1 if no TRD information
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
 
-DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY,                          //! Unpacked dcaxy
+DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY, //! Unpacked dcaxy
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
@@ -126,8 +124,7 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   collision::PosY,
                   collision::PosZ,
                   spectra::Sel8,
-                  spectra::RunNumber
-);
+                  spectra::RunNumber);
 using SpColl = SpColls::iterator;
 
 DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
@@ -144,13 +141,13 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::IsPVContributor,
                   track::ITSClusterMap,
                   spectra::HasTRD,
-                  //spectra::DCAxyStore,
-                  //spectra::DCAzStore,
+                  // spectra::DCAxyStore,
+                  // spectra::DCAzStore,
                   spectra::IsGlobalTrack,
                   spectra::IsGlobalTrackWoDCA,
                   spectra::IsGlobalTrackWoPtEta,
-                  //spectra::DCAxy<spectra::DCAxyStore>,
-                  //spectra::DCAz<spectra::DCAzStore>,
+                  // spectra::DCAxy<spectra::DCAxyStore>,
+                  // spectra::DCAz<spectra::DCAzStore>,
                   spectra::Pt<spectra::PtSigned>,
                   track::Sign<spectra::PtSigned>,
                   spectra::P<spectra::PtSigned, spectra::Eta>,
@@ -164,9 +161,7 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>
-);
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
 } // namespace o2::aod
 
 #endif
-
