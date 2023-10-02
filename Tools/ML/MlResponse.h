@@ -15,7 +15,7 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
 #ifndef TOOLS_ML_MLRESPONSE_H_
-#define TOOLS_ML_MLRESPONSE_H
+#define TOOLS_ML_MLRESPONSE_H_
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
@@ -205,4 +205,4 @@ class MlResponse
 } // namespace analysis
 } // namespace o2
 
-#endif // TOOLS_ML_MLRESPONSE_H
+#endif // TOOLS_ML_MLRESPONSE_H_
