@@ -12,7 +12,6 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-
 using std::cout;
 using std::endl;
 using namespace o2::constants::physics;
