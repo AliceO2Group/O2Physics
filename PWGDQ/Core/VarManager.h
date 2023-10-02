@@ -347,6 +347,7 @@ class VarManager : public TObject
     kPhiCS,
     kPsiPair,
     kDeltaPhiPair,
+    kOpeningAngle,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
     kQuadDCAabsZ,
@@ -1258,6 +1259,19 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values[kDeltaPhiPair] = (t1.sign() > 0) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
     values[kPsiPair] = (t1.sign() > 0) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
+  }
+
+  if (fgUsedVars[kOpeningAngle]) {
+    double scalar = v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz();
+    double Ptot12 = Ptot1 * Ptot2;
+    if (Ptot12 <= 0) {
+      values[kOpeningAngle] = 0.;
+    } else {
+      double arg = scalar / Ptot12;
+      if(arg > 1.) arg = 1.;
+      if(arg < -1) arg = -1;
+      values[kOpeningAngle] = TMath::ACos(arg);
+    }
   }
 
   // TO DO: get the correct values from CCDB
