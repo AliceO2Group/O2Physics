@@ -13,7 +13,7 @@
 /// \file   for derived process JetTrackQa.h and .cxx
 /// \author Johanna Lömker
 /// \since  2023-10-02
-/// \brief  Header for the trackJetQa task for the analysis of the tracks for jets.
+/// \brief  Header for the trackJetQa task for the analysis of the tracks for jets..
 ///
 
 // O2 includes
