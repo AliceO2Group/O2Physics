@@ -45,7 +45,9 @@ struct createEMReducedMCEvent {
   Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
+  Produces<o2::aod::EMPrimaryTrackMCLabels> emprimarytrackmclabels;
   Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
+  Produces<o2::aod::DalitzEEEMReducedEventIds> dalitzeventid;
   Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
   Produces<o2::aod::EMCEMReducedEventIds> emceventid;
 
@@ -59,13 +61,15 @@ struct createEMReducedMCEvent {
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<aod::DalitzEEs> perCollision_dalitz = aod::dalitzee::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_emprmtrk = aod::emprimarytrack::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::McCollisionLabels>;
 
-  template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs>
-  void skimmingMC(MyCollisions const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const&, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters)
+  template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TDielectorns, typename TEMPrimaryTracks>
+  void skimmingMC(MyCollisions const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters, TDielectorns const& dileptons, TEMPrimaryTracks const& emprimarytracks)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -80,6 +84,7 @@ struct createEMReducedMCEvent {
       int ng_pcm = 0;
       int ng_phos = 0;
       int ng_emc = 0;
+      int ng_dilepton = 0;
 
       // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
@@ -97,6 +102,12 @@ struct createEMReducedMCEvent {
         ng_pcm = v0photons_coll.size();
         for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
           v0kfeventid(events.lastIndex() + 1);
+        }
+
+        auto dileptons_coll = dileptons.sliceBy(perCollision_dalitz, collision.globalIndex());
+        ng_dilepton = v0photons_coll.size();
+        for (int iee = 0; iee < dileptons_coll.size(); iee++) {
+          dalitzeventid(events.lastIndex() + 1);
         }
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
@@ -191,9 +202,6 @@ struct createEMReducedMCEvent {
 
           for (auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
             auto o2track = leg.template track_as<TracksMC>();
-            // if (!o2track.has_mcParticle()) {
-            //   continue; // If no MC particle is found, skip the track
-            // }
             auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
 
             // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
@@ -207,6 +215,26 @@ struct createEMReducedMCEvent {
             emmcparticlelabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
           } // end of leg loop
         }   // end of v0 loop
+
+        // for dalitz ee
+        auto emprimarytracks_coll = emprimarytracks.sliceBy(perCollision_emprmtrk, collision.globalIndex());
+        for (auto& emprimarytrack : emprimarytracks_coll) {
+          auto o2track = o2tracks.iteratorAt(emprimarytrack.trackId());
+          if (!o2track.has_mcParticle()) {
+            continue; // If no MC particle is found, skip the dilepton
+          }
+          auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
+
+          // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+          emprimarytrackmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
+        } // end of em primary track loop
       }
 
     } // end of collision loop
@@ -218,28 +246,6 @@ struct createEMReducedMCEvent {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        ////auto mp = mctrack.template mothers_first_as<TMCs>();
-        // int motherid = mctrack.mothersIds()[0];//first mother index
-        // while(motherid > -1) {
-        //   if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-        //     auto mp = mcTracks.iteratorAt(motherid);
-
-        //    if (fNewLabels.find(mp.globalIndex()) != fNewLabels.end()) {
-        //      mothers.push_back(fNewLabels.find(mp.globalIndex())->second);
-        //    }
-
-        //    if(mp.has_mothers()){
-        //      motherid = mp.mothersIds()[0];//first mother index
-        //    } else {
-        //      motherid = -999;
-        //    }
-        //  }
-        //  else{
-        //    std::cout << "Mother label (" << motherid << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
-        //    std::cout << " Check the MC generator" << std::endl;
-        //  }
-        //}
-
         for (auto& m : mctrack.mothersIds()) {
           if (m < mcTracks.size()) { // protect against bad mother indices
             if (fNewLabels.find(m) != fNewLabels.end()) {
@@ -289,40 +295,40 @@ struct createEMReducedMCEvent {
     fCounters[1] = 0;
   } //  end of skimmingMC
 
-  void processMC_PCM(soa::SmallGroups<MyCollisions> const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void processMC_PCM(soa::SmallGroups<MyCollisions> const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::DalitzEEs const& dileptons, aod::EMPrimaryTracks const& emprimarytracks)
   {
-    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, nullptr, nullptr);
+    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, dileptons, emprimarytracks);
   }
   void processMC_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::PHOSClusters const& phosclusters)
   {
-    skimmingMC<kPHOS>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, nullptr);
+    skimmingMC<kPHOS>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, nullptr, nullptr, nullptr);
   }
   void processMC_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::SkimEMCClusters const& emcclusters)
   {
-    skimmingMC<kEMC>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, emcclusters);
+    skimmingMC<kEMC>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, emcclusters, nullptr, nullptr);
   }
-  void processMC_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters)
+  void processMC_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::DalitzEEs const& dileptons, aod::EMPrimaryTracks const& emprimarytracks)
   {
     const uint8_t sysflag = kPCM | kPHOS;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, phosclusters, nullptr);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, nullptr, dileptons, emprimarytracks);
   }
-  void processMC_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::SkimEMCClusters const& emcclusters)
+  void processMC_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dileptons, aod::EMPrimaryTracks const& emprimarytracks)
   {
     const uint8_t sysflag = kPCM | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, nullptr, emcclusters);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, emcclusters, dileptons, emprimarytracks);
   }
   void processMC_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, emcclusters);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, emcclusters, nullptr, nullptr);
   }
-  void processMC_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  void processMC_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dileptons, aod::EMPrimaryTracks const& emprimarytracks)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, phosclusters, emcclusters);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, dileptons, emprimarytracks);
   }
 
-  void processDummy(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs) {}
+  void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(createEMReducedMCEvent, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(createEMReducedMCEvent, processMC_PHOS, "create em mc event table for PHOS", false);
