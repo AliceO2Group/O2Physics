@@ -127,9 +127,15 @@ struct skimmerDalitzEE {
     mRunNumber = bc.runNumber();
   }
 
-  template <typename TTrack>
+  template <bool isMC, typename TTrack>
   bool checkTrack(TTrack const& track)
   {
+    if constexpr (isMC) {
+      if (!track.has_mcParticle()) {
+        return false;
+      }
+    }
+
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
@@ -159,12 +165,12 @@ struct skimmerDalitzEE {
     return true;
   }
 
-  template <EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
+  template <bool isMC, EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
   void fillPairTable(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     if constexpr (pairtype == EM_EEPairType::kULS) { // ULS
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!checkTrack(t1) || !checkTrack(t2)) {
+        if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
@@ -184,7 +190,7 @@ struct skimmerDalitzEE {
       }      // end of pairing loop
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        if (!checkTrack(t1) || !checkTrack(t2)) {
+        if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
@@ -204,11 +210,11 @@ struct skimmerDalitzEE {
     }
   }
 
-  template <typename TTracks>
+  template <bool isMC, typename TTracks>
   void fillTrackTable(TTracks const& tracks)
   {
     for (auto& track : tracks) {
-      if (!checkTrack(track)) {
+      if (!checkTrack<isMC>(track)) {
         continue;
       }
 
@@ -249,13 +255,13 @@ struct skimmerDalitzEE {
       // store track info which belongs to pairs. (i.e. only 1 track per event does not enter pair analysis.)
       int npos = 0, nneg = 0;
       for (auto& ptrack : posTracks_per_coll) {
-        if (!checkTrack(ptrack)) {
+        if (!checkTrack<false>(ptrack)) {
           continue;
         }
         npos++;
       }
       for (auto& ntrack : negTracks_per_coll) {
-        if (!checkTrack(ntrack)) {
+        if (!checkTrack<false>(ntrack)) {
           continue;
         }
         nneg++;
@@ -265,12 +271,12 @@ struct skimmerDalitzEE {
         continue;
       }
 
-      fillTrackTable(posTracks_per_coll);
-      fillTrackTable(negTracks_per_coll);
+      fillTrackTable<false>(posTracks_per_coll);
+      fillTrackTable<false>(negTracks_per_coll);
 
-      fillPairTable<EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll);  // ULS
-      fillPairTable<EM_EEPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-      fillPairTable<EM_EEPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+      fillPairTable<false, EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll);  // ULS
+      fillPairTable<false, EM_EEPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+      fillPairTable<false, EM_EEPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
 
     } // end of collision loop
     fNewLabels.clear();
@@ -278,32 +284,51 @@ struct skimmerDalitzEE {
   }
   PROCESS_SWITCH(skimmerDalitzEE, processRec, "process reconstructed info only", true);
 
-  //  void processMC(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
-  //                 aod::McCollisions const&,
-  //                 aod::BCsWithTimestamps const& bcs,
-  //                 aod::V0Datas const& theV0s,
-  //                 MyTracksMC const& theTracks)
-  //  {
-  //    for (auto& collision : collisions) {
-  //
-  //      if (!collision.has_mcCollision()) {
-  //        continue;
-  //      }
-  //      auto mcCollision = collision.mcCollision();
-  //      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-  //
-  //      auto lGroupedV0s = theV0s.sliceBy(perCollision, collision.globalIndex());
-  //      for (auto& v0 : lGroupedV0s) {
-  //        auto pos = v0.template posTrack_as<MyTracksMC>(); // positive daughter
-  //        auto ele = v0.template negTrack_as<MyTracksMC>(); // negative daughter
-  //
-  //        if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
-  //          continue; // If no MC particle is found, skip the v0
-  //        }
-  //      }
-  //    }
-  //  }
-  //  PROCESS_SWITCH(skimmerDalitzEE, processMC, "process reconstructed and MC info ", false);
+  using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
+  Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
+  void processMC(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
+  {
+    for (auto& collision : collisions) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      // auto mcCollision = collision.mcCollision();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+
+      // store track info which belongs to pairs. (i.e. only 1 track per event does not enter pair analysis.)
+      int npos = 0, nneg = 0;
+      for (auto& ptrack : posTracks_per_coll) {
+        if (!checkTrack<true>(ptrack)) {
+          continue;
+        }
+        npos++;
+      }
+      for (auto& ntrack : negTracks_per_coll) {
+        if (!checkTrack<true>(ntrack)) {
+          continue;
+        }
+        nneg++;
+      }
+
+      if (npos + nneg < 2) {
+        continue;
+      }
+
+      fillTrackTable<true>(posTracks_per_coll);
+      fillTrackTable<true>(negTracks_per_coll);
+
+      fillPairTable<true, EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll);  // ULS
+      fillPairTable<true, EM_EEPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+      fillPairTable<true, EM_EEPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+    }                                                                                               // end of collision loop
+    fNewLabels.clear();
+    fCounter = 0;
+  }
+  PROCESS_SWITCH(skimmerDalitzEE, processMC, "process reconstructed and MC info ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
