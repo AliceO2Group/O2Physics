@@ -86,6 +86,25 @@ struct kfStrangenessStudy {
     auto hEventSelectionFlow = histos.add<TH1>("hEventSelectionFlow", "Event selection flow", kTH1F, {{2, 0.5f, 2.5f}});
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(1), "Sel8");
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(2), "|Vtx_{z}|<10cm");
+
+    histos.add("hVertexX", "hVertexX", kTH1F, {{1000, -3.0f, 3.0f}});
+    histos.add("hKFVertexX", "hKFVertexX", kTH1F, {{1000, -3.0f, 3.0f}});
+    histos.add("hVertexY", "hVertexY", kTH1F, {{1000, -3.0f, 3.0f}});
+    histos.add("hKFVertexY", "hKFVertexY", kTH1F, {{1000, -3.0f, 3.0f}});
+    histos.add("hVertexZ", "hVertexZ", kTH1F, {{1000, -10.0f, 10.0f}});
+    histos.add("hKFVertexZ", "hKFVertexZ", kTH1F, {{1000, -10.0f, 10.0f}});
+
+    histos.add("hCascRadius", "hCascRadius", kTH1F, {{1000, 0.0f, 3.0f}});
+    histos.add("hKFCascRadius", "hKFCascRadius", kTH1F, {{1000, 0.0f, 3.0f}});
+
+    histos.add("hDCAxy", "hDCAxy", kTH1F, {{500, -1.0f, 1.0f}});
+    histos.add("hKFDCAxy", "hKFDCAxy", kTH1F, {{500, -1.0f, 1.0f}});
+    
+    histos.add("hPointingAngle", "hPointingAngle", kTH1F, {{800, 0.0f, 3.5f}});
+    histos.add("hKFPointingAngle", "hKFPointingAngle", kTH1F, {{800, 0.0f, 3.5f}});
+    histos.add("hCosPointingAngle", "hCosPointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
+    histos.add("hKFCosPointingAngle", "hKFCosPointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
+
   }
 
   template <typename TCollision, typename TCascTable, typename TCascDatas, typename TKFCascDatas>
@@ -116,6 +135,14 @@ struct kfStrangenessStudy {
       vtxYErr = sqrt(cascdata.positionCovMat()[2]);
       vtxZErr = sqrt(cascdata.positionCovMat()[5]);
       V0Rad = cascdata.v0radius();
+
+      histos.fill(HIST("hVertexX"), vtxX);  
+      histos.fill(HIST("hVertexY"), vtxY);
+      histos.fill(HIST("hVertexZ"), vtxZ);
+      histos.fill(HIST("hPointingAngle"), cascPointingAngle);
+      histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
+      histos.fill(HIST("hDCAxy"), dcaXYCascToPV);
+      histos.fill(HIST("hCascRadius"), cascRad);
     }
     if (cascade.has_kfCascData()) {
       // check aod::Cascades -> aod::KFCascData link
@@ -143,7 +170,16 @@ struct kfStrangenessStudy {
       vtxZErrKF = sqrt(cascdata.kfTrackCovMat()[5]);
       V0RadKF = cascdata.v0radius();
       cascChi2geoKF = cascdata.kfCascadeChi2();
+
+      histos.fill(HIST("hKFVertexX"), vtxXKF);
+      histos.fill(HIST("hKFVertexY"), vtxYKF);
+      histos.fill(HIST("hKFVertexZ"), vtxZKF);
+      histos.fill(HIST("hKFPointingAngle"), cascPointingAngleKF);
+      histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
+      histos.fill(HIST("hKFDCAxy"), dcaXYCascToPVKF);
+      histos.fill(HIST("hKFCascRadius"), cascRadKF);
     }
+
   }
 
   template <typename TCollision, typename TCascTable>
