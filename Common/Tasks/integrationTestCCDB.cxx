@@ -11,11 +11,11 @@
 
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
-// Integration tester for CCDB access 
-// This task is meant to attempt accessing typical CCDB objects 
-// but to do no actual analysis. It will then allow for systematic 
+// Integration tester for CCDB access
+// This task is meant to attempt accessing typical CCDB objects
+// but to do no actual analysis. It will then allow for systematic
 // studies of CCDB access performance for the various objects it queries.
-// 
+//
 // The task allows for some basic configuration of which CCDB objects
 // are to be queried (from B field to material LUT and others).
 // For now: magnetic field is required, matlut is optional
@@ -88,7 +88,7 @@ struct integrationTestCCDB {
 
     // Known magnetic field
     float magneticField = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Finished MagField init! Magnetic field set in Propagator Instance for inspection: "<<magneticField;
+    LOG(info) << "Finished MagField init! Magnetic field set in Propagator Instance for inspection: " << magneticField;
   }
 
   void init(InitContext& context)
@@ -106,11 +106,11 @@ struct integrationTestCCDB {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    if(loadMatLut){
+    if (loadMatLut) {
       LOG(info) << "Loading material LUT...";
       o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
       LOG(info) << "Material LUT successfully loaded!";
-      LOG(info) << "Material LUT min R: "<<lut->getRMin()<<" max R: "<<lut->getRMax();
+      LOG(info) << "Material LUT min R: " << lut->getRMin() << " max R: " << lut->getRMax();
     }
     initMagneticFieldCCDB(bc);
   }
