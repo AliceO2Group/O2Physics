@@ -85,6 +85,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
 DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);  //! Pt (signed) of the track
 DECLARE_SOA_COLUMN(Eta, eta, float);            //! Eta of the track
 DECLARE_SOA_COLUMN(Phi, phi, float);            //! Phi of the track
+DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
 // DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                               //! Event time of the track computed with the T0AC
 // DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);                         //! Resolution of the event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
@@ -131,6 +132,7 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   o2::soa::Index<>,
                   spectra::CollisionId,
                   spectra::PtSigned, spectra::Eta, spectra::Phi,
+                  spectra::Sigma1Pt,
                   track::Length,
                   track::TPCSignal,
                   track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
@@ -141,13 +143,13 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::IsPVContributor,
                   track::ITSClusterMap,
                   spectra::HasTRD,
-                  // spectra::DCAxyStore,
-                  // spectra::DCAzStore,
+                  //track::DCAxy,
+                  //track::DCAz,
                   spectra::IsGlobalTrack,
                   spectra::IsGlobalTrackWoDCA,
                   spectra::IsGlobalTrackWoPtEta,
-                  // spectra::DCAxy<spectra::DCAxyStore>,
-                  // spectra::DCAz<spectra::DCAzStore>,
+                  //spectra::DCAxy<spectra::DCAxyStore>,
+                  //spectra::DCAz<spectra::DCAzStore>,
                   spectra::Pt<spectra::PtSigned>,
                   track::Sign<spectra::PtSigned>,
                   spectra::P<spectra::PtSigned, spectra::Eta>,
