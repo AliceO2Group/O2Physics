@@ -133,8 +133,17 @@ DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 // NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
 DECLARE_SOA_TABLE(EMMCParticleLabels, "AOD", "EMMCPARLABEL", //!
                   emmcparticlelabel::EMMCParticleId, emmcparticlelabel::McMask);
-
 using EMMCParticleLabel = EMMCParticleLabels::iterator;
+
+namespace emprimarytrackmclabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace emprimarytrackmclabel
+
+DECLARE_SOA_TABLE(EMPrimaryTrackMCLabels, "AOD", "EMPRMTRKMCLABEL", //!
+                  emprimarytrackmclabel::EMMCParticleId, emprimarytrackmclabel::McMask);
+using EMPrimaryTrackMCLabel = EMPrimaryTrackMCLabels::iterator;
 
 namespace v0leg
 {

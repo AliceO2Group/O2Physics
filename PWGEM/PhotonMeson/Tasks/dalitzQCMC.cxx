@@ -29,6 +29,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -40,7 +41,7 @@ using std::array;
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-struct DalitzQC {
+struct DalitzQCMC {
 
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "global_tpchadrejortofreq,nocut", "Comma separated list of dalitz ee cuts"};
 
@@ -112,13 +113,22 @@ struct DalitzQC {
     fOutputDalitzEE.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")));
   }
 
+  template <typename TTrack, typename TMCTracks>
+  int FindLF(TTrack const& posmc, TTrack const& elemc, TMCTracks const& mcparticles)
+  {
+    int arr[] = {
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 331, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 113, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 223, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 333, mcparticles)};
+    int size = sizeof(arr) / sizeof(*arr);
+    int max = *std::max_element(arr, arr + size);
+    return max;
+  }
+
   Partition<MyDalitzEEs> uls_pairs = o2::aod::dalitzee::sign == 0;
-  Partition<MyDalitzEEs> lspp_pairs = o2::aod::dalitzee::sign == +1;
-  Partition<MyDalitzEEs> lsmm_pairs = o2::aod::dalitzee::sign == -1;
 
   SliceCache cache;
   Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
-  void processQC(aod::EMReducedEvents const& collisions, MyDalitzEEs const& dileptons, aod::EMPrimaryTracks const& tracks)
+  using MyMCTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackMCLabels>;
+  void processQCMC(aod::EMReducedEvents const& collisions, MyDalitzEEs const& dileptons, MyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
@@ -145,21 +155,29 @@ struct DalitzQC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
 
-      // auto dileptons_coll = dileptons.sliceBy(perCollision, collision.collisionId());
-
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
 
-        int nuls = 0, nlspp = 0, nlsmm = 0;
+        int nuls = 0;
         for (auto& uls_pair : uls_pairs_per_coll) {
-          auto pos = uls_pair.posTrack_as<aod::EMPrimaryTracks>();
-          auto ele = uls_pair.negTrack_as<aod::EMPrimaryTracks>();
-          if (cut.IsSelected<aod::EMPrimaryTracks>(uls_pair)) {
+          auto pos = uls_pair.posTrack_as<MyMCTracks>();
+          auto ele = uls_pair.negTrack_as<MyMCTracks>();
+          auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
+          auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
+
+          int mother_id = FindLF(posmc, elemc, mcparticles);
+          if (mother_id < 0) {
+            continue;
+          }
+          auto mcmother = mcparticles.iteratorAt(mother_id);
+
+          if (!IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+            continue;
+          }
+          if (cut.IsSelected<MyMCTracks>(uls_pair)) {
             values[0] = uls_pair.mee();
             values[1] = uls_pair.pt();
             values[2] = uls_pair.dcaeeXY();
@@ -172,42 +190,17 @@ struct DalitzQC {
           }
         } // end of uls pair loop
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
-
-        for (auto& lspp_pair : lspp_pairs_per_coll) {
-          if (cut.IsSelected<aod::EMPrimaryTracks>(lspp_pair)) {
-            values[0] = lspp_pair.mee();
-            values[1] = lspp_pair.pt();
-            values[2] = lspp_pair.dcaeeXY();
-            values[3] = lspp_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp"))->Fill(values);
-            nlspp++;
-          }
-        } // end of lspp pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
-
-        for (auto& lsmm_pair : lsmm_pairs_per_coll) {
-          if (cut.IsSelected<aod::EMPrimaryTracks>(lsmm_pair)) {
-            values[0] = lsmm_pair.mee();
-            values[1] = lsmm_pair.pt();
-            values[2] = lsmm_pair.dcaeeXY();
-            values[3] = lsmm_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm"))->Fill(values);
-            nlsmm++;
-          }
-        } // end of lsmm pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
-
       } // end of cut loop
     }   // end of collision loop
   }     // end of process
-  PROCESS_SWITCH(DalitzQC, processQC, "run Dalitz QC", true);
+  PROCESS_SWITCH(DalitzQCMC, processQCMC, "run Dalitz QC", true);
 
   void processDummy(aod::EMReducedEvents::iterator const& collision) {}
-  PROCESS_SWITCH(DalitzQC, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DalitzQCMC, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DalitzQC>(cfgc, TaskName{"dalitz-qc"})};
+    adaptAnalysisTask<DalitzQCMC>(cfgc, TaskName{"dalitz-qc-mc"})};
 }
