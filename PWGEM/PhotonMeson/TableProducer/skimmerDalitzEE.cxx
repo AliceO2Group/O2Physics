@@ -172,7 +172,14 @@ struct skimmerDalitzEE {
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
-        dalitzees(collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()], v12.Pt(), v12.Eta(), v12.Phi(), v12.M(), phiv, static_cast<int>(pairtype));
+        float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
+        float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
+        float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
+        float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
+        float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
+        float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
+
+        dalitzees(collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()], v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
         // LOGF(info, "ULS: collision.globalIndex() = %d, fNewLabels[t1.globalIndex()] = %d, fNewLabels[t2.globalIndex()] = %d", collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()]);
       }      // end of pairing loop
     } else { // LS
@@ -185,7 +192,13 @@ struct skimmerDalitzEE {
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
-        dalitzees(collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()], v12.Pt(), v12.Eta(), v12.Phi(), v12.M(), phiv, static_cast<int>(pairtype));
+        float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
+        float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
+        float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
+        float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
+        float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
+        float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
+        dalitzees(collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()], v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
         // LOGF(info, "LS: collision.globalIndex() = %d, fNewLabels[t1.globalIndex()] = %d, fNewLabels[t2.globalIndex()] = %d", collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()]);
       } // end of pairing loop
     }
@@ -208,7 +221,7 @@ struct skimmerDalitzEE {
                         track.tpcChi2NCl(), track.tpcInnerParam(),
                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                        track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt());
+                        track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
 
         fCounter++;
       }
