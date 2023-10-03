@@ -300,7 +300,7 @@ DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPRIMARYTRACK", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -325,11 +325,15 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mee, mee, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
-DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(DCAeeXY, dcaeeXY, float);
+DECLARE_SOA_COLUMN(DCAeeZ, dcaeeZ, float);
+DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
 } // namespace dalitzee
 DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
                   o2::soa::Index<>, dalitzee::CollisionId, dalitzee::PosTrackId, dalitzee::NegTrackId,
-                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mee, dalitzee::PhiV, dalitzee::Sign);
+                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mee, dalitzee::PhiV, dalitzee::DCAeeXY, dalitzee::DCAeeZ, dalitzee::Sign,
+                  dalitzee::Energy<o2::aod::dalitzee::Pt, o2::aod::dalitzee::Eta, o2::aod::dalitzee::Mee>);
 // iterators
 using DalitzEE = DalitzEEs::iterator;
 

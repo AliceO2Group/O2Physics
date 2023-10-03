@@ -188,8 +188,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 200, -1.0f, 1.0f, 200, -1.0f, 1.0f));
-    list->Add(new TH2F("hNclsTPC_Pt", "number of TPC clusters vs. pT", 1000, 0, 10, 161, -0.5, 160.5));
-    list->Add(new TH2F("hNcrTPC_Pt", "number of TPC crossed rows vs. pT", 1000, 0, 10, 161, -0.5, 160.5));
+    list->Add(new TH2F("hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", 1000, 0, 10, 100, 0., 1000));
+    list->Add(new TH2F("hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", 1000, 0, 10, 100, 0., 1000));
     list->Add(new TH1F("hNclsTPC", "number of TPC clusters", 161, -0.5, 160.5));
     list->Add(new TH1F("hNcrTPC", "number of TPC crossed rows", 161, -0.5, 160.5));
     list->Add(new TH1F("hChi2TPC", "chi2/number of TPC clusters", 100, 0, 10));

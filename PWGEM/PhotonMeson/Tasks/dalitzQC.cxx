@@ -24,13 +24,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
-// #include "ReconstructionDataFormats/Track.h"
-// #include "Common/Core/trackUtilities.h"
-// #include "Common/Core/TrackSelection.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
@@ -49,9 +42,9 @@ using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct DalitzQC {
 
-  Configurable<std::string> fConfigDalitzCuts{"cfgDalitzCuts", "global_tpchadrejortofreq,nocut", "Comma separated list of dalitz ee cuts"};
+  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "global_tpchadrejortofreq,nocut", "Comma separated list of dalitz ee cuts"};
 
-  std::vector<DalitzEECut> fDalitzCuts;
+  std::vector<DalitzEECut> fDalitzEECuts;
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputTrack{"Track"};
@@ -74,21 +67,21 @@ struct DalitzQC {
     o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE");
     THashList* list_dalitzee = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE"));
 
-    for (const auto& cut : fDalitzCuts) {
+    for (const auto& cut : fDalitzEECuts) {
       const char* cutname = cut.GetName();
       o2::aod::emphotonhistograms::AddHistClass(list_track, cutname);
       o2::aod::emphotonhistograms::AddHistClass(list_dalitzee, cutname);
     }
 
     // for single tracks
-    for (auto& cut : fDalitzCuts) {
+    for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
       o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
     }
 
     // for DalitzEEs
-    for (auto& cut : fDalitzCuts) {
+    for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
       o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE");
@@ -97,16 +90,16 @@ struct DalitzQC {
 
   void DefineCuts()
   {
-    TString cutNamesStr = fConfigDalitzCuts.value;
+    TString cutNamesStr = fConfigDalitzEECuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fDalitzCuts.push_back(*dalitzeecuts::GetCut(cutname));
+        fDalitzEECuts.push_back(*dalitzeecuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of Dalitz cuts = %d", fDalitzCuts.size());
+    LOGF(info, "Number of Dalitz cuts = %d", fDalitzEECuts.size());
   }
 
   void init(InitContext& context)
@@ -158,7 +151,7 @@ struct DalitzQC {
       auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
       auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
 
-      for (const auto& cut : fDalitzCuts) {
+      for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
 
@@ -169,7 +162,7 @@ struct DalitzQC {
           if (cut.IsSelected<aod::EMPrimaryTracks>(uls_pair)) {
             values[0] = uls_pair.mee();
             values[1] = uls_pair.pt();
-            values[2] = 0;
+            values[2] = uls_pair.dcaeeXY();
             values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
             nuls++;
@@ -184,7 +177,7 @@ struct DalitzQC {
           if (cut.IsSelected<aod::EMPrimaryTracks>(lspp_pair)) {
             values[0] = lspp_pair.mee();
             values[1] = lspp_pair.pt();
-            values[2] = 0;
+            values[2] = lspp_pair.dcaeeXY();
             values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp"))->Fill(values);
             nlspp++;
@@ -196,7 +189,7 @@ struct DalitzQC {
           if (cut.IsSelected<aod::EMPrimaryTracks>(lsmm_pair)) {
             values[0] = lsmm_pair.mee();
             values[1] = lsmm_pair.pt();
-            values[2] = 0;
+            values[2] = lsmm_pair.dcaeeXY();
             values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm"))->Fill(values);
             nlsmm++;
