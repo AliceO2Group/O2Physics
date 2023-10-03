@@ -92,6 +92,8 @@ DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 // DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);                      //! Index of the last cluster in the TRD, -1 if no TRD information
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
 
+DECLARE_SOA_COLUMN(DCAxyStore, dcaxyStore, binningDCA::binned_t); //! Stored binned dcaxy
+DECLARE_SOA_COLUMN(DCAzStore, dcazStore, binningDCA::binned_t);   //! Stored binned dcaz
 DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY, //! Unpacked dcaxy
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
@@ -143,13 +145,13 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::IsPVContributor,
                   track::ITSClusterMap,
                   spectra::HasTRD,
-                  // track::DCAxy,
-                  // track::DCAz,
+                  spectra::DCAxyStore,
+                  spectra::DCAzStore,
+                  spectra::DCAxy<spectra::DCAxyStore>,
+                  spectra::DCAz<spectra::DCAzStore>,
                   spectra::IsGlobalTrack,
                   spectra::IsGlobalTrackWoDCA,
                   spectra::IsGlobalTrackWoPtEta,
-                  // spectra::DCAxy<spectra::DCAxyStore>,
-                  // spectra::DCAz<spectra::DCAzStore>,
                   spectra::Pt<spectra::PtSigned>,
                   track::Sign<spectra::PtSigned>,
                   spectra::P<spectra::PtSigned, spectra::Eta>,
