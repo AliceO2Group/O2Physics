@@ -55,6 +55,9 @@ struct integrationTestCCDB {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  o2::base::MatLayerCylSet* lut;
+
   int mRunNumber;
 
   void initMagneticFieldCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -93,7 +96,9 @@ struct integrationTestCCDB {
 
   void init(InitContext& context)
   {
-    // Empty for the time being
+    lut = 0x0;
+    const AxisSpec axis{1, 0.0f, 1.0f, ""};
+    histos.add<TH1>("hDFs", "hDFs", HistType::kTH1F, {axis});
   }
 
   void process(aod::BCsWithTimestamps const& bcs)
@@ -101,14 +106,15 @@ struct integrationTestCCDB {
     mRunNumber = 0;
 
     auto bc = bcs.begin(); // first element
+    histos.fill(HIST("hDFs"), 0.5f);
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    if (loadMatLut) {
+    if (loadMatLut && !lut) {
       LOG(info) << "Loading material LUT...";
-      o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
       LOG(info) << "Material LUT successfully loaded!";
       LOG(info) << "Material LUT min R: " << lut->getRMin() << " max R: " << lut->getRMax();
     }
