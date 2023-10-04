@@ -435,13 +435,13 @@ struct lambdaAnalysis {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
-  BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
-
+  
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(tracks);
+    BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
     SameKindPair<resoCols, resoTracks, BinningType> pairs{binningPositions, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
       fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
