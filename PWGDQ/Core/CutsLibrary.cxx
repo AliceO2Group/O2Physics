@@ -390,43 +390,25 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("ITSaloneprefilter")) {
+  if (!nameStr.compare("ITSalone_prefilter")) {
     cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
     return cut;
   }
 
-  if (!nameStr.compare("TPCaloneprefilter")) {
+  if (!nameStr.compare("TPCalone_prefilter")) {
     cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
     return cut;
   }
 
-  if (!nameStr.compare("ITSTPCprefilter")) {
+  if (!nameStr.compare("ITSTPC_prefilter")) {
     cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
-    return cut;
-  }
-
-  if (!nameStr.compare("ITSTPC_TPCPID_prefilter")) {
-    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
-    cut->AddCut(GetAnalysisCut("electronPIDOnly"));
-    return cut;
-  }
-
-  if (!nameStr.compare("ITSTPC_TPCPIDCorr_prefilter")) {
-    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
-    cut->AddCut(GetAnalysisCut("electronPIDOnly_Corr"));
     return cut;
   }
 
@@ -823,6 +805,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   // loop to define PID cuts with and without post calibration
   for (int icase = 0; icase < vecPIDcase.size(); icase++) {
+    if (!nameStr.compare(Form("ITSTPC_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+      cut->AddCut(GetAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
     if (!nameStr.compare(Form("ITS_ifTPC_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
       cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
@@ -1138,7 +1129,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
 
     for (int i = 1; i <= 8; i++) {
-      if (!nameStr.compare(Form("lmee_pp502TeV_PID%s_Prefilter%d", vecPIDcase.at(icase).Data(), i))) {
+      if (!nameStr.compare(Form("lmee_pp502TeV_PID%s_UsePrefilter%d", vecPIDcase.at(icase).Data(), i))) {
         cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
         cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
         cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -1177,7 +1168,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
 
     for (int i = 1; i <= 8; i++) {
-      if (!nameStr.compare(Form("lmee_eNSigmaRun3%s_Prefilter%d", vecPIDcase.at(icase).Data(), i))) {
+      if (!nameStr.compare(Form("lmee_eNSigmaRun3%s_UsePrefilter%d", vecPIDcase.at(icase).Data(), i))) {
         cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
         cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
         cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -1546,6 +1537,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pair_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pair_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pair_prefilter2")) {
+    cut->AddCut(GetAnalysisCut("pair_prefilter2"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairJpsi")) {
     cut->AddCut(GetAnalysisCut("pairJpsi"));
     return cut;
@@ -1743,7 +1744,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("eventExclusivePair")) {
-    cut->AddCut(VarManager::kMultTPC, 2, 2);
+    cut->AddCut(VarManager::kVtxNcontrib, 2, 2);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventVtxNContrib")) {
+    cut->AddCut(VarManager::kVtxNcontrib, 0, 10);
     return cut;
   }
 
@@ -1823,8 +1829,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("rho0TrackCut")) {
-    cut->AddCut(VarManager::kPt, 0.15, 1000.0);
-    cut->AddCut(VarManager::kTPCncls, 50.0, 159);
+    cut->AddCut(VarManager::kPt, 0.1, 1000.0);
+    cut->AddCut(VarManager::kEta, -1.1, 1.1);
+    cut->AddCut(VarManager::kTPCncls, 50.0, 1000.);
+    cut->AddCut(VarManager::kPVContributor, 0.5, 1.5);
     return cut;
   }
 
@@ -2884,6 +2892,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairDalitz3")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.15);
+    return cut;
+  }
+
+  if (!nameStr.compare("pair_prefilter1")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    return cut;
+  }
+
+  if (!nameStr.compare("pair_prefilter2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
     return cut;
   }
 

@@ -83,6 +83,11 @@ struct HfCandidateSelectorD0 {
 
   void init(InitContext& initContext)
   {
+    std::array<bool, 2> doprocess{doprocessWithDCAFitterN, doprocessWithKFParticle};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function can be enabled at a time.");
+    }
+
     if (applyMl) {
       registry.add("DebugBdt/hBdtScore1VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
       registry.add("DebugBdt/hBdtScore2VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
@@ -112,9 +117,10 @@ struct HfCandidateSelectorD0 {
   }
 
   /// Conjugate-independent topological cuts
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <typename T>
+  template <int reconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -146,6 +152,11 @@ struct HfCandidateSelectorD0 {
     // candidate DCA
     // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
 
+    // candidate topological chi2 over ndf when using KFParticle, need to add this selection to the SelectorCuts.h
+    // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+    //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
+    // }
+
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
     if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
@@ -168,12 +179,13 @@ struct HfCandidateSelectorD0 {
   }
 
   /// Conjugate-dependent topological cuts
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidate is candidate
   /// \param trackPion is the track with the pion hypothesis
   /// \param trackKaon is the track with the kaon hypothesis
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <typename T1, typename T2>
+  template <int reconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
     auto candpT = candidate.pt();
@@ -183,12 +195,20 @@ struct HfCandidateSelectorD0 {
     }
 
     // invariant-mass cut
+    float massD0, massD0bar;
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      massD0 = candidate.kfGeoMassD0();
+      massD0bar = candidate.kfGeoMassD0bar();
+    } else {
+      massD0 = hfHelper.invMassD0ToPiK(candidate);
+      massD0bar = hfHelper.invMassD0barToKPi(candidate);
+    }
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0 - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0bar - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -229,9 +249,9 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-
-  void process(aod::HfCand2Prong const& candidates,
-               TracksSel const&)
+  template <int reconstructionType, typename CandType>
+  void processSel(CandType const& candidates,
+                  TracksSel const&)
   {
     // looping over 2-prong candidates
     for (const auto& candidate : candidates) {
@@ -254,11 +274,11 @@ struct HfCandidateSelectorD0 {
       statusHFFlag = 1;
 
       auto ptCand = candidate.pt();
-      auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
+      auto trackPos = candidate.template prong0_as<TracksSel>(); // positive daughter
+      auto trackNeg = candidate.template prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
-      if (!selectionTopol(candidate)) {
+      if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMl);
@@ -271,9 +291,9 @@ struct HfCandidateSelectorD0 {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
+      bool topolD0 = selectionTopolConjugate<reconstructionType>(candidate, trackPos, trackNeg);
       // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
+      bool topolD0bar = selectionTopolConjugate<reconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
@@ -370,6 +390,18 @@ struct HfCandidateSelectorD0 {
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
     }
   }
+
+  void processWithDCAFitterN(aod::HfCand2Prong const& candidates, TracksSel const& tracks)
+  {
+    processSel<aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
+
+  void processWithKFParticle(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
+  {
+    processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

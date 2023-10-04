@@ -33,8 +33,7 @@ using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using FullTrack = FullTracks::iterator;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct vzero_cascade_absorption {
 
@@ -134,8 +133,6 @@ struct vzero_cascade_absorption {
     if (!track.hasITS())
       return false;
     if (!track.hasTPC())
-      return false;
-    if (!track.passedTPCRefit())
       return false;
     if (track.tpcNClsFound() < minTPCnClsFound)
       return false;
@@ -268,8 +265,7 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
 */
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision,
-                   aod::V0Datas const& fullV0s, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
   {
 
     // Event Counter (before event sel)
@@ -289,43 +285,25 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       const auto& posTrack = v0.posTrack_as<FullTracks>();
       const auto& negTrack = v0.negTrack_as<FullTracks>();
 
-      auto hit_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
-      auto hit_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+      // Require TPC Refit
+      if (!posTrack.passedTPCRefit())
+        continue;
+      if (!negTrack.passedTPCRefit())
+        continue;
 
       // K0 Short
       if (passedK0Selection(v0, negTrack, posTrack, collision)) {
 
         // Before Target
-        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
-          if (requireITShits) {
-            for (int i = 0; i < 7; i++) {
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
-                continue;
-              if (hit_before_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
-                continue;
-            }
-          }
-
+        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs)
           registryData.fill(HIST("K0_before_target"), v0.p(), v0.mK0Short());
-        }
 
         // After Target
-        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
-
-          if (requireITShits) {
-            for (int i = 0; i < 7; i++) {
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i))
-                continue;
-              if (hit_after_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i))
-                continue;
-            }
-          }
-
+        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("K0_after_target"), v0.p(), v0.mK0Short());
-        }
-      }
-    } // end loop on V0s
-  }
+      } // end loop on K0s
+    }   // end loop on V0s
+  }     // end processData
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

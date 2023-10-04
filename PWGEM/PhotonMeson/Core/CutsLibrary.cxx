@@ -343,6 +343,136 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   return nullptr;
 }
 
+DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
+{
+  DalitzEECut* cut = new DalitzEECut(cutName, cutName);
+  std::string nameStr = cutName;
+
+  if (!nameStr.compare("allee_tpchadrejortofreq")) {
+    // for pair
+    cut->SetMinMeePhivPairDep([](float phiv) {
+      return phiv < 2.5 ? 0.0 : 0.02;
+    });
+
+    // for track
+    cut->SetTrackPtRange(0.2f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetMinPinTOF(0.4);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-1e+10, +3);
+    cut->SetTPCNsigmaKaRange(-3, +3);
+    cut->SetTPCNsigmaPrRange(-3, +3);
+    cut->SetTOFNsigmaElRange(-3, +3);
+    return cut;
+  }
+  if (!nameStr.compare("pi0ee_tpchadrejortofreq")) {
+    // for pair
+    cut->SetMeeRange(0, 0.12);
+    cut->SetMinMeePhivPairDep([](float phiv) {
+      return phiv < 2.5 ? 0.0 : 0.02;
+    });
+
+    // for track
+    cut->SetTrackPtRange(0.2f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetMinPinTOF(0.4);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-1e+10, +3);
+    cut->SetTPCNsigmaKaRange(-3, +3);
+    cut->SetTPCNsigmaPrRange(-3, +3);
+    cut->SetTOFNsigmaElRange(-3, +3);
+    return cut;
+  }
+  if (!nameStr.compare("pi0ee_tpchadrejortofreq_wo_phiv")) {
+    // for pair
+    cut->SetMeeRange(0, 0.12);
+
+    // for track
+    cut->SetTrackPtRange(0.2f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetMinPinTOF(0.4);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-1e+10, +3);
+    cut->SetTPCNsigmaKaRange(-3, +3);
+    cut->SetTPCNsigmaPrRange(-3, +3);
+    cut->SetTOFNsigmaElRange(-3, +3);
+    return cut;
+  }
+  if (!nameStr.compare("etaee_tpchadrejortofreq")) {
+    // for pair
+    cut->SetMeeRange(0.12, 0.5);
+
+    // for track
+    cut->SetTrackPtRange(0.2f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetMinPinTOF(0.4);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-1e+10, +3);
+    cut->SetTPCNsigmaKaRange(-3, +3);
+    cut->SetTPCNsigmaPrRange(-3, +3);
+    cut->SetTOFNsigmaElRange(-3, +3);
+    return cut;
+  }
+
+  if (!nameStr.compare("nocut")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+    return cut;
+  }
+
+  delete cut;
+  LOGF(info, Form("Did not find cut %s", cutName));
+  return nullptr;
+}
+
 PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
 {
   PHOSPhotonCut* cut = new PHOSPhotonCut(cutName, cutName);

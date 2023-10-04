@@ -27,13 +27,18 @@ DECLARE_SOA_TABLE(VtxQAtable, "AOD", "VTXQATABLE",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  collision::CovXX,
+                  collision::CovXY,
+                  collision::CovYY,
+                  collision::CovZZ,
                   collision::CollisionTime,
+                  collision::CollisionTimeRes,
                   collision::NumContrib)
 }
 struct vertexQA {
   Produces<o2::aod::VtxQAtable> vtxQAtable;
 
-  Configurable<bool> storeTree{"storeTree", false, "Store tree for in-depth analysis"};
+  Configurable<int> storeTree{"storeTree", 1000, "Store in tree collisions from BC's with more than 'storeTree' vertices, for in-depth analysis"};
 
   ConfigurableAxis xVtxAxis{"xVtxBins", {100, -0.1f, 0.1f}, "Binning for the vertex x (y) in cm"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -76,6 +81,11 @@ struct vertexQA {
     std::vector<double> collPosY;
     std::vector<double> collPosZ;
     std::vector<double> collPosT;
+    std::vector<double> collCovXX;
+    std::vector<double> collCovXY;
+    std::vector<double> collCovYY;
+    std::vector<double> collCovZZ;
+    std::vector<double> collResT;
     std::vector<uint16_t> collContribs;
 
     for (auto& collision : collisions) {
@@ -88,6 +98,11 @@ struct vertexQA {
       collPosY.push_back(posY);
       collPosZ.push_back(posZ);
       collPosT.push_back(posT);
+      collCovXX.push_back(collision.covXX());
+      collCovXY.push_back(collision.covXY());
+      collCovYY.push_back(collision.covYY());
+      collCovZZ.push_back(collision.covZZ());
+      collResT.push_back(collision.collisionTimeRes());
       collContribs.push_back(collision.numContrib());
 
       histos.fill(HIST("xVtxHistogram"), posX);
@@ -110,9 +125,9 @@ struct vertexQA {
     }
 
     histos.fill(HIST("nVtxHistogram"), collSize);
-    if (storeTree && collSize > 1) {
+    if (collSize > storeTree) {
       for (int i{0}; i < collSize; ++i) {
-        vtxQAtable(bc.globalBC(), collPosX[i], collPosY[i], collPosZ[i], collPosT[i], collContribs[i]);
+        vtxQAtable(bc.globalBC(), collPosX[i], collPosY[i], collPosZ[i], collCovXX[i], collCovXY[i], collCovYY[i], collCovZZ[i], collPosT[i], collResT[i], collContribs[i]);
       }
     }
   }
