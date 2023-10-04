@@ -47,24 +47,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-namespace ep
-{
-static constexpr std::string_view centClasses[] = {
-  "Centrality_0-5/", "Centrality_5-10/", "Centrality_10-20/", "Centrality_20-30/",
-  "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/", "Centrality_60-80/"};
-
-static constexpr std::string_view detNames[] = {
-  "FT0A", "FT0C", "FV0A", "BPos", "BNeg",
-  "FT0CUC", "FT0CRC", "FT0CTW"};
-} // namespace ep
-
 struct evtPlanesTable {
-  // Configurables.
-  Configurable<std::string> cfgCentEsti{"cfgCentEsti", // List from qVectorsTable.cxx
-                                        "FT0C", "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
-  Configurable<std::string> cfgCorrStep{"cfgCorrStep", // Used in the plotting.
-                                        "Recentered", "Latest correction applied: Raw, Recentered, Twisted, Rescaled"};
-
   // Table.
   Produces<aod::EvtPlanes> evPlane;
 
@@ -77,31 +60,7 @@ struct evtPlanesTable {
 
   void init(InitContext const&)
   {
-    // Fill the registry with the needed objects.
-    const AxisSpec axisCent{100, 0., 100., fmt::format("Centrality percentile ({})", (std::string)cfgCentEsti)};
-    histosQA.add("histCentFull", "Centrality distribution for valid events",
-                 HistType::kTH1F, {axisCent});
-
-    const AxisSpec axisEP{200, -TMath::Pi() / 2., TMath::Pi() / 2.};
-
-    for (int i = 0; i < 8; i++) {
-      histosQA.add(("Centrality_0-5/histEP" + (std::string)ep::detNames[i]).c_str(),
-                   ("#Psi_{2} for " + (std::string)ep::detNames[i] + (std::string)cfgCorrStep).c_str(),
-                   HistType::kTH1F, {axisEP});
-    }
-
-    for (int iBin = 1; iBin < 8; iBin++) {
-      histosQA.addClone("Centrality_0-5/", ep::centClasses[iBin].data());
-    }
-
   } // void init(InitContext const&)
-
-  template <int cBin, int det, typename T>
-  void fillHistosQA(const T& val)
-  {
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEP") + HIST(ep::detNames[det]),
-                  val[det]);
-  }
 
   void process(aod::Qvector const& qVec)
   {
@@ -110,56 +69,34 @@ struct evtPlanesTable {
     if (centBin < 0 || centBin > 8) {
       return;
     }
-    histosQA.fill(HIST("histCentFull"), qVec.cent());
-
     // Calculate the event plane for each detector, then save them in the
     // corresponding distribution. The order is the same as in detNames[].
     // TODO: Update the calculation of the event plane for the central barrel.
-    float evtPlaneValues[8] = {0.};
-    evtPlaneValues[0] = helperEP.GetEventPlane(qVec.qvecFT0ARe(), qVec.qvecFT0AIm());
-    evtPlaneValues[1] = helperEP.GetEventPlane(qVec.qvecFT0CRe(), qVec.qvecFT0CIm());
-    evtPlaneValues[2] = helperEP.GetEventPlane(qVec.qvecFV0ARe(), qVec.qvecFV0AIm());
-    evtPlaneValues[3] = helperEP.GetEventPlane(1., 2.);
-    evtPlaneValues[4] = helperEP.GetEventPlane(2., 1.);
 
-    evtPlaneValues[5] = helperEP.GetEventPlane(qVec.qvecFT0CUncorRe(), qVec.qvecFT0CUncorIm());
-    evtPlaneValues[6] = helperEP.GetEventPlane(qVec.qvecFT0CRectrRe(), qVec.qvecFT0CRectrIm());
-    evtPlaneValues[7] = helperEP.GetEventPlane(qVec.qvecFT0CTwistRe(), qVec.qvecFT0CTwistIm());
+    float evtPlane[4];
+    float evtPlaneBPos[4];
+    float evtPlaneBNeg[4];
 
-    static_for<0, 7>([&](auto iDet) {
-      constexpr int indexDet = iDet.value;
-      switch (centBin) {
-        case 0:
-          fillHistosQA<0, indexDet>(evtPlaneValues);
-          break;
-        case 1:
-          fillHistosQA<1, indexDet>(evtPlaneValues);
-          break;
-        case 2:
-          fillHistosQA<2, indexDet>(evtPlaneValues);
-          break;
-        case 3:
-          fillHistosQA<3, indexDet>(evtPlaneValues);
-          break;
-        case 4:
-          fillHistosQA<4, indexDet>(evtPlaneValues);
-          break;
-        case 5:
-          fillHistosQA<5, indexDet>(evtPlaneValues);
-          break;
-        case 6:
-          fillHistosQA<6, indexDet>(evtPlaneValues);
-          break;
-        case 7:
-          fillHistosQA<7, indexDet>(evtPlaneValues);
-          break;
-      }
-    });
+    evtPlane[0] = helperEP.GetEventPlane(qVec.qvecUncorRe(), qVec.qvecUncorIm());
+    evtPlane[1] = helperEP.GetEventPlane(qVec.qvecRectrRe(), qVec.qvecRectrIm());
+    evtPlane[2] = helperEP.GetEventPlane(qVec.qvecTwistRe(), qVec.qvecTwistIm());
+    evtPlane[3] = helperEP.GetEventPlane(qVec.qvecFinalRe(), qVec.qvecFinalIm());
+
+    evtPlaneBPos[0] = helperEP.GetEventPlane(qVec.qvecBPosUncorRe(), qVec.qvecBPosUncorIm());
+    evtPlaneBPos[1] = helperEP.GetEventPlane(qVec.qvecBPosRectrRe(), qVec.qvecBPosRectrIm());
+    evtPlaneBPos[2] = helperEP.GetEventPlane(qVec.qvecBPosTwistRe(), qVec.qvecBPosTwistIm());
+    evtPlaneBPos[3] = helperEP.GetEventPlane(qVec.qvecBPosFinalRe(), qVec.qvecBPosFinalIm());
+
+    evtPlaneBNeg[0] = helperEP.GetEventPlane(qVec.qvecBNegUncorRe(), qVec.qvecBNegUncorIm());
+    evtPlaneBNeg[1] = helperEP.GetEventPlane(qVec.qvecBNegRectrRe(), qVec.qvecBNegRectrIm());
+    evtPlaneBNeg[2] = helperEP.GetEventPlane(qVec.qvecBNegTwistRe(), qVec.qvecBNegTwistIm());
+    evtPlaneBNeg[3] = helperEP.GetEventPlane(qVec.qvecBNegFinalRe(), qVec.qvecBNegFinalIm());
+
     // Fill the columns of the evtPlane table.
     evPlane(qVec.cent(),
-            evtPlaneValues[0], evtPlaneValues[1], evtPlaneValues[2],
-            evtPlaneValues[3], evtPlaneValues[4],
-            evtPlaneValues[5], evtPlaneValues[6], evtPlaneValues[7]);
+            evtPlane[0], evtPlane[1], evtPlane[2], evtPlane[3],
+            evtPlaneBPos[0], evtPlaneBPos[1], evtPlaneBPos[2], evtPlaneBPos[3],
+            evtPlaneBNeg[0], evtPlaneBNeg[1], evtPlaneBNeg[2], evtPlaneBNeg[3]);
   } // void process(aod::Qvector const& qVec)
 };
 
