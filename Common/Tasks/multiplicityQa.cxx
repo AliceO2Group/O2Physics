@@ -113,9 +113,6 @@ struct MultiplicityQa {
       histos.add("multiplicityQa/h2dPVsVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFDD", "FDD", kTH2F, {axisMultFDD, axisNumberOfPVs});
-
-      // correlate T0 and V0
-      histos.add("multiplicityQa/h2dFT0VsFV0", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
     }
 
     if (doprocessMCCollisions) {
@@ -132,6 +129,10 @@ struct MultiplicityQa {
       histos.add("multiplicityQa/hIsolatedFT0C", "isolated FT0C", kTH1D, {axisMultFT0});
       histos.add("multiplicityQa/hIsolatedFT0M", "isolated FT0M", kTH1D, {axisMultFT0});
     }
+
+    if (doprocessCollisionExtras) {
+      histos.add("h2dITSOnlyVsITSTPC", "h2dITSOnlyVsITSTPC", kTH2D, {axisMultNTracks, axisMultNTracks});
+    }
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
@@ -144,7 +145,7 @@ struct MultiplicityQa {
     if (selection == 8 && !col.sel8()) {
       return;
     }
-    if (selection != 7 && selection != 8) {
+    if (selection != 7 && selection != 8 && selection >= 0) {
       LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
     }
     histos.fill(HIST("multiplicityQa/hEventCounter"), 1.5);
@@ -198,10 +199,12 @@ struct MultiplicityQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multFT0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
-
-      // 2d FT0 vs FV0 fill
-      histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFT0A(), col.multFT0A() + col.multFT0C());
     }
+  }
+
+  void processCollisionExtras(soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra, aod::MultZeqs>::iterator const& col)
+  {
+    histos.fill(HIST("multiplicityQa/h2dITSOnlyVsITSTPC"), col.multNTracksITSTPC(), col.multNTracksITSOnly());
   }
 
   void processBCs(BCsWithRun3Matchings::iterator const& bc,
@@ -401,6 +404,7 @@ struct MultiplicityQa {
   }
 
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(MultiplicityQa, processCollisionExtras, "per-collision analysis, extra QA", true);
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsPVChecks, "do PV contributors check", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsWithMCInfo, "analyse collisions + correlate with MC info", false);
