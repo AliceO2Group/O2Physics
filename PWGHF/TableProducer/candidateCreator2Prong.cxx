@@ -244,8 +244,6 @@ struct HfCandidateCreator2Prong {
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
       auto track0 = rowTrackIndexProng2.template prong0_as<TTracks>();
       auto track1 = rowTrackIndexProng2.template prong1_as<TTracks>();
-      auto trackParVarPos1 = getTrackParCov(track0);
-      auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = rowTrackIndexProng2.collision();
 
       /// Set the magnetic field from ccdb.
