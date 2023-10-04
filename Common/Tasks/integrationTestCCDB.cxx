@@ -56,7 +56,7 @@ struct integrationTestCCDB {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  o2::base::MatLayerCylSet* lut; 
+  o2::base::MatLayerCylSet* lut;
 
   int mRunNumber;
 
