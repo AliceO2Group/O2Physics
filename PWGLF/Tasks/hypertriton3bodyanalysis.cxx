@@ -44,8 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCKa, aod::pidTPCPr>;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullPr>;
 
 struct hypertriton3bodyQa {
   // Basic checks

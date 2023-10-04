@@ -44,7 +44,6 @@ using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
-using MyTracksIU = FullTracksExtIU;
 
 using LabeledTracks = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
@@ -54,7 +53,7 @@ struct hypertriton3bodyBuilder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables
-  Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   HistogramRegistry registry{
     "registry",
@@ -180,7 +179,7 @@ struct hypertriton3bodyBuilder {
   }
   //------------------------------------------------------------------
 
-  void process(aod::Collision const& collision, MyTracksIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void process(aod::Collision const& collision, FullTracksExtIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -191,9 +190,9 @@ struct hypertriton3bodyBuilder {
 
       registry.fill(HIST("hVtx3BodyCounter"), 0.5);
 
-      auto t0 = vtx3body.track0_as<MyTracksIU>();
-      auto t1 = vtx3body.track1_as<MyTracksIU>();
-      auto t2 = vtx3body.track2_as<MyTracksIU>();
+      auto t0 = vtx3body.track0_as<FullTracksExtIU>();
+      auto t1 = vtx3body.track1_as<FullTracksExtIU>();
+      auto t2 = vtx3body.track2_as<FullTracksExtIU>();
       if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
         continue;
       }
