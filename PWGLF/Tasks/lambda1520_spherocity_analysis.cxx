@@ -435,7 +435,7 @@ struct lambdaAnalysis {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
-  
+
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
