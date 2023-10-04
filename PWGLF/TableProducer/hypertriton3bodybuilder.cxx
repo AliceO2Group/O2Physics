@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 // Builder task for hypertriton 3-body decay reconstruction
+// author: yuanzhe.wang@cern.ch
 
 #include <cmath>
 #include <array>

@@ -17,7 +17,7 @@
 // the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
 // to have been executed in the workflow (before).
 //
-//
+// author: yuanzhe.wang@cern.ch
 
 #include <cmath>
 #include <array>

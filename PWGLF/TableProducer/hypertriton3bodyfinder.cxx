@@ -9,7 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// This 3-body method should be only run on MC data as a check due to high cost of computing resources
+// This 3-body method is not recommended due to high cost of computing resources
+// author: yuanzhe.wang@cern.ch
 
 #include <cmath>
 #include <array>
