@@ -304,6 +304,7 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
       } // end loop on K0s
     }   // end loop on V0s
   }     // end processData
+  PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
