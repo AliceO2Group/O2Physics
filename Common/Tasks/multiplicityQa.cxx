@@ -134,7 +134,7 @@ struct MultiplicityQa {
     }
 
     if (doprocessCollisionExtras) {
-      histos.add("h2dITSOnlyVsITSTPC", "h2dITSOnlyVsITSTPC", kTH2D, {axisMultNTracks, axisMultNTracks});
+      histos.add("multiplicityQa/h2dITSOnlyVsITSTPC", "h2dITSOnlyVsITSTPC", kTH2D, {axisMultNTracks, axisMultNTracks});
     }
   }
 
@@ -412,7 +412,7 @@ struct MultiplicityQa {
   }
 
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
-  PROCESS_SWITCH(MultiplicityQa, processCollisionExtras, "per-collision analysis, extra QA", true);
+  PROCESS_SWITCH(MultiplicityQa, processCollisionExtras, "per-collision analysis, extra QA", false);
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsPVChecks, "do PV contributors check", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsWithMCInfo, "analyse collisions + correlate with MC info", false);
