@@ -252,7 +252,7 @@ struct AnalysisTrackSelection {
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
     if (fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist((int)fConfigInitRunNumber);
+      VarManager::SetDummyRunlist(fConfigInitRunNumber);
     } else {
       VarManager::SetRunlist((TString)fConfigRunPeriods);
     }

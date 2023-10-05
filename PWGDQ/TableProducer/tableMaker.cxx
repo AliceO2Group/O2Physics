@@ -265,7 +265,7 @@ struct TableMaker {
 
     VarManager::SetRunlist((TString)fConfigRunPeriods);
     if (fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist((int)fConfigInitRunNumber);
+      VarManager::SetDummyRunlist(fConfigInitRunNumber);
     } else {
       VarManager::SetRunlist((TString)fConfigRunPeriods);
     }
