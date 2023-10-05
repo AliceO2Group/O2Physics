@@ -276,7 +276,7 @@ struct HfTaskD0 {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         auto ptGen = particleMother.pt();                                                                                                                     // gen. level pT
-        auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
+        auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::analysis::pdg::MassD0); // gen. level y
         registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                              // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = hfHelper.yD0(candidate);
