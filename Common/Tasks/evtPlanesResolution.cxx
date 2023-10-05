@@ -17,6 +17,15 @@
 /// \brief  ...
 ///
 
+// C++/ROOT includes.
+#include <chrono>
+#include <string>
+#include <vector>
+#include <TComplex.h>
+#include <TProfile.h>
+#include <TMath.h>
+#include <TH1F.h>
+
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -30,15 +39,6 @@
 #include "Common/Core/EventPlaneHelper.h"
 
 // o2 includes.
-
-// C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TProfile.h>
-#include <TMath.h>
-#include <TH1F.h>
 
 using namespace o2;
 using namespace o2::framework;
