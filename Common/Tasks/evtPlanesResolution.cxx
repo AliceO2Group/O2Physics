@@ -45,10 +45,9 @@ using namespace o2::framework;
 
 namespace ep
 {
-  static constexpr std::string_view centClasses[] = {
-    "Centrality_0-5/", "Centrality_5-10/", "Centrality_10-20/", "Centrality_20-30/",
-    "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/", "Centrality_60-80/"
-  };
+static constexpr std::string_view centClasses[] = {
+  "Centrality_0-5/", "Centrality_5-10/", "Centrality_10-20/", "Centrality_20-30/",
+  "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/", "Centrality_60-80/"};
 } // namespace ep
 
 struct evtPlanesResolution {
@@ -57,9 +56,7 @@ struct evtPlanesResolution {
   // Histogram registry for the output QA figures and list of centrality classes for it.
   // Objects are NOT saved in alphabetical orders, and registry names are NOT saved
   // as TDirectoryFile.
-  HistogramRegistry histosQA{"histosQA", {},
-                            OutputObjHandlingPolicy::AnalysisObject,
-                            false, false};
+  HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   // Helper variables.
   EventPlaneHelper helperEP;
@@ -89,7 +86,7 @@ struct evtPlanesResolution {
     for (int iBin = 1; iBin < 8; iBin++) {
       histosQA.addClone("Centrality_0-5/", ep::centClasses[iBin].data());
     }
-  }   // End void init(InitContext const&)
+  } // End void init(InitContext const&)
 
   template <int cBin, typename T>
   void fillHistosEvtPl(const T& vec)
@@ -110,14 +107,14 @@ struct evtPlanesResolution {
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), vec.evtPlBNegFinal());
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlResolution"),
-      std::sqrt( std::cos( 2*(vec.evtPlFinal()-vec.evtPlBPosFinal())) * std::cos( 2*(vec.evtPlFinal()-vec.evtPlBNegFinal())) /
-        std::cos( 2*(vec.evtPlBPosFinal()-vec.evtPlBNegFinal()))));
+                  std::sqrt(std::cos(2 * (vec.evtPlFinal() - vec.evtPlBPosFinal())) * std::cos(2 * (vec.evtPlFinal() - vec.evtPlBNegFinal())) /
+                            std::cos(2 * (vec.evtPlBPosFinal() - vec.evtPlBNegFinal()))));
   }
 
   void process(aod::EvtPlane const& evPl)
   {
     int centBin = helperEP.GetCentBin(evPl.cent());
-    switch(centBin) {
+    switch (centBin) {
       case 0:
         fillHistosEvtPl<0>(evPl);
         break;
@@ -149,6 +146,5 @@ struct evtPlanesResolution {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<evtPlanesResolution>(cfgc)
-  };
+    adaptAnalysisTask<evtPlanesResolution>(cfgc)};
 }
