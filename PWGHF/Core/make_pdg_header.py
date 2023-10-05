@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 
-"""
-Generates the body of a C++ header with PDG codes and particle masses.
-Author: Vít Kučera <vit.kucera@cern.ch>
+# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+# All rights not expressly granted are reserved.
+#
+# This software is distributed under the terms of the GNU General Public
+# License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+#
+# In applying this license CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+"""!
+@brief  Generates the body of a C++ header with PDG codes and particle masses.
+@author Vít Kučera <vit.kucera@cern.ch>, Inha University
+@date   2023-09-21
 """
 
 from ctypes import c_bool
@@ -98,12 +110,8 @@ class Pdg(Enum):
     kXiCZero = 4132
 
 
-"""
-Returns particle mass from o2::O2DatabasePDG except for special cases.
-"""
-
-
 def mass(code):
+    """Returns particle mass from o2::O2DatabasePDG except for special cases."""
     # Special cases (present in TDatabasePDG but with wrong values)
     # Missing particles should be added in O2DatabasePDG.h.
     if abs(code) == Pdg.kXiCCPlusPlus.value:
@@ -115,12 +123,8 @@ def mass(code):
     return ROOT.o2.O2DatabasePDG.Mass(code, success)
 
 
-"""
-Returns a C++ declaration of a particle mass constant.
-"""
-
-
 def declare_mass(pdg, type="double") -> str:
+    """Returns a C++ declaration of a particle mass constant."""
     return f"constexpr {type} Mass{pdg.name[1:]} = {mass(pdg.value)};\n"
 
 
