@@ -96,9 +96,9 @@ DECLARE_SOA_COLUMN(DCAxyStore, dcaxyStore, binningDCA::binned_t); //! Stored bin
 DECLARE_SOA_COLUMN(DCAzStore, dcazStore, binningDCA::binned_t);   //! Stored binned dcaz
 DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY,                          //! Unpacked dcaxy
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ,                            //! Unpacked dcaxz
+DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                //! Absolute value of signed pT
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
                            [](float signedPt) -> float { return std::abs(signedPt); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
