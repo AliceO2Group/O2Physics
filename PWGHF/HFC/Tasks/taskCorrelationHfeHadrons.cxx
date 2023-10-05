@@ -45,7 +45,7 @@ struct HfTaskCorrelationHfeHadrons {
   // Run3 selection
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
   // Electron hadron correlation condition
-  Configurable<bool> ptCondition{"ptCondition", true, "Electron pT should be greater than associate particle pT"};;
+  Configurable<bool> ptCondition{"ptCondition", true, "Electron pT should be greater than associate particle pT"};
 
   // Deltaphi binning
   Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 32, "Bins for #Delta#varphi bins"};
@@ -133,7 +133,7 @@ struct HfTaskCorrelationHfeHadrons {
   void correlation(TrackTable const& eTrack, TrackTables const& assoTrack, int sparseNo = -1)
   {
     if (sparseNo < 0 || sparseNo > 1) {
-      LOGF(info, "Error: The THnSparse array has a maximum limit of two elements. Please provide a sparse value of either '0' or '1' in the correlation function");
+      LOGF(info, "Error: no matching function for call.");
       return;
     }
     std::shared_ptr<THnSparse> hEHCorrArray[2] = {
@@ -222,7 +222,7 @@ struct HfTaskCorrelationHfeHadrons {
       if ((phiTrack > phiTrackEMcalMin && phiTrack < phiTrackEMcalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
         passEmcal = 1; // EMcal acceptance passed
       if ((phiTrack > phiTrackDcalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDcalRightMin && etaTrack < etaTrackDcalRightMax) || (etaTrack > etaTrackDcalLeftMin && etaTrack < etaTrackDcalLeftMax)))
-        passEmcal = 2;                                                                                                                                // Dcal acceptance passed
+        passEmcal = 2;                                                                                                                                    // Dcal acceptance passed
       registry.fill(HIST("hTrackInformation"), track.tpcSignal(), nSigmaTpcTrack, pTrack, ptTrack, etaTrack, phiTrack, dcaxyTrack, dcazTrack, passEmcal); // track infor after filter bit
 
       // Apply Track cut
