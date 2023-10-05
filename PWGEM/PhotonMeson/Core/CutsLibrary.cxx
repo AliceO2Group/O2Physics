@@ -347,11 +347,20 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
 {
   DalitzEECut* cut = new DalitzEECut(cutName, cutName);
   std::string nameStr = cutName;
+  const std::string t = "_lowB";
+  bool is_lowB = false;
+  if (nameStr.find(t) != std::string::npos) {
+    printf("--- low B analysis ---\n");
+    is_lowB = true;
+    auto pos = nameStr.find(t);
+    auto len = t.length();
+    nameStr.replace(pos, len, "");
+  }
 
-  if (!nameStr.compare("allee_tpchadrejortofreq")) {
+  if (!nameStr.compare("mee_all_tpchadrejortofreq")) {
     // for pair
     cut->SetMinMeePhivPairDep([](float phiv) {
-      return phiv < 2.5 ? 0.0 : 0.02;
+      return phiv < 1.5 ? 0.0 : (phiv < 2.5 ? 0.01 : 0.03);
     });
 
     // for track
@@ -373,13 +382,16 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaKaRange(-3, +3);
     cut->SetTPCNsigmaPrRange(-3, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
     return cut;
   }
-  if (!nameStr.compare("pi0ee_tpchadrejortofreq")) {
+  if (!nameStr.compare("mee_0_120_tpchadrejortofreq")) {
     // for pair
     cut->SetMeeRange(0, 0.12);
     cut->SetMinMeePhivPairDep([](float phiv) {
-      return phiv < 2.5 ? 0.0 : 0.02;
+      return phiv < 1.5 ? 0.0 : (phiv < 2.5 ? 0.01 : 0.03);
     });
 
     // for track
@@ -401,9 +413,12 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaKaRange(-3, +3);
     cut->SetTPCNsigmaPrRange(-3, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
     return cut;
   }
-  if (!nameStr.compare("pi0ee_tpchadrejortofreq_wo_phiv")) {
+  if (!nameStr.compare("mee_0_120_tpchadrejortofreq_wo_phiv")) {
     // for pair
     cut->SetMeeRange(0, 0.12);
 
@@ -426,11 +441,17 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaKaRange(-3, +3);
     cut->SetTPCNsigmaPrRange(-3, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
     return cut;
   }
-  if (!nameStr.compare("etaee_tpchadrejortofreq")) {
+  if (!nameStr.compare("mee_120_500_tpchadrejortofreq")) {
     // for pair
     cut->SetMeeRange(0.12, 0.5);
+    cut->SetMinMeePhivPairDep([](float phiv) {
+      return phiv < 1.5 ? 0.0 : (phiv < 2.5 ? 0.01 : 0.03);
+    });
 
     // for track
     cut->SetTrackPtRange(0.2f, 1e10f);
@@ -451,6 +472,40 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaKaRange(-3, +3);
     cut->SetTPCNsigmaPrRange(-3, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
+    return cut;
+  }
+  if (!nameStr.compare("mee_0_500_tpchadrejortofreq")) {
+    // for pair
+    cut->SetMeeRange(0., 0.5);
+    cut->SetMinMeePhivPairDep([](float phiv) {
+      return phiv < 1.5 ? 0.0 : (phiv < 2.5 ? 0.01 : 0.03);
+    });
+
+    // for track
+    cut->SetTrackPtRange(0.2f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetMinPinTOF(0.4);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-1e+10, +3);
+    cut->SetTPCNsigmaKaRange(-3, +3);
+    cut->SetTPCNsigmaPrRange(-3, +3);
+    cut->SetTOFNsigmaElRange(-3, +3);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
     return cut;
   }
 
@@ -465,6 +520,9 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetNClustersITS(5, 7);
     cut->SetMaxDcaXY(1.0);
     cut->SetMaxDcaZ(1.0);
+    if (is_lowB) {
+      cut->SetTrackPtRange(0.05f, 1e10f);
+    }
     return cut;
   }
 
