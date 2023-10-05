@@ -210,6 +210,9 @@ struct AnalysisTrackSelection {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
+  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
+  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
+
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   HistogramManager* fHistMan;
@@ -248,7 +251,11 @@ struct AnalysisTrackSelection {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
-
+    if (fConfigDummyRunlist) {
+      VarManager::SetDummyRunlist((int)fConfigInitRunNumber);
+    } else {
+      VarManager::SetRunlist((TString)fConfigRunPeriods);
+    }
     if (fConfigComputeTPCpostCalib) {
       // CCDB configuration
       fCCDB->setURL(fConfigCcdbUrl.value);

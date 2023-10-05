@@ -160,7 +160,8 @@ struct TableMaker {
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
   Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
   Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
-
+  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
+  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
@@ -263,6 +264,12 @@ struct TableMaker {
     }
 
     VarManager::SetRunlist((TString)fConfigRunPeriods);
+    if (fConfigDummyRunlist) {
+      VarManager::SetDummyRunlist((int)fConfigInitRunNumber);
+    } else {
+      VarManager::SetRunlist((TString)fConfigRunPeriods);
+    }
+
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());

@@ -449,6 +449,9 @@ class VarManager : public TObject
   static void SetRunNumbers(std::vector<int> runs);
   static float GetRunIndex(double);
   static void SetRunlist(TString period);
+  static void SetDummyRunlist(int InitRunnumber);
+  static int GetDummyFirst();
+  static int GetDummyLast();
   static int GetNRuns()
   {
     return fgRunMap.size();
