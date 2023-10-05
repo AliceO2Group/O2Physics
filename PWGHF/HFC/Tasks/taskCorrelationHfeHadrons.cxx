@@ -133,7 +133,7 @@ struct HfTaskCorrelationHfeHadrons {
   void correlation(TrackTable const& eTrack, TrackTables const& assoTrack, int sparseNo = -1)
   {
     if (sparseNo < 0 || sparseNo > 1) {
-      LOGF(info, "Error: no matching function for call.");
+      LOGF(info, "Error: The THnSparse array has a maximum limit of two elements. Please provide a sparse value of either '0' or '1'");
       return;
     }
     std::shared_ptr<THnSparse> hEHCorrArray[2] = {
