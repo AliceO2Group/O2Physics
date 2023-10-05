@@ -35,6 +35,11 @@ using namespace o2::aod::hf_cand_2prong;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
+
+constexpr float cutsBdt[1][3] = {{1., 0., 0.}}; // background, prompt, nonprompt
+static const std::vector<std::string> labelsBdt = {"Background", "Prompt", "Nonprompt"};
+static const std::vector<std::string> labelsEmpty{};
 
 struct tableMakerJpsiHf {
   //
@@ -44,6 +49,7 @@ struct tableMakerJpsiHf {
   // Produce derived tables
   Produces<RedJpDmColls> redCollisions;
   Produces<RedJpDmDmesons> redDmesons;
+  Produces<RedJpDmDmesBdts> redDmesBdts;
   Produces<RedJpDmDileptons> redDileptons;
 
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
@@ -52,13 +58,9 @@ struct tableMakerJpsiHf {
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
 
   // HF configurables
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
-  Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
-  Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
-  Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
+  // cuts on BDT output scores to be applied only for the histograms
+  Configurable<LabeledArray<float>> bdtCutsForHistos{"bdtCutsForHistos", {cutsBdt[0], 1, 3, labelsEmpty, labelsBdt}, "Additional bdt cut values only for histograms"};
+  Configurable<double> yCandDmesonMax{"yCandDmesonMax", -1., "max. cand. rapidity"};
   // DQ configurables
   Configurable<double> massDileptonCandMin{"massDileptonCandMin", 1, "minimum dilepton mass"};
   Configurable<double> massDileptonCandMax{"massDileptonCandMax", 5, "maximum dilepton mass"};
@@ -67,7 +69,8 @@ struct tableMakerJpsiHf {
 
   SliceCache cache;
   Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
-  Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
+  Partition<MyD0CandidatesSelectedWithBdt> selectedD0CandidatesWithBdt = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
 
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
   Preslice<MyPairCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
@@ -94,31 +97,37 @@ struct tableMakerJpsiHf {
   void init(o2::framework::InitContext& context)
   {
     if (configDebug) {
-      registry.add("JPsi/hMassJPsi", ";#it{M}(J/#psi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassJPsi}});
-      registry.add("JPsi/hPtJPsi", ";#it{p}_{T}(J/#psi) (GeV/#it{c});counts", {HistType::kTH1F, {axisPt}});
-      registry.add("JPsi/hRapJPsi", ";#it{y}(J/#psi);counts", {HistType::kTH1F, {axisFwdY}});
+      registry.add("JPsi/hMassVsPtJPsi", ";#it{p}_{T}(J/#psi) (GeV/#it{c});#it{M}(J/#psi) (GeV/#it{c}^{2});counts", {HistType::kTH2F, {axisPt, axisMassJPsi}});
+      registry.add("JPsi/hRapVsPtJPsi", ";#it{p}_{T}(J/#psi) (GeV/#it{c});#it{y}(J/#psi);counts", {HistType::kTH2F, {axisPt, axisFwdY}});
       registry.add("JPsi/hPhiJPsi", ";#it{#varphi}(J/#psi);counts", {HistType::kTH1F, {axisPhi}});
-      registry.add("Dmeson/hMassDmeson", ";#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassDmeson}});
-      registry.add("Dmeson/hPtDmeson", ";#it{p}_{T}(D) (GeV/#it{c});counts", {HistType::kTH1F, {axisPt}});
-      registry.add("Dmeson/hRapDmeson", ";#it{y}(D);counts", {HistType::kTH1F, {axisMidY}});
+      registry.add("Dmeson/hMassVsPtDmeson", ";#it{p}_{T}(D) (GeV/#it{c});#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH2F, {axisPt, axisMassDmeson}});
+      registry.add("Dmeson/hRapVsPtDmeson", ";#it{p}_{T}(D) (GeV/#it{c});#it{y}(D);counts", {HistType::kTH2F, {axisPt, axisMidY}});
       registry.add("Dmeson/hPhiDmeson", ";#it{#varphi}(D);counts", {HistType::kTH1F, {axisPhi}});
     }
   }
 
   // Template function to run pair - hadron combinations
   // TODO: generalise to all charm-hadron species
-  template <typename TDqTrack, typename THfTrack>
+  template <bool withBdt, typename TDqTrack, typename THfTrack>
   void runDileptonDmeson(TDqTrack const& dileptons, THfTrack const& dmesons, MyEvents::iterator const& collision)
   {
+    std::vector<float> scores{-1., 2., 2.};
+    bool isCollSel{false};
     if (configDebug) {
       for (auto& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
           continue;
         }
 
+        if constexpr (withBdt) {
+          scores[0] = dmeson.mlProbD0()[0];
+          scores[1] = dmeson.mlProbD0()[1];
+          scores[2] = dmeson.mlProbD0()[2];
+        }
+
         auto rapD0 = yD0(dmeson);
 
-        if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
+        if (yCandDmesonMax >= 0. && std::abs(yD0(dmeson)) > yCandDmesonMax) {
           continue;
         }
 
@@ -127,20 +136,20 @@ struct tableMakerJpsiHf {
         auto massD0 = -1.;
         auto massD0bar = -1.;
 
-        if (dmeson.isSelD0() >= selectionFlagD0) {
-          massD0 = invMassD0ToPiK(dmeson);
-          registry.fill(HIST("Dmeson/hMassDmeson"), massD0);
-          registry.fill(HIST("Dmeson/hPtDmeson"), ptD0);
-          registry.fill(HIST("Dmeson/hRapDmeson"), rapD0);
-          registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
-        }
+        if (scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
+          if (dmeson.isSelD0() >= 1) {
+            massD0 = invMassD0ToPiK(dmeson);
+            registry.fill(HIST("Dmeson/hMassVsPtDmeson"), ptD0, massD0);
+            registry.fill(HIST("Dmeson/hRapVsPtDmeson"), ptD0, rapD0);
+            registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
+          }
 
-        if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-          massD0bar = invMassD0ToPiK(dmeson);
-          registry.fill(HIST("Dmeson/hMassDmeson"), massD0bar);
-          registry.fill(HIST("Dmeson/hPtDmeson"), ptD0);
-          registry.fill(HIST("Dmeson/hRapDmeson"), rapD0);
-          registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
+          if (dmeson.isSelD0bar() >= 1) {
+            massD0bar = invMassD0ToPiK(dmeson);
+            registry.fill(HIST("Dmeson/hMassVsPtDmeson"), ptD0, massD0bar);
+            registry.fill(HIST("Dmeson/hRapVsPtDmeson"), ptD0, rapD0);
+            registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
+          }
         }
       }
     }
@@ -157,9 +166,8 @@ struct tableMakerJpsiHf {
       }
 
       if (configDebug) {
-        registry.fill(HIST("JPsi/hMassJPsi"), massJPsi);
-        registry.fill(HIST("JPsi/hPtJPsi"), ptJPsi);
-        registry.fill(HIST("JPsi/hRapJPsi"), rapJPsi);
+        registry.fill(HIST("JPsi/hMassVsPtJPsi"), ptJPsi, massJPsi);
+        registry.fill(HIST("JPsi/hRapVsPtJPsi"), ptJPsi, rapJPsi);
         registry.fill(HIST("JPsi/hPhiJPsi"), phiJPsi);
       }
 
@@ -171,7 +179,7 @@ struct tableMakerJpsiHf {
 
         auto rapD0 = yD0(dmeson);
 
-        if (yCandMax >= 0. && std::abs(rapD0) > yCandMax) {
+        if (yCandDmesonMax >= 0. && std::abs(rapD0) > yCandDmesonMax) {
           continue;
         }
 
@@ -180,13 +188,20 @@ struct tableMakerJpsiHf {
         auto massD0 = -1.;
         auto massD0bar = -1.;
 
-        if (dmeson.isSelD0() >= selectionFlagD0 || dmeson.isSelD0bar() >= selectionFlagD0bar) {
-          redCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib());
+        if (dmeson.isSelD0() >= 1 || dmeson.isSelD0bar() >= 1) {
+          if (!isCollSel) {
+            redCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib());
+            isCollSel = true;
+          }
           auto indexRed = redCollisions.lastIndex();
           redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.sign(), dilepton.mcDecision(), dilepton.tauz(), dilepton.lz(), dilepton.lxy());
           redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+          if constexpr (withBdt) {
+            auto scores = dmeson.mlProbD0();
+            redDmesBdts(scores[0], scores[1], scores[2]);
+          }
 
-          if (dmeson.isSelD0() >= selectionFlagD0) {
+          if (dmeson.isSelD0() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
             massD0 = invMassD0ToPiK(dmeson);
             registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
             registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
@@ -197,7 +212,7 @@ struct tableMakerJpsiHf {
             registry.fill(HIST("JPsiDmeson/hRapDmesonWithJPsi"), rapD0);
             registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
           }
-          if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
+          if (dmeson.isSelD0bar() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
             massD0bar = invMassD0barToKPi(dmeson);
             registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
             registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
@@ -219,7 +234,17 @@ struct tableMakerJpsiHf {
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
-      runDileptonDmeson(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+    }
+  }
+
+  // process J/psi - D0 adding the BDT output scores to the D0 table
+  void processJspiD0WithBdt(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
+  {
+    for (auto& collision : collisions) {
+      auto groupedDmesonCandidates = selectedD0CandidatesWithBdt->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
+      runDileptonDmeson<true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
 
