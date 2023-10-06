@@ -540,7 +540,7 @@ struct Alice3Dilepton {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        if (useGnm) {
+        if (useGen) {
           if (!IsInAcceptance(mcParticle)) {
             continue;
           }
