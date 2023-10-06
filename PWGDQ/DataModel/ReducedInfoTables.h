@@ -572,6 +572,8 @@ DECLARE_SOA_TABLE(RedJpDmColls, "AOD", "REDJPDMCOLL", //!
 namespace jpsidmescorr
 {
 DECLARE_SOA_INDEX_COLUMN(RedJpDmColl, redJpDmColl);    //!
+DECLARE_SOA_COLUMN(MassD0, massD0, float);             //!
+DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);       //!
 DECLARE_SOA_COLUMN(Px, px, float);                     //!
 DECLARE_SOA_COLUMN(Py, py, float);                     //!
 DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
@@ -590,11 +592,13 @@ DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
                   jpsidmescorr::Px,
                   jpsidmescorr::Py,
                   jpsidmescorr::Pz,
+                  reducedpair::Mass,
                   reducedpair::Sign,
                   reducedpair::McDecision,
                   reducedpair::Tauz,
                   reducedpair::Lz,
                   reducedpair::Lxy);
+
 
 DECLARE_SOA_TABLE(RedJpDmDmesons, "AOD", "REDJPDMDMESON", //!
                   o2::soa::Index<>,
@@ -607,6 +611,10 @@ DECLARE_SOA_TABLE(RedJpDmDmesons, "AOD", "REDJPDMDMESON", //!
                   jpsidmescorr::DecVtxZ,
                   reducedpair::Sign,
                   reducedpair::McDecision);
+
+DECLARE_SOA_TABLE(RedJpDmD0Masss, "AOD", "REDJPDMD0MASS", //!
+                  jpsidmescorr::MassD0,
+                  jpsidmescorr::MassD0bar);
 
 DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
                   jpsidmescorr::BdtBkg,

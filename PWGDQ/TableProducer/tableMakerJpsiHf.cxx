@@ -50,6 +50,7 @@ struct tableMakerJpsiHf {
   Produces<RedJpDmColls> redCollisions;
   Produces<RedJpDmDmesons> redDmesons;
   Produces<RedJpDmDmesBdts> redDmesBdts;
+  Produces<RedJpDmD0Masss> redD0Masses;
   Produces<RedJpDmDileptons> redDileptons;
 
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
@@ -194,7 +195,7 @@ struct tableMakerJpsiHf {
             isCollSel = true;
           }
           auto indexRed = redCollisions.lastIndex();
-          redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.sign(), dilepton.mcDecision(), dilepton.tauz(), dilepton.lz(), dilepton.lxy());
+          redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.mass(), dilepton.sign(), dilepton.mcDecision(), dilepton.tauz(), dilepton.lz(), dilepton.lxy());
           redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
           if constexpr (withBdt) {
             auto scores = dmeson.mlProbD0();
@@ -223,6 +224,7 @@ struct tableMakerJpsiHf {
             registry.fill(HIST("JPsiDmeson/hRapDmesonWithJPsi"), rapD0);
             registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
           }
+          redD0Masses(massD0, massD0bar);
         }
       }
     }
