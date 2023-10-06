@@ -73,3 +73,8 @@ o2physics_add_dpl_workflow(qvectors-correction
                     SOURCES qVectorsCorrection.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(evtplanes-resolution
+                    SOURCES evtPlanesResolution.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
