@@ -80,14 +80,14 @@ struct correlateStrangeness {
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
 
   // objects to use for efficiency corrections
-  TH2F *hEfficiencyPion;
-  TH2F *hEfficiencyK0Short;
-  TH2F *hEfficiencyLambda;
-  TH2F *hEfficiencyAntiLambda;
-  TH2F *hEfficiencyXiMinus;
-  TH2F *hEfficiencyXiPlus;
-  TH2F *hEfficiencyOmegaMinus;
-  TH2F *hEfficiencyOmegaPlus;
+  TH2F* hEfficiencyPion;
+  TH2F* hEfficiencyK0Short;
+  TH2F* hEfficiencyLambda;
+  TH2F* hEfficiencyAntiLambda;
+  TH2F* hEfficiencyXiMinus;
+  TH2F* hEfficiencyXiPlus;
+  TH2F* hEfficiencyOmegaMinus;
+  TH2F* hEfficiencyOmegaPlus;
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -128,25 +128,24 @@ struct correlateStrangeness {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    LOG(info) << "Loading efficiencies from CCDB for run " << mRunNumber <<"now...";
+    LOG(info) << "Loading efficiencies from CCDB for run " << mRunNumber << "now...";
     auto timeStamp = bc.timestamp();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
-    if(!listEfficiencies){
+    if (!listEfficiencies) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
 
-    hEfficiencyK0Short = (TH2F*) listEfficiencies -> FindObject("hEfficiencyK0Short"); 
-    hEfficiencyLambda = (TH2F*) listEfficiencies -> FindObject("hEfficiencyLambda"); 
-    hEfficiencyAntiLambda = (TH2F*) listEfficiencies -> FindObject("hEfficiencyAntiLambda"); 
-    hEfficiencyXiMinus = (TH2F*) listEfficiencies -> FindObject("hEfficiencyXiMinus"); 
-    hEfficiencyXiPlus = (TH2F*) listEfficiencies -> FindObject("hEfficiencyXiPlus"); 
-    hEfficiencyOmegaMinus = (TH2F*) listEfficiencies -> FindObject("hEfficiencyOmegaMinus"); 
-    hEfficiencyOmegaPlus = (TH2F*) listEfficiencies -> FindObject("hEfficiencyOmegaPlus"); 
+    hEfficiencyK0Short = (TH2F*)listEfficiencies->FindObject("hEfficiencyK0Short");
+    hEfficiencyLambda = (TH2F*)listEfficiencies->FindObject("hEfficiencyLambda");
+    hEfficiencyAntiLambda = (TH2F*)listEfficiencies->FindObject("hEfficiencyAntiLambda");
+    hEfficiencyXiMinus = (TH2F*)listEfficiencies->FindObject("hEfficiencyXiMinus");
+    hEfficiencyXiPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyXiPlus");
+    hEfficiencyOmegaMinus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaMinus");
+    hEfficiencyOmegaPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaPlus");
 
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
-
 
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
@@ -181,7 +180,7 @@ struct correlateStrangeness {
         if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
           continue;
 
-        TH2F *hEfficiencyV0[3];
+        TH2F* hEfficiencyV0[3];
         hEfficiencyV0[0] = hEfficiencyK0Short;
         hEfficiencyV0[1] = hEfficiencyLambda;
         hEfficiencyV0[2] = hEfficiencyAntiLambda;
@@ -189,7 +188,7 @@ struct correlateStrangeness {
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index)) {
-            float weight = applyEfficiencyCorrection?1./hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta())):1.0f;
+            float weight = applyEfficiencyCorrection ? 1. / hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta())) : 1.0f;
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
@@ -248,7 +247,7 @@ struct correlateStrangeness {
         if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
           continue;
 
-        TH2F *hEfficiencyCascade[4];
+        TH2F* hEfficiencyCascade[4];
         hEfficiencyCascade[0] = hEfficiencyXiMinus;
         hEfficiencyCascade[1] = hEfficiencyXiPlus;
         hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
@@ -257,7 +256,7 @@ struct correlateStrangeness {
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index + 3)) {
-            float weight = applyEfficiencyCorrection?1./hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta())):1.0f;
+            float weight = applyEfficiencyCorrection ? 1. / hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta())) : 1.0f;
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
@@ -613,7 +612,7 @@ struct correlateStrangeness {
 
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
-    if(applyEfficiencyCorrection) {
+    if (applyEfficiencyCorrection) {
       ccdb->setURL(ccdburl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -643,7 +642,7 @@ struct correlateStrangeness {
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
-    TH2F *hEfficiencyV0[3];
+    TH2F* hEfficiencyV0[3];
     hEfficiencyV0[0] = hEfficiencyK0Short;
     hEfficiencyV0[1] = hEfficiencyLambda;
     hEfficiencyV0[2] = hEfficiencyAntiLambda;
@@ -653,7 +652,7 @@ struct correlateStrangeness {
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index) && (!doMCassociation || v0.mcTrue(index)) && bitcheck(doCorrelation, index)) {
-          float weight = applyEfficiencyCorrection?1./hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta())):1.0f;
+          float weight = applyEfficiencyCorrection ? 1. / hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta())) : 1.0f;
           histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index), weight);
           if (std::abs(v0Data.rapidity(index)) < 0.5) {
             histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("SpectrumY"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index), weight);
@@ -697,7 +696,7 @@ struct correlateStrangeness {
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
     histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
-    TH2F *hEfficiencyCascade[4];
+    TH2F* hEfficiencyCascade[4];
     hEfficiencyCascade[0] = hEfficiencyXiMinus;
     hEfficiencyCascade[1] = hEfficiencyXiPlus;
     hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
@@ -707,7 +706,7 @@ struct correlateStrangeness {
       auto cascData = casc.cascData();
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
-        float weight = applyEfficiencyCorrection?1./hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta())):1.0f;
+        float weight = applyEfficiencyCorrection ? 1. / hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta())) : 1.0f;
         if (casc.compatible(index) && (!doMCassociation || casc.mcTrue(index)) && bitcheck(doCorrelation, index + 3)) {
           histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index), weight);
           if (std::abs(cascData.rapidity(index)) < 0.5) {
