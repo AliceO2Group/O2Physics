@@ -12,6 +12,13 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
 /// \since September 26, 2023
 
+#include <cmath>
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TObjArray.h>
+#include <TLorentzVector.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -87,8 +94,8 @@ struct vzero_cascade_absorption {
   Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
   Configurable<float> dcaBachelorToPVmin{"dcaBachelorToPVmin", 0.1f, "Minimum DCA bachelor To PV"};
   Configurable<float> dcaV0ToPVmin{"dcaV0ToPVmin", 0.1f, "Minimum DCA V0 To PV for cascades"};
-  Configurable<float> v0cospaMin{"v0cospaMin", 0.998f, "Minimum V0 CosPA"};
-  Configurable<float> casccospaMin{"casccospaMin", 0.998f, "Minimum Cascade CosPA"};
+  Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
+  Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum Cascade CosPA"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA Daughters"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Cascade Daughters"};
   Configurable<float> Rmin_beforeAbs{"Rmin_beforeAbs", 10.0f, "Rmin before target"};
@@ -99,9 +106,11 @@ struct vzero_cascade_absorption {
   void init(InitContext const&)
   {
     // Histograms
-    registryQC.add("event_counter", "event counter", HistType::kTH1F, {{2, 0, 2, "number of events"}});
-    registryData.add("K0_before_target", "K0 before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
-    registryData.add("K0_after_target", "K0 after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryQC.add("event_counter", "event counter", HistType::kTH1F, {{4, 0, 4, "number of events in data (first 2 bins) and mc (last 2 bins)"}});
+    registryData.add("K0_before_target_data", "K0 before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryData.add("K0_after_target_data", "K0 after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryMC.add("K0_before_target_mc", "K0 before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryMC.add("K0_after_target_mc", "K0 after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
 
     /*
     registryData.add("Lambda_before_target", "Lambda_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c)"}});
@@ -296,15 +305,84 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
 
         // Before Target
         if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs)
-          registryData.fill(HIST("K0_before_target"), v0.p(), v0.mK0Short());
+          registryData.fill(HIST("K0_before_target_data"), v0.p(), v0.mK0Short());
 
         // After Target
         if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
-          registryData.fill(HIST("K0_after_target"), v0.p(), v0.mK0Short());
+          registryData.fill(HIST("K0_after_target_data"), v0.p(), v0.mK0Short());
       } // end loop on K0s
     }   // end loop on V0s
   }     // end processData
-  PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", false);
+  PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
+
+  // Process MC
+  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, soa::Join<FullTracks, aod::McTrackLabels> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  {
+
+    // Event Counter (before event sel)
+    registryQC.fill(HIST("event_counter"), 2.5);
+
+    // Event Selection
+    if (!collision.sel8())
+      return;
+
+    // Event Counter (after event sel)
+    registryQC.fill(HIST("event_counter"), 3.5);
+
+    // Loop over Reconstructed V0s
+    for (auto& v0 : fullV0s) {
+
+      // Positive and Negative Tracks
+      const auto& posTrack = v0.posTrack_as<FullTracks>();
+      const auto& negTrack = v0.negTrack_as<FullTracks>();
+
+      // Require TPC Refit
+      if (!posTrack.passedTPCRefit())
+        continue;
+      if (!negTrack.passedTPCRefit())
+        continue;
+
+      // MC Particles
+      if (!posTrack.has_mcParticle())
+        continue;
+      if (!negTrack.has_mcParticle())
+        continue;
+
+      auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
+      auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
+      if (!posParticle.has_mothers() || !negParticle.has_mothers()) {
+        continue;
+      }
+
+      if (posParticle.pdgCode() != +211)
+        continue;
+      if (negParticle.pdgCode() != -211)
+        continue;
+
+      bool isK0s = false;
+      for (auto& particleMotherOfNeg : negTrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : posTrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310)
+            isK0s = true;
+        }
+      }
+      if (!isK0s)
+        continue;
+
+      // K0 Short
+      if (passedK0Selection(v0, negTrack, posTrack, collision)) {
+
+        // Before Target
+        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs)
+          registryMC.fill(HIST("K0_before_target_mc"), v0.p(), v0.mK0Short());
+
+        // After Target
+        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
+          registryMC.fill(HIST("K0_after_target_mc"), v0.p(), v0.mK0Short());
+      } // end loop on K0s
+    }   // end loop on V0s
+  }     // end processMC
+  PROCESS_SWITCH(vzero_cascade_absorption, processMC, "Process mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
