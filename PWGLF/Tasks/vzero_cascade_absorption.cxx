@@ -362,8 +362,8 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
         continue;
 
       bool isK0s = false;
-      for (auto& particleMotherOfNeg : negTrack.mothers_as<aod::McParticles>()) {
-        for (auto& particleMotherOfPos : posTrack.mothers_as<aod::McParticles>()) {
+      for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
           if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310)
             isK0s = true;
         }
