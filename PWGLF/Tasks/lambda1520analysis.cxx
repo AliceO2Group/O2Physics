@@ -567,10 +567,10 @@ struct lambda1520analysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

@@ -21,11 +21,12 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include "Rtypes.h"
 #include "TNamed.h"
 #include "TMath.h"
+
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed
 {
@@ -137,8 +138,8 @@ class V0PhotonCut : public TNamed
       }
     }
 
-    bool isTPConly_pos = !pos.hasITS() & pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
-    bool isTPConly_ele = !ele.hasITS() & ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
+    bool isTPConly_pos = isTPConlyTrack(pos);
+    bool isTPConly_ele = isTPConlyTrack(ele);
     if (isTPConly_pos && isTPConly_ele) {
       if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
         return false;
@@ -165,7 +166,7 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
-      bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTOF() & !track.hasTRD();
+      bool isITSonly = isITSonlyTrack(track);
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {
@@ -322,10 +323,7 @@ class V0PhotonCut : public TNamed
         // }
 
         float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
-        if (dxy > margin_xy) { // cut in XY plane first
-          return false;
-        }
-        return true;
+        return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
         const float margin_x = 2.0;                                         // cm
@@ -407,28 +405,25 @@ class V0PhotonCut : public TNamed
         }
 
         const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
-        if (track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY())) {
-          return false;
-        }
-        return true;
+        return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY()));
       }
       case V0PhotonCuts::kRequireITSTPC:
-        return track.hasITS() & track.hasTPC();
+        return isITSTPCTrack(track);
 
       case V0PhotonCuts::kRequireITSonly:
-        return track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+        return isITSonlyTrack(track);
 
       case V0PhotonCuts::kRequireTPConly:
-        return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
+        return isTPConlyTrack(track);
 
       case V0PhotonCuts::kRequireTPCTRD:
-        return track.hasTPC() & track.hasTRD() & !track.hasITS();
+        return isTPCTRDTrack(track);
 
       case V0PhotonCuts::kRequireTPCTOF:
-        return track.hasTPC() & track.hasTOF() & !track.hasITS();
+        return isTPCTOFTrack(track);
 
       case V0PhotonCuts::kRequireTPCTRDTOF:
-        return track.hasTPC() & track.hasTOF() & !track.hasITS() & track.hasTRD();
+        return isTPCTRDTOFTrack(track);
 
       default:
         return false;

@@ -16,23 +16,21 @@
 #define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
 #include <TVector2.h>
-#include "Framework/AnalysisTask.h"
+#include <cmath>
 
-//_______________________________________________________________________
+namespace o2::aod::photonpair
+{
 enum PairType {
   kPCMPCM = 0,
   kPHOSPHOS = 1,
   kEMCEMC = 2,
   kPCMPHOS = 3,
   kPCMEMC = 4,
-  kPHOSEMC = 5,
-  kPCMPCMibw = 6,
+  kPCMDalitz = 5,
+  kPHOSEMC = 6,
+  kPCMPCMibw = 7,
 };
-//_______________________________________________________________________
-namespace o2::aod
-{
-namespace photonpair
-{
+
 template <typename U1, typename U2, typename TG1, typename TG2, typename TCut1, typename TCut2>
 bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
 {
@@ -40,9 +38,9 @@ bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const
   bool is_g2_selected = false;
   is_g1_selected = cut1.template IsSelected<U1>(g1);
   is_g2_selected = cut2.template IsSelected<U2>(g2);
-  return (is_g1_selected & is_g2_selected);
+  return (is_g1_selected && is_g2_selected);
 }
-//_______________________________________________________________________
+
 template <typename TV0Leg, typename TCluster>
 bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, const float max_deta, const float max_dphi, const float max_Ep_width)
 {
@@ -50,12 +48,8 @@ bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, con
   float dphi = TVector2::Phi_mpi_pi(TVector2::Phi_0_2pi(v0leg.phi()) - TVector2::Phi_0_2pi(cluster.phi()));
   // float dR = sqrt(deta * deta + dphi * dphi);
   float Ep = cluster.e() / v0leg.p();
-  return (pow(deta / max_deta, 2) + pow(dphi / max_dphi, 2) < 1) & (abs(Ep - 1) < max_Ep_width);
+  return (pow(deta / max_deta, 2) + pow(dphi / max_dphi, 2) < 1) && (abs(Ep - 1) < max_Ep_width);
 }
-//_______________________________________________________________________
-} // namespace photonpair
-} // namespace o2::aod
-//_______________________________________________________________________
-//_______________________________________________________________________
-//_______________________________________________________________________
+} // namespace o2::aod::photonpair
+
 #endif // PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_

@@ -192,6 +192,8 @@ struct UpcCandProducer {
     // and calculate new MC table IDs
     for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
       const auto& mcPart = mcParticles.iteratorAt(mcPartID);
+      if (!mcPart.has_mcCollision())
+        continue;
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
       bool isSignal = mcEvent.generatorsID() == fSignalGenID;
@@ -352,6 +354,54 @@ struct UpcCandProducer {
                       o2::aod::FDDs const& fdds,
                       o2::aod::FV0As const& fv0as)
   {
+    auto it = std::find_if(v.begin(),
+                           v.end(),
+                           [midbc](const std::pair<uint64_t, int64_t>& p) { return p.first == midbc; });
+
+    if (it != v.end()) {
+      auto bcId = it->second;
+      auto bcEntry = bcs.iteratorAt(bcId);
+      if (bcEntry.has_foundFT0()) {
+        auto ft0 = bcEntry.foundFT0();
+        fitInfo.timeFT0A = ft0.timeA();
+        fitInfo.timeFT0C = ft0.timeC();
+        const auto& ampsA = ft0.amplitudeA();
+        const auto& ampsC = ft0.amplitudeC();
+        fitInfo.ampFT0A = 0.;
+        for (auto amp : ampsA)
+          fitInfo.ampFT0A += amp;
+        fitInfo.ampFT0C = 0.;
+        for (auto amp : ampsC)
+          fitInfo.ampFT0C += amp;
+        fitInfo.triggerMaskFT0 = ft0.triggerMask();
+      }
+      if (bcEntry.has_foundFV0()) {
+        auto fv0a = bcEntry.foundFV0();
+        fitInfo.timeFV0A = fv0a.time();
+        const auto& amps = fv0a.amplitude();
+        fitInfo.ampFV0A = 0.;
+        for (auto amp : amps)
+          fitInfo.ampFV0A += amp;
+        fitInfo.triggerMaskFV0A = fv0a.triggerMask();
+      }
+      if (bcEntry.has_foundFDD()) {
+        auto fdd = bcEntry.foundFDD();
+        fitInfo.timeFDDA = fdd.timeA();
+        fitInfo.timeFDDC = fdd.timeC();
+        const auto& ampsA = fdd.chargeA();
+        const auto& ampsC = fdd.chargeC();
+        fitInfo.ampFDDA = 0.;
+        for (auto amp : ampsA) {
+          fitInfo.ampFDDA += amp;
+        }
+        fitInfo.ampFDDC = 0.;
+        for (auto amp : ampsC) {
+          fitInfo.ampFDDC += amp;
+        }
+        fitInfo.triggerMaskFDD = fdd.triggerMask();
+      }
+    }
+
     const uint64_t range = 16;
     uint64_t left = midbc >= range ? midbc - range : 0;
     uint64_t right = fMaxBC >= midbc + range ? midbc + range : fMaxBC;
@@ -368,71 +418,26 @@ struct UpcCandProducer {
       uint64_t bit = curbc - (midbc - range);
       int64_t bcGlId = curit->second;
       const auto& bc = bcs.iteratorAt(bcGlId);
-      if (bc.has_foundFT0()) {
-        const auto& ft0 = bc.foundFT0();
-        if (curbc == midbc) {
-          fitInfo.timeFT0A = ft0.timeA();
-          fitInfo.timeFT0C = ft0.timeC();
-          const auto& ampsA = ft0.amplitudeA();
-          const auto& ampsC = ft0.amplitudeC();
-          fitInfo.ampFT0A = 0.;
-          for (auto amp : ampsA)
-            fitInfo.ampFT0A += amp;
-          fitInfo.ampFT0C = 0.;
-          for (auto amp : ampsC)
-            fitInfo.ampFT0C += amp;
-          fitInfo.triggerMaskFT0 = ft0.triggerMask();
-        }
-        if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
-          SETBIT(fitInfo.BGFT0Apf, bit);
-        if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
-          SETBIT(fitInfo.BGFT0Cpf, bit);
-        if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
-          SETBIT(fitInfo.BBFT0Apf, bit);
-        if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
-          SETBIT(fitInfo.BBFT0Cpf, bit);
-      }
-      if (bc.has_foundFV0()) {
-        const auto& fv0a = bc.foundFV0();
-        if (curbc == midbc) {
-          fitInfo.timeFV0A = fv0a.time();
-          const auto& amps = fv0a.amplitude();
-          fitInfo.ampFV0A = 0.;
-          for (auto amp : amps)
-            fitInfo.ampFV0A += amp;
-          fitInfo.triggerMaskFV0A = fv0a.triggerMask();
-        }
-        if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
-          SETBIT(fitInfo.BGFV0Apf, bit);
-        if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
-          SETBIT(fitInfo.BBFV0Apf, bit);
-      }
-      if (bc.has_foundFDD()) {
-        const auto& fdd = bc.foundFDD();
-        if (curbc == midbc) {
-          fitInfo.timeFDDA = fdd.timeA();
-          fitInfo.timeFDDC = fdd.timeC();
-          const auto& ampsA = fdd.chargeA();
-          const auto& ampsC = fdd.chargeC();
-          fitInfo.ampFDDA = 0.;
-          for (auto amp : ampsA) {
-            fitInfo.ampFDDA += amp;
-          }
-          fitInfo.ampFDDC = 0.;
-          for (auto amp : ampsC) {
-            fitInfo.ampFDDC += amp;
-          }
-          fitInfo.triggerMaskFDD = fdd.triggerMask();
-        }
-        if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
-          SETBIT(fitInfo.BGFDDApf, bit);
-        if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
-          SETBIT(fitInfo.BGFDDCpf, bit);
-        if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
-          SETBIT(fitInfo.BBFDDApf, bit);
-        if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
-          SETBIT(fitInfo.BBFDDCpf, bit);
-      }
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
+        SETBIT(fitInfo.BGFT0Apf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
+        SETBIT(fitInfo.BGFT0Cpf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
+        SETBIT(fitInfo.BBFT0Apf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
+        SETBIT(fitInfo.BBFT0Cpf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
+        SETBIT(fitInfo.BGFV0Apf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
+        SETBIT(fitInfo.BBFV0Apf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
+        SETBIT(fitInfo.BGFDDApf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
+        SETBIT(fitInfo.BGFDDCpf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
+        SETBIT(fitInfo.BBFDDApf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
+        SETBIT(fitInfo.BBFDDCpf, bit);
       ++curit;
       if (curit == v.end())
         break;
@@ -528,8 +533,15 @@ struct UpcCandProducer {
                             std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
   {
     for (const auto& trk : fwdTracks) {
-      if (trk.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
-        continue;
+      if (upcCuts.getTrackType() != -1) {  // need to filter by type ?
+        if (upcCuts.getTrackType() == 5) { // is MCH-MID or MCH ?
+          if (trk.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack &&
+              trk.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)
+            continue;
+        }
+        if (trk.trackType() != upcCuts.getTrackType()) // getTrackType < 5 -> check exact track type
+          continue;
+      }
       if (!applyFwdCuts(trk))
         continue;
       int64_t trkId = trk.globalIndex();
@@ -545,8 +557,6 @@ struct UpcCandProducer {
       }
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       uint64_t bc = trackBC + tint;
-      if (bc > fMaxBC)
-        continue;
       if (nContrib <= upcCuts.getMaxNContrib())
         addTrack(bcsMatchedTrIdsMID, bc, trkId);
     }

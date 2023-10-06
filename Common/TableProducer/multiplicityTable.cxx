@@ -22,6 +22,8 @@ using namespace o2::framework;
 #include "TableHelper.h"
 #include "iostream"
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
   Produces<aod::FV0Mults> multFV0;
@@ -31,6 +33,7 @@ struct MultiplicityTableTaskIndexed {
   Produces<aod::BarrelMults> multBarrel;
   Produces<aod::MultsExtra> multExtra;
   Produces<aod::MultZeqs> multzeq;
+  Produces<aod::MultsDebug> multDebug;
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -309,11 +312,33 @@ struct MultiplicityTableTaskIndexed {
           if (track.hasTRD())
             nHasTRD++;
         };
-        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC);
+
+        int bcNumber = bc.globalBC() % 3564;
+
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
       }
     }
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+
+  void processFT0(aod::FT0s const& ft0s)
+  {
+    // process function to acquire FT0A/C derived table for posterior study
+    for (auto const& ft0 : ft0s) {
+      if (bitcheck(ft0.triggerMask(), 4)) {
+        float multFT0A = 0, multFT0C = 0;
+        for (auto amplitude : ft0.amplitudeA()) {
+          multFT0A += amplitude;
+        }
+        for (auto amplitude : ft0.amplitudeC()) {
+          multFT0C += amplitude;
+        }
+
+        multDebug(multFT0A, multFT0C);
+      }
+    }
+  }
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processFT0, "Produce Run 3 MultsDebug table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

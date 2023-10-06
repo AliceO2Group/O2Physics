@@ -157,8 +157,9 @@ struct HfTaskBplusReduced {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
-               aod::HfCand2ProngReduced const&)
+  void process(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
+               aod::HfRed2Prongs const&,
+               aod::HfRedTracks const&)
   {
     for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
@@ -168,9 +169,10 @@ struct HfTaskBplusReduced {
         continue;
       }
 
-      auto candD0 = candidate.prong0_as<HfCand2ProngReduced>();
-      // auto candPi = candidate.prong1_as<aod::HfTracksPidReduced>();
+      auto candD0 = candidate.prong0_as<HfRed2Prongs>();
+      auto candPi = candidate.prong1_as<aod::HfRedTracks>();
       auto ptCandBplus = candidate.pt();
+      auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassD0() : candD0.invMassD0Bar();
 
       registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
       registry.fill(HIST("hPtCand"), ptCandBplus);
@@ -189,16 +191,16 @@ struct HfTaskBplusReduced {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandBplus);
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandBplus);
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandBplus);
-      registry.fill(HIST("hInvMassD0"), candD0.invMass(), ptCandBplus);
+      registry.fill(HIST("hInvMassD0"), invMassD0, ptCandBplus);
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandBplus);
       registry.fill(HIST("hCPAxyFinerBinning"), candidate.cpaXY(), ptCandBplus);
     } // candidate loop
   }   // process
 
   /// B+ MC analysis and fill histograms
-  void processMc(soa::Join<aod::HfCandBplus, aod::HfBpMcRecReduced> const& candidates,
-                 aod::HfBpMcGenReduced const& mcParticles,
-                 aod::HfCand2ProngReduced const&)
+  void processMc(soa::Join<aod::HfRedCandBplus, aod::HfMcRecRedBps> const& candidates,
+                 aod::HfMcGenRedBps const& mcParticles,
+                 aod::HfRed2Prongs const&)
   {
     // MC rec
     for (const auto& candidate : candidates) {
@@ -210,7 +212,12 @@ struct HfTaskBplusReduced {
       }
 
       auto ptCandBplus = candidate.pt();
-      auto candD0 = candidate.prong0_as<aod::HfCand2ProngReduced>();
+      auto candD0 = candidate.prong0_as<aod::HfRed2Prongs>();
+      std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+      std::array<float, 3> posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
+      std::array<float, 3> momD{candD0.px(), candD0.py(), candD0.pz()};
+      auto cospD0 = RecoDecay::cpa(posPv, posSvD, momD);
+      auto decLenD0 = RecoDecay::distance(posPv, posSvD);
 
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
@@ -231,8 +238,8 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), ptCandBplus);
         registry.fill(HIST("hd0d0RecSig"), candidate.impactParameterProduct(), ptCandBplus);
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), ptCandBplus);
-        registry.fill(HIST("hCPAD0RecSig"), candD0.cpa(), candidate.ptProng0());
-        registry.fill(HIST("hDecLengthD0RecSig"), candD0.decayLength(), candidate.ptProng0());
+        registry.fill(HIST("hCPAD0RecSig"), cospD0, candidate.ptProng0());
+        registry.fill(HIST("hDecLengthD0RecSig"), decLenD0, candidate.ptProng0());
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandBplus);
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), ptCandBplus);
@@ -250,8 +257,8 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), ptCandBplus);
         registry.fill(HIST("hd0d0RecBg"), candidate.impactParameterProduct(), ptCandBplus);
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), ptCandBplus);
-        registry.fill(HIST("hCPAD0RecBg"), candD0.cpa(), candidate.ptProng0());
-        registry.fill(HIST("hDecLengthD0RecBg"), candD0.decayLength(), candidate.ptProng0());
+        registry.fill(HIST("hCPAD0RecBg"), cospD0, candidate.ptProng0());
+        registry.fill(HIST("hDecLengthD0RecBg"), decLenD0, candidate.ptProng0());
       }
     } // rec
 

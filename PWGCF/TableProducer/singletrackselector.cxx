@@ -71,36 +71,33 @@ struct singleTrackSelector {
       if (abs(track.dcaXY()) > cutDcaXy) {
         continue;
       }
-      if (abs(track.tpcNSigmaPr()) > cutTPCNSigmaPr) {
-        continue;
+      if (abs(track.tpcNSigmaPr()) < cutTPCNSigmaPr || abs(track.tpcNSigmaDe()) < cutTPCNSigmaDe) {
+
+        tableRow(tableRowColl.lastIndex(),
+                 track.hasITS(),
+                 track.hasTOF(),
+                 track.px(),
+                 track.py(),
+                 track.pz(),
+                 track.tpcInnerParam(),
+                 track.tpcSignal(),
+                 track.beta(),
+                 track.dcaXY(),
+                 track.dcaZ(),
+                 track.tpcNClsFound(),
+                 track.tpcFoundOverFindableCls(),
+                 track.tpcChi2NCl(),
+                 track.itsNCls(),
+                 track.itsChi2NCl(),
+                 track.sign(),
+                 track.eta(),
+                 track.phi(),
+                 singletrackselector::packInTableOffset<singletrackselector::storedcrossedrows::binning>(track.tpcNClsCrossedRows()),
+                 singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
+                 singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()),
+                 singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
+                 singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaDe()));
       }
-      if (abs(track.tpcNSigmaDe()) > cutTPCNSigmaDe) {
-        continue;
-      }
-      tableRow(tableRowColl.lastIndex(),
-               track.hasITS(),
-               track.hasTOF(),
-               track.px(),
-               track.py(),
-               track.pz(),
-               track.tpcInnerParam(),
-               track.tpcSignal(),
-               track.beta(),
-               track.dcaXY(),
-               track.dcaZ(),
-               track.tpcNClsFound(),
-               track.tpcFoundOverFindableCls(),
-               track.tpcChi2NCl(),
-               track.itsNCls(),
-               track.itsChi2NCl(),
-               track.sign(),
-               track.eta(),
-               track.phi(),
-               singletrackselector::packInTableOffset<singletrackselector::storedcrossedrows::binning>(track.tpcNClsCrossedRows()),
-               singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
-               singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()),
-               singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
-               singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaDe()));
     }
   }
 };

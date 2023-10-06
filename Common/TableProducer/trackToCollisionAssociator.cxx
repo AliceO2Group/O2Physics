@@ -38,6 +38,7 @@ struct TrackToCollisionAssociation {
   Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
+  Configurable<int> bcWindowForOneSigma{"bcWindowForOneSigma", 60, "BC window to be multiplied by the number of sigmas to define maximum window to be considered"};
 
   CollisionAssociation<true> collisionAssociator;
 
@@ -61,6 +62,7 @@ struct TrackToCollisionAssociation {
     collisionAssociator.setUsePvAssociation(usePVAssociation);
     collisionAssociator.setIncludeUnassigned(includeUnassigned);
     collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
+    collisionAssociator.setBcWindow(bcWindowForOneSigma);
   }
 
   void processAssocWithTime(Collisions const& collisions, TracksWithSel const& tracksUnfiltered, TracksWithSelFilter const& tracks, AmbiguousTracks const& ambiguousTracks, BCs const& bcs)

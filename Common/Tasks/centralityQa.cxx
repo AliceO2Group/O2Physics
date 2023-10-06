@@ -23,6 +23,7 @@ struct CentralityQa {
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
   Configurable<bool> INELgtZERO{"INELgtZERO", 1, "0 - no, 1 - yes"};
   OutputObj<TH1F> hCentRun2V0M{TH1F("hCentRun2V0M", "V0M", nBins, 0, 105.)};
+  OutputObj<TH1F> hCentRun2V0A{TH1F("hCentRun2V0A", "V0A", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2SPDTks{TH1F("hCentRun2SPDTks", "SPD Tracklets", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2SPDCls{TH1F("hCentRun2SPDCls", "SPD Clusters", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2CL0{TH1F("hCentRun2CL0", "CL0", nBins, 0, 105.)};
@@ -85,6 +86,23 @@ struct CentralityQa {
     hCentRun2CL1->Fill(col.centRun2CL1());
   }
   PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
+
+  void processRun2PPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0As, aod::Mults>::iterator const& col)
+  {
+    if (!col.alias_bit(kINT7)) {
+      return;
+    }
+    if (!col.sel7()) {
+      return;
+    }
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
+    LOGF(debug, "centV0A=%.0f", col.centRun2V0A());
+    // fill centrality histos
+    hCentRun2V0A->Fill(col.centRun2V0A());
+  }
+  PROCESS_SWITCH(CentralityQa, processRun2PPb, "Process with Run2 V0A multiplicitY centrality/multiplicity  estimation", false);
 
   void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col)
   {
