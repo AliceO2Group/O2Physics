@@ -66,7 +66,7 @@ struct qVectorsCorrection {
   {
     // Fill the registry with the needed objects.
     const AxisSpec axisCent{110, 0., 110.};
-    const AxisSpec axisQvec{2000, -5, 5};
+    const AxisSpec axisQvec{1000, -5, 5};
     const AxisSpec axisConst{12, 0., 12.}; // 4 constants x 3 detectors.
 
     histosQA.add("histCentFull", "Centrality distribution for valid events",
