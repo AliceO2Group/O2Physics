@@ -50,7 +50,7 @@ struct rhoanalysis {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<int> cMultiplicityType{"cMultiplicityType", 1, " Set 1 For multTPC, 2 for MultFT0M, 3for MultFV0M"};
 
-  Configurable<bool> isUnlike{"isUnlike", false, "Use unlike cahrge tracks"};
+  Configurable<bool> isUnlike{"isUnlike", false, "Use unlike charged tracks"};
   Configurable<bool> isLike{"isLike", false, "use same charge tracks"};
   Configurable<bool> isMixed{"isMixed", false, "Use mixed events"};
   Configurable<bool> isMC{"isMC", false, "Run MC"};
