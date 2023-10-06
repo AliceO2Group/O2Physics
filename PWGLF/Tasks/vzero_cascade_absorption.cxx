@@ -42,6 +42,8 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
+using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
+
 struct vzero_cascade_absorption {
 
   // QC Histograms
@@ -316,7 +318,7 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   // Process MC
-  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, soa::Join<FullTracks, aod::McTrackLabels> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, MCTracks const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
 
     // Event Counter (before event sel)
@@ -333,8 +335,8 @@ bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
     for (auto& v0 : fullV0s) {
 
       // Positive and Negative Tracks
-      const auto& posTrack = v0.posTrack_as<FullTracks>();
-      const auto& negTrack = v0.negTrack_as<FullTracks>();
+      const auto& posTrack = v0.posTrack_as<MCTracks>();
+      const auto& negTrack = v0.negTrack_as<MCTracks>();
 
       // Require TPC Refit
       if (!posTrack.passedTPCRefit())
