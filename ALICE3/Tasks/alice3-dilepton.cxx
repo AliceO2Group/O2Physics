@@ -533,14 +533,14 @@ struct Alice3Dilepton {
         if (!track.has_mcParticle()) {
           continue;
         }
+        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
         if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
-        if (useGem) {
+        if (useGnm) {
           if (!IsInAcceptance(mcParticle)) {
             continue;
           }
