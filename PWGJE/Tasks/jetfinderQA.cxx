@@ -83,6 +83,9 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_track_eta", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_track_phi", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
       registry.add("h3_jet_r_jet_pt_leadingtrack_pt", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,leading track} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}});
+      registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -235,6 +238,9 @@ struct JetFinderQATask {
       if (!selectTrack(track)) {
         continue;
       }
+      registry.fill(HIST("h_track_pt"), track.pt());
+      registry.fill(HIST("h_track_eta"), track.eta());
+      registry.fill(HIST("h_track_phi"), track.phi());
       if (track.pt() > leadingTrackpT)
         leadingTrackpT = track.pt();
     }
@@ -245,12 +251,28 @@ struct JetFinderQATask {
   void processJetsMCD(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet, JetTracks const& tracks)
   {
     fillHistograms(jet);
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt"), track.pt());
+      registry.fill(HIST("h_track_eta"), track.eta());
+      registry.fill(HIST("h_track_phi"), track.phi());
+    }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
   void processJetsMCDWeighted(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>::iterator const& jet, JetTracks const& tracks)
   {
     fillHistograms(jet, jet.eventWeight());
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt"), track.pt(), jet.eventWeight());
+      registry.fill(HIST("h_track_eta"), track.eta(), jet.eventWeight());
+      registry.fill(HIST("h_track_phi"), track.phi(), jet.eventWeight());
+    }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
