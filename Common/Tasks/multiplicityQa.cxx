@@ -205,7 +205,7 @@ struct MultiplicityQa {
         histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
 
         // 2d FT0 vs FV0 fill
-        histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFT0A(), col.multFT0A() + col.multFT0C());
+        histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFV0A(), col.multFT0A() + col.multFT0C());
       }
     }
   }
