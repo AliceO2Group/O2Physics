@@ -55,6 +55,7 @@ struct Alice3Dilepton {
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
@@ -225,7 +226,7 @@ struct Alice3Dilepton {
       if (((400 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 499) || (4000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 4999)) && ((400 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 499) || (4000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 4999))) { // mother is charm
 
         if (((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
-          return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
+          return kBCe_BCe;                                                                                                                                                                                                                                                                                                          // b->c->e and b->c->e, decay type = 1
         } else {
           return kCe_Ce; // prompt cc->ee, decay type = 0
         }
@@ -505,11 +506,12 @@ struct Alice3Dilepton {
   }   // end of processGen
 
   using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::TracksAlice3>;
-  Filter trackFilter = etaMin < o2::aod::track::eta &&
-                       o2::aod::track::eta < etaMax &&
-                       ptMin < o2::aod::track::pt &&
-                       o2::aod::track::pt < ptMax &&
-                       o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  // Filter trackFilter = etaMin < o2::aod::track::eta &&
+  //                      o2::aod::track::eta < etaMax &&
+  //                      ptMin < o2::aod::track::pt &&
+  //                      o2::aod::track::pt < ptMax &&
+  //                      o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -528,18 +530,30 @@ struct Alice3Dilepton {
 
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracks_coll) {
-        // if (!IsInAcceptance(neg) || !IsInAcceptance(pos)) {
-        //   continue;
-        // }// filtered already
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (useGen) {
+          if (!IsInAcceptance(mcParticle)) {
+            continue;
+          }
+        } else {
+          if (!IsInAcceptance(track)) {
+            continue;
+          }
+        }
 
         // if (fabs(track.nSigmaElectronOuterTOF())<3 ) {
         //   continue;
         // }
 
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
         if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
