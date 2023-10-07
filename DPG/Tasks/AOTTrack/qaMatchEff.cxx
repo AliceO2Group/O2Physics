@@ -45,6 +45,7 @@ struct qaMatchEff {
 
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> enableMonitorVsTime{"enableMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
+  Configurable<bool> enableTHnSparseMonitorVsTime{"enableTHnSparseMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
   //
   // histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1085,7 +1086,9 @@ struct qaMatchEff {
             if (track.has_collision()) {
               const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
               histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
-              histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+              if (enableTHnSparseMonitorVsTime) {
+                histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+              }
             }
           }
           //
@@ -1453,7 +1456,9 @@ struct qaMatchEff {
               if (track.has_collision()) {
                 const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
                 histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
-                histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+                if (enableTHnSparseMonitorVsTime) {
+                  histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+                }
               }
             }
             //
@@ -1867,10 +1872,14 @@ struct qaMatchEff {
       const AxisSpec axisItsClstVsTime{itsClstBinsVsTime, "TPC clusters"};
       // TPC tracks
       histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});
-      histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      if (enableTHnSparseMonitorVsTime) {
+        histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      }
       // ITS-TPC tracks
       histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds});
-      histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseD, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      if (enableTHnSparseMonitorVsTime) {
+        histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      }
 
       /// time monitoring correctly set up
       timeMonitorSetUp = true;

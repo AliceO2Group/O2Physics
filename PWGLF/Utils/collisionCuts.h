@@ -132,59 +132,6 @@ class CollisonCuts
     }
   }
 
-  /// Compute the spherocity of an event
-  /// Important here is that the filter on tracks does not interfere here!
-  /// In Run 2 we used here global tracks within |eta| < 0.8
-  /// \tparam T type of the tracks
-  /// \param tracks All tracks
-  /// \return value of the spherocity of the event
-  template <typename T>
-  float computeSpherocity(T const& tracks, int nTracksMin, int spdef)
-  {
-    // if number of tracks is not enough for spherocity estimation.
-    int ntrks = tracks.size();
-    if (ntrks < nTracksMin)
-      return -99.;
-
-    // start computing spherocity
-
-    float ptSum = 0.;
-    for (auto const& track : tracks) {
-      if (mHistogramRegistry) {
-        mHistogramRegistry->fill(HIST("Track/Phi"), track.phi());
-      }
-      if (spdef == 0) {
-        ptSum += 1.;
-      } else {
-        ptSum += track.pt();
-      }
-    }
-
-    float tempSph = 1.;
-    for (auto const& trk1 : tracks) {
-      float sum = 0., pt = 0.;
-      float phi1 = trk1.phi();
-      // float nx = TMath::Cos(phi1);
-      // float ny = TMath::Sin(phi1);
-      for (auto const& trk2 : tracks) {
-        pt = trk2.pt();
-        if (spdef == 0) {
-          pt = 1.;
-        }
-        float phi2 = trk2.phi();
-        // float px = pt * TMath::Cos(phi2);
-        // float py = pt * TMath::Sin(phi2);
-        sum += pt * abs(sin(phi1 - phi2));
-        // sum += TMath::Abs(px*ny - py*nx);
-      }
-      float sph = TMath::Power((sum / ptSum), 2);
-      if (sph < tempSph)
-        tempSph = sph;
-    }
-
-    return TMath::Power(TMath::Pi() / 2., 2) * tempSph;
-  }
-
  private:
   HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
   bool mCutsSet = false;                           ///< Protection against running without cuts
