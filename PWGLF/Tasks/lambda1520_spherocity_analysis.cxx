@@ -37,8 +37,8 @@ const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 struct lambdaAnalysis {
 
   // Configurables.
-  Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms"};
+  Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 320, "N bins in InvMass histograms"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -54,18 +54,18 @@ struct lambdaAnalysis {
   // TPC TOF Protons
   Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.2, "max pT for tpc protons"};
   Configurable<float> tpcNSigmaProton{"tpcNSigmaProton", 3, "nsigma tpc for Proton when Tof signal is present"};
-  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 0.7, 1.2}, "pT dependent TPC cuts protons"};
-  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {4, 3, 2}, "TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 0.57, 0.68, 0.80, 0.87, 1.0}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {5.5, 3.5, 2.5, 2.0, 1.5, 1.0}, "TPC cuts protons"};
   Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {36.}, "pT dependent TOF cuts protons"};
-  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDCut", {4}, "TOF cuts protons"};
 
   // TPC TOF Kaons
   Configurable<float> tpcKaonMaxPt{"tpcKaonMaxPt", 0.6, "max pT for tpc kaons"};
   Configurable<float> tpcNSigmaKaon{"tpcNSigmaKaon", 3, "nsigma tpc for Kaon when Tof signal is present"};
-  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.25, 0.4, 0.6}, "pT dependent TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {4, 3, 2}, "TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.225, 0.267, 0.35, 0.450, 0.50}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {6, 5, 3, 2.5, 2.}, "TPC cuts kaons"};
   Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {36.}, "pT dependent TOF cuts kaons"};
-  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {4}, "TOF cuts kaons"};
 
   // Event Mixing.
   Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
@@ -81,22 +81,22 @@ struct lambdaAnalysis {
 
     // Define Axis.
     const AxisSpec axisSp(100, 0., 1., "S_{0}");
-    const AxisSpec axisCent(105, 0, 105, "V0M (%)");
-    const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
+    const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
+    const AxisSpec axisPtQA(40, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
     const AxisSpec axisEta(200, -1, 1, "#eta");
-    const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
+    const AxisSpec axisDCAz(440, -1.1, 1.1, {"DCA_{z} (cm)"});
     const AxisSpec axisDCAxy(240, -0.12, 0.12, {"DCA_{xy} (cm)"});
     const AxisSpec axisTPCNCls(200, 0, 200, {"TPCNCls"});
-    const AxisSpec axisTPCNsigma(28, -7, 7, {"n#sigma^{TPC}"});
-    const AxisSpec axisTOFNsigma(28, -7, 7, {"n#sigma^{TOF}"});
-    const AxisSpec axisInvM(nBinsInvM, 1.4, 2.4, {"M_{inv} (GeV/c^{2})"});
+    const AxisSpec axisTPCNsigma(140, -7, 7, {"n#sigma^{TPC}"});
+    const AxisSpec axisTOFNsigma(140, -7, 7, {"n#sigma^{TOF}"});
+    const AxisSpec axisInvM(nBinsInvM, 1.4, 3.0, {"M_{inv} (GeV/c^{2})"});
 
     // Create Histograms.
     // Event
-    histos.add("Event/hCent", "V0M (%)", kTH1F, {axisCent});
+    histos.add("Event/hCent", "FT0M (%)", kTH1F, {axisCent});
     histos.add("Event/hSph", "Event Spherocity", kTH1F, {axisSp});
-    histos.add("Event/hSpCent", "Spherocity vs V0M(%)", kTH2F, {axisCent, axisSp});
+    histos.add("Event/hSpCent", "Spherocity vs FT0M(%)", kTH2F, {axisCent, axisSp});
 
     // QA Before
     histos.add("QAbefore/Proton/hTPCNsigma", "n#sigma^{TPC} Protons", kTH2F, {axisPtQA, axisTPCNsigma});
@@ -127,11 +127,13 @@ struct lambdaAnalysis {
 
     // Lambda Invariant Mass
     histos.add("Analysis/hInvMass", "#Lambda(1520) M_{inv}", kTH1D, {axisInvM});
-    histos.add("Analysis/hInvMassLS", "Like Signs M_{inv}", kTH1D, {axisInvM});
+    histos.add("Analysis/hInvMassLS1", "Like Signs M_{inv} p K^{+}", kTH1D, {axisInvM});
+    histos.add("Analysis/hInvMassLS2", "Like Signs M_{inv} #bar{p} K^{-}", kTH1D, {axisInvM});
     histos.add("Analysis/hInvMassR", "Rotated Spectra", kTH1D, {axisInvM});
     histos.add("Analysis/hInvMassMix", "Mixed Events M_{inv}", kTH1D, {axisInvM});
     histos.add("Analysis/h4InvMass", "THn #Lambda(1520)", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
-    histos.add("Analysis/h4InvMassLS", "THn Like Signs", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/h4InvMassLS1", "THn Like Signs p K^{+}", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
+    histos.add("Analysis/h4InvMassLS2", "THn Like Signs #bar{p} K^{-}", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
     histos.add("Analysis/h4InvMassR", "THn Rotated", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
     histos.add("Analysis/h4InvMassMix", "THn Mixed Events", kTHnSparseD, {axisInvM, axisPt, axisSp, axisCent});
 
@@ -326,7 +328,7 @@ struct lambdaAnalysis {
           histos.fill(HIST("Analysis/hInvMass"), p.M());
           histos.fill(HIST("Analysis/h4InvMass"), p.M(), p.Pt(), sph, mult);
           if (doRotate) {
-            float theta = rn->Uniform(1.5, 3.0);
+            float theta = rn->Uniform(2.0, 2.5);
             p1.RotateZ(theta);
             p = p1 + p2;
             if (std::abs(p.Rapidity()) < 0.5) {
@@ -335,10 +337,14 @@ struct lambdaAnalysis {
             }
           }
         } else {
-          histos.fill(HIST("Analysis/hInvMassLS"), p.M());
-          histos.fill(HIST("Analysis/h4InvMassLS"), p.M(), p.Pt(), sph, mult);
+          if (trkPr.sign() == 1) {
+            histos.fill(HIST("Analysis/hInvMassLS1"), p.M());
+            histos.fill(HIST("Analysis/h4InvMassLS1"), p.M(), p.Pt(), sph, mult);            
+          } else {
+            histos.fill(HIST("Analysis/hInvMassLS2"), p.M());
+            histos.fill(HIST("Analysis/h4InvMassLS2"), p.M(), p.Pt(), sph, mult);
+          }
         }
-        continue;
       }
 
       if constexpr (mc) {
@@ -435,13 +441,13 @@ struct lambdaAnalysis {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
+  BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
 
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
     SameKindPair<resoCols, resoTracks, BinningType> pairs{binningPositions, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
       fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
