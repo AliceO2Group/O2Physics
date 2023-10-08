@@ -80,6 +80,7 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
+    const AxisSpec axisMult(100000, 0, 100000, "FT0M Mult");
     const AxisSpec axisSp(100, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
@@ -97,6 +98,7 @@ struct lambdaAnalysis {
     histos.add("Event/hCent", "FT0M (%)", kTH1F, {axisCent});
     histos.add("Event/hSph", "Event Spherocity", kTH1F, {axisSp});
     histos.add("Event/hSpCent", "Spherocity vs FT0M(%)", kTH2F, {axisCent, axisSp});
+    histos.add("Event/hSpMult", "Spherocity vs FT0M Mult", kTH2F, {axisMult, axisSp});
 
     // QA Before
     histos.add("QAbefore/Proton/hTPCNsigma", "n#sigma^{TPC} Protons", kTH2F, {axisPtQA, axisTPCNsigma});
@@ -393,6 +395,7 @@ struct lambdaAnalysis {
     histos.fill(HIST("Event/hCent"), collision.multV0M());
     histos.fill(HIST("Event/hSph"), collision.spherocity());
     histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
+    histos.fill(HIST("Event/hSpMult"), collision.multFT0(), collision.spherocity());
 
     fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
