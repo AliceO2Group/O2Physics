@@ -38,7 +38,7 @@ struct lambdaAnalysis {
 
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 320, "N bins in InvMass histograms"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histograms"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -82,15 +82,15 @@ struct lambdaAnalysis {
     // Define Axis.
     const AxisSpec axisSp(100, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
-    const AxisSpec axisPtQA(40, 0., 2., "p_{T} (GeV/c)");
+    const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
     const AxisSpec axisEta(200, -1, 1, "#eta");
-    const AxisSpec axisDCAz(440, -1.1, 1.1, {"DCA_{z} (cm)"});
+    const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
     const AxisSpec axisDCAxy(240, -0.12, 0.12, {"DCA_{xy} (cm)"});
     const AxisSpec axisTPCNCls(200, 0, 200, {"TPCNCls"});
     const AxisSpec axisTPCNsigma(140, -7, 7, {"n#sigma^{TPC}"});
     const AxisSpec axisTOFNsigma(140, -7, 7, {"n#sigma^{TOF}"});
-    const AxisSpec axisInvM(nBinsInvM, 1.4, 3.0, {"M_{inv} (GeV/c^{2})"});
+    const AxisSpec axisInvM(nBinsInvM, 1.4, 3.4, {"M_{inv} (GeV/c^{2})"});
 
     // Create Histograms.
     // Event
@@ -339,7 +339,7 @@ struct lambdaAnalysis {
         } else {
           if (trkPr.sign() == 1) {
             histos.fill(HIST("Analysis/hInvMassLS1"), p.M());
-            histos.fill(HIST("Analysis/h4InvMassLS1"), p.M(), p.Pt(), sph, mult);            
+            histos.fill(HIST("Analysis/h4InvMassLS1"), p.M(), p.Pt(), sph, mult);
           } else {
             histos.fill(HIST("Analysis/hInvMassLS2"), p.M());
             histos.fill(HIST("Analysis/h4InvMassLS2"), p.M(), p.Pt(), sph, mult);
