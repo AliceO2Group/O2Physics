@@ -122,6 +122,9 @@ struct JetFinderHFTask {
     jetFinder.jetPtMax = jetPtMax;
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
+    if (jetEtaMin < -98.0) {
+      jetFinder.jetEtaDefault = true;
+    }
     jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
