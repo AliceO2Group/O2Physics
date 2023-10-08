@@ -63,7 +63,7 @@ struct skimmerDalitzEE {
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
-  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 1.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -159,7 +159,7 @@ struct skimmerDalitzEE {
     if (abs(track.tpcNSigmaEl()) > maxTPCNsigmaEl) {
       return false;
     }
-    if (track.tpcNSigmaPi() < minTPCNsigmaPi) {
+    if (abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
       return false;
     }
     return true;
