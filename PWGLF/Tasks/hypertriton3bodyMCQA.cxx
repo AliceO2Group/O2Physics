@@ -44,8 +44,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCKa, aod::pidTPCPr>;
-using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::McTrackLabels>;
+// using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCDe, aod::pidTPCPr>;
+using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullPr, aod::McTrackLabels>;
 
 struct hypertriton3bodyQaMc {
   // Basic checks
@@ -153,7 +153,7 @@ struct hypertriton3bodyAnalysisMc {
   }
 
   // Selection criteria
-  Configurable<double> vtxcospa{"vtxcospa", 0.8, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> vtxcospa{"vtxcospa", 0.9, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"}; // loose cut
   Configurable<float> dcapiontopv{"dcapiontopv", .00, "DCA Pion To PV"};
   Configurable<float> etacut{"etacut", 1, "etacut"};
@@ -179,7 +179,7 @@ struct hypertriton3bodyAnalysisMc {
     for (auto& vtx : vtx3bodydatas) {
       // couldn't filter cosPA and radius variables (dynamic columns)
 
-      int lLabel = -1;
+      //int lLabel = -1;
       int lPDG = -1;
       float lPt = -1;
       double MClifetime = -1;
@@ -196,7 +196,7 @@ struct hypertriton3bodyAnalysisMc {
             for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
               for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
                 if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
-                  lLabel = lMother1.globalIndex();
+                  //lLabel = lMother1.globalIndex();
                   lPt = lMother1.pt();
                   lPDG = lMother1.pdgCode();
                   if ((lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) ||
@@ -363,7 +363,6 @@ struct hypertriton3bodyAnalysisMc {
       }
     }
   }
-  // PROCESS_SWITCH(hypertriton3bodyAnalysis, processRun3, "Process Run 3 data", true);
 };
 
 // check vtx3body with mclabels

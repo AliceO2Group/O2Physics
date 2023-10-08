@@ -149,7 +149,7 @@ struct hypertriton3bodyAnalysis {
   }
 
   // Selection criteria
-  Configurable<double> vtxcospa{"vtxcospa", 0.8, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> vtxcospa{"vtxcospa", 0.9, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"}; // loose cut
   Configurable<float> dcapiontopv{"dcapiontopv", .00, "DCA Pion To PV"};
   Configurable<float> etacut{"etacut", 1, "etacut"};
