@@ -103,7 +103,6 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hXY"))->Fill(obj.x(), obj.y());
     reinterpret_cast<TH2F*>(list->FindObject("hZX"))->Fill(obj.z(), obj.x());
     reinterpret_cast<TH2F*>(list->FindObject("hZY"))->Fill(obj.z(), obj.y());
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyEta"))->Fill(obj.eta(), obj.dcaXY());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyZ"))->Fill(obj.z(), obj.dcaXY());
   } else if constexpr (htype == EMHistType::kTrack) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
