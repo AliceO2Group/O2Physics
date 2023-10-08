@@ -47,7 +47,7 @@ using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct Pi0EtaToGammaGammaMC {
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
   using MyMCTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackMCLabels>;
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
