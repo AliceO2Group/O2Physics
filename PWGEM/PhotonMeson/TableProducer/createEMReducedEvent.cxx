@@ -40,6 +40,7 @@ struct createEMReducedEvent {
     kPCM = 0x1,
     kPHOS = 0x2,
     kEMC = 0x4,
+    kDalitzEE = 0x8,
     kUndef = -1,
   };
 
@@ -74,7 +75,7 @@ struct createEMReducedEvent {
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>;
 
   template <uint8_t system, typename TPCMs, typename TPHOSs, typename TEMCs, typename TDielectorns>
-  void processEvent(MyCollisions const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters, TDielectorns const& dileptons)
+  void processEvent(MyCollisions const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters, TDielectorns const& dielectrons)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -96,13 +97,6 @@ struct createEMReducedEvent {
         for (int iv0 = 0; iv0 < v0photons_coll.size(); iv0++) {
           v0kfeventid(event.lastIndex() + 1);
         }
-
-        auto dileptons_coll = dileptons.sliceBy(perCollision_dalitz, collision.globalIndex());
-        ng_dilepton = v0photons_coll.size();
-        registry.fill(HIST("hNGammas_DalitzEE"), ng_dilepton);
-        for (int iee = 0; iee < dileptons_coll.size(); iee++) {
-          dalitzeventid(event.lastIndex() + 1);
-        }
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
@@ -120,6 +114,15 @@ struct createEMReducedEvent {
           emceventid(event.lastIndex() + 1);
         }
       }
+      if constexpr (static_cast<bool>(system & kDalitzEE)) {
+        auto dielectrons_coll = dielectrons.sliceBy(perCollision_dalitz, collision.globalIndex());
+        ng_dilepton = dielectrons_coll.size();
+        registry.fill(HIST("hNGammas_DalitzEE"), ng_dilepton);
+        for (int iee = 0; iee < dielectrons_coll.size(); iee++) {
+          dalitzeventid(event.lastIndex() + 1);
+        }
+      }
+
       if (ng_pcm >= minN_PCM) {
         minN_any = true;
         registry.fill(HIST("hEventCounter"), 2);
@@ -156,9 +159,14 @@ struct createEMReducedEvent {
     } // end of collision loop
   }   // end of processEvent
 
-  void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::DalitzEEs const& dileptons)
+  void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons)
   {
-    processEvent<kPCM>(collisions, bcs, v0photons, nullptr, nullptr, dileptons);
+    processEvent<kPCM>(collisions, bcs, v0photons, nullptr, nullptr, nullptr);
+  }
+  void process_PCM_DalitzEE(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::DalitzEEs const& dielectrons)
+  {
+    const uint8_t sysflag = kPCM | kDalitzEE;
+    processEvent<sysflag>(collisions, bcs, v0photons, nullptr, nullptr, dielectrons);
   }
   void process_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
   {
@@ -168,36 +176,55 @@ struct createEMReducedEvent {
   {
     processEvent<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters, nullptr);
   }
-  void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::DalitzEEs const& dileptons)
+  void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
-    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr, dileptons);
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr, nullptr);
   }
-  void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dileptons)
+  void process_PCM_PHOS_DalitzEE(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::DalitzEEs const& dielectrons)
+  {
+    const uint8_t sysflag = kPCM | kPHOS | kDalitzEE;
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr, dielectrons);
+  }
+  void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
-    processEvent<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters, dileptons);
+    processEvent<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters, nullptr);
+  }
+  void process_PCM_EMC_DalitzEE(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dielectrons)
+  {
+    const uint8_t sysflag = kPCM | kEMC | kDalitzEE;
+    processEvent<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters, dielectrons);
   }
   void process_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
     processEvent<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters, nullptr);
   }
-  void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dileptons)
+  void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
-    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters, dileptons);
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters, nullptr);
+  }
+  void process_PCM_PHOS_EMC_DalitzEE(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::DalitzEEs const& dielectrons)
+  {
+    const uint8_t sysflag = kPCM | kPHOS | kEMC | kDalitzEE;
+    processEvent<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters, dielectrons);
   }
 
   void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(createEMReducedEvent, process_PCM, "create em event table for PCM", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_DalitzEE, "create em event table for PCM, DalitzEE", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PHOS, "create em event table for PHOS", false);
   PROCESS_SWITCH(createEMReducedEvent, process_EMC, "create em event table for EMCal", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS, "create em event table for PCM, PHOS", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS_DalitzEE, "create em event table for PCM, PHOS, DalitzEE", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PCM_EMC, "create em event table for PCM, EMCal", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_EMC_DalitzEE, "create em event table for PCM, EMCal, DalitzEE", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PHOS_EMC, "create em event table for PHOS, EMCal", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS_EMC, "create em event table for PCM, PHOS, EMCal", false);
+  PROCESS_SWITCH(createEMReducedEvent, process_PCM_PHOS_EMC_DalitzEE, "create em event table for PCM, PHOS, EMCal, DalitzEE", false);
   PROCESS_SWITCH(createEMReducedEvent, processDummy, "processDummy", true);
 };
 
