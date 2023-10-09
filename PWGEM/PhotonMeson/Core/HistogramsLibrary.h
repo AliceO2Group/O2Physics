@@ -97,6 +97,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcls2Nf"))->Fill(obj.tpcFoundOverFindableCls());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2TPC"))->Fill(obj.tpcChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2ITS"))->Fill(obj.itsChi2NCl());
+    reinterpret_cast<TH1F*>(list->FindObject("hITSClusterMap"))->Fill(obj.itsClusterMap());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCdEdx"))->Fill(obj.tpcInnerParam(), obj.tpcSignal());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaEl"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaPi"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaPi());
@@ -118,6 +119,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcls2Nf"))->Fill(obj.tpcFoundOverFindableCls());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2TPC"))->Fill(obj.tpcChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2ITS"))->Fill(obj.itsChi2NCl());
+    reinterpret_cast<TH1F*>(list->FindObject("hITSClusterMap"))->Fill(obj.itsClusterMap());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCdEdx"))->Fill(obj.tpcInnerParam(), obj.tpcSignal());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaEl"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaMu"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaMu());

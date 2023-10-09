@@ -42,9 +42,7 @@ using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct DalitzEEQCMC {
-
-  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "global_tpchadrejortofreq,nocut", "Comma separated list of dalitz ee cuts"};
-
+  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
   std::vector<DalitzEECut> fDalitzEECuts;
 
   OutputObj<THashList> fOutputEvent{"Event"};
