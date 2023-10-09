@@ -20,13 +20,19 @@ struct tracksextraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void process(aod::TracksExtra_000 const& tracksExtra_000)
   {
-    // dummy itsClusterSizes, table filled with maximum uint32_t value
-    uint32_t itsClusterSizes = 0xFFFFFFFF;
+    // dummy itsClusterSizes, fill with overflows if a hit in the layer is present
 
     for (auto& track0 : tracksExtra_000) {
+
+      uint32_t itsClusterSizes = 0;
+      for (int layer = 0; layer < 7; layer++) {
+        if (track0.itsClusterMap() & (1 << layer)) {
+          itsClusterSizes |= (0xf << (layer * 4));
+        }
+      }
+
       tracksExtra_001(track0.tpcInnerParam(),
                       track0.flags(),
-                      track0.itsClusterMap(),
                       itsClusterSizes,
                       track0.tpcNClsFindable(),
                       track0.tpcNClsFindableMinusFound(),
