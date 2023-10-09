@@ -983,7 +983,7 @@ struct AnalysisSameEventPairing {
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(t1, t2);
         }
@@ -1012,8 +1012,8 @@ struct AnalysisSameEventPairing {
                         VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
                         VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
                         VarManager::fgValues[VarManager::kCosPointingAngle],
-                        t1.pt(), t1.eta(), t1.phi(), t1.sign(),
-                        t2.pt(), t2.eta(), t2.phi(), t2.sign(),
+                        VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
+                        VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
                         t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
                         0., 0.,
                         t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
