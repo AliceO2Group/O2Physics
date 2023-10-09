@@ -21,15 +21,22 @@ enum eConfiguration {
   eConfiguration_N
 };
 
-enum eRecoSim { eRec = 0, eSim = 1 };
+enum eRecoSim { eRec = 0,
+                eSim = 1 };
 
-enum eBeforeAfter { eBefore = 0, eAfter = 1 };
+enum eBeforeAfter { eBefore = 0,
+                    eAfter = 1 };
 
-enum eMinMax { eMin = 0, eMax = 1 };
+enum eMinMax { eMin = 0,
+               eMax = 1 };
 
-enum eDefaultColors { eColor = kBlack, eFillColor = kGray };
+enum eDefaultColors { eColor = kBlack,
+                      eFillColor = kGray };
 
-enum eWeights { wPHI = 0, wPT = 1, wETA = 2, eWeights_N };
+enum eWeights { wPHI = 0,
+                wPT = 1,
+                wETA = 2,
+                eWeights_N };
 
 enum eEventHistograms {
   eNumberOfEvents,

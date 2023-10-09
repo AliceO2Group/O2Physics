@@ -16,21 +16,21 @@
 
 // Task configuration:
 Configurable<string> cfTaskName{
-    "cfTaskName", "Default task name",
-    "set task name - use eventually to determine weights for this task"};
+  "cfTaskName", "Default task name",
+  "set task name - use eventually to determine weights for this task"};
 Configurable<string> cfRunNumber{
-    "cfRunNumber", "Some run number",
-    "set run number - TBI temporarily here, this shall be eventually "
-    "automatically obtained from e.g. collision.bc().runNumber()"};
+  "cfRunNumber", "Some run number",
+  "set run number - TBI temporarily here, this shall be eventually "
+  "automatically obtained from e.g. collision.bc().runNumber()"};
 Configurable<bool> cfVerbose{
-    "cfVerbose", false,
-    "run or not in verbose mode (but not for function calls per particle)"};
+  "cfVerbose", false,
+  "run or not in verbose mode (but not for function calls per particle)"};
 Configurable<bool> cfVerboseForEachParticle{
-    "cfVerboseForEachParticle", false,
-    "run or not in verbose mode (also for function calls per particle)"};
+  "cfVerboseForEachParticle", false,
+  "run or not in verbose mode (also for function calls per particle)"};
 Configurable<bool> cfUseCCDB{
-    "cfUseCCDB", true,
-    "access personal files from CCDB or from home dir in AliEn"};
+  "cfUseCCDB", true,
+  "access personal files from CCDB or from home dir in AliEn"};
 
 // Test0:
 Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
@@ -42,9 +42,9 @@ Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
 // "/alice/cern.ch/user/a/abilandz/labels.root", "path to external ROOT file
 // which specifies all labels"};
 Configurable<string> cfFileWithLabels{
-    "cfFileWithLabels", "/alice-ccdb.cern.ch/Users/a/abilandz/test-4",
-    "path to CCDB dir (not file!) containing ROOT file which specifies all "
-    "labels"};
+  "cfFileWithLabels", "/alice-ccdb.cern.ch/Users/a/abilandz/test-4",
+  "path to CCDB dir (not file!) containing ROOT file which specifies all "
+  "labels"};
 
 // Particle weights:
 Configurable<bool> cfUsePhiWeights{"cfUsePhiWeights", false,
@@ -60,26 +60,26 @@ Configurable<bool> cfUseEtaWeights{"cfUseEtaWeights", false,
 // "/alice/cern.ch/user/a/abilandz/O2/weights.root", "path to external ROOT file
 // which holds all particle weights in O2 format"};
 Configurable<string> cfFileWithWeights{
-    "cfFileWithWeights", "/alice-ccdb.cern.ch/Users/a/abilandz/test-8",
-    "path to CCDB dir (not file!) containing ROOT file which holds all "
-    "particle weights in O2 format"};
+  "cfFileWithWeights", "/alice-ccdb.cern.ch/Users/a/abilandz/test-8",
+  "path to CCDB dir (not file!) containing ROOT file which holds all "
+  "particle weights in O2 format"};
 
 // Event cuts:
 Configurable<int> cNumberOfEvents_min{
-    "cNumberOfEvents_min", -1,
-    "minimum number of events to process (set to -1 to ignore)"};
+  "cNumberOfEvents_min", -1,
+  "minimum number of events to process (set to -1 to ignore)"};
 Configurable<int> cNumberOfEvents_max{"cNumberOfEvents_max", 1000000000,
                                       "maximum number of events to process"};
 Configurable<int> cTotalMultiplicity_min{
-    "cTotalMultiplicity_min", -1,
-    "minimum total multiplicity of an event to be processed (set to -1 to "
-    "ignore)"};
+  "cTotalMultiplicity_min", -1,
+  "minimum total multiplicity of an event to be processed (set to -1 to "
+  "ignore)"};
 Configurable<int> cTotalMultiplicity_max{
-    "cTotalMultiplicity_max", 1000000000,
-    "maximum total multiplicity of an event to be processed"};
+  "cTotalMultiplicity_max", 1000000000,
+  "maximum total multiplicity of an event to be processed"};
 Configurable<int> cSelectedTracks_min{
-    "cSelectedTracks_min", -1,
-    "minimum number of selected tracks (set to -1 to ignore)"};
+  "cSelectedTracks_min", -1,
+  "minimum number of selected tracks (set to -1 to ignore)"};
 Configurable<int> cSelectedTracks_max{"cSelectedTracks_max", 1000000000,
                                       "maximum number of selected tracks"};
 Configurable<float> cCentrality_min{"cCentrality_min", 0.,
@@ -99,8 +99,8 @@ Configurable<float> cVertex_z_min{"cVertex_z_min", -10.0,
 Configurable<float> cVertex_z_max{"cVertex_z_max", 10.0,
                                   "maximum vertex z range [cm]"};
 Configurable<int> cNContributors_min{
-    "cNContributors_min", -1,
-    "minimum number of vertex contributors (set to -1 to ignore)"};
+  "cNContributors_min", -1,
+  "minimum number of vertex contributors (set to -1 to ignore)"};
 Configurable<int> cNContributors_max{"cNContributors_max", 1000000000,
                                      "maximum number of vertex contributors"};
 

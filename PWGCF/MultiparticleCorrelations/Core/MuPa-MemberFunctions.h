@@ -81,14 +81,15 @@
 
 //============================================================
 
-void BookBaseList() {
+void BookBaseList()
+{
   // ...
 
   if (fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  TList *temp = new TList();
+  TList* temp = new TList();
   temp->SetOwner(kTRUE);
   fBaseList.setObject(temp);
   // fBaseList.object->SetName("4444");
@@ -119,7 +120,8 @@ void BookBaseList() {
 
 //============================================================
 
-void DefaultConfiguration() {
+void DefaultConfiguration()
+{
   // Default task configuration.
   // a) Default values are hardcoded as Configurables in the file
   // MuPa-Configurables.h b) If corresponding fields are available in an
@@ -197,7 +199,8 @@ void DefaultConfiguration() {
 
 //============================================================
 
-void DefaultBooking() {
+void DefaultBooking()
+{
   // Set here which histograms are booked by default.
 
   // a) Event histograms;
@@ -237,7 +240,8 @@ void DefaultBooking() {
 
 //============================================================
 
-void DefaultBinning() {
+void DefaultBinning()
+{
   // Default binning for all histograms.
 
   // a) Default binning for event histograms;
@@ -301,7 +305,8 @@ void DefaultBinning() {
 
 //============================================================
 
-void DefaultCuts() {
+void DefaultCuts()
+{
   // Define default cuts. Default cuts are hardwired in MuPa-Configurables.h.
 
   // a) Default event cuts;
@@ -313,11 +318,11 @@ void DefaultCuts() {
 
   // a) Default event cuts:
   ceh_a.fEventCuts[eNumberOfEvents][eMin] =
-      cNumberOfEvents_min; // Configurable<int>
-                           // cNumberOfEvents_min{"cNumberOfEvents_min", ...
+    cNumberOfEvents_min; // Configurable<int>
+                         // cNumberOfEvents_min{"cNumberOfEvents_min", ...
   ceh_a.fEventCuts[eNumberOfEvents][eMax] =
-      cNumberOfEvents_max; // Configurable<int>
-                           // cNumberOfEvents_max{"cNumberOfEvents_max", ...
+    cNumberOfEvents_max; // Configurable<int>
+                         // cNumberOfEvents_max{"cNumberOfEvents_max", ...
 
   ceh_a.fEventCuts[eTotalMultiplicity][eMin] = cTotalMultiplicity_min; // Configurable<int>
                                                                        // cTotalMultiplicity_min{"cTotalMultiplicity_min",
@@ -327,40 +332,40 @@ void DefaultCuts() {
                                                                        // ...
 
   ceh_a.fEventCuts[eSelectedTracks][eMin] =
-      cSelectedTracks_min; // Configurable<int>
-                           // cSelectedTracks_min{"cSelectedTracks_min", ...
+    cSelectedTracks_min; // Configurable<int>
+                         // cSelectedTracks_min{"cSelectedTracks_min", ...
   ceh_a.fEventCuts[eSelectedTracks][eMax] =
-      cSelectedTracks_max; // Configurable<int>
-                           // cSelectedTracks_max{"cSelectedTracks_max", ...
+    cSelectedTracks_max; // Configurable<int>
+                         // cSelectedTracks_max{"cSelectedTracks_max", ...
 
   ceh_a.fEventCuts[eCentrality][eMin] =
-      cCentrality_min; // Configurable<int> cCentrality_min{"cCentrality_min",
-                       // ...
+    cCentrality_min; // Configurable<int> cCentrality_min{"cCentrality_min",
+                     // ...
   ceh_a.fEventCuts[eCentrality][eMax] =
-      cCentrality_max; // Configurable<int> cCentrality_max{"cCentrality_max",
-                       // ...
+    cCentrality_max; // Configurable<int> cCentrality_max{"cCentrality_max",
+                     // ...
 
   ceh_a.fEventCuts[eVertex_x][eMin] =
-      cVertex_x_min; // Configurable<int> cVertex_x_min{"cVertex_x_min", ...
+    cVertex_x_min; // Configurable<int> cVertex_x_min{"cVertex_x_min", ...
   ceh_a.fEventCuts[eVertex_x][eMax] =
-      cVertex_x_max; // Configurable<int> cVertex_x_max{"cVertex_x_max", ...
+    cVertex_x_max; // Configurable<int> cVertex_x_max{"cVertex_x_max", ...
 
   ceh_a.fEventCuts[eVertex_y][eMin] =
-      cVertex_y_min; // Configurable<int> cVertex_y_min{"cVertex_y_min", ...
+    cVertex_y_min; // Configurable<int> cVertex_y_min{"cVertex_y_min", ...
   ceh_a.fEventCuts[eVertex_y][eMax] =
-      cVertex_y_max; // Configurable<int> cVertex_y_max{"cVertex_y_max", ...
+    cVertex_y_max; // Configurable<int> cVertex_y_max{"cVertex_y_max", ...
 
   ceh_a.fEventCuts[eVertex_z][eMin] =
-      cVertex_z_min; // Configurable<int> cVertex_z_min{"cVertex_z_min", ...
+    cVertex_z_min; // Configurable<int> cVertex_z_min{"cVertex_z_min", ...
   ceh_a.fEventCuts[eVertex_z][eMax] =
-      cVertex_z_max; // Configurable<int> cVertex_z_max{"cVertex_z_max", ...
+    cVertex_z_max; // Configurable<int> cVertex_z_max{"cVertex_z_max", ...
 
   ceh_a.fEventCuts[eNContributors][eMin] =
-      cNContributors_min; // Configurable<int>
-                          // cNContributors_min{"cNContributors_min", ...
+    cNContributors_min; // Configurable<int>
+                        // cNContributors_min{"cNContributors_min", ...
   ceh_a.fEventCuts[eNContributors][eMax] =
-      cNContributors_max; // Configurable<int>
-                          // cNContributors_max{"cNContributors_max", ...
+    cNContributors_max; // Configurable<int>
+                        // cNContributors_max{"cNContributors_max", ...
 
   // ...
 
@@ -370,7 +375,8 @@ void DefaultCuts() {
 
 //============================================================
 
-void BookAndNestAllLists() {
+void BookAndNestAllLists()
+{
   // *) QA;
   // *) Control event histograms;
   // *) Control particle histograms;
@@ -443,7 +449,8 @@ void BookAndNestAllLists() {
 
 //============================================================
 
-void BookEventHistograms() {
+void BookEventHistograms()
+{
   // Book all event histograms.
 
   // a) Book the profile holding flags;
@@ -463,15 +470,15 @@ void BookEventHistograms() {
   fEventHistogramsList->Add(fEventHistogramsPro);
 
   Int_t fBeforeAfterColor[2] = {
-      kRed,
-      kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
+    kRed,
+    kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
   // b) Book specific control event histograms:
   TString stype[eEventHistograms_N] = {
-      "NumberOfEvents", "TotalMultiplicity", "SelectedTracks",
-      "Centrality",     "Vertex_x",          "Vertex_y",
-      "Vertex_z",       "NContributors"}; // keep in sync. with enum
-                                          // eEventHistograms
+    "NumberOfEvents", "TotalMultiplicity", "SelectedTracks",
+    "Centrality", "Vertex_x", "Vertex_y",
+    "Vertex_z", "NContributors"}; // keep in sync. with enum
+                                  // eEventHistograms
   TString srs[2] = {"rec", "sim"};
   TString sba[2] = {"before", "after"};
 
@@ -486,11 +493,11 @@ void BookEventHistograms() {
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
         ceh_a.fEventHistograms[t][rs][ba] = new TH1D(
-            Form("fEventHistograms[%s][%s][%s]", stype[t].Data(),
-                 srs[rs].Data(), sba[ba].Data()),
-            Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
-            (Int_t)ceh_a.fEventHistogramsBins[t][0],
-            ceh_a.fEventHistogramsBins[t][1], ceh_a.fEventHistogramsBins[t][2]);
+          Form("fEventHistograms[%s][%s][%s]", stype[t].Data(),
+               srs[rs].Data(), sba[ba].Data()),
+          Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
+          (Int_t)ceh_a.fEventHistogramsBins[t][0],
+          ceh_a.fEventHistogramsBins[t][1], ceh_a.fEventHistogramsBins[t][2]);
         ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
         ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] -
                                                         10);
@@ -504,7 +511,8 @@ void BookEventHistograms() {
 
 //============================================================
 
-void BookParticleHistograms() {
+void BookParticleHistograms()
+{
   // Book all particle histograms.
 
   // a) Book the profile holding flags;
@@ -516,7 +524,7 @@ void BookParticleHistograms() {
 
   // a) Book the profile holding flags:
   fParticleHistogramsPro = new TProfile(
-      "fParticleHistogramsPro", "flags for particle histograms", 25, 0., 25.);
+    "fParticleHistogramsPro", "flags for particle histograms", 25, 0., 25.);
   fParticleHistogramsPro->SetStats(kFALSE);
   fParticleHistogramsPro->SetLineColor(eColor);
   fParticleHistogramsPro->SetFillColor(eFillColor);
@@ -524,13 +532,13 @@ void BookParticleHistograms() {
   fParticleHistogramsList->Add(fParticleHistogramsPro);
 
   Int_t fBeforeAfterColor[2] = {
-      kRed,
-      kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
+    kRed,
+    kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
   // b) Book specific control particle histograms:
   TString stype[eParticleHistograms_N] = {
-      "Phi",    "Pt",   "Eta", "tpcNClsCrossedRows",
-      "DCA_xy", "DCA_z"}; // keep in sync. with enum eParticleHistograms
+    "Phi", "Pt", "Eta", "tpcNClsCrossedRows",
+    "DCA_xy", "DCA_z"}; // keep in sync. with enum eParticleHistograms
   TString srs[2] = {"rec", "sim"};
   TString sba[2] = {"before", "after"};
 
@@ -545,16 +553,16 @@ void BookParticleHistograms() {
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
         cph_a.fParticleHistograms[t][rs][ba] = new TH1D(
-            Form("fParticleHistograms[%s][%s][%s]", stype[t].Data(),
-                 srs[rs].Data(), sba[ba].Data()),
-            Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
-            (Int_t)cph_a.fParticleHistogramsBins[t][0],
-            cph_a.fParticleHistogramsBins[t][1],
-            cph_a.fParticleHistogramsBins[t][2]);
+          Form("fParticleHistograms[%s][%s][%s]", stype[t].Data(),
+               srs[rs].Data(), sba[ba].Data()),
+          Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
+          (Int_t)cph_a.fParticleHistogramsBins[t][0],
+          cph_a.fParticleHistogramsBins[t][1],
+          cph_a.fParticleHistogramsBins[t][2]);
         cph_a.fParticleHistograms[t][rs][ba]->SetLineColor(
-            fBeforeAfterColor[ba]);
+          fBeforeAfterColor[ba]);
         cph_a.fParticleHistograms[t][rs][ba]->SetFillColor(
-            fBeforeAfterColor[ba] - 10);
+          fBeforeAfterColor[ba] - 10);
         fParticleHistogramsList->Add(cph_a.fParticleHistograms[t][rs][ba]);
       } // for(Int_t ba=0;ba<2;ba++)
     }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
@@ -565,7 +573,8 @@ void BookParticleHistograms() {
 
 //============================================================
 
-void BookQvectorHistograms() {
+void BookQvectorHistograms()
+{
   // Book all Q-vector histograms.
 
   // a) Book the profile holding flags;
@@ -577,7 +586,7 @@ void BookQvectorHistograms() {
 
   // a) Book the profile holding flags:
   fQvectorFlagsPro =
-      new TProfile("fQvectorFlagsPro", "flags for Q-vector objects", 3, 0., 3.);
+    new TProfile("fQvectorFlagsPro", "flags for Q-vector objects", 3, 0., 3.);
   fQvectorFlagsPro->SetStats(kFALSE);
   fQvectorFlagsPro->SetLineColor(eColor);
   fQvectorFlagsPro->SetFillColor(eFillColor);
@@ -596,7 +605,8 @@ void BookQvectorHistograms() {
 
 //============================================================
 
-void BookCorrelationsHistograms() {
+void BookCorrelationsHistograms()
+{
   // Book all correlations histograms.
 
   // a) Book the profile holding flags;
@@ -625,11 +635,11 @@ void BookCorrelationsHistograms() {
 
   // b) Common local labels:
   TString oVariable[4] = {
-      "#varphi_{1}-#varphi_{2}",
-      "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
-      "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
-      "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
-      "#varphi_{7}-#varphi_{8}"};
+    "#varphi_{1}-#varphi_{2}",
+    "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
+    "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
+    "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
+    "#varphi_{7}-#varphi_{8}"};
 
   TString vvVariable[3] = {"int", "mult", "cent"};
 
@@ -646,15 +656,15 @@ void BookCorrelationsHistograms() {
         // c_a.fCorrelationsPro[k][n][v] = new
         // TProfile(Form("c_a.fCorrelationsPro[%d][%d][%s]",k,n,vvVariable[v].Data()),harmonicArray.Data(),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
         c_a.fCorrelationsPro[k][n][v] = new TProfile(
-            Form("fCorrelationsPro[%d][%d][%s]", k, n, vvVariable[v].Data()),
-            "some title", 2000, 0., 2000.);
+          Form("fCorrelationsPro[%d][%d][%s]", k, n, vvVariable[v].Data()),
+          "some title", 2000, 0., 2000.);
         c_a.fCorrelationsPro[k][n][v]->SetStats(kFALSE);
         c_a.fCorrelationsPro[k][n][v]->Sumw2();
         c_a.fCorrelationsPro[k][n][v]->GetXaxis()->SetTitle(
-            vvVariable[v].Data());
+          vvVariable[v].Data());
         c_a.fCorrelationsPro[k][n][v]->GetYaxis()->SetTitle(
-            Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
-                 oVariable[k].Data()));
+          Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
+               oVariable[k].Data()));
         fCorrelationsList->Add(c_a.fCorrelationsPro[k][n][v]);
       }
     }
@@ -664,7 +674,8 @@ void BookCorrelationsHistograms() {
 
 //============================================================
 
-void BookWeightsHistograms() {
+void BookWeightsHistograms()
+{
   // Book all objects for particle weights.
 
   // a) Book the profile holding flags;
@@ -677,7 +688,7 @@ void BookWeightsHistograms() {
 
   // a) Book the profile holding flags:
   fWeightsFlagsPro =
-      new TProfile("fWeightsFlagsPro", "flags for particle weights", 3, 0., 3.);
+    new TProfile("fWeightsFlagsPro", "flags for particle weights", 3, 0., 3.);
   fWeightsFlagsPro->SetStats(kFALSE);
   fWeightsFlagsPro->SetLineColor(eColor);
   fWeightsFlagsPro->SetFillColor(eFillColor);
@@ -709,9 +720,9 @@ void BookWeightsHistograms() {
       // pw_a.fWeightsHist[w] = new
       // TH1D(Form("fWeightsHist[%d]",w),"",(Int_t)fKinematicsBins[w][0],fKinematicsBins[w][1],fKinematicsBins[w][2]);
       pw_a.fWeightsHist[w] =
-          new TH1D(Form("fWeightsHist[%d]", w), "", 200, -100., 100.);
+        new TH1D(Form("fWeightsHist[%d]", w), "", 200, -100., 100.);
       pw_a.fWeightsHist[w]->SetTitle(
-          Form("Particle weights for %s", sWeights[w].Data()));
+        Form("Particle weights for %s", sWeights[w].Data()));
       pw_a.fWeightsHist[w]->SetStats(kFALSE);
       pw_a.fWeightsHist[w]->GetXaxis()->SetTitle(sVariable[w].Data());
       pw_a.fWeightsHist[w]->SetFillColor(eFillColor);
@@ -724,7 +735,8 @@ void BookWeightsHistograms() {
 
 //============================================================
 
-void BookNestedLoopsHistograms() {
+void BookNestedLoopsHistograms()
+{
   // Book all nested loops histograms.
 
   // a) Book the profile holding flags;
@@ -736,7 +748,7 @@ void BookNestedLoopsHistograms() {
 
   // a) Book the profile holding flags:
   fNestedLoopsFlagsPro =
-      new TProfile("fNestedLoopsFlagsPro", "flags for nested loops", 2, 0., 2.);
+    new TProfile("fNestedLoopsFlagsPro", "flags for nested loops", 2, 0., 2.);
   fNestedLoopsFlagsPro->SetStats(kFALSE);
   fNestedLoopsFlagsPro->GetXaxis()->SetLabelSize(0.05);
   fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateNestedLoops");
@@ -750,9 +762,9 @@ void BookNestedLoopsHistograms() {
 
   const Int_t iMaxSize = 2e4;
   nl_a.ftaNestedLoops[0] =
-      new TArrayD(iMaxSize); // ebe container for azimuthal angles
+    new TArrayD(iMaxSize); // ebe container for azimuthal angles
   nl_a.ftaNestedLoops[1] = new TArrayD(
-      iMaxSize); // ebe container for particle weights (product of all)
+    iMaxSize); // ebe container for particle weights (product of all)
 
   // TBI 20220823 port here if(fCalculatePtCorrelations) { ... } and
   // if(fCalculateEtaCorrelations) { ... }
@@ -763,11 +775,11 @@ void BookNestedLoopsHistograms() {
 
   // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms())
   TString oVariable[4] = {
-      "#varphi_{1}-#varphi_{2}",
-      "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
-      "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
-      "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
-      "#varphi_{7}-#varphi_{8}"};
+    "#varphi_{1}-#varphi_{2}",
+    "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
+    "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
+    "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
+    "#varphi_{7}-#varphi_{8}"};
 
   /*
   Int_t vvvariableNBins[5] =
@@ -816,15 +828,15 @@ void BookNestedLoopsHistograms() {
         // fNestedLoopsPro[k][n][v] = new
         // TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
         nl_a.fNestedLoopsPro[k][n][v] = new TProfile(
-            Form("fNestedLoopsPro[%d][%d][%d]", k, n, v),
-            Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
-                 oVariable[k].Data()),
-            2000, 0., 2000.);
+          Form("fNestedLoopsPro[%d][%d][%d]", k, n, v),
+          Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
+               oVariable[k].Data()),
+          2000, 0., 2000.);
         // } // else
         nl_a.fNestedLoopsPro[k][n][v]->SetStats(kFALSE);
         nl_a.fNestedLoopsPro[k][n][v]->Sumw2();
         nl_a.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(
-            vvVariable[v].Data());
+          vvVariable[v].Data());
         // fNestedLoopsPro[k][n][v]->SetFillColor(colorsW[v]-10);
         // fNestedLoopsPro[k][n][v]->SetLineColor(colorsW[v]);
         /*
@@ -847,7 +859,8 @@ void BookNestedLoopsHistograms() {
 
 //============================================================
 
-void BookTest0Histograms() {
+void BookTest0Histograms()
+{
   // Book all Test0 histograms.
 
   // a) Book the profile holding flags;
@@ -887,7 +900,8 @@ void BookTest0Histograms() {
 
 //============================================================
 
-void BookResultsHistograms() {
+void BookResultsHistograms()
+{
   // Book all results histograms.
 
   // a) Book the profile holding flags;
@@ -914,7 +928,8 @@ void BookResultsHistograms() {
 
 //============================================================
 
-void ResetEventByEventQuantities() {
+void ResetEventByEventQuantities()
+{
   // Reset all global event-by-event quantities here:
 
   // a) Event-by-event quantities;
@@ -963,7 +978,8 @@ void ResetEventByEventQuantities() {
 
 // Bool_t EventCuts(aod::Collision const& collision, soa::Join<aod::Tracks,
 // aod::TracksExtra, aod::TracksDCA> const& tracks)
-Bool_t EventCuts(aod::Collision const &collision, aod::Tracks const &tracks) {
+Bool_t EventCuts(aod::Collision const& collision, aod::Tracks const& tracks)
+{
   // ...
 
   if (fVerbose) {
@@ -1020,8 +1036,8 @@ Bool_t EventCuts(aod::Collision const &collision, aod::Tracks const &tracks) {
 // soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks, const
 // Int_t rs, const Int_t ba) // reco or sim, before or after event cuts
 void FillEventHistograms(
-    aod::Collision const &collision, aod::Tracks const &tracks, const Int_t rs,
-    const Int_t ba) // reco or sim, before or after event cuts
+  aod::Collision const& collision, aod::Tracks const& tracks, const Int_t rs,
+  const Int_t ba) // reco or sim, before or after event cuts
 {
   // Fill all event histograms.
 
@@ -1040,12 +1056,12 @@ void FillEventHistograms(
   ceh_a.fEventHistograms[eNContributors][rs][ba]->Fill(collision.numContrib());
 
 } // void FillEventHistograms(aod::Collision const& collision, aod::Tracks
-  // const& tracks, const Int_t rs, const Int_t ba); // reco or sim, before or
-  // after event cuts
+// const& tracks, const Int_t rs, const Int_t ba); // reco or sim, before or
+// after event cuts
 
 //============================================================
 
-Bool_t ParticleCuts(aod::Track const &track)
+Bool_t ParticleCuts(aod::Track const& track)
 // Bool_t ParticleCuts(auto const& track)
 {
   // ...
@@ -1067,8 +1083,8 @@ Bool_t ParticleCuts(aod::Track const &track)
 // void FillParticleHistograms(auto const& track, const Int_t rs, const Int_t
 // ba) // reco or sim, before or after particle cuts
 void FillParticleHistograms(
-    aod::Track const &track, const Int_t rs,
-    const Int_t ba) // reco or sim, before or after particle cuts
+  aod::Track const& track, const Int_t rs,
+  const Int_t ba) // reco or sim, before or after particle cuts
 {
   // Fill all particle histograms.
 
@@ -1091,11 +1107,12 @@ void FillParticleHistograms(
   */
 
 } // void FillParticleHistograms(aod::Track const& track, const Int_t rs, const
-  // Int_t ba); // reco or sim, before or after particle cuts
+// Int_t ba); // reco or sim, before or after particle cuts
 
 //============================================================
 
-void CalculateCorrelations() {
+void CalculateCorrelations()
+{
   // Calculate analytically multiparticle correlations from Q-vectors
   // In this method, only isotropic correlations for which all harmonics are the
   // same are evaluated. For the calculus of generic multiparticle correlations,
@@ -1129,8 +1146,8 @@ void CalculateCorrelations() {
     Double_t twoC = two.Re(); // cos
     // Double_t twoS = two.Im(); // sin
     Double_t wTwo =
-        Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
-                        // 20220809 add support for other weights
+      Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
+                      // 20220809 add support for other weights
     if (wTwo > 0.0) {
       twoC /= wTwo;
     } else {
@@ -1192,7 +1209,8 @@ void CalculateCorrelations() {
 
 //============================================================
 
-void CalculateNestedLoops() {
+void CalculateNestedLoops()
+{
   // Calculate correlations with nested loops.
 
   if (fVerbose) {
@@ -1234,18 +1252,18 @@ void CalculateNestedLoops() {
         // fill cos, 2p, integreated:
         if (nl_a.fNestedLoopsPro[0][h][0]) {
           nl_a.fNestedLoopsPro[0][h][0]->Fill(
-              0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. M:
         if (nl_a.fNestedLoopsPro[0][h][1]) {
           nl_a.fNestedLoopsPro[0][h][1]->Fill(
-              fSelectedTracks + 0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)),
-              dW1 * dW2);
+            fSelectedTracks + 0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)),
+            dW1 * dW2);
         }
         // fill cos, 2p, vs. centrality:
         if (nl_a.fNestedLoopsPro[0][h][2]) {
           nl_a.fNestedLoopsPro[0][h][2]->Fill(
-              fCentrality, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            fCentrality, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
       } // for(int h=1; h<=6; h++)
     }   // for(int i2=0; i2<nParticles; i2++)
@@ -1257,7 +1275,8 @@ void CalculateNestedLoops() {
 
 //============================================================
 
-void ComparisonNestedLoopsVsCorrelations() {
+void ComparisonNestedLoopsVsCorrelations()
+{
   // Make a ratio fNestedLoopsPro[....]/fCorrelationsPro[....]. If results are
   // the same, these ratios must be 1.
 
@@ -1314,7 +1333,8 @@ void ComparisonNestedLoopsVsCorrelations() {
 
 //============================================================
 
-TComplex Q(Int_t n, Int_t wp) {
+TComplex Q(Int_t n, Int_t wp)
+{
   // Using the fact that Q{-n,p} = Q{n,p}^*.
 
   if (n >= 0) {
@@ -1326,7 +1346,8 @@ TComplex Q(Int_t n, Int_t wp) {
 
 //============================================================
 
-TComplex One(Int_t n1) {
+TComplex One(Int_t n1)
+{
   // Generic expression <exp[i(n1*phi1)]>.
 
   TComplex one = Q(n1, 1);
@@ -1337,7 +1358,8 @@ TComplex One(Int_t n1) {
 
 //============================================================
 
-TComplex Two(Int_t n1, Int_t n2) {
+TComplex Two(Int_t n1, Int_t n2)
+{
   // Generic two-particle correlation <exp[i(n1*phi1+n2*phi2)]>.
 
   TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
@@ -1348,7 +1370,8 @@ TComplex Two(Int_t n1, Int_t n2) {
 
 //============================================================
 
-TComplex Three(Int_t n1, Int_t n2, Int_t n3) {
+TComplex Three(Int_t n1, Int_t n2, Int_t n3)
+{
   // Generic three-particle correlation <exp[i(n1*phi1+n2*phi2+n3*phi3)]>.
 
   TComplex three = Q(n1, 1) * Q(n2, 1) * Q(n3, 1) - Q(n1 + n2, 2) * Q(n3, 1) -
@@ -1361,20 +1384,21 @@ TComplex Three(Int_t n1, Int_t n2, Int_t n3) {
 
 //============================================================
 
-TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4) {
+TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
+{
   // Generic four-particle correlation
   // <exp[i(n1*phi1+n2*phi2+n3*phi3+n4*phi4)]>.
 
   TComplex four =
-      Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) -
-      Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) -
-      Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) -
-      Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) -
-      Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) -
-      Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) +
-      2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) +
-      Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) +
-      2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
+    Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) -
+    Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) -
+    Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) -
+    Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) -
+    Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) -
+    Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) +
+    2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) +
+    Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) +
+    2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
 
   return four;
 
@@ -1382,7 +1406,8 @@ TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4) {
 
 //============================================================
 
-void ResetQ() {
+void ResetQ()
+{
   // Reset the components of generic Q-vectors. Use it whenever you call the
   // standard functions for correlations, for some custom Q-vectors.
 
@@ -1401,7 +1426,8 @@ void ResetQ() {
 
 //============================================================
 
-void SetWeightsHist(TH1D *const hist, const char *variable) {
+void SetWeightsHist(TH1D* const hist, const char* variable)
+{
   // Copy histogram holding weights from an external file to the corresponding
   // data member.
 
@@ -1429,7 +1455,7 @@ void SetWeightsHist(TH1D *const hist, const char *variable) {
 
   // Finally:
   hist->SetDirectory(0);
-  pw_a.fWeightsHist[ppe] = reinterpret_cast<TH1D *>(hist->Clone());
+  pw_a.fWeightsHist[ppe] = reinterpret_cast<TH1D*>(hist->Clone());
   if (!pw_a.fWeightsHist[ppe]) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
          __PRETTY_FUNCTION__, __LINE__);
@@ -1442,7 +1468,8 @@ void SetWeightsHist(TH1D *const hist, const char *variable) {
 
 //============================================================
 
-TH1D *GetWeightsHist(const char *variable) {
+TH1D* GetWeightsHist(const char* variable)
+{
   // The standard getter.
 
   if (fVerbose) {
@@ -1474,8 +1501,9 @@ TH1D *GetWeightsHist(const char *variable) {
 
 //============================================================
 
-TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
-                              const char *variable) {
+TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
+                              const char* variable)
+{
   // ...
 
   // a) Return value;
@@ -1493,7 +1521,7 @@ TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
   }
 
   // a) Return value:
-  TH1D *hist = NULL;
+  TH1D* hist = NULL;
 
   // b) Basic protection for arguments:
   if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") ||
@@ -1522,36 +1550,36 @@ TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
 
   if (bFileIsInAliEn) {
     // d) Handle the AliEn case:
-    TGrid *alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
-    TFile *weightsFile = TFile::Open(Form("alien://%s", filePath), "READ");
+    TFile* weightsFile = TFile::Open(Form("alien://%s", filePath), "READ");
     if (!weightsFile) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TList *baseList = NULL;
+    TList* baseList = NULL;
     weightsFile->GetObject(
-        "ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
-                                  // of base TList is "ccdb_object" also for
-                                  // AliEn case, see if I need to change this
+      "ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
+                                // of base TList is "ccdb_object" also for
+                                // AliEn case, see if I need to change this
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TList *listWithRuns =
-        reinterpret_cast<TList *>(GetObjectFromList(baseList, runNumber));
+    TList* listWithRuns =
+      reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    hist = reinterpret_cast<TH1D *>(GetObjectFromList(
-        listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(
+      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
     if (!hist) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1579,27 +1607,27 @@ TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
       LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m",
            TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
     }
-    TList *baseList =
-        (TList *)(cm.get<TList>(TString(filePath)
-                                    .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                                    .Data()))
-            ->Clone(); // TBI 20231005 circumventing temporarily problem with
-                       // the ownership this way, but I shouldn't be really
-                       // clonning here anything
+    TList* baseList =
+      (TList*)(cm.get<TList>(TString(filePath)
+                               .ReplaceAll("/alice-ccdb.cern.ch/", "")
+                               .Data()))
+        ->Clone(); // TBI 20231005 circumventing temporarily problem with
+                   // the ownership this way, but I shouldn't be really
+                   // clonning here anything
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TList *listWithRuns =
-        reinterpret_cast<TList *>(GetObjectFromList(baseList, runNumber));
+    TList* listWithRuns =
+      reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    hist = reinterpret_cast<TH1D *>(GetObjectFromList(
-        listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(
+      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
 
     if (!hist) {
       LOGF(info, "\033[1;33m%s_%s \033[0m", variable, fTaskName.Data());
@@ -1627,31 +1655,31 @@ TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TFile *weightsFile = TFile::Open(filePath, "READ");
+    TFile* weightsFile = TFile::Open(filePath, "READ");
     if (!weightsFile) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TList *baseList = NULL;
+    TList* baseList = NULL;
     weightsFile->GetObject(
-        "ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
-                                  // of base TList is "ccdb_object" also for
-                                  // local case, see if I need to change this
+      "ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
+                                // of base TList is "ccdb_object" also for
+                                // local case, see if I need to change this
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    TList *listWithRuns =
-        reinterpret_cast<TList *>(GetObjectFromList(baseList, runNumber));
+    TList* listWithRuns =
+      reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    hist = reinterpret_cast<TH1D *>(GetObjectFromList(
-        listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(
+      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
     if (!hist) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1666,11 +1694,12 @@ TH1D *GetHistogramWithWeights(const char *filePath, const char *runNumber,
   return hist;
 
 } // TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
-  // const char* variable)
+// const char* variable)
 
 //============================================================
 
-TObjArray *GetObjArrayWithLabels(const char *filePath) {
+TObjArray* GetObjArrayWithLabels(const char* filePath)
+{
   // This function extracts from an external file TObjArray named "labels", and
   // returns it. External file can be: 1) on a local computer; 2) in home
   // directory AliEn => configurable "cfFileWithLabels" must begin with
@@ -1689,7 +1718,7 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
   }
 
   // a) Return value:
-  TObjArray *oa;
+  TObjArray* oa;
 
   // b) Determine from filePath if the file in on a local machine, or in home
   // dir AliEn, or in CCDB:
@@ -1709,10 +1738,10 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
     } // else {
   }   // if (TString(filePath).BeginsWith("/alice/cern.ch/")) {
 
-  TFile *oaFile = NULL; // file holding TObjArray with all labels
+  TFile* oaFile = NULL; // file holding TObjArray with all labels
   if (bFileIsInAliEn) {
     // c) Handle the AliEn case:
-    TGrid *alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1723,9 +1752,9 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
            __PRETTY_FUNCTION__, __LINE__);
     }
     oaFile->GetObject(
-        "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
-                       // perhaps I can do this also via Configurables? Keep in
-                       // sync with O2::TranslateASCIIintoObjArray
+      "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
+                     // perhaps I can do this also via Configurables? Keep in
+                     // sync with O2::TranslateASCIIintoObjArray
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1748,12 +1777,12 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
     // cm.get<TObjArray>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/","").Data());
     // // TBI 20231004 doesn't work due to ownership problem, later in
     // StoreLabelsInPlaceholder()
-    oa = (TObjArray *)(cm.get<TObjArray>(
-                           TString(filePath)
-                               .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                               .Data()))
-             ->Clone(); // TBI 20231004 circumventing temporarily problem with
-                        // the ownership this way
+    oa = (TObjArray*)(cm.get<TObjArray>(
+                        TString(filePath)
+                          .ReplaceAll("/alice-ccdb.cern.ch/", "")
+                          .Data()))
+           ->Clone(); // TBI 20231004 circumventing temporarily problem with
+                      // the ownership this way
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1777,9 +1806,9 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
            __PRETTY_FUNCTION__, __LINE__);
     }
     oaFile->GetObject(
-        "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
-                       // perhaps I can do this also via Configurables? Keep in
-                       // sync with O2::TranslateASCIIintoObjArray
+      "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
+                     // perhaps I can do this also via Configurables? Keep in
+                     // sync with O2::TranslateASCIIintoObjArray
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1793,7 +1822,8 @@ TObjArray *GetObjArrayWithLabels(const char *filePath) {
 
 //============================================================
 
-void StoreLabelsInPlaceholder() {
+void StoreLabelsInPlaceholder()
+{
   // Storal all Test0 labels in the temporary placeholder.
 
   // a) Initialize all counters;
@@ -1812,7 +1842,7 @@ void StoreLabelsInPlaceholder() {
   } // now it's safe :-)
 
   // b) Fetch TObjArray with labels from an external file:
-  TObjArray *oa = GetObjArrayWithLabels(fFileWithLabels.Data());
+  TObjArray* oa = GetObjArrayWithLabels(fFileWithLabels.Data());
   if (!oa) {
     LOGF(info, "\033[1;33m fFileWithLabels = %s \033[0m",
          fFileWithLabels.Data());
@@ -1823,16 +1853,16 @@ void StoreLabelsInPlaceholder() {
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels:
   Int_t nLabels = oa->GetEntries();
   fTest0LabelsPlaceholder =
-      new TH1I("fTest0LabelsPlaceholder",
-               Form("placeholder for all labels, %d in total", nLabels),
-               nLabels, 0, nLabels);
+    new TH1I("fTest0LabelsPlaceholder",
+             Form("placeholder for all labels, %d in total", nLabels),
+             nLabels, 0, nLabels);
   fTest0LabelsPlaceholder->SetStats(kFALSE);
 
   // d) Finally, store the labels from external source into placeholder:
   Int_t bin = 1; // used only for fTest0LabelsPlaceholder
   Int_t order = -44;
   for (Int_t e = 0; e < nLabels; e++) {
-    TObjArray *temp = TString(oa->At(e)->GetName()).Tokenize(" ");
+    TObjArray* temp = TString(oa->At(e)->GetName()).Tokenize(" ");
     if (!temp) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1844,9 +1874,9 @@ void StoreLabelsInPlaceholder() {
     } // empty lines, or the label format which is not supported
     // 1-p => 0, 2-p => 1, etc.:
     t0_a.fTest0Labels[order - 1][counter[order - 1]] =
-        new TString(oa->At(e)->GetName()); // okay...
+      new TString(oa->At(e)->GetName()); // okay...
     fTest0LabelsPlaceholder->GetXaxis()->SetBinLabel(
-        bin++, t0_a.fTest0Labels[order - 1][counter[order - 1]]->Data());
+      bin++, t0_a.fTest0Labels[order - 1][counter[order - 1]]->Data());
     // cout<<__LINE__<<":
     // "<<t0_a.fTest0Labels[order-1][counter[order-1]]->Data()<<endl;
     counter[order - 1]++;
@@ -1858,7 +1888,8 @@ void StoreLabelsInPlaceholder() {
 
 //============================================================
 
-Bool_t RetrieveCorrelationsLabels() {
+Bool_t RetrieveCorrelationsLabels()
+{
   // Generate the labels of all correlations of interest, i.e. retrieve them
   // from TH1I *fTest0LabelsPlaceholder
 
@@ -1875,8 +1906,8 @@ Bool_t RetrieveCorrelationsLabels() {
 
   Int_t order = -44;
   for (Int_t b = 1; b <= nBins; b++) {
-    TObjArray *oa = TString(fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b))
-                        .Tokenize(" ");
+    TObjArray* oa = TString(fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b))
+                      .Tokenize(" ");
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1888,7 +1919,7 @@ Bool_t RetrieveCorrelationsLabels() {
     } // empty lines, or the label format which is not supported
     // 1-p => 0, 2-p => 1, etc.:
     t0_a.fTest0Labels[order - 1][counter[order - 1]] = new TString(
-        fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)); // okay...
+      fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)); // okay...
     // cout<<__LINE__<<":
     // "<<fTest0Labels[order-1][counter[order-1]]->Data()<<endl; sleep(1);
     counter[order - 1]++;
@@ -1900,8 +1931,8 @@ Bool_t RetrieveCorrelationsLabels() {
 
 //============================================================
 
-TObject *GetObjectFromList(TList *list,
-                           const Char_t *objectName) // Last update: 20210918
+TObject* GetObjectFromList(TList* list,
+                           const Char_t* objectName) // Last update: 20210918
 {
   // Get TObject pointer from TList, even if it's in some nested TList. Foreseen
   // to be used to fetch histograms or profiles from files directly. Some ideas
@@ -1935,19 +1966,19 @@ TObject *GetObjectFromList(TList *list,
   }
 
   // The object is in the current base list:
-  TObject *objectFinal =
-      list->FindObject(objectName); // final object I am after
+  TObject* objectFinal =
+    list->FindObject(objectName); // final object I am after
   if (objectFinal)
     return objectFinal;
 
   // Search for object recursively in the nested lists:
-  TObject *objectIter; // iterator object in the loop below
+  TObject* objectIter; // iterator object in the loop below
   TIter next(list);
   while (
-      (objectIter = next())) // double round braces are to silent the warnings
+    (objectIter = next())) // double round braces are to silent the warnings
   {
     if (TString(objectIter->ClassName()).EqualTo("TList")) {
-      objectFinal = GetObjectFromList((TList *)objectIter, objectName);
+      objectFinal = GetObjectFromList((TList*)objectIter, objectName);
       if (objectFinal)
         return objectFinal;
     }
@@ -1959,8 +1990,8 @@ TObject *GetObjectFromList(TList *list,
 
 //============================================================
 
-Double_t Weight(const Double_t &value,
-                const char *variable) // value, [phi,pt,eta]
+Double_t Weight(const Double_t& value,
+                const char* variable) // value, [phi,pt,eta]
 {
   // Determine particle weight.
 

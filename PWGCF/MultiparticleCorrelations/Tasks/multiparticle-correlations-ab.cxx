@@ -74,20 +74,17 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
     // *) Particle weights:
-    if(pw_a.fUseWeights[wPHI])
-    {
-     TH1D* phiWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "phi");
-     SetWeightsHist(phiWeights, "phi");
+    if (pw_a.fUseWeights[wPHI]) {
+      TH1D* phiWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "phi");
+      SetWeightsHist(phiWeights, "phi");
     }
-    if(pw_a.fUseWeights[wPT])
-    {
-     TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "pt");
-     SetWeightsHist(ptWeights,"pt");
+    if (pw_a.fUseWeights[wPT]) {
+      TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "pt");
+      SetWeightsHist(ptWeights, "pt");
     }
-    if(pw_a.fUseWeights[wETA])
-    {
-     TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "eta");
-     SetWeightsHist(etaWeights,"eta");
+    if (pw_a.fUseWeights[wETA]) {
+      TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "eta");
+      SetWeightsHist(etaWeights, "eta");
     }
 
     // *) Book random generator:
@@ -113,13 +110,13 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // *) Process the data:
-//  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks) // called once per collision found in the time frame
+  //  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks) // called once per collision found in the time frame
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
 
     // *) TBI 20231008 Temporarily here: If I reached max number of events, ignore the remaining collisions.
     //    But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
-    if(ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1) >= ceh_a.fEventCuts[eNumberOfEvents][eMax]) {
+    if (ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1) >= ceh_a.fEventCuts[eNumberOfEvents][eMax]) {
       return;
     }
 
@@ -136,10 +133,10 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Main loop over particles:
     Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
-    Double_t dPt = 0., wPt = 1.; // transverse momentum and corresponding pT weight
+    Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pT weight
     Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
-    Double_t wToPowerP = 1.; // weight raised to power p
-    fSelectedTracks = 0;     // reset number of selected tracks
+    Double_t wToPowerP = 1.;       // weight raised to power p
+    fSelectedTracks = 0;           // reset number of selected tracks
     for (auto& track : tracks) {
 
       // *) Fill particle histograms for reconstructed data before particle cuts:
@@ -155,50 +152,44 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
       // *) Fill Q-vectors:
       dPhi = track.phi();
-      dPt  = track.pt();
+      dPt = track.pt();
       dEta = track.eta();
       // Particle weights:
-      if(pw_a.fUseWeights[wPHI])
-      {
-       wPhi = Weight(dPhi,"phi"); // corresponding phi weight
-       if(!(wPhi > 0.))
-       {
-        cout<<"wPhi is not positive, skipping this particle for the time being..."<<endl;
-        //cout<<Form("iTrack = %d\ndPhi = %f\nwPhi = %f",iTrack,dPhi,wPhi)<<endl;
-        cout<<Form("dPhi = %f\nwPhi = %f",dPhi,wPhi)<<endl;
-        //sleep(2);
-        continue;
-       }
+      if (pw_a.fUseWeights[wPHI]) {
+        wPhi = Weight(dPhi, "phi"); // corresponding phi weight
+        if (!(wPhi > 0.)) {
+          cout << "wPhi is not positive, skipping this particle for the time being..." << endl;
+          //cout<<Form("iTrack = %d\ndPhi = %f\nwPhi = %f",iTrack,dPhi,wPhi)<<endl;
+          cout << Form("dPhi = %f\nwPhi = %f", dPhi, wPhi) << endl;
+          //sleep(2);
+          continue;
+        }
       } // if(pw_a.fUseWeights[wPHI])
-      if(pw_a.fUseWeights[wPT])
-      {
-       wPt = Weight(dPt,"pt"); // corresponding pt weight
-       if(!(wPt > 0.))
-       {
-        cout<<"wPt is not positive, skipping this particle for the time being..."<<endl;
-        //cout<<Form("iTrack = %d\ndPt = %f\nwPt = %f",iTrack,dPt,wPt)<<endl;
-        cout<<Form("dPt = %f\nwPt = %f",dPt,wPt)<<endl;
-        //sleep(2);
-        continue;
-       }
+      if (pw_a.fUseWeights[wPT]) {
+        wPt = Weight(dPt, "pt"); // corresponding pt weight
+        if (!(wPt > 0.)) {
+          cout << "wPt is not positive, skipping this particle for the time being..." << endl;
+          //cout<<Form("iTrack = %d\ndPt = %f\nwPt = %f",iTrack,dPt,wPt)<<endl;
+          cout << Form("dPt = %f\nwPt = %f", dPt, wPt) << endl;
+          //sleep(2);
+          continue;
+        }
       } // if(pw_a.fUseWeights[wPT])
-      if(pw_a.fUseWeights[wETA])
-      {
-       wEta = Weight(dEta,"eta"); // corresponding eta weight
-       if(!(wEta > 0.))
-       {
-        cout<<"wEta is not positive, skipping this particle for the time being..."<<endl;
-        //cout<<Form("iTrack = %d\ndEta = %f\nwEta = %f",iTrack,dEta,wEta)<<endl;
-        cout<<Form("dEta = %f\nwEta = %f",dEta,wEta)<<endl;
-        //sleep(2);
-        continue;
-       }
+      if (pw_a.fUseWeights[wETA]) {
+        wEta = Weight(dEta, "eta"); // corresponding eta weight
+        if (!(wEta > 0.)) {
+          cout << "wEta is not positive, skipping this particle for the time being..." << endl;
+          //cout<<Form("iTrack = %d\ndEta = %f\nwEta = %f",iTrack,dEta,wEta)<<endl;
+          cout << Form("dEta = %f\nwEta = %f", dEta, wEta) << endl;
+          //sleep(2);
+          continue;
+        }
       } // if(pw_a.fUseWeights[wETA])
 
       for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
         for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
           if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) {
-            wToPowerP = pow(wPhi*wPt*wEta,wp);
+            wToPowerP = pow(wPhi * wPt * wEta, wp);
           }
           qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
         } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
@@ -210,9 +201,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
           nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
         } // remember that the 2nd argument here must start from 0
         if (nl_a.ftaNestedLoops[1]) {
-          nl_a.ftaNestedLoops[1]->AddAt(wPhi*wPt*wEta, fSelectedTracks);
+          nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
         } // remember that the 2nd argument here must start from 0
-      } // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
+      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
 
       // *) Counter of selected tracks in the current event:
       fSelectedTracks++;
@@ -227,7 +218,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Remaining event cuts:
     if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
-     return;
+      return;
     }
 
     // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
