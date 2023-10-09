@@ -59,6 +59,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hTPCNcls2Nf", "TPC Ncls/Nfindable", 200, 0, 2));
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 360, 0, 36));
+    list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
     list->Add(new TH2F("hXY", "X vs. Y;X;Y", 200, 0, 200, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z;X", 200, -100, 100, 200, 0, 200));
     list->Add(new TH2F("hZY", "Z vs. Y;Z;Y", 200, -100, 100, 100, -50, 50));
@@ -203,6 +204,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hTPCNcls2Nf", "TPC Ncls/Nfindable", 200, 0, 2));
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 360, 0, 36));
+    list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
   }
 
   if (TString(histClass) == "Cluster") {
