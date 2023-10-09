@@ -52,7 +52,7 @@ struct Pi0EtaToGammaGammaMC {
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
-  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "pi0ee_tpchadrejortofreq,etaee_tpchadrejortofreq", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq_lowB,mee_120_500_tpchadrejortofreq_lowB,mee_0_500_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
 
   OutputObj<THashList> fOutputEvent{"Event"};

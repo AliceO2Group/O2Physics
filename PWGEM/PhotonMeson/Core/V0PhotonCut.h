@@ -124,14 +124,6 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // bool isITSonly_pos = pos.hasITS() & !pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
-    // bool isITSonly_ele = ele.hasITS() & !ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
-    // if (isITSonly_pos && isITSonly_ele) {
-    //  if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
-    //    return false;
-    //  }
-    //}
-
     if (pos.hasITS() && ele.hasITS()) {
       if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
         return false;
@@ -167,6 +159,19 @@ class V0PhotonCut : public TNamed
       }
 
       bool isITSonly = isITSonlyTrack(track);
+      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
+      if (isITSonly && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
+
+      bool isITSTPC = isITSTPCTrack(track);
+      auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
+      if (isITSTPC && !its_ob_only_itstpc) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {
@@ -472,6 +477,9 @@ class V0PhotonCut : public TNamed
   void print() const;
 
  private:
+  static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
+  static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
+  static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement_ITSTPC;
   // v0 cuts
   float mMinMee{0.f}, mMaxMee{0.1f};
   float mMinV0Pt{0.f}, mMaxV0Pt{1e10f};      // range in pT
