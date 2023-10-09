@@ -117,11 +117,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
 
-    // *) TBI 20231008 Temporarily here: If I reached max number of events, ignore the remaining collisions. 
+    // *) TBI 20231008 Temporarily here: If I reached max number of events, ignore the remaining collisions.
     //    But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
     if(ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1) >= ceh_a.fEventCuts[eNumberOfEvents][eMax]) {
       return;
-    } 
+    }
 
     // *) Fill event histograms for reconstructed data before event cuts:
     FillEventHistograms(collision, tracks, eRec, eBefore);
@@ -180,7 +180,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
         cout<<Form("dPt = %f\nwPt = %f",dPt,wPt)<<endl;
         //sleep(2);
         continue;
-       } 
+       }
       } // if(pw_a.fUseWeights[wPT])
       if(pw_a.fUseWeights[wETA])
       {
@@ -218,7 +218,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
       fSelectedTracks++;
       if (fSelectedTracks >= cSelectedTracks_max) {
         break;
-      } 
+      }
 
     } // for (auto& track : tracks)
 
