@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -47,7 +48,7 @@ struct HfTaskB0Reduced {
      {"hPtProng1", "B0 candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{300, 4.5, 6.0}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "B^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -126,10 +127,10 @@ struct HfTaskB0Reduced {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-               aod::HfCand3ProngReduced const&)
+  void process(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi>> const& candidates,
+               aod::HfRed3Prongs const&)
   {
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -138,7 +139,7 @@ struct HfTaskB0Reduced {
       }
 
       auto ptCandB0 = candidate.pt();
-      auto candD = candidate.prong0_as<aod::HfCand3ProngReduced>();
+      auto candD = candidate.prong0_as<aod::HfRed3Prongs>();
 
       registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), ptCandB0);
       registry.fill(HIST("hPtCand"), ptCandB0);
@@ -161,12 +162,12 @@ struct HfTaskB0Reduced {
   }   // process
 
   /// B0 MC analysis and fill histograms
-  void processMc(soa::Join<aod::HfCandB0, aod::HfB0McRecReduced> const& candidates,
-                 aod::HfB0McGenReduced const& particlesMc,
-                 aod::HfCand3ProngReduced const&)
+  void processMc(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s> const& candidates,
+                 aod::HfMcGenRedB0s const& mcParticles,
+                 aod::HfRed3Prongs const&)
   {
     // MC rec
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
@@ -175,7 +176,12 @@ struct HfTaskB0Reduced {
       }
 
       auto ptCandB0 = candidate.pt();
-      auto candD = candidate.prong0_as<aod::HfCand3ProngReduced>();
+      auto candD = candidate.prong0_as<aod::HfRed3Prongs>();
+      std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+      std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
+      std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
+      auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
+      auto decLenD = RecoDecay::distance(posPv, posSvD);
 
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
         registry.fill(HIST("hPtGenSig"), candidate.ptMother());
@@ -193,8 +199,8 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), ptCandB0);
         registry.fill(HIST("hImpParProdB0RecSig"), candidate.impactParameterProduct(), ptCandB0);
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), ptCandB0);
-        registry.fill(HIST("hCPADRecSig"), candD.cpa(), ptCandB0);
-        registry.fill(HIST("hDecLengthDRecSig"), candD.decayLength(), ptCandB0);
+        registry.fill(HIST("hCPADRecSig"), cospD, ptCandB0);
+        registry.fill(HIST("hDecLengthDRecSig"), decLenD, ptCandB0);
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandB0);
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandB0);
@@ -211,15 +217,14 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), ptCandB0);
         registry.fill(HIST("hImpParProdB0RecBg"), candidate.impactParameterProduct(), ptCandB0);
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), ptCandB0);
-        registry.fill(HIST("hCPADRecBg"), candD.cpa(), ptCandB0);
-        registry.fill(HIST("hDecLengthDRecBg"), candD.decayLength(), ptCandB0);
+        registry.fill(HIST("hCPADRecBg"), cospD, ptCandB0);
+        registry.fill(HIST("hDecLengthDRecBg"), decLenD, ptCandB0);
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandB0);
       }
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();

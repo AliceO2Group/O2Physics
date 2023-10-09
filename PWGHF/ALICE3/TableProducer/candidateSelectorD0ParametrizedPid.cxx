@@ -42,7 +42,7 @@ DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackI
 
 struct HfCandidateSelectorD0ParametrizedPidRichIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> indB;
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
@@ -66,22 +66,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
-  {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::RICHTracksIndex, aod::McTrackLabels>;
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -189,10 +174,14 @@ struct HfCandidateSelectorD0ParametrizedPid {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates,
+               TracksSel const& barreltracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusD0NoPid = 0;
@@ -213,8 +202,8 @@ struct HfCandidateSelectorD0ParametrizedPid {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<Trks>();
-      auto trackNeg = candidate.prong1_as<Trks>();
+      auto trackPos = candidate.prong0_as<TracksSel>();
+      auto trackNeg = candidate.prong1_as<TracksSel>();
 
       // auto momentumPosTrack = trackPos.p();
       // auto momentumNegTrack = trackNeg.p();

@@ -42,7 +42,7 @@ struct EffPtMFT {
   SliceCache cache;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   ConfigurableAxis PtAxis{"PtAxis", {1001, -0.0005, 1.0005}, "pt axis for histograms"};

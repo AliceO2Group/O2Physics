@@ -50,12 +50,13 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::photonpair;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct TaggingPi0MC {
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis1690", "Comma separated list of V0 photon cuts"};

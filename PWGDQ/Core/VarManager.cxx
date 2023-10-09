@@ -8,11 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include <cmath>
+using std::cout;
+using std::endl;
+using namespace o2::constants::physics;
 
 ClassImp(VarManager);
 
@@ -24,6 +26,8 @@ float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
+float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
+float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -155,7 +159,32 @@ void VarManager::SetRunlist(TString period)
     SetRunNumbers(LHC22t);
   }
 }
+//__________________________________________________________________
+void VarManager::SetDummyRunlist(int InitRunnumber)
+{
+  //
+  // runlist for the different periods
+  fgRunList.clear();
+  fgRunList.push_back(InitRunnumber);
+  fgRunList.push_back(InitRunnumber + 100);
+}
 
+//__________________________________________________________________
+int VarManager::GetDummyFirst()
+{
+  //
+  // Get the fist index of the vector of run numbers
+  //
+  return fgRunList[0];
+}
+//__________________________________________________________________
+int VarManager::GetDummyLast()
+{
+  //
+  // Get the last index of the vector of run numbers
+  //
+  return fgRunList[fgRunList.size() - 1];
+}
 //_________________________________________________________________
 float VarManager::GetRunIndex(double Runnumber)
 {
@@ -166,6 +195,22 @@ float VarManager::GetRunIndex(double Runnumber)
   auto runIndex = std::find(fgRunList.begin(), fgRunList.end(), runNumber);
   float index = std::distance(fgRunList.begin(), runIndex);
   return index;
+}
+//__________________________________________________________________
+void VarManager::SetCollisionSystem(TString system, float energy)
+{
+  //
+  // Set the collision system and the center of mass energy
+  //
+  fgCenterOfMassEnergy = energy;
+
+  if (system.Contains("PbPb")) {
+    fgMassofCollidingParticle = MassProton * 208;
+  }
+  if (system.Contains("pp")) {
+    fgMassofCollidingParticle = MassProton;
+  }
+  // TO Do: add more systems
 }
 
 //__________________________________________________________________
@@ -304,6 +349,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
+  fgVariableNames[kSignedPin] = "p_{IN} x charge";
+  fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
   fgVariableUnits[kTOFExpMom] = "GeV/c";
   fgVariableNames[kTrackTime] = "Track time wrt collision().bc()";
@@ -571,10 +618,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhiSym] = "rad.";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
+  fgVariableNames[kPhiHE] = "#varphi_{HE}";
+  fgVariableUnits[kPhiHE] = "rad.";
+  fgVariableNames[kCosThetaCS] = "cos#it{#theta}_{CS}";
+  fgVariableUnits[kCosThetaCS] = "";
+  fgVariableNames[kPhiCS] = "#varphi_{CS}";
+  fgVariableUnits[kPhiCS] = "rad.";
   fgVariableNames[kPsiPair] = "#Psi_{pair}";
   fgVariableUnits[kPsiPair] = "rad.";
   fgVariableNames[kDeltaPhiPair] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiPair] = "rad.";
+  fgVariableNames[kOpeningAngle] = "Opening angle";
+  fgVariableUnits[kOpeningAngle] = "rad.";
   fgVariableNames[kQuadDCAabsXY] = "DCA_{xy}^{quad}";
   fgVariableUnits[kQuadDCAabsXY] = "cm";
   fgVariableNames[kQuadDCAsigXY] = "DCA_{xy}^{quad}";

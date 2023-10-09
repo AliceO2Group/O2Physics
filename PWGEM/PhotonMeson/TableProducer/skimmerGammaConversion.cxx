@@ -59,7 +59,7 @@ using namespace o2::constants::physics;
 using tracksAndTPCInfo = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::TracksCovIU>;
 using tracksAndTPCInfoMC = soa::Join<tracksAndTPCInfo, aod::McTrackLabels>;
 
-struct skimmerGammaConversions {
+struct skimmerGammaConversion {
 
   // configurables for CCDB access
   Configurable<std::string> ccdbPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
@@ -308,8 +308,8 @@ struct skimmerGammaConversions {
     // LOGF(info, "mee = %f (KF at PV) , %f (KF at SV)", v0_pv.M(), v0_sv.M());
 
     // calculate psipair, phiv at the decay vertex
-    float phiv = getPhivPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx, o2::base::Propagator::Instance()->getNominalBz());
-    float psipair = getPsiPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx);
+    float phiv = getPhivPair(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), kfp_pos_DecayVtx.GetQ(), kfp_ele_DecayVtx.GetQ(), o2::base::Propagator::Instance()->getNominalBz());
+    float psipair = getPsiPair(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     // LOGF(info, "bz = %f , phiv = %f , psipair = %f", bz, phiv, psipair);
 
     // float pca_kf = kfp_pos.GetDistanceFromParticle(kfp_ele);
@@ -369,7 +369,7 @@ struct skimmerGammaConversions {
       } // end of v0 loop
     }   // end of collision loop
   }
-  PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
+  PROCESS_SWITCH(skimmerGammaConversion, processRec, "process reconstructed info only", true);
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processMc(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
@@ -434,7 +434,7 @@ struct skimmerGammaConversions {
       }
     }
   }
-  PROCESS_SWITCH(skimmerGammaConversions, processMc, "process reconstructed and mc info ", false);
+  PROCESS_SWITCH(skimmerGammaConversion, processMc, "process reconstructed and mc info ", false);
 
   template <typename TV0, typename TTRACK>
   eV0Confirmation isTrueV0(TV0 const& theV0,
@@ -547,5 +547,5 @@ struct skimmerGammaConversions {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversions>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversion>(cfgc, TaskName{"skimmer-gamma-conversion"})};
 }

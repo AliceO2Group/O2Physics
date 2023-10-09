@@ -16,6 +16,7 @@
 #define PWGDQ_CORE_CUTSLIBRARY_H_
 
 #include <string>
+#include <vector>
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/VarManager.h"

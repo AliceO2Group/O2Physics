@@ -55,8 +55,8 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), (xyz[0] - helixPos.xC));
-  Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), (xyz[0] - helixNeg.xC));
+  Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
   Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
   Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
@@ -89,8 +89,7 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
 //_______________________________________________________________________
-template <typename T>
-float getPhivPair(T const& t1, T const& t2, const float bz)
+float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int cpos, int cneg, float bz)
 {
   // cos(phiv) = w*a /|w||a|
   // with w = u x v
@@ -100,20 +99,22 @@ float getPhivPair(T const& t1, T const& t2, const float bz)
 
   // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
   // vector product of pep X pem
-  std::array<float, 3> arr_pos{t1.GetPx(), t1.GetPy(), t1.GetPz()};
-  std::array<float, 3> arr_ele{t2.GetPx(), t2.GetPy(), t2.GetPz()};
+  // std::array<float, 3> arr_pos{t1.GetPx(), t1.GetPy(), t1.GetPz()};
+  // std::array<float, 3> arr_ele{t2.GetPx(), t2.GetPy(), t2.GetPz()};
+  std::array<float, 3> arr_pos{pxpos, pypos, pzpos};
+  std::array<float, 3> arr_ele{pxneg, pyneg, pzneg};
   std::array<double, 3> pos_x_ele{0, 0, 0};
-  // LOGF(info, "Q1 = %d , Q2 = %d", t1.GetQ(), t2.GetQ());
+  // LOGF(info, "Q1 = %d , Q2 = %d", cpos, cneg);
 
-  if (t1.GetQ() * t2.GetQ() > 0) { // Like Sign
+  if (cpos * cneg > 0) { // Like Sign
     if (bz < 0) {
-      if (t1.GetQ() > 0) {
+      if (cpos > 0) {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       }
     } else {
-      if (t1.GetQ() > 0) {
+      if (cpos > 0) {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
@@ -121,13 +122,13 @@ float getPhivPair(T const& t1, T const& t2, const float bz)
     }
   } else { // Unlike Sign
     if (bz > 0) {
-      if (t1.GetQ() > 0) {
+      if (cpos > 0) {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       }
     } else {
-      if (t1.GetQ() > 0) {
+      if (cpos > 0) {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
@@ -141,9 +142,9 @@ float getPhivPair(T const& t1, T const& t2, const float bz)
   float vz = pos_x_ele[2] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
 
   // unit vector of (pep+pem)
-  float ux = (t1.GetPx() + t2.GetPx()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
-  float uy = (t1.GetPy() + t2.GetPy()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
-  float uz = (t1.GetPz() + t2.GetPz()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
+  float ux = (pxpos + pxneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float uy = (pypos + pyneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float uz = (pzpos + pzneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
 
   float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
   float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
@@ -156,19 +157,18 @@ float getPhivPair(T const& t1, T const& t2, const float bz)
   return TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
 }
 //_______________________________________________________________________
-template <typename T>
-float getPsiPair(T const& t1, T const& t2)
+float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
-  float pxpos = t1.GetPx();
-  float pypos = t1.GetPy();
-  float pzpos = t1.GetPz();
-  float pxneg = t2.GetPx();
-  float pyneg = t2.GetPy();
-  float pzneg = t2.GetPz();
+  // float pxpos = t1.GetPx();
+  // float pypos = t1.GetPy();
+  // float pzpos = t1.GetPz();
+  // float pxneg = t2.GetPx();
+  // float pyneg = t2.GetPy();
+  // float pzneg = t2.GetPz();
 
   auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
   float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
-  float argcos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
   float thetaPos = std::atan2(RecoDecay::sqrtSumOfSquares(pxpos, pypos), pzpos);
   float thetaNeg = std::atan2(RecoDecay::sqrtSumOfSquares(pxneg, pyneg), pzneg);
   float argsin = (thetaNeg - thetaPos) / std::acos(clipToPM1(argcos));

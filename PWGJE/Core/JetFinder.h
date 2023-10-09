@@ -69,6 +69,7 @@ class JetFinder
   float jetPhiMax;
   float jetEtaMin;
   float jetEtaMax;
+  bool jetEtaDefault;
 
   float ghostEtaMin;
   float ghostEtaMax;
@@ -121,6 +122,7 @@ class JetFinder
                                                                                                                  jetPhiMax(phi_Max),
                                                                                                                  jetEtaMin(-99.0),
                                                                                                                  jetEtaMax(99.0),
+                                                                                                                 jetEtaDefault(false),
                                                                                                                  ghostEtaMin(eta_Min),
                                                                                                                  ghostEtaMax(eta_Max),
                                                                                                                  ghostArea(0.005),

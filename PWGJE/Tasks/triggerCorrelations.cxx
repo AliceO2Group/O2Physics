@@ -56,6 +56,7 @@ struct TriggerCorrelationsTask {
   Configurable<bool> rejectExoticClusters{"rejectExoticClusters", true, "reject exotic clusters"};
   Configurable<float> clusterTimeMin{"clusterTimeMin", -999, "minimum cluster time for gamma trigger"};
   Configurable<float> clusterTimeMax{"clusterTimeMax", 999, "maximum cluster time for gamma trigger"};
+  Configurable<int> emcalTriggered{"emcalTriggered", -1, "-1 = min bias, 0 = L0"};
   Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
 
   void init(o2::framework::InitContext&)
@@ -97,7 +98,7 @@ struct TriggerCorrelationsTask {
       }
     }
 
-    if (collision.alias_bit(kTVXinEMC)) {
+    if ((emcalTriggered == -1 && collision.alias_bit(kTVXinEMC)) || (emcalTriggered == 0 && (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7)))) {
       if (doFullJetTrigger) {
         for (auto& jetFull : jetsFull) {
           if (jetFull.r() == round(jetsFullR * 100.0f)) {

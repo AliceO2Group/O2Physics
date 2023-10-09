@@ -16,15 +16,17 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
+#include <algorithm>
 #include <set>
 #include <vector>
 #include <utility>
 #include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include "Rtypes.h"
 #include "TNamed.h"
 #include "TMath.h"
+
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed
 {
@@ -39,6 +41,7 @@ class V0PhotonCut : public TNamed
     kV0EtaRange,
     kAP,
     kPsiPair,
+    kPhiV,
     kRxy,
     kCosPA,
     kPCA,
@@ -61,8 +64,10 @@ class V0PhotonCut : public TNamed
     kIsWithinBeamPipe,
     kRequireITSTPC,
     kRequireITSonly,
-    kTPConly,
-    kAntiTPConly,
+    kRequireTPConly,
+    kRequireTPCTRD,
+    kRequireTPCTOF,
+    kRequireTPCTRDTOF,
     kNCuts
   };
 
@@ -84,6 +89,9 @@ class V0PhotonCut : public TNamed
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPsiPair)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kPhiV)) {
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kRxy)) {
@@ -116,15 +124,27 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // if(pos.hasITS() && ele.hasITS()){
-    //   bool ret = sqrt(pow(v0.alpha() / 0.95, 2) + pow(v0.qtarm() / 0.02, 2) ) < 1.0;
-    //   if (!ret){
-    //     return false;
-    //   }
-    // }
-    // if (v0.recalculatedVtxR() > std::min(pos.x(), ele.x()) + 7.f && (pos.x() > 1.f && ele.x() > 1.f)) {
-    //   return false;
-    // }
+    // bool isITSonly_pos = pos.hasITS() & !pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
+    // bool isITSonly_ele = ele.hasITS() & !ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
+    // if (isITSonly_pos && isITSonly_ele) {
+    //  if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
+    //    return false;
+    //  }
+    //}
+
+    if (pos.hasITS() && ele.hasITS()) {
+      if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
+        return false;
+      }
+    }
+
+    bool isTPConly_pos = isTPConlyTrack(pos);
+    bool isTPConly_ele = isTPConlyTrack(ele);
+    if (isTPConly_pos && isTPConly_ele) {
+      if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
+        return false;
+      }
+    }
 
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
@@ -146,7 +166,7 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
-      bool isITSonly = track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+      bool isITSonly = isITSonlyTrack(track);
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {
@@ -170,10 +190,16 @@ class V0PhotonCut : public TNamed
       if (mRequireITSTPC && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSTPC)) {
         return false;
       }
-      if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kTPConly)) {
+      if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPConly)) {
         return false;
       }
-      if (mRequireAntiTPConly && !IsSelectedTrack(track, V0PhotonCuts::kAntiTPConly)) {
+      if (mRequireTPCTRD && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRD)) {
+        return false;
+      }
+      if (mRequireTPCTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTOF)) {
+        return false;
+      }
+      if (mRequireTPCTRDTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRDTOF)) {
         return false;
       }
     }
@@ -260,6 +286,9 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPsiPair:
         return v0.psipair() >= mMinPsiPair && v0.psipair() <= mMaxPsiPair;
 
+      case V0PhotonCuts::kPhiV:
+        return v0.phiv() >= mMinPhivPair && v0.phiv() <= mMaxPhivPair;
+
       case V0PhotonCuts::kRxy:
         return v0.recalculatedVtxR() >= mMinRxy && v0.recalculatedVtxR() <= mMaxRxy;
 
@@ -274,30 +303,27 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kOnWwireIB: {
         const float margin_xy = 1.0; // cm
-        const float margin_z = 20.0; // cm
-        const float rxy_min = 5.506; // cm
+        // const float margin_z = 20.0; // cm
+        // const float rxy_min = 5.506; // cm
         // const float rxy_max = 14.846;         // cm
-        const float z_min = -17.56; // cm
+        // const float z_min = -17.56; // cm
         // const float z_max = +31.15;           // cm
         float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
         float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
-        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+        // float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
         if (rxy < 7.5 || 15.0 < rxy) {
           return false;
         }
 
-        float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
-        if (abs(z - z_exp) > margin_z) {
-          return false;
-        }
+        // float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
+        // if (abs(z - z_exp) > margin_z) {
+        //   return false;
+        // }
 
         float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
-        if (dxy > margin_xy) { // cut in XY plane first
-          return false;
-        }
-        return true;
+        return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
         const float margin_x = 2.0;                                         // cm
@@ -373,22 +399,31 @@ class V0PhotonCut : public TNamed
         if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) < 20.f && abs(abs(track.z()) - 43.5f) < 3.5f && 15.f < abs(track.dcaXY())) {
+
+        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
-        return true;
+
+        const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
+        return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY()));
       }
       case V0PhotonCuts::kRequireITSTPC:
-        return track.hasITS() & track.hasTPC();
+        return isITSTPCTrack(track);
 
       case V0PhotonCuts::kRequireITSonly:
-        return track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+        return isITSonlyTrack(track);
 
-      case V0PhotonCuts::kTPConly:
-        return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
+      case V0PhotonCuts::kRequireTPConly:
+        return isTPConlyTrack(track);
 
-      case V0PhotonCuts::kAntiTPConly:
-        return track.hasTPC() & (track.hasITS() | track.hasTOF() | track.hasTRD());
+      case V0PhotonCuts::kRequireTPCTRD:
+        return isTPCTRDTrack(track);
+
+      case V0PhotonCuts::kRequireTPCTOF:
+        return isTPCTOFTrack(track);
+
+      case V0PhotonCuts::kRequireTPCTRDTOF:
+        return isTPCTRDTOFTrack(track);
 
       default:
         return false;
@@ -400,6 +435,7 @@ class V0PhotonCut : public TNamed
   void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.1);
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
+  void SetPhivPairRange(float min = 0.f, float max = +3.15);
   void SetAPRange(float max_alpha = 0.95, float max_qt = 0.05); // Armenteros Podolanski
   void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
@@ -428,7 +464,9 @@ class V0PhotonCut : public TNamed
   void SetRequireITSTPC(bool flag);
   void SetRequireITSonly(bool flag);
   void SetRequireTPConly(bool flag);
-  void SetRequireAntiTPConly(bool flag);
+  void SetRequireTPCTRD(bool flag);
+  void SetRequireTPCTOF(bool flag);
+  void SetRequireTPCTRDTOF(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -440,6 +478,7 @@ class V0PhotonCut : public TNamed
   float mMinV0Eta{-1e10f}, mMaxV0Eta{1e10f}; // range in eta
   float mMaxAlpha{0.95}, mMaxQt{0.05};
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
+  float mMinPhivPair{0.f}, mMaxPhivPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
@@ -471,7 +510,9 @@ class V0PhotonCut : public TNamed
   bool mRequireITSTPC{false};
   bool mRequireITSonly{false};
   bool mRequireTPConly{false};
-  bool mRequireAntiTPConly{false};
+  bool mRequireTPCTRD{false};
+  bool mRequireTPCTOF{false};
+  bool mRequireTPCTRDTOF{false};
 
   ClassDef(V0PhotonCut, 1);
 };

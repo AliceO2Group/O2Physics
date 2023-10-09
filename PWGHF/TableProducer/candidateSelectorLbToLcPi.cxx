@@ -56,7 +56,7 @@ struct HfCandidateSelectorLbToLcPi {
     auto candpT = hfCandLb.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
-      // Printf("Lb topol selection failed at getpTBin");
+      // LOGF(debug, "Lb topol selection failed at getpTBin");
       return false;
     }
 
@@ -67,7 +67,7 @@ struct HfCandidateSelectorLbToLcPi {
 
     //Λb0 mass cut
     if (std::abs(invMassLbToLcPi(hfCandLb) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
-      // Printf("Lb topol selection failed at mass diff check");
+      // LOGF(debug, "Lb topol selection failed at mass diff check");
       return false;
     }
 
@@ -100,7 +100,7 @@ struct HfCandidateSelectorLbToLcPi {
 
     // Lb chi2PCA cut
     if (hfCandLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      // Printf("Lb selection failed at chi2PCA");
+      // LOGF(debug, "Lb selection failed at chi2PCA");
       return false;
     }
 
@@ -122,33 +122,35 @@ struct HfCandidateSelectorLbToLcPi {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandLb const& hfCandLbs,
+               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               aod::Tracks const&)
   {
-    for (auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
+    for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
 
       // check if flagged as Λb --> Λc+ π-
       if (!(hfCandLb.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         hfSelLbToLcPiCandidate(statusLb);
-        // Printf("Lb candidate selection failed at hfflag check");
+        // LOGF(debug, "Lb candidate selection failed at hfflag check");
         continue;
       }
 
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto trackPi = hfCandLb.prong1_as<aod::BigTracksPID>();
+      auto trackPi = hfCandLb.prong1();
 
       // topological cuts
       if (!selectionTopol(hfCandLb, candLc, trackPi)) {
         hfSelLbToLcPiCandidate(statusLb);
-        // Printf("Lb candidate selection failed at selection topology");
+        // LOGF(debug, "Lb candidate selection failed at selection topology");
         continue;
       }
 
       hfSelLbToLcPiCandidate(1);
-      // Printf("Lb candidate selection successful, candidate should be selected");
+      // LOGF(debug, "Lb candidate selection successful, candidate should be selected");
     }
   }
 };

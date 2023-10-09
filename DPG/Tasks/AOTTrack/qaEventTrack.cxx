@@ -81,7 +81,7 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {500, 0, 500}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -133,7 +133,7 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-    const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
+    const AxisSpec axisVertexNumContrib{500, 0, 500, "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
@@ -167,6 +167,7 @@ struct qaEventTrack {
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+    histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -338,9 +339,15 @@ struct qaEventTrack {
     h3->GetXaxis()->SetTitle("#eta");
     h3->GetYaxis()->SetTitle("# clusters TPC");
     h3->GetZaxis()->SetTitle("Vtx. Z [cm]");
+    auto h4 = histos.add<TH3>("Tracks/TPC/tpcNClsFoundVsEtaPhi", "tracks with at least 1 TPC cluster", kTH3D, {axisEta, {165, -0.5, 164.5}, axisPhi});
+    h4->GetXaxis()->SetTitle("#eta");
+    h4->GetYaxis()->SetTitle("# clusters TPC");
+    h4->GetZaxis()->SetTitle("#varphi");
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
+    histos.add("Tracks/TPC/tpcNClsSharedVsFilteredTracks", "number of shared TPC clusters vs. filtered tracks", kTH2D, {{165, -0.5, 164.5, "# shared clusters TPC"}, axisTrackMultiplicity});
+    histos.add("Tracks/TPC/tpcFractionSharedClsVsFilteredTracks", "fraction of shared TPC clusters vs. filtered tracks", kTH2D, {{100, 0., 1., "fraction shared clusters TPC"}, axisTrackMultiplicity});
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
@@ -1355,6 +1362,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     }
   }
   histos.fill(HIST("Events/nContribWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
+  histos.fill(HIST("Events/nContribAllvsWithTRD"), collision.numContrib(), nPvContrWithTRD);
 
   // track related histograms
   for (const auto& track : tracks) {
@@ -1440,10 +1448,13 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEta"), track.eta(), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaVtxZ"), track.eta(), track.tpcNClsFound(), collision.posZ());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaPhi"), track.eta(), track.tpcNClsFound(), track.phi());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
     histos.fill(HIST("Tracks/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls());
+    histos.fill(HIST("Tracks/TPC/tpcNClsSharedVsFilteredTracks"), track.tpcNClsShared(), nFilteredTracks);
+    histos.fill(HIST("Tracks/TPC/tpcFractionSharedClsVsFilteredTracks"), track.tpcFractionSharedCls(), nFilteredTracks);
     histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
 
     if constexpr (IS_MC) {

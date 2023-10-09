@@ -28,7 +28,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "EventFiltering/filterTables.h"
-#include "HFFilterHelpers.h"
+#include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -44,7 +44,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // Initialize the histograms
     hPartPerEvent[0] = registry.add<TH2>("hPartPerEventAll", "All events;;number of particles", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
@@ -65,13 +65,13 @@ struct HfFilterQc { // Main struct for HF trigger QC
 
   /// Loops over particle species and checks whether the analysed particle is the correct one
   /// \param pdgDau  tuple with PDG daughter codes for the desired decay
-  /// \param particlesMC  table with MC particles
+  /// \param mcParticles  table with MC particles
   /// \param particle  MC particle
   /// \param nParticles  array with number of particles found for each particle species
   /// \param triggerDecision  array with trigger decision
   template <size_t I = 0, typename... Ts, typename T, typename U, typename A>
   constexpr void checkParticleDecay(std::tuple<Ts...> pdgDau,
-                                    const T& particlesMC,
+                                    const T& mcParticles,
                                     const U& particle,
                                     A& nParticles,
                                     const std::array<bool, kNtriggersHF + 1>& triggerDecision)
@@ -83,7 +83,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
       return;
     } else {
       int8_t sign = 0;
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodesCharm[I], std::get<I>(pdgDau), true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodesCharm[I], std::get<I>(pdgDau), true, &sign, 2)) {
         nParticles[I]++;
         hPtDistr[0]->Fill(static_cast<double>(I), static_cast<double>(particle.pt()));
         for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
@@ -94,12 +94,12 @@ struct HfFilterQc { // Main struct for HF trigger QC
       }
 
       // Going for next element.
-      checkParticleDecay<I + 1>(pdgDau, particlesMC, particle, nParticles, triggerDecision);
+      checkParticleDecay<I + 1>(pdgDau, mcParticles, particle, nParticles, triggerDecision);
     }
   }
 
   void process(HfFilter const& filterDecision,
-               McParticles const& particlesMC)
+               McParticles const& mcParticles)
   {
     bool hasHighPt2P = filterDecision.hasHfHighPt2P();
     bool hasHighPt3P = filterDecision.hasHfHighPt3P();
@@ -118,9 +118,9 @@ struct HfFilterQc { // Main struct for HF trigger QC
 
     std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles
-    for (auto const& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       // Check if the particle is of interest
-      checkParticleDecay(pdgCharmDaughters, particlesMC, particle, nPart, triggerDecision);
+      checkParticleDecay(pdgCharmDaughters, mcParticles, particle, nPart, triggerDecision);
     }
 
     for (auto iPart = 0; iPart < kNCharmParticles; ++iPart) {

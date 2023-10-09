@@ -19,7 +19,7 @@
 ///
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
-
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
@@ -46,16 +46,25 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct LfTreeCreatorNuclei {
-  Produces<o2::aod::LfCandNucleusEvents> tableEvents;
+  Produces<o2::aod::LfNuclEvents> tableEvents;
   Produces<o2::aod::LfCandNucleus> tableCandidate;
   Produces<o2::aod::LfCandNucleusExtra> tableCandidateExtra;
   Produces<o2::aod::LfCandNucleusMC> tableCandidateMC;
+  HistogramRegistry hEvents{"hEvents", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
     if (doprocessData == true && doprocessMC == true) {
       LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
     }
+
+    hEvents.add("eventSelection", "eventSelection", kTH1D, {{5, -0.5, 4.5}});
+    auto h = hEvents.get<TH1>(HIST("eventSelection"));
+    h->GetXaxis()->SetBinLabel(1, "total");
+    h->GetXaxis()->SetBinLabel(2, "sel8");
+    h->GetXaxis()->SetBinLabel(3, "z-vertex");
+    h->GetXaxis()->SetBinLabel(4, "not empty");
+    h->GetXaxis()->SetBinLabel(5, "With a good track");
   }
 
   // track
@@ -65,6 +74,8 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
+  Configurable<float> ptcutLow{"ptcutLow", 0.f, "Value of the lower pt cut for the filtering (option 3)"};
+  Configurable<float> ptcutHigh{"ptcutHigh", 10.f, "Value of the upper pt cut for the filtering (option 3)"};
   Configurable<float> filterDeTPC{"filterDeTPC", 15.0, "Value of the Nsigma cut for deuterons for the filtering (option 3)"};
   Configurable<float> filterHeTPC{"filterHeTPC", 15.0, "Value of the Nsigma cut for helium3 for the filtering (option 3)"};
   Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack, 3 is for filtered mode"};
@@ -74,6 +85,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
+  Configurable<bool> doSkim{"doSkim", false, "Save events that contains only selected tracks (for filtered mode)"};
 
   Filter collisionFilter = (aod::collision::posZ < cfgHighCutVertex && aod::collision::posZ > cfgLowCutVertex);
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
@@ -82,27 +94,53 @@ struct LfTreeCreatorNuclei {
                        (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||
                        (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFV0As>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
-                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullTr, aod::pidTOFFullTr,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe,
-                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
+                                    aod::pidTPCLfFullPi, aod::pidTOFFullPi,
+                                    aod::pidTPCLfFullKa, aod::pidTOFFullKa,
+                                    aod::pidTPCLfFullPr, aod::pidTOFFullPr,
+                                    aod::pidTPCLfFullDe, aod::pidTOFFullDe,
+                                    aod::pidTPCLfFullTr, aod::pidTOFFullTr,
+                                    aod::pidTPCLfFullHe, aod::pidTOFFullHe,
+                                    aod::pidTPCLfFullAl, aod::pidTOFFullAl>;
+
+  template <bool isMC, typename TrackType, typename CollisionType>
+  bool checkQuality(CollisionType const& collision, TrackType const& tracks)
+  {
+    bool out = kFALSE;
+    for (auto& track : tracks) {
+
+      if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits) {
+        continue;
+      }
+      if (!track.hasTPC()) {
+        continue;
+      }
+      if (track.tpcNClsCrossedRows() < 90) {
+        continue;
+      }
+      if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
+        continue;
+      }
+      if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
+        continue;
+      }
+      out = kTRUE;
+    }
+    return out;
+  }
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
   {
     // Filling event properties
-    tableEvents(collision.bcId(),
-                collision.numContrib(),
+    tableEvents(collision.numContrib(), // collision.bcId(),
                 collision.posX(),
                 collision.posY(),
                 collision.posZ(),
-                collision.multFV0M(),
+                collision.centFV0A(),
+                collision.centFT0M(),
                 collision.sel8(),
                 collision.bc().runNumber());
 
@@ -123,10 +161,14 @@ struct LfTreeCreatorNuclei {
         if (track.tpcNClsCrossedRows() < 90) {
           continue;
         }
+        if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
+          continue;
+        }
         if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
           continue;
         }
       }
+
       tableCandidate(
         tableEvents.lastIndex(),
         track.dcaXY(), track.dcaZ(),
@@ -164,10 +206,13 @@ struct LfTreeCreatorNuclei {
           const auto& particle = track.mcParticle();
           tableCandidateMC(particle.pdgCode(),
                            particle.isPhysicalPrimary(),
-                           particle.producedByGenerator());
+                           particle.producedByGenerator(),
+                           particle.px(),
+                           particle.py(),
+                           particle.pz());
           continue;
         }
-        tableCandidateMC(0, -1, -1);
+        tableCandidateMC(0, -1, -1, 0, 0, 0);
       }
     }
   }
@@ -175,14 +220,26 @@ struct LfTreeCreatorNuclei {
   Preslice<soa::Filtered<TrackCandidates>> perCollision = aod::track::collisionId;
 
   void processData(soa::Filtered<EventCandidates> const& collisions,
-                   soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
+                   soa::Filtered<TrackCandidates> const& tracks,
+                   aod::BCs const&)
   {
     for (const auto& collision : collisions) {
+      hEvents.fill(HIST("eventSelection"), 0);
       if (useEvsel && !collision.sel8()) {
         continue;
       }
+      hEvents.fill(HIST("eventSelection"), 1);
+      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 2);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+      if (tracksInCollision.size() == 0)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 3);
+      if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
+        continue;
       fillForOneEvent<false>(collision, tracksInCollision);
+      hEvents.fill(HIST("eventSelection"), 4);
     }
   }
 

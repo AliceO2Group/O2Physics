@@ -179,6 +179,7 @@ class TrackSmearer
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
   void useEfficiency(bool val) { mUseEfficiency = val; }                      //;
   void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }      //;
+  void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }          //;
   void setWhatEfficiency(int val) { mWhatEfficiency = val; }                  //;
   lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; } //;
   lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff);
@@ -188,6 +189,8 @@ class TrackSmearer
   // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
   double getPtRes(int pdg, float nch, float eta, float pt);
   double getEtaRes(int pdg, float nch, float eta, float pt);
+  double getAbsPtRes(int pdg, float nch, float eta, float pt);
+  double getAbsEtaRes(int pdg, float nch, float eta, float pt);
   double getEfficiency(int pdg, float nch, float eta, float pt);
 
   int getIndexPDG(int pdg)
@@ -222,6 +225,7 @@ class TrackSmearer
   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;
+  bool mSkipUnreconstructed = true; // don't smear tracks that are not reco'ed
   int mWhatEfficiency = 1;
   float mdNdEta = 1600.;
 };

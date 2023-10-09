@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
       std::ofstream out("CutCulator.txt");
       std::streambuf* coutbuf = std::cout.rdbuf(); // save old buf
       std::cout.rdbuf(out.rdbuf());                // redirect std::cout to out.txt!
-      for (int i = 0; i < 20; i++) {
+      for (int i = 0; i < 1000; i++) {
         cut.analyseCuts(choice, true, 1);
       }
       std::cout.rdbuf(coutbuf); // reset to standard output again

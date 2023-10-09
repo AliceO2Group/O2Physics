@@ -20,7 +20,6 @@
 #include "TH2.h"
 #include "TProfile.h"
 
-using namespace std;
 class multGlauberNBDFitter : public TNamed
 {
 
@@ -108,6 +107,7 @@ class multGlauberNBDFitter : public TNamed
 
   //The actual output: mu, k, f, norm
   Double_t fMu;
+  Double_t fdMu; // variable mu option
   Double_t fk;
   Double_t ff;
   Double_t fnorm;

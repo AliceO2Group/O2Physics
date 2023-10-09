@@ -24,6 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -54,6 +55,12 @@ struct Alice3Dilepton {
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
+  Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
+  Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
+  Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
+  Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF", 3., "Pion exclusion in outer TOF"};
+  Configurable<float> nSigmaPionCutInnerTOF{"nSigmaPionCutInnerTOF", 3., "Pion exclusion in inner TOF"};
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -80,6 +87,7 @@ struct Alice3Dilepton {
     registry.add("Generated/Particle/Pt", "Particle Pt", kTH1F, {axisPt});
     registry.add("Generated/Particle/Eta", "Particle Eta", kTH1F, {axisEta});
     registry.add("Generated/Particle/Phi", "Particle Phi", kTH1F, {axisPhi});
+    registry.add("Generated/Particle/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Generated/Particle/prodVx", "Particle Prod. Vertex X", kTH1F, {axisProdx});
     registry.add("Generated/Particle/prodVy", "Particle Prod. Vertex Y", kTH1F, {axisPrody});
     registry.add("Generated/Particle/prodVz", "Particle Prod. Vertex Z", kTH1F, {axisProdz});
@@ -89,39 +97,32 @@ struct Alice3Dilepton {
     registry.add("Generated/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Generated/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
     registry.add("Generated/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-    registry.add("Generated/Pair/LSpp/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Generated/Pair/LSpp/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Generated/Pair/LSpp/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Generated/Pair/LSpp/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Generated/Pair/LSpp/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-    registry.add("Generated/Pair/LSnn/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Generated/Pair/LSnn/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Generated/Pair/LSnn/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Generated/Pair/LSnn/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Generated/Pair/LSnn/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
+    registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSpp/");
+    registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSnn/");
 
     registry.add("Reconstructed/Event/VtxX", "Vertex X", kTH1F, {axisVx});
     registry.add("Reconstructed/Event/VtxY", "Vertex Y", kTH1F, {axisVy});
     registry.add("Reconstructed/Event/VtxZ", "Vertex Z", kTH1F, {axisVz});
+
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Eta", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
+
+    registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
 
     registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Reconstructed/Pair/LSpp/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Reconstructed/Pair/LSpp/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Reconstructed/Pair/LSpp/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Reconstructed/Pair/LSpp/Phi", "Pair Phi", kTH1F, {axisPhi});
-    registry.add("Reconstructed/Pair/LSnn/Mass", "Pair Mass", kTH1F, {axisM});
-    registry.add("Reconstructed/Pair/LSnn/Pt", "Pair Pt", kTH1F, {axisPt});
-    registry.add("Reconstructed/Pair/LSnn/Eta", "Pair Eta", kTH1F, {axisEta});
-    registry.add("Reconstructed/Pair/LSnn/Phi", "Pair Phi", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
+    registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSpp/");
+    registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSnn/");
 
     HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
     registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
@@ -169,15 +170,15 @@ struct Alice3Dilepton {
     if (mother1_pdg != mother2_pdg)
       return -1;
 
-    if (abs(mother1_pdg) != 22        // photon
-        && abs(mother1_pdg) != 111    // pi0
-        && abs(mother1_pdg) != 221    // eta
-        && abs(mother1_pdg) != 331    // eta'
-        && abs(mother1_pdg) != 113    // rho
-        && abs(mother1_pdg) != 223    // omega
-        && abs(mother1_pdg) != 333    // phi
-        && abs(mother1_pdg) != 443    // Jpsi
-        && abs(mother1_pdg) != 100443 // psi2S
+    if (std::abs(mother1_pdg) != 22        // photon
+        && std::abs(mother1_pdg) != 111    // pi0
+        && std::abs(mother1_pdg) != 221    // eta
+        && std::abs(mother1_pdg) != 331    // eta'
+        && std::abs(mother1_pdg) != 113    // rho
+        && std::abs(mother1_pdg) != 223    // omega
+        && std::abs(mother1_pdg) != 333    // phi
+        && std::abs(mother1_pdg) != 443    // Jpsi
+        && std::abs(mother1_pdg) != 100443 // psi2S
     ) {
       return -1;
     }
@@ -210,7 +211,7 @@ struct Alice3Dilepton {
     int mother1_pdg = mother_p1.pdgCode();
     int mother2_pdg = mother_p2.pdgCode();
 
-    if (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999))) {
+    if (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999))) {
       return HFllType::kBe_Be; // bb->ee, decay type = 2
     }
 
@@ -222,10 +223,10 @@ struct Alice3Dilepton {
       int grand_mother1_pdg = grand_mother_p1.pdgCode();
       int grand_mother2_pdg = grand_mother_p2.pdgCode();
 
-      if (((400 < abs(mother1_pdg) && abs(mother1_pdg) < 499) || (4000 < abs(mother1_pdg) && abs(mother1_pdg) < 4999)) && ((400 < abs(mother2_pdg) && abs(mother2_pdg) < 499) || (4000 < abs(mother2_pdg) && abs(mother2_pdg) < 4999))) { // mother is charm
+      if (((400 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 499) || (4000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 4999)) && ((400 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 499) || (4000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 4999))) { // mother is charm
 
-        if (((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
-          return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
+        if (((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
+          return kBCe_BCe;                                                                                                                                                                                                                                                                                                          // b->c->e and b->c->e, decay type = 1
         } else {
           return kCe_Ce; // prompt cc->ee, decay type = 0
         }
@@ -233,8 +234,8 @@ struct Alice3Dilepton {
 
       if (motherid_p1 == grand_motherid_p2 || grand_motherid_p1 == motherid_p2) {
         if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
+          (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) ||
+          (((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999)) && ((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)))) {
           return HFllType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3
         }
       }
@@ -273,8 +274,8 @@ struct Alice3Dilepton {
 
       if (motherid_p1 != grand_motherid_p2 && grand_motherid_p1 != motherid_p2) { // different mother and grand mother
         if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
+          (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) ||
+          (((500 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 599) || (5000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 5999)) && ((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)))) {
           return HFllType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4
         }
       }
@@ -292,12 +293,12 @@ struct Alice3Dilepton {
         }
 
         auto mct1 = t1.template mcParticle_as<aod::McParticles>();
-        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+        if (std::abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
           continue;
         }
 
         auto mct2 = t2.template mcParticle_as<aod::McParticles>();
-        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+        if (std::abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
           continue;
         }
 
@@ -315,14 +316,15 @@ struct Alice3Dilepton {
         // float dcaXY_res_t2 = sqrt(t2.cYY());
 
         float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         registry.fill(HIST("Reconstructed/Pair/ULS/Mass"), v12.M());
         registry.fill(HIST("Reconstructed/Pair/ULS/Pt"), v12.Pt());
         registry.fill(HIST("Reconstructed/Pair/ULS/Eta"), v12.Eta());
         registry.fill(HIST("Reconstructed/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
         registry.fill(HIST("Reconstructed/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
       } // end of unlike-sign pair loop
 
@@ -333,12 +335,12 @@ struct Alice3Dilepton {
         }
 
         auto mct1 = t1.template mcParticle_as<aod::McParticles>();
-        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+        if (std::abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
           continue;
         }
 
         auto mct2 = t2.template mcParticle_as<aod::McParticles>();
-        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+        if (std::abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
           continue;
         }
 
@@ -356,20 +358,22 @@ struct Alice3Dilepton {
         // float dcaXY_res_t2 = sqrt(t2.cYY());
 
         float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == PairType::kLSpp) {
           registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Pt"), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Mass_Pt"), v12.M(), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
           registry.fill(HIST("Reconstructed/Pair/LSpp/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
         } else if constexpr (pairtype == PairType::kLSnn) {
           registry.fill(HIST("Reconstructed/Pair/LSnn/Mass"), v12.M());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Pt"), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Mass_Pt"), v12.M(), v12.Pt());
           registry.fill(HIST("Reconstructed/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
           registry.fill(HIST("Reconstructed/Pair/LSnn/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
         }
@@ -382,7 +386,7 @@ struct Alice3Dilepton {
   {
     if constexpr (pairtype == PairType::kULS) {
       for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+        if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
         }
 
@@ -402,8 +406,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         registry.fill(HIST("Generated/Pair/ULS/Mass"), v12.M());
@@ -415,7 +419,7 @@ struct Alice3Dilepton {
 
     } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
       for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+        if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
         }
 
@@ -435,8 +439,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == PairType::kLSpp) {
@@ -470,7 +474,7 @@ struct Alice3Dilepton {
 
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
       for (const auto& mcParticle : mcParticles_per_coll) {
-        if (abs(mcParticle.pdgCode()) != pdg) {
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
         if (!mcParticle.isPhysicalPrimary()) {
@@ -483,6 +487,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Generated/Particle/Pt"), mcParticle.pt());
         registry.fill(HIST("Generated/Particle/Eta"), mcParticle.eta());
         registry.fill(HIST("Generated/Particle/Phi"), mcParticle.phi());
+        registry.fill(HIST("Generated/Particle/Eta_Pt"), mcParticle.pt(), mcParticle.eta());
 
         registry.fill(HIST("Generated/Particle/prodVx"), mcParticle.vx());
         registry.fill(HIST("Generated/Particle/prodVy"), mcParticle.vy());
@@ -500,8 +505,13 @@ struct Alice3Dilepton {
     } // end of mc collision loop
   }   // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs>;
-  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::TracksAlice3>;
+  // Filter trackFilter = etaMin < o2::aod::track::eta &&
+  //                      o2::aod::track::eta < etaMax &&
+  //                      ptMin < o2::aod::track::pt &&
+  //                      o2::aod::track::pt < ptMax &&
+  //                      o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -520,19 +530,31 @@ struct Alice3Dilepton {
 
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracks_coll) {
-        // if (!IsInAcceptance(neg) || !IsInAcceptance(pos)) {
-        //   continue;
-        // }// filtered already
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (useGen) {
+          if (!IsInAcceptance(mcParticle)) {
+            continue;
+          }
+        } else {
+          if (!IsInAcceptance(track)) {
+            continue;
+          }
+        }
 
         // if (fabs(track.nSigmaElectronOuterTOF())<3 ) {
         //   continue;
         // }
 
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
-        if (abs(mcParticle.pdgCode()) != pdg) {
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
         }
         if (!mcParticle.isPhysicalPrimary()) {
@@ -544,6 +566,23 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
+        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
+        // implement pid
+        bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+        bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+        isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
+        bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+        bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+        isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
+        if (isEleOuterTOF || isEleInnerTOF) {
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phi());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
+        }
       } // end of track loop
 
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);

@@ -20,6 +20,7 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
@@ -52,6 +53,9 @@ struct HfTaskBplus {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
   Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
 
@@ -66,7 +70,7 @@ struct HfTaskBplus {
      {"hPtGenSig", bPlusCandMatch + "candidate #it{p}_{T}^{gen.} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}},
      {"hPtGen", mcParticleMatched + "candidate #it{p}_{T} (GeV/#it{c});" + entries, {HistType::kTH1F, {{300, 0., 30.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     const AxisSpec axisMass{150, 4.5, 6.0};
     const AxisSpec axisCPA{120, -1.1, 1.1};
@@ -153,7 +157,10 @@ struct HfTaskBplus {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::BigTracks const&)
+  void process(aod::Collisions const& collision,
+               soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&,
+               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&,
+               aod::Tracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -165,7 +172,7 @@ struct HfTaskBplus {
       }
       auto ptCandBplus = candidate.pt();
       auto candD0 = candidate.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
-      auto candPi = candidate.prong1_as<aod::BigTracks>();
+      auto candPi = candidate.prong1();
 
       registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
       registry.fill(HIST("hPtCand"), ptCandBplus);
@@ -195,7 +202,9 @@ struct HfTaskBplus {
   }   // process
 
   void processMc(soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const&,
-                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCand2Prong const&)
+                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& mcParticles,
+                 aod::TracksWMc const& tracks,
+                 aod::HfCand2Prong const&)
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
@@ -209,8 +218,8 @@ struct HfTaskBplus {
       // auto candD0 = candidate.prong0_as<aod::HfCand2Prong>();
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
-        auto particleMother = particlesMC.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
+        auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandBplus);
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), ptCandBplus);
@@ -249,22 +258,21 @@ struct HfTaskBplus {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, pdg->Mass(pdg::Code::kBPlus));
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
           counter++;
         }
 

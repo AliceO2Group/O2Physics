@@ -45,7 +45,7 @@ struct ueCharged {
 
   TrackSelection myTrackSelection();
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   // acceptance cuts

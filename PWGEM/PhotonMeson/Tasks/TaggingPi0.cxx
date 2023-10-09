@@ -49,6 +49,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::photonpair;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using MyV0Photon = MyV0Photons::iterator;

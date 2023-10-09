@@ -9,13 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(skimmergammaconversions
-                    SOURCES skimmerGammaConversions.cxx
+o2physics_add_dpl_workflow(skimmer-gamma-conversion
+                    SOURCES skimmerGammaConversion.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmergammaconversionstruthonlymc
-                    SOURCES skimmerGammaConversionsTruthOnlyMc.cxx
+o2physics_add_dpl_workflow(skimmer-gamma-conversion-truthonlymc
+                    SOURCES skimmerGammaConversionTruthOnlyMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -34,7 +34,7 @@ o2physics_add_dpl_workflow(create-emreduced-mc-event
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmergammacalo
+o2physics_add_dpl_workflow(skimmer-gamma-calo
                     SOURCES skimmerGammaCalo.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -42,6 +42,11 @@ o2physics_add_dpl_workflow(skimmergammacalo
 o2physics_add_dpl_workflow(skimmer-phos
                     SOURCES skimmerPHOS.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::PHOSBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-dalitz-ee
+                    SOURCES skimmerDalitzEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(gamma-table-producer
@@ -52,9 +57,4 @@ o2physics_add_dpl_workflow(gamma-table-producer
 o2physics_add_dpl_workflow(produce-meson-calo
                     SOURCES produceMesonCalo.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(check-v0-mc
-                    SOURCES checkV0MC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
