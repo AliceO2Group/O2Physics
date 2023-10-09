@@ -179,7 +179,7 @@ struct hypertriton3bodyAnalysisMc {
     for (auto& vtx : vtx3bodydatas) {
       // couldn't filter cosPA and radius variables (dynamic columns)
 
-      //int lLabel = -1;
+      // int lLabel = -1;
       int lPDG = -1;
       float lPt = -1;
       double MClifetime = -1;
@@ -196,7 +196,7 @@ struct hypertriton3bodyAnalysisMc {
             for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
               for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
                 if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
-                  //lLabel = lMother1.globalIndex();
+                  // lLabel = lMother1.globalIndex();
                   lPt = lMother1.pt();
                   lPDG = lMother1.pdgCode();
                   if ((lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) ||
@@ -399,8 +399,7 @@ struct hypertriton3bodyLabelCheck {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
-        } 
-        else if (mcparticle.pdgCode() == -1010010030) {
+        } else if (mcparticle.pdgCode() == -1010010030) {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
@@ -1049,14 +1048,11 @@ struct hypertriton3bodyMcParticleCount {
 
       if (mcparticle.pdgCode() == 211 || mcparticle.pdgCode() == -211) {
         registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 3.5);
-      }
-      else if (mcparticle.pdgCode() == 2212 || mcparticle.pdgCode() == -2212) {
+      } else if (mcparticle.pdgCode() == 2212 || mcparticle.pdgCode() == -2212) {
         registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 4.5);
-      }
-      else if (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) {
+      } else if (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) {
         registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 5.5);
-      }
-      else if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
+      } else if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
         registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 6.5);
         registry.fill(HIST("hMcHypertritonCount"), 1.5);
       }
