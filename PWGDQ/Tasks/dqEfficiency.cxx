@@ -751,7 +751,7 @@ struct AnalysisSameEventPairing {
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
       if constexpr ((TPairType == VarManager::kDecayToEE) || (TPairType == VarManager::kDecayToMuMu)) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA, VarManager::fgValues);
       }
 
       // run MC matching for this pair
@@ -786,8 +786,8 @@ struct AnalysisSameEventPairing {
                         VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
                         VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
                         VarManager::fgValues[VarManager::kCosPointingAngle],
-                        t1.pt(), t1.eta(), t1.phi(), t1.sign(),
-                        t2.pt(), t2.eta(), t2.phi(), t2.sign(),
+                        VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
+                        VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
                         t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
                         t1.mcMask(), t2.mcMask(),
                         t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
