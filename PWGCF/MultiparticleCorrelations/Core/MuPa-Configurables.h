@@ -35,16 +35,8 @@ Configurable<bool> cfUseCCDB{
 // Test0:
 Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
                                     "calculate or not Test0"};
-// Configurable<string> cfFileWithLabels{"cfFileWithLabels",
-// "/home/abilandz/DatasetsO2/labels.root", "path to external ROOT file which
-// specifies all labels"}; Configurable<string>
-// cfFileWithLabels{"cfFileWithLabels",
-// "/alice/cern.ch/user/a/abilandz/labels.root", "path to external ROOT file
-// which specifies all labels"};
-Configurable<string> cfFileWithLabels{
-  "cfFileWithLabels", "/alice-ccdb.cern.ch/Users/a/abilandz/test-4",
-  "path to CCDB dir (not file!) containing ROOT file which specifies all "
-  "labels"};
+Configurable<string> cfFileWithLabels{"cfFileWithLabels",
+                                      "/home/abilandz/DatasetsO2/labels.root", "path to external ROOT file which specifies all labels"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 
 // Particle weights:
 Configurable<bool> cfUsePhiWeights{"cfUsePhiWeights", false,
@@ -53,16 +45,8 @@ Configurable<bool> cfUsePtWeights{"cfUsePtWeights", false,
                                   "use or not pt weights"};
 Configurable<bool> cfUseEtaWeights{"cfUseEtaWeights", false,
                                    "use or not eta weights"};
-// Configurable<string> cfFileWithWeights{"cfFileWithWeights",
-// "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which
-// holds all particle weights in O2 format"}; Configurable<string>
-// cfFileWithWeights{"cfFileWithWeights",
-// "/alice/cern.ch/user/a/abilandz/O2/weights.root", "path to external ROOT file
-// which holds all particle weights in O2 format"};
-Configurable<string> cfFileWithWeights{
-  "cfFileWithWeights", "/alice-ccdb.cern.ch/Users/a/abilandz/test-8",
-  "path to CCDB dir (not file!) containing ROOT file which holds all "
-  "particle weights in O2 format"};
+Configurable<string> cfFileWithWeights{"cfFileWithWeights",
+                                       "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 
 // Event cuts:
 Configurable<int> cNumberOfEvents_min{

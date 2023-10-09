@@ -47,8 +47,7 @@ enum eEventHistograms {
   eVertex_y,
   eVertex_z,
   eNContributors, // Number of tracks used for the vertex
-  eEventHistograms_N
-};
+  eEventHistograms_N };
 
 enum eParticleHistograms {
   ePhi,
@@ -57,7 +56,6 @@ enum eParticleHistograms {
   etpcNClsCrossedRows, // from aod::TracksExtra
   eDCA_xy,             // from aod::TracksDCA
   eDCA_z,
-  eParticleHistograms_N
-};
+  eParticleHistograms_N };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

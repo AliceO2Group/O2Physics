@@ -1608,12 +1608,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
            TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
     }
     TList* baseList =
-      (TList*)(cm.get<TList>(TString(filePath)
+      reinterpret_cast<TList*>((cm.get<TList>(TString(filePath)
                                .ReplaceAll("/alice-ccdb.cern.ch/", "")
                                .Data()))
-        ->Clone(); // TBI 20231005 circumventing temporarily problem with
-                   // the ownership this way, but I shouldn't be really
-                   // clonning here anything
+        ->Clone()); // TBI 20231005 circumventing temporarily problem with
+                    // the ownership this way, but I shouldn't be really
+                    // clonning here anything
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1635,9 +1635,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-  } // else if(bFileIsInCCDB) {
-
-  else {
+  } else {
 
     // f) Handle the local case:
     //    TBI 20231008 In principle, also for the local case in O2, I could
@@ -1777,18 +1775,17 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     // cm.get<TObjArray>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/","").Data());
     // // TBI 20231004 doesn't work due to ownership problem, later in
     // StoreLabelsInPlaceholder()
-    oa = (TObjArray*)(cm.get<TObjArray>(
+    oa = reinterpret_cast<TObjArray*>((cm.get<TObjArray>(
                         TString(filePath)
                           .ReplaceAll("/alice-ccdb.cern.ch/", "")
                           .Data()))
-           ->Clone(); // TBI 20231004 circumventing temporarily problem with
-                      // the ownership this way
+           ->Clone()); // TBI 20231004 circumventing temporarily problem with
+                       // the ownership this way
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
-  } // else if(bFileIsInCCDB) {
-  else {
+  } else {
 
     // e) Handle the local case:
     // Check if the external ROOT file exists at specified path:
@@ -1978,7 +1975,7 @@ TObject* GetObjectFromList(TList* list,
     (objectIter = next())) // double round braces are to silent the warnings
   {
     if (TString(objectIter->ClassName()).EqualTo("TList")) {
-      objectFinal = GetObjectFromList((TList*)objectIter, objectName);
+      objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);   
       if (objectFinal)
         return objectFinal;
     }
