@@ -715,8 +715,9 @@ struct kinkAnalysis {
                     continue;
               }
 
-              if (!cfgIsMC) if(sigmaPt < 1.6)
-                continue;
+              if (!cfgIsMC)
+                if(sigmaPt < 1.6)
+                  continue;
 
               if (theta * radToDeg < 0.5)
                 continue;
@@ -742,19 +743,18 @@ struct kinkAnalysis {
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
-                   histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
-                   if ((motherPdg == particlePdgCode||motherPdg == -3222)&&(daughterPdg==-211)) {
-                     histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
-                     histos.fill(HIST("hptMDtrue"), sigmaPt, PionTr.getPt());
-                   }
-                   else if ((motherPdg == particlePdgCode||motherPdg == -3222)&&(daughterPdg!=-211)) {
-                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
-                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                   }
-                   else {//if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
-                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
-                     histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
-                   }
+                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
+                  if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg == -211)) {
+                    histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
+                    histos.fill(HIST("hptMDtrue"), sigmaPt, PionTr.getPt());
+                  } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg!=-211)) {
+                    histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
+                    histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
+                  }
+                  else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
+                  histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
+                  histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
+                  }
                 }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }
