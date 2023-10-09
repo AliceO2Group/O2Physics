@@ -83,7 +83,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     {
      TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "pt");
      SetWeightsHist(ptWeights,"pt");
-    } 
+    }
     if(pw_a.fUseWeights[wETA])
     {
      TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "eta");
@@ -168,7 +168,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
         cout<<Form("dPhi = %f\nwPhi = %f",dPhi,wPhi)<<endl;
         //sleep(2);
         continue;
-       } 
+       }
       } // if(pw_a.fUseWeights[wPHI])
       if(pw_a.fUseWeights[wPT])
       {
@@ -192,7 +192,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
         cout<<Form("dEta = %f\nwEta = %f",dEta,wEta)<<endl;
         //sleep(2);
         continue;
-       } 
+       }
       } // if(pw_a.fUseWeights[wETA])
 
       for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
