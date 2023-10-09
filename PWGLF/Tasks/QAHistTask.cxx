@@ -95,7 +95,6 @@ struct QAHistTask {
     QA_reg.add("histEta_cent", "Pseudorapidity vs Centrality", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_reg.add("histTrackLength", "Track length", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
 
-
     // QA proton
     QA_p.add("histTpcSignalData", "Specific energy loss (p)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     QA_p.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -143,7 +142,6 @@ struct QAHistTask {
     QA_antip.add("histEta", "Pseudorapidity with centrality cut (antip)", HistType::kTH1F, {etaAxis});
     QA_antip.add("histEta_cent", "Pseudorapidity vs Centrality (antip)", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_antip.add("histTrackLength", "Track length (antip)", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-
 
     // QA deuteron
     QA_d.add("histTpcSignalData", "Specific energy loss (d)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
@@ -193,7 +191,6 @@ struct QAHistTask {
     QA_antid.add("histEta_cent", "Pseudorapidity vs Centrality (antid)", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_antid.add("histTrackLength", "Track length (antid)", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
 
-
     // QA triton
     QA_t.add("histTpcSignalData", "Specific energy loss (t)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     QA_t.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -241,7 +238,6 @@ struct QAHistTask {
     QA_antit.add("histEta", "Pseudorapidity with centrality cut (antit)", HistType::kTH1F, {etaAxis});
     QA_antit.add("histEta_cent", "Pseudorapidity vs Centrality (antit)", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_antit.add("histTrackLength", "Track length (antit)", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-
 
     // QA Helium-3
     QA_He3.add("histTpcSignalData", "Specific energy loss (He3)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
@@ -291,7 +287,6 @@ struct QAHistTask {
     QA_antiHe3.add("histEta_cent", "Pseudorapidity vs Centrality (antiHe3)", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_antiHe3.add("histTrackLength", "Track length (antiHe3)", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
 
-
     // QA Helium-4
     QA_He4.add("histTpcSignalData", "Specific energy loss (He4)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     QA_He4.add("histTofSignalData", "TOF signal (He4)", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -339,7 +334,6 @@ struct QAHistTask {
     QA_antiHe4.add("histEta", "Pseudorapidity with centrality cut (antiHe4)", HistType::kTH1F, {etaAxis});
     QA_antiHe4.add("histEta_cent", "Pseudorapidity vs Centrality (antiHe4)", HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_antiHe4.add("histTrackLength", "Track length (antiHe4)", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-
   }
 
   // Configurables
@@ -348,7 +342,7 @@ struct QAHistTask {
   Configurable<bool> enable_triton_processing{"enable_triton_processing", false, "0: disabled, 1: enabled"};
   Configurable<bool> enable_Helium3_processing{"enable_Helium3_processing", false, "0: disabled, 1: enabled"};
   Configurable<bool> enable_Helium4_processing{"enable_Helium4_processing", false, "0: disabled, 1: enabled"};
-  
+
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "0: disabled, 1: enabled"};
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
@@ -383,7 +377,6 @@ struct QAHistTask {
   Configurable<float> maxChi2TOF{"maxChi2TOF", 100.0f, "max chi2 for the TOF track segment"};
   Configurable<float> minTPCFoundOverFindable{"minTPCFoundOverFindable", 0.0f, "min ratio of found over findable clusters TPC"};
   Configurable<float> maxTPCFoundOverFindable{"maxTPCFoundOverFindable", 2.0f, "max ratio of found over findable clusters TPC"};
-
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
@@ -430,7 +423,8 @@ struct QAHistTask {
 
       if (custom_Track_selection && (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.length() < minTrackLength || track.length() > maxTrackLength || track.tpcNClsFindable() < minTPCNClsFindable || track.tpcNClsShared() > maxTPCNClsShared || track.tpcFoundOverFindableCls() < minTPCFoundOverFindable || track.tpcFoundOverFindableCls() > maxTPCFoundOverFindable)) {
 
-        if (track.hasTOF() && track.tofChi2() > maxChi2TOF) continue;
+        if (track.hasTOF() && track.tofChi2() > maxChi2TOF)
+          continue;
         continue;
       }
 
@@ -459,7 +453,8 @@ struct QAHistTask {
         continue;
       }
 
-      if (track.pt() < pTmin || track.pt() > pTmax) continue;
+      if (track.pt() < pTmin || track.pt() > pTmax)
+        continue;
 
       // fill QA histograms (all species)
       float nSigmaProton = track.tpcNSigmaPr();
@@ -504,7 +499,6 @@ struct QAHistTask {
         QA_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         QA_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
       }
-
 
       // fill QA histograms (proton)
       if (TMath::Abs(nSigmaProton) < nsigmacut && enable_proton_processing) {
@@ -586,7 +580,6 @@ struct QAHistTask {
         }
       }
 
-
       // fill QA histograms (deuteron)
       if (TMath::Abs(nSigmaDeut) < nsigmacut && enable_deuteron_processing) {
         if (track.sign() > 0) {
@@ -666,7 +659,6 @@ struct QAHistTask {
           }
         }
       }
-
 
       // fill QA histograms (triton)
       if (TMath::Abs(nSigmaTriton) < nsigmacut && enable_triton_processing) {
@@ -748,7 +740,6 @@ struct QAHistTask {
         }
       }
 
-
       // fill QA histograms (Helium-3)
       if (TMath::Abs(nSigmaHe3) < nsigmacut && enable_Helium3_processing) {
         if (track.sign() > 0) {
@@ -828,7 +819,6 @@ struct QAHistTask {
           }
         }
       }
-
 
       // fill QA histograms (Helium-4)
       if (TMath::Abs(nSigmaHe4) < nsigmacut && enable_Helium4_processing) {
@@ -910,13 +900,8 @@ struct QAHistTask {
         }
       }
 
-
-
     } // end loop over tracks
   }
-
-
-
 
   //****************************************************************************************************
 
@@ -934,7 +919,6 @@ struct QAHistTask {
     fillHistograms(event, tracks);
   }
   PROCESS_SWITCH(QAHistTask, processData, "process data", true);
-
 };
 
 //****************************************************************************************************
