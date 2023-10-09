@@ -18,14 +18,11 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_dplus_hadron;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
-using namespace o2::constants::math;
 
 namespace o2::aod
 {

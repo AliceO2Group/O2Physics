@@ -18,6 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -25,9 +26,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorChicToJpsiGamma {
@@ -46,7 +45,9 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], hf_cuts_chic_to_jpsi_gamma::nBinsPt, hf_cuts_chic_to_jpsi_gamma::nCutVars, hf_cuts_chic_to_jpsi_gamma::labelsPt, hf_cuts_chic_to_jpsi_gamma::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+
+  HfHelper hfHelper;
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -75,8 +76,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
-    if (std::abs(invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
+    auto mchic = o2::analysis::pdg::MassChiC1; // chi_c1(1p)
+    if (std::abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "Chic topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
