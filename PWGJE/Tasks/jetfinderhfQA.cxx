@@ -27,6 +27,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -37,13 +38,11 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 #include "Framework/runDataProcessing.h"
 
 template <typename JetTableData, typename JetConstituentTableData, typename CandidateTableData, typename JetTableMCD, typename JetConstituentTableMCD, typename JetMatchingTableMCDMCP, typename JetTableMCDWeighted, typename CandidateTableMCD, typename JetTableMCP, typename JetConstituentTableMCP, typename JetMatchingTableMCPMCD, typename JetTableMCPWeighted, typename ParticleTableMCP>
 struct JetFinderHFQATask {
-
   HistogramRegistry registry;
 
   Configurable<float> selectedJetsRadius{"selectedJetsRadius", 0.4, "resolution parameter for histograms without radius"};
@@ -59,6 +58,8 @@ struct JetFinderHFQATask {
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
   Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
+
+  HfHelper hfHelper;
   std::string trackSelection;
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
@@ -234,26 +235,26 @@ struct JetFinderHFQATask {
       if (jet.r() == round(selectedJetsRadius * 100.0f)) {
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>) {
           if (hfcandidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
           if (hfcandidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
 
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>) {
           if (hfcandidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassLcToPKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassLcToPKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
           if (hfcandidate.isSelLcToPiKP() >= selectionFlagLcToPiPK) {
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassLcToPiKP(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassLcToPiKP(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
 
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>) {
           if (hfcandidate.isSelBplusToD0Pi() >= selectionFlagBplus) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
       }

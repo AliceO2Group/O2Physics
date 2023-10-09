@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -26,9 +27,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorXToJpsiPiPi {
@@ -47,7 +46,9 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], hf_cuts_x_to_jpsi_pi_pi::nBinsPt, hf_cuts_x_to_jpsi_pi_pi::nCutVars, hf_cuts_x_to_jpsi_pi_pi::labelsPt, hf_cuts_x_to_jpsi_pi_pi::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+
+  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
@@ -82,8 +83,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
-    if (std::abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - o2::analysis::pdg::MassX3872) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }

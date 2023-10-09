@@ -21,6 +21,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -28,10 +29,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_bplus;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 struct HfCandidateSelectorBplusToD0Pi {
   Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate;
@@ -53,13 +51,14 @@ struct HfCandidateSelectorBplusToD0Pi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 999., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], hf_cuts_bplus_to_d0_pi::nBinsPt, hf_cuts_bplus_to_d0_pi::nCutVars, hf_cuts_bplus_to_d0_pi::labelsPt, hf_cuts_bplus_to_d0_pi::labelsCutVar}, "B+ candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
   // check if selectionFlagD (defined in candidateCreatorBplus.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPi selectorPion;
+  HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 
@@ -158,7 +157,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       auto trackPi = hfCandB.prong1_as<TracksPidWithSel>();
 
       // topological cuts
-      if (!hf_sel_candidate_bplus::selectionTopol(hfCandB, cuts, binsPt)) {
+      if (!hfHelper.selectionBplusToD0PiTopol(hfCandB, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         // LOGF(debug, "B+ candidate selection failed at topology selection");
         continue;
@@ -176,7 +175,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       // track-level PID selection
       if (usePid) {
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!selectionPID(pidTrackPi)) {
+        if (!selectionPID(pidTrackPi)) { // FIXME use helper function
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }

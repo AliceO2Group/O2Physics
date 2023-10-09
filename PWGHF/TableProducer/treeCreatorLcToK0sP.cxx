@@ -20,6 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -168,6 +169,8 @@ struct HfTreeCreatorLcToK0sP {
   Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
 
+  HfHelper hfHelper;
+
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
@@ -221,8 +224,8 @@ struct HfTreeCreatorLcToK0sP {
       candidate.mAntiLambda(),
       candidate.mK0Short(),
       candidate.mGamma(),
-      o2::aod::hf_cand_casc::ctV0K0s(candidate),
-      o2::aod::hf_cand_casc::ctV0Lambda(candidate),
+      hfHelper.ctV0K0s(candidate),
+      hfHelper.ctV0Lambda(candidate),
       candidate.dcaV0daughters(),
       candidate.pxpos(),
       candidate.pypos(),
@@ -236,16 +239,16 @@ struct HfTreeCreatorLcToK0sP {
       candidate.dcanegtopv(),
       bach.tpcNSigmaPr(),
       bach.tofNSigmaPr(),
-      o2::aod::hf_cand_casc::invMassLcToK0sP(candidate),
+      hfHelper.invMassLcToK0sP(candidate),
       candidate.pt(),
       candidate.p(),
       candidate.cpa(),
       candidate.cpaXY(),
-      o2::aod::hf_cand_3prong::ctLc(candidate),
+      hfHelper.ctLc(candidate),
       candidate.eta(),
       candidate.phi(),
-      o2::aod::hf_cand_3prong::yLc(candidate),
-      o2::aod::hf_cand_3prong::eLc(candidate),
+      hfHelper.yLc(candidate),
+      hfHelper.eLc(candidate),
       flagMc,
       originMcRec);
   }
@@ -294,7 +297,7 @@ struct HfTreeCreatorLcToK0sP {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
-                       RecoDecay::getMassPDG(particle.pdgCode())),
+                       o2::analysis::pdg::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

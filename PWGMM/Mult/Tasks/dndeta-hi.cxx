@@ -58,9 +58,6 @@ using namespace o2::aod::track;
 using namespace o2::aod;
 using namespace o2::aod::evsel;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_bplus;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
