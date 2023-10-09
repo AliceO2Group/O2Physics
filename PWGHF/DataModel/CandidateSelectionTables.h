@@ -305,6 +305,7 @@ DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
 namespace hf_sel_candidate_bs
 {
 DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int); //!
+DECLARE_SOA_COLUMN(MlProbBsToDsPi, mlProbBsToDsPi, std::vector<float>); //!
 
 /// Apply topological cuts as defined in SelectorCuts.h
 /// \param candBs Bs candidate
@@ -396,6 +397,8 @@ bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 } // namespace hf_sel_candidate_bs
 DECLARE_SOA_TABLE(HfSelBsToDsPi, "AOD", "HFSELBS", //!
                   hf_sel_candidate_bs::IsSelBsToDsPi);
+DECLARE_SOA_TABLE(HfMlBsToDsPi, "AOD", "HFMLBS", //!
+                  hf_sel_candidate_bs::MlProbBsToDsPi);
 
 namespace hf_sel_candidate_bplus
 {
@@ -417,7 +420,7 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   }
 
   // B+ mass cut
-  if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+  if (std::abs(o2::aod::hf_cand_bplus::invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
     return false;
   }
 

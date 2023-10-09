@@ -50,6 +50,10 @@ struct LFNucleiBATask {
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
+  // Set the multiplity event limits
+  Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
+  Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
+
   // Set the z-vertex event cut limits
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex upper limit"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex lower limit"};
@@ -1263,11 +1267,19 @@ struct LFNucleiBATask {
       if (!event.sel8()) {
         return;
       }
+      if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut) {
+        return;
+      }
+      // if (event.centFV0M() < cfgLowMultCut || event.centFV0M() > cfgHighMultCut) {
+      //   return;
+      // }
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex) {
         return;
       }
     }
 
+    if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut)
+      return;
     if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
       return;
 

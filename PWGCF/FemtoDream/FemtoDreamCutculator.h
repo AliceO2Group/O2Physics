@@ -330,18 +330,22 @@ class FemtoDreamCutculator
     std::cout << output << " (number representation)" << std::endl;
     std::cout << "PID for these species is stored:" << std::endl;
     int index = 0;
+    int randomIndex = 0;
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    std::uniform_int_distribution<int> uni(0, mPIDValues.size() - 1);
     for (auto id : mPIDspecies) {
       std::cout << o2::track::PID::getName(id) << " : " << index++ << std::endl;
       if (SysChecks) {
         // Seed the random number generator
-        std::random_device rd;
-        std::mt19937 rng(rd());
         // Select a random element
-        std::uniform_int_distribution<int> uni(0, mPIDValues.size() - 1);
-        int randomIndex = uni(rng);
-        std::cout << "Nsigma: " << mPIDValues[randomIndex] << std::endl;
+        randomIndex = uni(rng);
+        std::cout << "Nsigma TPC: " << mPIDValues[randomIndex] << std::endl;
+        randomIndex = uni(rng);
+        std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
       }
     }
+    std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
   }
 
  private:

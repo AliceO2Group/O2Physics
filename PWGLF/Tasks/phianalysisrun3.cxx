@@ -196,12 +196,9 @@ struct phianalysisrun3 {
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
-
-  SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -247,6 +244,9 @@ struct phianalysisrun3 {
   PROCESS_SWITCH(phianalysisrun3, processSameEvent, "Process Same event", false);
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
+    auto tracksTuple = std::make_tuple(tracks);
+    BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
         continue;

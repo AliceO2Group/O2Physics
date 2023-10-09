@@ -29,27 +29,67 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/TrackJetQa.h"
 #include "PWGJE/TableProducer/jetfinder.h"
 
 using namespace o2;
+using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackJetQa {
   HistogramRegistry histos{"JetQAHistograms"};
-
-  Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks"};
-
+  // Configurable<int> selectedTracks{"select", 1, "Choice of track selection. 0 = no selection, 1 = globalTracks"}; --not in use
   Configurable<bool> enable{"selectTrack", true, "false = disable track selection, true = enable track selection"};
-
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
 
   Configurable<double> ValVtx{"ValVtx", 10, "Value of the vertex position"};
+  Configurable<float> ValCutEta{"ValCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> ValCutY{"ValCutY", 0.5f, "Y range for tracks"};
+
+  // Custom track cuts for the cut variation study
+  TrackSelection customTrackCuts;
+  Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 60.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.7f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 7.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+  Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
   void init(o2::framework::InitContext&)
   {
+    // Custom track cuts - to adjust cuts for the tree analysis via configurables
+    LOG(info) << "Using custom track cuts from values:";
+    LOG(info) << "\trequireITS=" << requireITS.value;
+    LOG(info) << "\trequireTPC=" << requireTPC.value;
+    LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
+    LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
+    LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
+    LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
+    LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
+    LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
+
+    customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
+    LOG(info) << "Customizing track cuts:";
+    customTrackCuts.SetRequireITSRefit(requireITS.value);
+    customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+    customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
+    customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
+    customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
+    customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
+    customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
+    customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+    customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+    customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+    customTrackCuts.print();
     // kinetic histograms
     histos.add("Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c];number of entries", HistType::kTH1F, {{nBins, 0, 200}});
+    histos.add("Kine/pt_TRD", "#it{p}_{T} if track has a TRD match;#it{p}_{T} [GeV/c];number of entries", HistType::kTH1F, {{nBins, 0, 200}});
     histos.add("Kine/eta", "#eta;#it{p}_{T} [GeV/c];#eta", {HistType::kTH2F, {{nBins, 0, 200}, {180, -0.9, 0.9}}});
     histos.add("Kine/phi", "#phi;#it{p}_{T} [GeV/c];#phi [rad]", {HistType::kTH2F, {{nBins, 0, 200}, {180, 0., 2 * M_PI}}});
     histos.add("Kine/etaVSphi", "#eta VS phi;#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
@@ -73,10 +113,17 @@ struct TrackJetQa {
     histos.add("TrackPar/dcaXY", "distance of closest approach in #it{xy} plane;#it{p}_{T} [GeV/c];#it{dcaXY} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/dcaZ", "distance of closest approach in #it{z};#it{p}_{T} [GeV/c];#it{dcaZ} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/length", "track length in cm;#it{p}_{T} [GeV/c];#it{Length} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, 0, 1000}}});
-    histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_firstLayerActive", "uncertainty over #it{p}_{T} with first ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_secondLayerActive", "uncertainty over #it{p}_{T} with second ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
-    histos.add("TrackPar/Sigma1Pt_bothLayersActive", "uncertainty over #it{p}_{T} with first and second ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layer1", "uncertainty over #it{p}_{T} with only 1st ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layer2", "uncertainty over #it{p}_{T} with only 2nd ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layers12", "uncertainty over #it{p}_{T} with only 1st and 2nd ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layer4", "uncertainty over #it{p}_{T} with only 4th ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layer5", "uncertainty over #it{p}_{T} with only 5th ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layer6", "uncertainty over #it{p}_{T} with only 6th ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layers45", "uncertainty over #it{p}_{T} with only 4th and 5th ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layers56", "uncertainty over #it{p}_{T} with only 5th and 6th ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layers46", "uncertainty over #it{p}_{T} with only 4th and 6th ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_Layers456", "uncertainty over #it{p}_{T} with only 4th, 5th and 6th ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
 
     // event property histograms
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
@@ -100,8 +147,9 @@ struct TrackJetQa {
     histos.print();
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-               soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
+  // @Alice, please make these blocks where you fill histograms templates that we can call in both process functions. Thank you !
+  void processFull(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {
 
     for (auto& collision : collisions) {
@@ -121,7 +169,6 @@ struct TrackJetQa {
 
       Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
       groupedTracks.bindTable(tracks);
-
       for (auto& track : groupedTracks) {
         // Track selection
         if (enable && !track.isGlobalTrackWoPtEta()) {
@@ -133,6 +180,9 @@ struct TrackJetQa {
         histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
         histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
         histos.fill(HIST("Kine/etaVSphi"), track.eta(), track.phi());
+        if (track.hasTRD()) {
+          histos.fill(HIST("Kine/pt_TRD"), track.pt());
+        }
 
         //// eta VS phi for different pT ranges
         double pt = track.pt();
@@ -168,19 +218,43 @@ struct TrackJetQa {
         histos.fill(HIST("TrackPar/dcaXY"), track.pt(), track.dcaXY());
         histos.fill(HIST("TrackPar/dcaZ"), track.pt(), track.dcaZ());
         histos.fill(HIST("TrackPar/length"), track.pt(), track.length());
-        histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+        histos.fill(HIST("TrackPar/Sigma1Pt"), track.pt(), track.sigma1Pt() * track.pt());
 
-        //// check the uncertainty over pT activating first, second and first & second ITS layers
+        //// check the uncertainty over pT activating several ITS layers
         bool firstLayerActive = track.itsClusterMap() & (1 << 0);
         bool secondLayerActive = track.itsClusterMap() & (1 << 1);
+        bool fourthLayerActive = track.itsClusterMap() & (1 << 3);
+        bool fifthLayerActive = track.itsClusterMap() & (1 << 4);
+        bool sixthLayerActive = track.itsClusterMap() & (1 << 5);
         if (firstLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_firstLayerActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layer1"), track.pt(), track.sigma1Pt() * track.pt());
         }
         if (secondLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_secondLayerActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layer2"), track.pt(), track.sigma1Pt() * track.pt());
         }
         if (firstLayerActive && secondLayerActive) {
-          histos.fill(HIST("TrackPar/Sigma1Pt_bothLayersActive"), track.pt(), track.sigma1Pt() * track.pt() * track.pt());
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layers12"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fourthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layer4"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fifthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layer5"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (sixthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layer6"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fourthLayerActive && fifthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layers45"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fifthLayerActive && sixthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layers56"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fourthLayerActive && sixthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layers46"), track.pt(), track.sigma1Pt() * track.pt());
+        }
+        if (fourthLayerActive && fifthLayerActive && sixthLayerActive) {
+          histos.fill(HIST("TrackPar/Sigma1Pt_Layers456"), track.pt(), track.sigma1Pt() * track.pt());
         }
 
         // fill ITS variables
@@ -203,6 +277,41 @@ struct TrackJetQa {
       }
     }
   }
+  PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
+
+  Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
+  SliceCache cacheTrk;
+  void processDerived(aod::SpColls const& collisions,
+                      aod::SpTracks const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      // fill event property variables - i put here a duplicate of your code above to test. Please make templates to shorten the code !
+      histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
+
+      if (!collision.sel8()) {
+        return;
+      }
+      histos.fill(HIST("EventProp/collisionVtxZSel8"), collision.posZ());
+
+      if (fabs(collision.posZ()) > ValVtx) {
+        return;
+      }
+      histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
+
+      // Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
+      // groupedTracks.bindTable(tracks);
+
+      const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
+      for (const auto& track : tracksInCollision) {
+        if (enable && !track.isGlobalTrackWoPtEta()) {
+          continue;
+        }
+        // filling all your histos.... please put them into templates and call the templates in the process functions.
+        //  else you really just duplicate code and we want to save line here :)
+      }
+    }
+  } // end of the process function
+  PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
