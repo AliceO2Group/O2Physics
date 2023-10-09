@@ -89,12 +89,12 @@ void V0PhotonCut::SetMaxMarginZ(float max)
 void V0PhotonCut::SetOnWwireIB(bool flag)
 {
   mIsOnWwireIB = flag;
-  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire IB: " << mIsOnWwireIB;
+  LOG(info) << "V0 Photon Cut, select photon on Tungsten wire IB: " << mIsOnWwireIB;
 }
 void V0PhotonCut::SetOnWwireOB(bool flag)
 {
   mIsOnWwireOB = flag;
-  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire OB: " << mIsOnWwireOB;
+  LOG(info) << "V0 Photon Cut, select photon on Tungsten wire OB: " << mIsOnWwireOB;
 }
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
