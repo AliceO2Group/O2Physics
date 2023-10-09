@@ -713,10 +713,11 @@ void BookWeightsHistograms()
     if (!pw_a.fUseWeights[w]) {
       continue;
     }
-    if (!pw_a.fWeightsHist[w]) // yes, because these histos are cloned from the
-                               // external ones, see SetWeightsHist(TH1D* const
-                               // hist, const char *variable)
-    {
+    if (!pw_a.fWeightsHist[w]) {
+      // yes, because these histos are cloned from the
+      // external ones, see SetWeightsHist(TH1D* const
+      // hist, const char *variable)
+
       // pw_a.fWeightsHist[w] = new
       // TH1D(Form("fWeightsHist[%d]",w),"",(Int_t)fKinematicsBins[w][0],fKinematicsBins[w][1],fKinematicsBins[w][2]);
       pw_a.fWeightsHist[w] =
@@ -1609,11 +1610,11 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
     }
     TList* baseList =
       reinterpret_cast<TList*>((cm.get<TList>(TString(filePath)
-                               .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                               .Data()))
-        ->Clone()); // TBI 20231005 circumventing temporarily problem with
-                    // the ownership this way, but I shouldn't be really
-                    // clonning here anything
+                                                .ReplaceAll("/alice-ccdb.cern.ch/", "")
+                                                .Data()))
+                                 ->Clone()); // TBI 20231005 circumventing temporarily problem with
+                                             // the ownership this way, but I shouldn't be really
+                                             // clonning here anything
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1776,11 +1777,11 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     // // TBI 20231004 doesn't work due to ownership problem, later in
     // StoreLabelsInPlaceholder()
     oa = reinterpret_cast<TObjArray*>((cm.get<TObjArray>(
-                        TString(filePath)
-                          .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                          .Data()))
-           ->Clone()); // TBI 20231004 circumventing temporarily problem with
-                       // the ownership this way
+                                         TString(filePath)
+                                           .ReplaceAll("/alice-ccdb.cern.ch/", "")
+                                           .Data()))
+                                        ->Clone()); // TBI 20231004 circumventing temporarily problem with
+                                                    // the ownership this way
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1975,7 +1976,7 @@ TObject* GetObjectFromList(TList* list,
     (objectIter = next())) // double round braces are to silent the warnings
   {
     if (TString(objectIter->ClassName()).EqualTo("TList")) {
-      objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);   
+      objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
       if (objectFinal)
         return objectFinal;
     }
