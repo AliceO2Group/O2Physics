@@ -302,8 +302,19 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("rho0Cuts")) {
-    cut->AddCut(GetAnalysisCut("rho0TrackCut"));
+    cut->AddCut(GetAnalysisCut("rho0Kine"));
+    cut->AddCut(GetAnalysisCut("pionQuality"));
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("rho0Kine")) {
+    cut->AddCut(GetAnalysisCut("rho0Kine"));
+    return cut;
+  }
+
+  if (!nameStr.compare("openEtaSel")) {
+    cut->AddCut(GetAnalysisCut("openEtaSel"));
     return cut;
   }
 
@@ -1828,10 +1839,23 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("rho0TrackCut")) {
+  if (!nameStr.compare("openEtaSel")) {
+    cut->AddCut(VarManager::kEta, -1.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("rho0Kine")) {
     cut->AddCut(VarManager::kPt, 0.1, 1000.0);
     cut->AddCut(VarManager::kEta, -1.1, 1.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("pionQuality")) {
     cut->AddCut(VarManager::kTPCncls, 50.0, 1000.);
+    return cut;
+  }
+
+  if (!nameStr.compare("primaryVertexContributor")) {
     cut->AddCut(VarManager::kPVContributor, 0.5, 1.5);
     return cut;
   }
