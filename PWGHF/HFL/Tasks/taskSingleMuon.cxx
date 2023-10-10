@@ -133,12 +133,14 @@ struct HfTaskSingleMuon {
       const auto charge(muon.sign());
       const auto chi2(muon.chi2MatchMCHMFT());
 
-      auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
-      if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
-        continue;
-      }
-      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
-        continue;
+      if (muon.matchMFTTrackId() > 0) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
@@ -190,12 +192,14 @@ struct HfTaskSingleMuon {
       const auto charge(muon.sign());
       const auto chi2(muon.chi2MatchMCHMFT());
 
-      auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
-      if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
-        continue;
-      }
-      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
-        continue;
+      if (muon.matchMFTTrackId() > 0) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
