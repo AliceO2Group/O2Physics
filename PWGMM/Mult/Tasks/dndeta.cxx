@@ -87,6 +87,7 @@ struct MultiplicityCounter {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
+  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
   Configurable<bool> responseStudy{"responseStudy", false, "Fill multi-estimator response"};
@@ -358,21 +359,21 @@ struct MultiplicityCounter {
   }
 
   // require ITS+TPC tracks
-  expressions::Filter trackSelectionProperGlobalOnly = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                                       ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
-                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
-                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
-
-  // require a mix of ITS+TPC and ITS-only tracks
-  //  expressions::Filter trackSelectionProperMixed     =  ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  //  expressions::Filter trackSelectionProperGlobalOnly = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  //                                                       ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
   //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-  //                                                       ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
-  //                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
+  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
+  //                                                       ifnode(dcaZ.node() > 0, nabs(aod::track::dcaZ) <= dcaZ, ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+
+  //   require a mix of ITS+TPC and ITS-only tracks
+  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                                  ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+                                                  ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
+                                                  ifnode(dcaZ.node() > 0, nabs(aod::track::dcaZ) <= dcaZ, ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
-                                     (nabs(aod::track::bestDCAZ) <= 2.f) &&
+                                     (ifnode(dcaZ.node() > 0, nabs(aod::track::bestDCAZ) <= dcaZ, nabs(aod::track::bestDCAZ) <= 2.0f)) &&
                                      (nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f))));
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
