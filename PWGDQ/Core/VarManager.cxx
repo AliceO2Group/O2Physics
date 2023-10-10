@@ -650,4 +650,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAresZ] = "cm";
   fgVariableNames[kBitMapIndex] = " ";
   fgVariableUnits[kBitMapIndex] = "";
+  fgVariableNames[kMassCharmHadron] = "mass (charm hadron)";
+  fgVariableUnits[kMassCharmHadron] = "GeV/c2";
+  fgVariableNames[kPtCharmHadron] = "p_{T} (charm hadron)";
+  fgVariableUnits[kPtCharmHadron] = "GeV/c";
+  fgVariableNames[kRapCharmHadron] = "y (charm hadron)";
+  fgVariableUnits[kRapCharmHadron] = " ";
+  fgVariableNames[kPhiCharmHadron] = "#varphi (charm hadron)";
+  fgVariableUnits[kPhiCharmHadron] = "rad.";
 }

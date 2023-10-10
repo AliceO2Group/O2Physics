@@ -21,9 +21,13 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,6 +44,8 @@ using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0,
 constexpr float cutsBdt[1][3] = {{1., 0., 0.}}; // background, prompt, nonprompt
 static const std::vector<std::string> labelsBdt = {"Background", "Prompt", "Nonprompt"};
 static const std::vector<std::string> labelsEmpty{};
+
+HfHelper hfHelper;
 
 struct tableMakerJpsiHf {
   //
@@ -76,35 +82,23 @@ struct tableMakerJpsiHf {
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
   Preslice<MyPairCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
 
-  // Define histograms
-  AxisSpec axisPt{100, 0.f, 50.f};
-  AxisSpec axisMassDmeson{200, 1.7f, 2.1f}; // TODO: make it dependent on the D-meson species
-  AxisSpec axisMassJPsi{300, 2.f, 5.f};
-  AxisSpec axisMidY{60, -1.5f, 1.5f};
-  AxisSpec axisFwdY{50, -4.5f, -2.0f};
-  AxisSpec axisDeltaY{90, 1.f, 5.5f};
-  AxisSpec axisPhi{180, 0., 2 * constants::math::PI}; // same for delta phi
+  // Define histograms manager
+  float* fValuesDileptonCharmHadron{};
+  HistogramManager* fHistMan{};
+  OutputObj<THashList> fOutputList{"output"};
 
-  HistogramRegistry registry{"registry",
-                             {{"JPsiDmeson/hMassJPsiWithDmeson", ";#it{M}(J/#psi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassJPsi}}},
-                              {"JPsiDmeson/hPtJPsiWithDmeson", ";#it{p}_{T}(J/#psi) (GeV/#it{c});counts", {HistType::kTH1F, {axisPt}}},
-                              {"JPsiDmeson/hRapJPsiWithDmeson", ";#it{y}(J/#psi);counts", {HistType::kTH1F, {axisFwdY}}},
-                              {"JPsiDmeson/hPhiJPsiWithDmeson", ";#it{#varphi}(J/#psi);counts", {HistType::kTH1F, {axisPhi}}},
-                              {"JPsiDmeson/hMassDmesonWithJPsi", ";#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {axisMassDmeson}}},
-                              {"JPsiDmeson/hPtDmesonWithJPsi", ";#it{p}_{T}(D) (GeV/#it{c});counts", {HistType::kTH1F, {axisPt}}},
-                              {"JPsiDmeson/hRapDmesonWithJPsi", ";#it{y}(D);counts", {HistType::kTH1F, {axisMidY}}},
-                              {"JPsiDmeson/hPhiDmesonWithJPsi", ";#it{#varphi}(D);counts", {HistType::kTH1F, {axisPhi}}}}};
-
-  void init(o2::framework::InitContext& context)
-  {
-    if (configDebug) {
-      registry.add("JPsi/hMassVsPtJPsi", ";#it{p}_{T}(J/#psi) (GeV/#it{c});#it{M}(J/#psi) (GeV/#it{c}^{2});counts", {HistType::kTH2F, {axisPt, axisMassJPsi}});
-      registry.add("JPsi/hRapVsPtJPsi", ";#it{p}_{T}(J/#psi) (GeV/#it{c});#it{y}(J/#psi);counts", {HistType::kTH2F, {axisPt, axisFwdY}});
-      registry.add("JPsi/hPhiJPsi", ";#it{#varphi}(J/#psi);counts", {HistType::kTH1F, {axisPhi}});
-      registry.add("Dmeson/hMassVsPtDmeson", ";#it{p}_{T}(D) (GeV/#it{c});#it{M}(D) (GeV/#it{c}^{2});counts", {HistType::kTH2F, {axisPt, axisMassDmeson}});
-      registry.add("Dmeson/hRapVsPtDmeson", ";#it{p}_{T}(D) (GeV/#it{c});#it{y}(D);counts", {HistType::kTH2F, {axisPt, axisMidY}});
-      registry.add("Dmeson/hPhiDmeson", ";#it{#varphi}(D);counts", {HistType::kTH1F, {axisPhi}});
-    }
+  void init(o2::framework::InitContext& context) {
+    fValuesDileptonCharmHadron = new float[VarManager::kNVars];
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(true);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->AddHistClass("JPsiDmeson");
+    dqhistograms::DefineHistograms(fHistMan, "Dmeson", "dilepton-charmhadron", "dmeson");
+    dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsi");
+    dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsidmeson");
+    VarManager::SetUseVars(fHistMan->GetUsedVars());
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
   // Template function to run pair - hadron combinations
@@ -112,6 +106,8 @@ struct tableMakerJpsiHf {
   template <bool withBdt, typename TDqTrack, typename THfTrack>
   void runDileptonDmeson(TDqTrack const& dileptons, THfTrack const& dmesons, MyEvents::iterator const& collision)
   {
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+
     std::vector<float> scores{-1., 2., 2.};
     bool isCollSel{false};
     if (configDebug) {
@@ -126,30 +122,22 @@ struct tableMakerJpsiHf {
           scores[2] = dmeson.mlProbD0()[2];
         }
 
-        auto rapD0 = yD0(dmeson);
+        auto rapD0 = hfHelper.yD0(dmeson);
 
-        if (yCandDmesonMax >= 0. && std::abs(yD0(dmeson)) > yCandDmesonMax) {
+        if (yCandDmesonMax >= 0. && std::abs(rapD0) > yCandDmesonMax) {
           continue;
         }
 
-        auto ptD0 = dmeson.pt();
-        auto phiD0 = dmeson.phi();
-        auto massD0 = -1.;
-        auto massD0bar = -1.;
-
         if (scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
           if (dmeson.isSelD0() >= 1) {
-            massD0 = invMassD0ToPiK(dmeson);
-            registry.fill(HIST("Dmeson/hMassVsPtDmeson"), ptD0, massD0);
-            registry.fill(HIST("Dmeson/hRapVsPtDmeson"), ptD0, rapD0);
-            registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
+            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
-
           if (dmeson.isSelD0bar() >= 1) {
-            massD0bar = invMassD0ToPiK(dmeson);
-            registry.fill(HIST("Dmeson/hMassVsPtDmeson"), ptD0, massD0bar);
-            registry.fill(HIST("Dmeson/hRapVsPtDmeson"), ptD0, rapD0);
-            registry.fill(HIST("Dmeson/hPhiDmeson"), phiD0);
+            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
         }
       }
@@ -158,18 +146,15 @@ struct tableMakerJpsiHf {
     // loop over dileptons
     for (auto dilepton : dileptons) {
       auto massJPsi = dilepton.mass();
-      auto ptJPsi = dilepton.pt();
-      auto rapJPsi = dilepton.rap();
-      auto phiJPsi = dilepton.phi() + constants::math::PI; // TODO: check conventions!
 
       if (massJPsi < massDileptonCandMin || massJPsi > massDileptonCandMax) {
         continue;
       }
 
       if (configDebug) {
-        registry.fill(HIST("JPsi/hMassVsPtJPsi"), ptJPsi, massJPsi);
-        registry.fill(HIST("JPsi/hRapVsPtJPsi"), ptJPsi, rapJPsi);
-        registry.fill(HIST("JPsi/hPhiJPsi"), phiJPsi);
+        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsiToMuMu>(dilepton, hfHelper, fValuesDileptonCharmHadron);
+        fHistMan->FillHistClass("JPsi", fValuesDileptonCharmHadron);
+        VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
       }
 
       // loop over D mesons
@@ -178,14 +163,12 @@ struct tableMakerJpsiHf {
           continue;
         }
 
-        auto rapD0 = yD0(dmeson);
+        auto rapD0 = hfHelper.yD0(dmeson);
 
         if (yCandDmesonMax >= 0. && std::abs(rapD0) > yCandDmesonMax) {
           continue;
         }
 
-        auto ptD0 = dmeson.pt();
-        auto phiD0 = dmeson.phi();
         auto massD0 = -1.;
         auto massD0bar = -1.;
 
@@ -203,26 +186,14 @@ struct tableMakerJpsiHf {
           }
 
           if (dmeson.isSelD0() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            massD0 = invMassD0ToPiK(dmeson);
-            registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
-            registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
-            registry.fill(HIST("JPsiDmeson/hRapJPsiWithDmeson"), rapJPsi);
-            registry.fill(HIST("JPsiDmeson/hPhiJPsiWithDmeson"), phiJPsi);
-            registry.fill(HIST("JPsiDmeson/hMassDmesonWithJPsi"), massD0);
-            registry.fill(HIST("JPsiDmeson/hPtDmesonWithJPsi"), ptD0);
-            registry.fill(HIST("JPsiDmeson/hRapDmesonWithJPsi"), rapD0);
-            registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
+            VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           if (dmeson.isSelD0bar() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            massD0bar = invMassD0barToKPi(dmeson);
-            registry.fill(HIST("JPsiDmeson/hMassJPsiWithDmeson"), massJPsi);
-            registry.fill(HIST("JPsiDmeson/hPtJPsiWithDmeson"), ptJPsi);
-            registry.fill(HIST("JPsiDmeson/hRapJPsiWithDmeson"), rapJPsi);
-            registry.fill(HIST("JPsiDmeson/hPhiJPsiWithDmeson"), phiJPsi);
-            registry.fill(HIST("JPsiDmeson/hMassDmesonWithJPsi"), massD0bar);
-            registry.fill(HIST("JPsiDmeson/hPtDmesonWithJPsi"), ptD0);
-            registry.fill(HIST("JPsiDmeson/hRapDmesonWithJPsi"), rapD0);
-            registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
+            VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           redD0Masses(massD0, massD0bar);
         }
