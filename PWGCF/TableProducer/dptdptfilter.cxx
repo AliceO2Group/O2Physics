@@ -47,10 +47,10 @@ using namespace o2::analysis;
 
 namespace o2::analysis::dptdptfilter
 {
-using DptDptFullTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using DptDptFullTracksPIDDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using DptDptFullTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using DptDptFullTracksPIDDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
@@ -145,7 +145,7 @@ using namespace dptdptfilter;
 
 struct DptDptFilter {
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NOCM: none. Default V0M"};
+  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
@@ -199,17 +199,18 @@ struct DptDptFilter {
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
       /* TODO: proper axes and axes titles according to the system; still incomplete */
+      std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
       if (fSystem > kPbp) {
         fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
         fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", 100, 0, 100);
-        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
-        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
+        fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 4001, -0.5, 4000.5);
+        fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 4001, -0.5, 4000.5);
       } else {
         /* for pp, pPb and Pbp systems use multiplicity instead */
         fhCentMultB = new TH1F("MultiplicityB", "Multiplicity before cut; multiplicity (%)", 100, 0, 100);
         fhCentMultA = new TH1F("MultiplicityA", "Multiplicity; multiplicity (%)", 100, 0, 100);
-        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
-        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
+        fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 601, -0.5, 600.5);
+        fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), 601, -0.5, 600.5);
       }
 
       fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
@@ -327,7 +328,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
   LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processReconstructed(). New collision with %d tracks", ftracks.size());
 
-  float mult = extractMultiplicity(collision);
+  float mult = extractMultiplicity(collision, fCentMultEstimator);
 
   fhCentMultB->Fill(tentativecentmult);
   fhMultB->Fill(mult);
@@ -354,12 +355,12 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
 void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks)
@@ -369,12 +370,12 @@ void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptD
 
 void DptDptFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks)
@@ -384,12 +385,12 @@ void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, D
 
 void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
@@ -399,12 +400,12 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 
 void DptDptFilter::processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centFT0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centRun2V0M());
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
 void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
@@ -419,12 +420,12 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
 
   uint8_t acceptedevent = uint8_t(false);
   if (IsEvtSelected(mccollision, centormult)) {
-    acceptedevent = true;
-    if (fullDerivedData) {
-      acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
-    } else {
-      gencollisionsinfo(acceptedevent, centormult);
-    }
+    acceptedevent = uint8_t(true);
+  }
+  if (fullDerivedData) {
+    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
+  } else {
+    gencollisionsinfo(acceptedevent, centormult);
   }
 }
 
@@ -443,6 +444,7 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction");
   }
 
+  bool processed = false;
   for (auto& tmpcollision : collisions) {
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
@@ -450,10 +452,14 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
         if (IsEvtSelected(collision, defaultcent)) {
           fhTrueVertexZAA->Fill((mccollision.posZ()));
           processGenerated(mccollision, mcparticles, defaultcent);
+          processed = true;
           break; /* TODO: only processing the first reconstructed accepted collision */
         }
       }
     }
+  }
+  if (!processed && !fullDerivedData) {
+    gencollisionsinfo(uint8_t(false), 105.0);
   }
 }
 
@@ -544,14 +550,9 @@ struct DptDptFilterTracks {
         particleMaxDCAZ = cfgTrackSelection->mDCAz;
       }
       ownTrackSelection.ResetITSRequirements();
-      ownTrackSelection.SetRequireITSRefit(false);
-      ownTrackSelection.SetRequireTPCRefit(false);
-      ownTrackSelection.SetRequireGoldenChi2(false);
       ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
       ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
-      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(0);
-      ownTrackSelection.SetMaxChi2PerClusterITS(1e6f);
-      ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
+      ownTrackSelection.SetMaxDcaXYPtDep([&](float) { return cfgTrackSelection->mDCAxy; });
       ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
       ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
       o2::aod::track::TrackTypeEnum ttype;
@@ -741,6 +742,8 @@ struct DptDptFilterTracks {
                                         float charge,
                                         MatchRecoGenSpecies sp);
 
+  /* TODO: as it is now when the derived data is stored (fullDerivedData = true) */
+  /* the collision index stored with the track is wrong. This has to be fixed    */
   template <typename passedtracks>
   void filterTracks(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
                     passedtracks const& tracks)
@@ -779,7 +782,7 @@ struct DptDptFilterTracks {
         }
       }
     }
-    LOGF(info,
+    LOGF(DPTDPTFILTERLOGCOLLISIONS,
          "Processed %d accepted collisions out of a total of %d with  %d accepted tracks out of a "
          "total of %d",
          ncollaccepted,
@@ -788,12 +791,23 @@ struct DptDptFilterTracks {
          tracks.size());
   }
 
-  template <typename ParticleListObject, typename MCCollisionObject, typename CollisionIndex>
-  void filterParticles(ParticleListObject const& particles, MCCollisionObject const& mccollision, CollisionIndex colix)
+  /* TODO: for the time being the full derived data is still not supported  */
+  /* for doing that we need to get the index of the associated mc collision */
+  void filterParticles(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
   {
     using namespace dptdptfilter;
 
     int acceptedparticles = 0;
+    int acceptedcollisions = 0;
+    if (!fullDerivedData) {
+      gentracksinfo.reserve(particles.size());
+    }
+
+    for (auto gencoll : gencollisions) {
+      if (gencoll.collisionaccepted()) {
+        acceptedcollisions++;
+      }
+    }
 
     for (auto& particle : particles) {
       float charge = 0.0;
@@ -805,73 +819,81 @@ struct DptDptFilterTracks {
       int8_t pid = -1;
 
       if (charge != 0) {
-        /* before particle selection */
-        fillParticleHistosBeforeSelection(particle, mccollision, charge);
+        if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>()).collisionaccepted()) {
+          auto mccollision = particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>();
+          /* before particle selection */
+          fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
-        /* track selection */
-        pid = AcceptParticle(particle, mccollision);
-        if (!(pid < 0)) {
-          /* the particle has been accepted */
-          /* let's identify the particle */
-          /* TODO: probably this needs to go to AcceptParticle */
-          MatchRecoGenSpecies sp = IdentifyParticle(particle);
-          if (sp != kWrongSpecies) {
-            if (sp != kDptDptCharged) {
-              /* fill the charged particle histograms */
-              fillParticleHistosAfterSelection(particle, mccollision, charge, kDptDptCharged);
-              /* update charged multiplicities */
+          /* track selection */
+          /* TODO: at some point the pid has to be substituted by the identified species */
+          pid = AcceptParticle(particle, mccollision);
+          if (!(pid < 0)) {
+            /* the particle has been accepted */
+            /* let's identify the particle */
+            /* TODO: probably this needs to go to AcceptParticle */
+            MatchRecoGenSpecies sp = IdentifyParticle(particle);
+            if (sp != kWrongSpecies) {
+              if (sp != kDptDptCharged) {
+                /* fill the charged particle histograms */
+                fillParticleHistosAfterSelection(particle, mccollision, charge, kDptDptCharged);
+                /* update charged multiplicities */
+                if (pid % 2 == 0) {
+                  partMultPos[kDptDptCharged]++;
+                }
+                if (pid % 2 == 1) {
+                  partMultNeg[kDptDptCharged]++;
+                }
+              }
+              /* fill the species  histograms */
+              fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
+              /* update species multiplicities */
               if (pid % 2 == 0) {
-                partMultPos[kDptDptCharged]++;
+                partMultPos[sp]++;
               }
               if (pid % 2 == 1) {
-                partMultNeg[kDptDptCharged]++;
+                partMultNeg[sp]++;
               }
+              acceptedparticles++;
+            } else {
+              pid = -1;
             }
-            /* fill the species  histograms */
-            fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
-            /* update species multiplicities */
-            if (pid % 2 == 0) {
-              partMultPos[sp]++;
-            }
-            if (pid % 2 == 1) {
-              partMultNeg[sp]++;
-            }
-            if (fullDerivedData) {
-              scannedtruetracks(colix, pid, particle.pt(), particle.eta(), particle.phi());
-            }
-            acceptedparticles++;
-          } else {
-            pid = -1;
           }
         }
       } else {
         if ((particle.mcCollisionId() == 0) && traceCollId0) {
-          LOGF(info, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
+          LOGF(DPTDPTFILTERLOGTRACKS, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
         }
       }
+      if (!fullDerivedData) {
+        gentracksinfo(pid);
+      }
     }
-    LOGF(DPTDPTFILTERLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
+    LOGF(DPTDPTFILTERLOGCOLLISIONS,
+         "Processed %d accepted generated collisions out of a total of %d with  %d accepted particles out of a "
+         "total of %d",
+         acceptedcollisions,
+         gencollisions.size(),
+         acceptedparticles,
+         particles.size());
   }
 
-  void filterRecoWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions,
-                         DptDptFullTracksPID const& tracks)
+  void filterRecoWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPID const& tracks)
   {
     filterTracks(collisions, tracks);
   }
-  PROCESS_SWITCH(DptDptFilterTracks,
-                 filterRecoWithPID,
-                 "Not stored derived data track filtering",
-                 false)
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPID, "Not stored derived data track filtering", false)
 
-  void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
-                            DptDptFullTracks const& tracks)
+  void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracks const& tracks)
   {
     filterTracks(collisions, tracks);
   }
-  PROCESS_SWITCH(DptDptFilterTracks,
-                 filterRecoWithoutPID,
-                 "Track filtering without PID information",
-                 true)
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPID, "Track filtering without PID information", true)
+
+  void filterGenerated(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
+  {
+    filterParticles(gencollisions, particles);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filering", true)
 };
 
 template <typename ParticleObject>

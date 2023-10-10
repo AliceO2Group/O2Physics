@@ -10,8 +10,10 @@
 // or submit itself to any jurisdiction.
 
 // O2:
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+//#include "Common/DataModel/TrackSelectionTables.h" TBI 20231008 needed for aod::TracksDCA
 using namespace o2;
 using namespace o2::framework;
 
@@ -36,14 +38,17 @@ using namespace std;
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
+  // *) CCDB:
+  Service<ccdb::BasicCCDBManager> ccdb;
+
+// *) Configurables (cuts):
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
+
 // *) Data members:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-DataMembers.h"
 
 // *) Member functions:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-MemberFunctions.h"
-
-// *) Configurables (cuts):
-#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
   // -------------------------------------------
 
@@ -71,10 +76,19 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
-    // *) Configure the task with setters and getters:
-    //TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
-    TH1D* phiWeights = GetHistogramWithWeights("/alice/cern.ch/user/a/abilandz/weights.root", "phi"); // both relative and abs path shell be fine
-    SetWeightsHist(phiWeights, "phi");
+    // *) Particle weights:
+    if (pw_a.fUseWeights[wPHI]) {
+      TH1D* phiWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "phi");
+      SetWeightsHist(phiWeights, "phi");
+    }
+    if (pw_a.fUseWeights[wPT]) {
+      TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "pt");
+      SetWeightsHist(ptWeights, "pt");
+    }
+    if (pw_a.fUseWeights[wETA]) {
+      TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "eta");
+      SetWeightsHist(etaWeights, "eta");
+    }
 
     // *) Book random generator:
     delete gRandom;
@@ -87,6 +101,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
+    BookNestedLoopsHistograms();
+    BookTest0Histograms();
     BookResultsHistograms();
 
     // *) Trick to avoid name clashes, part 2:
@@ -97,13 +113,21 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // *) Process the data:
+  //  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks) // called once per collision found in the time frame
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
+
+    // *) TBI 20231008 Temporarily here: If I reached max number of events, ignore the remaining collisions.
+    //    But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
+    if (ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1) >= ceh_a.fEventCuts[eNumberOfEvents][eMax]) {
+      return;
+    }
+
     // *) Fill event histograms for reconstructed data before event cuts:
     FillEventHistograms(collision, tracks, eRec, eBefore);
 
     // *) Event cuts:
-    if (!EventCuts(collision)) {
+    if (!EventCuts(collision, tracks)) {
       return;
     }
 
@@ -111,9 +135,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     FillEventHistograms(collision, tracks, eRec, eAfter);
 
     // *) Main loop over particles:
-    Double_t dPhi = 0.; //, dPt = 0., dEta = 0.;
-    // Double_t wPhi = 1., wPt = 1., wEta = 1.;
-    Double_t wToPowerP = 1.; // final particle weight raised to power p
+    Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
+    Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pT weight
+    Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
+    Double_t wToPowerP = 1.;       // weight raised to power p
+    fSelectedTracks = 0;           // reset number of selected tracks
     for (auto& track : tracks) {
 
       // *) Fill particle histograms for reconstructed data before particle cuts:
@@ -129,24 +155,80 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
       // *) Fill Q-vectors:
       dPhi = track.phi();
-      // dPt  = track.pt();
-      // dEta = track.eta();
+      dPt = track.pt();
+      dEta = track.eta();
+      // Particle weights:
+      if (pw_a.fUseWeights[wPHI]) {
+        wPhi = Weight(dPhi, "phi"); // corresponding phi weight
+        if (!(wPhi > 0.)) {
+          LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
+          continue;
+        }
+      } // if(pw_a.fUseWeights[wPHI])
+      if (pw_a.fUseWeights[wPT]) {
+        wPt = Weight(dPt, "pt"); // corresponding pt weight
+        if (!(wPt > 0.)) {
+          LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
+          continue;
+        }
+      } // if(pw_a.fUseWeights[wPT])
+      if (pw_a.fUseWeights[wETA]) {
+        wEta = Weight(dEta, "eta"); // corresponding eta weight
+        if (!(wEta > 0.)) {
+          LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
+          continue;
+        }
+      } // if(pw_a.fUseWeights[wETA])
+
       for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
         for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-          // if (fUseWeights[0]||fUseWeights[1]||fUseWeights[2]) {
-          //   wToPowerP = pow(wPhi*wPt*wEta,wp);
-          // }
+          if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) {
+            wToPowerP = pow(wPhi * wPt * wEta, wp);
+          }
           qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
         } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
       }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
 
-      fResultsHist->Fill(pw_a.fWeightsHist[wPHI]->GetBinContent(pw_a.fWeightsHist[wPHI]->FindBin(track.phi()))); // TBI 20220713 meaningless, only temporarily here to check if this is feasible
+      // *) Nested loops containers:
+      if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
+        if (nl_a.ftaNestedLoops[0]) {
+          nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
+        } // remember that the 2nd argument here must start from 0
+        if (nl_a.ftaNestedLoops[1]) {
+          nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
+        } // remember that the 2nd argument here must start from 0
+      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
+
+      // *) Counter of selected tracks in the current event:
+      fSelectedTracks++;
+      if (fSelectedTracks >= cSelectedTracks_max) {
+        break;
+      }
 
     } // for (auto& track : tracks)
+
+    // *) Fill remaining event histograms for reconstructed data after event (and particle) cuts:
+    ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
+
+    // *) Remaining event cuts:
+    if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
+      return;
+    }
 
     // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
     if (fCalculateCorrelations) {
       CalculateCorrelations();
+    }
+
+    // *) Calculate nested loops:
+    if (fCalculateNestedLoops) {
+      CalculateNestedLoops();
+
+      // TBI 20220823 this shall be called after all events are processed, only temporarily here called for each event:
+      ComparisonNestedLoopsVsCorrelations();
     }
 
     // *) Reset event-by-event objects:

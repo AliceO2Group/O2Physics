@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -13,23 +13,21 @@
 /// \brief Definition of the FemtoUniverseTrackCuts
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <iostream>
-#include <vector>
-#include <string>
 
-#include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
-
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -92,7 +90,9 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                   dcaXYMax(-9999999.),
                                   dcaZMax(-9999999.),
                                   dcaMin(9999999.),
-                                  nSigmaPIDMax(9999999.) {}
+                                  nSigmaPIDMax(9999999.),
+                                  nSigmaPIDOffsetTPC(0.),
+                                  nSigmaPIDOffsetTOF(0.) {}
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -177,7 +177,6 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
       if (obs.compare(cmp) == 0)
         return index;
     }
-    LOGF(info, "Variable %s not found", obs);
     return -1;
   }
 
@@ -206,6 +205,11 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   void setRejectNotPropagatedTracks(bool reject)
   {
     nRejectNotPropagatedTracks = reject;
+  }
+  void setnSigmaPIDOffset(float offsetTPC, float offsetTOF)
+  {
+    nSigmaPIDOffsetTPC = offsetTPC;
+    nSigmaPIDOffsetTOF = offsetTOF;
   }
 
  private:
@@ -236,6 +240,8 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   float dcaZMax;
   float dcaMin;
   float nSigmaPIDMax;
+  float nSigmaPIDOffsetTPC;
+  float nSigmaPIDOffsetTOF;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
   static constexpr int kNtrackSelection = 14;
   static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
@@ -368,9 +374,9 @@ template <typename T>
 auto FemtoUniverseTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
 {
   /// skip tracks without TOF signal
-  if (!track.hasTOF()) {
-    return 999.f;
-  }
+  // if (!track.hasTOF()) {
+  //   return 999.f;
+  // }
 
   return o2::aod::pidutils::tofNSigma(pid, track);
 }
@@ -440,7 +446,7 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
     bool isFulfilled = false;
     for (size_t i = 0; i < pidTPC.size(); ++i) {
       auto pidTPCVal = pidTPC.at(i);
-      if (std::abs(pidTPCVal) < nSigmaPIDMax) {
+      if (std::abs(pidTPCVal - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
         isFulfilled = true;
       }
     }
@@ -457,7 +463,6 @@ std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
   cutContainerType output = 0;
   size_t counter = 0;
   cutContainerType outputPID = 0;
-  size_t counterPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -482,12 +487,12 @@ std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoUniverseTrackSelection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species
-      for (size_t i = 0; i < pidTPC.size(); ++i) {
-        auto pidTPCVal = pidTPC.at(i);
-        auto pidTOFVal = pidTOF.at(i);
-        sel.checkSelectionSetBit(pidTPCVal, outputPID, counterPID);
+      for (size_t i = 0; i < mPIDspecies.size(); ++i) {
+        auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
+        auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-        sel.checkSelectionSetBit(pidComb, outputPID, counterPID);
+        sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
+        sel.checkSelectionSetBitPID(pidComb, outputPID);
       }
 
     } else {

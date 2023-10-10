@@ -16,6 +16,7 @@
 #ifndef PWGJE_TABLEPRODUCER_JETFINDER_H_
 #define PWGJE_TABLEPRODUCER_JETFINDER_H_
 
+#include <array>
 #include <vector>
 #include <string>
 
@@ -40,21 +41,21 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
-using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+using JetTracks = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-using JetParticles2Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-using JetParticles3Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-using JetParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
+using ParticlesD0 = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand2ProngMcGen>>;
+using ParticlesLc = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCand3ProngMcGen>>;
+using ParticlesBplus = o2::soa::Filtered<o2::soa::Join<o2::aod::McParticles, o2::aod::HfCandBplusMcGen>>;
 
-using CandidateD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-using CandidateD0MC = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+using CandidatesD0Data = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0>>;
+using CandidatesD0MCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0, o2::aod::HfCand2ProngMcRec>>;
 
-using CandidateBplusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
-using CandidateBplusMC = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+using CandidatesBplusData = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi>>;
+using CandidatesBplusMCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>>;
 
-using CandidateLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+using CandidatesLcData = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc>>;
+using CandidatesLcMCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc, o2::aod::HfCand3ProngMcRec>>;
 
 // functions for track, cluster and candidate selection
 
@@ -62,12 +63,12 @@ using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, a
 template <typename T>
 bool selectTrack(T const& track, std::string trackSelection)
 {
-  if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
-    return false;
-  } else if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
-    return false;
-  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) { // isQualityTrack
-    return false;
+  if (trackSelection == "globalTracks") {
+    return track.isGlobalTrackWoPtEta();
+  } else if (trackSelection == "QualityTracks") {
+    return track.isQualityTrack();
+  } else if (trackSelection == "hybridTracksJE") {
+    return track.trackCutFlagFb5();
   } else {
     return true;
   }
@@ -83,20 +84,20 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
     }
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0MCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0MCD::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcMCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcMCD::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong2_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::filtered_iterator>) {
-        if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::filtered_iterator>) {
+        if (cand.template prong0_as<o2::aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<o2::aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
@@ -166,7 +167,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> trackconst;
       std::vector<int> candconst;
       std::vector<int> clusterconst;
-      jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
+      jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.m(), jet.area(), std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         // need to add seperate thing for constituent subtraction
@@ -186,7 +187,6 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
         }
       }
       constituentsTable(jetsTable.lastIndex(), trackconst, clusterconst, candconst);
-      break;
     }
   }
 }
@@ -195,7 +195,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
 template <typename T>
 bool checkDaughters(T const& particle, int globalIndex)
 {
-  for (auto daughter : particle.template daughters_as<aod::McParticles>()) {
+  for (auto daughter : particle.template daughters_as<o2::aod::McParticles>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
     }
@@ -207,15 +207,17 @@ bool checkDaughters(T const& particle, int globalIndex)
 }
 
 template <typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float particleEtaMin, float particleEtaMax, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
 {
   inputParticles.clear();
   for (auto& particle : particles) {
-    // TODO: can we do this through the filter?
-    if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
+    if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
       continue;
-    }
-    if (particle.getGenStatusCode() != 1) { // CHECK : Does this exclude the HF hadron?
+    } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) { // do we need isPhysicalPrimary as well? Note: Might give unforseen results if the generator isnt PYTHIA
+      continue;
+    } else if (particleSelection == "GenStatus" && particle.getGenStatusCode() != 1) {
+      continue;
+    } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
       continue;
     }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
@@ -237,12 +239,30 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
 }
 
 template <typename T>
-bool selectCollision(T const& collision)
+bool selectCollision(T const& collision, std::string eventSelection)
 {
-  if (!collision.sel8()) {
-    return false;
+  if (eventSelection == "sel8") {
+    return collision.sel8();
+  } else if (eventSelection == "sel7") {
+    return collision.sel7();
+  } else {
+    return true;
   }
-  return true;
+}
+
+template <typename T>
+bool hasEMCAL(T const& collision)
+{
+  // Check for EMCAL in readout requires any of the EMCAL trigger classes (including EMC in MB trigger) to fire
+  std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
+  bool found = false;
+  for (auto alias : selectAliases) {
+    if (collision.alias_bit(alias)) {
+      found = true;
+      break;
+    }
+  }
+  return found;
 }
 
 #endif // PWGJE_TABLEPRODUCER_JETFINDER_H_

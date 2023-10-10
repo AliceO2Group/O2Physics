@@ -1,6 +1,6 @@
 ---
 # MegaLinter GitHub Action configuration file
-# More info at https://oxsecurity.github.io/megalinter
+# More info at https://megalinter.io
 name: MegaLinter
 
 'on': [pull_request_target]
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  megalinter:
     name: MegaLinter
     runs-on: ubuntu-latest
     steps:
@@ -38,11 +38,11 @@ jobs:
       - name: MegaLinter
         id: ml
         # You can override MegaLinter flavor used to have faster performances
-        # More info at https://oxsecurity.github.io/megalinter/flavors/
-        uses: oxsecurity/megalinter@v6
+        # More info at https://megalinter.io/flavors/
+        uses: oxsecurity/megalinter@v7
         env:
           # All available variables are described in documentation:
-          # https://oxsecurity.github.io/megalinter/configuration/
+          # https://megalinter.io/configuration/
           # Validates all source when push on master, else just the diff with
           # master. Override with true if you always want to lint all sources.
           VALIDATE_ALL_CODEBASE: false
@@ -83,7 +83,7 @@ jobs:
             yourself and update the pull request, or merge this PR in yours.
 
             You can find how to run MegaLinter locally at
-            <https://oxsecurity.github.io/megalinter/latest/mega-linter-runner/>.
+            <https://megalinter.io/latest/mega-linter-runner/>.
         # We do not create PRs if the branch is not there.
         continue-on-error: true
 

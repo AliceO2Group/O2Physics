@@ -20,9 +20,17 @@ void DGCutparHolder::SetMinNBCs(int nminbcs)
 {
   mMinNBCs = nminbcs;
 }
+void DGCutparHolder::SetWithFwdTracks(bool withFwdTracks)
+{
+  mWithFwdTracks = withFwdTracks;
+}
 void DGCutparHolder::SetGlobalTracksOnly(bool globalTracksOnly)
 {
   mGlobalTracksOnly = globalTracksOnly;
+}
+void DGCutparHolder::SetITSOnlyTracks(bool ITSonlyTracks)
+{
+  mITSOnlyTracks = ITSonlyTracks;
 }
 void DGCutparHolder::SetMinRgtrwTOF(float rgtrwTOF)
 {
@@ -70,7 +78,10 @@ void DGCutparHolder::SetMaxNSigmaTOF(float maxnSigma)
 {
   mMaxNSigmaTOF = maxnSigma;
 }
-
+void DGCutparHolder::SetMaxFITtime(float maxFITtime)
+{
+  mMaxFITtime = maxFITtime;
+}
 void DGCutparHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
   mFITAmpLimits = FITAmpLimits;
@@ -79,7 +90,9 @@ void DGCutparHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 // getter
 int DGCutparHolder::NDtcoll() const { return mNDtcoll; }
 int DGCutparHolder::minNBCs() const { return mMinNBCs; }
+bool DGCutparHolder::withFwdTracks() const { return mWithFwdTracks; }
 bool DGCutparHolder::globalTracksOnly() const { return mGlobalTracksOnly; }
+bool DGCutparHolder::ITSOnlyTracks() const { return mITSOnlyTracks; }
 float DGCutparHolder::minRgtrwTOF() const { return mMinRgtrwTOF; }
 int DGCutparHolder::minNTracks() const { return mMinNTracks; }
 int DGCutparHolder::maxNTracks() const { return mMaxNTracks; }
@@ -95,4 +108,5 @@ float DGCutparHolder::minIVM() const { return mMinIVM; }
 float DGCutparHolder::maxIVM() const { return mMaxIVM; }
 float DGCutparHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; }
 float DGCutparHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; }
+float DGCutparHolder::maxFITtime() const { return mMaxFITtime; }
 std::vector<float> DGCutparHolder::FITAmpLimits() const { return mFITAmpLimits; }

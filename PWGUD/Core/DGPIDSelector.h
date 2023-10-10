@@ -110,14 +110,20 @@ struct DGAnaparHolder {
   DGAnaparHolder(int MinNTracks = 0, int MaxNTracks = 10000, float minrgtrwTOF = 0.,
                  float maxDCAxy = 100., float maxDCAz = 100,
                  int dBCMin = 0, int dBCMax = 0,
+                 std::vector<int> FITvetoes = {0, 1, 1, 0, 0},
+                 bool ITSonlyTracks = true,
+                 int minNClTPC = 0, int maxNClTPC = 200,
+                 float minChi2NClTPC = 0., float maxChi2NClTPC = 100.,
                  float minpt = 0.0, float maxpt = 100.0,
                  float mineta = -2.0, float maxeta = 2.0,
                  float minalpha = 0.0, float maxalpha = 3.2,
                  float minptsys = 0.0, float maxptsys = 100.0,
                  int nCombine = 2,
                  std::vector<int> netCharges = {0},
+                 std::vector<int> unlikeCharges = {0},
+                 std::vector<int> likeCharges = {-2, 2},
                  std::vector<int> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mFITvetoes{FITvetoes}, mITSOnlyTracks{ITSonlyTracks}, mMinNClTPC{minNClTPC}, mMaxNClTPC{maxNClTPC}, mMinChi2NClTPC{minChi2NClTPC}, mMaxChi2NClTPC{maxChi2NClTPC}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mUnlikeCharges{unlikeCharges}, mLikeCharges{likeCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
   {
     if (mdBCMin < -16) {
       mdBCMin = -16;
@@ -144,6 +150,12 @@ struct DGAnaparHolder {
   float maxDCAz() const { return mMaxDCAz; }
   int dBCMin() const { return mdBCMin; }
   int dBCMax() const { return mdBCMax; }
+  std::vector<int> FITvetoes() { return mFITvetoes; }
+  bool ITSOnlyTracks() { return mITSOnlyTracks; }
+  int minNClTPC() { return mMinNClTPC; }
+  int maxNClTPC() { return mMaxNClTPC; }
+  float minChi2NClTPC() { return mMinChi2NClTPC; }
+  float maxChi2NClTPC() { return mMaxChi2NClTPC; }
   float minpt() const { return mMinpt; }
   float maxpt() const { return mMaxpt; }
   float mineta() const { return mMineta; }
@@ -154,6 +166,8 @@ struct DGAnaparHolder {
   float maxptsys() const { return mMaxptsys; }
   int nCombine() const { return mNCombine; }
   std::vector<int> netCharges() const { return mNetCharges; }
+  std::vector<int> unlikeCharges() const { return mUnlikeCharges; }
+  std::vector<int> likeCharges() const { return mLikeCharges; }
   std::vector<int> PIDs() const { return mDGPIDs; }
   DGPIDCuts PIDCuts();
   std::vector<int> uniquePermutations();
@@ -172,6 +186,12 @@ struct DGAnaparHolder {
   float mMaxDCAz;
   int mdBCMin;
   int mdBCMax;
+  std::vector<int> mFITvetoes;
+  bool mITSOnlyTracks;
+  int mMinNClTPC;
+  int mMaxNClTPC;
+  float mMinChi2NClTPC;
+  float mMaxChi2NClTPC;
   float mMinpt;
   float mMaxpt;
   float mMineta;
@@ -181,7 +201,9 @@ struct DGAnaparHolder {
   float mMinptsys;
   float mMaxptsys;
   int mNCombine;
-  std::vector<int> mNetCharges;
+  std::vector<int> mNetCharges;    // all PV tracks
+  std::vector<int> mUnlikeCharges; // selected PV tracks
+  std::vector<int> mLikeCharges;   // selected PV tracks
   std::vector<int> mDGPIDs;
   std::vector<float> mDGPIDCutValues;
 
@@ -247,7 +269,7 @@ struct DGPIDSelector {
   // getters
   void Print();
   template <typename TTrack>
-  bool isGoodCombination(std::vector<int> comb, TTrack const& tracks)
+  bool isGoodCombination(std::vector<int> comb, TTrack const& tracks, std::vector<int> acceptedCharges)
   {
     // compute net charge of track combination
     int netCharge = 0.;
@@ -256,8 +278,7 @@ struct DGPIDSelector {
     }
 
     // is this in the list of accepted net charges?
-    auto netCharges = mAnaPars.netCharges();
-    if (std::find(netCharges.begin(), netCharges.end(), netCharge) != netCharges.end()) {
+    if (std::find(acceptedCharges.begin(), acceptedCharges.end(), netCharge) != acceptedCharges.end()) {
       return true;
     }
     return false;
@@ -272,6 +293,23 @@ struct DGPIDSelector {
     // unknown PID
     auto pidhypo = pid2ind(pid);
     if (pidhypo < 0) {
+      return false;
+    }
+
+    // check ITS only
+    if (!mAnaPars.ITSOnlyTracks() && !track.hasTPC()) {
+      return false;
+    }
+
+    // check ncluster TPC
+    auto nTPCCL = track.tpcNClsFindable() - track.tpcNClsFindableMinusFound();
+    if (nTPCCL < mAnaPars.minNClTPC() || nTPCCL > mAnaPars.maxNClTPC()) {
+      return false;
+    }
+
+    // check chi2 per ncluster TPC
+    auto chi2NClTPC = track.tpcChi2NCl();
+    if (chi2NClTPC < mAnaPars.minChi2NClTPC() || chi2NClTPC > mAnaPars.maxChi2NClTPC()) {
       return false;
     }
 
@@ -361,41 +399,44 @@ struct DGPIDSelector {
 
     return true;
   }
+
   template <typename TTrack>
-  int computeIVMs(TTrack const& tracks)
+  std::vector<int> computeIVMs(TTrack const& tracks)
   {
     // reset
-    mIVMs.clear();
+    mUnlikeIVMs.clear();
+    mLikeIVMs.clear();
 
     // create combinations including permutations
     auto combs = combinations(tracks.size());
 
     // loop over unique combinations
     for (auto comb : combs) {
-      // is combination compatible with netCharge requirements?
-      if (!isGoodCombination(comb, tracks)) {
-        LOGF(info, "Not a good combination");
-        continue;
-      }
-      // is tracks compatible with PID requirements?
-      bool isGoodComb = true;
+      // are tracks compatible with PID requirements?
+      bool isGoodTracks = true;
       auto cnt = -1;
       for (auto ind : comb) {
         cnt++;
         if (!isGoodTrack(tracks.begin() + ind, cnt)) {
-          isGoodComb = false;
+          isGoodTracks = false;
           break;
         }
       }
 
-      // update list of IVMs
-      if (isGoodComb) {
+      // is combination compatible with netCharge requirements?
+      if (isGoodTracks) {
         DGParticle IVM(fPDG, mAnaPars, tracks, comb);
-        mIVMs.push_back(IVM);
+        // unlike sign
+        if (isGoodCombination(comb, tracks, mAnaPars.unlikeCharges())) {
+          mUnlikeIVMs.push_back(IVM);
+        }
+        if (isGoodCombination(comb, tracks, mAnaPars.likeCharges())) {
+          mLikeIVMs.push_back(IVM);
+        }
       }
     }
 
-    return mIVMs.size();
+    return std::vector<int>{static_cast<int>(mUnlikeIVMs.size()), static_cast<int>(mLikeIVMs.size())};
   }
 
   DGAnaparHolder getAnaPars() { return mAnaPars; }
@@ -437,7 +478,8 @@ struct DGPIDSelector {
         return 0.;
     }
   }
-  std::vector<DGParticle> IVMs() { return mIVMs; }
+  std::vector<DGParticle> unlikeIVMs() { return mUnlikeIVMs; }
+  std::vector<DGParticle> likeIVMs() { return mLikeIVMs; }
 
   int pid2ind(int pid);
 
@@ -446,7 +488,8 @@ struct DGPIDSelector {
   DGAnaparHolder mAnaPars;
 
   // list of DGParticles
-  std::vector<DGParticle> mIVMs;
+  std::vector<DGParticle> mUnlikeIVMs;
+  std::vector<DGParticle> mLikeIVMs;
 
   // particle properties
   TDatabasePDG* fPDG;

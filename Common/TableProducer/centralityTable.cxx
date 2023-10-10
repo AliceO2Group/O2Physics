@@ -12,21 +12,22 @@
 /// \file centrality.cxx
 /// \brief Task to produce the centrality tables associated to each of the required centrality estimators
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TH1F.h>
+#include <TFormula.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
-#include <TFormula.h>
 
 using namespace o2;
 using namespace o2::framework;
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
+  Produces<aod::CentRun2V0As> centRun2V0A;
   Produces<aod::CentRun2SPDTrks> centRun2SPDTracklets;
   Produces<aod::CentRun2SPDClss> centRun2SPDClusters;
   Produces<aod::CentRun2CL0s> centRun2CL0;
@@ -39,7 +40,8 @@ struct CentralityTable {
   Produces<aod::CentNTPVs> centNTPV;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<int> estRun2V0M{"estRun2V0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2V0M{"estRun2V0M", -1, {"Produces centrality percentiles using total V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2V0A{"estRun2V0A", -1, {"Produces centrality percentiles using V0A multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2SPDTrklets{"estRun2SPDtks", -1, {"Produces Run2 centrality percentiles using SPD tracklets multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2SPDClusters{"estRun2SPDcls", -1, {"Produces Run2 centrality percentiles using SPD clusters multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -54,6 +56,7 @@ struct CentralityTable {
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
   Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
+  Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 
   int mRunNumber;
   struct tagRun2V0MCalibration {
@@ -64,6 +67,11 @@ struct CentralityTable {
     TH1* mhVtxAmpCorrV0C = nullptr;
     TH1* mhMultSelCalib = nullptr;
   } Run2V0MInfo;
+  struct tagRun2V0ACalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2V0AInfo;
   struct tagRun2SPDTrackletsCalibration {
     bool mCalibrationStored = false;
     TH1* mhVtxAmpCorr = nullptr;
@@ -91,7 +99,7 @@ struct CentralityTable {
     TH1* mhMultSelCalib = nullptr;
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
-    calibrationInfo(std::string name)
+    explicit calibrationInfo(std::string name)
       : name(name),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
@@ -135,6 +143,7 @@ struct CentralityTable {
           }
         };
         enable("Run2V0M", estRun2V0M);
+        enable("Run2V0A", estRun2V0A);
         enable("Run2SPDTrk", estRun2SPDTrklets);
         enable("Run2SPDCls", estRun2SPDClusters);
         enable("Run2CL0", estRun2CL0);
@@ -165,17 +174,18 @@ struct CentralityTable {
       TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
 
       Run2V0MInfo.mCalibrationStored = false;
+      Run2V0AInfo.mCalibrationStored = false;
       Run2SPDTksInfo.mCalibrationStored = false;
       Run2SPDClsInfo.mCalibrationStored = false;
       Run2CL0Info.mCalibrationStored = false;
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = (TH1*)callst->FindObject(ccdbhname);
+          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = (TFormula*)callst->FindObject(ccdbhname);
+          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
         if (estRun2V0M == 1) {
@@ -184,7 +194,7 @@ struct CentralityTable {
           Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
           Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
           Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
-          if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) and (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) and (Run2V0MInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
             if (genName->length() != 0) {
               if (Run2V0MInfo.mMCScale != nullptr) {
                 for (int ixpar = 0; ixpar < 6; ++ixpar) {
@@ -199,11 +209,21 @@ struct CentralityTable {
             LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
           }
         }
+        if (estRun2V0A == 1) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2V0AInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+          Run2V0AInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0A");
+          if ((Run2V0AInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0AInfo.mhMultSelCalib != nullptr)) {
+            Run2V0AInfo.mCalibrationStored = true;
+          } else {
+            LOGF(fatal, "Calibration information from V0A for run %d corrupted", bc.runNumber());
+          }
+        }
         if (estRun2SPDTrklets == 1) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2SPDTksInfo.mhVtxAmpCorr = getccdb("hVtx_fnTracklets_Normalized");
           Run2SPDTksInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDTracklets");
-          if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) and (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) && (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
             Run2SPDTksInfo.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from SPD tracklets for run %d corrupted", bc.runNumber());
@@ -214,7 +234,7 @@ struct CentralityTable {
           Run2SPDClsInfo.mhVtxAmpCorrCL0 = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2SPDClsInfo.mhVtxAmpCorrCL1 = getccdb("hVtx_fnSPDClusters1_Normalized");
           Run2SPDClsInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDClusters");
-          if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) and (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) and (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
+          if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) && (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) && (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
             Run2SPDClsInfo.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from SPD clusters for run %d corrupted", bc.runNumber());
@@ -224,7 +244,7 @@ struct CentralityTable {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
-          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) and (Run2CL0Info.mhMultSelCalib != nullptr)) {
+          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
             Run2CL0Info.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
@@ -234,13 +254,13 @@ struct CentralityTable {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL1Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters1_Normalized");
           Run2CL1Info.mhMultSelCalib = getccdb("hMultSelCalib_CL1");
-          if ((Run2CL1Info.mhVtxAmpCorr != nullptr) and (Run2CL1Info.mhMultSelCalib != nullptr)) {
+          if ((Run2CL1Info.mhVtxAmpCorr != nullptr) && (Run2CL1Info.mhMultSelCalib != nullptr)) {
             Run2CL1Info.mCalibrationStored = true;
           } else {
             LOGF(fatal, "Calibration information from CL1 multiplicity for run %d corrupted", bc.runNumber());
           }
         }
-        if (Run2V0MInfo.mCalibrationStored or Run2SPDTksInfo.mCalibrationStored or Run2SPDClsInfo.mCalibrationStored or Run2CL0Info.mCalibrationStored or Run2CL1Info.mCalibrationStored) {
+        if (Run2V0MInfo.mCalibrationStored || Run2V0AInfo.mCalibrationStored || Run2SPDTksInfo.mCalibrationStored || Run2SPDClsInfo.mCalibrationStored || Run2CL0Info.mCalibrationStored || Run2CL1Info.mCalibrationStored) {
           mRunNumber = bc.runNumber();
         }
       } else {
@@ -273,6 +293,16 @@ struct CentralityTable {
       LOGF(debug, "centRun2V0M=%.0f", cV0M);
       // fill centrality columns
       centRun2V0M(cV0M);
+    }
+    if (estRun2V0A == 1) {
+      float cV0A = 105.0f;
+      if (Run2V0AInfo.mCalibrationStored) {
+        float v0a = collision.multFV0A() * Run2V0AInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0AInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ()));
+        cV0A = Run2V0AInfo.mhMultSelCalib->GetBinContent(Run2V0AInfo.mhMultSelCalib->FindFixBin(v0a));
+      }
+      LOGF(debug, "centRun2V0A=%.0f", cV0A);
+      // fill centrality columns
+      centRun2V0A(cV0A);
     }
     if (estRun2SPDTrklets == 1) {
       float cSPD = 105.0f;
@@ -353,8 +383,8 @@ struct CentralityTable {
         if (callst != nullptr) {
           LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-            estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
-            estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
+            estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+            estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
             if (estimator.mhMultSelCalib != nullptr) {
               if (generatorName->length() != 0) {
                 if (estimator.mMCScale != nullptr) {
@@ -399,7 +429,7 @@ struct CentralityTable {
         }
       }
 
-      auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity) {
+      auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity, bool assignOutOfRange) {
         auto scaleMC = [](float x, float pars[6]) {
           return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
@@ -412,28 +442,31 @@ struct CentralityTable {
             LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
           }
           percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+          if (assignOutOfRange)
+            percentile = 100.5f;
         }
         LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
         table(percentile);
       };
 
       if (estFV0A == 1) {
-        populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A());
+        populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
+      } else {
       }
       if (estFT0M == 1) {
-        populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+        populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFT0A == 1) {
-        populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+        populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFT0C == 1) {
-        populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+        populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFDDM == 1) {
-        populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
+        populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estNTPV == 1) {
-        populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
+        populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
     }
   }

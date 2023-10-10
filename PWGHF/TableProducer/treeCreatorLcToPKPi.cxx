@@ -16,21 +16,21 @@
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
 
 namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -49,43 +49,44 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(NSigTPCPi0, nsigTPCPi0, float);
-DECLARE_SOA_COLUMN(NSigTPCKa0, nsigTPCKa0, float);
-DECLARE_SOA_COLUMN(NSigTPCPr0, nsigTPCPr0, float);
-DECLARE_SOA_COLUMN(NSigTOFPi0, nsigTOFPi0, float);
-DECLARE_SOA_COLUMN(NSigTOFKa0, nsigTOFKa0, float);
-DECLARE_SOA_COLUMN(NSigTOFPr0, nsigTOFPr0, float);
-DECLARE_SOA_COLUMN(NSigTPCPi1, nsigTPCPi1, float);
-DECLARE_SOA_COLUMN(NSigTPCKa1, nsigTPCKa1, float);
-DECLARE_SOA_COLUMN(NSigTPCPr1, nsigTPCPr1, float);
-DECLARE_SOA_COLUMN(NSigTOFPi1, nsigTOFPi1, float);
-DECLARE_SOA_COLUMN(NSigTOFKa1, nsigTOFKa1, float);
-DECLARE_SOA_COLUMN(NSigTOFPr1, nsigTOFPr1, float);
-DECLARE_SOA_COLUMN(NSigTPCPi2, nsigTPCPi2, float);
-DECLARE_SOA_COLUMN(NSigTPCKa2, nsigTPCKa2, float);
-DECLARE_SOA_COLUMN(NSigTPCPr2, nsigTPCPr2, float);
-DECLARE_SOA_COLUMN(NSigTOFPi2, nsigTOFPi2, float);
-DECLARE_SOA_COLUMN(NSigTOFKa2, nsigTOFKa2, float);
-DECLARE_SOA_COLUMN(NSigTOFPr2, nsigTOFPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
+DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
+DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
+DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
+DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);
+DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);
+DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
-DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 // Events
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
-                  collision::BCId,
-                  collision::NumContrib,
+DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
+                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -124,41 +125,43 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand::ErrorImpactParameter2,
-                  full::NSigTPCPi0,
-                  full::NSigTPCKa0,
-                  full::NSigTPCPr0,
-                  full::NSigTOFPi0,
-                  full::NSigTOFKa0,
-                  full::NSigTOFPr0,
-                  full::NSigTPCPi1,
-                  full::NSigTPCKa1,
-                  full::NSigTPCPr1,
-                  full::NSigTOFPi1,
-                  full::NSigTOFKa1,
-                  full::NSigTOFPr1,
-                  full::NSigTPCPi2,
-                  full::NSigTPCKa2,
-                  full::NSigTPCPr2,
-                  full::NSigTOFPi2,
-                  full::NSigTOFKa2,
-                  full::NSigTOFPr2,
+                  full::NSigTpcPi0,
+                  full::NSigTpcKa0,
+                  full::NSigTpcPr0,
+                  full::NSigTofPi0,
+                  full::NSigTofKa0,
+                  full::NSigTofPr0,
+                  full::NSigTpcPi1,
+                  full::NSigTpcKa1,
+                  full::NSigTpcPr1,
+                  full::NSigTofPi1,
+                  full::NSigTofKa1,
+                  full::NSigTofPr1,
+                  full::NSigTpcPi2,
+                  full::NSigTpcKa2,
+                  full::NSigTpcPr2,
+                  full::NSigTofPi2,
+                  full::NSigTofKa2,
+                  full::NSigTofPr2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
                   full::P,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::E,
-                  full::MCflag,
+                  full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped);
+                  full::IsCandidateSwapped,
+                  full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
-                  collision::BCId,
+DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
+                  full::CollisionId,
+                  full::McCollisionId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -166,66 +169,71 @@ DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
-                  collision::BCId,
+DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
+                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag,
-                  full::OriginMcGen);
+                  full::FlagMc,
+                  full::OriginMcGen,
+                  full::CandidateId);
 
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLcToPKPi {
-  Produces<o2::aod::HfCand3ProngFull> rowCandidateFull;
-  Produces<o2::aod::HfCand3ProngFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCand3ProngFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandLcFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+
+  HfHelper hfHelper;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   void init(InitContext const&)
   {
   }
 
-  void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mccollisions,
+  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                 aod::McCollisions const& mcCollisions,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 aod::BigTracksPID const& tracks)
+                 TracksWPid const& tracks, aod::BCs const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
-        collision.bcId(),
+        collision.globalIndex(),
+        collision.mcCollisionId(),
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
         collision.posZ(),
         0,
-        1);
+        collision.bc().runNumber());
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+    for (const auto& candidate : candidates) {
+      auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
+        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
-            trackPos1.collision().bcId(),
-            trackPos1.collision().numContrib(),
+            candidate.collisionId(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -295,26 +303,28 @@ struct HfTreeCreatorLcToPKPi {
             FunctionE,
             candidate.flagMcMatchRec(),
             candidate.originMcRec(),
-            candidate.isCandidateSwapped());
+            candidate.isCandidateSwapped(),
+            candidate.globalIndex());
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), invMassLcToPKPi(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), invMassLcToPiKP(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
+    for (const auto& particle : particles) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
+          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus),
           particle.flagMcMatchGen(),
-          particle.originMcGen());
+          particle.originMcGen(),
+          particle.globalIndex());
       }
     }
   }
@@ -322,39 +332,39 @@ struct HfTreeCreatorLcToPKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                   aod::BigTracksPID const& tracks)
+                   TracksWPid const& tracks, aod::BCs const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
-        collision.bcId(),
+        collision.globalIndex(),
+        -1,
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
         collision.posZ(),
         0,
-        1);
+        collision.bc().runNumber());
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+    for (const auto& candidate : candidates) {
+      auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
+        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
-            trackPos1.collision().bcId(),
-            trackPos1.collision().numContrib(),
+            candidate.collisionId(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -424,12 +434,13 @@ struct HfTreeCreatorLcToPKPi {
             FunctionE,
             0.,
             0.,
-            0.);
+            0.,
+            candidate.globalIndex());
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), invMassLcToPKPi(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), invMassLcToPiKP(candidate), ctLc(candidate), yLc(candidate), eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
     }
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processData, "Process data tree writer", false);

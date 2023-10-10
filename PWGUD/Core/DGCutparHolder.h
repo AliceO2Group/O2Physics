@@ -21,7 +21,9 @@ class DGCutparHolder
  public:
   // constructor
   DGCutparHolder(int ndtcoll = 4, int nMinBCs = 7,
+                 bool withFwdTracks = false,
                  bool globalTracksOnly = false,
+                 bool ITSonlyTracks = true,
                  float minrgtrwTOF = 0.,
                  int MinNTracks = 0, int MaxNTracks = 10000,
                  std::vector<int> NetCharges = {0},
@@ -31,14 +33,17 @@ class DGCutparHolder
                  float minEta = -1.0, float maxEta = 1.0,
                  float minIVM = 0.0, float maxIVM = 1000.,
                  float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+                 float maxFITtime = 4,
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
   // setter
   void SetNDtcoll(int);
   void SetMinNBCs(int);
+  void SetWithFwdTracks(bool);
   void SetGlobalTracksOnly(bool);
+  void SetITSOnlyTracks(bool);
   void SetMinRgtrwTOF(float);
   void SetNTracks(int MinNTracks, int MaxNTracks);
   void SetNetCharges(std::vector<int> netCharges);
@@ -49,12 +54,15 @@ class DGCutparHolder
   void SetIVMRange(float minIVM, float maxIVM);
   void SetMaxNSigmaTPC(float maxnSigma);
   void SetMaxNSigmaTOF(float maxnSigma);
+  void SetMaxFITtime(float maxFITtime);
   void SetFITAmpLimits(std::vector<float> FITAmpLimits);
 
   // getter
   int NDtcoll() const;
   int minNBCs() const;
+  bool withFwdTracks() const;
   bool globalTracksOnly() const;
+  bool ITSOnlyTracks() const;
   float minRgtrwTOF() const;
   int minNTracks() const;
   int maxNTracks() const;
@@ -70,6 +78,7 @@ class DGCutparHolder
   float maxIVM() const;
   float maxNSigmaTPC() const;
   float maxNSigmaTOF() const;
+  float maxFITtime() const;
   std::vector<float> FITAmpLimits() const;
 
  private:
@@ -77,8 +86,12 @@ class DGCutparHolder
   int mNDtcoll;
   int mMinNBCs;
 
+  // allow forward tracks
+  bool mWithFwdTracks;
+
   // require all vertex tracks to be global tracks
   bool mGlobalTracksOnly;
+  bool mITSOnlyTracks;
 
   // required minimum fraction of global tracks with TOF hit
   float mMinRgtrwTOF;
@@ -103,6 +116,9 @@ class DGCutparHolder
   // maximum nSigma for PID
   float mMaxNSigmaTPC; // maximum nSigma TPC
   float mMaxNSigmaTOF; // maximum nSigma TOF
+
+  // maximum FIT time
+  float mMaxFITtime;
 
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;

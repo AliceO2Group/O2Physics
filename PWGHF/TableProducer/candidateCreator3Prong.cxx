@@ -15,33 +15,26 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
   // vertexing
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -54,21 +47,20 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
+  int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
+  double massPi{0.};
+  double massK{0.};
   double massPiKPi{0.};
-  double bz = 0.;
+  double bz{0.};
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -84,20 +76,24 @@ struct HfCandidateCreator3Prong {
 
   void init(InitContext const&)
   {
+    if (doprocessPvRefit && doprocessNoPvRefit) {
+      LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
+    }
+
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
-  void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
-               aod::BigTracks const& tracks,
-               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  template <bool doPvRefit = false, typename Cand>
+  void runCreator3Prong(aod::Collisions const& collisions,
+                        Cand const& rowsTrackIndexProng3,
+                        aod::TracksWCov const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
@@ -112,9 +108,9 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
-      auto track0 = rowTrackIndexProng3.prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng3.prong1_as<aod::BigTracks>();
-      auto track2 = rowTrackIndexProng3.prong2_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng3.template prong0_as<aod::TracksWCov>();
+      auto track1 = rowTrackIndexProng3.template prong1_as<aod::TracksWCov>();
+      auto track2 = rowTrackIndexProng3.template prong2_as<aod::TracksWCov>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -123,7 +119,7 @@ struct HfCandidateCreator3Prong {
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
@@ -150,9 +146,9 @@ struct HfCandidateCreator3Prong {
       trackParVar2 = df.getTrack(2);
 
       // get track momenta
-      array<float, 3> pvec0;
-      array<float, 3> pvec1;
-      array<float, 3> pvec2;
+      std::array<float, 3> pvec0;
+      std::array<float, 3> pvec1;
+      std::array<float, 3> pvec2;
       trackParVar0.getPxPyPzGlo(pvec0);
       trackParVar1.getPxPyPzGlo(pvec1);
       trackParVar2.getPxPyPzGlo(pvec2);
@@ -161,7 +157,7 @@ struct HfCandidateCreator3Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      if (doPvRefit) {
+      if constexpr (doPvRefit) {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
@@ -196,7 +192,7 @@ struct HfCandidateCreator3Prong {
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+      getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -217,12 +213,32 @@ struct HfCandidateCreator3Prong {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant mass
-        auto arrayMomenta = array{pvec0, pvec1, pvec2};
-        massPiKPi = RecoDecay::m(std::move(arrayMomenta), array{massPi, massK, massPi});
+        auto arrayMomenta = std::array{pvec0, pvec1, pvec2};
+        massPiKPi = RecoDecay::m(std::move(arrayMomenta), std::array{massPi, massK, massPi});
         hMass3->Fill(massPiKPi);
       }
     }
   }
+
+  void processPvRefit(aod::Collisions const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::TracksWCov const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", false);
+
+  void processNoPvRefit(aod::Collisions const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::TracksWCov const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
 };
 
 /// Extends the base table with expression columns.
@@ -234,8 +250,8 @@ struct HfCandidateCreator3ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMc(aod::BigTracksMC const& tracks,
-                 aod::McParticles const& particlesMC)
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -247,52 +263,65 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t channel = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};  // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};  // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonant1 = {kProton, 313};       // Λc± → p± K*
+    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};       // Λc± → Δ(1232)±± K∓
+    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};      // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
+    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
-    for (auto& candidate : *rowCandidateProng3) {
-      // Printf("New rec. candidate");
+    for (const auto& candidate : *rowCandidateProng3) {
       flag = 0;
       origin = 0;
       swapping = 0;
       channel = 0;
       arrDaughIndex.clear();
-      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>(), candidate.prong2_as<aod::BigTracksMC>()};
+      auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
+          if (arrayDaughters[0].has_mcParticle()) {
+            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+          }
+          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
+          if (arrDaughIndex.size() == 2) {
+            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+              arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+            }
+            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+              channel = DecayChannelDs::PhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+              channel = DecayChannelDs::K0starK;
+            }
+          }
         }
       }
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Flagging the different Λc± → p± K∓ π± decay channels
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-              auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
@@ -308,8 +337,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
@@ -317,46 +345,54 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(flag, origin, swapping, channel);
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
-      // Printf("New gen. candidate");
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+          if (arrDaughIndex.size() == 2) {
+            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+            }
+            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+              channel = DecayChannelDs::PhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+              channel = DecayChannelDs::K0starK;
+            }
+          }
         }
       }
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
-          RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
+          // Flagging the different Λc± → p± K∓ π± decay channels
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
@@ -372,15 +408,14 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
       }
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchGen(flag, origin, channel);

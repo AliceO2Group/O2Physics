@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using V0LegsWithMC = soa::Join<aod::V0Legs, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -608,9 +608,9 @@ struct GammaConversions {
     }
   }
 
-  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
+  Preslice<V0DatasAdditional> perCollision = aod::v0photon::collisionId;
   void processRec(aod::EMReducedEvents::iterator const& theCollision,
-                  V0DatasAdditional const& theV0s,
+                  V0DatasAdditional const& theV0s, aod::V0Photons const&,
                   aod::V0Legs const& theAllTracks)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -635,7 +635,7 @@ struct GammaConversions {
   Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonId;
 
   void processMc(aod::EMReducedEvents::iterator const& theCollision,
-                 V0DatasAdditional const& theV0s,
+                 V0DatasAdditional const& theV0s, aod::V0Photons const&,
                  V0LegsWithMC const& theAllTracks,
                  aod::V0DaughterMcParticles const& TheAllTracksMC,
                  aod::McGammasTrue const& theV0sTrue)
@@ -741,8 +741,10 @@ struct GammaConversions {
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
     fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
-    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), theV0.ppos() / theV0.p());
-    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), theV0.pneg() / theV0.p());
+
+    auto v0 = theV0.template v0photon_as<aod::V0Photons>();
+    fillTH2(theContainer, "hpeDivpGamma", v0.p(), v0.ppos() / v0.p());
+    fillTH2(theContainer, "hpeDivpGamma", v0.p(), v0.pneg() / v0.p());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a separate fill function is needed

@@ -12,15 +12,19 @@
 o2physics_add_library(PWGEMPhotonMesonCore
                SOURCES  V0PhotonCut.cxx
                         PHOSPhotonCut.cxx
+                        DalitzEECut.cxx
                         EMCPhotonCut.cxx
+                        PairCut.cxx
                         CutsLibrary.cxx
                         HistogramsLibrary.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(PWGEMPhotonMesonCore
               HEADERS   V0PhotonCut.h
+                        DalitzEECut.h
                         PHOSPhotonCut.h
                         EMCPhotonCut.h
+                        PairCut.h
                         CutsLibrary.h
                         HistogramsLibrary.h
               LINKDEF PWGEMPhotonMesonCoreLinkDef.h)

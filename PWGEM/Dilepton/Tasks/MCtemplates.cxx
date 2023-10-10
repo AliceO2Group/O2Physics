@@ -60,11 +60,11 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", dqanalysisflags::Is
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
 // TODO: make secondary vertexing optional
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
+// using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
-using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
+// using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 
@@ -165,7 +165,7 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.emplace_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -180,7 +180,7 @@ struct AnalysisTrackSelection {
         if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
           continue;
         }
-        fMCSignals.push_back(*sig);
+        fMCSignals.emplace_back(*sig);
       }
     }
 
@@ -189,16 +189,16 @@ struct AnalysisTrackSelection {
     TString histClasses = "TrackBarrel_BeforeCuts;";
     for (auto& cut : fTrackCuts) {
       TString nameStr = Form("TrackBarrel_%s", cut.GetName());
-      fHistNamesReco.push_back(nameStr);
+      fHistNamesReco.emplace_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
         TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
-        mcnames.push_back(nameStr2);
+        mcnames.emplace_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
       }
-      fHistNamesMCMatched.push_back(mcnames);
+      fHistNamesMCMatched.emplace_back(mcnames);
     }
 
     if (fConfigQA) {
@@ -267,12 +267,12 @@ struct AnalysisTrackSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(true, track.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -322,7 +322,7 @@ struct AnalysisSameEventPairing {
 
   HistogramManager* fHistMan;
   std::vector<std::vector<TString>> fBarrelHistNames;
-  std::vector<std::vector<TString>> fBarrelHistNamesMCmatched;
+  std::vector<std::vector<std::vector<TString>>> fBarrelHistNamesMCmatched;
   std::vector<MCSignal> fRecMCSignals;
   std::vector<MCSignal> fGenMCSignals;
 
@@ -350,7 +350,7 @@ struct AnalysisSameEventPairing {
         if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
           continue;
         }
-        fRecMCSignals.push_back(*sig);
+        fRecMCSignals.emplace_back(*sig);
       }
     }
 
@@ -364,16 +364,19 @@ struct AnalysisSameEventPairing {
             Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-          fBarrelHistNames.push_back(names);
-          std::vector<TString> mcSigClasses;
+          fBarrelHistNames.emplace_back(names);
+          std::vector<std::vector<TString>> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
             for (auto& sig : fRecMCSignals) {
-              TString histName = Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName());
-              histNames += Form("%s;", histName.Data());
-              mcSigClasses.push_back(histName);
+              std::vector<TString> names = {
+                Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName()),
+                Form("PairsBarrelSEPP_%s_%s", objArray->At(icut)->GetName(), sig.GetName()),
+                Form("PairsBarrelSEMM_%s_%s", objArray->At(icut)->GetName(), sig.GetName())};
+              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+              mcSigClasses.emplace_back(names);
             } // end loop over MC signals
           }
-          fBarrelHistNamesMCmatched.push_back(mcSigClasses);
+          fBarrelHistNamesMCmatched.emplace_back(mcSigClasses);
         } // end loop over cuts
       }   // end if(cutNames.IsNull())
     }     // end if processBarrel
@@ -386,10 +389,10 @@ struct AnalysisSameEventPairing {
       MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenSigArray->At(isig)->GetName());
       if (sig) {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
-          fGenMCSignals.push_back(*sig);
+          fGenMCSignals.emplace_back(*sig);
           histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         } else if (sig->GetNProngs() == 2) {                   // NOTE: 2-prong signals required
-          fGenMCSignals.push_back(*sig);
+          fGenMCSignals.emplace_back(*sig);
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
         }
       }
@@ -409,7 +412,7 @@ struct AnalysisSameEventPairing {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
     unsigned int ncuts = fBarrelHistNames.size();
     std::vector<std::vector<TString>> histNames = fBarrelHistNames;
-    std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
+    std::vector<std::vector<std::vector<TString>>> histNamesMCmatched = fBarrelHistNamesMCmatched;
 
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
@@ -436,12 +439,12 @@ struct AnalysisSameEventPairing {
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
-          if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) { // for Framework data model
-          if ((*sig).CheckSignal(false, tracksMC, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(true, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -459,14 +462,24 @@ struct AnalysisSameEventPairing {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
-                fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNamesMCmatched[icut][isig][0].Data(), VarManager::fgValues);
               }
             }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+                if (mcDecision & (uint32_t(1) << isig)) {
+                  fHistMan->FillHistClass(histNamesMCmatched[icut][isig][1].Data(), VarManager::fgValues);
+                }
+              }
             } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+                if (mcDecision & (uint32_t(1) << isig)) {
+                  fHistMan->FillHistClass(histNamesMCmatched[icut][isig][2].Data(), VarManager::fgValues);
+                }
+              }
             }
           }
         }
@@ -489,7 +502,14 @@ struct AnalysisSameEventPairing {
         if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
           continue;
         }
-        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = sig.CheckSignal(true, mctrack_raw);
+        } else {
+          checked = sig.CheckSignal(true, mctrack);
+        }
+        if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -501,7 +521,15 @@ struct AnalysisSameEventPairing {
         continue;
       }
       for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-        if (sig.CheckSignal(false, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = sig.CheckSignal(true, t1_raw, t2_raw);
+        } else {
+          checked = sig.CheckSignal(true, t1, t2);
+        }
+        if (checked) {
           VarManager::FillPairMC(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
@@ -509,7 +537,7 @@ struct AnalysisSameEventPairing {
     } // end of true pairing loop
   }   // end runMCGen
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,

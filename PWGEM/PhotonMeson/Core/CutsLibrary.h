@@ -17,8 +17,10 @@
 
 #include <string>
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PairCut.h"
 
 namespace o2::aod
 {
@@ -26,6 +28,10 @@ namespace pcmcuts
 {
 V0PhotonCut* GetCut(const char* cutName);
 } // namespace pcmcuts
+namespace dalitzeecuts
+{
+DalitzEECut* GetCut(const char* cutName);
+} // namespace dalitzeecuts
 
 namespace phoscuts
 {
@@ -36,6 +42,11 @@ namespace emccuts
 {
 EMCPhotonCut* GetCut(const char* cutName);
 } // namespace emccuts
+
+namespace paircuts
+{
+PairCut* GetCut(const char* cutName);
+} // namespace paircuts
 
 } // namespace o2::aod
 #endif // PWGEM_PHOTONMESON_CORE_CUTSLIBRARY_H_

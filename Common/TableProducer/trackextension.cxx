@@ -22,7 +22,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -45,7 +44,6 @@ namespace analysis
 namespace trackextension
 {
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
-const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
 const char* ccdbpath_grp = "GLO/GRP/GRP";
 const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
 } // namespace trackextension
@@ -71,9 +69,6 @@ struct TrackExtension {
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
 
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbpath_geo);
-    }
     mRunNumber = 0;
     mMagField = 0.0;
   }

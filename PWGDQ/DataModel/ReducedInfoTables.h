@@ -12,9 +12,10 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 
-#ifndef O2_Analysis_ReducedInfoTables_H_
-#define O2_Analysis_ReducedInfoTables_H_
+#ifndef PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
+#define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"
@@ -22,7 +23,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -255,6 +255,25 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelLabels, "AOD", "RTBARRELLABELS", //!
 
 using ReducedTrackBarrelLabel = ReducedTracksBarrelLabels::iterator;
 
+// MFT track quantities
+namespace reducedmft
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);        //!
+DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint8_t); //!
+
+DECLARE_SOA_COLUMN(Pt, pt, float);   //!
+DECLARE_SOA_COLUMN(Eta, eta, float); //!
+DECLARE_SOA_COLUMN(Phi, phi, float); //!
+} // namespace reducedmft
+
+// MFT track kinematics
+DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
+                  o2::soa::Index<>, reducedmft::ReducedEventId, reducedmft::FilteringFlags,
+                  reducedmft::Pt, reducedmft::Eta, reducedmft::Phi);
+
+// iterator
+using ReducedMFTTrack = ReducedMFTTracks::iterator;
+
 // muon quantities
 namespace reducedmuon
 {
@@ -268,6 +287,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int);               //!
 DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
 DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                 //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -286,6 +306,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
+DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack); //!  matching index pointing to the ReducedMFTTrack table if filled
 } // namespace reducedmuon
 
 // Muon track kinematics
@@ -301,7 +322,7 @@ DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
 DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId,
+                  fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId, reducedmuon::ReducedMFTTrackId,
                   fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType,
                   reducedmuon::FwdDcaX, reducedmuon::FwdDcaY,
                   fwdtrack::TrackTime, fwdtrack::TrackTimeRes);
@@ -313,10 +334,15 @@ DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
                   fwdtrack::CTglX, fwdtrack::CTglY, fwdtrack::CTglPhi, fwdtrack::CTglTgl, fwdtrack::C1PtX,
                   fwdtrack::C1PtY, fwdtrack::C1PtPhi, fwdtrack::C1PtTgl, fwdtrack::C1Pt21Pt2);
 
+// Muon collision information (joined with ReducedMuons) allowing to connect different tables (cross PWGs)
+DECLARE_SOA_TABLE(ReducedMuonsInfo, "AOD", "RTMUONINFO",
+                  reducedmuon::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+
 // iterators
 using ReducedMuon = ReducedMuons::iterator;
 using ReducedMuonExtra = ReducedMuonsExtra::iterator;
 using ReducedMuonCov = ReducedMuonsCov::iterator;
+using ReducedMuonInfo = ReducedMuonsInfo::iterator;
 
 namespace reducedmuonlabel
 {
@@ -390,6 +416,11 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 
+DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float); //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float); //! Y component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float); //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
+
 } // namespace dilepton_track_index
 
 // pair information
@@ -409,10 +440,13 @@ DECLARE_SOA_COLUMN(Tauxy, tauxy, float);               //! Transverse pseudo-pro
 DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);           //! Chi2 for PCA of the dilepton
+DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float); //! Cosine of the pointing angle
 DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 2)
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);     //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -450,16 +484,22 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi);
 
+// Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
+DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
+                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
-                  collision::PosX, collision::PosY, collision::PosZ,
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   reducedpair::Mass,
                   reducedpair::McDecision,
-                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign, reducedpair::Chi2pca,
                   reducedpair::Tauz, reducedpair::TauzErr,
                   reducedpair::Tauxy, reducedpair::TauxyErr,
+                  reducedpair::CosPointingAngle,
                   dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Sign1,
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::Sign2,
+                  dilepton_track_index::FwdDcaX1, dilepton_track_index::FwdDcaY1, dilepton_track_index::FwdDcaX2, dilepton_track_index::FwdDcaY2,
                   dilepton_track_index::McMask1, dilepton_track_index::McMask2,
                   dilepton_track_index::Chi2MatchMCHMID1, dilepton_track_index::Chi2MatchMCHMID2,
                   dilepton_track_index::Chi2MatchMCHMFT1, dilepton_track_index::Chi2MatchMCHMFT2,
@@ -473,6 +513,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
+using DileptonInfo = DileptonsInfo::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
 // candidate information
@@ -522,4 +563,4 @@ DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
 } // namespace o2::aod
 
-#endif // O2_Analysis_ReducedInfoTables_H_
+#endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_

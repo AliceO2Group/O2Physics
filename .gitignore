@@ -7,3 +7,4 @@ compile_commands.json
 megalinter-reports/
 .mypy_cache/
 github_conf/
+.cache

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \brief Analyses reduced tables (DGCandidates, DGTracks) of DG candidates produced with DGCandProducer
+// \brief Analyses UD tables (DGCandidates, DGTracks) of DG candidates produced with DGCandProducer
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  06.06.2022
 
@@ -17,13 +17,14 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
-#include "PWGUD/Core/UDFSParser.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -35,13 +36,14 @@ struct DGCandAnalyzer {
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   Configurable<int> candCaseSel{"CandCase", {}, "0: all Cands, 1: only ColCands,2: only BCCands"};
   Configurable<std::string> goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
-  Configurable<std::string> fillingSchemeFile{"fillingSchemeFile", {}, "csv file with filling scheme information"};
+
+  // ccdb
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // a pdg object
   TDatabasePDG* pdg = nullptr;
 
   // get a DGCutparHolder and DGAnaparHolder
-  DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // analysis cuts
@@ -56,8 +58,9 @@ struct DGCandAnalyzer {
   DGPIDSelector pidsel = DGPIDSelector();
   UDGoodRunSelector grsel = UDGoodRunSelector();
 
-  // a filling scheme parser
-  UDFSParser fsparser = UDFSParser();
+  // filling scheme
+  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
 
   // a global container to contain bcnum of accepted candidates
   std::set<uint64_t> bcnums;
@@ -65,20 +68,14 @@ struct DGCandAnalyzer {
   // define histograms
   HistogramRegistry registry{
     "registry",
-    {
-      {"nIVMs", "#nIVMs", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
-      {"candCase", "#candCase", {HistType::kTH1F, {{5, -0.5, 4.5}}}},
-      {"nSigmaTPCPEl", "#nSigmaTPCPEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
-      {"nSigmaTPCPPi", "#nSigmaTPCPPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
-      {"nSigmaTPCPMu", "#nSigmaTPCPMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
-      {"nSigmaTPCPKa", "#nSigmaTPCPKa", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
-      {"nSigmaTPCPPr", "#nSigmaTPCPPr", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
-    }};
+    {}};
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
 
+  // a function to fill 2Prong histograms
   template <typename TTrack>
   void fillSignalHists(DGParticle ivm, TTrack const& dgtracks, DGPIDSelector pidsel)
   {
@@ -92,101 +89,163 @@ struct DGCandAnalyzer {
     auto m1 = particleMass(pdg, pidsel.getAnaPars().PIDs()[0]);
     auto ene1 = sqrt(pow(tr1.px(), 2.) + pow(tr1.py(), 2.) + pow(tr1.pz(), 2.) + m1);
     auto lv1 = TLorentzVector(tr1.px(), tr1.py(), tr1.pz(), ene1);
-    LOGF(debug, "pid1 %f mass %f energy %f", pidsel.getAnaPars().PIDs()[0], m1, ene1);
-    auto signalTPC1 = tr1.tpcSignal() * tr1.sign();
-    auto signalTOF1 = tr1.tofSignal() / 1.E3;
+    auto signalTPC1 = tr1.tpcSignal();
+    auto signalTOF1 = tr1.tofSignal() / 1.E4;
 
     auto tr2 = dgtracks.begin() + ivm.trkinds()[1];
     auto m2 = particleMass(pdg, pidsel.getAnaPars().PIDs()[1]);
     auto ene2 = sqrt(pow(tr2.px(), 2.) + pow(tr2.py(), 2.) + pow(tr2.pz(), 2.) + m2);
     auto lv2 = TLorentzVector(tr2.px(), tr2.py(), tr2.pz(), ene2);
-    LOGF(debug, "pid2 %f mass %f energy %f", pidsel.getAnaPars().PIDs()[1], m2, ene2);
-    auto signalTPC2 = tr2.tpcSignal() * tr2.sign();
-    auto signalTOF2 = tr2.tofSignal() / 1.E3;
+    auto signalTPC2 = tr2.tpcSignal();
+    auto signalTOF2 = tr2.tofSignal() / 1.E4;
 
-    registry.get<TH2>(HIST("TPCsignal1"))->Fill(tr1.tpcInnerParam(), signalTPC1);
-    registry.get<TH2>(HIST("TPCsignal2"))->Fill(tr2.tpcInnerParam(), signalTPC2);
-    registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
-    registry.get<TH2>(HIST("TOFsignal1"))->Fill(lv1.P(), signalTOF1);
-    registry.get<TH2>(HIST("TOFsignal2"))->Fill(lv2.P(), signalTOF2);
-    registry.get<TH2>(HIST("sig1VsSig2TOF"))->Fill(signalTOF1, signalTOF2);
-    registry.get<TH2>(HIST("eta1Vseta2"))->Fill(lv1.Eta(), lv2.Eta());
+    LOGF(debug, "TOF signals %f %f", signalTOF1, signalTOF2);
+
+    registry.fill(HIST("2Prong/TPCsignal1"), tr1.tpcInnerParam(), signalTPC1);
+    registry.fill(HIST("2Prong/TPCsignal2"), tr2.tpcInnerParam(), signalTPC2);
+    registry.fill(HIST("2Prong/sig1VsSig2TPC"), signalTPC1, signalTPC2);
+    registry.fill(HIST("2Prong/eta1Vseta2"), lv1.Eta(), lv2.Eta());
+
+    if (tr1.hasTOF()) {
+      registry.fill(HIST("2Prong/TOFsignal1"), lv1.P(), signalTOF1);
+    }
+    if (tr2.hasTOF()) {
+      registry.fill(HIST("2Prong/TOFsignal2"), lv2.P(), signalTOF2);
+    }
+    if (tr1.hasTOF() && tr2.hasTOF()) {
+      registry.fill(HIST("2Prong/sig1VsSig2TOF"), signalTOF1, signalTOF2);
+    }
   }
 
-  void init(InitContext&)
+  void init(InitContext& context)
   {
+    // initalise ccdb
+    ccdb->setURL(o2::base::NameConf::getCCDBServer());
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    // PDG
     pdg = TDatabasePDG::Instance();
 
-    diffCuts = (DGCutparHolder)DGCuts;
     anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
     grsel.init(goodRunsFile);
-    std::string FSFile(fillingSchemeFile);
-    fsparser.readFS(FSFile.data());
 
     if (verbose) {
       pidsel.Print();
       grsel.Print();
-      fsparser.Print();
     }
     bcnums.clear();
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
-    registry.add("trackQC", "#trackQC", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-    registry.add("dcaXYDG", "#dcaXYDG", {HistType::kTH1F, {{400, -2., 2.}}});
-    registry.add("ptTrkdcaXYDG", "#ptTrkdcaXYDG", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
-    registry.add("dcaZDG", "#dcaZDG", {HistType::kTH1F, {{800, -20., 20.}}});
-    registry.add("ptTrkdcaZDG", "#ptTrkdcaZDG", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
-    registry.add("IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {axisIVM, axispt}});
 
-    const AxisSpec axisnsTOF{nsTOFAxis, "nSigma TOF axis for histograms"};
-    registry.add("nSigmaTOFPEl", "#nSigmaTOFPEl", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
-    registry.add("nSigmaTOFPPi", "#nSigmaTOFPPi", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
-    registry.add("nSigmaTOFPMu", "#nSigmaTOFPMu", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
-    registry.add("nSigmaTOFPKa", "#nSigmaTOFPKa", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
-    registry.add("nSigmaTOFPPr", "#nSigmaTOFPPr", {HistType::kTH2F, {{250, 0.0, 2.5}, axisnsTOF}});
+    if (context.mOptions.get<bool>("processReco")) {
+      registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
 
-    // FIT signals
-    registry.add("FT0AAmplitude", "#FT0AAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FT0CAmplitude", "#FT0CAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FV0AAmplitude", "#FV0AAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FDDAAmplitude", "#FDDAAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
-    registry.add("FDDCAmplitude", "#FDDCAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("tracks/nSigmaTPCPEl", "nSigma TPC for electrons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPPi", "nSigma TPC for pions", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPMu", "nSigma TPC for muons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPKa", "nSigma TPC for kaons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
+      registry.add("tracks/nSigmaTPCPPr", "nSigma TPC for protons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
 
-    registry.add("BBT0A", "#BBT0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("BBT0C", "#BBT0C", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("BBV0A", "#BBV0A", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("BBFDDA", "#BBFDDA", {HistType::kTH1F, {{32, -16.5, 15.5}}});
-    registry.add("BBFDDC", "#BBFDDC", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      const AxisSpec axisnsTOF{nsTOFAxis, "nSigma TOF axis for histograms"};
+      registry.add("tracks/nSigmaTOFPEl", "nSigma TOF for electrons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPPi", "nSigma TOF for pions versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPMu", "nSigma TOF for muons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPKa", "nSigma TOF for kaons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
+      registry.add("tracks/nSigmaTOFPPr", "nSigma TOF for protons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
 
-    // 2 track events
-    registry.add("TPCChi2NCl1", "#TPCChi2NCl1", {HistType::kTH1F, {{200, 0., 50.}}});
-    registry.add("TPCChi2NCl2", "#TPCChi2NCl2", {HistType::kTH1F, {{200, 0., 50.}}});
-    registry.add("TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, -100., 100.0}}});
-    registry.add("TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, -100., 100.0}}});
-    registry.add("sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, -100., 100.}, {100, -100., 100.}}});
-    registry.add("TOFsignal1", "#TOFsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, -200., 200.}}});
-    registry.add("TOFsignal2", "#TOFsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, -200., 200.}}});
-    registry.add("sig1VsSig2TOF", "#sig1VsSig2TOF", {HistType::kTH2F, {{100, -200., 200.}, {100, -200., 200.}}});
-    registry.add("eta1Vseta2", "#eta1Vseta2", {HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}}});
-    registry.add("2Trackpt1pt2", "#2Trackpt1pt2", {HistType::kTH2F, {axispt, axispt}});
-    registry.add("2Trackpt1eta1", "#2Trackpt1eta1", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
-    registry.add("2Trackpt2eta2", "#2Trackpt2eta2", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
-    registry.add("2TrackAngle", "#2TrackAngle", {HistType::kTH1F, {{140, -0.2, 3.3}}});
-    registry.add("2TrackAngleIVM", "#2TrackAngleIVM", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
-    registry.add("2Tracketa1IVM", "#2Tracketa1IVM", {HistType::kTH2F, {axisIVM, {160, -2.0, 2.0}}});
-    registry.add("2Tracketa2IVM", "#2Tracketa2IVM", {HistType::kTH2F, {axisIVM, {160, -2.0, 2.0}}});
+      registry.add("tracks/trackHits", "Track hits in various detectors", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{200, -0.5, 0.5}}});
+      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
+      registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
+      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {100, -0.5, 0.5}}});
+      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {200, -2., 2.}}});
+
+      registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+      registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/unlikeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/nLikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+      registry.add("system/likeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("system/likeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+
+      // FIT signals
+      registry.add("FIT/FT0AAmplitude", "Total amplitude in FV0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FT0CAmplitude", "Total amplitude in FT0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FV0AAmplitude", "Total amplitude in FT0C", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FDDAAmplitude", "Total amplitude in FDDA", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("FIT/FDDCAmplitude", "Total amplitude in FDDC", {HistType::kTH1F, {{5000, 0., 5000.}}});
+
+      registry.add("FIT/BBFV0A", "FV0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFT0A", "FT0A signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFT0C", "FT0C signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFDDA", "FDDA signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+      registry.add("FIT/BBFDDC", "FDDC signal in neighbouring BCs", {HistType::kTH1F, {{32, -16.5, 15.5}}});
+
+      // 2 track events
+      registry.add("2Prong/TPCNCl1", "Number of found TPC clusters of track 1", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+      registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+      registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 150.}, {300, 0., 150.}}});
+      registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+      registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+      registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{1000, -5., 5.}, {1000, -5., 5.}}});
+      registry.add("2Prong/eta1Vseta2", "etas of track 1 versus track 2", {HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}}});
+      registry.add("2Prong/pt1pt2", "pTs of track 1 versus track 2", {HistType::kTH2F, {axispt, axispt}});
+      registry.add("2Prong/pt1eta1", "pT versus eta of track 1", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
+      registry.add("2Prong/pt2eta2", "pT versus eta of track 2", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
+      registry.add("2Prong/Angle", "Angle between both tracks", {HistType::kTH1F, {{175, -0.2, 3.3}}});
+      registry.add("2Prong/AngleIVM", "Angle versis invariant mass", {HistType::kTH2F, {axisIVM, {175, -0.2, 3.3}}});
+      registry.add("2Prong/pt1IVM", "pT of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("2Prong/pt2IVM", "pT of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
+      registry.add("2Prong/eta1IVM", "eta of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
+      registry.add("2Prong/eta2IVM", "eta of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
+      registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+      registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+      registry.add("2Prong/NCl1IVM", "Number of found TPC clusters of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+      registry.add("2Prong/NCl2IVM", "Number of found TPC clusters of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+    }
+
+    if (context.mOptions.get<bool>("processMcTruth")) {
+      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("mcTruth/IVMpt", "Invariant mass versus p_{T}", {HistType::kTH2F, {axisIVM, axispt}});
+    }
   }
 
-  void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
+  void processReco(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
+    // count collisions
+    registry.fill(HIST("stat/candCaseAll"), 0., 1.);
+
     // accept only selected run numbers
-    if (!grsel.isGoodRun(dgcand.runNumber())) {
+    int run = dgcand.runNumber();
+    if (!grsel.isGoodRun(run)) {
       return;
     }
-    LOGF(debug, "Run number %d", dgcand.runNumber());
+
+    // extract bc pattern from CCDB for data or anchored MC only
+    if (run != lastRun && run >= 500000) {
+      LOGF(info, "Updating bcPattern %d ...", run);
+      auto tss = ccdb->getRunDuration(run);
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", tss.first);
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+      lastRun = run;
+      LOGF(info, "done!");
+    }
+
+    // is BB bunch?
+    auto bcnum = dgcand.globalBC();
+    if (run >= 500000 && bcPatternB[bcnum % o2::constants::lhc::LHCMaxBunches] == 0) {
+      LOGF(debug, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
+      return;
+    }
 
     // skip unwanted cases
     // 0. all candidates
@@ -202,6 +261,14 @@ struct DGCandAnalyzer {
     if (candCaseSel > 0 && candCase != candCaseSel) {
       return;
     }
+    registry.fill(HIST("stat/candCaseAll"), candCase, 1.);
+
+    // fill FIT amplitude histograms
+    registry.fill(HIST("FIT/FT0AAmplitude"), dgcand.totalFT0AmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FT0CAmplitude"), dgcand.totalFT0AmplitudeC(), 1.);
+    registry.fill(HIST("FIT/FV0AAmplitude"), dgcand.totalFV0AmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FDDAAmplitude"), dgcand.totalFDDAmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
     // skip events with too few/many tracks
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
@@ -209,13 +276,13 @@ struct DGCandAnalyzer {
     if (dgcand.numContrib() != PVContributors.size()) {
       LOGF(info, "Missmatch of PVContributors %d != %d", dgcand.numContrib(), PVContributors.size());
     }
-    if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
-      LOGF(debug, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), diffCuts.minNTracks(), diffCuts.maxNTracks());
+    if (dgcand.numContrib() < anaPars.minNTracks() || dgcand.numContrib() > anaPars.maxNTracks()) {
+      LOGF(debug, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), anaPars.minNTracks(), anaPars.maxNTracks());
       return;
     }
 
     // skip events with out-of-range net charge
-    auto netChargeValues = diffCuts.netCharges();
+    auto netChargeValues = anaPars.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
       LOGF(debug, "Rejected 2: %d not in set.", dgcand.netCharge());
       return;
@@ -223,7 +290,7 @@ struct DGCandAnalyzer {
 
     // skip events with out-of-range rgtrwTOF
     auto rtrwTOF = udhelpers::rPVtrwTOF<false>(dgtracks, PVContributors.size());
-    auto minRgtrwTOF = candCase != 1 ? 1.0 : diffCuts.minRgtrwTOF();
+    auto minRgtrwTOF = candCase != 1 ? 1.0 : anaPars.minRgtrwTOF();
     if (rtrwTOF < minRgtrwTOF) {
       LOGF(debug, "Rejected 3: %f below threshold of %f.", rtrwTOF, minRgtrwTOF);
       return;
@@ -233,59 +300,52 @@ struct DGCandAnalyzer {
     auto bitMin = anaPars.dBCMin() + 16;
     auto bitMax = anaPars.dBCMax() + 16;
     for (auto bit = bitMin; bit <= bitMax; bit++) {
-      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
-          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
-          TESTBIT(dgcand.bbFV0Apf(), bit) ||
-          TESTBIT(dgcand.bbFDDApf(), bit) ||
-          TESTBIT(dgcand.bbFDDCpf(), bit)) {
+      if (anaPars.FITvetoes()[0] && TESTBIT(dgcand.bbFV0Apf(), bit))
         return;
-      }
+      if (anaPars.FITvetoes()[1] && TESTBIT(dgcand.bbFT0Apf(), bit))
+        return;
+      if (anaPars.FITvetoes()[2] && TESTBIT(dgcand.bbFT0Cpf(), bit))
+        return;
+      if (anaPars.FITvetoes()[3] && TESTBIT(dgcand.bbFDDApf(), bit))
+        return;
+      if (anaPars.FITvetoes()[4] && TESTBIT(dgcand.bbFDDCpf(), bit))
+        return;
     }
-
-    // fill FIT amplitude histograms
-    registry.get<TH1>(HIST("FT0AAmplitude"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
-    registry.get<TH1>(HIST("FT0CAmplitude"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
-    registry.get<TH1>(HIST("FV0AAmplitude"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
-    registry.get<TH1>(HIST("FDDAAmplitude"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
-    registry.get<TH1>(HIST("FDDCAmplitude"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
 
     // fill BBFlag histograms
     for (auto bit = 0; bit < 33; bit++) {
-      registry.get<TH1>(HIST("BBT0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Apf(), bit));
-      registry.get<TH1>(HIST("BBT0C"))->Fill(bit - 16, TESTBIT(dgcand.bbFT0Cpf(), bit));
-      registry.get<TH1>(HIST("BBV0A"))->Fill(bit - 16, TESTBIT(dgcand.bbFV0Apf(), bit));
-      registry.get<TH1>(HIST("BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
-      registry.get<TH1>(HIST("BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
+      registry.fill(HIST("FIT/BBFV0A"), bit - 16, TESTBIT(dgcand.bbFV0Apf(), bit));
+      registry.fill(HIST("FIT/BBFT0A"), bit - 16, TESTBIT(dgcand.bbFT0Apf(), bit));
+      registry.fill(HIST("FIT/BBFT0C"), bit - 16, TESTBIT(dgcand.bbFT0Cpf(), bit));
+      registry.fill(HIST("FIT/BBFDDA"), bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
+      registry.fill(HIST("FIT/BBFDDC"), bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
 
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
-    LOGF(info, "Number of IVMs %d", nIVMs);
 
-    // update candCase histogram
-    if (nIVMs > 0) {
-      registry.get<TH1>(HIST("candCase"))->Fill(candCase, 1.);
-      // check bcnum
-      auto bcnum = dgcand.globalBC();
-      if (bcnums.find(bcnum) != bcnums.end()) {
-        LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
-        registry.get<TH1>(HIST("candCase"))->Fill(4, 1.);
-        return;
-      } else {
-        bcnums.insert(bcnum);
-      }
-
-      // is BB bunch?
-      if (!fsparser.isP2BCBB(bcnum % o2::constants::lhc::LHCMaxBunches)) {
-        LOGF(info, "bcnum %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
-      }
-    } else {
+    // process the unlike sign combinations
+    if (nIVMs[0] == 0 && nIVMs[1] == 0) {
       LOGF(debug, "Rejected 4: no IVMs.");
+      return;
     }
 
+    // update histogram stat/candCase and stat/nDGperRun
+    registry.fill(HIST("stat/candCaseSel"), 0, 1.);
+    registry.fill(HIST("stat/candCaseSel"), candCase, 1.);
+
+    // check bcnum
+    if (bcnums.find(bcnum) != bcnums.end()) {
+      LOGF(info, "candCase %d bcnum %d allready found! ", candCase, bcnum);
+      registry.fill(HIST("stat/candCaseSel"), 4, 1.);
+    } else {
+      bcnums.insert(bcnum);
+    }
+    registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
+
     // update histograms
-    registry.get<TH1>(HIST("nIVMs"))->Fill(nIVMs, 1.);
-    for (auto ivm : pidsel.IVMs()) {
+    int goodIVMs = 0;
+    for (auto ivm : pidsel.unlikeIVMs()) {
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
         continue;
@@ -305,56 +365,161 @@ struct DGCandAnalyzer {
         LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
         if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
           continue;
-        } else {
-          registry.get<TH1>(HIST("2TrackAngle"))->Fill(angle, 1.);
-          registry.get<TH2>(HIST("2TrackAngleIVM"))->Fill(ivm.M(), angle, 1.);
         }
 
-        registry.get<TH1>(HIST("TPCChi2NCl1"))->Fill(trk1.tpcChi2NCl(), 1.);
-        registry.get<TH1>(HIST("TPCChi2NCl2"))->Fill(trk2.tpcChi2NCl(), 1.);
-        registry.get<TH2>(HIST("2Trackpt1eta1"))->Fill(trk1.pt(), v1.Eta(), 1.);
-        registry.get<TH2>(HIST("2Trackpt2eta2"))->Fill(trk2.pt(), v2.Eta(), 1.);
-        registry.get<TH2>(HIST("2Trackpt1pt2"))->Fill(trk1.pt(), trk2.pt(), 1.);
-        registry.get<TH2>(HIST("2Tracketa1IVM"))->Fill(ivm.M(), v1.Eta(), 1.);
-        registry.get<TH2>(HIST("2Tracketa2IVM"))->Fill(ivm.M(), v2.Eta(), 1.);
+        // update 2Prong histograms
+        registry.fill(HIST("2Prong/Angle"), angle, 1.);
+        registry.fill(HIST("2Prong/AngleIVM"), ivm.M(), angle, 1.);
+
+        registry.fill(HIST("2Prong/TPCChi2NCl1"), trk1.tpcChi2NCl(), 1.);
+        registry.fill(HIST("2Prong/TPCChi2NCl2"), trk2.tpcChi2NCl(), 1.);
+        registry.fill(HIST("2Prong/pt1eta1"), trk1.pt(), v1.Eta(), 1.);
+        registry.fill(HIST("2Prong/pt2eta2"), trk2.pt(), v2.Eta(), 1.);
+        registry.fill(HIST("2Prong/pt1pt2"), trk1.pt(), trk2.pt(), 1.);
+        registry.fill(HIST("2Prong/pt1IVM"), ivm.M(), trk1.pt(), 1.);
+        registry.fill(HIST("2Prong/pt2IVM"), ivm.M(), trk2.pt(), 1.);
+        registry.fill(HIST("2Prong/eta1IVM"), ivm.M(), v1.Eta(), 1.);
+        registry.fill(HIST("2Prong/eta2IVM"), ivm.M(), v2.Eta(), 1.);
+        registry.fill(HIST("2Prong/chi2NCl1IVM"), ivm.M(), trk1.tpcChi2NCl(), 1.);
+        registry.fill(HIST("2Prong/chi2NCl2IVM"), ivm.M(), trk2.tpcChi2NCl(), 1.);
+
+        auto nTPCCL = trk1.tpcNClsFindable() - trk1.tpcNClsFindableMinusFound();
+        registry.fill(HIST("2Prong/TPCNCl1"), nTPCCL, 1.);
+        registry.fill(HIST("2Prong/NCl1IVM"), ivm.M(), nTPCCL, 1.);
+        nTPCCL = trk2.tpcNClsFindable() - trk2.tpcNClsFindableMinusFound();
+        registry.fill(HIST("2Prong/TPCNCl2"), nTPCCL, 1.);
+        registry.fill(HIST("2Prong/NCl2IVM"), ivm.M(), nTPCCL, 1.);
+
+        fillSignalHists(ivm, PVContributors, pidsel);
       }
 
-      registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
+      // update system/IVMptSysDG
+      registry.fill(HIST("system/unlikeIVMptSysDG"), ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = PVContributors.begin() + ind;
-        registry.get<TH1>(HIST("trackQC"))->Fill(0., 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(1., track.hasITS() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTPC() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTRD() * 1.);
-        registry.get<TH1>(HIST("trackQC"))->Fill(4., track.hasTOF() * 1.);
+        registry.fill(HIST("system/unlikeIVMptTrkDG"), ivm.M(), track.pt());
+      }
+      goodIVMs++;
+    }
 
-        // registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
-        // registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
-        // registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
-        // registry.get<TH2>(HIST("ptTrkdcaZDG"))->Fill(track.pt(), track.dcaZ());
+    // fill histograms with PV track information of collisions with DG candidates
+    registry.fill(HIST("system/nUnlikeIVMs"), goodIVMs, 1.);
+    if (goodIVMs > 0) {
 
-        registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+      // loop over PV tracks and update histograms
+      for (auto track : PVContributors) {
+        registry.fill(HIST("tracks/trackHits"), 0., 1.);
+        registry.fill(HIST("tracks/trackHits"), 1., track.hasITS() * 1.);
+        registry.fill(HIST("tracks/trackHits"), 2., track.hasTPC() * 1.);
+        registry.fill(HIST("tracks/trackHits"), 3., track.hasTRD() * 1.);
+        registry.fill(HIST("tracks/trackHits"), 4., track.hasTOF() * 1.);
+
+        registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
+        registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
+        registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
+        registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
+        registry.fill(HIST("tracks/TPCNCl"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), 1.);
+        registry.fill(HIST("tracks/TPCChi2NCl"), track.tpcChi2NCl(), 1.);
 
         // fill nSigma histograms
+        /*
         auto mom = sqrt(pow(track.px(), 2) + pow(track.py(), 2) + pow(track.pz(), 2));
-        registry.get<TH2>(HIST("nSigmaTPCPEl"))->Fill(track.tpcInnerParam(), track.tpcNSigmaEl());
-        registry.get<TH2>(HIST("nSigmaTPCPPi"))->Fill(track.tpcInnerParam(), track.tpcNSigmaPi());
-        registry.get<TH2>(HIST("nSigmaTPCPMu"))->Fill(track.tpcInnerParam(), track.tpcNSigmaMu());
-        registry.get<TH2>(HIST("nSigmaTPCPKa"))->Fill(track.tpcInnerParam(), track.tpcNSigmaKa());
-        registry.get<TH2>(HIST("nSigmaTPCPPr"))->Fill(track.tpcInnerParam(), track.tpcNSigmaPr());
+        registry.fill(HIST("tracks/nSigmaTPCPEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+        registry.fill(HIST("tracks/nSigmaTPCPPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+        registry.fill(HIST("tracks/nSigmaTPCPMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        registry.fill(HIST("tracks/nSigmaTPCPKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+        registry.fill(HIST("tracks/nSigmaTPCPPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+        */
+        registry.fill(HIST("tracks/nSigmaTPCPEl"), track.pt(), track.tpcNSigmaEl());
+        registry.fill(HIST("tracks/nSigmaTPCPPi"), track.pt(), track.tpcNSigmaPi());
+        registry.fill(HIST("tracks/nSigmaTPCPMu"), track.pt(), track.tpcNSigmaMu());
+        registry.fill(HIST("tracks/nSigmaTPCPKa"), track.pt(), track.tpcNSigmaKa());
+        registry.fill(HIST("tracks/nSigmaTPCPPr"), track.pt(), track.tpcNSigmaPr());
         if (track.hasTOF()) {
           LOGF(debug, "tofNSigmaPi %f", track.tofNSigmaPi());
-          registry.get<TH2>(HIST("nSigmaTOFPEl"))->Fill(mom, track.tofNSigmaEl());
-          registry.get<TH2>(HIST("nSigmaTOFPPi"))->Fill(mom, track.tofNSigmaPi());
-          registry.get<TH2>(HIST("nSigmaTOFPMu"))->Fill(mom, track.tofNSigmaMu());
-          registry.get<TH2>(HIST("nSigmaTOFPKa"))->Fill(mom, track.tofNSigmaKa());
-          registry.get<TH2>(HIST("nSigmaTOFPPr"))->Fill(mom, track.tofNSigmaPr());
+          /*
+          registry.fill(HIST("nSigmaTOFPEl"), mom, track.tofNSigmaEl());
+          registry.fill(HIST("nSigmaTOFPPi"), mom, track.tofNSigmaPi());
+          registry.fill(HIST("nSigmaTOFPMu"), mom, track.tofNSigmaMu());
+          registry.fill(HIST("nSigmaTOFPKa"), mom, track.tofNSigmaKa());
+          registry.fill(HIST("nSigmaTOFPPr"), mom, track.tofNSigmaPr());
+          */
+          registry.fill(HIST("tracks/nSigmaTOFPEl"), track.pt(), track.tofNSigmaEl());
+          registry.fill(HIST("tracks/nSigmaTOFPPi"), track.pt(), track.tofNSigmaPi());
+          registry.fill(HIST("tracks/nSigmaTOFPMu"), track.pt(), track.tofNSigmaMu());
+          registry.fill(HIST("tracks/nSigmaTOFPKa"), track.pt(), track.tofNSigmaKa());
+          registry.fill(HIST("tracks/nSigmaTOFPPr"), track.pt(), track.tofNSigmaPr());
         }
       }
-      // fillSignalHists(ivm, dgtracks, pidsel);
-      fillSignalHists(ivm, PVContributors, pidsel);
     }
+
+    // process the like sign combinations
+    goodIVMs = 0;
+    for (auto ivm : pidsel.likeIVMs()) {
+      // cut on pt-system
+      if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
+        continue;
+      }
+
+      // applicable to 2-track events - cut on angle between two tracks
+      if (anaPars.nCombine() == 2) {
+        auto ind1 = ivm.trkinds()[0];
+        auto trk1 = PVContributors.begin() + ind1;
+        auto v1 = TVector3(trk1.px(), trk1.py(), trk1.pz());
+        auto ind2 = ivm.trkinds()[1];
+        auto trk2 = PVContributors.begin() + ind2;
+        auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
+
+        // cut on angle
+        auto angle = v1.Angle(v2);
+        LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
+        if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
+          continue;
+        }
+      }
+
+      // update system/IVMptSysDG
+      registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
+      for (auto ind : ivm.trkinds()) {
+        auto track = PVContributors.begin() + ind;
+        registry.fill(HIST("system/likeIVMptTrkDG"), ivm.M(), track.pt());
+      }
+      goodIVMs++;
+    }
+    registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
   }
+
+  PROCESS_SWITCH(DGCandAnalyzer, processReco, "Analyse reconstructed data", true);
+
+  using UDMcCollisionsFull = aod::UDMcCollisions;
+  using UDMcCollisionFull = UDMcCollisionsFull::iterator;
+  using UDMcTracksFull = aod::UDMcParticles;
+
+  void processMcTruth(UDMcCollisionFull const& mcCollison, UDMcTracksFull const& mcParts)
+  {
+
+    // which type of event is this
+    // 0: MB
+    // 1: Pythia diffractive
+    // 2: GRANIITTI diffractive
+    bool isPythiaDiff = udhelpers::isPythiaCDE(mcParts);
+    bool isGraniittiDiff = udhelpers::isGraniittiCDE(mcParts);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(0., 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(1., (!isPythiaDiff && !isGraniittiDiff) * 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(2., isPythiaDiff * 1.);
+    registry.get<TH1>(HIST("mcTruth/collType"))->Fill(3., isGraniittiDiff * 1.);
+
+    // compute GRANIITTI event invariant mass
+    if (!isGraniittiDiff) {
+      return;
+    }
+    auto ivm = udhelpers::ivmGraniittiCDE(mcParts);
+
+    // update histograms
+    registry.get<TH2>(HIST("mcTruth/IVMpt"))->Fill(ivm.M(), ivm.Perp(), 1.);
+  }
+
+  PROCESS_SWITCH(DGCandAnalyzer, processMcTruth, "Analyse MC truth", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

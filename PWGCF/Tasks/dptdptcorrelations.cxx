@@ -67,12 +67,15 @@ bool ptorder = false;
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
 bool fUseTwoTrackCut = false;    // suppress too close tracks
+
+std::vector<std::string> tname = {"O", "T"}; ///< the track names
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
 struct DptDptCorrelationsTask {
 
   /* the data collecting engine */
+  template <bool smallsingles>
   struct DataCollectingEngine {
     int nspecies = 1; /* for the time being just hadrons */
     size_t nch = nspecies * 2;
@@ -108,17 +111,6 @@ struct DptDptCorrelationsTask {
     std::vector<std::vector<TProfile*>> fhSum2PtPtnw_vsC{nch, {nch, nullptr}};   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     std::vector<std::vector<TProfile*>> fhSum2DptDptnw_vsC{nch, {nch, nullptr}}; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
 
-    /// \enum TrackPairs
-    /// \brief The track combinations hadled by the class
-    typedef enum {
-      kOO = 0,    ///< one-one pairs
-      kOT,        ///< one-two pairs
-      kTO,        ///< two-one pairs
-      kTT,        ///< two-two pairs
-      nTrackPairs ///< the number of track pairs
-    } trackpairs;
-
-    std::vector<std::string> tname = {"1", "2"}; ///< the external track names, one and two, for histogram creation
     std::vector<std::vector<std::string>> trackPairsNames = {{"OO", "OT"}, {"TO", "TT"}};
     bool ccdbstored = false;
 
@@ -204,8 +196,21 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections for track id %s %s", corrs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d %s", corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
+        if (fhNuaNue_vsZEtaPhiPt[i] != nullptr) {
+          int nbins = 0;
+          double avg = 0.0;
+          for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
+            for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
+              for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
+                nbins++;
+                avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+              }
+            }
+          }
+          LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
+        }
       }
       ccdbstored = true;
     }
@@ -214,7 +219,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored pT average for %d track ids", ptavgs.size());
       for (uint i = 0; i < ptavgs.size(); ++i) {
-        LOGF(info, "  Stored pT average for track id %s %s", ptavgs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored pT average for track id %d %s", i, ptavgs[i] != nullptr ? "yes" : "no");
         fhPtAvg_vsEtaPhi[i] = ptavgs[i];
       }
       ccdbstored = true;
@@ -225,9 +230,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()] != nullptr) {
-          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt());
+          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
         }
         index++;
       }
@@ -239,9 +244,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* ptavg = new std::vector<float>(tracks.size(), 0.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhPtAvg_vsEtaPhi[t.trackacceptedid()] != nullptr) {
-          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindBin(t.eta(), t.phi()));
+          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindFixBin(t.eta(), t.phi()));
           index++;
         }
       }
@@ -258,8 +263,13 @@ struct DptDptCorrelationsTask {
       for (auto& track : passedtracks) {
         float corr = (*corrs)[index];
         fhN1_vsPt[track.trackacceptedid()]->Fill(track.pt(), corr);
-        fhN1_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
-        fhSum1Pt_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
+        if constexpr (smallsingles) {
+          fhN1_vsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), GetShiftedPhi(track.phi()), corr);
+          fhSum1Pt_vsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), GetShiftedPhi(track.phi()), track.pt() * corr);
+        } else {
+          fhN1_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
+          fhSum1Pt_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
+        }
         index++;
       }
     }
@@ -371,7 +381,9 @@ struct DptDptCorrelationsTask {
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
+          index2++;
         }
+        index1++;
       }
       for (uint pid1 = 0; pid1 < nch; ++pid1) {
         for (uint pid2 = 0; pid2 < nch; ++pid2) {
@@ -468,55 +480,78 @@ struct DptDptCorrelationsTask {
                                   ptbins, ptlow, ptup);
           /* we don't want the Sumw2 structure being created here */
           bool defSumw2 = TH1::GetDefaultSumw2();
-          TH1::SetDefaultSumw2(false);
-          fhN1_vsZEtaPhiPt[i] = new TH3F(
-            TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
-            TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
-                            tname[i].c_str(),
-                            tname[i].c_str(),
-                            tname[i].c_str())
-              .Data(),
-            zvtxbins,
-            zvtxlow,
-            zvtxup,
-            etabins * phibins,
-            0.0,
-            static_cast<double>(etabins * phibins),
-            ptbins,
-            ptlow,
-            ptup);
-          fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(
-            TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
-            TString::Format(
-              "#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
-              tname[i].c_str(),
-              tname[i].c_str(),
-              tname[i].c_str(),
-              tname[i].c_str())
-              .Data(),
-            zvtxbins,
-            zvtxlow,
-            zvtxup,
-            etabins * phibins,
-            0.0,
-            static_cast<double>(etabins * phibins),
-            ptbins,
-            ptlow,
-            ptup);
+          if constexpr (smallsingles) {
+            fhN1_vsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i].c_str()).Data(),
+                                        TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i].c_str(), tname[i].c_str()).Data(),
+                                        etabins, etalow, etaup, phibins, philow, phiup);
+            fhSum1Pt_vsEtaPhi[i] = new TH2F(TString::Format("sumPt_%s_vsEtaPhi", tname[i].c_str()).Data(),
+                                            TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
+                                                            tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str())
+                                              .Data(),
+                                            etabins, etalow, etaup, phibins, philow, phiup);
+          } else {
+            TH1::SetDefaultSumw2(false);
+            fhN1_vsZEtaPhiPt[i] = new TH3F(
+              TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+            fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(
+              TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format(
+                "#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                tname[i].c_str(),
+                tname[i].c_str(),
+                tname[i].c_str(),
+                tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+          }
           /* we return it back to previuos state */
           TH1::SetDefaultSumw2(defSumw2);
 
           /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
-          fhN1_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
-          fhN1_vsZEtaPhiPt[i]->Sumw2(false);
-          fhSum1Pt_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
-          fhSum1Pt_vsZEtaPhiPt[i]->Sumw2(false);
+          if constexpr (smallsingles) {
+            fhN1_vsEtaPhi[i]->SetBit(TH1::kIsNotW);
+            fhN1_vsEtaPhi[i]->Sumw2(false);
+            fhSum1Pt_vsEtaPhi[i]->SetBit(TH1::kIsNotW);
+            fhSum1Pt_vsEtaPhi[i]->Sumw2(false);
+          } else {
+            fhN1_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
+            fhN1_vsZEtaPhiPt[i]->Sumw2(false);
+            fhSum1Pt_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
+            fhSum1Pt_vsZEtaPhiPt[i]->Sumw2(false);
+          }
           fhNuaNue_vsZEtaPhiPt[i] = nullptr;
           fhPtAvg_vsEtaPhi[i] = nullptr;
 
           fOutputList->Add(fhN1_vsPt[i]);
-          fOutputList->Add(fhN1_vsZEtaPhiPt[i]);
-          fOutputList->Add(fhSum1Pt_vsZEtaPhiPt[i]);
+          if constexpr (smallsingles) {
+            fOutputList->Add(fhN1_vsEtaPhi[i]);
+            fOutputList->Add(fhSum1Pt_vsEtaPhi[i]);
+          } else {
+            fOutputList->Add(fhN1_vsZEtaPhiPt[i]);
+            fOutputList->Add(fhSum1Pt_vsZEtaPhiPt[i]);
+          }
         }
       } else {
         for (uint i = 0; i < nch; ++i) {
@@ -625,8 +660,9 @@ struct DptDptCorrelationsTask {
   float* fCentMultMax = nullptr;
 
   /* the data collecting engine instances */
-  DataCollectingEngine** dataCE;
-  DataCollectingEngine** dataCEME;
+  DataCollectingEngine<false>** dataCE;
+  DataCollectingEngine<true>** dataCE_small;
+  DataCollectingEngine<false>** dataCEME;
 
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
@@ -639,6 +675,7 @@ struct DptDptCorrelationsTask {
   Configurable<float> cfgTwoTrackCut{"twotrackcut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
   Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
+  Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
@@ -697,20 +734,21 @@ struct DptDptCorrelationsTask {
     fOutput.setObject(fGlobalOutputList);
 
     /* incorporate configuration parameters to the output */
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsVertexZ", zvtxbins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsPt", ptbins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsEta", etabins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsPhi", phibins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinVertexZ", zvtxlow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxVertexZ", zvtxup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinPt", ptlow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxPt", ptup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinEta", etalow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxEta", etaup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinPhi", philow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxPhi", phiup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("PhiBinShift", phibinshift, 'f'));
-    fGlobalOutputList->Add(new TParameter<Bool_t>("DifferentialOutput", true, 'f'));
+    fGlobalOutputList->Add(new TParameter<int>("NoBinsPt", ptbins, 'f'));
+    fGlobalOutputList->Add(new TParameter<int>("NoBinsEta", etabins, 'f'));
+    fGlobalOutputList->Add(new TParameter<int>("NoBinsPhi", phibins, 'f'));
+    fGlobalOutputList->Add(new TParameter<int>("NoBinsVertexZ", zvtxbins, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MinVertexZ", zvtxlow, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MaxVertexZ", zvtxup, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MinPt", ptlow, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MaxPt", ptup, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MinEta", etalow, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MaxEta", etaup, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MinPhi", philow, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("MaxPhi", phiup, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("PhiBinShift", phibinshift, 'f'));
+    fGlobalOutputList->Add(new TParameter<float>("DifferentialOutput", true, 'f'));
+    fGlobalOutputList->Add(new TParameter<bool>("SmallDCE", cfgSmallDCE.value, 'f'));
 
     /* after the parameters dump the proper phi limits are set according to the phi shift */
     phiup = phiup - phibinwidth * phibinshift;
@@ -722,21 +760,34 @@ struct DptDptCorrelationsTask {
       ncmranges = tokens->GetEntries();
       fCentMultMin = new float[ncmranges];
       fCentMultMax = new float[ncmranges];
-      dataCE = new DataCollectingEngine*[ncmranges];
+      dataCE = new DataCollectingEngine<false>*[ncmranges];
+      if (cfgSmallDCE) {
+        dataCE_small = new DataCollectingEngine<true>*[ncmranges];
+      } else {
+        dataCE = new DataCollectingEngine<false>*[ncmranges];
+      }
       if (processmixedevents) {
-        dataCEME = new DataCollectingEngine*[ncmranges];
+        dataCEME = new DataCollectingEngine<false>*[ncmranges];
       }
 
       for (int i = 0; i < ncmranges; ++i) {
-        auto buildCEInstance = [&fGlobalOutputList](auto rg, bool me = false) {
-          DataCollectingEngine* dce = new DataCollectingEngine();
+        auto initializeCEInstance = [&fGlobalOutputList](auto dce, auto name) {
           /* crete the output list for the passed centrality/multiplicity range */
           TList* fOutputList = new TList();
-          fOutputList->SetName(TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          fOutputList->SetName(name);
           fOutputList->SetOwner(true);
           /* init the data collection instance */
           dce->init(fOutputList);
           fGlobalOutputList->Add(fOutputList);
+        };
+        auto builSmallDCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
+          DataCollectingEngine<true>* dce = new DataCollectingEngine<true>();
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          return dce;
+        };
+        auto buildCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
+          DataCollectingEngine<false>* dce = new DataCollectingEngine<false>();
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           return dce;
         };
         float cmmin = 0.0f;
@@ -744,8 +795,19 @@ struct DptDptCorrelationsTask {
         sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
         fCentMultMin[i] = cmmin;
         fCentMultMax[i] = cmmax;
-        dataCE[i] = buildCEInstance(tokens->At(i)->GetName());
+        if (cfgSmallDCE.value) {
+          if (processpairs) {
+            LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
+          }
+          dataCE_small[i] = builSmallDCEInstance(tokens->At(i)->GetName());
+        } else {
+          dataCE[i] = buildCEInstance(tokens->At(i)->GetName());
+        }
         if (processmixedevents) {
+          /* consistency check */
+          if (cfgSmallDCE.value) {
+            LOGF(fatal, "Mixed events cannot be used with the small DCE, please configure properly!!");
+          }
           dataCEME[i] = buildCEInstance(tokens->At(i)->GetName(), true);
         }
       }
@@ -842,41 +904,51 @@ struct DptDptCorrelationsTask {
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
       if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
-        dataCE[ixDCE]->storeTrackCorrections(
-          std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_p1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data())),
-                            reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_m1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data()))});
         if constexpr (gen) {
-          dataCE[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("trueptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          if (cfgSmallDCE.value) {
+            dataCE_small[ixDCE]->storePtAverages(ptavgs);
+          } else {
+            dataCE[ixDCE]->storePtAverages(ptavgs);
+          }
         } else {
-          dataCE[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH3*> corrs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+              TString::Format("correction_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          if (cfgSmallDCE.value) {
+            dataCE_small[ixDCE]->storeTrackCorrections(corrs);
+          } else {
+            dataCE[ixDCE]->storeTrackCorrections(corrs);
+          }
+
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("ptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          if (cfgSmallDCE.value) {
+            dataCE_small[ixDCE]->storePtAverages(ptavgs);
+          } else {
+            dataCE[ixDCE]->storePtAverages(ptavgs);
+          }
         }
       }
 
@@ -896,7 +968,11 @@ struct DptDptCorrelationsTask {
       if constexpr (!gen) {
         bfield = (fUseConversionCuts || fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
       }
-      dataCE[ixDCE]->processCollision<false>(tracks, tracks, collision.posZ(), collision.centmult(), bfield);
+      if (cfgSmallDCE.value) {
+        dataCE_small[ixDCE]->processCollision<false>(tracks, tracks, collision.posZ(), collision.centmult(), bfield);
+      } else {
+        dataCE[ixDCE]->processCollision<false>(tracks, tracks, collision.posZ(), collision.centmult(), bfield);
+      }
     }
   }
 
@@ -916,40 +992,38 @@ struct DptDptCorrelationsTask {
     if (!(ixDCE < 0)) {
       if (ccdblst != nullptr && !(dataCEME[ixDCE]->isCCDBstored())) {
         if constexpr (gen) {
-          dataCEME[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("trueptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         } else {
-          dataCEME[ixDCE]->storeTrackCorrections(
-            std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
-                                TString::Format("correction_%02d-%02d_p1",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH3*>(ccdblst->FindObject(
-                                TString::Format("correction_%02d-%02d_m1",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
-          dataCEME[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH3*> corrs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+              TString::Format("correction_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storeTrackCorrections(corrs);
+
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("ptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         }
       }
 
@@ -1011,6 +1085,33 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelCheck, "Process reco level checks", true);
 
+  void processGenLevelCheck(aod::McCollisions const& mccollisions, aod::McParticles& particles)
+  {
+    int nAssignedParticles = 0;
+    int nNotAssignedParticles = 0;
+    int64_t firstNotAssignedIndex = -1;
+    int64_t lastNotAssignedIndex = -1;
+
+    for (auto particle : particles) {
+      if (particle.has_mcCollision()) {
+        nAssignedParticles++;
+      } else {
+        nNotAssignedParticles++;
+        if (firstNotAssignedIndex < 0) {
+          firstNotAssignedIndex = particle.globalIndex();
+        } else {
+          lastNotAssignedIndex = particle.globalIndex();
+        }
+      }
+    }
+    LOGF(info, "Received %d generated collisions and %d particles.", mccollisions.size(), particles.size());
+    LOGF(info, "  Assigned tracks %d", nAssignedParticles);
+    LOGF(info, "  Not assigned tracks %d", nNotAssignedParticles);
+    LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
+    LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelCheck, "Process generator level checks", true);
+
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
@@ -1033,9 +1134,9 @@ struct DptDptCorrelationsTask {
 
   void processGenLevelNotStored(
     soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
-    soa::Filtered<aod::ScannedTrueTracks>& tracks)
+    soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>& particles)
   {
-    processSame<true>(collision, tracks);
+    processSame<true>(collision, particles);
   }
   PROCESS_SWITCH(DptDptCorrelationsTask,
                  processGenLevelNotStored,

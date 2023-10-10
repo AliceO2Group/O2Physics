@@ -19,13 +19,14 @@
 
 #if !defined(__CINT__) || defined(__CLING__)
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include "HFInvMassFitter.h"
-#include "Riostream.h"
-#include "TROOT.h"
+
+#include <iostream> // std::cout
+#include <string>   // std::string
+#include <vector>   // std::vector
+
+#include <Riostream.h>
+#include <TROOT.h>
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <rapidjson/document.h>
@@ -539,7 +540,7 @@ int runMassFitter(TString configFileName)
       hRawYieldsSignificance->SetBinContent(iPt + 1, significance);
       hRawYieldsSignificance->SetBinError(iPt + 1, significanceErr);
       hRawYieldsSgnOverBkg->SetBinContent(iPt + 1, rawYield / bkg);
-      hRawYieldsSgnOverBkg->SetBinError(iPt + 1, rawYield / bkg * TMath::Sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
+      hRawYieldsSgnOverBkg->SetBinError(iPt + 1, rawYield / bkg * std::sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
       hRawYieldsSignal->SetBinContent(iPt + 1, rawYield);
       hRawYieldsSignal->SetBinError(iPt + 1, rawYieldErr);
       hRawYieldsBkg->SetBinContent(iPt + 1, bkg);

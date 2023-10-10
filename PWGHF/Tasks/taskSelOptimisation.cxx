@@ -14,9 +14,10 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,7 +27,6 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-
 static constexpr int nCutsToTestCosp = 15;
 static constexpr int nCutsToTestDecLen = 11;
 static constexpr int nCutsToTestImpParProd = 11;
@@ -104,8 +104,6 @@ struct HfSelOptimisation {
   Configurable<std::vector<float>> cutsToTestImpParProd{"cutsToTestImpParProd", std::vector<float>{vecCutsImpParProd}, "impact parameter product cut values to test (2-prongs only)"};
   Configurable<std::vector<float>> cutsToTestMinDcaXY{"cutsToTestMinDcaXY", std::vector<float>{vecCutsMinDCAxy}, "min DCA xy cut values to test"};
   Configurable<std::vector<float>> cutsToTestMinTrackPt{"cutsToTestMinTrackPt", std::vector<float>{vecCutsMinTrackPt}, "min track pT cut values to test"};
-
-  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksDCA>;
 
   ConfigurableAxis ptBinning{"ptBinning", {0, 0., 2., 5., 20.}, "pT bin limits"};
 
@@ -259,13 +257,13 @@ struct HfSelOptimisation {
 
   void process(soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec> const& cand2Prongs,
                soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const& cand3Prongs,
-               ExtendedTracks const&)
+               aod::TracksWDca const&)
   {
     // looping over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
 
-      auto trackPos = cand2Prong.prong0_as<ExtendedTracks>(); // positive daughter
-      auto trackNeg = cand2Prong.prong1_as<ExtendedTracks>(); // negative daughter
+      auto trackPos = cand2Prong.prong0_as<aod::TracksWDca>(); // positive daughter
+      auto trackNeg = cand2Prong.prong1_as<aod::TracksWDca>(); // negative daughter
       std::array tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
@@ -319,9 +317,9 @@ struct HfSelOptimisation {
     // looping over 3-prong candidates
     for (const auto& cand3Prong : cand3Prongs) {
 
-      auto trackFirst = cand3Prong.prong0_as<ExtendedTracks>();  // first daughter
-      auto trackSecond = cand3Prong.prong1_as<ExtendedTracks>(); // second daughter
-      auto trackThird = cand3Prong.prong2_as<ExtendedTracks>();  // third daughter
+      auto trackFirst = cand3Prong.prong0_as<aod::TracksWDca>();  // first daughter
+      auto trackSecond = cand3Prong.prong1_as<aod::TracksWDca>(); // second daughter
+      auto trackThird = cand3Prong.prong2_as<aod::TracksWDca>();  // third daughter
       std::array tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;

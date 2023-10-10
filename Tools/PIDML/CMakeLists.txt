@@ -9,8 +9,14 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(pid-ml-producer
-                           SOURCES pidMLProducer.cxx
+o2physics_add_dpl_workflow(pid-ml-producer-mc
+                           SOURCES pidMLProducerMC.cxx
+                           JOB_POOL analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-ml-producer-data
+                           SOURCES pidMLProducerData.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
@@ -40,5 +46,5 @@ o2physics_add_dpl_workflow(qa-pid-ml
 o2physics_add_dpl_workflow(kaon-pid-ml
                   SOURCES KaonPidTask.cxx
                   JOB_POOL analysis
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                   COMPONENT_NAME Analysis)

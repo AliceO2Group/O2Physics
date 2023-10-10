@@ -25,8 +25,10 @@
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
@@ -39,6 +41,7 @@ using namespace o2::dataformats;
 struct qaEventTrackLiteProducer {
   // Tables to produce
   Produces<o2::aod::DPGCollisions> tableCollisions;
+  Produces<o2::aod::DPGCollsBig> tableCollsBig;
   Produces<o2::aod::DPGTracks> tableTracks;
   Produces<o2::aod::DPGRecoParticles> tableRecoParticles;
   Produces<o2::aod::DPGNonRecoParticles> tableNonRecoParticles;
@@ -52,6 +55,8 @@ struct qaEventTrackLiteProducer {
   Configurable<float> selectMaxVtxZ{"selectMaxVtxZ", 100.f, "Derived data option: select collision in a given Z window"};
   Configurable<int> targetNumberOfEvents{"targetNumberOfEvents", 10000000, "Derived data option: target number of collisions, if the target is met, future collisions will be skipped"};
   Configurable<float> fractionOfSampledEvents{"fractionOfSampledEvents", 1.f, "Derived data option: fraction of events to sample"};
+  Configurable<bool> storeOnlySinglePvCollsBig{"storeOnlySinglePvCollsBig", false, "Colls. big table (MC): store only reco. PV for single-reconstructed MC collisions"};
+  Configurable<bool> storeOnlyMultiplePvCollsBig{"storeOnlyMultiplePvCollsBig", false, "Colls. big table (MC): store only reco. PV for multiple-reconstructed MC collisions"};
 
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -90,15 +95,25 @@ struct qaEventTrackLiteProducer {
                                                    ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-  Preslice<aod::Tracks> perRecoCollision = aod::track::collisionId;
+  Preslice<TrackTableData> perRecoCollision = aod::track::collisionId;
+
+  int counterColl;
+  int counterDF;
 
   void init(InitContext const&)
   {
-    if (doprocessTableData == true && doprocessTableMC == true) {
-      LOGF(fatal, "Cannot enable processTableData and processTableMC at the same time. Please choose one.");
+    int howManyProcesses = static_cast<int>(doprocessTableData) + static_cast<int>(doprocessTableMC) + static_cast<int>(doprocessTableDataCollsBig) + static_cast<int>(doprocessTableMCCollsBig);
+    if (howManyProcesses > 1) {
+      LOGF(fatal, "%d process functions enabled. Enable only one of them!", howManyProcesses);
+    } else if (howManyProcesses == 0) {
+      LOGF(fatal, "No process function enabled. Enable one of them.");
     }
-    if (doprocessTableData == false && doprocessTableMC == false) {
-      LOGF(fatal, "No process function enabled. Enable either processTableData or processTableMC");
+
+    /// for studies with collision table
+    counterColl = 0;
+    counterDF = 0;
+    if (doprocessTableMCCollsBig && storeOnlySinglePvCollsBig && storeOnlyMultiplePvCollsBig) {
+      LOGF(fatal, "storeOnlySinglePvCollsBig and storeOnlyMultiplePvCollsBig are both activated. Not possible. Fix the configuration.");
     }
   }
 
@@ -278,6 +293,137 @@ struct qaEventTrackLiteProducer {
       }
     }
   }
+
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  ///   Table filling for offline collision monitoring   ///
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+  using CollsBigTable = soa::Join<CollisionTableData, aod::Mults>;
+  using CollsBigTableMC = soa::Join<CollsBigTable, aod::McCollisionLabels>;
+  using McCollsWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+
+  template <bool IS_MC, typename COLLS, typename MCCOLLS, typename TFILT, typename TALL>
+  void fillCollsBigTable(COLLS& collisions, MCCOLLS& mcCollisions, TFILT& tracksFiltered, TALL& tracksAll, soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const& ft0s)
+  {
+    if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
+      return;
+    }
+    for (auto& collision : collisions) {
+
+      if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+        return;
+      }
+      nTableEventCounter++;
+
+      const auto tracksFilteredPerColl = tracksFiltered.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto tracksAllPerColl = tracksAll.sliceBy(perRecoCollision, collision.globalIndex());
+
+      const auto& bc = collision.template bc_as<BCsWithRun3Matchings>();
+      int collIDMC = -1;
+      float posXMC = -9999.;
+      float posYMC = -9999.;
+      float posZMC = -9999.;
+      float collTimeMC = -9999.;
+      int isFakeCollision = -1;
+      int recoPVsPerMcColl = -1;            // how many reco. PV are associated to this MC collision
+      int isPvHighestContribForMcColl = -1; // the "best" PV associated to this MC collision, i.e. the one with the highest number of PV contributors
+      if constexpr (IS_MC) {
+        if (!collision.has_mcCollision()) {
+          isFakeCollision = 1;
+        } else {
+          isFakeCollision = 0;
+          const auto& mcCollision = collision.template mcCollision_as<MCCOLLS>();
+          collIDMC = mcCollision.globalIndex();
+          posXMC = mcCollision.posX();
+          posYMC = mcCollision.posY();
+          posZMC = mcCollision.posZ();
+          collTimeMC = mcCollision.t();
+          recoPVsPerMcColl = mcCollision.numRecoCollision();
+          isPvHighestContribForMcColl = (mcCollision.bestCollisionIndex() == collision.globalIndex());
+        }
+
+        /// MC
+        /// Decide to fill the table only with the desired collisions
+        if ((!storeOnlySinglePvCollsBig && !storeOnlyMultiplePvCollsBig) || /// store all collisions
+            (storeOnlySinglePvCollsBig && recoPVsPerMcColl == 1) ||         /// store only single-reconstructed collisions
+            (storeOnlyMultiplePvCollsBig && recoPVsPerMcColl > 1))          /// store only multiple-reconstructed collisions
+        {
+          tableCollsBig((isRun3 ? collision.sel8() : collision.sel7()),
+                        bc.runNumber(),
+                        collision.posX(), collision.posY(), collision.posZ(),
+                        collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(),
+                        collision.numContrib(), tracksAllPerColl.size(), tracksFilteredPerColl.size(),
+                        collision.chi2(),
+                        bc.globalBC(),
+                        bc.has_ft0() ? bc.ft0().posZ() : -999.,
+                        collision.multFT0A(), collision.multFT0C(), collision.multFT0M(), collision.multFV0A(),
+                        collision.collisionTime(), collision.collisionTimeRes(),
+                        counterColl, counterDF,
+                        collIDMC,
+                        posXMC, posYMC, posZMC,
+                        collTimeMC,
+                        isFakeCollision,
+                        recoPVsPerMcColl, isPvHighestContribForMcColl);
+        }
+
+      } else {
+        /// DATA
+        /// Let's fill the table with all the collisions
+        tableCollsBig((isRun3 ? collision.sel8() : collision.sel7()),
+                      bc.runNumber(),
+                      collision.posX(), collision.posY(), collision.posZ(),
+                      collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(),
+                      collision.numContrib(), tracksAllPerColl.size(), tracksFilteredPerColl.size(),
+                      collision.chi2(),
+                      bc.globalBC(),
+                      bc.has_ft0() ? bc.ft0().posZ() : -999.,
+                      collision.multFT0A(), collision.multFT0C(), collision.multFT0M(), collision.multFV0A(),
+                      collision.collisionTime(), collision.collisionTimeRes(),
+                      counterColl, counterDF,
+                      collIDMC,
+                      posXMC, posYMC, posZMC,
+                      collTimeMC,
+                      isFakeCollision,
+                      recoPVsPerMcColl, isPvHighestContribForMcColl);
+      }
+
+      /// update the collision global counter
+      counterColl++;
+    }
+  }
+
+  /// Processing data
+  void processTableDataCollsBig(CollsBigTable const& collisions,
+                                soa::Filtered<TrackTableData> const& tracksFiltered,
+                                TrackTableData const& tracksAll,
+                                BCsWithRun3Matchings const& bcs, aod::FT0s const& ft0s)
+  {
+
+    fillCollsBigTable<false>(collisions, collisions, tracksFiltered, tracksAll, bcs, ft0s);
+
+    /// We are at the end of the process, which is run once per DF
+    /// Let's update the DF counter
+    counterDF++;
+  }
+  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableDataCollsBig, "Process data for big collision table producing", false);
+
+  /// Processing MC
+  void processTableMCCollsBig(CollsBigTableMC const& collisions,
+                              McCollsWithExtra const& mcCollisions,
+                              soa::Filtered<TrackTableData> const& tracksFiltered,
+                              TrackTableData const& tracksAll,
+                              BCsWithRun3Matchings const& bcs, aod::FT0s const& ft0s)
+  {
+
+    fillCollsBigTable<true>(collisions, mcCollisions, tracksFiltered, tracksAll, bcs, ft0s);
+
+    /// We are at the end of the process, which is run once per DF
+    /// Let's update the DF counter
+    counterDF++;
+  }
+  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableMCCollsBig, "Process MC for big collision table producing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

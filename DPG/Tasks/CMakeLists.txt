@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(AOTTrack)
+add_subdirectory(AOTEvent)
 add_subdirectory(TPC)
 add_subdirectory(TOF)
 add_subdirectory(FDD)

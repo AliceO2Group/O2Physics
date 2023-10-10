@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -34,14 +34,14 @@ DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the eve
 
 } // namespace femtodreamcollision
 
-DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
+DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
                   femtodreamcollision::MultNtr,
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
-using FemtoDreamCollision = FemtoDreamCollisions::iterator;
+using FDCollision = FDCollisions::iterator;
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
@@ -54,6 +54,12 @@ enum ParticleType {
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
+};
+
+enum MomentumType {
+  kPt,    //! transverse momentum
+  kPreco, //! reconstructed/propagated momentum at the vertex
+  kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
@@ -70,7 +76,7 @@ enum TrackType {
 
 static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
 
-DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
+DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                     //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                     //! Phi
@@ -112,17 +118,27 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
-
 } // namespace femtodreamparticle
-DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
+
+DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
-                  femtodreamparticle::FemtoDreamCollisionId,
+                  femtodreamparticle::FDCollisionId,
                   femtodreamparticle::Pt,
                   femtodreamparticle::Eta,
                   femtodreamparticle::Phi,
@@ -138,9 +154,9 @@ DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
                   femtodreamparticle::Py<femtodreamparticle::Pt, femtodreamparticle::Phi>,
                   femtodreamparticle::Pz<femtodreamparticle::Pt, femtodreamparticle::Eta>,
                   femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
-using FemtoDreamParticle = FemtoDreamParticles::iterator;
+using FDParticle = FDParticles::iterator;
 
-DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
+DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   femtodreamparticle::Sign,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
@@ -152,59 +168,49 @@ DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
                   track::DcaXY,
                   track::DcaZ,
                   track::TPCSignal,
-                  pidtpc_tiny::TPCNSigmaStoreEl,
-                  pidtpc_tiny::TPCNSigmaStorePi,
-                  pidtpc_tiny::TPCNSigmaStoreKa,
-                  pidtpc_tiny::TPCNSigmaStorePr,
-                  pidtpc_tiny::TPCNSigmaStoreDe,
-                  pidtof_tiny::TOFNSigmaStoreEl,
-                  pidtof_tiny::TOFNSigmaStorePi,
-                  pidtof_tiny::TOFNSigmaStoreKa,
-                  pidtof_tiny::TOFNSigmaStorePr,
-                  pidtof_tiny::TOFNSigmaStoreDe,
+                  femtodreamparticle::TPCNSigmaEl,
+                  femtodreamparticle::TPCNSigmaPi,
+                  femtodreamparticle::TPCNSigmaKa,
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TPCNSigmaDe,
+                  femtodreamparticle::TOFNSigmaEl,
+                  femtodreamparticle::TOFNSigmaPi,
+                  femtodreamparticle::TOFNSigmaKa,
+                  femtodreamparticle::TOFNSigmaPr,
+                  femtodreamparticle::TOFNSigmaDe,
                   femtodreamparticle::DaughDCA,
                   femtodreamparticle::TransRadius,
                   femtodreamparticle::DecayVtxX,
                   femtodreamparticle::DecayVtxY,
                   femtodreamparticle::DecayVtxZ,
                   femtodreamparticle::MKaon,
-                  femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>,
-                  pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
-                  pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
-                  pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
-                  pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>,
-                  pidtpc_tiny::TPCNSigmaDe<pidtpc_tiny::TPCNSigmaStoreDe>,
-                  pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>,
-                  pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
-                  pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
-                  pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
-                  pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
-using FemtoDreamDebugParticle = FemtoDreamDebugParticles::iterator;
+                  femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>)
+using FDFullParticle = FDExtParticles::iterator;
 
 /// FemtoDreamTrackMC
 namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,           //! Primary track or V0
-  kDaughter,          //! Particle from a decay
-  kMaterial,          //! Particle from a material
-  kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
-  kDaughterLambda,    //! Daughter from a Lambda decay
-  kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kPrimary,                    //! Primary track or V0
+  kSecondary,                  //! Particle from a decay
+  kMaterial,                   //! Particle from a material
+  kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
+  kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
+  kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
   kNOriginMCTruthTypes
 };
 
 //! Naming of the different OriginMCTruth types
 static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
   "_Primary",
-  "_Daughter",
+  "_Secondary",
   "_Material",
   "_NotPrimary",
   "_Fake",
-  "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "_SecondaryDaughterLambda",
+  "_SecondaryDaughterSigmaPlus"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
@@ -215,7 +221,6 @@ enum MCType {
 
 static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
 
-DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
 
@@ -223,26 +228,25 @@ DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle 
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
 } // namespace femtodreamMCparticle
 
-DECLARE_SOA_TABLE(FemtoDreamMCParticles, "AOD", "FEMTODREAMMCPS",
+DECLARE_SOA_TABLE(FDMCParticles, "AOD", "FDMCPARTICLE",
                   o2::soa::Index<>,
                   femtodreamMCparticle::PartOriginMCTruth,
                   femtodreamMCparticle::PDGMCTruth,
                   femtodreamparticle::Pt,
                   femtodreamparticle::Eta,
                   femtodreamparticle::Phi);
-using FemtoDreamMCParticle = FemtoDreamMCParticles::iterator;
+using FDMCParticle = FDMCParticles::iterator;
 
-DECLARE_SOA_TABLE(FemtoDreamDebugMCParticles, "AOD", "FEMTODEBUGMCP",
+DECLARE_SOA_TABLE(FDExtMCParticles, "AOD", "FDEXTMCPARTICLE",
                   femtodreamMCparticle::MotherPDG);
-using FemtoDreamDebugMCParticle = FemtoDreamDebugMCParticles::iterator;
+using FDExtMCParticle = FDExtMCParticles::iterator;
 
 namespace mcfdlabel
 {
-DECLARE_SOA_INDEX_COLUMN(FemtoDreamMCParticle, femtoDreamMCParticle); //! MC particle for femtodreamparticle
+DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtodreamparticle
 } // namespace mcfdlabel
-DECLARE_SOA_TABLE(FemtoDreamMCLabels, "AOD", "FEMTOMCLABELS", //! Table joinable to FemtoDreamParticle containing the MC labels
-                  mcfdlabel::FemtoDreamMCParticleId);
-using FemtoDreamMCLabel = FemtoDreamMCLabels::iterator;
+DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
+                  mcfdlabel::FDMCParticleId);
 
 /// Hash
 namespace hash

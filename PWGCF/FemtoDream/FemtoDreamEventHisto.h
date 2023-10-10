@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -34,9 +34,11 @@ class FemtoDreamEventHisto
   void init(HistogramRegistry* registry)
   {
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
-    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{200, 0, 200}});
+    mHistogramRegistry->add("Event/hZvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/hMultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/hMultNTr", "; vMultNTr; Entries", kTH1F, {{200, 0, 200}});
+    mHistogramRegistry->add("Event/hMultNTrVsZvtx", "; vMultNTr; vtx_{z} (cm)", kTH2F, {{200, 0, 200}, {300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/hMultNTrVsMultV0M", "; vMultNTr; vMultV0M", kTH2F, {{200, 0, 200}, {16384, 0, 32768}});
   }
 
   /// Some basic QA of the event
@@ -46,9 +48,11 @@ class FemtoDreamEventHisto
   void fillQA(T const& col)
   {
     if (mHistogramRegistry) {
-      mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
-      mHistogramRegistry->fill(HIST("Event/MultNTr"), col.multNtr());
+      mHistogramRegistry->fill(HIST("Event/hZvtx"), col.posZ());
+      mHistogramRegistry->fill(HIST("Event/hMultV0M"), col.multV0M());
+      mHistogramRegistry->fill(HIST("Event/hMultNTr"), col.multNtr());
+      mHistogramRegistry->fill(HIST("Event/hMultNTrVsZvtx"), col.multNtr(), col.posZ());
+      mHistogramRegistry->fill(HIST("Event/hMultNTrVsMultV0M"), col.multNtr(), col.multV0M());
     }
   }
 

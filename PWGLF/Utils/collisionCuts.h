@@ -20,7 +20,6 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
-#include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
@@ -44,7 +43,7 @@ class CollisonCuts
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
-    mTrigger = static_cast<triggerAliases>(trig);
+    mTrigger = trig;
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
   }
@@ -57,10 +56,14 @@ class CollisonCuts
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultFV0M", "; vMultV0M; Entries", kTH1F, {{120, 0, 120}});
-    mHistogramRegistry->add("Event/MultFT0M", "; vMultT0M; Entries", kTH1F, {{120, 0, 120}});
-    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1F, {{300, 0, 3000}});
+    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
+    mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
+    mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", kTH1F, {{110, 0, 110}});
+    mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
+    mHistogramRegistry->add("Event/MultFT0M", "; FT0M signal; Entries", kTH1F, {{100000, 0, 100000}});
+    mHistogramRegistry->add("Event/MultFT0C", "; FT0C signal; Entries", kTH1F, {{100000, 0, 100000}});
+    mHistogramRegistry->add("Event/MultFT0A", "; FT0A signal; Entries", kTH1F, {{100000, 0, 100000}});
   }
 
   /// Print some debug information
@@ -83,29 +86,29 @@ class CollisonCuts
       LOGF(debug, "Vertex out of range");
       return false;
     }
-    if (mCheckIsRun3) {
+    if (mCheckIsRun3) { // Run3 case
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        LOGF(debug, "Trigger selection failed");
-        if (mInitialTriggerScan) {
-          LOGF(debug, "Trigger scan initialized");
-          for (int i = 0; i < kNaliases; i++) {
-            if (col.alias_bit(i)) {
-              LOGF(debug, "Trigger %d fired", i);
-            }
-          }
-          mInitialTriggerScan = false;
-        }
-        return false;
-      }
+    } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
         return false;
       }
+    }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      LOGF(debug, "Trigger selection failed");
+      if (mInitialTriggerScan) { // Print out the trigger bits
+        LOGF(debug, "Trigger scan initialized");
+        for (int i = 0; i < kNaliases; i++) {
+          if (col.alias_bit(i)) {
+            LOGF(debug, "Trigger %d fired", i);
+          }
+        }
+        mInitialTriggerScan = false;
+      }
+      return false;
     }
     return true;
   }
@@ -118,25 +121,14 @@ class CollisonCuts
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/posZ"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultFV0M"), col.multFV0M());
-      mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.centFT0M());
-      mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
+      mHistogramRegistry->fill(HIST("Event/CentFV0A"), col.centFV0A());
+      mHistogramRegistry->fill(HIST("Event/CentFT0M"), col.centFT0M());
+      mHistogramRegistry->fill(HIST("Event/CentFT0C"), col.centFT0C());
+      mHistogramRegistry->fill(HIST("Event/CentFT0A"), col.centFT0A());
+      mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultFT0C"), col.multFT0C());
+      mHistogramRegistry->fill(HIST("Event/MultFT0A"), col.multFT0A());
     }
-  }
-
-  /// \todo to be implemented!
-  /// Compute the sphericity of an event
-  /// Important here is that the filter on tracks does not interfere here!
-  /// In Run 2 we used here global tracks within |eta| < 0.8
-  /// \tparam T1 type of the collision
-  /// \tparam T2 type of the tracks
-  /// \param col Collision
-  /// \param tracks All tracks
-  /// \return value of the sphericity of the event
-  template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
-  {
-    return 2.f;
   }
 
  private:
@@ -146,7 +138,7 @@ class CollisonCuts
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
-  triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
+  int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
 } // namespace o2::analysis

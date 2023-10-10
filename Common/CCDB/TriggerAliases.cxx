@@ -38,6 +38,8 @@ std::string aliasLabels[kNaliases] = {
   "kTVXinTRD",
   "kTVXinEMC",
   "kTVXinPHOS",
+  "kTVXinHMP",
+  "kPHOS",
   "kALL"};
 
 void TriggerAliases::AddClassIdToAlias(uint32_t aliasId, int classId)
