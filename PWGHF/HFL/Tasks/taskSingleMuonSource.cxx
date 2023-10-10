@@ -52,6 +52,7 @@ namespace o2::aod
 {
 namespace muon_source
 {
+DECLARE_SOA_COLUMN(Nevent, nevent, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
