@@ -1245,6 +1245,14 @@ struct AnalysisDileptonHadron {
     // Set the global index offset to find the proper lepton
     // TO DO: remove it once the issue with lepton index is solved
     int indexOffset = -999;
+    std::vector<int> trackGlobalIndexes;
+
+    if (dileptons.size() > 0) {
+      for (auto track : tracks) {
+        trackGlobalIndexes.push_back(track.globalIndex());
+        std::cout << track.index() << " " << track.globalIndex() << std::endl;
+      }
+    }
     // loop once over dileptons for QA purposes
     for (auto dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
@@ -1255,10 +1263,12 @@ struct AnalysisDileptonHadron {
       int indexLepton2 = dilepton.index1Id();
 
       if (indexOffset == -999) {
-        indexOffset = indexLepton1;
+        indexOffset = trackGlobalIndexes.at(0);
       }
 
       // get full track info of tracks based on the index
+      std::cout << indexLepton1 - indexOffset << std::endl;
+      std::cout << indexLepton2 - indexOffset << std::endl;
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
 
