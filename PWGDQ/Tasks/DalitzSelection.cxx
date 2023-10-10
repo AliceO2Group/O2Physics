@@ -250,7 +250,7 @@ struct dalitzPairing {
         auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (filterMap & (uint8_t(1) << icut)) {
-            ((TH1I*)fStatsList->At(0))->Fill(icut + 1);
+            reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(icut + 1);
             fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
           }
         }
@@ -271,7 +271,7 @@ struct dalitzPairing {
 
       if (isEventSelected) {
 
-        ((TH1I*)fStatsList->At(0))->Fill(0);
+        reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(0);
 
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
@@ -291,9 +291,10 @@ struct dalitzPairing {
             magField = fConfigMagField.value;
           }
           LOGF(info, "setting mag field to %f", magField);
-          if (magField == 0.)
+          if (magField == 0.) {
             LOGF(fatal, "magnetic field not set correctly, please check");
-          VarManager::fgValues[VarManager::kMagField] = magField;
+          }
+          VarManager::SetMagneticField(magField);
 
           if (fConfigComputeTPCpostCalib) {
             auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());

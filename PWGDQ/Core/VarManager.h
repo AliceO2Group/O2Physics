@@ -121,7 +121,6 @@ class VarManager : public TObject
     kRunNo = 0,
     kRunId,
     kRunIndex,
-    kMagField,
     kNRunWiseVariables,
 
     // Event wise variables
@@ -461,6 +460,11 @@ class VarManager : public TObject
 
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
+  
+  static void SetMagneticField(float magField)
+  {
+    fgMagField = magField;  
+  }
 
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
@@ -580,6 +584,7 @@ class VarManager : public TObject
   static bool fgUsedKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
+  static float fgMagField;
   static std::map<int, int> fgRunMap;     // map of runs to be used in histogram axes
   static TString fgRunStr;                // semi-colon separated list of runs, to be used for histogram axis labels
   static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
@@ -1257,9 +1262,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
-    values[kDeltaPhiPair] = (t1.sign() * values[kMagField] > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
+    values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = (t1.sign() * values[kMagField] > 0.) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
+    values[kPsiPair] = (t1.sign() * fgMagField > 0.) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
   }
 
   if (fgUsedVars[kOpeningAngle]) {
