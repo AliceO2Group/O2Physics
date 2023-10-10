@@ -460,10 +460,10 @@ class VarManager : public TObject
 
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
-  
+
   static void SetMagneticField(float magField)
   {
-    fgMagField = magField;  
+    fgMagField = magField;
   }
 
   // Setup the 2 prong KFParticle
