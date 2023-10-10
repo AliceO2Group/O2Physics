@@ -93,7 +93,8 @@ struct evtPlanesResolution {
   template <int cBin, typename T>
   void fillHistosEvtPl(const T& vec)
   {
-    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks) return;
+    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks)
+      return;
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlUncor"), vec.evtPlUncor());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlRectr"), vec.evtPlRectr());

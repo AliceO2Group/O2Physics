@@ -291,8 +291,8 @@ struct qVectorsTable {
     qVectBNeg[0] = 0.;
     qVectBNeg[1] = 0.;
 
-    int nTrkBPos=0;
-    int nTrkBNeg=0;
+    int nTrkBPos = 0;
+    int nTrkBNeg = 0;
     for (auto& trk : tracks) {
       if (!SelTrack(trk))
         continue;
@@ -300,15 +300,15 @@ struct qVectorsTable {
       if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
         continue;
       if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi()) /20.;
-        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi()) /20.;
+        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
         nTrkBPos++;
       } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi()) /20.;
-        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi()) /20.;
+        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
         nTrkBNeg++;
       }
-    } //FIXME: ARBITRARY SCALE FACTOR OF 20
+    } // FIXME: ARBITRARY SCALE FACTOR OF 20
 
     /// TODO: Repeat here the procedure for any other Qvector columns.
     /// Do not forget to add the configurable for the correction constants.
