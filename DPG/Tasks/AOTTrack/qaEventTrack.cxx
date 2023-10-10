@@ -81,7 +81,7 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {500, 0, 500}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {5000, 0, 5000}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -133,7 +133,7 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-    const AxisSpec axisVertexNumContrib{500, 0, 500, "Number Of contributors to the PV"};
+    const AxisSpec axisVertexNumContrib{5000, 0, 5000, "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
