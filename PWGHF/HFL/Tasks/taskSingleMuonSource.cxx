@@ -56,10 +56,12 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
 } // namespace muon_source
+DECLARE_SOA_TABLE(HfMuonEvent, "AOD", "MUONEVENT", muon_source::Nevent);
 DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
 } // namespace o2::aod
 
 struct HfTaskSingleMuonSource {
+  Produces<aod::HfMuonEvent> singleMuonEvent;
   Produces<aod::HfMuonSource> singleMuonSource;
 
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
