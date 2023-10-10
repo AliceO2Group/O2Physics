@@ -98,7 +98,7 @@ struct femtoDreamDebugTrack {
       if (!isFullPIDSelected(part.pidcut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
         continue;
       }
-      trackHisto.fillQA<isMC, true>(part, ConfTempFitVarMomentum.value);
+      trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
     }
   }
 

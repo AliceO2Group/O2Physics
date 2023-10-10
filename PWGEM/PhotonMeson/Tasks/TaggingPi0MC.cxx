@@ -19,26 +19,18 @@
 
 #include "TString.h"
 #include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
@@ -50,15 +42,21 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::photonpair;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEE = MyDalitzEEs::iterator;
+
 struct TaggingPi0MC {
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
+  using MyMCTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackMCLabels>;
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis1690", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigPCMibwCuts{"cfgPCMibwCuts", "wwire_ib", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
@@ -82,6 +80,7 @@ struct TaggingPi0MC {
   THashList* fMainList = new THashList();
 
   std::vector<V0PhotonCut> fPCMCuts;
+  std::vector<DalitzEECut> fDalitzEECuts;
   std::vector<V0PhotonCut> fPCMibwCuts;
   std::vector<PHOSPhotonCut> fPHOSCuts;
   std::vector<EMCPhotonCut> fEMCCuts;
@@ -93,6 +92,9 @@ struct TaggingPi0MC {
     if (context.mOptions.get<bool>("processPCMPCMibw")) {
       fPairNames.push_back("PCMPCMibw");
     }
+    if (context.mOptions.get<bool>("processPCMDalitz")) {
+      fPairNames.push_back("PCMDalitz");
+    }
     if (context.mOptions.get<bool>("processPCMPHOS")) {
       fPairNames.push_back("PCMPHOS");
     }
@@ -101,6 +103,7 @@ struct TaggingPi0MC {
     }
 
     DefinePCMCuts();
+    DefineDalitzEECuts();
     DefinePCMibwCuts();
     DefinePHOSCuts();
     DefineEMCCuts();
@@ -138,7 +141,7 @@ struct TaggingPi0MC {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[7] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC", "PCMPCMibw"};
+  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitz", "PHOSEMC", "PCMPCMibw"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -170,6 +173,9 @@ struct TaggingPi0MC {
       if (pairname == "PCMPCMibw") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fPCMibwCuts, fPairCuts);
       }
+      if (pairname == "PCMDalitz") {
+        add_pair_histograms(list_pair, pairname, fPCMCuts, fDalitzEECuts, fPairCuts);
+      }
       if (pairname == "PCMPHOS") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fPHOSCuts, fPairCuts);
       }
@@ -193,6 +199,21 @@ struct TaggingPi0MC {
     }
     LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
+
+  void DefineDalitzEECuts()
+  {
+    TString cutNamesStr = fConfigDalitzEECuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fDalitzEECuts.push_back(*dalitzeecuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of DalitzEE cuts = %d", fDalitzEECuts.size());
+  }
+
   void DefinePCMibwCuts()
   {
     TString cutNamesStr = fConfigPCMibwCuts.value;
@@ -206,6 +227,7 @@ struct TaggingPi0MC {
     }
     LOGF(info, "Number of PCMibw cuts = %d", fPCMibwCuts.size());
   }
+
   void DefinePHOSCuts()
   {
     TString cutNamesStr = fConfigPHOSCuts.value;
@@ -286,14 +308,16 @@ struct TaggingPi0MC {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, int>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMEMC) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
+    } else if constexpr (pairtype == PairType::kPCMDalitz) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, MyMCTracks>(g1, g2, cut1, cut2);
     } else {
       is_selected_pair = true;
     }
     return is_selected_pair;
   }
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
-  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const& mcevents)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryTracks, typename TMCParticles, typename TMCEvents>
+  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryTracks const& emprimarytracks, TMCParticles const& mcparticles, TMCEvents const& mcevents)
   {
     THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
@@ -326,8 +350,8 @@ struct TaggingPi0MC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
 
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
       for (auto& cut1 : cuts1) {
         for (auto& g1 : photons1_coll) {
@@ -377,6 +401,16 @@ struct TaggingPi0MC {
 
               auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
               auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
+              auto pos1mc = pos1.template emmcparticle_as<aod::EMMCParticles>();
+              auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
+
+              int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
+              if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+                photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
+              }
+              if (photonid1 < 0) {
+                continue;
+              }
 
               if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
                 if constexpr (pairtype == PairType::kPCMPHOS) {
@@ -392,18 +426,8 @@ struct TaggingPi0MC {
 
               int pi0id = -1;
               if constexpr (pairtype == PairType::kPCMPCMibw) {
-
-                auto pos1mc = pos1.template emmcparticle_as<aod::EMMCParticles>();
-                auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
-
-                int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
-                if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-                }
-
                 auto pos2 = g2.template posTrack_as<MyMCV0Legs>();
                 auto ele2 = g2.template negTrack_as<MyMCV0Legs>();
-
                 auto pos2mc = pos2.template emmcparticle_as<aod::EMMCParticles>();
                 auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
 
@@ -419,10 +443,23 @@ struct TaggingPi0MC {
                 auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto g2mc = mcparticles.iteratorAt(photonid2);
                 pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+              } else if constexpr (pairtype == PairType::kPCMDalitz) {
+                auto g1mc = mcparticles.iteratorAt(photonid1);
+                auto pos2 = g2.template posTrack_as<MyMCTracks>();
+                auto ele2 = g2.template negTrack_as<MyMCTracks>();
+                auto pos2mc = pos2.template emmcparticle_as<aod::EMMCParticles>();
+                auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
+                pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
+              }
+              if (pi0id < 0) {
+                continue;
               }
 
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // pcm
-              ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // phos or pcmibw
+              ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // phos or emc or dalitzee
+              if constexpr (pairtype == PairType::kPCMDalitz) {
+                v2.SetM(g2.mee());
+              }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
               // if (abs(v12.Rapidity()) > maxY) {
               //   continue;
@@ -445,28 +482,37 @@ struct TaggingPi0MC {
     }         // end of collision loop
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
+  using MyFilteredDalitzEEs = soa::Filtered<MyDalitzEEs>;
+
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
+  Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emreducedeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   void processPCMPCMibw(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMPCMibw>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMibwCuts, fPairCuts, legs, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMPCMibw>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMibwCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
+  }
+  void processPCMDalitz(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, MyFilteredDalitzEEs const& dielectrons, MyMCTracks const& emprimarytracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
+  {
+    TruePairing<PairType::kPCMDalitz>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimarytracks, mcparticles, mccollisions);
   }
 
   void processPCMPHOS(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
   }
 
   void processPCMEMC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision_pcm, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision_pcm, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
   }
 
   void processDummy(aod::EMReducedEvents::iterator const& collision) {}
 
   PROCESS_SWITCH(TaggingPi0MC, processPCMPCMibw, "pairing PCM-PCMibw", false);
+  PROCESS_SWITCH(TaggingPi0MC, processPCMDalitz, "pairing PCM-Dalitz", false);
   PROCESS_SWITCH(TaggingPi0MC, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(TaggingPi0MC, processPCMEMC, "pairing PCM-EMCal", false);
   PROCESS_SWITCH(TaggingPi0MC, processDummy, "Dummy function", true);
