@@ -283,8 +283,8 @@ struct Pi0EtaToGammaGammaMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
       int pi0id = -1;
       int etaid = -1;
