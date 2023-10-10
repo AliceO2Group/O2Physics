@@ -73,11 +73,6 @@
 
 // *) Utility:
 // TObject* GetObjectFromList(TList *list, Char_t *objectName);
-// Int_t NumberOfNonEmptyLines(const char *externalFile); // 20220803
-// NOT_PORTED_YET void Exit(const char* functionName, const Int_t lineNumber,
-// const char* message); // 20220803 NOT_PORTED_YET void Warning(const char*
-// functionName, const Int_t lineNumber, const char* message); // 20220803
-// NOT_PORTED_YET
 
 //============================================================
 
@@ -1218,7 +1213,7 @@ void CalculateNestedLoops()
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  cout << "fSelectedTracks = " << fSelectedTracks << endl;
+  LOGF(info, "\033[1;32m fSelectedTracks = %d\033[0m", fSelectedTracks);
   Int_t nParticles = fSelectedTracks;
 
   /* TBI 20220823 enable the lines below eventually
@@ -1238,7 +1233,7 @@ void CalculateNestedLoops()
   if (nParticles < 2) {
     return;
   }
-  cout << "      CalculateNestedLoops(void), 2-p correlations .... " << endl;
+  LOGF(info, "\033[1;32m       CalculateNestedLoops(void), 2-p correlations .... \033[0m");
   for (int i1 = 0; i1 < nParticles; i1++) {
     Double_t dPhi1 = nl_a.ftaNestedLoops[0]->GetAt(i1);
     Double_t dW1 = nl_a.ftaNestedLoops[1]->GetAt(i1);
@@ -1589,32 +1584,28 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
   } else if (bFileIsInCCDB) {
 
     // e) Handle the CCDB case: Remember that here I do not access the file,
-    // instead directly object in that file.
-    //    My home dir in CCDB:
-    //    https://alice-ccdb.cern.ch/browse/Users/a/abilandz/ Inspired by:
+    //    instead directly object in that file.
+    //    My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/
+    //    Inspired by:
     //    1. Discussion at:
     //    https://alice-talk.web.cern.ch/t/access-to-lhc-filling-scheme/1073/17
     //    2. See also:
     //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyGlobal.cxx
-    //                 https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
     //    3. O2 Analysis Tutorial 2.0:
     //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
 
-    auto cm = o2::ccdb::BasicCCDBManager::instance();
-    cm.setURL("http://alice-ccdb.cern.ch");
-    // TH1F* hist = cm.get<TH1F>("Users/a/abilandz/test-2"); // this is the
-    // standard working example for histograms
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     if (fVerbose) {
       LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m",
            TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
     }
+
     TList* baseList =
-      reinterpret_cast<TList*>((cm.get<TList>(TString(filePath)
-                                                .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                                                .Data()))
-                                 ->Clone()); // TBI 20231005 circumventing temporarily problem with
-                                             // the ownership this way, but I shouldn't be really
-                                             // clonning here anything
+      reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath)
+                                                  .ReplaceAll("/alice-ccdb.cern.ch/", "")
+                                                  .Data()));
+
     if (!baseList) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1762,26 +1753,22 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
 
     // d) Handle the CCDB case: Remember that here I do not access the file,
     // instead directly object in that file.
+    //    My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/
     //    Inspired by:
     //    1. Discussion at:
     //    https://alice-talk.web.cern.ch/t/access-to-lhc-filling-scheme/1073/17
     //    2. See also:
     //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyGlobal.cxx
-    //                 https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
+    //    3. O2 Analysis Tutorial 2.0:
+    //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
 
-    auto cm = o2::ccdb::BasicCCDBManager::instance();
-    cm.setURL("http://alice-ccdb.cern.ch");
-    // TH1F* hist = cm.get<TH1F>("Users/a/abilandz/test-2"); // this is the
-    // standard working example for histograms oa =
-    // cm.get<TObjArray>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/","").Data());
-    // // TBI 20231004 doesn't work due to ownership problem, later in
-    // StoreLabelsInPlaceholder()
-    oa = reinterpret_cast<TObjArray*>((cm.get<TObjArray>(
-                                         TString(filePath)
-                                           .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                                           .Data()))
-                                        ->Clone()); // TBI 20231004 circumventing temporarily problem with
-                                                    // the ownership this way
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    oa = reinterpret_cast<TObjArray*>(ccdb->get<TObjArray>(
+      TString(filePath)
+        .ReplaceAll("/alice-ccdb.cern.ch/", "")
+        .Data()));
+
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);

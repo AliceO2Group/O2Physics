@@ -137,9 +137,9 @@ TList* fWeightsList = NULL;        //!<! list to hold all particle weights
 TProfile* fWeightsFlagsPro = NULL; //!<! profile to hold all flags for weights
 struct ParticleWeights_Arrays {
   Bool_t fUseWeights[eWeights_N] = {false}; // use weights [phi,pt,eta]
-  TH1D* fWeightsHist[eWeights_N] = {NULL}; //!<! particle weights
-} pw_a;                                    // "pw_a" labels an instance of this group of histograms, e.g.
-                                           // pw_a.fWeightsHist[0]
+  TH1D* fWeightsHist[eWeights_N] = {NULL};  //!<! particle weights
+} pw_a;                                     // "pw_a" labels an instance of this group of histograms, e.g.
+                                            // pw_a.fWeightsHist[0]
 TString fFileWithWeights =
   ""; // path to external ROOT file which holds all particle weights
 

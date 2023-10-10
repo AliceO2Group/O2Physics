@@ -38,6 +38,9 @@ using namespace std;
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
+  // *) CCDB:
+  Service<ccdb::BasicCCDBManager> ccdb;
+
 // *) Configurables (cuts):
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
@@ -158,30 +161,24 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
       if (pw_a.fUseWeights[wPHI]) {
         wPhi = Weight(dPhi, "phi"); // corresponding phi weight
         if (!(wPhi > 0.)) {
-          cout << "wPhi is not positive, skipping this particle for the time being..." << endl;
-          // cout<<Form("iTrack = %d\ndPhi = %f\nwPhi = %f",iTrack,dPhi,wPhi)<<endl;
-          cout << Form("dPhi = %f\nwPhi = %f", dPhi, wPhi) << endl;
-          // sleep(2);
+          LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
           continue;
         }
       } // if(pw_a.fUseWeights[wPHI])
       if (pw_a.fUseWeights[wPT]) {
         wPt = Weight(dPt, "pt"); // corresponding pt weight
         if (!(wPt > 0.)) {
-          cout << "wPt is not positive, skipping this particle for the time being..." << endl;
-          // cout<<Form("iTrack = %d\ndPt = %f\nwPt = %f",iTrack,dPt,wPt)<<endl;
-          cout << Form("dPt = %f\nwPt = %f", dPt, wPt) << endl;
-          // sleep(2);
+          LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
           continue;
         }
       } // if(pw_a.fUseWeights[wPT])
       if (pw_a.fUseWeights[wETA]) {
         wEta = Weight(dEta, "eta"); // corresponding eta weight
         if (!(wEta > 0.)) {
-          cout << "wEta is not positive, skipping this particle for the time being..." << endl;
-          // cout<<Form("iTrack = %d\ndEta = %f\nwEta = %f",iTrack,dEta,wEta)<<endl;
-          cout << Form("dEta = %f\nwEta = %f", dEta, wEta) << endl;
-          // sleep(2);
+          LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+          LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
           continue;
         }
       } // if(pw_a.fUseWeights[wETA])
