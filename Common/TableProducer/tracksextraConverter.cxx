@@ -20,6 +20,7 @@ struct tracksextraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void process(aod::TracksExtra_000 const& tracksExtra_000)
   {
+
     // dummy itsClusterSizes, fill with overflows if a hit in the layer is present
 
     for (auto& track0 : tracksExtra_000) {
@@ -55,9 +56,15 @@ struct tracksextraConverter {
   }
 };
 
+struct trackExtraSpawner {
+  // spawn the extended table for TracksExtra001 to avoid the call to the internal spawner and the circular dependency
+  Spawns<aod::TracksExtra_001> tracksExtra_001;
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<tracksextraConverter>(cfgc),
+    adaptAnalysisTask<trackExtraSpawner>(cfgc),
   };
 }
