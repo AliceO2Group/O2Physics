@@ -71,6 +71,7 @@ class DalitzEECut : public TNamed
     kTOFif = 1,
     kTPChadrej = 2,
     kTPChadrejORTOFreq = 3,
+    kTPConly = 4,
   };
 
   template <class TLeg, typename TPair>
@@ -156,6 +157,9 @@ class DalitzEECut : public TNamed
       case PIDSchemes::kTPChadrejORTOFreq:
         return PassTPChadrej(track) || PassTOFreq(track);
 
+      case PIDSchemes::kTPConly:
+        return PassTPConly(track);
+
       case PIDSchemes::kUnDef:
         return true;
 
@@ -167,30 +171,38 @@ class DalitzEECut : public TNamed
   template <typename T>
   bool PassTOFreq(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_e_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_e_included_TPC && is_pi_excluded_TPC && is_e_included_TOF;
+    bool is_el_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
   bool PassTOFif(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_e_included_TOF = (track.tpcInnerParam() < mMinPinTOF || track.beta() < 0.0) ? true : mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_e_included_TPC && is_pi_excluded_TPC && is_e_included_TOF;
+    bool is_el_included_TOF = (track.tpcInnerParam() < mMinPinTOF || track.beta() < 0.0) ? true : mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
   bool PassTPChadrej(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_mu_excluded_TPC = track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu();
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_e_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+  }
+
+  template <typename T>
+  bool PassTPConly(T const& track) const
+  {
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
+    return is_el_included_TPC && is_pi_excluded_TPC;
   }
 
   template <typename T>
