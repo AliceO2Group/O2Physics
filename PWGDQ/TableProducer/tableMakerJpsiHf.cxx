@@ -87,7 +87,8 @@ struct tableMakerJpsiHf {
   HistogramManager* fHistMan{};
   OutputObj<THashList> fOutputList{"output"};
 
-  void init(o2::framework::InitContext& context) {
+  void init(o2::framework::InitContext& context)
+  {
     fValuesDileptonCharmHadron = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
