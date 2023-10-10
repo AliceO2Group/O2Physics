@@ -39,8 +39,8 @@ double getDeltaPhi(double phiD, double phiHadron)
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsMassAndEfficiency+1] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + (npTBinsMassAndEfficiency+1)};
+const double efficiencyDmesonDefault[npTBinsMassAndEfficiency + 1] = {};
+auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + (npTBinsMassAndEfficiency + 1)};
 
 // histogram binning definition
 const int massAxisBins = 350;
