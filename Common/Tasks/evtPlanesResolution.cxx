@@ -61,6 +61,8 @@ struct evtPlanesResolution {
   // Helper variables.
   EventPlaneHelper helperEP;
 
+  Configurable<int> cfgMinTPCTracks{"cfgMinTPCTracks", 20, "minimum TPC tracks participating in Q-vector reconstruction"};
+
   void init(InitContext const&)
   {
     // Fill the registry with the needed objects.
@@ -91,6 +93,8 @@ struct evtPlanesResolution {
   template <int cBin, typename T>
   void fillHistosEvtPl(const T& vec)
   {
+    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks) return;
+
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlUncor"), vec.evtPlUncor());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlRectr"), vec.evtPlRectr());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTwist"), vec.evtPlTwist());
