@@ -1081,14 +1081,23 @@ struct AnalysisDileptonTrack {
     // Set the global index offset to find the proper lepton
     // TO DO: remove it once the issue with lepton index is solved
     int indexOffset = -999;
+    std::vector<int> trackGlobalIndexes;
+
+    if (dileptons.size() > 0) {
+      for (auto track : tracks) {
+        trackGlobalIndexes.push_back(track.globalIndex());
+        //std::cout << track.index() << " " << track.globalIndex() << std::endl;
+      }
+    }
     for (auto dilepton : dileptons) {
 
       int indexLepton1 = dilepton.index0Id();
       int indexLepton2 = dilepton.index1Id();
 
       if (indexOffset == -999) {
-        indexOffset = indexLepton1;
+        indexOffset = trackGlobalIndexes.at(0);
       }
+      trackGlobalIndexes.clear();
 
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);

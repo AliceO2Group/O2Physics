@@ -1250,7 +1250,7 @@ struct AnalysisDileptonHadron {
     if (dileptons.size() > 0) {
       for (auto track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
-        std::cout << track.index() << " " << track.globalIndex() << std::endl;
+        //std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
     }
     // loop once over dileptons for QA purposes
@@ -1265,6 +1265,7 @@ struct AnalysisDileptonHadron {
       if (indexOffset == -999) {
         indexOffset = trackGlobalIndexes.at(0);
       }
+      trackGlobalIndexes.clear();
 
       // get full track info of tracks based on the index
       std::cout << indexLepton1 - indexOffset << std::endl;
