@@ -25,7 +25,6 @@
 
 #include "CCDB/CcdbApi.h"
 #include "Framework/Array2D.h"
-
 #include "Tools/ML/MlResponse.h"
 
 namespace o2::analysis

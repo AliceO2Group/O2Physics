@@ -28,6 +28,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
@@ -35,9 +36,9 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
 
 struct HfCandidateCreatorSigmac0plusplus {
+
   /// Table with Σc0,++ info
   Produces<aod::HfCandScBase> rowScCandidates;
 
@@ -46,12 +47,14 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
   Configurable<double> mPKPiCandLcMax{"mPKPiCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(pKpi)"};
   Configurable<double> mPiKPCandLcMax{"mPiKPCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(piKp)"};
+
   /// Selections on candidate soft π-,+
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
   Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
+
   // CCDB
   Configurable<bool> isRun2Ccdb{"isRun2Ccdb", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -59,6 +62,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
 
@@ -146,22 +150,22 @@ struct HfCandidateCreatorSigmac0plusplus {
 
         /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
         /// if not selected, skip it and go to the next one
-        if (!(candLc.hfflag() & 1 << DecayType::LcToPKPi)) {
+        if (!(candLc.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
         }
         /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
         /// if not selected, skip it and go to the next one
-        if (yCandLcMax >= 0. && std::abs(yLc(candLc)) > yCandLcMax) {
+        if (yCandLcMax >= 0. && std::abs(hfHelper.yLc(candLc)) > yCandLcMax) {
           continue;
         }
 
         /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
         auto statusSpreadMinvPKPiFromPDG = 0;
         auto statusSpreadMinvPiKPFromPDG = 0;
-        if (candLc.isSelLcToPKPi() >= 1 && std::abs(invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
+        if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPKPiCandLcMax) {
           statusSpreadMinvPKPiFromPDG = 1;
         }
-        if (candLc.isSelLcToPiKP() >= 1 && std::abs(invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
+        if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPiKPCandLcMax) {
           statusSpreadMinvPiKPFromPDG = 1;
         }
         if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {
@@ -296,7 +300,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
-      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << DecayType::LcToPKPi)) { /// (*)
+      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
         rowMCMatchScRec(flag, origin);
         continue;
       }
@@ -356,7 +360,7 @@ struct HfCandidateSigmac0plusplusMc {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
+          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
@@ -370,7 +374,7 @@ struct HfCandidateSigmac0plusplusMc {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << DecayType::LcToPKPi)) {
+          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);

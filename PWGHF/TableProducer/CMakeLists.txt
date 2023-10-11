@@ -25,7 +25,7 @@ o2physics_add_dpl_workflow(refit-pv-dummy
 
 o2physics_add_dpl_workflow(candidate-creator-2prong
                     SOURCES candidateCreator2Prong.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-3prong

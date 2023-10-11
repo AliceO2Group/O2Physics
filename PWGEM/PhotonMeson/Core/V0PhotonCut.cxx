@@ -20,6 +20,10 @@ ClassImp(V0PhotonCut);
 
 const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "PhivPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "RequireTPConly", "RequireTPCTRD", "RequireTPCTOF", "RequireTPCTRDTOF"};
 
+const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ib_Requirement = {0, {0, 1, 2}};           // no hit on 3 ITS ib layers.
+const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ob_Requirement = {4, {3, 4, 5, 6}};        // all hits on 4 ITS ob layers.
+const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ob_Requirement_ITSTPC = {2, {3, 4, 5, 6}}; // at least 2 hits on 4 ITS ob layers.
+
 void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
 {
   mMinV0Pt = minPt;
@@ -85,12 +89,12 @@ void V0PhotonCut::SetMaxMarginZ(float max)
 void V0PhotonCut::SetOnWwireIB(bool flag)
 {
   mIsOnWwireIB = flag;
-  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire IB: " << mIsOnWwireIB;
+  LOG(info) << "V0 Photon Cut, select photon on Tungsten wire IB: " << mIsOnWwireIB;
 }
 void V0PhotonCut::SetOnWwireOB(bool flag)
 {
   mIsOnWwireOB = flag;
-  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire OB: " << mIsOnWwireOB;
+  LOG(info) << "V0 Photon Cut, select photon on Tungsten wire OB: " << mIsOnWwireOB;
 }
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {

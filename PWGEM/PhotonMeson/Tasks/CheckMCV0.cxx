@@ -14,6 +14,7 @@
 /// \author daiki.sekihata@cern.ch felix.schlepper@cern.ch
 
 #include "TDatabasePDG.h"
+#include "TMath.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -27,6 +28,7 @@
 #include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/LHCConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,6 +53,8 @@ struct CheckMCV0 {
   Configurable<float> maxY{"maxY", 200.0, "maximum Y (starting point of track Y)"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 100.0, "max chi2/NclsTPC"};
   Configurable<int> minCrossedRowsTPC{"minCrossedRowsTPC", 10, "min crossed rows tpc"};
+  Configurable<bool> cutSign{"cutSign", false, "wrong sign cut"};
+  Configurable<bool> cutSameSign{"cutSameSign", false, "reject same sign"};
 
   // Filters
   Filter trackPt = aod::track::pt > minpt&& aod::track::pt < maxpt;
@@ -71,9 +75,9 @@ struct CheckMCV0 {
   Configurable<int> ptNBins{"ptNBins", 200, "nBins for pt"};
   Configurable<float> ptLowCut{"ptLowCut", 0.1, "low pt cut"};
   // Axes
-  AxisSpec axisTgl{tglNBins, -5.f, +5.f, "tan(#lambda)"};
-  AxisSpec axisTglEle{tglNBins, -5.f, +5.f, "tan(#lambda) of e^{#minus}"};
-  AxisSpec axisTglPos{tglNBins, -5.f, +5.f, "tan(#lambda) of e^{#plus}"};
+  AxisSpec axisTgl{tglNBins, -3.f, +3.f, "tan(#lambda)"};
+  AxisSpec axisTglEle{tglNBins, -3.f, +3.f, "tan(#lambda) of e^{#minus}"};
+  AxisSpec axisTglPos{tglNBins, -3.f, +3.f, "tan(#lambda) of e^{#plus}"};
   AxisSpec axisEta{300, -1.6, +1.6, "#eta"};
   AxisSpec axisX{xNBins, 0.0, maxX, "reco. x"};
   AxisSpec axisXMC{xNBins, 0.0, maxX, "MC prop. x"};
@@ -98,12 +102,16 @@ struct CheckMCV0 {
   AxisSpec axisPt{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c}"};
   AxisSpec axisPtPos{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c} of e^{#plus}"};
   AxisSpec axisPtEle{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c} of e^{#minus}"};
+  AxisSpec axisTPos{1000, -50'000, +50'000, "timeStamp ns of e^{#plus}"};
+  AxisSpec axisTEle{1000, -50'000, +50'000, "timeStamp ns of e^{#minus}"};
 
-  static constexpr std::array<std::string_view, 7> cutsBinLabels{"Pre", "checkV0leg", "sign", "propagationFailed", "lowPt", "highPt", "survived"};
+  static constexpr std::array<std::string_view, 9> cutsBinLabels{"Pre", "checkV0leg", "sign", "sameSign", "photon", "propagationFailed", "lowPt", "highPt", "survived"};
   enum cutsBinEnum : uint8_t {
     PRE = 1,
     CHECKV0LEG,
     SIGN,
+    SAMESIGN,
+    PHOTON,
     PROPFAIL,
     LOWPT,
     HIGHPT,
@@ -125,31 +133,33 @@ struct CheckMCV0 {
   static_assert(checkV0legLabels.size() == checkV0legEnum::MINCROSSEDROWSTPC);
 
   // CCDB
-  Configurable<std::string> ccdbPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int runNumber{-1};
-  o2::base::MatLayerCylSet* lut{nullptr};
-  o2::parameters::GRPMagField* grpmag{nullptr};
+  Configurable<std::string> mCCDBPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
+  Configurable<std::string> mGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
+  Configurable<std::string> mLUTPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<std::string> mCCDBUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Service<o2::ccdb::BasicCCDBManager> mCCDB;
+  int mRunNumber{-1};
+  o2::base::MatLayerCylSet* mLUT{nullptr};
+  o2::parameters::GRPMagField* mGRPMagField{nullptr};
 
   // params
-  std::array<float, 3> mcPosXYZProp{};
-  std::array<float, 3> mcEleXYZProp{};
+  std::array<float, 6> mcPosXYZEtaTglPtProp{};
+  std::array<float, 6> mcEleXYZEtaTglPtProp{};
+  std::array<float, 6> mcMotherXYZEtaTglPtProp{};
 
   // Track Types
   static constexpr std::array<std::string_view, 6> v0Types{"ITSTPC_ITSTPC/", "TPConly_TPConly/", "ITSonly_ITSonly/", "ITSTPC_TPConly/", "ITSTPC_ITSonly/", "TPConly_ITSonly/"};
   std::array<bool, v0Types.size()> v0TypesPassed{};
-  static constexpr std::array<std::string_view, 3> ptBins{"lowPt/", "highPt/", "all/"};
+  static constexpr std::array<std::string_view, 4> cuts{"lowPt/", "highPt/", "zReco43/", "all/"};
 
   void init(InitContext const& /*unused*/)
   {
     // setup CCDB
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    mCCDB->setURL(mCCDBUrl);
+    mCCDB->setCaching(true);
+    mCCDB->setLocalObjectValidityChecking();
+    mLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCCDB->get<o2::base::MatLayerCylSet>(mLUTPath));
 
     // maybe logarithmic
     if (ptLogAxis) {
@@ -160,8 +170,8 @@ struct CheckMCV0 {
 
     // Create histograms
     for (const auto& v0type : v0Types) {
-      for (const auto& ptbin : ptBins) {
-        const auto path = Form("%s%s", v0type.data(), ptbin.data());
+      for (const auto& cut : cuts) {
+        const auto path = Form("%s%s", v0type.data(), cut.data());
         registry.add(Form("%sTglTgl", path), "tan(#lambda) vs. tan(#lambda)", HistType::kTH2F, {axisTglPos, axisTglEle});
         registry.add(Form("%sPtPt", path), "p_{T} vs. p_{T}", HistType::kTH2F, {axisPtPos, axisPtEle});
         registry.add(Form("%sXX", path), "x vs. x", HistType::kTH2F, {axisXPos, axisXEle});
@@ -170,6 +180,7 @@ struct CheckMCV0 {
         registry.add(Form("%sZPt", path), "z vs. p_{T}", HistType::kTH2F, {axisZ, axisPt});
         registry.add(Form("%sZTgl", path), "z vs. tan(#lambda)", HistType::kTH2F, {axisZ, axisTgl});
         registry.add(Form("%sPtTgl", path), "p_{T} vs. tan(#lambda)", HistType::kTH2F, {axisPt, axisTgl});
+        registry.add(Form("%sTT", path), "est. Time vs. Time", HistType::kTH2F, {axisTPos, axisTEle});
         registry.add(Form("%sMC/XX", path), Form("MC x vs. reconstructed x (ptLowCut=%.2f)", ptLowCut.value), HistType::kTH2F, {axisXMC, axisX});
         registry.add(Form("%sMC/YY", path), Form("MC y vs. rconstructed y (ptLowCut=%.2f)", ptLowCut.value), HistType::kTH2F, {axisYMC, axisY});
         registry.add(Form("%sMC/ZZ", path), Form("MC z vs. reconstructed z (ptLowCut=%.2f)", ptLowCut.value), HistType::kTH2F, {axisZMC, axisZ});
@@ -203,66 +214,95 @@ struct CheckMCV0 {
 
     // loop over all true photon pairs
     for (const auto& v0 : v0s) {
-      registry.fill(HIST("V0Counter"), PRE);
+      registry.fill(HIST("V0Counter"), cutsBinEnum::PRE);
 
       // tracks
-      const auto pos = v0.template posTrack_as<TracksMC>(); // positive daughter
-      const auto ele = v0.template negTrack_as<TracksMC>(); // negative daughter
+      const auto& pos = v0.template posTrack_as<TracksMC>(); // positive daughter
+      const auto& ele = v0.template negTrack_as<TracksMC>(); // negative daughter
       if (!checkV0leg(pos) || !checkV0leg(ele)) {
-        registry.fill(HIST("V0Counter"), CHECKV0LEG);
+        registry.fill(HIST("V0Counter"), cutsBinEnum::CHECKV0LEG);
         continue;
       }
 
       // set correct track types
       checkPassed(pos, ele);
 
-      // corresponding generated particles
-      const auto posMC = pos.template mcParticle_as<aod::McParticles>();
-      const auto eleMC = ele.template mcParticle_as<aod::McParticles>();
-      if (std::signbit(pos.sign()) || !std::signbit(ele.sign())) { // wrong sign and same sign reject (e.g. loopers)
-        registry.fill(HIST("V0Counter"), SIGN);
+      if (cutSign && (std::signbit(pos.sign()) || !std::signbit(ele.sign()))) { // wrong sign and same sign reject (e.g. loopers)
+        registry.fill(HIST("V0Counter"), cutsBinEnum::SIGN);
         continue;
       }
+      if (cutSameSign && (pos.sign() * ele.sign() > 0)) {
+        registry.fill(HIST("V0Counter"), cutsBinEnum::SAMESIGN);
+        continue;
+      }
+      const auto& posMC = pos.template mcParticle_as<aod::McParticles>();
+      const auto& eleMC = ele.template mcParticle_as<aod::McParticles>();
+      if (!checkMCParticles<kGamma>(posMC, eleMC)) {
+        registry.fill(HIST("V0Counter"), cutsBinEnum::PHOTON);
+        continue;
+      }
+      const auto& mother = posMC.mothers_first_as<aod::McParticles>();
 
       // Propagate the vertex position of the MC track to the reconstructed vertex position of the track
-      if (!recacluateMCVertex(ele, eleMC, mcEleXYZProp) || !recacluateMCVertex(pos, posMC, mcPosXYZProp)) {
-        registry.fill(HIST("V0Counter"), PROPFAIL);
+      if (!recacluateMCVertex(ele, eleMC, mcEleXYZEtaTglPtProp) || !recacluateMCVertex(pos, posMC, mcPosXYZEtaTglPtProp)) {
+        registry.fill(HIST("V0Counter"), cutsBinEnum::PROPFAIL);
         continue;
       }
       registry.fill(HIST("V0Counter"), SURVIVED);
 
       static_for<0, v0Types.size() - 1>([&](auto i) {
-        static_for<0, ptBins.size() - 1>([&](auto j) {
+        static_for<0, cuts.size() - 1>([&](auto j) {
           fillHistograms<i, j>(pos, ele);
         });
       });
 
-      mcV0Table(pos.pt(), pos.eta(), pos.tgl(), pos.x(), pos.y(), pos.z(),
-                ele.pt(), ele.eta(), ele.tgl(), ele.x(), ele.y(), ele.z(),
-                posMC.pt(), posMC.eta(), posMC.vx(), posMC.vy(), posMC.vz(),
-                eleMC.pt(), eleMC.eta(), eleMC.vx(), eleMC.vy(), eleMC.vz(),
-                mcPosXYZProp[0], mcPosXYZProp[1], mcPosXYZProp[2],
-                mcEleXYZProp[0], mcEleXYZProp[1], mcEleXYZProp[2],
-                std::distance(v0TypesPassed.cbegin(), std::find(v0TypesPassed.cbegin(), v0TypesPassed.cend(), true)));
+      mcV0Table(
+        // Track Pos
+        pos.pt(), pos.eta(), pos.tgl(), pos.x(), pos.y(), pos.z(), pos.trackTime(), pos.sign(),
+        pos.hasITS(), pos.hasTPC(), pos.hasTRD(), pos.hasTOF(),
+        // Track Ele
+        ele.pt(), ele.eta(), ele.tgl(), ele.x(), ele.y(), ele.z(), ele.trackTime(), ele.sign(),
+        ele.hasITS(), ele.hasTPC(), ele.hasTRD(), ele.hasTOF(),
+        // MC particle Pos
+        posMC.pt(), posMC.eta(), posMC.vx(), posMC.vy(), posMC.vz(),
+        // MC particle Ele
+        eleMC.pt(), eleMC.eta(), eleMC.vx(), eleMC.vy(), eleMC.vz(),
+        // Propagated MC pos
+        mcPosXYZEtaTglPtProp[0], mcPosXYZEtaTglPtProp[1], mcPosXYZEtaTglPtProp[2],
+        mcPosXYZEtaTglPtProp[3], mcPosXYZEtaTglPtProp[4], mcPosXYZEtaTglPtProp[5],
+        // Propagated MC ele
+        mcEleXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[2],
+        mcEleXYZEtaTglPtProp[3], mcEleXYZEtaTglPtProp[4], mcEleXYZEtaTglPtProp[5],
+        // MC mother particle
+        mother.isPhysicalPrimary(), mother.producedByGenerator(), mother.pt(), mother.eta(),
+        mother.vx(), mother.vy(), mother.vz(),
+        // MC Primary Vertex
+        mother.vx(), mother.vy(), mother.vz(),
+        // TrackType
+        std::distance(v0TypesPassed.cbegin(), std::find(v0TypesPassed.cbegin(), v0TypesPassed.cend(), true)));
     }
   }
-  PROCESS_SWITCH(CheckMCV0, processMCV0, "process reconstructed MC info", true);
+  PROCESS_SWITCH(CheckMCV0, processMCV0, "process reconstructed MC V0 info", true);
 
-  template <unsigned int idxV0Type, unsigned int idxPtBin, typename TTrack>
+  template <unsigned int idxV0Type, unsigned int idxCut, typename TTrack>
   inline void fillHistograms(TTrack const& pos, TTrack const& ele)
   {
-    constexpr auto hist = HIST(v0Types[idxV0Type]) + HIST(ptBins[idxPtBin]);
+    constexpr auto hist = HIST(v0Types[idxV0Type]) + HIST(cuts[idxCut]);
 
     if (!v0TypesPassed[idxV0Type]) {
       return;
     }
 
-    if constexpr (idxPtBin == 0) {
+    if constexpr (idxCut == 0) { // lowPt
       if (pos.pt() > ptLowCut && ele.pt() > ptLowCut) {
         return;
       }
-    } else if constexpr (idxPtBin == 1) {
+    } else if constexpr (idxCut == 1) { // highPt
       if (pos.pt() < ptLowCut && ele.pt() < ptLowCut) {
+        return;
+      }
+    } else if constexpr (idxCut == 2) {
+      if (!(abs(pos.z()) > 38.f && abs(pos.z()) < 46.f) && !(abs(ele.z()) > 38.f && abs(ele.z()) < 46.f)) {
         return;
       }
     }
@@ -278,50 +318,51 @@ struct CheckMCV0 {
     registry.fill(hist + HIST("ZTgl"), ele.z(), ele.tgl());
     registry.fill(hist + HIST("PtTgl"), pos.pt(), pos.tgl());
     registry.fill(hist + HIST("PtTgl"), ele.pt(), ele.tgl());
-    if constexpr (idxPtBin == 0) {
+    registry.fill(hist + HIST("TT"), pos.trackTime(), ele.trackTime());
+    if constexpr (idxCut == 0) {
       if (pos.pt() < ptLowCut || ele.pt() < ptLowCut) {
         registry.fill(HIST("V0Counter"), cutsBinEnum::LOWPT);
       }
       if (pos.pt() < ptLowCut) {
-        registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZProp[0], pos.x());
-        registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZProp[1], pos.y());
-        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZProp[2], pos.z());
+        registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZEtaTglPtProp[0], pos.x());
+        registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZEtaTglPtProp[1], pos.y());
+        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZEtaTglPtProp[2], pos.z());
       }
       if (ele.pt() < ptLowCut) {
-        registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZProp[0], ele.x());
-        registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZProp[1], ele.y());
-        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZProp[2], ele.z());
+        registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZEtaTglPtProp[0], ele.x());
+        registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZEtaTglPtProp[1], ele.y());
+        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZEtaTglPtProp[2], ele.z());
       }
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZProp[0], mcEleXYZProp[0]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZProp[1], mcEleXYZProp[1]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZProp[2], mcEleXYZProp[2]);
-    } else if constexpr (idxPtBin == 1) {
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[0]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[1]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZEtaTglPtProp[2], mcEleXYZEtaTglPtProp[2]);
+    } else if constexpr (idxCut == 1) {
       if (pos.pt() > ptLowCut || ele.pt() > ptLowCut) {
         registry.fill(HIST("V0Counter"), cutsBinEnum::HIGHPT);
       }
       if (pos.pt() > ptLowCut) {
-        registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZProp[0], pos.x());
-        registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZProp[1], pos.y());
-        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZProp[2], pos.z());
+        registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZEtaTglPtProp[0], pos.x());
+        registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZEtaTglPtProp[1], pos.y());
+        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZEtaTglPtProp[2], pos.z());
       }
       if (ele.pt() > ptLowCut) {
-        registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZProp[0], ele.x());
-        registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZProp[1], ele.y());
-        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZProp[2], ele.z());
+        registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZEtaTglPtProp[0], ele.x());
+        registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZEtaTglPtProp[1], ele.y());
+        registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZEtaTglPtProp[2], ele.z());
       }
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZProp[0], mcEleXYZProp[0]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZProp[1], mcEleXYZProp[1]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZProp[2], mcEleXYZProp[2]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[0]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[1]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZEtaTglPtProp[2], mcEleXYZEtaTglPtProp[2]);
     } else {
-      registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZProp[0], pos.x());
-      registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZProp[1], pos.y());
-      registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZProp[2], pos.z());
-      registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZProp[0], ele.x());
-      registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZProp[1], ele.y());
-      registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZProp[2], ele.z());
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZProp[0], mcEleXYZProp[0]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZProp[1], mcEleXYZProp[1]);
-      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZProp[2], mcEleXYZProp[2]);
+      registry.fill(hist + HIST("MC/") + HIST("XX"), mcPosXYZEtaTglPtProp[0], pos.x());
+      registry.fill(hist + HIST("MC/") + HIST("YY"), mcPosXYZEtaTglPtProp[1], pos.y());
+      registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcPosXYZEtaTglPtProp[2], pos.z());
+      registry.fill(hist + HIST("MC/") + HIST("XX"), mcEleXYZEtaTglPtProp[0], ele.x());
+      registry.fill(hist + HIST("MC/") + HIST("YY"), mcEleXYZEtaTglPtProp[1], ele.y());
+      registry.fill(hist + HIST("MC/") + HIST("ZZ"), mcEleXYZEtaTglPtProp[2], ele.z());
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationX"), mcPosXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[0]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationY"), mcPosXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[1]);
+      registry.fill(hist + HIST("MC/") + HIST("VertexPropagationZ"), mcPosXYZEtaTglPtProp[2], mcEleXYZEtaTglPtProp[2]);
     }
   }
 
@@ -361,6 +402,9 @@ struct CheckMCV0 {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::MINCROSSEDROWSTPC);
       return false;
     }
+    if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
+      return false;
+    }
     return true;
   }
 
@@ -382,7 +426,7 @@ struct CheckMCV0 {
   }
 
   template <typename TTrack, typename MCTrack>
-  inline bool recacluateMCVertex(TTrack const& track, MCTrack const& mcTrack, std::array<float, 3>& xyz)
+  inline bool recacluateMCVertex(TTrack const& track, MCTrack const& mcTrack, std::array<float, 6>& xyzEtaTglPt)
   {
     std::array<float, 3> xyzMC{mcTrack.vx(), mcTrack.vy(), mcTrack.vz()};
     std::array<float, 3> pxyzMC{mcTrack.px(), mcTrack.py(), mcTrack.pz()};
@@ -395,20 +439,20 @@ struct CheckMCV0 {
     if (!mctrO2.rotate(track.alpha()) || !o2::base::Propagator::Instance()->PropagateToXBxByBz(mctrO2, track.x())) {
       return false;
     }
-    xyz = {mctrO2.getX(), mctrO2.getY(), mctrO2.getZ()};
+    xyzEtaTglPt = {mctrO2.getX(), mctrO2.getY(), mctrO2.getZ(), mctrO2.getEta(), mctrO2.getTgl(), mctrO2.getPt()};
     return true;
   }
 
   template <typename BC>
   inline void initCCDB(BC const& bc)
   {
-    if (runNumber == bc.runNumber()) {
+    if (mRunNumber == bc.runNumber()) {
       return;
     }
-    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    o2::base::Propagator::Instance()->setMatLUT(lut);
-    runNumber = bc.runNumber();
+    mGRPMagField = mCCDB->getForTimeStamp<o2::parameters::GRPMagField>(mGRPMagPath, bc.timestamp());
+    o2::base::Propagator::initFieldFromGRP(mGRPMagField);
+    o2::base::Propagator::Instance()->setMatLUT(mLUT);
+    mRunNumber = bc.runNumber();
   }
 };
 

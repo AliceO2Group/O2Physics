@@ -31,6 +31,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Core/PDG.h"
 
 using namespace o2::analysis;
 
@@ -442,6 +443,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(std::array{px, py, pz}, RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}), m); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
+DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overndf of the KFParticle topological constraint
+
+// method of secondary-vertex reconstruction
+enum VertexerType { DCAFitter = 0,
+                    KfParticle };
 } // namespace hf_cand
 
 // specific 2-prong decay properties
@@ -470,92 +476,15 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction l
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
+// KF related properties
+DECLARE_SOA_COLUMN(KfGeoMassD0, kfGeoMassD0, float);       //! mass of the D0 candidate from the KFParticle geometric fit
+DECLARE_SOA_COLUMN(KfGeoMassD0bar, kfGeoMassD0bar, float); //! mass of the D0bar candidate from the KFParticle geometric fit
 
 // mapping of decay types
 enum DecayType { D0ToPiK = 0,
                  JpsiToEE,
                  JpsiToMuMu,
                  N2ProngDecays }; // always keep N2ProngDecays at the end
-
-// functions for specific particles
-
-// D0(bar) → π± K∓
-
-template <typename T>
-auto ctD0(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kD0));
-}
-
-template <typename T>
-auto yD0(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0));
-}
-
-template <typename T>
-auto eD0(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kD0));
-}
-
-template <typename T>
-auto invMassD0ToPiK(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
-}
-
-template <typename T>
-auto invMassD0barToKPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto cosThetaStarD0(const T& candidate)
-{
-  return candidate.cosThetaStar(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)}, RecoDecay::getMassPDG(pdg::Code::kD0), 1);
-}
-
-template <typename T>
-auto cosThetaStarD0bar(const T& candidate)
-{
-  return candidate.cosThetaStar(std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kD0), 0);
-}
-
-// J/ψ
-
-template <typename T>
-auto ctJpsi(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kJPsi));
-}
-
-template <typename T>
-auto yJpsi(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kJPsi));
-}
-
-template <typename T>
-auto eJpsi(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kJPsi));
-}
-
-// J/ψ → e+ e−
-template <typename T>
-auto invMassJpsiToEE(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
-}
-// J/ψ → μ+ μ−
-
-template <typename T>
-auto invMassJpsiToMuMu(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kMuonPlus), RecoDecay::getMassPDG(kMuonMinus)});
-}
 
 } // namespace hf_cand_2prong
 
@@ -621,6 +550,10 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand2ProngExt, HfCand2ProngBase, "HFCAND2PEXT"
 
 using HfCand2Prong = HfCand2ProngExt;
 
+DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
+                  hf_cand::KfTopolChi2OverNdf,
+                  hf_cand_2prong::KfGeoMassD0, hf_cand_2prong::KfGeoMassD0bar);
+
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
                   hf_cand_2prong::FlagMcMatchRec,
@@ -655,31 +588,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(V0X, v0x, float);                        //! X position of V0 decay
 DECLARE_SOA_COLUMN(V0Y, v0y, float);                        //! Y position of V0 decay
 DECLARE_SOA_COLUMN(V0Z, v0z, float);                        //! Z position of V0 decay
-
-template <typename T>
-auto invMassLcToK0sP(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kK0Short)}); // first daughter is bachelor
-}
-
-template <typename T>
-auto invMassGammaToEE(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
-}
-
-template <typename T>
-auto ctV0K0s(const T& candidate)
-{
-  return candidate.ctV0(RecoDecay::getMassPDG(kK0Short));
-}
-
-template <typename T>
-auto ctV0Lambda(const T& candidate)
-{
-  return candidate.ctV0(RecoDecay::getMassPDG(kLambda0));
-}
-
 } // namespace hf_cand_casc
 
 DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
@@ -763,38 +671,6 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, 
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
 
 enum DecayType { BplusToD0Pi = 0 };
-
-// B± → D0bar(D0) π±
-
-template <typename T>
-auto ctBplus(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kBPlus));
-}
-
-template <typename T>
-auto yBplus(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kBPlus));
-}
-
-template <typename T>
-auto eBplus(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kBPlus));
-}
-
-template <typename T>
-auto invMassBplusToD0Pi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto cosThetaStarBplus(const T& candidate)
-{
-  return candidate.cosThetaStar(std::array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kBPlus), 1);
-}
 } // namespace hf_cand_bplus
 
 // declare dedicated BPlus decay candidate table
@@ -883,196 +759,12 @@ enum DecayType { DplusToPiKPi = 0,
                  XicToPKPi,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
 
-// functions for specific particles
-
-// D± → π± K∓ π±
-
-template <typename T>
-auto ctDplus(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDPlus));
-}
-
-template <typename T>
-auto yDplus(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus));
-}
-
-template <typename T>
-auto eDplus(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDPlus));
-}
-
-template <typename T>
-auto invMassDplusToPiKPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
 // Ds± → K± K∓ π±
 
 enum DecayChannelDs {
   PhiPi = 1,
   K0starK
 };
-
-template <typename T>
-auto ctDs(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDS));
-}
-
-template <typename T>
-auto yDs(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDS));
-}
-
-template <typename T>
-auto eDs(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDS));
-}
-
-template <typename T>
-auto invMassDsToKKPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto invMassDsToPiKK(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
-}
-
-template <typename T>
-auto deltaMassPhiDsToKKPi(const T& candidate)
-{
-  double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
-  return std::abs(invMassKKpair - RecoDecay::getMassPDG(pdg::Code::kPhi));
-}
-
-template <typename T>
-auto deltaMassPhiDsToPiKK(const T& candidate)
-{
-  double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
-  return std::abs(invMassKKpair - RecoDecay::getMassPDG(pdg::Code::kPhi));
-}
-
-/// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
-/// \param candidate Ds candidate from aod::HfCand3Prong table
-/// \param option mass hypothesis considered: 0 = KKPi, 1 = PiKK
-/// \return cosine of pion-kaon angle in the phi rest frame
-template <typename T>
-auto cosPiKPhiRestFrame(const T& candidate, int option)
-{
-  // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
-  std::array<float, 3> momPi;
-  std::array<float, 3> momK1;
-  std::array<float, 3> momK2;
-
-  if (option == 0) { // KKPi
-    momPi = candidate.pVectorProng2();
-    momK1 = candidate.pVectorProng1();
-    momK2 = candidate.pVectorProng0();
-  } else { // PiKK
-    momPi = candidate.pVectorProng0();
-    momK1 = candidate.pVectorProng1();
-    momK2 = candidate.pVectorProng2();
-  }
-
-  ROOT::Math::PxPyPzMVector vecPi(momPi[0], momPi[1], momPi[2], RecoDecay::getMassPDG(kPiPlus));
-  ROOT::Math::PxPyPzMVector vecK1(momK1[0], momK1[1], momK1[2], RecoDecay::getMassPDG(kKPlus));
-  ROOT::Math::PxPyPzMVector vecK2(momK2[0], momK2[1], momK2[2], RecoDecay::getMassPDG(kKPlus));
-  ROOT::Math::PxPyPzMVector vecPhi = vecK1 + vecK2;
-
-  ROOT::Math::Boost boostToPhiRestFrame(vecPhi.BoostToCM());
-  auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
-  auto momK1PhiRestFrame = boostToPhiRestFrame(vecK1).Vect();
-
-  return momPiPhiRestFrame.Dot(momK1PhiRestFrame) / std::sqrt(momPiPhiRestFrame.Mag2() * momK1PhiRestFrame.Mag2());
-}
-
-template <typename T>
-auto cos3PiKDsToKKPi(const T& candidate)
-{
-  auto cosPiK = cosPiKPhiRestFrame(candidate, 0);
-  return cosPiK * cosPiK * cosPiK;
-}
-
-template <typename T>
-auto cos3PiKDsToPiKK(const T& candidate)
-{
-  auto cosPiK = cosPiKPhiRestFrame(candidate, 1);
-  return cosPiK * cosPiK * cosPiK;
-}
-
-// Λc± → p± K∓ π±
-
-template <typename T>
-auto ctLc(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
-}
-
-template <typename T>
-auto yLc(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
-}
-
-template <typename T>
-auto eLc(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus));
-}
-
-template <typename T>
-auto invMassLcToPKPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto invMassLcToPiKP(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kProton)});
-}
-
-// Ξc± → p± K∓ π±
-
-template <typename T>
-auto ctXic(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
-}
-
-template <typename T>
-auto yXic(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
-}
-
-template <typename T>
-auto eXic(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kXiCPlus));
-}
-
-template <typename T>
-auto invMassXicToPKPi(const T& candidate)
-{
-  return invMassLcToPKPi(candidate);
-}
-
-template <typename T>
-auto invMassXicToPiKP(const T& candidate)
-{
-  return invMassLcToPiKP(candidate);
-}
 
 } // namespace hf_cand_3prong
 
@@ -1160,18 +852,6 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
-template <typename T>
-auto invMassXiczeroToXiPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto invMassOmegaczeroToOmegaPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
 // mapping of decay types
 enum DecayType { XiczeroToXiPi = 0,
                  OmegaczeroToOmegaPi,
@@ -1205,12 +885,6 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
-template <typename T>
-auto invMassXicplusToXiPiPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(kXiMinus), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
 // mapping of decay types
 enum DecayType { XicplusToXiPiPi = 0,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
@@ -1231,83 +905,6 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); // resonant 
 // mapping of decay types
 enum DecayType { XToJpsiToEEPiPi = 0,
                  XToJpsiToMuMuPiPi }; // move this to a dedicated cascade namespace in the future?
-
-// X → Jpsi π+ π-
-// TODO: add pdg code for X (9920443), temporarily hardcode mass here:
-float massX = 3.872; // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
-template <typename T>
-auto ctX(const T& candidate)
-{
-  return candidate.ct(massX);
-}
-
-template <typename T>
-auto yX(const T& candidate)
-{
-  return candidate.y(massX);
-}
-
-template <typename T>
-auto eX(const T& candidate)
-{
-  return candidate.e(massX);
-}
-
-template <typename T>
-auto invMassXToJpsiPiPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-/// Difference between the X mass and the sum of the J/psi and di-pion masses
-template <typename T>
-auto qX(const T& candidate)
-{
-  auto piVec1 = std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-  auto piVec2 = std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-
-  auto arrayMomenta = std::array{piVec1, piVec2};
-  double massPiPi = RecoDecay::m(arrayMomenta, std::array{massPi, massPi});
-
-  // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
-  double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJPsi);
-
-  double massX = invMassXToJpsiPiPi(candidate);
-  return std::abs(massX - massJpsi - massPiPi);
-}
-
-/// Angular difference between the J/psi and the pion
-template <typename T>
-auto dRX(const T& candidate, int numPi)
-{
-  double etaJpsi = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
-  double phiJpsi = RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0());
-
-  double etaPi, phiPi;
-
-  if (numPi <= 1) {
-    etaPi = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
-    phiPi = RecoDecay::phi(candidate.pxProng1(), candidate.pyProng1());
-  } else {
-    etaPi = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-    phiPi = RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2());
-  }
-
-  double deltaEta = etaJpsi - etaPi;
-  double deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
-
-  return RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi);
-}
-
-/// Difference in pT between the two pions
-template <typename T>
-auto balancePtPionsX(const T& candidate)
-{
-  double ptPi1 = RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1());
-  double ptPi2 = RecoDecay::pt(candidate.pxProng2(), candidate.pyProng2());
-  return std::abs(ptPi1 - ptPi2) / (ptPi1 + ptPi2);
-}
 } // namespace hf_cand_x
 
 // declare dedicated X candidate table
@@ -1495,32 +1092,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 // mapping of decay types
 enum DecayType { XiccToXicPi = 0 }; // move this to a dedicated cascade namespace in the future?
-
-// Ξcc±± → p± K∓ π± π±
-
-template <typename T>
-auto ctXicc(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
-}
-
-template <typename T>
-auto yXicc(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
-}
-
-template <typename T>
-auto eXicc(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus));
-}
-
-template <typename T>
-auto invMassXiccToXicPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kXiCPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
 } // namespace hf_cand_xicc
 
 // declare dedicated Xicc candidate table
@@ -1747,30 +1318,6 @@ DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float);          // Jpsi mass
 // mapping of decay types
 enum DecayType { ChicToJpsiToEEGamma = 0,
                  ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
-// chic → Jpsi gamma
-template <typename T>
-auto ctChic(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChiC1));
-}
-
-template <typename T>
-auto yChic(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChiC1));
-}
-
-template <typename T>
-auto eChic(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChiC1));
-}
-template <typename T>
-auto invMassChicToJpsiGamma(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kJPsi), 0.});
-}
-
 } // namespace hf_cand_chic
 
 // declare dedicated chi_c candidate table
@@ -1838,31 +1385,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 // mapping of decay types
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
-
-// Λb → Λc+ π- → p K- π+ π-
-// float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
-template <typename T>
-auto ctLb(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-}
-
-template <typename T>
-auto yLb(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-}
-
-template <typename T>
-auto eLb(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-}
-template <typename T>
-auto invMassLbToLcPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
 } // namespace hf_cand_lb
 
 // declare dedicated Lb candidate table
@@ -1933,36 +1455,6 @@ enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };
-// B0(B0bar) → D∓ π±
-template <typename T>
-auto ctB0(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kB0));
-}
-
-template <typename T>
-auto yB0(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kB0));
-}
-
-template <typename T>
-auto eB0(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kB0));
-}
-
-template <typename T>
-auto invMassB0ToDPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto cosThetaStarB0(const T& candidate)
-{
-  return candidate.cosThetaStar(std::array{RecoDecay::getMassPDG(pdg::Code::kDMinus), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kB0), 1);
-}
 } // namespace hf_cand_b0
 
 // declare dedicated B0 decay candidate table
@@ -2034,36 +1526,6 @@ enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± →
                              PartlyRecoDecay,      // 4 final state particles have another common b-hadron ancestor
                              NDecayTypeMc };       // counter of differentiated MC decay types
 
-// Bs(bar) → Ds∓ π±
-template <typename T>
-auto ctBs(const T& candidate)
-{
-  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kBS));
-}
-
-template <typename T>
-auto yBs(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kBS));
-}
-
-template <typename T>
-auto eBs(const T& candidate)
-{
-  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kBS));
-}
-
-template <typename T>
-auto invMassBsToDsPi(const T& candidate)
-{
-  return candidate.m(std::array{RecoDecay::getMassPDG(pdg::Code::kDSBar), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto cosThetaStarBs(const T& candidate)
-{
-  return candidate.cosThetaStar(std::array{RecoDecay::getMassPDG(pdg::Code::kDSBar), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kBS), 1);
-}
 } // namespace hf_cand_bs
 
 // declare dedicated Bs decay candidate table
@@ -2131,34 +1593,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 // mapping of decay types
 enum DecayType { Sc0ToPKPiPi = 0,
                  ScplusplusToPKPiPi };
-
-/// Σc0,++ → Λc+(→pK-π+) π-,+
-/// @brief Sc inv. mass using reco mass for Lc in pKpi and PDG mass for pion
-template <typename T, typename U>
-auto invMassScRecoLcToPKPi(const T& candidateSc, const U& candidateLc)
-{
-  return candidateSc.m(std::array{static_cast<double>(hf_cand_3prong::invMassLcToPKPi(candidateLc)), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-/// @brief Sc inv. mass using reco mass for Lc in piKp and PDG mass for pion
-template <typename T, typename U>
-auto invMassScRecoLcToPiKP(const T& candidateSc, const U& candidateLc)
-{
-  return candidateSc.m(std::array{static_cast<double>(hf_cand_3prong::invMassLcToPiKP(candidateLc)), RecoDecay::getMassPDG(kPiPlus)});
-}
-
-template <typename T>
-auto ySc0(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSigmaC0));
-}
-
-template <typename T>
-auto yScPlusPlus(const T& candidate)
-{
-  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kSigmaCPlusPlus));
-}
-
 } // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table
