@@ -22,6 +22,7 @@
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -48,8 +49,6 @@ using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 namespace o2::aod
 {
@@ -102,7 +101,6 @@ struct femtoWorldProducerTask {
   // Configurables for D0/D0bar mesons
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
   // Choose if filtering or skimming version is run
@@ -219,6 +217,7 @@ struct femtoWorldProducerTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -1143,10 +1142,10 @@ struct femtoWorldProducerTask {
     // loop over 2-prong candidates
     for (auto& candidate : candidates) { // selectedD0Candidates
 
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
         continue;
       }
 
@@ -1275,11 +1274,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                           // general mass
-                    invMassD0ToPiK(candidate),    // D0mass
-                    invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),          // D0 flag
-                    candidate.isSelD0bar(),       // D0bar flag
+                    0.,                                    // general mass
+                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
+                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                   // D0 flag
+                    candidate.isSelD0bar(),                // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
@@ -2090,10 +2089,10 @@ struct femtoWorldProducerTask {
 
     // loop over 2-prong candidates
     for (const auto& candidate : candidates) { // selectedD0Candidates
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
         continue;
       }
 
@@ -2224,11 +2223,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                           // general mass
-                    invMassD0ToPiK(candidate),    // D0mass
-                    invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),          // D0 flag
-                    candidate.isSelD0bar(),       // D0bar flag
+                    0.,                                    // general mass
+                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
+                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                   // D0 flag
+                    candidate.isSelD0bar(),                // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,

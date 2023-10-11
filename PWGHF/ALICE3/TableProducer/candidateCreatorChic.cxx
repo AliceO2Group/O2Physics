@@ -23,16 +23,13 @@
 #include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-// using namespace o2::aod::alice3ecal;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -63,8 +60,10 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
-  double massJpsi = RecoDecay::getMassPDG(pdg::Code::kJPsi);
-  double massJpsiGamma = 0;
+  HfHelper hfHelper;
+
+  double massJpsi{0.};
+  double massJpsiGamma{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
@@ -76,6 +75,11 @@ struct HfCandidateCreatorChic {
   OutputObj<TH1F> hMassChicToJpsiToMuMuGamma{TH1F("hMassChicToJpsiToMuMuGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massJpsi = o2::analysis::pdg::MassJPsi;
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -100,14 +104,14 @@ struct HfCandidateCreatorChic {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(hfHelper.invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(hfHelper.invMassJpsiToMuMu(jpsiCand));
       }
       hPtJpsi->Fill(jpsiCand.pt());
       hCPAJpsi->Fill(jpsiCand.cpa());
@@ -180,7 +184,7 @@ struct HfCandidateCreatorChic {
                          impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), ecal.globalIndex(),
-                         hfFlag, invMassJpsiToMuMu(jpsiCand));
+                         hfFlag, hfHelper.invMassJpsiToMuMu(jpsiCand));
 
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecJpsi, pvecGamma};
@@ -208,6 +212,8 @@ struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMcRec> rowMcMatchRec;
   Produces<aod::HfCandChicMcGen> rowMcMatchGen;
 
+  HfHelper hfHelper;
+
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -216,7 +222,7 @@ struct HfCandidateCreatorChicMc {
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
                aod::TracksWMc const& tracks,
-               aod::McParticles const& particlesMC,
+               aod::McParticles const& mcParticles,
                aod::ECALs const& ecals)
   {
     int indexRec = -1;
@@ -236,14 +242,14 @@ struct HfCandidateCreatorChicMc {
       auto arrayJpsiDaughters = std::array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
       if (indexRec > -1) {
-        hMassJpsiToMuMuMatched->Fill(invMassJpsiToMuMu(candidate.prong0()));
+        hMassJpsiToMuMuMatched->Fill(hfHelper.invMassJpsiToMuMu(candidate.prong0()));
 
-        int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(indexRec), pdg::Code::kChiC1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcparticleId()), pdg::Code::kChiC1);
+        int indexMother = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(indexRec), pdg::Code::kChiC1);
+        int indexMotherGamma = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(candidate.prong1().mcparticleId()), pdg::Code::kChiC1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.prong1().mcparticle().pdgCode() == kGamma) {
-          auto particleMother = particlesMC.rawIteratorAt(indexMother);
+          auto particleMother = mcParticles.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.prong1().e());
           hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
           if (particleMother.has_daughters()) {
@@ -251,37 +257,36 @@ struct HfCandidateCreatorChicMc {
             RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, std::array{static_cast<int>(kGamma), static_cast<int>(pdg::Code::kJPsi)}, 1);
             if (arrAllDaughtersIndex.size() == 2) {
               flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
-              hMassChicToJpsiToMuMuGammaMatched->Fill(invMassChicToJpsiGamma(candidate));
+              hMassChicToJpsiToMuMuGammaMatched->Fill(hfHelper.invMassChicToJpsiGamma(candidate));
             }
           }
         }
       }
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
       rowMcMatchRec(flag, origin, channel);
     }
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
-      // Printf("New gen. candidate");
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
       channel = 0;
 
       // chi_c → J/ψ gamma
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kChiC1, std::array{static_cast<int>(pdg::Code::kJPsi), static_cast<int>(kGamma)}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kChiC1, std::array{static_cast<int>(pdg::Code::kJPsi), static_cast<int>(kGamma)}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particle, &arrDaughter, std::array{static_cast<int>(pdg::Code::kJPsi)}, 1);
-        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+        auto jpsiCandMC = mcParticles.rawIteratorAt(arrDaughter[0]);
+        if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
         }
 
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
           }
         }

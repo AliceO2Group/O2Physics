@@ -22,12 +22,12 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
@@ -50,17 +50,17 @@ struct HfCandidateCreator3Prong {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
+  int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
+  double massPi{0.};
+  double massK{0.};
   double massPiKPi{0.};
-  double bz = 0.;
+  double bz{0.};
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -80,6 +80,8 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
 
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -249,7 +251,7 @@ struct HfCandidateCreator3ProngExpressions {
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles const& mcParticles)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -270,7 +272,6 @@ struct HfCandidateCreator3ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng3) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       swapping = 0;
@@ -279,25 +280,23 @@ struct HfCandidateCreator3ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
+          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-              auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
@@ -311,19 +310,18 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Flagging the different Λc± → p± K∓ π± decay channels
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
+          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-              auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
@@ -339,8 +337,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
@@ -348,36 +345,33 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(flag, origin, swapping, channel);
     }
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
-      // Printf("New gen. candidate");
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      // Printf("Checking D± → π± K∓ π±");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ds± → K± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
@@ -391,15 +385,14 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Λc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Flagging the different Λc± → p± K∓ π± decay channels
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
@@ -415,15 +408,14 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        // Printf("Checking Ξc± → p± K∓ π±");
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
       }
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchGen(flag, origin, channel);

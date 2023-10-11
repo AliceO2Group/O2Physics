@@ -23,13 +23,12 @@
 
 #include "ALICE3/DataModel/RICH.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_lb;
 
 namespace o2::aod
 {
@@ -182,12 +181,14 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
 
-  void init(o2::framework::InitContext&) {}
+  void init(InitContext&) {}
 };
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
+
+  HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
@@ -293,10 +294,10 @@ struct HfTreeCreatorLbToLcPi {
             track2.tofNSigmaKa(),
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
-            o2::aod::hf_cand_3prong::invMassLcToPKPi(candLc),
-            o2::aod::hf_cand_3prong::ctLc(candLc),
-            o2::aod::hf_cand_3prong::yLc(candLc),
-            o2::aod::hf_cand_3prong::eLc(candLc),
+            hfHelper.invMassLcToPKPi(candLc),
+            hfHelper.ctLc(candLc),
+            hfHelper.yLc(candLc),
+            hfHelper.eLc(candLc),
             candLc.eta(),
             candLc.cpa(),
             candLc.cpaXY(),
@@ -321,7 +322,7 @@ struct HfTreeCreatorLbToLcPi {
             candidate.originMcRec());
         }
       };
-      fillTable(candidate.isSelLbToLcPi(), invMassLbToLcPi(candidate), ctLb(candidate), yLb(candidate));
+      fillTable(candidate.isSelLbToLcPi(), hfHelper.invMassLbToLcPi(candidate), hfHelper.ctLb(candidate), hfHelper.yLb(candidate));
     }
   }
 };

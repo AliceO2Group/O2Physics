@@ -18,14 +18,11 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_dplus_hadron;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
-using namespace o2::constants::math;
 
 namespace o2::aod
 {
@@ -120,7 +117,7 @@ struct HfTaskCorrelationDplusHadrons {
       {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2.}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;

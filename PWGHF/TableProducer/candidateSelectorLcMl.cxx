@@ -25,15 +25,13 @@
 #include "Common/Core/trackUtilities.h"
 #include "Tools/ML/model.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
-using namespace hf_cuts_bdt_multiclass;
 using namespace o2::ml;
 
 /// Struct for applying Lc selection cuts
@@ -64,17 +62,17 @@ struct HfCandidateSelectorLcMl {
   Configurable<std::string> onnxFileLcToPiKPConf{"onnxFileLcToPiKPConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220818/PWGHF/o2/trigger/ModelHandler_onnx_LcToPKPi.onnx", "ONNX file for ML model for Lc+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
 
-  o2::ccdb::CcdbApi ccdbApi;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/Lc", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  int dataTypeML;
-  OnnxModel model;
 
+  int dataTypeML;
+  o2::ccdb::CcdbApi ccdbApi;
+  OnnxModel model;
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
@@ -82,6 +80,8 @@ struct HfCandidateSelectorLcMl {
   using TracksSel = soa::Join<aod::TracksWDca,
                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext&)
   {
@@ -147,7 +147,7 @@ struct HfCandidateSelectorLcMl {
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
@@ -253,10 +253,10 @@ struct HfCandidateSelectorLcMl {
       std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
-      const float massPi = RecoDecay::getMassPDG(kPiPlus);
-      const float massK = RecoDecay::getMassPDG(kKPlus);
-      const float massProton = RecoDecay::getMassPDG(kProton);
-      const float massLc = RecoDecay::getMassPDG(o2::analysis::pdg::kLambdaCPlus);
+      const float massPi = o2::analysis::pdg::MassPiPlus;
+      const float massK = o2::analysis::pdg::MassKPlus;
+      const float massProton = o2::analysis::pdg::MassProton;
+      const float massLc = o2::analysis::pdg::MassLambdaCPlus;
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
         if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {

@@ -28,20 +28,42 @@ namespace o2::aod
 namespace qvec
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality percentile.
-DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float); //! Real part of Qvec in FT0A.
-DECLARE_SOA_COLUMN(QvecFT0AIm, qvecFT0AIm, float); //! Imaginary part for FT0A.
-DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float); //! Real part of Qvec in FT0C.
-DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float); //! Imaginary part for FT0C.
-DECLARE_SOA_COLUMN(QvecFV0ARe, qvecFV0ARe, float); //! Real part of Qvec in FV0A.
-DECLARE_SOA_COLUMN(QvecFV0AIm, qvecFV0AIm, float); //! Imaginary part for FV0A.
+DECLARE_SOA_COLUMN(CentBin, centBin, int);
+DECLARE_SOA_COLUMN(QvecUncorRe, qvecUncorRe, float);
+DECLARE_SOA_COLUMN(QvecUncorIm, qvecUncorIm, float);
+DECLARE_SOA_COLUMN(QvecRectrRe, qvecRectrRe, float);
+DECLARE_SOA_COLUMN(QvecRectrIm, qvecRectrIm, float);
+DECLARE_SOA_COLUMN(QvecTwistRe, qvecTwistRe, float);
+DECLARE_SOA_COLUMN(QvecTwistIm, qvecTwistIm, float);
+DECLARE_SOA_COLUMN(QvecFinalRe, qvecFinalRe, float);
+DECLARE_SOA_COLUMN(QvecFinalIm, qvecFinalIm, float);
+DECLARE_SOA_COLUMN(QvecBPosUncorRe, qvecBPosUncorRe, float);
+DECLARE_SOA_COLUMN(QvecBPosUncorIm, qvecBPosUncorIm, float);
+DECLARE_SOA_COLUMN(QvecBPosRectrRe, qvecBPosRectrRe, float);
+DECLARE_SOA_COLUMN(QvecBPosRectrIm, qvecBPosRectrIm, float);
+DECLARE_SOA_COLUMN(QvecBPosTwistRe, qvecBPosTwistRe, float);
+DECLARE_SOA_COLUMN(QvecBPosTwistIm, qvecBPosTwistIm, float);
+DECLARE_SOA_COLUMN(QvecBPosFinalRe, qvecBPosFinalRe, float);
+DECLARE_SOA_COLUMN(QvecBPosFinalIm, qvecBPosFinalIm, float);
+DECLARE_SOA_COLUMN(QvecBNegUncorRe, qvecBNegUncorRe, float);
+DECLARE_SOA_COLUMN(QvecBNegUncorIm, qvecBNegUncorIm, float);
+DECLARE_SOA_COLUMN(QvecBNegRectrRe, qvecBNegRectrRe, float);
+DECLARE_SOA_COLUMN(QvecBNegRectrIm, qvecBNegRectrIm, float);
+DECLARE_SOA_COLUMN(QvecBNegTwistRe, qvecBNegTwistRe, float);
+DECLARE_SOA_COLUMN(QvecBNegTwistIm, qvecBNegTwistIm, float);
+DECLARE_SOA_COLUMN(QvecBNegFinalRe, qvecBNegFinalRe, float);
+DECLARE_SOA_COLUMN(QvecBNegFinalIm, qvecBNegFinalIm, float);
 /// NOTE: Add here Qx,Qy for other systems.
 } // namespace qvec
 
 DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS", //! Table with all Qvectors.
-                  qvec::Cent,
-                  qvec::QvecFT0ARe, qvec::QvecFT0AIm,
-                  qvec::QvecFT0CRe, qvec::QvecFT0CIm,
-                  qvec::QvecFV0ARe, qvec::QvecFV0AIm);
+                  qvec::Cent, qvec::CentBin,
+                  qvec::QvecUncorRe, qvec::QvecUncorIm, qvec::QvecRectrRe, qvec::QvecRectrIm,
+                  qvec::QvecTwistRe, qvec::QvecTwistIm, qvec::QvecFinalRe, qvec::QvecFinalIm,
+                  qvec::QvecBPosUncorRe, qvec::QvecBPosUncorIm, qvec::QvecBPosRectrRe, qvec::QvecBPosRectrIm,
+                  qvec::QvecBPosTwistRe, qvec::QvecBPosTwistIm, qvec::QvecBPosFinalRe, qvec::QvecBPosFinalIm,
+                  qvec::QvecBNegUncorRe, qvec::QvecBNegUncorIm, qvec::QvecBNegRectrRe, qvec::QvecBNegRectrIm,
+                  qvec::QvecBNegTwistRe, qvec::QvecBNegTwistIm, qvec::QvecBNegFinalRe, qvec::QvecBNegFinalIm);
 using Qvector = Qvectors::iterator;
 } // namespace o2::aod
 

@@ -23,6 +23,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
+#include "CCDB/BasicCCDBManager.h"
 //
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -37,6 +38,14 @@ using namespace o2::framework::expressions;
 using std::array;
 //
 struct qaMatchEff {
+  int lastRunNumber = -1;
+  bool timeMonitorSetUp = false;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  using BCsWithTimeStamp = soa::Join<aod::BCs, aod::Timestamps>;
+
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> enableMonitorVsTime{"enableMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
+  Configurable<bool> enableTHnSparseMonitorVsTime{"enableTHnSparseMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
   //
   // histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -85,6 +94,12 @@ struct qaMatchEff {
   // histo axes
   //
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
+  ConfigurableAxis ptBinsVsTime{"ptBinsVsTime", {VARIABLE_WIDTH, 0.1, 0.5, 1.0, 2.0, 5.0}, "pT binning for monitorning vs time"};
+  ConfigurableAxis ptInvserseBinsVsTime{"ptInverseBinsVsTime", {VARIABLE_WIDTH, 0, 0.2, 0.5, 1, 2, 10}, "1/pT binning for monitorning vs time"};
+  ConfigurableAxis etaBinsVsTime{"etaBinsVsTime", {14, -1.4, 1.4}, "eta binning for monitoring vs time"};
+  ConfigurableAxis posZBinsVsTime{"posZBinsVsTime", {2, -100, 100}, "posZ primary vertex binning for monitoring vs time"};
+  ConfigurableAxis tpcClstBinsVsTime{"tpcClstBinsVsTime", {40, 0, 160}, "TPC cluster binning for monitoring vs time"};
+  ConfigurableAxis itsClstBinsVsTime{"itsClstBinsVsTime", {9, 0, 9}, "ITS cluster binning for monitoring vs time"};
   //
   AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
   //
@@ -887,8 +902,8 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
-  template <bool IS_MC, typename T, typename P>
-  void fillHistograms(T& tracks, P& mcParticles)
+  template <bool IS_MC, typename T, typename P, typename B>
+  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;
@@ -1066,6 +1081,17 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(track.eta());
           //
+          // monitoring vs. time (debug reasons)
+          if (enableMonitorVsTime && timeMonitorSetUp) {
+            if (track.has_collision()) {
+              const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+              histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
+              if (enableTHnSparseMonitorVsTime) {
+                histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+              }
+            }
+          }
+          //
           // with TOF tag
           if (trkWTOF) {
             histos.get<TH1>(HIST("data/pthist_toftpc"))->Fill(trackPt);
@@ -1230,7 +1256,7 @@ struct qaMatchEff {
             }
           }
           // end protons
-          if (!isPion && !isKaon && !isProton) {
+          if (!isPion && !isKaon && !isProton && (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired)) {
             histos.get<TH1>(HIST("data/PID/pthist_tpc_noid"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_noid"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_noid"))->Fill(track.eta());
@@ -1424,6 +1450,17 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(track.eta());
+            //
+            // monitoring vs. time (debug reasons)
+            if (enableMonitorVsTime && timeMonitorSetUp) {
+              if (track.has_collision()) {
+                const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+                histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
+                if (enableTHnSparseMonitorVsTime) {
+                  histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+                }
+              }
+            }
             //
             // not identified
             if (!isPion && !isKaon && !isProton) {
@@ -1795,12 +1832,66 @@ struct qaMatchEff {
     }
   }
 
+  /// Function to add histograms for time-based monitoring of matching efficiency (debug purposes)
+  /// BEWARE: these hitograms are ok only if looked run-by-run
+  void setUpTimeMonitoring(BCsWithTimeStamp const& bcs)
+  {
+    int runNumber = bcs.rawIteratorAt(0).runNumber();
+    if (lastRunNumber != runNumber) {
+      /// execute the code in this scope only once, i.e. when the current run is considered for the first time in this DF
+      lastRunNumber = runNumber;
+      int64_t tsSOR = 0;
+      int64_t tsEOR = 0;
+
+      /// reject AO2Ds for which no CCDB access is possible
+      if (runNumber < 500000) {
+        LOG(warning) << ">>> run number " << runNumber << " < 500000. access to CCDB not possible. Exiting";
+        return;
+      }
+
+      /// If we are here, the current run was never considered before.
+      /// Let's add the TH2 that we need for the monitoring
+      /// Let's define the x-axis according to the start-of-run (SOR) and end-of-run (EOR) times
+      o2::ccdb::CcdbApi ccdb_api;
+      ccdb_api.init(ccdburl);
+      std::map<string, string> metadataRCT, headers;
+      headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
+      tsSOR = atol(headers["SOR"].c_str());
+      tsEOR = atol(headers["EOR"].c_str());
+      double minMilliSec = floor(tsSOR); /// round tsSOR to the highest integer lower than tsSOR
+      double maxMilliSec = ceil(tsEOR);  /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxMilliSec - minMilliSec) * 1. / 10.), minMilliSec, maxMilliSec, "time from January 1st, 1970 at UTC (unit: 10 ms)"};
+
+      /// add histograms now
+      const AxisSpec axisPtVsTime{ptBinsVsTime, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axis1overPtVsTime{ptInvserseBinsVsTime, "1/#it{p}_{T} (#it{c}/GeV)"};
+      const AxisSpec axisChargeVsTime{2, -1, 1, "charge"};
+      const AxisSpec axisEtaVsTime{etaBinsVsTime, "#eta"};
+      const AxisSpec axisPosZVsTime{posZBinsVsTime, "posZ (cm)"};
+      const AxisSpec axisTpcClstVsTime{tpcClstBinsVsTime, "TPC clusters"};
+      const AxisSpec axisItsClstVsTime{itsClstBinsVsTime, "TPC clusters"};
+      // TPC tracks
+      histos.add("data/hTrkTPCvsTime", "", kTH1D, {axisSeconds});
+      if (enableTHnSparseMonitorVsTime) {
+        histos.add("data/hTrkTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      }
+      // ITS-TPC tracks
+      histos.add("data/hTrkITSTPCvsTime", "", kTH1D, {axisSeconds});
+      if (enableTHnSparseMonitorVsTime) {
+        histos.add("data/hTrkITSTPCvsTimePtEtaPosZ", "", kTHnSparseF, {axisSeconds, axisPtVsTime, axisEtaVsTime, axisPosZVsTime, axis1overPtVsTime, axisChargeVsTime, axisTpcClstVsTime, axisItsClstVsTime});
+      }
+
+      /// time monitoring correctly set up
+      timeMonitorSetUp = true;
+    }
+  }
+
   //////////////////////////////////////////////
   ///   Process MC with collision grouping   ///
   //////////////////////////////////////////////
   void processMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
@@ -1810,7 +1901,7 @@ struct qaMatchEff {
   ////////////////////////////////////////////////////////////
   void processTrkIUMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUMC, "process MC for IU tracks", false);
@@ -1820,16 +1911,20 @@ struct qaMatchEff {
   /////////////////////////////////////////////
   void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    fillHistograms<true>(tracks, mcParticles);
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
   }
   PROCESS_SWITCH(qaMatchEff, processMCNoColl, "process MC - no collision grouping", false);
 
   ////////////////////////////////////////////////
   ///   Process data with collision grouping   ///
   ////////////////////////////////////////////////
-  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    if (enableMonitorVsTime) {
+      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
@@ -1839,7 +1934,7 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////////////
   void processTrkIUData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUData, "process data", false);
@@ -1847,9 +1942,12 @@ struct qaMatchEff {
   ///////////////////////////////////////////////
   ///   Process data w/o collision grouping   ///
   ///////////////////////////////////////////////
-  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
   {
-    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    if (enableMonitorVsTime) {
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
   }
   PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", true);
 

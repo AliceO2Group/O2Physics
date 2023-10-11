@@ -207,14 +207,10 @@ bool checkDaughters(T const& particle, int globalIndex)
 }
 
 template <typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, float particleEtaMin, float particleEtaMax, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
 {
   inputParticles.clear();
   for (auto& particle : particles) {
-    // TODO: can we do this through the filter?
-    if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
-      continue;
-    }
     if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
       continue;
     } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) { // do we need isPhysicalPrimary as well? Note: Might give unforseen results if the generator isnt PYTHIA

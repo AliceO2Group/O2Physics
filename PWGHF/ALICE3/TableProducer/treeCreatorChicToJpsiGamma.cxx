@@ -21,13 +21,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
 
 namespace o2::aod
 {
@@ -121,12 +121,14 @@ struct HfTreeCreatorChicToJpsiGamma {
   Produces<o2::aod::HfCandChicFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandChicFullPs> rowCandidateFullParticles;
 
+  HfHelper hfHelper;
+
   void init(InitContext const&)
   {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const& mcCollisions,
                soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
                aod::Tracks const& tracks,
@@ -200,15 +202,15 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.originMcRec());
         }
       };
-      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), invMassChicToJpsiGamma(candidate), ctChic(candidate), yChic(candidate));
-      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), invMassChicToJpsiGamma(candidate), ctChic(candidate), yChic(candidate));
+      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), hfHelper.invMassChicToJpsiGamma(candidate), hfHelper.ctChic(candidate), hfHelper.yChic(candidate));
+      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), hfHelper.invMassChicToJpsiGamma(candidate), hfHelper.ctChic(candidate), hfHelper.yChic(candidate));
     }
 
     // Filling particle properties
-    float massChic = RecoDecay::getMassPDG(pdg::Code::kChiC1);
+    float massChic = o2::analysis::pdg::MassChiC1;
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << DecayType::ChicToJpsiToMuMuGamma) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

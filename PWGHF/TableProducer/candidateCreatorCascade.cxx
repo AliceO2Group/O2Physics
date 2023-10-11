@@ -23,13 +23,13 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_2prong;
 
 // #define MY_DEBUG
 
@@ -59,7 +59,6 @@ struct HfCandidateCreatorCascade {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation histograms"};
   Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
-
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -67,10 +66,10 @@ struct HfCandidateCreatorCascade {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
   // for debugging
 #ifdef MY_DEBUG
@@ -79,10 +78,11 @@ struct HfCandidateCreatorCascade {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  double massP = RecoDecay::getMassPDG(kProton);
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
+  int runNumber{0};
+  double massP{0.};
+  double massK0s{0.};
+  double massPi{0.};
+  double massLc{0.};
   double mass2K0sP{0.};
   double bz = 0.;
 
@@ -92,6 +92,10 @@ struct HfCandidateCreatorCascade {
 
   void init(InitContext const&)
   {
+    massP = o2::analysis::pdg::MassProton;
+    massK0s = o2::analysis::pdg::MassK0Short;
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massLc = o2::analysis::pdg::MassLambdaCPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -261,7 +265,7 @@ struct HfCandidateCreatorCascadeMc {
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
 
   void processMc(MyTracksWMc const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles const& mcParticles)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -297,20 +301,20 @@ struct HfCandidateCreatorCascadeMc {
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "correct K0S in the Lc daughters: posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
       // if (isLc) {
-      RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
+      RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
 
       if (sign != 0) { // we have already positively checked the K0s
         // then we check the Lc
         MY_DEBUG_MSG(sign, LOG(info) << "K0S was correct! now we check the Lc");
         MY_DEBUG_MSG(sign, LOG(info) << "index proton = " << indexBach);
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
         MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
       }
 
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(sign, origin);
@@ -318,12 +322,12 @@ struct HfCandidateCreatorCascadeMc {
     //}
 
     // Match generated particles.
-    for (const auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       origin = 0;
       // checking if I have a Lc --> K0S + p
-      RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
+      RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
       if (sign == 0) { // now check for anti-Lc
-        RecoDecay::isMatchedMCGen(particlesMC, particle, -pdg::Code::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
+        RecoDecay::isMatchedMCGen(mcParticles, particle, -pdg::Code::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
         sign = -sign;
       }
       if (sign != 0) {
@@ -333,7 +337,7 @@ struct HfCandidateCreatorCascadeMc {
         RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
         if (arrDaughLcIndex.size() == 3) {
           for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
-            auto daughI = particlesMC.rawIteratorAt(arrDaughLcIndex[iProng]);
+            auto daughI = mcParticles.rawIteratorAt(arrDaughLcIndex[iProng]);
             arrDaughLcPDG[iProng] = daughI.pdgCode();
           }
           if (!(arrDaughLcPDG[0] == sign * arrDaughLcPDGRef[0] && arrDaughLcPDG[1] == arrDaughLcPDGRef[1] && arrDaughLcPDG[2] == arrDaughLcPDGRef[2])) { // this should be the condition, first bach, then v0
@@ -346,7 +350,7 @@ struct HfCandidateCreatorCascadeMc {
       }
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
       rowMcMatchGen(sign, origin);
     }

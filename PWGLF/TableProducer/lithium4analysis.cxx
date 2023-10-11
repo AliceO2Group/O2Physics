@@ -26,6 +26,9 @@
 #include <array>
 #include <cstdlib>
 
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -55,7 +58,6 @@ namespace
 {
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-static const std::vector<std::string> particleNames{"He3"};
 
 constexpr float he3Mass = o2::constants::physics::MassHelium3;
 constexpr float protonMass = o2::constants::physics::MassProton;
@@ -78,12 +80,18 @@ struct lithium4Candidate {
   std::array<float, 3> momPr;
 
   float nSigmaHe3 = -10;
+  float nSigmaPr = -10;
+  float massTOFHe3 = -10;
+  float massTOFPr = -10;
+
   float he3DCAXY = -10;
   float he3DCAZ = -10;
   float protonDCAXY = -10;
   float protonDCAZ = -10;
   uint16_t tpcSignalHe3 = 0u;
   float momHe3TPC = -10.f;
+  float momPrTPC = -10.f;
+  float invMass = -10.f;
   uint8_t nTPCClustersHe3 = 0u;
 
   bool isBkgUS = false;
@@ -118,7 +126,7 @@ struct lithium4analysis {
 
   // bethe bloch parameters
   std::array<float, 6> mBBparamsHe;
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, {"He3"}, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
@@ -127,15 +135,14 @@ struct lithium4analysis {
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 2000.0f}});
-    histos.add("hHe3Dcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hHe3Dcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hLitInvMass", "Invariant mass distribution", kTH1F, {{50, 3.74f, 3.85f}});
+    histos.add("hHe3Dcaxy", ";DcaXY", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hHe3Dcaz", ";DcaZ", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hLitInvMass", "; M(^{3}He + p)", kTH1F, {{50, 3.74f, 3.85f}});
     histos.add("hHe3Pt", "Pt distribution", kTH1F, {{200, 0.0f, 6.0f}});
-    histos.add("hProtonPt", "Pt distribution", kTH1F, {{200, 0.0f, 3.0f}});
-    histos.add("h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
-    histos.add("h2NsigmaHe3TOF", "NsigmaHe3 TOF distribution", kTH2F, {{20, -5.0f, 5.0f}, {200, -10.0f, 10.0f}});
-    histos.add("h2NsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{20, -3.0f, 3.0f}, {200, -5.0f, 5.0f}});
-    histos.add("h2NsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{20, -3.0f, 3.0f}, {200, -10.0f, 10.0f}});
+    histos.add("hProtonPt", "Pt distribution; Pt", kTH1F, {{200, 0.0f, 3.0f}});
+    histos.add("h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed p/z; NsigmaHe3TPC", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
+    histos.add("h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed p/z; NsigmaProtonTPC", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
+    histos.add("h2NsigmaProtonTOF", "NsigmaProton TOF distribution; pT; NsigmaProtonTOF", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
 
     for (int i = 0; i < 5; i++) {
       mBBparamsHe[i] = cfgBetheBlochParams->get("He3", Form("p%i", i));
@@ -146,13 +153,19 @@ struct lithium4analysis {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() || candidate.isPVContributor())) {
+    if (!candidate.isGlobalTrack()) {
       return false;
-    } else {
-      if (!candidate.isGlobalTrackWoDCA() || std::abs(candidate.dcaXY()) > cfgCutDCAxy || std::abs(candidate.dcaZ()) > cfgCutDCAz || !candidate.isPVContributor()) {
-        return false;
-      }
     }
+
+    if (candidate.itsNCls() < 5 ||
+        candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsCrossedRows() < 70 ||
+        candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
+        candidate.tpcChi2NCl() > 4.f ||
+        candidate.itsChi2NCl() > 36.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -185,14 +198,13 @@ struct lithium4analysis {
   {
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
     if (std::abs(nSigmaHe3) < nsigmaCutTPC) {
-      histos.fill(HIST("h2NsigmaHe3TPC"), candidate.tpcInnerParam() * candidate.sign(), nSigmaHe3);
       return true;
     }
     return false;
   }
 
   template <typename T1, typename T2>
-  void FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix)
+  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix, bool isMC = false)
   {
     lithium4Candidate l4Cand;
 
@@ -202,11 +214,8 @@ struct lithium4analysis {
     float invMass = RecoDecay::m(array{l4Cand.momHe3, l4Cand.momPr}, array{he3Mass, protonMass});
 
     if (invMass < 3.74 || invMass > 3.85 || candidatePr.pt() > cfgCutMaxPrPT) {
-      return;
+      return false;
     }
-
-    histos.fill(HIST("hHe3Pt"), l4Cand.recoPtHe3());
-    histos.fill(HIST("hProtonPt"), l4Cand.recoPtPr());
 
     int he3Sign = candidateHe3.sign();
     int protonSign = candidatePr.sign();
@@ -220,9 +229,29 @@ struct lithium4analysis {
     l4Cand.protonDCAZ = candidatePr.dcaZ();
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
     l4Cand.momHe3TPC = candidateHe3.tpcInnerParam();
+    l4Cand.momPrTPC = candidatePr.tpcInnerParam();
+    l4Cand.invMass = invMass;
+
     l4Cand.nTPCClustersHe3 = candidateHe3.tpcNClsFound();
     l4Cand.nSigmaHe3 = computeNSigmaHe3(candidateHe3);
+    l4Cand.nSigmaPr = candidatePr.tpcNSigmaPr();
+
     l4Candidates.push_back(l4Cand);
+    return true;
+  }
+
+  template <typename T>
+  void fillHistograms(const T& l4cand)
+  {
+    int candSign = l4cand.isMatter ? 1 : -1;
+    histos.fill(HIST("hHe3Pt"), l4cand.recoPtHe3());
+    histos.fill(HIST("hProtonPt"), l4cand.recoPtPr());
+    histos.fill(HIST("hLitInvMass"), l4cand.invMass);
+    histos.fill(HIST("hHe3Dcaxy"), l4cand.he3DCAXY);
+    histos.fill(HIST("hHe3Dcaz"), l4cand.he3DCAZ);
+    histos.fill(HIST("h2NsigmaHe3TPC"), candSign * l4cand.momHe3TPC, l4cand.nSigmaHe3);
+    histos.fill(HIST("h2NsigmaProtonTPC"), candSign * l4cand.momPrTPC, l4cand.nSigmaPr);
+    histos.fill(HIST("h2NsigmaProtonTOF"), l4cand.recoPtPr(), l4cand.nSigmaPr);
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -230,14 +259,16 @@ struct lithium4analysis {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime>>;
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>>;
+  o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
+  o2::pid::tof::Beta<TrackCandidatesMC::iterator> responseBetaMC;
 
   Preslice<TrackCandidates> perCol = aod::track::collisionId;
   Preslice<TrackCandidatesMC> perColMC = aod::track::collisionId;
 
   // binning for EM background
-  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "vertex axis for bin"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
   BinningType binningOnPositions{{axisVertex}, true};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
@@ -261,10 +292,12 @@ struct lithium4analysis {
         if (!selectionTrack(track1) || !selectionPIDHe3(track1)) {
           continue;
         }
-        histos.fill(HIST("hHe3Dcaxy"), track1.dcaXY());
-        histos.fill(HIST("hHe3Dcaz"), track1.dcaZ());
 
         for (auto track2 : TrackTable_thisCollision) {
+
+          if (track1 == track2) {
+            continue;
+          }
 
           if (!cfgEnableBkgUS) {
             if (track1.sign() * track2.sign() < 0) {
@@ -276,7 +309,22 @@ struct lithium4analysis {
             continue;
           }
 
-          FillCandidateInfo(track1, track2, false);
+          if (!FillCandidateInfo(track1, track2, false)) {
+            continue;
+          }
+          // fill TOF info outside to avoide responseBeta crash
+          auto& cand = l4Candidates.back();
+          if (track1.hasTOF()) {
+            float beta = responseBeta.GetBeta(track1);
+            beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+            cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+          }
+          if (track2.hasTOF()) {
+            float beta = responseBeta.GetBeta(track2);
+            beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+            cand.massTOFPr = track2.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+          }
+          fillHistograms(cand);
         }
       }
     }
@@ -286,15 +334,15 @@ struct lithium4analysis {
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                       l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                      l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates& collisions, TrackCandidates const& tracks)
   {
     l4Candidates.clear();
-
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
         continue;
@@ -302,17 +350,45 @@ struct lithium4analysis {
       if (!c2.sel8()) {
         continue;
       }
+      histos.fill(HIST("hNcontributor"), c1.numContrib());
+      histos.fill(HIST("hVtxZ"), c1.posZ());
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!selectionTrack(t1)) {
+
+        if (!selectionTrack(t1) || !selectionTrack(t2)) {
           continue;
         }
-        if (!selectionTrack(t2)) {
+
+        TrackCandidates::iterator he3Cand, protonCand;
+        bool passPID = false;
+        if (selectionPIDHe3(t1) && selectionPIDProton(t2)) {
+          he3Cand = t1, protonCand = t2;
+          passPID = true;
+        }
+        if (selectionPIDHe3(t2) && selectionPIDProton(t1)) {
+          he3Cand = t2, protonCand = t1;
+          passPID = true;
+        }
+        if (!passPID) {
           continue;
         }
-        if ((selectionPIDHe3(t1) && selectionPIDProton(t2)) || (selectionPIDHe3(t2) && selectionPIDProton(t1))) {
-          FillCandidateInfo(t1, t2, true);
+
+        if (!FillCandidateInfo(he3Cand, protonCand, true)) {
+          continue;
         }
+        // fill TOF info outside to avoide responseBeta crash
+        auto& cand = l4Candidates.back();
+        if (he3Cand.hasTOF()) {
+          float beta = responseBeta.GetBeta(he3Cand);
+          beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+          cand.massTOFHe3 = he3Cand.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+        }
+        if (protonCand.hasTOF()) {
+          float beta = responseBeta.GetBeta(protonCand);
+          beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+          cand.massTOFPr = protonCand.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+        }
+        fillHistograms(cand);
       }
     }
 
@@ -321,6 +397,7 @@ struct lithium4analysis {
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                       l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                      l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
@@ -337,7 +414,6 @@ struct lithium4analysis {
         continue;
       }
 
-      histos.fill(HIST("hCentrality"), 1);
       histos.fill(HIST("hNcontributor"), collision.numContrib());
       histos.fill(HIST("hVtxZ"), collision.posZ());
 
@@ -384,11 +460,27 @@ struct lithium4analysis {
                 continue;
               }
 
-              FillCandidateInfo(track1, track2, false);
-              auto& l4Candidate = l4Candidates.back();
-              l4Candidate.l4PtMC = mothertrack.pt();
-              l4Candidate.l4MassMC = std::sqrt(mothertrack.e() * mothertrack.e() - mothertrack.p() * mothertrack.p());
+              if (!FillCandidateInfo(track1, track2, false, true)) {
+                continue;
+              }
+
+              // fill TOF info outside to avoide responseBeta crash
+              auto& cand = l4Candidates.back();
+              if (track1.hasTOF()) {
+                float beta = responseBetaMC.GetBeta(track1);
+                beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+                cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+              }
+              if (track2.hasTOF()) {
+                float beta = responseBetaMC.GetBeta(track2);
+                beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+                cand.massTOFPr = track2.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+              }
+              cand.l4PtMC = mothertrack.pt();
+              double eLit = mctrackHe3.e() + mctrackPr.e();
+              cand.l4MassMC = std::sqrt(eLit * eLit - mothertrack.p() * mothertrack.p());
               filledMothers.push_back(mothertrack.globalIndex());
+              fillHistograms(cand);
             }
           }
         }
@@ -412,18 +504,21 @@ struct lithium4analysis {
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       auto daughtHe3 = false;
       auto daughtPr = false;
+      double eLit = 0;
       for (auto kCurrentDaughter : kDaughters) {
         if (std::abs(kCurrentDaughter.pdgCode()) == he3PDG) {
           daughtHe3 = true;
+          eLit += kCurrentDaughter.e();
         } else if (std::abs(kCurrentDaughter.pdgCode()) == protonPDG) {
           daughtPr = true;
+          eLit += kCurrentDaughter.e();
         }
       }
       if (daughtHe3 && daughtPr) {
         lithium4Candidate l4Candidate;
         int sign = mcParticle.pdgCode() > 0 ? 1 : -1;
         l4Candidate.l4PtMC = mcParticle.pt() * sign;
-        l4Candidate.l4MassMC = std::sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p());
+        l4Candidate.l4MassMC = std::sqrt(eLit * eLit - mcParticle.p() * mcParticle.p());
         l4Candidates.push_back(l4Candidate);
       }
     }
@@ -433,6 +528,7 @@ struct lithium4analysis {
                     l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                     l4Cand.he3DCAXY, l4Cand.he3DCAZ, l4Cand.protonDCAXY, l4Cand.protonDCAZ,
                     l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.nTPCClustersHe3, l4Cand.nSigmaHe3,
+                    l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
                     l4Cand.isBkgUS, l4Cand.isBkgEM,
                     l4Cand.l4PtMC, l4Cand.l4MassMC);
     }

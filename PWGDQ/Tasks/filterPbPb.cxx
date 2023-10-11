@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 #include <iostream>
+#include <fstream>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
@@ -30,27 +31,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-/*
-namespace o2::aod
-{
-namespace dppbpbfilter
-{
-DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint32_t);
-} // namespace dqpbpbfilter
-
-DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqpbpbfilter::IsDQBarrelSelected);
-} // namespace o2::aod
-*/
-namespace o2::aod
-{
-namespace dqppfilter
-{
-DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint32_t);
-} // namespace dqppfilter
-
-DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqppfilter::IsDQBarrelSelected);
-} // namespace o2::aod
-
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -59,144 +39,23 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, 
                                  aod::pidTOFFullEl, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
-using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                         aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                         aod::pidTOFFullEl, aod::pidTOFFullPi,
-                                         aod::pidTOFFullKa, aod::pidTOFFullPr,
-                                         aod::DQBarrelTrackCuts>;
 using MyMuons = aod::FwdTracks;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
-
-struct DQBarrelTrackSelection {
-  Produces<aod::DQBarrelTrackCuts> trackSel;
-  OutputObj<THashList> fOutputList{"output"};
-  HistogramManager* fHistMan;
-
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
-  Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
-
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
-
-  std::vector<AnalysisCompositeCut> fTrackCuts;
-  std::vector<TString> fCutHistNames;
-
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
-
-  void init(o2::framework::InitContext&)
-  {
-    TString cutNamesStr = fConfigCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        AnalysisCompositeCut* cut = dqcuts::GetCompositeCut(objArray->At(icut)->GetName());
-        if (cut) {
-          fTrackCuts.push_back(*cut);
-        } else {
-          LOGF(fatal, "Invalid barrel track cut provided: %s", objArray->At(icut)->GetName());
-        }
-      }
-    }
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-
-    if (fConfigQA) {
-      VarManager::SetDefaultVarNames();
-      fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-      fHistMan->SetUseDefaultVariableNames(kTRUE);
-      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-      TString cutNames = "TrackBarrel_BeforeCuts;";
-      for (auto& cut : fTrackCuts) {
-        cutNames += Form("TrackBarrel_%s;", cut.GetName());
-        fCutHistNames.push_back(Form("TrackBarrel_%s", cut.GetName()));
-      }
-
-      DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
-      fOutputList.setObject(fHistMan->GetMainHistogramList());
-
-      // CCDB configuration
-      if (fConfigComputeTPCpostCalib) {
-        fCCDB->setURL(fConfigCcdbUrl.value);
-        fCCDB->setCaching(true);
-        fCCDB->setLocalObjectValidityChecking();
-        // Not later than now objects
-        fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
-      }
-    }
-  }
-
-  // Templated function instantianed for all of the process functions
-  template <uint32_t TTrackFillMap, typename TTracks>
-  void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
-  {
-    auto bc = bcs.begin(); // check just the first bc to get the run number
-    if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
-      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
-      fCurrentRun = bc.runNumber();
-    }
-
-    uint32_t filterMap = uint32_t(0);
-    trackSel.reserve(tracksBarrel.size());
-
-    VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    for (auto& track : tracksBarrel) {
-      filterMap = uint32_t(0);
-      if (!track.has_collision()) {
-        trackSel(uint32_t(0));
-      } else {
-        VarManager::FillTrack<TTrackFillMap>(track);
-        if (fConfigQA) {
-          fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
-        }
-        int i = 0;
-        for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
-            filterMap |= (uint32_t(1) << i);
-            if (fConfigQA) {
-              fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
-            }
-          }
-        }
-        trackSel(filterMap);
-      }
-    } // end loop over tracks
-  }
-
-  void processSelection(aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
-  {
-    runTrackSelection<gkTrackFillMap>(bcs, tracks);
-  }
-  void processDummy(MyBarrelTracks&)
-  {
-    // do nothing
-  }
-
-  PROCESS_SWITCH(DQBarrelTrackSelection, processSelection, "Run barrel track selection", true);
-  PROCESS_SWITCH(DQBarrelTrackSelection, processDummy, "Dummy function", false);
-};
 
 struct DQFilterPbPbTask {
   Produces<aod::DQEventFilter> eventFilter;
   OutputObj<TH1I> fStats{"Statistics"};
+  OutputObj<TH1F> fIsEventDGOutcome{TH1F("Filter outcome", "Filter outcome", 14, -1.5, 6.5)};
 
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:2:5", "<track-cut>:<nmin>:<nmax>,[<track-cut>:<nmin>:<nmax>],..."};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
   Configurable<int> fConfigMinNBCs{"cfgMinNBCs", 7, "Minimum number of BCs to consider in BC range"};
+  Configurable<int> fConfigMinNPVCs{"cfgMinNPVCs", 2, "Minimum number of PV contributors"};
+  Configurable<int> fConfigMaxNPVCs{"cfgMaxNPVCs", 5, "Maximum number of PV contributors"};
+  Configurable<float> fConfigMaxFITTime{"cfgMaxFITTime", 4, "Maximum time in FIT"};
   Configurable<float> fConfigFV0AmpLimit{"cfgFV0AmpLimit", 0, "FV0 amplitude limit for event selection"};
   Configurable<float> fConfigFT0AAmpLimit{"cfgFT0AAmpLimit", 0, "FT0A amplitude limit for event selection"};
   Configurable<float> fConfigFT0CAmpLimit{"cfgFT0CAmpLimit", 0, "FT0C amplitude limit for event selection"};
@@ -209,7 +68,7 @@ struct DQFilterPbPbTask {
   Configurable<bool> fConfigVetoForward{"cfgVetoForward", true, "Whether to veto on forward tracks"};
   Configurable<bool> fConfigVetoBarrel{"cfgVetoBarrel", false, "Whether to veto on barrel tracks"};
 
-  Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
+  // Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
 
   int fNBarrelCuts;                   // number of barrel selections
   std::vector<int> fBarrelNminTracks; // minimal number of tracks in barrel
@@ -219,16 +78,19 @@ struct DQFilterPbPbTask {
   std::vector<std::string> FITVetoSidesOptions = {"both", "either", "A", "C", "neither"};
 
   // Helper function for selecting DG events
-  bool isEventDG(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
-                 aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, int FITSide, bool doVetoFwd, bool doVetoBarrel)
+  template <typename TEvent, typename TBCs, typename TTracks, typename TMuons>
+  int isEventDG(TEvent const& collision, TBCs const& bcs, TTracks const& tracks, TMuons const& muons,
+                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+                std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
+                bool useFV0, bool useFT0, bool useFDD, int FITSide, bool doVetoFwd, bool doVetoBarrel)
   {
+    fIsEventDGOutcome->Fill(0., 1.);
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
-      return 0;
+      return -1;
     }
     // foundBCId is stored in EvSels
-    auto bc = collision.foundBC_as<MyBCs>();
+    auto bc = collision.template foundBC_as<TBCs>();
 
     // Obtain slice of compatible BCs
     uint64_t mostProbableBC = bc.globalBC();
@@ -242,36 +104,49 @@ struct DQFilterPbPbTask {
     uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
     uint64_t maxBC = meanBC + (uint64_t)deltaBC;
 
-    // find slice of BCs table with BC in [minBC, maxBC]
-    int64_t minBCId = bc.globalIndex();
-    int64_t maxBCId = bc.globalIndex();
-
-    // lower limit
-    if (bc.globalBC() < minBC) {
-      while (bc != bcs.end() && bc.globalBC() < minBC) {
-        ++bc;
-        minBCId = bc.globalIndex();
+    int slicemin = 0;
+    int slicemax = 0;
+    // Check if there is overlap between acceptable and possible BCs
+    if (maxBC > bcs.iteratorAt(0).globalBC() && minBC < bcs.iteratorAt(bcs.size() - 1).globalBC()) {
+      // find slice of BCs table with BC in [minBC, maxBC]
+      int moveCount = 0;
+      int64_t minBCId = bc.globalIndex();
+      int64_t maxBCId = bc.globalIndex();
+      // lower limit
+      if (bc.globalBC() < minBC) {
+        while (bc != bcs.end() && bc.globalBC() < minBC) {
+          ++bc;
+          ++moveCount;
+          minBCId = bc.globalIndex();
+        }
+      } else {
+        while (bc.globalIndex() > 0 && bc.globalBC() >= minBC) {
+          minBCId = bc.globalIndex();
+          --bc;
+          --moveCount;
+        }
       }
-    } else {
-      while (bc.globalIndex() > 0 && bc.globalBC() >= minBC) {
-        minBCId = bc.globalIndex();
-        --bc;
+      // upper limit
+      if (bc.globalBC() < maxBC) {
+        while (bc != bcs.end() && bc.globalBC() <= maxBC) {
+          maxBCId = bc.globalIndex();
+          ++bc;
+          ++moveCount;
+        }
+      } else {
+        while (bc.globalIndex() > 0 && bc.globalBC() > maxBC) {
+          --bc;
+          --moveCount;
+          maxBCId = bc.globalIndex();
+        }
       }
+      // reset bc
+      bc.moveByIndex(-moveCount);
+      // Create BC slice
+      slicemin = minBCId;
+      slicemax = maxBCId - minBCId + 1;
     }
-    // upper limit
-    if (bc.globalBC() < maxBC) {
-      while (bc != bcs.end() && bc.globalBC() <= maxBC) {
-        maxBCId = bc.globalIndex();
-        ++bc;
-      }
-    } else {
-      while (bc.globalIndex() > 0 && bc.globalBC() > maxBC) {
-        --bc;
-        maxBCId = bc.globalIndex();
-      }
-    }
-    MyBCs bcrange{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-
+    MyBCs bcrange{{bcs.asArrowTable()->Slice(slicemin, slicemax)}, (uint16_t)slicemin};
     // DG condition: Check FIT activity in BC range
     bool isSideAClean = true;
     bool isSideCClean = true;
@@ -284,7 +159,8 @@ struct DQFilterPbPbTask {
           for (auto amp : fv0a.amplitude()) {
             FV0Amplitude += amp;
           }
-          if (FV0Amplitude > FITAmpLimits[0]) {
+          float FV0Time = std::abs(fv0a.time());
+          if (FV0Amplitude > FITAmpLimits[0] || FV0Time > maxFITTime) {
             isSideAClean = false;
           }
         }
@@ -300,10 +176,12 @@ struct DQFilterPbPbTask {
           for (auto amp : ft0.amplitudeC()) {
             FT0CAmplitude += amp;
           }
-          if (FT0AAmplitude > FITAmpLimits[1]) {
+          float FT0ATime = std::abs(ft0.timeA());
+          float FT0CTime = std::abs(ft0.timeC());
+          if (FT0AAmplitude > FITAmpLimits[1] || FT0ATime > maxFITTime) {
             isSideAClean = false;
           }
-          if (FT0CAmplitude > FITAmpLimits[2]) {
+          if (FT0CAmplitude > FITAmpLimits[2] || FT0CTime > maxFITTime) {
             isSideCClean = false;
           }
         }
@@ -319,32 +197,24 @@ struct DQFilterPbPbTask {
           for (auto amp : fdd.chargeC()) {
             FDDCAmplitude += amp;
           }
-          if (FDDAAmplitude > FITAmpLimits[3]) {
+          float FDDATime = std::abs(fdd.timeA());
+          float FDDCTime = std::abs(fdd.timeC());
+          if (FDDAAmplitude > FITAmpLimits[3] || FDDATime > maxFITTime) {
             isSideAClean = false;
           }
-          if (FDDCAmplitude > FITAmpLimits[4]) {
+          if (FDDCAmplitude > FITAmpLimits[4] || FDDCTime > maxFITTime) {
             isSideCClean = false;
           }
         }
       }
     }
 
-    // DG condition: Veto on activiy in either forward or barrel region. Save info on both cases
-    bool muonsEmpty = true;
-    if (muons.size() > 0) {
-      muonsEmpty = false;
-    }
-    bool barrelEmpty = true;
-    if (tracks.size() > 0) {
-      barrelEmpty = false;
-    }
-
-    // Compute decision
+    // Compute FIT decision
     bool FITDecision = 0;
     if (FITSide == 0) {
       FITDecision = isSideAClean && isSideCClean;
     } else if (FITSide == 1) {
-      FITDecision = isSideAClean || isSideCClean;
+      FITDecision = isSideAClean ^ isSideCClean;
     } else if (FITSide == 2) {
       FITDecision = isSideAClean;
     } else if (FITSide == 3) {
@@ -352,16 +222,39 @@ struct DQFilterPbPbTask {
     } else if (FITSide == 4) {
       FITDecision = 1;
     }
-    bool decision = 0;
-    if (doVetoFwd) {
-      decision = FITDecision && muonsEmpty;
-    } else if (doVetoBarrel) {
-      decision = FITDecision && barrelEmpty;
-    } else {
-      decision = FITDecision;
+    if (!FITDecision) {
+      return 1;
     }
 
-    return decision;
+    // Veto on activiy in either forward or barrel region
+    if (doVetoFwd) {
+      for (auto& muon : muons) {
+        // Only care about muons with good timing (MID)
+        if (muon.trackType() == 0 || muon.trackType() == 3) {
+          return 2;
+        }
+      }
+    }
+    if (doVetoBarrel) {
+      if (tracks.size() > 0) {
+        return 3;
+      }
+    }
+
+    // No global tracks which are not vtx tracks
+    for (auto& track : tracks) {
+      if (track.isGlobalTrack() && !track.isPVContributor()) {
+        return 4;
+      }
+    }
+
+    // Number of primary vertex contributors
+    if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
+      return 5;
+    }
+
+    // If we made it here, the event passed
+    return 0;
   }
 
   void DefineCuts()
@@ -409,39 +302,29 @@ struct DQFilterPbPbTask {
   }
 
   template <uint32_t TEventFillMap>
-  void runFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
+  void runFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracks const& tracks, MyMuons const& muons,
                      aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     fStats->Fill(-2.0);
 
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
-    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, FITVetoSides, fConfigVetoForward, fConfigVetoBarrel);
-    fStats->Fill(-1.0, isDG);
+    int filterOutcome = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds,
+                                  FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigMinNPVCs, fConfigMaxNPVCs, fConfigMaxFITTime,
+                                  fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, FITVetoSides, fConfigVetoForward, fConfigVetoBarrel);
+    fIsEventDGOutcome->Fill(filterOutcome + 1, 1);
 
-    std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
-    // Count the number of barrel tracks fulfilling each cut
-    for (auto track : tracks) {
-      for (int i = 0; i < fNBarrelCuts; ++i) {
-        if (track.isDQBarrelSelected() & (uint32_t(1) << i)) {
-          objCountersBarrel[i] += 1;
-        }
-      }
-    }
+    // Don't need info on filter outcome anymore; reduce to a boolean
+    bool isDG = !filterOutcome;
+    fStats->Fill(-1.0, isDG);
 
     // Compute event filter
     uint64_t filter = 0;
     filter |= isDG;
-    for (int i = 0; i < fNBarrelCuts; i++) {
-      if (objCountersBarrel[i] >= fBarrelNminTracks[i] && objCountersBarrel[i] <= fBarrelNmaxTracks[i]) {
-        filter |= (uint64_t(1) << (i + 1));
-        fStats->Fill(static_cast<float>(i));
-      }
-    }
     eventFilter(filter);
   }
 
   void processFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs,
-                         soa::Filtered<MyBarrelTracksSelected> const& tracks, MyMuons const& muons,
+                         MyBarrelTracks const& tracks, MyMuons const& muons,
                          aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     runFilterPbPb<gkEventFillMap>(collision, bcs, tracks, muons, ft0s, fv0as, fdds);
@@ -459,7 +342,6 @@ struct DQFilterPbPbTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DQBarrelTrackSelection>(cfgc),
     adaptAnalysisTask<DQFilterPbPbTask>(cfgc)};
 }
 

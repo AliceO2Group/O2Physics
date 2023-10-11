@@ -130,7 +130,7 @@ struct JetSubstructureHFTask {
     jetSubstructurehfTable(zg, rg, nsd);
   }
 
-  void processDummy(aod::Tracks const& track)
+  void processDummy(aod::Tracks const& tracks)
   {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);

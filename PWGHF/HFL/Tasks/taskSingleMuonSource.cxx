@@ -14,7 +14,6 @@
 // \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
 #include <TDatabasePDG.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -145,7 +144,7 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       // compute the flavor of constituent quark
-      const int flv(pdgRem / TMath::Power(10, static_cast<int>(TMath::Log10(pdgRem))));
+      const int flv(pdgRem / std::pow(10, static_cast<int>(std::log10(pdgRem))));
       if (flv > 6) {
         // no more than 6 flavors
         continue;
