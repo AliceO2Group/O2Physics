@@ -105,19 +105,18 @@ struct jetTrackCollisionQa {
     mHistManager.add("leadTrackPhi", "leading selected track #phi", HistType::kTH1F, {phiAxis});
     mHistManager.add("leadTrackEta", "leading selected track #eta", HistType::kTH1F, {etaAxis});
 
-    //Some more Track QA histos to test the implemented track cuts
+    // Some more Track QA histos to test the implemented track cuts
     mHistManager.add("TPC/nClsCrossedRows", "nCls crossed rows TPC", HistType::kTH1F, {{165, -0.5, 164.5}});
     mHistManager.add("TPC/chi2PerCluster", "chi2 per cluster TPC", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TPC/crossedRowsOverFindableCls", "ratio of crossed rows over findable cluster TPC", HistType::kTH1F, {{120,0.0,1.2}});
+    mHistManager.add("TPC/crossedRowsOverFindableCls", "ratio of crossed rows over findable cluster TPC", HistType::kTH1F, {{120, 0.0, 1.2}});
     mHistManager.add("TPC/NClsFindable", "number of findable TPC clusters;# findable clusters TPC", HistType::kTH1F, {{165, -0.5, 164.5}});
     mHistManager.add("TPC/NClsFound", "number of found TPC clusters;# clusters TPC", HistType::kTH1F, {{165, -0.5, 164.5}});
     mHistManager.add("TPC/NClsShared", "number of shared TPC clusters;# shared clusters TPC", HistType::kTH1F, {{165, -0.5, 164.5}});
     mHistManager.add("TPC/FractionSharedCls", "fraction of shared TPC clusters;# fraction shared clusters TPC", HistType::kTH1F, {{100, 0., 1.}});
-    
-    mHistManager.add("ITS/chi2PerCluster", "chi2 per ITS cluster", HistType::kTH1F, {{100, 0, 40}});
-    mHistManager.add("ITS/itsHits", "hitmap ITS;#it{p}_{T} [GeV/c];layer ITS", HistType::kTH1F, {{7, -0.5, 6.5}});      
-    mHistManager.add("ITS/itsNCls", "number of found ITS clusters;# clusters ITS", HistType::kTH1F, {{8, -0.5, 7.5}});
 
+    mHistManager.add("ITS/chi2PerCluster", "chi2 per ITS cluster", HistType::kTH1F, {{100, 0, 40}});
+    mHistManager.add("ITS/itsHits", "hitmap ITS;#it{p}_{T} [GeV/c];layer ITS", HistType::kTH1F, {{7, -0.5, 6.5}});
+    mHistManager.add("ITS/itsNCls", "number of found ITS clusters;# clusters ITS", HistType::kTH1F, {{8, -0.5, 7.5}});
   }
 
   template <typename validationTracks>
@@ -126,7 +125,7 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("selectedTrackPt"), track.pt());
     mHistManager.fill(HIST("selectedTrackPhi"), track.phi());
     mHistManager.fill(HIST("selectedTrackEta"), track.eta());
-    //START OF FILLING TRACK CUTS HISTOS
+    // START OF FILLING TRACK CUTS HISTOS
     mHistManager.fill(HIST("TPC/chi2PerCluster"), track.tpcChi2NCl());
     mHistManager.fill(HIST("TPC/nClsCrossedRows"), track.tpcNClsCrossedRows());
     mHistManager.fill(HIST("TPC/crossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
@@ -139,7 +138,7 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("ITS/itsNCls"), track.itsNCls());
     for (unsigned int i = 0; i < 7; i++) {
       if (track.itsClusterMap() & (1 << i)) {
-        mHistManager.fill(HIST("ITS/itsHits"), i);        
+        mHistManager.fill(HIST("ITS/itsHits"), i);
       }
     }
   } // end of fillTrackQA template
