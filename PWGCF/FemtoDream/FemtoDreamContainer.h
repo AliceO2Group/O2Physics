@@ -86,7 +86,7 @@ class FemtoDreamContainer
     if (use3dplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
     }
-    if (extendedplots){
+    if (extendedplots) {
       mHistogramRegistry->add((folderName + "/mTPtPart1PtPart2").c_str(), "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 1 (GeV/#it{c})", kTH3F, {mTAxis3D, {375, 0., 7.5}, {375, 0., 7.5}});
     }
   }
@@ -179,7 +179,7 @@ class FemtoDreamContainer
     if (use3dplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult);
     }
-    if (extendedplots){
+    if (extendedplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/mTPtPart1PtPart2"), mT, part1.pt(), part2.pt());
     }
   }
@@ -219,8 +219,8 @@ class FemtoDreamContainer
     if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
       femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
     }
-    if (mHighkstarCut > 0){
-      if (femtoObs > mHighkstarCut){
+    if (mHighkstarCut > 0) {
+      if (femtoObs > mHighkstarCut) {
         return;
       }
     }
