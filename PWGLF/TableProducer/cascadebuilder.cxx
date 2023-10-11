@@ -1054,6 +1054,13 @@ struct cascadeBuilder {
       LOG(debug) << "Failed to construct cascade V0 from daughter tracks: " << e.what();
       return false;
     }
+
+    // mass window cut on lambda before mass constraint
+    float massLam, sigLam;
+    KFV0.GetMass(massLam, sigLam);
+    if (TMath::Abs(MLambda - 1.116) > lambdaMassWindow)
+      return false;
+    
     if (kfUseV0MassConstraint) {
       KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
     }
