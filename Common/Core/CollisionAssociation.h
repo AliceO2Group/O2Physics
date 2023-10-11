@@ -133,6 +133,10 @@ class CollisionAssociation
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
+              if(!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+                globalBC.push_back(-1);
+                break;
+              }
               globalBC.push_back(ambTrack.bc().begin().globalBC());
               break;
             }
@@ -163,6 +167,9 @@ class CollisionAssociation
         }
 
         float trackTime = track.trackTime();
+        if (globalBC[track.filteredIndex()] < 0 ) {
+          continue;
+        }
         const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
         if (std::abs(bcOffsetWindow) > bOffsetMax) {
           continue;
