@@ -402,6 +402,12 @@ class VarManager : public TObject
     kDeltaPhiSym,
     kNCorrelationVariables,
 
+    // DQ-HF correlation variables
+    kMassCharmHadron,
+    kPtCharmHadron,
+    kRapCharmHadron,
+    kPhiCharmHadron,
+
     // Index used to scan bit maps
     kBitMapIndex,
 
@@ -418,6 +424,12 @@ class VarManager : public TObject
     kTPCProtonMean,
     kTPCProtonSigma,
     kNCalibObjects
+  };
+
+  enum DileptonCharmHadronTypes {
+    kJPsiToMuMu = 0,
+    kD0ToPiK,
+    kD0barToKPi
   };
 
   static TString fgVariableNames[kNVars]; // variable names
@@ -555,6 +567,10 @@ class VarManager : public TObject
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T>
   static void FillHadron(T const& hadron, float* values = nullptr, float hadronMass = 0.0f);
+  template <int partType, typename Cand, typename H>
+  static void FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values = nullptr);
+  template <int partTypeCharmHad, typename DQ, typename HF, typename H>
+  static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values = nullptr);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -2132,6 +2148,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
 }
+
 template <typename T>
 void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
 {
@@ -2146,4 +2163,39 @@ void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
   values[kPhi] = hadron.phi();
   values[kRap] = vhadron.Rapidity();
 }
+
+template <int partType, typename Cand, typename H>
+void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr (partType == kJPsiToMuMu) {
+    values[kMass] = candidate.mass();
+    values[kPt] = candidate.pt();
+    values[kPhi] = candidate.phi();
+    values[kRap] = candidate.rap();
+  }
+  if constexpr (partType == kD0ToPiK) {
+    values[kMassCharmHadron] = hfHelper.invMassD0ToPiK(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yD0(candidate);
+  }
+  if constexpr (partType == kD0barToKPi) {
+    values[kMassCharmHadron] = hfHelper.invMassD0barToKPi(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yD0(candidate);
+  }
+}
+
+template <int partTypeCharmHad, typename DQ, typename HF, typename H>
+void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values)
+{
+  FillSingleDileptonCharmHadron<kJPsiToMuMu>(dilepton, hfHelper, values);
+  FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, values);
+}
+
 #endif // PWGDQ_CORE_VARMANAGER_H_
