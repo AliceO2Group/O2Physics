@@ -38,16 +38,10 @@ void DalitzEECut::SetMeeRange(float min, float max)
   mMaxMee = max;
   LOG(info) << "DalitzEE selection, set mee range: " << mMinMee << " - " << mMaxMee;
 }
-void DalitzEECut::SetPhivPairRange(float min, float max)
+void DalitzEECut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
 {
-  mMinPhivPair = min;
-  mMaxPhivPair = max;
-  LOG(info) << "DalitzEE selection, set phiv pair range: " << mMinPhivPair << " - " << mMaxPhivPair;
-}
-void DalitzEECut::SetMinMeePhivPairDep(std::function<float(float)> phivDepCut)
-{
-  mMinMeePhivPairDep = phivDepCut;
-  LOG(info) << "DalitzEE Cut, set min mee phiv pair dep: " << mMinMeePhivPairDep(2.8);
+  mMaxPhivPairMeeDep = meeDepCut;
+  LOG(info) << "DalitzEE Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
 }
 void DalitzEECut::SetTrackPtRange(float minPt, float maxPt)
 {
@@ -122,6 +116,20 @@ void DalitzEECut::SetMinPinTOF(float min)
 {
   mMinPinTOF = min;
   LOG(info) << "DalitzEE Cut, set min pin for TOF: " << mMinPinTOF;
+}
+
+void DalitzEECut::SetMuonExclusionTPC(bool flag)
+{
+  mMuonExclusionTPC = flag;
+  LOG(info) << "DalitzEE Cut, set flag for muon exclusion in TPC: " << mMuonExclusionTPC;
+}
+
+void DalitzEECut::SetTOFbetaRange(bool flag, float min, float max)
+{
+  mApplyTOFbeta = flag;
+  mMinTOFbeta = min;
+  mMaxTOFbeta = max;
+  LOG(info) << "DalitzEE selection, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
 }
 
 void DalitzEECut::SetTPCNsigmaElRange(float min, float max)
