@@ -52,23 +52,24 @@ struct lambdaAnalysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
 
   // TPC TOF Protons
-  Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.2, "max pT for tpc protons"};
+  Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.0, "max pT for tpc protons"};
   Configurable<float> tpcNSigmaProton{"tpcNSigmaProton", 3, "nsigma tpc for Proton when Tof signal is present"};
-  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 0.57, 0.68, 0.80, 0.87, 1.0}, "pT dependent TPC cuts protons"};
-  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {5.5, 3.5, 2.5, 2.0, 1.5, 1.0}, "TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 0.7, 0.8, 1.0}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {5., 3.5, 2.5, 1.5}, "TPC cuts protons"};
   Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {36.}, "pT dependent TOF cuts protons"};
-  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDCut", {4}, "TOF cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
 
   // TPC TOF Kaons
-  Configurable<float> tpcKaonMaxPt{"tpcKaonMaxPt", 0.6, "max pT for tpc kaons"};
+  Configurable<float> tpcKaonMaxPt{"tpcKaonMaxPt", 0.5, "max pT for tpc kaons"};
   Configurable<float> tpcNSigmaKaon{"tpcNSigmaKaon", 3, "nsigma tpc for Kaon when Tof signal is present"};
-  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.225, 0.267, 0.35, 0.450, 0.50}, "pT dependent TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {6, 5, 3, 2.5, 2.}, "TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.2, 0.3, 0.4, 0.50}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {5, 3.5, 2., 1.5}, "TPC cuts kaons"};
   Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {36.}, "pT dependent TOF cuts kaons"};
-  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {4}, "TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
 
   // Event Mixing.
-  Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
+  Configurable<bool> doSphMix{"doSphMix", true, "Include Sph Bins to be mixed"};
+  Configurable<int> nMix{"nMix", 10, "Number of Events to be mixed"};
   ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis cfgSphBins{"cfgSphBins", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f}, "Mixing bins - spherocity"};
@@ -80,8 +81,7 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
-    const AxisSpec axisMult(100000, 0, 100000, "FT0M Mult");
-    const AxisSpec axisSp(100, 0., 1., "S_{0}");
+    const AxisSpec axisSp(1000, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
@@ -89,8 +89,8 @@ struct lambdaAnalysis {
     const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
     const AxisSpec axisDCAxy(240, -0.12, 0.12, {"DCA_{xy} (cm)"});
     const AxisSpec axisTPCNCls(200, 0, 200, {"TPCNCls"});
-    const AxisSpec axisTPCNsigma(140, -7, 7, {"n#sigma^{TPC}"});
-    const AxisSpec axisTOFNsigma(140, -7, 7, {"n#sigma^{TOF}"});
+    const AxisSpec axisTPCNsigma(140, -10, 10, {"n#sigma^{TPC}"});
+    const AxisSpec axisTOFNsigma(140, -10, 10, {"n#sigma^{TOF}"});
     const AxisSpec axisInvM(nBinsInvM, 1.4, 3.4, {"M_{inv} (GeV/c^{2})"});
 
     // Create Histograms.
@@ -98,7 +98,6 @@ struct lambdaAnalysis {
     histos.add("Event/hCent", "FT0M (%)", kTH1F, {axisCent});
     histos.add("Event/hSph", "Event Spherocity", kTH1F, {axisSp});
     histos.add("Event/hSpCent", "Spherocity vs FT0M(%)", kTH2F, {axisCent, axisSp});
-    histos.add("Event/hSpMult", "Spherocity vs FT0M Mult", kTH2F, {axisMult, axisSp});
 
     // QA Before
     histos.add("QAbefore/Proton/hTPCNsigma", "n#sigma^{TPC} Protons", kTH2F, {axisPtQA, axisTPCNsigma});
@@ -271,16 +270,16 @@ struct lambdaAnalysis {
 
       // Fill QA before track selection.
       if (!mix & !mc) {
-        if (std::abs(trkPr.tpcNSigmaPr()) < 6) {
+        if (std::abs(trkPr.tpcNSigmaPr()) < cfgPIDprecut) {
           histos.fill(HIST("QAbefore/Proton/hTPCNsigma"), trkPr.pt(), trkPr.tpcNSigmaPr());
-          if (std::abs(trkPr.tofNSigmaPr()) < 6) {
+          if (std::abs(trkPr.tofNSigmaPr()) < cfgPIDprecut) {
             histos.fill(HIST("QAbefore/Proton/hTOFNsigma"), trkPr.pt(), trkPr.tofNSigmaPr());
             histos.fill(HIST("QAbefore/Proton/hTpcTofNsigma"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
           }
         }
-        if (std::abs(trkKa.tpcNSigmaKa()) < 6) {
+        if (std::abs(trkKa.tpcNSigmaKa()) < cfgPIDprecut) {
           histos.fill(HIST("QAbefore/Kaon/hTPCNsigma"), trkKa.pt(), trkKa.tpcNSigmaKa());
-          if (std::abs(trkKa.tofNSigmaKa()) < 6) {
+          if (std::abs(trkKa.tofNSigmaKa()) < cfgPIDprecut) {
             histos.fill(HIST("QAbefore/Kaon/hTOFNsigma"), trkKa.pt(), trkKa.tofNSigmaKa());
             histos.fill(HIST("QAbefore/Kaon/hTpcTofNsigma"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
           }
@@ -395,7 +394,6 @@ struct lambdaAnalysis {
     histos.fill(HIST("Event/hCent"), collision.multV0M());
     histos.fill(HIST("Event/hSph"), collision.spherocity());
     histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
-    histos.fill(HIST("Event/hSpMult"), collision.multFT0(), collision.spherocity());
 
     fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
@@ -443,17 +441,28 @@ struct lambdaAnalysis {
 
   // Processing Event Mixing
   SliceCache cache;
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
-  BinningType binningPositions{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
+
+  using BinningType1 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
+  BinningType1 binningPositions1{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
+
+  using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  BinningType2 binningPositions2{{cfgVtxBins, cfgMultBins}, true};
 
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<resoCols, resoTracks, BinningType> pairs{binningPositions, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    for (auto& [c1, t1, c2, t2] : pairs) {
-      fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
+    if (doSphMix) {
+      SameKindPair<resoCols, resoTracks, BinningType1> pairs{binningPositions1, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+      for (auto& [c1, t1, c2, t2] : pairs) {
+        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
+      }
+    } else {
+      SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+      for (auto& [c1, t1, c2, t2] : pairs) {
+        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
+      }
     }
   }
 
