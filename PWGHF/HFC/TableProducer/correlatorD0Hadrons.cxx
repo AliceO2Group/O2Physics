@@ -199,7 +199,7 @@ struct HfCorrelatorD0Hadrons {
                        (aod::track::dcaZ > static_cast<float>(-dcaZTrackMax)) && (aod::track::dcaZ < static_cast<float>(dcaZTrackMax));
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == pdg::Code::kD0 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(pdg::Code::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   HistogramRegistry registry{
     "registry",
