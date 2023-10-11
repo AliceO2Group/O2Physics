@@ -36,21 +36,16 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace constants::math;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
+using namespace o2::constants::math;
 
 struct HfTaskFlow {
-  SliceCache cache;
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
-
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
@@ -67,21 +62,25 @@ struct HfTaskFlow {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
+  HfHelper hfHelper;
+  SliceCache cache;
+
+  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
+  using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-
   //  Charged track filters
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackAssocMax) &&
                        (aod::track::pt > ptTrackAssocMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
-
   //  HF candidate filter
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  using hfCandidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   //  configurables for containers
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
@@ -109,7 +108,7 @@ struct HfTaskFlow {
   //  =========================
   //      init()
   //  =========================
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     //  EVENT HISTOGRAMS
     constexpr int kNBinsEvents = 3;
@@ -301,10 +300,10 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
-    if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+    if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
     }
-    if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+    if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
       return false;
     }
     return true;
@@ -320,10 +319,10 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
       }
 
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -334,8 +333,8 @@ struct HfTaskFlow {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEtaCand"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
@@ -365,13 +364,13 @@ struct HfTaskFlow {
       //  Note: this is needed only in case of HF-hadron correlations
       bool fillingHFcontainer = false;
       double invmass = 0;
-      if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+      if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
         //  TODO: Check how to put this into a Filter
         if (!isAcceptedCandidate(track1)) {
           continue;
         }
         fillingHFcontainer = true;
-        invmass = invMassD0ToPiK(track1);
+        invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
       //  fill single-track distributions
@@ -393,7 +392,7 @@ struct HfTaskFlow {
 
         //  in case of HF-h correlations, remove candidate daughters from the pool of associated hadrons
         //  with which the candidate is being correlated
-        if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+        if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
           if ((track1.prong0Id() == track2.globalIndex()) || (track1.prong1Id() == track2.globalIndex())) {
             continue;
           }
@@ -427,13 +426,13 @@ struct HfTaskFlow {
   }
 
   template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(aodCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  void mixCollisions(MyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
 
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -450,7 +449,7 @@ struct HfTaskFlow {
       const auto multiplicity = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
       const auto vz = collision1.posZ();
 
-      if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+      if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
         registry.fill(HIST("hEventCountHFMixing"), bin);
         fillHFMixingQA(multiplicity, vz, tracks1);
       } else {
@@ -466,8 +465,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-h case
   // =====================================
-  void processSameTpcTpcHH(aodCollisions::iterator const& collision,
-                           aodTracks const& tracks)
+  void processSameTpcTpcHH(MyCollisions::iterator const& collision,
+                           MyTracks const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -495,9 +494,9 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: HF-h case
   // =====================================
-  void processSameHfHadrons(aodCollisions::iterator const& collision,
-                            aodTracks const& tracks,
-                            hfCandidates const& candidates)
+  void processSameHfHadrons(MyCollisions::iterator const& collision,
+                            MyTracks const& tracks,
+                            HfCandidatesSel const& candidates)
   {
     if (!(isCollisionSelected(collision, false))) {
       return;
@@ -514,8 +513,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-MFT case
   // =====================================
-  void processSameTpcMftHH(aodCollisions::iterator const& collision,
-                           aodTracks const& tracks,
+  void processSameTpcMftHH(MyCollisions::iterator const& collision,
+                           MyTracks const& tracks,
                            aod::MFTTracks const& mfttracks)
   {
     if (!(isCollisionSelected(collision, false))) {
@@ -534,11 +533,11 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTpcTpcHH(aodCollisions const& collisions,
-                            aodTracks const& tracks)
+  void processMixedTpcTpcHH(MyCollisions const& collisions,
+                            MyTracks const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
@@ -551,12 +550,12 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedHfHadrons(aodCollisions const& collisions,
-                             aodTracks const& tracks,
-                             hfCandidates const& candidates)
+  void processMixedHfHadrons(MyCollisions const& collisions,
+                             MyTracks const& tracks,
+                             HfCandidatesSel const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
@@ -569,6 +568,5 @@ struct HfTaskFlow {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskFlow>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskFlow>(cfgc)};
 }

@@ -93,6 +93,9 @@ struct JetFinderTask {
     jetFinder.jetPtMax = jetPtMax;
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
+    if (jetEtaMin < -98.0) {
+      jetFinder.jetEtaDefault = true;
+    }
     jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
@@ -105,7 +108,7 @@ struct JetFinderTask {
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
   Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax && aod::track::phi >= trackPhiMin && aod::track::phi <= trackPhiMax); // do we need eta cut both here and in globalselection?
-  Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax);
+  Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax && aod::mcparticle::eta > trackEtaMin && aod::mcparticle::eta < trackEtaMax);
   Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax && aod::emcalcluster::energy >= clusterEnergyMin && aod::emcalcluster::time > clusterTimeMin && aod::emcalcluster::time < clusterTimeMax && (clusterRejectExotics && aod::emcalcluster::isExotic != true));
 
   void processDummy(aod::Collisions const& collision)
@@ -153,26 +156,26 @@ struct JetFinderTask {
   }
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data jet finding for full and neutral jets", false);
 
-  void processParticleLevelChargedJets(aod::McCollision const& collision, aod::McParticles const& particles)
+  void processParticleLevelChargedJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 1, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
 
-  void processParticleLevelNeutralJets(aod::McCollision const& collision, aod::McParticles const& particles)
+  void processParticleLevelNeutralJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 2, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
 
-  void processParticleLevelFullJets(aod::McCollision const& collision, aod::McParticles const& particles)
+  void processParticleLevelFullJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, particleSelection, trackEtaMin, trackEtaMax, 0, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdg->Instance());
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 

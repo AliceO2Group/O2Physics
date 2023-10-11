@@ -94,7 +94,7 @@ struct LfTreeCreatorNuclei {
                        (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||
                        (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFV0As>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
                                     aod::pidTPCLfFullPi, aod::pidTOFFullPi,
@@ -139,7 +139,8 @@ struct LfTreeCreatorNuclei {
                 collision.posX(),
                 collision.posY(),
                 collision.posZ(),
-                collision.multFV0M(),
+                collision.centFV0A(),
+                collision.centFT0M(),
                 collision.sel8(),
                 collision.bc().runNumber());
 

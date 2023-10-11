@@ -21,16 +21,16 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 /// Ξc± analysis task
 
@@ -43,10 +43,13 @@ struct HfTaskXic {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
+  HfHelper hfHelper;
+
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-  using TracksWPid = soa::Join<aod::Tracks,
+  using TracksWPid = soa::Join<aod::TracksWDca,
                                aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -72,9 +75,8 @@ struct HfTaskXic {
 
     }};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
-
     AxisSpec axisPPid = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     AxisSpec axisNSigmaPr = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
     AxisSpec axisNSigmaPi = {100, -6.f, 6.f, "n#it{#sigma}_{#pi}"};
@@ -185,7 +187,7 @@ struct HfTaskXic {
   }
 
   void process(aod::Collision const& collision,
-               soa::Join<TracksWPid, aod::TracksDCA> const& tracks,
+               TracksWPid const& tracks,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates)
   {
     int nTracks = 0;
@@ -205,21 +207,21 @@ struct HfTaskXic {
     registry.fill(HIST("Data/hMultiplicity"), nTracks); // filling the histo for multiplicity
     for (const auto& candidate : candidates) {
       auto ptCandidate = candidate.pt();
-      if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       }
 
-      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
       if (candidate.isSelXicToPKPi() >= selectionFlagXic) { // pKpi
-        registry.fill(HIST("Data/hMassVsPt"), invMassXicToPKPi(candidate), ptCandidate);
-        registry.fill(HIST("Data/hMass"), invMassXicToPKPi(candidate));
+        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassXicToPKPi(candidate), ptCandidate);
+        registry.fill(HIST("Data/hMass"), hfHelper.invMassXicToPKPi(candidate));
       }
       if (candidate.isSelXicToPiKP() >= selectionFlagXic) { // piKp
-        registry.fill(HIST("Data/hMassVsPt"), invMassXicToPiKP(candidate), ptCandidate);
-        registry.fill(HIST("Data/hMass"), invMassXicToPiKP(candidate));
+        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassXicToPiKP(candidate), ptCandidate);
+        registry.fill(HIST("Data/hMass"), hfHelper.invMassXicToPiKP(candidate));
       }
       registry.fill(HIST("Data/hPt"), ptCandidate);
       registry.fill(HIST("Data/hEta"), candidate.eta());
@@ -234,7 +236,7 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hd0Prong0"), candidate.impactParameter0(), ptCandidate);
       registry.fill(HIST("Data/hd0Prong1"), candidate.impactParameter1(), ptCandidate);
       registry.fill(HIST("Data/hd0Prong2"), candidate.impactParameter2(), ptCandidate);
-      registry.fill(HIST("Data/hCt"), ctXic(candidate), ptCandidate);
+      registry.fill(HIST("Data/hCt"), hfHelper.ctXic(candidate), ptCandidate);
       registry.fill(HIST("Data/hCPA"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("Data/hCPAXY"), candidate.cpaXY(), ptCandidate);
       registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), ptCandidate);
@@ -283,16 +285,16 @@ struct HfTaskXic {
   }
   // Fill MC histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles)
   {
 
     // MC rec.
     for (const auto& candidate : candidates) {
       // Selected Xic
-      if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       } // rapidity selection
-      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -301,13 +303,13 @@ struct HfTaskXic {
       auto ptCandidate = candidate.pt();
 
       if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
-        massXicToPKPi = invMassXicToPKPi(candidate);
+        massXicToPKPi = hfHelper.invMassXicToPKPi(candidate);
       }
       if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
-        massXicToPiKP = invMassXicToPiKP(candidate); // mass conjugate
+        massXicToPiKP = hfHelper.invMassXicToPiKP(candidate); // mass conjugate
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
         // Signal
         registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), ptCandidate);     // rec. level pT
 
@@ -328,7 +330,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong0RecSig"), candidate.impactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong1RecSig"), candidate.impactParameter1(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hd0Prong2RecSig"), candidate.impactParameter2(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), ctXic(candidate), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), hfHelper.ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPAXYRecSig"), candidate.cpaXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta(), ptCandidate);
@@ -356,7 +358,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hd0Prong0RecBg"), candidate.impactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hd0Prong1RecBg"), candidate.impactParameter1(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hd0Prong2RecBg"), candidate.impactParameter2(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), ctXic(candidate), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), hfHelper.ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPARecBg"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPAXYRecBg"), candidate.cpaXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hEtaRecBg"), candidate.eta(), ptCandidate);
@@ -366,9 +368,9 @@ struct HfTaskXic {
       }
     }
     // MC gen.
-    for (const auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+    for (const auto& particle : mcParticles) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCPlus);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -380,7 +382,7 @@ struct HfTaskXic {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
           counter++;
         }
 
@@ -397,7 +399,6 @@ struct HfTaskXic {
       }
     }
   }
-
   PROCESS_SWITCH(HfTaskXic, processMc, "Process MC", false);
 };
 

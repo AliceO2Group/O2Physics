@@ -28,17 +28,27 @@ namespace o2::aod
 namespace ep
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);           //! Centrality percentile.
-DECLARE_SOA_COLUMN(EvtPlFT0A, evtPlFT0A, float); //! Event plane for FT0A.
-DECLARE_SOA_COLUMN(EvtPlFT0C, evtPlFT0C, float); //! Event plane for FT0C.
-DECLARE_SOA_COLUMN(EvtPlFV0A, evtPlFV0A, float); //! Event plane for FV0A.
-DECLARE_SOA_COLUMN(EvtPlBPos, evtPlBPos, float); //! Event plane for the central barrel, positive pseudorapidity.
-DECLARE_SOA_COLUMN(EvtPlBNeg, evtPlBNeg, float); //! Event plane for the central barrel, negative pseudorapidity.
+DECLARE_SOA_COLUMN(EvtPlUncor, evtPlUncor, float);
+DECLARE_SOA_COLUMN(EvtPlRectr, evtPlRectr, float);
+DECLARE_SOA_COLUMN(EvtPlTwist, evtPlTwist, float);
+DECLARE_SOA_COLUMN(EvtPlFinal, evtPlFinal, float);
+
+DECLARE_SOA_COLUMN(EvtPlBPosUncor, evtPlBPosUncor, float);
+DECLARE_SOA_COLUMN(EvtPlBPosRectr, evtPlBPosRectr, float);
+DECLARE_SOA_COLUMN(EvtPlBPosTwist, evtPlBPosTwist, float);
+DECLARE_SOA_COLUMN(EvtPlBPosFinal, evtPlBPosFinal, float);
+
+DECLARE_SOA_COLUMN(EvtPlBNegUncor, evtPlBNegUncor, float);
+DECLARE_SOA_COLUMN(EvtPlBNegRectr, evtPlBNegRectr, float);
+DECLARE_SOA_COLUMN(EvtPlBNegTwist, evtPlBNegTwist, float);
+DECLARE_SOA_COLUMN(EvtPlBNegFinal, evtPlBNegFinal, float);
 
 } // namespace ep
 DECLARE_SOA_TABLE(EvtPlanes, "AOD", "EVTPLANES", //! Table with all event planes.
                   ep::Cent,
-                  ep::EvtPlFT0A, ep::EvtPlFT0C, ep::EvtPlFV0A,
-                  ep::EvtPlBPos, ep::EvtPlBNeg);
+                  ep::EvtPlUncor, ep::EvtPlRectr, ep::EvtPlTwist, ep::EvtPlFinal,
+                  ep::EvtPlBPosUncor, ep::EvtPlBPosRectr, ep::EvtPlBPosTwist, ep::EvtPlBPosFinal,
+                  ep::EvtPlBNegUncor, ep::EvtPlBNegRectr, ep::EvtPlBNegTwist, ep::EvtPlBNegFinal);
 using EvtPlane = EvtPlanes::iterator;
 } // namespace o2::aod
 

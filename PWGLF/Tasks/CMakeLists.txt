@@ -116,6 +116,11 @@ o2physics_add_dpl_workflow(nuclei-hist
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(qa-hist
+                    SOURCES QAHistTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascpostprocessing
                     SOURCES cascpostprocessing.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -190,3 +195,18 @@ o2physics_add_dpl_workflow(hypertriton3bodymcqa
                    SOURCES hypertriton3bodyMCQA.cxx
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(vzero-cascade-absorption
+                    SOURCES vzero_cascade_absorption.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(delta-analysis
+                    SOURCES deltaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+ o2physics_add_dpl_workflow(rhoanalysis
+                    SOURCES rhoanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

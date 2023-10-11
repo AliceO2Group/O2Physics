@@ -18,12 +18,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
 
 namespace o2::aod
 {
@@ -188,6 +188,8 @@ struct HfTreeCreatorXicToPKPi {
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
+  HfHelper hfHelper;
+
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   void init(InitContext const&)
@@ -195,7 +197,7 @@ struct HfTreeCreatorXicToPKPi {
   }
 
   void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mccollisions,
+                 aod::McCollisions const& mcCollisions,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelXicToPKPi> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                  TracksWPid const& tracks)
@@ -304,21 +306,21 @@ struct HfTreeCreatorXicToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelXicToPKPi(), invMassXicToPKPi(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
-      fillTable(1, candidate.isSelXicToPiKP(), invMassXicToPiKP(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
+      fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
+      fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
         rowCandidateFullParticles(
           particle.mcCollision().globalIndex(),
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());
@@ -436,8 +438,8 @@ struct HfTreeCreatorXicToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelXicToPKPi(), invMassXicToPKPi(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
-      fillTable(1, candidate.isSelXicToPiKP(), invMassXicToPiKP(candidate), ctXic(candidate), yXic(candidate), eXic(candidate));
+      fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
+      fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToPKPi, processData, "Process data tree writer", false);

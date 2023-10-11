@@ -19,6 +19,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,8 +27,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -113,6 +112,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
+  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
@@ -180,8 +180,8 @@ struct HfCandidateSelectorToXiPi {
   void process(aod::HfCandToXiPi const& candidates,
                TracksSel const&)
   {
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0;
+    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;
 
     int collId = -999;
 

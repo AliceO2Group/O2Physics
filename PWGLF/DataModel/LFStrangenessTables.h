@@ -162,6 +162,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton, //! V0 y with hypertriton
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(std::array{2.0f * pxpos + pxneg, 2.0f * pypos + pyneg, 2.0f * pzpos + pzneg}, o2::constants::physics::MassHyperTriton); });
 DECLARE_SOA_DYNAMIC_COLUMN(YAntiHypertriton, yAntiHypertriton, //! V0 y with antihypertriton hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(std::array{pxpos + 2.0f * pxneg, pypos + 2.0f * pyneg, pzpos + 2.0f * pzneg}, o2::constants::physics::MassHyperTriton); });
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! rapidity (0:K0, 1:L, 2:Lbar)
+                           [](float Px, float Py, float Pz, int value) -> float {
+                             if (value == 0)
+                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassKaonNeutral);
+                             if (value == 1 || value == 2)
+                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassLambda);
+                             return 0.0f;
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! V0 eta
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! V0 phi
@@ -225,6 +233,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::Eta<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::Phi<v0data::Px, v0data::Py>,
                        v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
@@ -399,6 +408,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(YXi, yXi, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassXiMinus); });
 DECLARE_SOA_DYNAMIC_COLUMN(YOmega, yOmega, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassOmegaMinus); });
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! rapidity (0, 1: Xi; 2, 3: Omega)
+                           [](float Px, float Py, float Pz, int value) -> float {
+                             if (value == 0 || value == 1)
+                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassXiMinus);
+                             if (value == 2 || value == 3)
+                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassOmegaMinus);
+                             return 0.0f;
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! cascade phi
@@ -443,6 +460,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Rapidity<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::Phi<cascdata::Px, cascdata::Py>);
 

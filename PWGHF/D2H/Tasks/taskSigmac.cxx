@@ -19,16 +19,14 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_sigmac;
 
 struct HfTaskSigmac {
-
   /// One value of rapidity only
   /// Remember that in Run2 the distinction among GenLimAcc, GenAccMother, GenAcc was done, where:
   ///  - GenLimAcc: Sc in |y|<0.5
@@ -38,6 +36,8 @@ struct HfTaskSigmac {
   /// OR
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandMax{"yCandMax", -1, "Sc rapidity"};
+
+  HfHelper hfHelper;
 
   /// analysis histograms
   HistogramRegistry registry{
@@ -239,8 +239,8 @@ struct HfTaskSigmac {
       double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
-        massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
-        massLc = invMassLcToPKPi(candidateLc);
+        massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
+        massLc = hfHelper.invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
         if (chargeSc == 0) {
@@ -293,8 +293,8 @@ struct HfTaskSigmac {
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
-        massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
-        massLc = invMassLcToPiKP(candidateLc);
+        massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
+        massLc = hfHelper.invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
         if (chargeSc == 0) {
@@ -350,18 +350,18 @@ struct HfTaskSigmac {
 
   /// @brief process function to fill the histograms needed in analysis (MC)
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
-  /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
+  /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
   void processMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
-                 aod::McParticles const& particlesMc,
-                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMcSc,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLc,
+                 aod::McParticles const& mcParticles,
+                 soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
                  soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&,
                  aod::TracksWMc const&)
   {
 
     /// MC generated particles
-    for (const auto& particle : particlesMcSc) {
+    for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
       bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
@@ -380,7 +380,7 @@ struct HfTaskSigmac {
          OR
          consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
       */
-      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassSigmaC0)) > yCandMax) {
         continue;
       }
 
@@ -401,8 +401,8 @@ struct HfTaskSigmac {
       int8_t channel = -1;
       if (std::abs(arrayDaughtersIds[0]) == pdg::Code::kLambdaCPlus) {
         /// daughter 0 is the Λc+, daughter 1 the soft π
-        auto daugLc = particlesMcLc.rawIteratorAt(arrayDaughtersIds[0]);
-        auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[1]);
+        auto daugLc = mcParticlesLc.rawIteratorAt(arrayDaughtersIds[0]);
+        auto daugSoftPi = mcParticles.rawIteratorAt(arrayDaughtersIds[1]);
         ptGenLc = daugLc.pt();
         etaGenLc = daugLc.eta();
         phiGenLc = daugLc.phi();
@@ -413,8 +413,8 @@ struct HfTaskSigmac {
         phiGenSoftPi = daugSoftPi.phi();
       } else if (std::abs(arrayDaughtersIds[0]) == kPiPlus) {
         /// daughter 0 is the soft π, daughter 1 the Λc+
-        auto daugLc = particlesMcLc.rawIteratorAt(arrayDaughtersIds[1]);
-        auto daugSoftPi = particlesMc.rawIteratorAt(arrayDaughtersIds[0]);
+        auto daugLc = mcParticlesLc.rawIteratorAt(arrayDaughtersIds[1]);
+        auto daugSoftPi = mcParticles.rawIteratorAt(arrayDaughtersIds[0]);
         ptGenLc = daugLc.pt();
         etaGenLc = daugLc.eta();
         phiGenLc = daugLc.phi();
@@ -480,7 +480,7 @@ struct HfTaskSigmac {
         continue;
       }
       /// rapidity selection on Σc0,++
-      if (yCandMax >= 0. && std::abs(ySc0(candSc)) > yCandMax && std::abs(yScPlusPlus(candSc)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandMax) {
         continue;
       }
 
@@ -497,13 +497,13 @@ struct HfTaskSigmac {
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaC0, true);
-        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaC0, true);
+        auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
 
@@ -520,8 +520,8 @@ struct HfTaskSigmac {
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
-          massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
-          massLc = invMassLcToPKPi(candidateLc);
+          massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -567,8 +567,8 @@ struct HfTaskSigmac {
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
-          massLc = invMassLcToPiKP(candidateLc);
+          massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -616,13 +616,13 @@ struct HfTaskSigmac {
       } else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(particlesMc, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
-        auto particleSc = particlesMc.rawIteratorAt(indexMcScRec);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
+        auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        auto particleLc = particlesMc.rawIteratorAt(indexMcLcRec);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
 
@@ -639,8 +639,8 @@ struct HfTaskSigmac {
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
-          massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
-          massLc = invMassLcToPKPi(candidateLc);
+          massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc++ signal
@@ -686,8 +686,8 @@ struct HfTaskSigmac {
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = invMassScRecoLcToPiKP(candSc, candidateLc);
-          massLc = invMassLcToPiKP(candidateLc);
+          massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc++ signal

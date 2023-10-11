@@ -20,13 +20,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_xicc;
 
 namespace o2::aod
 {
@@ -162,6 +161,8 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
+  HfHelper hfHelper;
+
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
@@ -169,7 +170,7 @@ struct HfTreeCreatorXiccToPKPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const& mcCollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
                TracksWPid const& tracks,
@@ -225,10 +226,10 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.impactParameterProduct(),
-            o2::aod::hf_cand_3prong::invMassXicToPKPi(xicCand),
-            o2::aod::hf_cand_3prong::ctXic(xicCand),
-            o2::aod::hf_cand_3prong::yXic(xicCand),
-            o2::aod::hf_cand_3prong::eXic(xicCand),
+            hfHelper.invMassXicToPKPi(xicCand),
+            hfHelper.ctXic(xicCand),
+            hfHelper.yXic(xicCand),
+            hfHelper.eXic(xicCand),
             xicCand.eta(),
             xicCand.cpa(),
             xicCand.cpaXY(),
@@ -256,19 +257,19 @@ struct HfTreeCreatorXiccToPKPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXiccToPKPiPi(), invMassXiccToXicPi(candidate), ctXicc(candidate), yXicc(candidate));
+      fillTable(0, candidate.isSelXiccToPKPiPi(), hfHelper.invMassXiccToXicPi(candidate), hfHelper.ctXicc(candidate), hfHelper.yXicc(candidate));
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCCPlusPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }
