@@ -200,3 +200,13 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
                     SOURCES vzero_cascade_absorption.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(delta-analysis
+                    SOURCES deltaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+ o2physics_add_dpl_workflow(rhoanalysis
+                    SOURCES rhoanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

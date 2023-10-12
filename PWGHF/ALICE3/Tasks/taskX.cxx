@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -26,11 +27,8 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -46,6 +44,8 @@ struct HfTaskX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
@@ -78,11 +78,11 @@ struct HfTaskX {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yX(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yX(candidate)) > yCandMax) {
         continue;
       }
 
-      registry.fill(HIST("hMass"), invMassXToJpsiPiPi(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -107,6 +107,8 @@ struct HfTaskXMc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
@@ -164,7 +166,7 @@ struct HfTaskXMc {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yX(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yX(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
@@ -176,7 +178,7 @@ struct HfTaskXMc {
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
 
         registry.fill(HIST("hDeclengthRecSig"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hMassRecSig"), invMassXToJpsiPiPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecSig"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0Prong2RecSig"), candidate.impactParameter2(), candidate.pt());
@@ -184,15 +186,15 @@ struct HfTaskXMc {
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hPtProng2RecSig"), candidate.ptProng2(), candidate.pt());
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), ctX(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), yX(candidate), candidate.pt());
+        registry.fill(HIST("hCtSig"), hfHelper.ctX(candidate), candidate.pt());
+        registry.fill(HIST("hYSig"), hfHelper.yX(candidate), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
 
         registry.fill(HIST("hDeclengthRecBg"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hMassRecBg"), invMassXToJpsiPiPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecBg"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0Prong2RecBg"), candidate.impactParameter2(), candidate.pt());
@@ -200,15 +202,14 @@ struct HfTaskXMc {
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hPtProng2RecBg"), candidate.ptProng2(), candidate.pt());
         registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), ctX(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), yX(candidate), candidate.pt());
+        registry.fill(HIST("hCtBg"), hfHelper.ctX(candidate), candidate.pt());
+        registry.fill(HIST("hYBg"), hfHelper.yX(candidate), candidate.pt());
       }
     } // rec
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
-        // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassX3872)) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());

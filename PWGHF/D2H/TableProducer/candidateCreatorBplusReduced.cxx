@@ -16,7 +16,6 @@
 
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -24,6 +23,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
@@ -51,8 +51,7 @@ struct HfCandidateCreatorBplusReduced {
   // variable that will store the value of invMassWindowD0Pi (defined in dataCreatorD0PiReduced.cxx)
   float myInvMassWindowD0Pi{1.};
 
-  // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  HfHelper hfHelper;
 
   double massPi{0.};
   double massD0{0.};
@@ -85,9 +84,9 @@ struct HfCandidateCreatorBplusReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // invariant-mass window cut
-    massPi = pdg->Mass(kPiPlus);
-    massD0 = pdg->Mass(pdg::Code::kD0);
-    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massD0 = o2::analysis::pdg::MassD0;
+    massBplus = o2::analysis::pdg::MassBPlus;
   }
 
   void process(aod::HfRedCollisions const& collisions,
