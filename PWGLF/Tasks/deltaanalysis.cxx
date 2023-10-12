@@ -82,13 +82,19 @@ struct deltaAnalysis {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
   // Histogram axes
-  std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.};
-  AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec nSigmaTPCaxis = {100, -5., 5., "n#sigma_{TPC}"};
   AxisSpec nSigmaTOFaxis = {100, -5., 5., "n#sigma_{TOF}"};
+  ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis cfgMassAxis{"cfgDeltaPlusPlusAxis", {110, 1.05, 1.6}, ""};
 
   void init(o2::framework::InitContext&)
   {
+    // Define axes
+    AxisSpec deltaPlusPlusAxis{cfgMassAxis, "m(p + #pi^{+}) (GeV/#it{c}^{2})"};
+    AxisSpec antiDeltaPlusPlusAxis{cfgMassAxis, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2})"};
+    AxisSpec deltaZeroAxis{cfgMassAxis, "m(p + #pi^{-}) (GeV/#it{c}^{2})"};
+    AxisSpec antiDeltaZeroAxis{cfgMassAxis, "m(#bar{p} + #pi^{2}) (GeV/#it{c}^{2})"};
+
     // Collision
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
@@ -97,47 +103,47 @@ struct deltaAnalysis {
     // Single track
     histos.add("hPiPlusDCAxy", "DCA_{xy} distribution for #pi^{+}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiPlusDCAz", "DCA_{z} distribution for #pi^{+}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPiPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTPCaxis});
-    histos.add("hPiPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTOFaxis});
+    histos.add("hPiPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
+    histos.add("hPiPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
 
     histos.add("hPiMinusDCAxy", "DCA_{xy} distribution for #pi^{-}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiMinusDCAz", "DCA_{z} distribution for #pi^{-}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPiMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTPCaxis});
-    histos.add("hPiMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTOFaxis});
+    histos.add("hPiMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
+    histos.add("hPiMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
 
     histos.add("hPrPlusDCAxy", "DCA_{xy} distribution for p; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrPlusDCAz", "DCA_{z} distribution for p; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPrPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTPCaxis});
-    histos.add("hPrPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTOFaxis});
+    histos.add("hPrPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
+    histos.add("hPrPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for p", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
 
     histos.add("hPrMinusDCAxy", "DCA_{xy} distribution for #bar{p}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrMinusDCAz", "DCA_{z} distribution for #bar{p};  DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPrMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTPCaxis});
-    histos.add("hPrMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTOFaxis});
+    histos.add("hPrMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
+    histos.add("hPrMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
 
     // Deltas
-    histos.add("hDeltaPlusPlusInvMass", "Invariant mass distribution for #Delta^{++}", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{+}) (GeV/#it{c}^{2})"}});
-    histos.add("hAntiDeltaPlusPlusInvMass", "Invariant mass distribution for #bar{#Delta^{++}}", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2}"}});
+    histos.add("hDeltaPlusPlusInvMass", "Invariant mass distribution for #Delta^{++}", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
+    histos.add("hAntiDeltaPlusPlusInvMass", "Invariant mass distribution for #bar{#Delta^{++}}", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
 
-    histos.add("hDeltaZeroInvMass", "Invariant mass distribution for #Delta^{0}", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{-}) (GeV/#it{c}^{2}"}});
-    histos.add("hAntiDeltaZeroInvMass", "Invariant mass distribution for #bar{#Delta^{0}}", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{+}) (GeV/#it{c}^{2}"}});
+    histos.add("hDeltaZeroInvMass", "Invariant mass distribution for #Delta^{0}", kTH2F, {cfgPtAxis, deltaZeroAxis});
+    histos.add("hAntiDeltaZeroInvMass", "Invariant mass distribution for #bar{#Delta^{0}}", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
 
     if (doprocessMixedEvent) {
       // Deltas - Event mixing
-      histos.add("hDeltaPlusPlusInvMassEM", "Invariant mass distribution for #Delta^{++} - event mixing", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{+}) (GeV/#it{c}^{2}"}});
-      histos.add("hAntiDeltaPlusPlusInvMassEM", "Invariant mass distribution for #bar{#Delta^{++}} - event mixing", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2}"}});
+      histos.add("hDeltaPlusPlusInvMassEM", "Invariant mass distribution for #Delta^{++} - event mixing", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
+      histos.add("hAntiDeltaPlusPlusInvMassEM", "Invariant mass distribution for #bar{#Delta^{++}} - event mixing", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
 
-      histos.add("hDeltaZeroInvMassEM", "Invariant mass distribution for #Delta^{0} - event mixing", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{-}) (GeV/#it{c}^{2}"}});
-      histos.add("hAntiDeltaZeroInvMassEM", "Invariant mass distribution for #bar{#Delta^{0}} - event mixing", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{+}) (GeV/#it{c}^{2}"}});
+      histos.add("hDeltaZeroInvMassEM", "Invariant mass distribution for #Delta^{0} - event mixing", kTH2F, {cfgPtAxis, deltaZeroAxis});
+      histos.add("hAntiDeltaZeroInvMassEM", "Invariant mass distribution for #bar{#Delta^{0}} - event mixing", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
     }
 
     if (doprocessMC) {
       // generated quantities
-      histos.add("hDeltaPlusPlusInvMassGen", "Invariant mass distribution for #Delta^{++} - generated", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{+}) (GeV/#it{c}^{2}"}});
-      histos.add("hAntiDeltaPlusPlusInvMassGen", "Invariant mass distribution for #bar{#Delta^{++}} - generated", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2}"}});
+      histos.add("hDeltaPlusPlusInvMassGen", "Invariant mass distribution for #Delta^{++} - generated", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
+      histos.add("hAntiDeltaPlusPlusInvMassGen", "Invariant mass distribution for #bar{#Delta^{++}} - generated", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
 
-      histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {ptAxis, {100, 1., 1.4, "m(p + #pi^{-}) (GeV/#it{c}^{2}"}});
-      histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {ptAxis, {100, 1., 1.4, "m(#bar{p} + #pi^{+}) (GeV/#it{c}^{2}"}});
+      histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {cfgPtAxis, deltaZeroAxis});
+      histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
     }
   }
 
