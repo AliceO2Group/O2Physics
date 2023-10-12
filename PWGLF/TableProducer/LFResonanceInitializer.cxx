@@ -386,9 +386,9 @@ struct reso2initializer {
     }
 
     float tempSph = 1.;
-    for (int i = 0; i < 360/0.1; ++i) {
+    for (int i = 0; i < 360 / 0.1; ++i) {
       float sum = 0., pt = 0.;
-	    float phiparm = (TMath::Pi() * i * 0.1) / 180.;
+      float phiparm = (TMath::Pi() * i * 0.1) / 180.;
       float nx = TMath::Cos(phiparm);
       float ny = TMath::Sin(phiparm);
       for (auto const& trk : tracks) {
@@ -400,7 +400,7 @@ struct reso2initializer {
         float px = pt * TMath::Cos(phi);
         float py = pt * TMath::Sin(phi);
         // sum += pt * abs(sin(phiparm - phi));
-        sum += TMath::Abs(px*ny - py*nx);
+        sum += TMath::Abs(px * ny - py * nx);
       }
       float sph = TMath::Power((sum / ptSum), 2);
       if (sph < tempSph)
