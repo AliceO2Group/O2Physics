@@ -181,6 +181,7 @@ struct TrackPropagation {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         }
         trackType = aod::track::Track;
+	std::cout << "++++++++++++++++++++++++  a test print ++++++++++++++++++++++++" << std::endl;
       }
       FillTracksPar(track, trackType, trackParCov);
       if (fillTracksDCA) {
