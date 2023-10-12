@@ -93,7 +93,7 @@ struct deltaAnalysis {
     AxisSpec deltaPlusPlusAxis{cfgMassAxis, "m(p + #pi^{+}) (GeV/#it{c}^{2})"};
     AxisSpec antiDeltaPlusPlusAxis{cfgMassAxis, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2})"};
     AxisSpec deltaZeroAxis{cfgMassAxis, "m(p + #pi^{-}) (GeV/#it{c}^{2})"};
-    AxisSpec antiDeltaZeroAxis{cfgMassAxis, "m(#bar{p} + #pi^{2}) (GeV/#it{c}^{2})"};
+    AxisSpec antiDeltaZeroAxis{cfgMassAxis, "m(#bar{p} + #pi^{+}) (GeV/#it{c}^{2})"};
 
     // Collision
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
@@ -481,9 +481,25 @@ struct deltaAnalysis {
       //   continue;
       // }
 
-      // LOGF(info, "   physical primary");
+      auto daughters = mcParticle.daughters_as<aod::McParticles>();
+      bool daughtPr = false;
+      bool daughtPi = false;
+      double eDelta = 0.;
+      for (auto daught : daughters) {
+        if (std::abs(daught.pdgCode()) == protonPDG) {
+          daughtPr = true;
+          eDelta += daught.e();
+        } else if (std::abs(daught.pdgCode()) == pionPDG) {
+          daughtPi = true;
+          eDelta += daught.e();
+        }
+      }
 
-      float gen_mass = TMath::Sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p());
+      if (!daughtPr || !daughtPi) {
+        continue;
+      }
+
+      float gen_mass = TMath::Sqrt(eDelta * eDelta - mcParticle.p() * mcParticle.p());
 
       if (pdg > 0) {
         if (std::abs(pdg) == deltaPlusPlusPDG) {
