@@ -233,6 +233,9 @@ class VarManager : public TObject
     kIsSPDany,
     kIsSPDfirst,
     kIsSPDboth,
+    kIsITSibAny,
+    kIsITSibFirst,
+    kIsITSibAll,
     kITSncls,
     kITSchi2,
     kITSlayerHit,
@@ -1010,6 +1013,17 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kITSClusterMap]) {
       values[kITSClusterMap] = track.itsClusterMap();
     }
+
+    if (fgUsedVars[kIsITSibFirst]) {
+      values[kIsITSibFirst] = (track.itsClusterMap() & uint8_t(1)) > 0;
+    }
+    if (fgUsedVars[kIsITSibAny]) {
+      values[kIsITSibAny] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 || (track.itsClusterMap() & (1 << uint8_t(1))) > 0 || (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+    }
+    if (fgUsedVars[kIsITSibAll]) {
+      values[kIsITSibAll] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 && (track.itsClusterMap() & (1 << uint8_t(1))) > 0 && (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+    }
+
     values[kTrackTime] = track.trackTime();
     values[kTrackTimeRes] = track.trackTimeRes();
     values[kTrackTimeResRelative] = track.trackTimeRes() / track.trackTime();
