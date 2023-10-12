@@ -61,6 +61,8 @@ DECLARE_SOA_COLUMN(VtxZKF, vtxzkf, float);
 DECLARE_SOA_COLUMN(VtxXErrKF, vtxxerrkf, float);
 DECLARE_SOA_COLUMN(VtxYErrKF, vtxyerrkf, float);
 DECLARE_SOA_COLUMN(VtxZErrKF, vtxzerrkf, float);
+DECLARE_SOA_COLUMN(PAV0ToPV, pav0topv, float);
+DECLARE_SOA_COLUMN(PAV0ToPVKF, pav0topvkf, float);
 DECLARE_SOA_COLUMN(V0Rad, v0rad, float);
 DECLARE_SOA_COLUMN(V0RadKF, v0radkf, float);
 DECLARE_SOA_COLUMN(Charge, charge, float);
@@ -134,6 +136,8 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::DCANegToPVKF,
                   kfStrangenessStudy::DCABachToPV,
                   kfStrangenessStudy::DCABachToPVKF,
+                  kfStrangenessStudy::PAV0ToPV,
+                  kfStrangenessStudy::PAV0ToPVKF,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF);
 
@@ -184,6 +188,8 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::DCANegToPVKF,
                   kfStrangenessStudy::DCABachToPV,
                   kfStrangenessStudy::DCABachToPVKF,
+                  kfStrangenessStudy::PAV0ToPV,
+                  kfStrangenessStudy::PAV0ToPVKF,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF,
                   kfStrangenessStudy::IsTrueCasc);

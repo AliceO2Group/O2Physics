@@ -1083,7 +1083,7 @@ struct cascadeBuilder {
     // mass window cut on lambda before mass constraint
     float massLam, sigLam;
     KFV0.GetMass(massLam, sigLam);
-    if (TMath::Abs(MLambda - 1.116) > lambdaMassWindow)
+    if (TMath::Abs(massLam - 1.116) > lambdaMassWindow)
       return false;
     
     if (kfUseV0MassConstraint) {

@@ -13,7 +13,7 @@
 //         cascades computed with standard DCAFitter methods and the KFparticle
 //         package. It is meant for the purposes of larger-scale QA of KF reco.
 
-/// \brief cascadebuilder.cxx task needs to be added to the workflow. Flag createCascCovMats needs to be enabled!
+/// \brief cascadebuilder.cxx and lambdakzerobuilder.cxx tasks need to be added to the workflow. Flag createCascCovMats needs to be enabled!
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -68,6 +68,7 @@ struct kfStrangenessStudy {
   float dcaNegToPV = -1.0f, dcaNegToPVKF = -1.0f;
   float dcaBachToPV = -1.0f, dcaBachToPVKF = -1.0f;
   float cascPointingAngle = -1.0f, cascPointingAngleKF = -1.0f;
+  float v0PointingAngle = -1.0f, v0PointingAngleKF = -1.0f;
   float V0Rad = -1.0f, V0RadKF = -1.0f;
   int charge = 0;
   float cascChi2geoKF = -1.f;
@@ -104,6 +105,10 @@ struct kfStrangenessStudy {
     histos.add("hKFPointingAngle", "hKFPointingAngle", kTH1F, {{800, 0.0f, 3.5f}});
     histos.add("hCosPointingAngle", "hCosPointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
     histos.add("hKFCosPointingAngle", "hKFCosPointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
+    histos.add("hV0PointingAngle", "hV0PointingAngle", kTH1F, {{800, 0.0f, 3.5f}});
+    histos.add("hKFV0PointingAngle", "hKFV0PointingAngle", kTH1F, {{800, 0.0f, 3.5f}});
+    histos.add("hCosV0PointingAngle", "hCosV0PointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
+    histos.add("hKFCosV0PointingAngle", "hKFCosV0PointingAngle", kTH1F, {{800, -1.0f, 1.0f}});
 
   }
 
@@ -135,14 +140,18 @@ struct kfStrangenessStudy {
       vtxYErr = sqrt(cascdata.positionCovMat()[2]);
       vtxZErr = sqrt(cascdata.positionCovMat()[5]);
       V0Rad = cascdata.v0radius();
+      v0PointingAngle = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
 
+      // fill QA histos
       histos.fill(HIST("hVertexX"), vtxX);  
       histos.fill(HIST("hVertexY"), vtxY);
       histos.fill(HIST("hVertexZ"), vtxZ);
-      histos.fill(HIST("hPointingAngle"), cascPointingAngle);
-      histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
       histos.fill(HIST("hDCAxy"), dcaXYCascToPV);
       histos.fill(HIST("hCascRadius"), cascRad);
+      histos.fill(HIST("hPointingAngle"), cascPointingAngle);
+      histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
+      histos.fill(HIST("hV0PointingAngle"), v0PointingAngle);
+      histos.fill(HIST("hCosV0PointingAngle"), cos(v0PointingAngle));
     }
     if (cascade.has_kfCascData()) {
       // check aod::Cascades -> aod::KFCascData link
@@ -170,53 +179,31 @@ struct kfStrangenessStudy {
       vtxZErrKF = sqrt(cascdata.kfTrackCovMat()[5]);
       V0RadKF = cascdata.v0radius();
       cascChi2geoKF = cascdata.kfCascadeChi2();
+      v0PointingAngleKF = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
 
+      // fill QA histos
       histos.fill(HIST("hKFVertexX"), vtxXKF);
       histos.fill(HIST("hKFVertexY"), vtxYKF);
       histos.fill(HIST("hKFVertexZ"), vtxZKF);
-      histos.fill(HIST("hKFPointingAngle"), cascPointingAngleKF);
-      histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
       histos.fill(HIST("hKFDCAxy"), dcaXYCascToPVKF);
       histos.fill(HIST("hKFCascRadius"), cascRadKF);
+      histos.fill(HIST("hKFPointingAngle"), cascPointingAngleKF);
+      histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
+      histos.fill(HIST("hKFV0PointingAngle"), v0PointingAngleKF);
+      histos.fill(HIST("hKFCosV0PointingAngle"), cos(v0PointingAngleKF));
     }
-
   }
 
-  template <typename TCollision, typename TCascTable>
-  void fillCascDataTable(TCollision const& collision, TCascTable const& cascade)
+  template <typename TCollision>
+  void fillCascDataTable(TCollision const& collision)
   {
     rowCasc(collision.globalIndex(),
-          pt, ptKF,
-          massXi, massXiKF,
-          massOmega, massOmegaKF,
-          cascRad, cascRadKF,
-          vtxX, vtxY, vtxZ, vtxXErr, vtxYErr, vtxZErr,
-          vtxXKF, vtxXKF, vtxXKF, vtxXErrKF, vtxYErrKF, vtxZErrKF,
-          dcaXYCascToPV, dcaXYCascToPVKF,
-          dcaZCascToPV, dcaZCascToPVKF,
-          dcaCascDaughters, dcaCascDaughtersKF,
-          cascPointingAngle, cascPointingAngleKF,
-          charge, 
-          massLambda, massLambdaKF,
-          V0Rad, V0RadKF,
-          dcaV0Daughters, dcaV0DaughtersKF,
-          dcaPosToPV, dcaPosToPVKF,
-          dcaNegToPV, dcaNegToPVKF,
-          dcaBachToPV, dcaBachToPVKF,
-          isDCAfitter, isKF);
-  }
-
-  template <typename TCollision, typename TCascTable>
-  void fillCascMCTable(TCollision const& collision, TCascTable const& cascade)
-  {
-    rowCascMC(collision.globalIndex(),
-            ptRec, ptRecKF, ptGen,
+            pt, ptKF,
             massXi, massXiKF,
             massOmega, massOmegaKF,
             cascRad, cascRadKF,
-            vtxXrec, vtxYrec, vtxZrec, vtxXrecErr, vtxYrecErr, vtxZrecErr,
-            vtxXrecKF, vtxXrecKF, vtxXrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
-            vtxXgen, vtxYgen, vtxZgen,
+            vtxX, vtxY, vtxZ, vtxXErr, vtxYErr, vtxZErr,
+            vtxXKF, vtxXKF, vtxXKF, vtxXErrKF, vtxYErrKF, vtxZErrKF,
             dcaXYCascToPV, dcaXYCascToPVKF,
             dcaZCascToPV, dcaZCascToPVKF,
             dcaCascDaughters, dcaCascDaughtersKF,
@@ -228,8 +215,35 @@ struct kfStrangenessStudy {
             dcaPosToPV, dcaPosToPVKF,
             dcaNegToPV, dcaNegToPVKF,
             dcaBachToPV, dcaBachToPVKF,
-            isDCAfitter, isKF,
-            isTrueCasc);
+            v0PointingAngle, v0PointingAngleKF,
+            isDCAfitter, isKF);
+  }
+
+  template <typename TCollision>
+  void fillCascMCTable(TCollision const& collision)
+  {
+    rowCascMC(collision.globalIndex(),
+              ptRec, ptRecKF, ptGen,
+              massXi, massXiKF,
+              massOmega, massOmegaKF,
+              cascRad, cascRadKF,
+              vtxXrec, vtxYrec, vtxZrec, vtxXrecErr, vtxYrecErr, vtxZrecErr,
+              vtxXrecKF, vtxXrecKF, vtxXrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
+              vtxXgen, vtxYgen, vtxZgen,
+              dcaXYCascToPV, dcaXYCascToPVKF,
+              dcaZCascToPV, dcaZCascToPVKF,
+              dcaCascDaughters, dcaCascDaughtersKF,
+              cascPointingAngle, cascPointingAngleKF,
+              charge, 
+              massLambda, massLambdaKF,
+              V0Rad, V0RadKF,
+              dcaV0Daughters, dcaV0DaughtersKF,
+              dcaPosToPV, dcaPosToPVKF,
+              dcaNegToPV, dcaNegToPVKF,
+              dcaBachToPV, dcaBachToPVKF,
+              v0PointingAngle, v0PointingAngleKF,
+              isDCAfitter, isKF,
+              isTrueCasc);
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, aod::TracksIU const&)
@@ -254,7 +268,7 @@ struct kfStrangenessStudy {
       // get cascade data and fill table
       getCascDatas(collision, cascade, CascDatas, KFCascDatas);
       if (cascade.has_cascData() || cascade.has_kfCascData()) {
-        fillCascDataTable(collision, cascade);
+        fillCascDataTable(collision);
       }
     } // end cascade loop
   } // end process
@@ -298,7 +312,7 @@ struct kfStrangenessStudy {
         }
 
         // fill cascade table
-        fillCascMCTable(collision, cascade);
+        fillCascMCTable(collision);
 
       }
     } // end cascade loop
