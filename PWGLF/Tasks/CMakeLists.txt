@@ -210,3 +210,8 @@ o2physics_add_dpl_workflow(delta-analysis
                     SOURCES rhoanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+          
+o2physics_add_dpl_workflow(rsn-analysis-thnsparse
+                    SOURCES rsnanalysisTHnSparse.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
