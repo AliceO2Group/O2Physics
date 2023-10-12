@@ -102,7 +102,8 @@ struct rsnanalysisTHnSparse {
 
   void process(EventCandidate const& collision, TrackCandidates const& tracks)
   {
-    if (test && collision.globalIndex() != 1) return;
+    if (test && collision.globalIndex() != 1)
+      return;
 
     auto posDauthers = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDauthers = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
