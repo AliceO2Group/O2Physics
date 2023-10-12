@@ -443,15 +443,13 @@ struct lambdaAnalysis {
   SliceCache cache;
 
   using BinningType1 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
-  BinningType1 binningPositions1{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
-
   using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningType2 binningPositions2{{cfgVtxBins, cfgMultBins}, true};
-
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
     LOGF(debug, "Event Mixing Started");
+    BinningType1 binningPositions1{{cfgVtxBins, cfgMultBins, cfgSphBins}, true};
+    BinningType2 binningPositions2{{cfgVtxBins, cfgMultBins}, true};
     auto tracksTuple = std::make_tuple(tracks);
     if (doSphMix) {
       SameKindPair<resoCols, resoTracks, BinningType1> pairs{binningPositions1, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
