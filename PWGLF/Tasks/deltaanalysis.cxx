@@ -72,7 +72,6 @@ struct deltaAnalysis {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // track
   Configurable<float> cfgCutPt{"cfgCutPt", 0.2, "Pt cut on daughter track"};
-  Configurable<float> cfgCutMaxPrPt{"cfgCutMaxPrPt", 1.8, "Max Pt cut on proton"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5, "Y cut on reconstructed delta"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -85,7 +84,7 @@ struct deltaAnalysis {
   AxisSpec nSigmaTPCaxis = {100, -5., 5., "n#sigma_{TPC}"};
   AxisSpec nSigmaTOFaxis = {100, -5., 5., "n#sigma_{TOF}"};
   ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis cfgMassAxis{"cfgDeltaPlusPlusAxis", {110, 1.05, 1.6}, ""};
+  ConfigurableAxis cfgMassAxis{"cfgDeltaPlusPlusAxis", {75, 1.05, 1.8}, ""};
 
   void init(o2::framework::InitContext&)
   {
@@ -154,6 +153,9 @@ struct deltaAnalysis {
     //   return false;
     // }
     if (track.itsNCls() < 5) {
+      return false;
+    }
+    if (track.tpcNClsShared() > 0) {
       return false;
     }
     if (track.tpcNClsFound() < 70) {
