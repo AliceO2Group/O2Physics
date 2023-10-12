@@ -53,12 +53,16 @@ struct QAHistTask {
 
     std::string species;
 
-    if (process_proton) species = "p";
-    if (process_deuteron) species = "d";
-    if (process_triton) species = "t";
-    if (process_He3) species = "He3";
-    if (process_He4) species = "He4";
-
+    if (process_proton)
+      species = "p";
+    if (process_deuteron)
+      species = "d";
+    if (process_triton)
+      species = "t";
+    if (process_He3)
+      species = "He3";
+    if (process_He4)
+      species = "He4";
 
     std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
@@ -123,7 +127,7 @@ struct QAHistTask {
     QA_species_pos.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
     QA_species_pos.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_species_pos.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-    
+
     // QA choosen species (negative)
     QA_species_neg.add("histTpcSignalData", Form("Specific energy loss (anti-%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     QA_species_neg.add("histTofSignalData", Form("TOF signal (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -148,7 +152,6 @@ struct QAHistTask {
     QA_species_neg.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_species_neg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
   }
-
 
   // Configurables
   Configurable<bool> process_proton{"process_proton", false, "0: disabled, 1: enabled"};
@@ -208,11 +211,16 @@ struct QAHistTask {
 
       float nSigmaSpecies = 999;
 
-      if (process_proton) nSigmaSpecies = track.tpcNSigmaPr();
-      if (process_deuteron) nSigmaSpecies = track.tpcNSigmaDe();
-      if (process_triton) nSigmaSpecies = track.tpcNSigmaTr();
-      if (process_He3) nSigmaSpecies = track.tpcNSigmaHe();
-      if (process_He4) nSigmaSpecies = track.tpcNSigmaAl();
+      if (process_proton)
+        nSigmaSpecies = track.tpcNSigmaPr();
+      if (process_deuteron)
+        nSigmaSpecies = track.tpcNSigmaDe();
+      if (process_triton)
+        nSigmaSpecies = track.tpcNSigmaTr();
+      if (process_He3)
+        nSigmaSpecies = track.tpcNSigmaHe();
+      if (process_He4)
+        nSigmaSpecies = track.tpcNSigmaAl();
 
       if (event_selection_sel8 && !event.sel8()) {
         continue;
@@ -391,7 +399,7 @@ struct QAHistTask {
   }
 
   //*******************************************************************************************************
-  
+
   template <typename CollisionType, typename TracksType>
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
@@ -403,25 +411,20 @@ struct QAHistTask {
     if (!event_selection_sel8) {
       QA_reg.fill(HIST("histCentrality"), event.centFT0C());
     }
-    
+
     for (auto track : tracks) { // start loop over tracks
-      
+
       if (event_selection_sel8 && !event.sel8()) {
         continue;
       }
-      
+
       QA_reg.fill(HIST("histEta_cent"), event.centFT0C(), track.eta());
-      
+
       if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality) && enable_Centrality_cut) {
         QA_reg.fill(HIST("histEta"), track.eta());
       }
-      
     }
-
-    
-
   }
-  
 
   //****************************************************************************************************
 
@@ -446,7 +449,6 @@ struct QAHistTask {
     fillCentHistorgrams(event, tracks);
   }
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
-
 };
 
 //****************************************************************************************************
