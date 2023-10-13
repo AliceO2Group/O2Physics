@@ -192,11 +192,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IsSPDfirst", "", false, 2, -0.5, 1.5, VarManager::kIsSPDfirst);
       hm->AddHistogram(histClass, "ITSClusterMap", "", false, 128, -0.5, 127.5, VarManager::kITSClusterMap);
       hm->AddHistogram(histClass, "ITSClustermap_vs_pin", "ITSClustermap vs pin", false, 200, 0.0, 20.0, VarManager::kPin, 128, -0.5, 127.5, VarManager::kITSClusterMap);
+      hm->AddHistogram(histClass, "ITSClustermap_vs_SignedPin", "ITSClustermap vs SignedPin", false, 400, -20.0, 20.0, VarManager::kSignedPin, 128, -0.5, 127.5, VarManager::kITSClusterMap);
       hm->AddHistogram(histClass, "ITSClustermap_vs_pt", "ITSClustermap vs pt", false, 200, 0.0, 20.0, VarManager::kPt, 128, -0.5, 127.5, VarManager::kITSClusterMap);
       hm->AddHistogram(histClass, "ITSClustermap_vs_eta", "ITSClustermap vs eta", false, 100, -1.0, 1.0, VarManager::kEta, 128, -0.5, 127.5, VarManager::kITSClusterMap);
       hm->AddHistogram(histClass, "ITSClustermap_vs_phi", "ITSClustermap vs phi", false, 315, 0.0, 6.3, VarManager::kPhi, 128, -0.5, 127.5, VarManager::kITSClusterMap);
-      hm->AddHistogram(histClass, "ITSClustermap_vs_dcaxy_vs_pt", "ITSClustermap vs dcaxy vs pt", false, 200, 0.0, 20.0, VarManager::kPt, 100, -1, 1, VarManager::kTrackDCAxy, 128, -0.5, 127.5, VarManager::kITSClusterMap);
-      hm->AddHistogram(histClass, "ITSClustermap_vs_dcaz_vs_pt", "ITSClustermap vs dcaxy vs pt", false, 200, 0.0, 20.0, VarManager::kPt, 100, -1, 1, VarManager::kTrackDCAz, 128, -0.5, 127.5, VarManager::kITSClusterMap);
+      hm->AddHistogram(histClass, "SignedPin_P_ITSMap", "SignedPin vs P vs ITSMap", false, 400, -20.0, 20.0, VarManager::kSignedPin, 200, 0.0, 20.0, VarManager::kP, 2, -0.5, 1.5, VarManager::kHasITS);
       if (subGroupStr.Contains("cent")) {
         hm->AddHistogram(histClass, "ITSncls_CentFT0C", "Number of cluster in ITS", false, 8, -0.5, 7.5, VarManager::kITSncls, 20, 0.0, 100.0, VarManager::kCentFT0C);
         hm->AddHistogram(histClass, "ITSchi2_CentFT0C", "ITS chi2", false, 100, 0.0, 50.0, VarManager::kITSchi2, 20, 0.0, 100.0, VarManager::kCentFT0C);
