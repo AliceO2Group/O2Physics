@@ -67,9 +67,8 @@ struct femtoDreamPairTaskTrackTrackTrack {
 
   // Which particles to analyse; currently support only for same species and cuts triplets
   Configurable<int> ConfPDGCodePart{"ConfPDGCodePart", 2212, "Particle PDG code"};
-  Configurable<int> ConfPIDPart{"ConfPIDPart", 2, "Particles - Read from cutCulator"}; 
+  Configurable<int> ConfPIDPart{"ConfPIDPart", 2, "Particles - Read from cutCulator"};
   Configurable<uint32_t> ConfCutPart{"ConfCutPart", 5542474, "Particles - Selection bit from cutCulator"};
-
 
   // Keep this format as next code update will include also different particle species and cuts:
 
@@ -83,7 +82,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
   /// Particle 2
-  
+
   /// Partition for particle 2
   Partition<aod::FDParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
@@ -91,15 +90,14 @@ struct femtoDreamPairTaskTrackTrackTrack {
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTwoMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                        ((aod::femtodreamparticle::cut & ConfCutPart) == ConfCutPart);
 
- /// Particle 3
-  
+  /// Particle 3
+
   /// Partition for particle 3
   Partition<aod::FDParticles> partsThree = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                         //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
-                                         ((aod::femtodreamparticle::cut & ConfCutPart) == ConfCutPart);
+                                           //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
+                                           ((aod::femtodreamparticle::cut & ConfCutPart) == ConfCutPart);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsThreeMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                                       ((aod::femtodreamparticle::cut & ConfCutPart) == ConfCutPart);
-
+                                                                         ((aod::femtodreamparticle::cut & ConfCutPart) == ConfCutPart);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -113,7 +111,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
-  //ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
+  // ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   ConfigurableAxis ConfMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
@@ -149,7 +147,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
     mixedEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
     sameEventCont.setPDGCodes(ConfPDGCodePart, ConfPDGCodePart, ConfPDGCodePart);
     mixedEventCont.setPDGCodes(ConfPDGCodePart, ConfPDGCodePart, ConfPDGCodePart);
-    pairCleaner.init(&qaRegistry);  // SERKSNYTE : later check if init should be updated to have 3 separate histos
+    pairCleaner.init(&qaRegistry); // SERKSNYTE : later check if init should be updated to have 3 separate histos
     if (ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
     }
@@ -195,7 +193,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
                              ConfCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
-      NGoodTracks ++;
+      NGoodTracks++;
 
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
     }
@@ -220,7 +218,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
                              ConfNspecies,
                              kNsigma,
                              ConfCutTable->get("PartTwo", "nSigmaTPC"),
-                             ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))||
+                             ConfCutTable->get("PartTwo", "nSigmaTPCTOF")) ||
           !isFullPIDSelected(p3.pidcut(),
                              p3.p(),
                              ConfCutTable->get("PartThree", "PIDthr"),
@@ -310,7 +308,6 @@ struct femtoDreamPairTaskTrackTrackTrack {
       if (p1.p() > ConfCutTable->get("PartOne", "MaxP") || p1.pt() > ConfCutTable->get("PartOne", "MaxPt") || p2.p() > ConfCutTable->get("PartTwo", "MaxP") || p2.pt() > ConfCutTable->get("PartTwo", "MaxPt") || p3.p() > ConfCutTable->get("PartThree", "MaxP") || p3.pt() > ConfCutTable->get("PartThree", "MaxPt")) {
         continue;
       }
-       
 
       if (!isFullPIDSelected(p1.pidcut(),
                              p1.p(),
@@ -327,7 +324,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
                              ConfNspecies,
                              kNsigma,
                              ConfCutTable->get("PartTwo", "nSigmaTPC"),
-                             ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))||
+                             ConfCutTable->get("PartTwo", "nSigmaTPCTOF")) ||
           !isFullPIDSelected(p3.pidcut(),
                              p3.p(),
                              ConfCutTable->get("PartThree", "PIDthr"),
@@ -338,7 +335,6 @@ struct femtoDreamPairTaskTrackTrackTrack {
                              ConfCutTable->get("PartThree", "nSigmaTPCTOF"))) {
         continue;
       }
-
 
       if (ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
@@ -374,7 +370,7 @@ struct femtoDreamPairTaskTrackTrackTrack {
       const auto& magFieldTesla2 = collision2.magField();
       const auto& magFieldTesla3 = collision3.magField();
 
-      if ( (magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3) ) {
+      if ((magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3)) {
         continue;
       }
       // CONSIDER testing different strategies to which events to use
@@ -405,8 +401,8 @@ struct femtoDreamPairTaskTrackTrackTrack {
       const auto& magFieldTesla2 = collision2.magField();
       const auto& magFieldTesla3 = collision3.magField();
 
-      if ( (magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3) ) {
-       continue;
+      if ((magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3)) {
+        continue;
       }
       // CONSIDER testing different strategies to which events to use
 
