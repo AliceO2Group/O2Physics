@@ -52,17 +52,14 @@ namespace o2::aod
 {
 namespace muon_source
 {
-DECLARE_SOA_COLUMN(Nevent, nevent, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
 } // namespace muon_source
-DECLARE_SOA_TABLE(HfMuonEvent, "AOD", "MUONEVENT", muon_source::Nevent);
 DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
 } // namespace o2::aod
 
 struct HfTaskSingleMuonSource {
-  Produces<aod::HfMuonEvent> singleMuonEvent;
   Produces<aod::HfMuonSource> singleMuonSource;
 
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
@@ -96,12 +93,10 @@ struct HfTaskSingleMuonSource {
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
     AxisSpec axisEta{250, -5., 0., "#it{#eta}"};
 
-    HistogramConfigSpec h1NCol{HistType::kTH1F, {axisColNumber}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec h2PtEta{HistType::kTH2F, {axisPt, axisEta}};
 
-    registry.add("h1NCollisions", "", h1NCol);
     for (const auto& src : muonSources) {
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
       registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
@@ -284,10 +279,6 @@ struct HfTaskSingleMuonSource {
     if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }
-
-    auto nCollision = collision.bc_as<aod::BCs>().runNumber();
-    singleMuonEvent(nCollision);
-    registry.fill(HIST("h1NCollisions"), 0.);
 
     for (const auto& muon : muons) {
       // muon selections
