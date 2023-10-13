@@ -154,15 +154,6 @@ namespace hf_charm_cand_reduced
 DECLARE_SOA_COLUMN(InvMass, invMass, float);           //! Invariant mass of 2prong candidate in GeV/c2
 DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);       //! Invariant mass of 2prong candidate in GeV/c2
 DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float); //! Invariant mass of 2prong candidate in GeV/c2
-
-template <typename T>
-auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
-{
-  return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
-                      std::array{RecoDecay::getMassPDG(kPiPlus),
-                                 RecoDecay::getMassPDG(kKPlus),
-                                 RecoDecay::getMassPDG(kPiPlus)});
-}
 } // namespace hf_charm_cand_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)

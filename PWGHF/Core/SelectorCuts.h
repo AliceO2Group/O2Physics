@@ -15,62 +15,11 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <algorithm> // std::upper_bound
-#include <iterator>  // std::distance
 #include <string>    // std::string
 #include <vector>    // std::vector
 
 namespace o2::analysis
 {
-namespace pdg
-{
-/// \brief Declarations of named PDG codes of HF particles missing in ROOT PDG_t.
-/// \note Follow kCamelCase naming convention
-/// \link https://root.cern/doc/master/TPDGCode_8h.html
-enum Code {
-  kB0 = 511,
-  kB0Bar = -511,
-  kBPlus = 521,
-  kBS = 531,
-  kBSBar = -531,
-  kD0 = 421,
-  kD0Bar = -421,
-  kDMinus = -411,
-  kDPlus = 411,
-  kDS = 431,
-  kDSBar = -431,
-  kDStar = 413,
-  kChiC1 = 20443,
-  kJPsi = 443,
-  kLambdaB0 = 5122,
-  kLambdaCPlus = 4122,
-  kOmegaC0 = 4332,
-  kPhi = 333,
-  kSigmaC0 = 4112,
-  kSigmaCPlusPlus = 4222,
-  kX3872 = 9920443,
-  kXiCCPlusPlus = 4422,
-  kXiCPlus = 4232,
-  kXiCZero = 4132
-};
-} // namespace pdg
-
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
-/// \return index of the pT bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
-template <typename T1, typename T2>
-int findBin(T1 const& binsPt, T2 value)
-{
-  if (value < binsPt->front()) {
-    return -1;
-  }
-  if (value >= binsPt->back()) {
-    return -1;
-  }
-  return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
-}
 
 // namespace per channel
 

@@ -19,14 +19,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_bs;
-using namespace o2::aod::hf_sel_candidate_bs;
 
 namespace o2::aod
 {
@@ -165,13 +164,15 @@ struct HfTreeCreatorBsToDsPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
+  HfHelper hfHelper;
+
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBs, aod::HfCandBsMcRec, aod::HfSelBsToDsPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bs::isSelBsToDsPi >= selectionFlagBs;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_bs::flagMcMatchRec) == (int8_t)BIT(BsToDsPiToKKPiPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_bs::flagMcMatchRec) != (int8_t)BIT(BsToDsPiToKKPiPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_bs::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_bs::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
 
   void init(InitContext const&)
   {
@@ -211,14 +212,14 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        invMassBsToDsPi(candidate),
+        hfHelper.invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        yBs(candidate),
+        hfHelper.yBs(candidate),
         flagMc);
     } else {
       rowCandidateFull(
@@ -256,17 +257,17 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        invMassBsToDsPi(candidate),
+        hfHelper.invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        ctBs(candidate),
+        hfHelper.ctBs(candidate),
         candidate.eta(),
         candidate.phi(),
-        yBs(candidate),
-        eBs(candidate),
+        hfHelper.yBs(candidate),
+        hfHelper.eBs(candidate),
         flagMc);
     }
   }
@@ -349,13 +350,13 @@ struct HfTreeCreatorBsToDsPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayTypeMc::BsToDsPiToKKPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBS),
           particle.flagMcMatchGen());
       }
     }

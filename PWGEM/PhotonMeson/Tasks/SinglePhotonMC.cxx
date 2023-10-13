@@ -48,7 +48,7 @@ using namespace o2::soa;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using MyV0Photon = MyV0Photons::iterator;
-using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
+using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
 struct SinglePhotonMC {
   enum EMDetType {

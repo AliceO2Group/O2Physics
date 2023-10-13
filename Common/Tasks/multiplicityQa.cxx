@@ -205,7 +205,7 @@ struct MultiplicityQa {
         histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
 
         // 2d FT0 vs FV0 fill
-        histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFT0A(), col.multFT0A() + col.multFT0C());
+        histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFV0A(), col.multFT0A() + col.multFT0C());
       }
     }
   }
@@ -402,12 +402,12 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/h2dFT0MVsNchT0M"), nchFT0, biggestFT0);
   }
 
-  void processFIT(aod::MultsDebug const& multsdebug)
+  void processFIT(aod::MultsBC const& multsdebug)
   {
     for (auto& mult : multsdebug) {
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multDebugFT0A());
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multDebugFT0C());
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multDebugFT0A() + mult.multDebugFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multBCFT0A());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multBCFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multBCFT0A() + mult.multBCFT0C());
     }
   }
 

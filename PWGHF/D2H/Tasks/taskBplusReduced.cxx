@@ -18,6 +18,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -28,8 +29,6 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_bplus; // from CandidateReconstructionTables.h
 
 // string definitions, used for histogram axis labels
 const TString stringPt = "#it{p}_{T} (GeV/#it{c})";
@@ -47,6 +46,8 @@ struct HfTaskBplusReduced {
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
@@ -165,7 +166,7 @@ struct HfTaskBplusReduced {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -174,7 +175,7 @@ struct HfTaskBplusReduced {
       auto ptCandBplus = candidate.pt();
       auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassD0() : candD0.invMassD0Bar();
 
-      registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
+      registry.fill(HIST("hMass"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
       registry.fill(HIST("hPtCand"), ptCandBplus);
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -186,7 +187,7 @@ struct HfTaskBplusReduced {
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandBplus);
       registry.fill(HIST("hCPAxy"), candidate.cpaXY(), ptCandBplus);
       registry.fill(HIST("hEta"), candidate.eta(), ptCandBplus);
-      registry.fill(HIST("hRapidity"), yBplus(candidate), ptCandBplus);
+      registry.fill(HIST("hRapidity"), hfHelper.yBplus(candidate), ptCandBplus);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), ptCandBplus);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandBplus);
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandBplus);
@@ -207,7 +208,7 @@ struct HfTaskBplusReduced {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -228,10 +229,10 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hCPAFinerBinningRecSig"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCPAxyFinerBinningRecSig"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidityRecSig"), yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidityRecSig"), hfHelper.yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBplus);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandBplus);
-        registry.fill(HIST("hMassRecSig"), invMassBplusToD0Pi(candidate), ptCandBplus);
+        registry.fill(HIST("hMassRecSig"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), ptCandBplus);
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), ptCandBplus);
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0(), ptCandBplus);
@@ -247,10 +248,10 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hCPAFinerBinningRecBg"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCPAxyFinerBinningRecBg"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidityRecBg"), yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidityRecBg"), hfHelper.yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBplus);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandBplus);
-        registry.fill(HIST("hMassRecBg"), invMassBplusToD0Pi(candidate), ptCandBplus);
+        registry.fill(HIST("hMassRecBg"), hfHelper.invMassBplusToD0Pi(candidate), ptCandBplus);
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), ptCandBplus);
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), ptCandBplus);
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), ptCandBplus);
