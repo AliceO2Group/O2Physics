@@ -23,7 +23,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
@@ -50,8 +49,6 @@ struct HfCandidateCreatorBplusReduced {
   Configurable<double> invMassWindowD0PiTolerance{"invMassWindowD0PiTolerance", 0.01, "invariant-mass window tolerance for D0Pi pair preselections (GeV/c2)"};
   // variable that will store the value of invMassWindowD0Pi (defined in dataCreatorD0PiReduced.cxx)
   float myInvMassWindowD0Pi{1.};
-
-  HfHelper hfHelper;
 
   double massPi{0.};
   double massD0{0.};
