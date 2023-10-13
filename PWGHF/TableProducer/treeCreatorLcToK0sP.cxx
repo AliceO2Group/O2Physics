@@ -112,7 +112,7 @@ DECLARE_SOA_TABLE(HfCandCascLites, "AOD", "HFCANDCASCLITE",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec)
+                  full::OriginMcRec);
                   
 DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
@@ -204,14 +204,15 @@ DECLARE_SOA_TABLE(HfCandCascFullPs, "AOD", "HFCANDCASCFULLP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLcToK0sP {
+  Produces<o2::aod::HfCandCascLites> rowCandidateLite;
   Produces<o2::aod::HfCandCascFulls> rowCandidateFull;
   Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandCascLites> rowCandidateLite;
+  Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;  
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
-  
+  Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 24., "Maximum pt for the application of the downsampling factor"};
+
   HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
@@ -366,8 +367,13 @@ struct HfTreeCreatorLcToK0sP {
     }
     for (const auto& candidate : candidates) {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
-      if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
+      if (downSampleBkgFactor < 1.) {
+	double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
+	if(candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+	  continue;
+	}
+      }
+      if (candidate.isSelLcToK0sP() >= 1) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
