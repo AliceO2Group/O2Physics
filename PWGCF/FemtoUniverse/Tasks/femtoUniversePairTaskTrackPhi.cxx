@@ -92,7 +92,7 @@ struct femtoUniversePairTaskTrackPhi {
   /// Particle 2 --- PHI
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePhi{"ConfPDGCodePhi", 333, "Phi meson - PDG code"};
-    Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
+    // Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
     Configurable<int> ConfPIDPhi{"ConfPIDPhi", 2, "Phi meson - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
     // Configurable<float> ConfPtLowPhi{"ConfPtLowPhi", 0.5, "Lower limit for Pt for the Phi meson"}; // change according to wrzesa cuts
     // Configurable<float> ConfPtHighPhi{"ConfPtHighPhi", 1.5, "Higher limit for Pt for the Phi meson"};
@@ -377,16 +377,16 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
       // // Close Pair Rejection
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
-      // // Track Cleaning
-      // if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
-      //   continue;
-      // }
+      // Track Cleaning
+      if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
+        continue;
+      }
       sameEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
     }
@@ -465,11 +465,11 @@ struct femtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
       mixedEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
