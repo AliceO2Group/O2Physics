@@ -73,7 +73,7 @@ class FemtoDreamContainerThreeBody
   {
 
     mHistogramRegistry->add((folderName + "/relTripletDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/relTripletQ3Mult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});  
+    mHistogramRegistry->add((folderName + "/relTripletQ3Mult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
   }
 
   /// Initializes specialized Monte Carlo truth histograms for the task in case of three-body femtoscopy
@@ -189,14 +189,14 @@ class FemtoDreamContainerThreeBody
       setTriplet_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, part1, part2, part3, mult);
 
       if constexpr (isMC) {
-        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()&& part3.has_fdMCParticle()) {
+        if (part1.has_fdMCParticle() && part2.has_fdMCParticle() && part3.has_fdMCParticle()) {
           // calculate the femto observable with MC truth information
           if constexpr (mFemtoObs == femtoDreamContainerThreeBody::Observable::Q3) {
             femtoObsMC = FemtoDreamMath::getQ3(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, part3.fdMCParticle(), mMassThree);
           }
 
           if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo && abs(part3.fdMCParticle().pdgMCTruth()) == mPDGThree) { // Note: all triplet-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setTriplet_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC,  part1.fdMCParticle(), part2.fdMCParticle(), part3.fdMCParticle(), mult);
+            setTriplet_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, part1.fdMCParticle(), part2.fdMCParticle(), part3.fdMCParticle(), mult);
             setTriplet_MC(femtoObsMC, femtoObs, mult);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakeTripletCounter"), 0);
@@ -212,7 +212,7 @@ class FemtoDreamContainerThreeBody
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                  ///< For QA output
   static constexpr std::string_view mFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to mEventType
-  static constexpr femtoDreamContainerThreeBody::Observable mFemtoObs = obs;                 ///< Femtoscopic observable to be computed (according to femtoDreamContainerThreeBody::Observable)
+  static constexpr femtoDreamContainerThreeBody::Observable mFemtoObs = obs;        ///< Femtoscopic observable to be computed (according to femtoDreamContainerThreeBody::Observable)
   static constexpr int mEventType = eventType;                                      ///< Type of the event (same/mixed, according to femtoDreamContainerThreeBody::EventType)
   float mMassOne = 0.f;                                                             ///< PDG mass of particle 1
   float mMassTwo = 0.f;                                                             ///< PDG mass of particle 1
