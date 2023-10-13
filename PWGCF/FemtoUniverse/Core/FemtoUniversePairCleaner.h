@@ -79,7 +79,7 @@ class FemtoUniversePairCleaner
       }
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
-      if (part1.globalIndex() != posChild.globalIndex() || part2.globalIndex() != negChild.globalIndex()) {
+      if (part1.globalIndex() != posChild.globalIndex() && part2.globalIndex() != negChild.globalIndex()) {
         return true;
       }
       return false;
@@ -94,7 +94,7 @@ class FemtoUniversePairCleaner
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
 
-      if (part1.globalIndex() != posChild.globalIndex() || part1.globalIndex() != negChild.globalIndex()) {
+      if (part1.globalIndex() != posChild.globalIndex() && part1.globalIndex() != negChild.globalIndex()) {
         return true;
       }
       return false;
