@@ -844,6 +844,53 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
 
+    if (!nameStr.compare(Form("ITSTPCbAny_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+      cut->AddCut(GetAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("ITSbAny_ifTPC_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+      AnalysisCompositeCut* cut_notpc = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+      cut_notpc->AddCut(GetAnalysisCut("noTPC"));
+
+      AnalysisCompositeCut* cut_tpcpid = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      cut_tpcpid->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+      cut_tpcpid->AddCut(GetAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
+
+      AnalysisCompositeCut* cut_OR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      cut_OR->AddCut(cut_notpc);
+      cut_OR->AddCut(cut_tpcpid);
+      cut->AddCut(cut_OR);
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("ITSbAny_ifTPCStandard_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+      cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+      AnalysisCompositeCut* cut_notpcstandard = new AnalysisCompositeCut("NoTPCstandard", "NoTPCstandard", kTRUE);
+      cut_notpcstandard->AddCut(GetAnalysisCut("NoelectronStandardQualityTPCOnly"));
+
+      AnalysisCompositeCut* cut_tpcpid = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      cut_tpcpid->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+      cut_tpcpid->AddCut(GetAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
+
+      AnalysisCompositeCut* cut_OR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      cut_OR->AddCut(cut_notpcstandard);
+      cut_OR->AddCut(cut_tpcpid);
+      cut->AddCut(cut_OR);
+      return cut;
+    }
+
     if (!nameStr.compare(Form("lmee_eNSigmaRun3%s_loose", vecPIDcase.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
       cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -2099,6 +2146,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("electronStandardQualityITSOnly")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronStandardQualitybAnyITSOnly")) {
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kITSncls, 3.5, 7.5);
     return cut;
