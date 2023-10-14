@@ -39,12 +39,13 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::analysis;
+// using namespace o2::analysis::pdg;
 using namespace o2::aod;
+using namespace o2::aod::cascdata;
+using namespace o2::aod::v0data;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::pdg;
-using namespace o2::aod::v0data;
-using namespace o2::aod::cascdata;
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorToXiPi {
