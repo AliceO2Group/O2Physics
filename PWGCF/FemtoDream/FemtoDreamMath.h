@@ -92,13 +92,14 @@ class FemtoDreamMath
   template <typename T>
   static float getQ3(const T& part1, const float mass1, const T& part2, const float mass2, const T& part3, const float mass3)
   {
-    float E1 = sqrt(pow(part1.px(), 2) + pow(part1.py(), 2) + pow(part1.pz(), 2) + pow(mass1, 2));
-    float E2 = sqrt(pow(part2.px(), 2) + pow(part2.py(), 2) + pow(part2.pz(), 2) + pow(mass2, 2));
-    float E3 = sqrt(pow(part3.px(), 2) + pow(part3.py(), 2) + pow(part3.pz(), 2) + pow(mass3, 2));
 
-    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), E1);
-    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), E2);
-    const ROOT::Math::PxPyPzEVector vecpart3(part3.px(), part3.py(), part3.pz(), E3);
+    const ROOT::Math::PtEtaPhiMVector vecpart01(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart02(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector vecpart03(part3.pt(), part3.eta(), part3.phi(), mass3);
+
+    const ROOT::Math::PxPyPzEVector vecpart1(vecpart01);
+    const ROOT::Math::PxPyPzEVector vecpart2(vecpart02);
+    const ROOT::Math::PxPyPzEVector vecpart3(vecpart03);
 
     ROOT::Math::PxPyPzEVector q12 = getqij(vecpart1, vecpart2);
     ROOT::Math::PxPyPzEVector q23 = getqij(vecpart2, vecpart3);
