@@ -983,7 +983,7 @@ struct AnalysisSameEventPairing {
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(t1, t2);
         }
@@ -1012,8 +1012,8 @@ struct AnalysisSameEventPairing {
                         VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
                         VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
                         VarManager::fgValues[VarManager::kCosPointingAngle],
-                        t1.pt(), t1.eta(), t1.phi(), t1.sign(),
-                        t2.pt(), t2.eta(), t2.phi(), t2.sign(),
+                        VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
+                        VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
                         t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
                         0., 0.,
                         t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
@@ -1245,6 +1245,14 @@ struct AnalysisDileptonHadron {
     // Set the global index offset to find the proper lepton
     // TO DO: remove it once the issue with lepton index is solved
     int indexOffset = -999;
+    std::vector<int> trackGlobalIndexes;
+
+    if (dileptons.size() > 0) {
+      for (auto track : tracks) {
+        trackGlobalIndexes.push_back(track.globalIndex());
+        // std::cout << track.index() << " " << track.globalIndex() << std::endl;
+      }
+    }
     // loop once over dileptons for QA purposes
     for (auto dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
@@ -1255,10 +1263,13 @@ struct AnalysisDileptonHadron {
       int indexLepton2 = dilepton.index1Id();
 
       if (indexOffset == -999) {
-        indexOffset = indexLepton1;
+        indexOffset = trackGlobalIndexes.at(0);
       }
+      trackGlobalIndexes.clear();
 
       // get full track info of tracks based on the index
+      std::cout << indexLepton1 - indexOffset << std::endl;
+      std::cout << indexLepton2 - indexOffset << std::endl;
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
 

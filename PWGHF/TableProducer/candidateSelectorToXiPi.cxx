@@ -26,8 +26,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -180,8 +178,8 @@ struct HfCandidateSelectorToXiPi {
   void process(aod::HfCandToXiPi const& candidates,
                TracksSel const&)
   {
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0;
+    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;
 
     int collId = -999;
 

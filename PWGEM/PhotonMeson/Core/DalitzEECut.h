@@ -71,6 +71,7 @@ class DalitzEECut : public TNamed
     kTOFif = 1,
     kTPChadrej = 2,
     kTPChadrejORTOFreq = 3,
+    kTPConly = 4,
   };
 
   template <class TLeg, typename TPair>
@@ -136,6 +137,10 @@ class DalitzEECut : public TNamed
       if (!PassPID(track)) {
         return false;
       }
+
+      if (mApplyTOFbeta && (mMinTOFbeta < track.beta() && track.beta() < mMaxTOFbeta)) {
+        return false;
+      }
     }
     return true;
   }
@@ -156,6 +161,9 @@ class DalitzEECut : public TNamed
       case PIDSchemes::kTPChadrejORTOFreq:
         return PassTPChadrej(track) || PassTOFreq(track);
 
+      case PIDSchemes::kTPConly:
+        return PassTPConly(track);
+
       case PIDSchemes::kUnDef:
         return true;
 
@@ -167,29 +175,38 @@ class DalitzEECut : public TNamed
   template <typename T>
   bool PassTOFreq(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_e_included_TOF = track.tpcInnerParam() < mMinPinTOF ? true : mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_e_included_TPC && is_pi_excluded_TPC && is_e_included_TOF;
+    bool is_el_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
   bool PassTOFif(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_e_included_TOF = (track.tpcInnerParam() < mMinPinTOF || track.beta() < 0.0) ? true : mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_e_included_TPC && is_pi_excluded_TPC && is_e_included_TOF;
+    bool is_el_included_TOF = (track.tpcInnerParam() < mMinPinTOF || track.beta() < 0.0) ? true : mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
   bool PassTPChadrej(T const& track) const
   {
-    bool is_e_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_e_included_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+  }
+
+  template <typename T>
+  bool PassTPConly(T const& track) const
+  {
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
+    return is_el_included_TPC && is_pi_excluded_TPC;
   }
 
   template <typename T>
@@ -203,10 +220,10 @@ class DalitzEECut : public TNamed
         return pair.eta() >= mMinPairEta && pair.eta() <= mMaxPairEta;
 
       case DalitzEECuts::kMee:
-        return ((mMinMeePhivPairDep) ? mMinMeePhivPairDep(abs(pair.phiv())) : mMinMee) <= pair.mee() && pair.mee() <= mMaxMee;
+        return mMinMee <= pair.mee() && pair.mee() <= mMaxMee;
 
       case DalitzEECuts::kPhiV:
-        return pair.phiv() >= mMinPhivPair && pair.phiv() <= mMaxPhivPair;
+        return mMinPhivPair <= pair.phiv() && pair.phiv() <= (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(pair.mee()) : mMaxPhivPair);
 
       default:
         return false;
@@ -255,9 +272,8 @@ class DalitzEECut : public TNamed
   // Setters
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
-  void SetMeeRange(float min = 0.f, float max = 0.1);
-  void SetPhivPairRange(float min = 0.f, float max = +3.15);
-  void SetMinMeePhivPairDep(std::function<float(float)> phivDepCut);
+  void SetMeeRange(float min = 0.f, float max = 0.5);
+  void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -270,6 +286,8 @@ class DalitzEECut : public TNamed
 
   void SetPIDScheme(PIDSchemes scheme);
   void SetMinPinTOF(float min);
+  void SetMuonExclusionTPC(bool flag);
+  void SetTOFbetaRange(bool flag, float min, float max);
   void SetTPCNsigmaElRange(float min = -1e+10, float max = 1e+10);
   void SetTPCNsigmaMuRange(float min = -1e+10, float max = 1e+10);
   void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
@@ -293,8 +311,8 @@ class DalitzEECut : public TNamed
   float mMinMee{0.f}, mMaxMee{1e10f};
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};      // range in pT
   float mMinPairEta{-1e10f}, mMaxPairEta{1e10f}; // range in eta
-  float mMinPhivPair{0.f}, mMaxPhivPair{+3.15};
-  std::function<float(float)> mMinMeePhivPairDep{}; // min mee as a function of phiv
+  float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
+  std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
@@ -314,7 +332,10 @@ class DalitzEECut : public TNamed
 
   // pid cuts
   PIDSchemes mPIDScheme{PIDSchemes::kUnDef};
-  float mMinPinTOF{0.0f}; // min pin cut for TOF.
+  float mMinPinTOF{0.0f};        // min pin cut for TOF.
+  bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
+  bool mApplyTOFbeta{false};     // flag to reject hadron contamination with TOF
+  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.95};
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
   float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
