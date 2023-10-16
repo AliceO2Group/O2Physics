@@ -64,7 +64,6 @@ class CollisonCuts
     mHistogramRegistry->add("Event/MultFT0M", "; FT0M signal; Entries", kTH1F, {{100000, 0, 100000}});
     mHistogramRegistry->add("Event/MultFT0C", "; FT0C signal; Entries", kTH1F, {{100000, 0, 100000}});
     mHistogramRegistry->add("Event/MultFT0A", "; FT0A signal; Entries", kTH1F, {{100000, 0, 100000}});
-    mHistogramRegistry->add("Track/Phi", "#phi distribution", kTH1F, {{65, -0.1, 6.4}});
   }
 
   /// Print some debug information
