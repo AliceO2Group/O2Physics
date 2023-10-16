@@ -39,8 +39,7 @@ double getDeltaPhi(double phiD, double phiHadron)
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsMassAndEfficiency + 1] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + (npTBinsMassAndEfficiency + 1)};
+std::vector<double> efficiencyDmeson;
 
 // histogram binning definition
 const int massAxisBins = 350;
@@ -164,7 +163,7 @@ struct HfCorrelatorDplusHadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
 
   HfHelper hfHelper;
   SliceCache cache;
