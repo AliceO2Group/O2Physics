@@ -143,13 +143,13 @@ def compute_efficiency(
         n_bins = len(pt_bins_limits) - 1
 
         h_rec = h_rec.Rebin(n_bins, 'hRec', pt_bins_limits)
+        h_gen = h_gen.Rebin(n_bins, 'hGen', pt_bins_limits)
         # using Scale causes weights-related complications in TEfficiency
         # trick: we SetBinContent + Sumw2 (gives same result as w/o rebinning)
-        h_rec.SetBinContent(1, h_rec.GetBinContent(1) / h_rec.GetBinWidth(1))
+        for i_bin in range(1, n_bins + 1):
+            h_rec.SetBinContent(i_bin, h_rec.GetBinContent(i_bin) / h_rec.GetBinWidth(i_bin))
+            h_gen.SetBinContent(i_bin, h_gen.GetBinContent(i_bin) / h_gen.GetBinWidth(i_bin))
         h_rec.Sumw2()
-
-        h_gen = h_gen.Rebin(n_bins, 'hGen', pt_bins_limits)
-        h_gen.SetBinContent(1, h_gen.GetBinContent(1) / h_gen.GetBinWidth(1))
         h_gen.Sumw2()
 
     efficiency = TEfficiency(h_rec, h_gen)
