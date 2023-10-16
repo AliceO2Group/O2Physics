@@ -86,7 +86,7 @@ struct EventSelectionQaTask {
     const AxisSpec axisTimeSum{100, -10., 10., ""};
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
-    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 4500., "n contributors"};
+    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 7000., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
