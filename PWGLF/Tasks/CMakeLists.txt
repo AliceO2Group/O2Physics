@@ -182,7 +182,7 @@ o2physics_add_dpl_workflow(kinkanalysis
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambda1520spherocityanalysis
-                    SOURCES lambda1520_spherocity_analysis.cxx
+                    SOURCES lambda1520SpherocityAnalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
