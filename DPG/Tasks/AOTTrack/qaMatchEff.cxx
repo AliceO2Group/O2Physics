@@ -21,6 +21,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -150,9 +151,6 @@ struct qaMatchEff {
   // Tracks selection object
   TrackSelection cutObject;
   //
-  // pt calculated at the inner wall of TPC
-  float trackPtInParamTPC = -1.;
-  //
   // do you want pt comparison 2d's ?
   Configurable<bool> makept2d{"makept2d", false, "choose if produce pt reco/TPC derived pt 2dims "};
   //
@@ -177,7 +175,7 @@ struct qaMatchEff {
   //
   //
   //
-  // Init function
+  //  Init function
   //
   void init(o2::framework::InitContext&)
   {
