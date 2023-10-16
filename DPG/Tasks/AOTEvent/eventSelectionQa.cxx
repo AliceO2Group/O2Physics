@@ -571,7 +571,7 @@ struct EventSelectionQaTask {
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
       const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
-      const AxisSpec axisBcDif{200, -100., 100., "collision bc difference"};
+      const AxisSpec axisBcDif{600, -300., 300., "bc difference"};
       histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
       histos.add("hSecondsTVXvsBcDifAll", "", kTH2F, {axisSeconds, axisBcDif});
     }
