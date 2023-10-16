@@ -12,9 +12,10 @@ import os
 import sys
 from typing import Union
 
+import numpy as np
 import yaml
 #pylint: disable=no-name-in-module
-from ROOT import (TH1, TH2, TCanvas, TEfficiency, TFile, TLatex, TLegend,
+from ROOT import (TH1, TH1F, TH2, TCanvas, TEfficiency, TFile, TLatex, TLegend,
                   kAzure, kBlack, kFullCircle, kFullSquare, kOpenSquare, kRed)
 from style_formatter import set_global_style, set_object_style
 
@@ -68,7 +69,7 @@ def enforce_trailing_slash(path: str) -> str:
     - path with a trailing slash at the end if it was not there yet
     """
 
-    if path[-1] != '/':
+    if path is not None and path[-1] != '/':
         path += '/'
 
     return path
@@ -96,7 +97,8 @@ def compute_efficiency(
     h_rec: Union[TH1, TH2],
     h_gen: Union[TH1, TH2],
     rapidity_cut: float = None,
-    axis_rapidity: str = 'Y') -> TEfficiency:
+    axis_rapidity: str = 'Y',
+    pt_bins_limits: np.float64 = None) -> TEfficiency:
     """
     Helper method to compute the efficiency as function of the feature in axis.
 
@@ -127,12 +129,28 @@ def compute_efficiency(
             h_rec = h_rec.ProjectionY()
 
     if is_gen_2d:
-        if rapidity_cut is not None:
-            h_gen.GetYaxis().SetRangeUser(-1.0 * rapidity_cut + epsilon, rapidity_cut - epsilon)
         if axis_rapidity == 'Y':
+            if rapidity_cut is not None:
+                h_gen.GetYaxis().SetRangeUser(-1.0 * rapidity_cut + epsilon, rapidity_cut - epsilon)
             h_gen = h_gen.ProjectionX()
         else:
+            if rapidity_cut is not None:
+                h_gen.GetXaxis().SetRangeUser(-1.0 * rapidity_cut + epsilon, rapidity_cut - epsilon)
             h_gen = h_gen.ProjectionY()
+
+    # rebin histograms, if enabled
+    if pt_bins_limits is not None:
+        n_bins = len(pt_bins_limits) - 1
+
+        h_rec = h_rec.Rebin(n_bins, 'hRec', pt_bins_limits)
+        # using Scale causes weights-related complications in TEfficiency
+        # trick: we SetBinContent + Sumw2 (gives same result as w/o rebinning)
+        h_rec.SetBinContent(1, h_rec.GetBinContent(1) / h_rec.GetBinWidth(1))
+        h_rec.Sumw2()
+
+        h_gen = h_gen.Rebin(n_bins, 'hGen', pt_bins_limits)
+        h_gen.SetBinContent(1, h_gen.GetBinContent(1) / h_gen.GetBinWidth(1))
+        h_gen.Sumw2()
 
     efficiency = TEfficiency(h_rec, h_gen)
 
@@ -157,9 +175,16 @@ def get_th1_from_tefficiency(
     n_bins = h_eff.GetXaxis().GetNbins()
     for i_bin in range(1, n_bins+1):
         h_eff.SetBinContent(i_bin, teff.GetEfficiency(i_bin))
-        # TH1 can't handle asymmetric errors so we take the max
-        err_max = max(teff.GetEfficiencyErrorLow(i_bin), teff.GetEfficiencyErrorUp(i_bin))
-        h_eff.SetBinError(i_bin, err_max)
+        if abs(teff.GetEfficiencyErrorLow(i_bin) - teff.GetEfficiencyErrorUp(i_bin)) \
+                / teff.GetEfficiencyErrorLow(i_bin) > 1e-02:
+            print((f'\033[93mWARNING: efficiency error is asymmetric in bin {i_bin},' \
+                    ' setting the maximum error in the histogram!\033[0m'))
+            # TH1 can't handle asymmetric errors so we take the max
+            err = max(teff.GetEfficiencyErrorLow(i_bin), teff.GetEfficiencyErrorUp(i_bin))
+        else:
+            err = teff.GetEfficiencyErrorLow(i_bin)
+
+        h_eff.SetBinError(i_bin, err)
 
     return h_eff
 
@@ -233,7 +258,7 @@ def main(
     name_file = cfg['input']['filename']
     name_tree = cfg['input']['treename']
     file = TFile.Open(name_file)
-    name_tree = enforce_trailing_slash(name_tree)
+    name_tree = enforce_trailing_slash(name_tree) if name_tree is not None else ''
 
     # fill dictionaries with histograms
     dic_rec, dic_gen = {}, {}
@@ -248,6 +273,16 @@ def main(
         else:
             dic_gen[key] = file.Get(name_tree + histoname)
 
+    # configure pt binning
+    pt_bins_limits = enforce_list(cfg['pt_bins_limits'])
+    if pt_bins_limits is not None:
+        pt_bins_limits =  np.array(pt_bins_limits, 'd')
+        pt_min, pt_max = pt_bins_limits[0], pt_bins_limits[-1]
+        is_retrieved_pt_interval = True
+    else:
+        pt_min, pt_max = 0., 36. # default values
+        is_retrieved_pt_interval = False
+
     #  configure possible cut on rapidity
     rapidity_cut = cfg['rapidity']['cut']
     axis_rapidity = cfg['rapidity']['axis']
@@ -261,7 +296,6 @@ def main(
     log_y_axis = cfg['output']['plots']['y_axis']['log_scale']
     if name_axis is None:
         name_axis = '#varepsilon' # default value
-    pt_min, pt_max = 0., 35. # default values
     title = ';#it{p}_{T} (GeV/#it{c});' + name_axis + ';'
     overlap = enforce_list(cfg['output']['plots']['overlap'])
 
@@ -291,17 +325,12 @@ def main(
 
     # compute efficiencies
     efficiencies = {}
-    is_retrieved_pt_interval = False
     for (key, h_rec), (_, h_gen) in zip(dic_rec.items(), dic_gen.items()):
         if h_rec is not None and h_gen is not None:
-            # retrieve pt_min and pt_max from imported histogram
-            if not is_retrieved_pt_interval:
-                pt_min, pt_max = h_rec.GetXaxis().GetXmin(), h_rec.GetXaxis().GetXmax()
-                is_retrieved_pt_interval = True
 
             # compute efficiency, store it in TEfficiency instance and configure it
             efficiencies[key] = compute_efficiency(
-                h_rec, h_gen, rapidity_cut, axis_rapidity)
+                h_rec, h_gen, rapidity_cut, axis_rapidity, pt_bins_limits)
             efficiencies[key].SetName('TEfficiency_' + out_label + key)
             efficiencies[key].SetTitle(title)
             __set_object_style(efficiencies[key], key)
@@ -309,6 +338,11 @@ def main(
             # save TEfficiency instance in output file, if enabled
             if save_tefficiency:
                 efficiencies[key].Write()
+
+            # retrieve pt_min and pt_max from imported histogram
+            if not is_retrieved_pt_interval:
+                pt_min, pt_max = h_rec.GetXaxis().GetXmin(), h_rec.GetXaxis().GetXmax()
+                is_retrieved_pt_interval = True
 
             # plot efficiency on canvas
             c_eff = configure_canvas(f'c{out_label + key}',
@@ -322,9 +356,14 @@ def main(
 
             # convert TEfficiency instance to TH1 histogram in output file, if save enabled
             if save_th1:
-                h_eff = get_th1_from_tefficiency(
-                    efficiencies[key], h_rec.Clone('h' + out_label + key))
-                h_eff.SetTitle(title)
+                if pt_bins_limits is not None:
+                    h_eff = TH1F(
+                        'h' + out_label + key, title, len(pt_bins_limits)-1, pt_bins_limits)
+                    h_eff = get_th1_from_tefficiency(efficiencies[key], h_eff)
+                else:
+                    h_eff = get_th1_from_tefficiency(
+                        efficiencies[key], h_rec.Clone('h' + out_label + key))
+                    h_eff.SetTitle(title)
                 __set_object_style(h_eff, key)
                 h_eff.Write()
 

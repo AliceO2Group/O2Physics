@@ -11,6 +11,8 @@ input:
       Prompt: hPtVsYGenPrompt
       Nonprompt: hPtVsYGenNonPrompt
 
+pt_bins_limits: null # options available: list of bin limits, null to deactivate
+
 rapidity:
   axis: Y # rapidity axis in input histograms, options available: X, Y
   cut: 0.5 # selection |y| < cut on the generated histogram, null if not cut
