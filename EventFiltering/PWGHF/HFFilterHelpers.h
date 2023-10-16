@@ -209,8 +209,8 @@ static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", 
 
 // dummy array
 static const std::vector<std::string> labelsEmpty{};
-static constexpr double cutsTrackDummy[hf_cuts_single_track::nBinsPtTrack][hf_cuts_single_track::nCutVarsTrack] = {{0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}};
-o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack};
+static constexpr double cutsTrackDummy[o2::analysis::hf_cuts_single_track::nBinsPtTrack][o2::analysis::hf_cuts_single_track::nCutVarsTrack] = {{0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}};
+o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], o2::analysis::hf_cuts_single_track::nBinsPtTrack, o2::analysis::hf_cuts_single_track::nCutVarsTrack, o2::analysis::hf_cuts_single_track::labelsPtTrack, o2::analysis::hf_cuts_single_track::labelsCutVarTrack};
 
 // Main helper class
 
