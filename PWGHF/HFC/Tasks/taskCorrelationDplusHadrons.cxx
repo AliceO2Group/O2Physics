@@ -72,7 +72,7 @@ auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sideban
 auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
 auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
-std::vector<double> efficiencyDmeson;
+std::vector<double> efficiencyDmeson(npTBinsEfficiency);
 
 /// Dplus-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDplusHadrons {
