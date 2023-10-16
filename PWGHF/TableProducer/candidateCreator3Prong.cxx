@@ -27,7 +27,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
@@ -53,14 +52,13 @@ struct HfCandidateCreator3Prong {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
+  int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
-
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
+  double massPi{0.};
+  double massK{0.};
   double massPiKPi{0.};
-  double bz = 0.;
+  double bz{0.};
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -80,6 +78,8 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
 
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

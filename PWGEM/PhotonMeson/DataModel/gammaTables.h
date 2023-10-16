@@ -124,17 +124,27 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
 
 using EMMCParticle = EMMCParticles::iterator;
 
-namespace emmcparticlelabel
+namespace v0legmclabel
 {
 DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
-} // namespace emmcparticlelabel
+} // namespace v0legmclabel
 
-// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
-DECLARE_SOA_TABLE(EMMCParticleLabels, "AOD", "EMMCPARLABEL", //!
-                  emmcparticlelabel::EMMCParticleId, emmcparticlelabel::McMask);
+// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with v0leg table)
+DECLARE_SOA_TABLE(V0LegMCLabels, "AOD", "V0LEGMCLABEL", //!
+                  v0legmclabel::EMMCParticleId, v0legmclabel::McMask);
+using V0LegMCLabel = V0LegMCLabels::iterator;
 
-using EMMCParticleLabel = EMMCParticleLabels::iterator;
+namespace emprimarytrackmclabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace emprimarytrackmclabel
+
+// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with emprimarytrack table)
+DECLARE_SOA_TABLE(EMPrimaryTrackMCLabels, "AOD", "EMPRMTRKMCLABEL", //!
+                  emprimarytrackmclabel::EMMCParticleId, emprimarytrackmclabel::McMask);
+using EMPrimaryTrackMCLabel = EMPrimaryTrackMCLabels::iterator;
 
 namespace v0leg
 {
@@ -144,7 +154,6 @@ DECLARE_SOA_COLUMN(Sign, sign, int);              //!
 DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool); //!
 
 } // namespace v0leg
-// reconstructed v0 information
 DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   o2::soa::Index<>, v0leg::CollisionId,
                   v0leg::TrackId, v0leg::Sign, v0leg::IsAmbTrack,
@@ -286,6 +295,61 @@ using V0PhotonKF = V0PhotonsKF::iterator;
 DECLARE_SOA_TABLE(V0KFEMReducedEventIds, "AOD", "V0KFEMEVENTID", v0photonkf::EMReducedEventId); // To be joined with V0PhotonsKF table at analysis level.
 // iterators
 using V0KFEMReducedEventId = V0KFEMReducedEventIds::iterator;
+
+namespace emprimarytrack
+{
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
+DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+} // namespace emprimarytrack
+DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPRIMARYTRACK", //!
+                  o2::soa::Index<>, emprimarytrack::CollisionId,
+                  emprimarytrack::TrackId, emprimarytrack::Sign,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ,
+
+                  // dynamic column
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::ITSNCls<track::ITSClusterMap>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
+                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+
+// iterators
+using EMPrimaryTrack = EMPrimaryTracks::iterator;
+
+namespace dalitzee
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);                        //!
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, EMPrimaryTracks, "_Pos"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, EMPrimaryTracks, "_Neg"); //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                               //!
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Mee, mee, float);
+DECLARE_SOA_COLUMN(PhiV, phiv, float);
+DECLARE_SOA_COLUMN(DCAeeXY, dcaeeXY, float);
+DECLARE_SOA_COLUMN(DCAeeZ, dcaeeZ, float);
+DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
+} // namespace dalitzee
+DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
+                  o2::soa::Index<>, dalitzee::CollisionId, dalitzee::PosTrackId, dalitzee::NegTrackId,
+                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mee, dalitzee::PhiV, dalitzee::DCAeeXY, dalitzee::DCAeeZ, dalitzee::Sign,
+                  dalitzee::Energy<o2::aod::dalitzee::Pt, o2::aod::dalitzee::Eta, o2::aod::dalitzee::Mee>);
+// iterators
+using DalitzEE = DalitzEEs::iterator;
+
+DECLARE_SOA_TABLE(DalitzEEEMReducedEventIds, "AOD", "EEEMEVENTID", dalitzee::EMReducedEventId); // To be joined with DalitzEEs table at analysis level.
+// iterators
+using DalitzEEEMReducedEventId = DalitzEEEMReducedEventIds::iterator;
 
 namespace MCTracksTrue
 {

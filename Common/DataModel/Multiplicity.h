@@ -106,6 +106,23 @@ DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
                   multZeq::MultZeqFDDA, multZeq::MultZeqFDDC,
                   multZeq::MultZeqNTracksPV);
 using MultZeq = MultZeqs::iterator;
+
+namespace multBC
+{
+DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);    //!
+DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);       //!
+DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool); //!
+} // namespace multDebug
+DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
+                  multBC::MultBCFT0A,
+                  multBC::MultBCFT0C,
+                  multBC::MultBCFV0A,
+                  multBC::MultBCTVX,
+                  multBC::MultBCFV0OrA);
+using MultBC = MultsBC::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_MULTIPLICITY_H_

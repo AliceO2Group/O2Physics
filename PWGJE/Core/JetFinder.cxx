@@ -18,8 +18,7 @@
 /// Sets the jet finding parameters
 void JetFinder::setParams()
 {
-
-  if (jetEtaMin < -98.0) {
+  if (jetEtaDefault) {
 
     jetEtaMin = etaMin + jetR; // in aliphysics this was (-etaMax + 0.95*jetR)
     jetEtaMax = etaMax - jetR;

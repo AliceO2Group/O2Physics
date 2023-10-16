@@ -45,9 +45,6 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::pdg;
 using namespace o2::aod::v0data;
 using namespace o2::aod::cascdata;
-using namespace o2::aod::hf_track_index;
-using namespace o2::aod::hf_sel_collision;
-using namespace o2::aod::hf_cand_toxipi;
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorToXiPi {
@@ -82,6 +79,7 @@ struct HfCandidateCreatorToXiPi {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
   int runNumber;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
@@ -138,11 +136,11 @@ struct HfCandidateCreatorToXiPi {
       df.setWeightedFinalPCA(useWeightedFinalPCA);
       df.setRefitWithMatCorr(refitWithMatCorr);
 
-      double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
-      double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
-      double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
-      double massOmegacFromPDG = RecoDecay::getMassPDG(kOmegaC0); // pdg code 4332
-      double massXicFromPDG = RecoDecay::getMassPDG(kXiCZero);    // pdg code 4132
+      double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
+      double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
+      double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
+      double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
+      double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
 
       // loop over cascades reconstructed by cascadebuilder.cxx
       auto thisCollId = collision.globalIndex();
@@ -375,7 +373,7 @@ struct HfCandidateCreatorToXiPi {
           float dcaOmegacDau = std::sqrt(df.getChi2AtPCACandidate());
 
           // set hfFlag
-          int hfFlag = 1 << DecayType::DecayToXiPi;
+          int hfFlag = 1 << aod::hf_cand_toxipi::DecayType::DecayToXiPi;
 
           // fill test histograms
           hInvMassOmegac->Fill(mOmegac);
@@ -491,7 +489,7 @@ struct HfCandidateCreatorToXiPiMc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << DecayType::OmegaczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
             }
           }
         }
@@ -516,7 +514,7 @@ struct HfCandidateCreatorToXiPiMc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << DecayType::XiczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
             }
           }
         }
@@ -549,7 +547,7 @@ struct HfCandidateCreatorToXiPiMc {
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               debugGenLambda = 1;
-              flag = sign * (1 << DecayType::OmegaczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
             }
           }
         }
@@ -566,7 +564,7 @@ struct HfCandidateCreatorToXiPiMc {
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               debugGenLambda = 1;
-              flag = sign * (1 << DecayType::XiczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
             }
           }
         }

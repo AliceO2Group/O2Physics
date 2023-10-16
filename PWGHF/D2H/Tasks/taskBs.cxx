@@ -17,8 +17,10 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -27,10 +29,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bs;               // from CandidateReconstructionTables.h
-using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
 /// Bs analysis task
@@ -43,6 +41,9 @@ struct HfTaskBs {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bs_to_ds_pi::vecBinsPt}, "pT bin limits"};
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+  HfHelper hfHelper;
 
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 
@@ -124,12 +125,12 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc + 1;
+      constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bs::DecayTypeMc::NDecayTypeMc + 1;
       TString labels[kNBinsDecayTypeMc];
-      labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
-      labels[DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
-      labels[DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
-      labels[DecayTypeMc::NDecayTypeMc] = "Other decays";
+      labels[hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
+      labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
+      labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
+      labels[hf_cand_bs::DecayTypeMc::NDecayTypeMc] = "Other decays";
       static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
       registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassBs, axisPt}});
       for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
@@ -156,7 +157,7 @@ struct HfTaskBs {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -168,9 +169,9 @@ struct HfTaskBs {
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hPtCand"), ptCandBs);
       registry.fill(HIST("hEta"), candidate.eta(), ptCandBs);
-      registry.fill(HIST("hRapidity"), yBs(candidate), ptCandBs);
+      registry.fill(HIST("hRapidity"), hfHelper.yBs(candidate), ptCandBs);
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandBs);
-      registry.fill(HIST("hMass"), invMassBsToDsPi(candidate), ptCandBs);
+      registry.fill(HIST("hMass"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
       registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandBs);
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandBs);
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), ptCandBs);
@@ -180,7 +181,7 @@ struct HfTaskBs {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), ptCandBs);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandBs);
       registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), ptCandBs);
-      registry.fill(HIST("hInvMassDs"), invMassDsToKKPi(candDs), ptCandBs);
+      registry.fill(HIST("hInvMassDs"), hfHelper.invMassDsToKKPi(candDs), ptCandBs);
     } // candidate loop
   }   // process
 
@@ -195,13 +196,13 @@ struct HfTaskBs {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto ptCandBs = candidate.pt();
       auto candDs = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
-      auto invMassCandBs = invMassBsToDsPi(candidate);
+      auto invMassCandBs = hfHelper.invMassBsToDsPi(candidate);
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
@@ -211,10 +212,10 @@ struct HfTaskBs {
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandBs);
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBs);
-        registry.fill(HIST("hRapidityRecSig"), yBs(candidate), ptCandBs);
+        registry.fill(HIST("hRapidityRecSig"), hfHelper.yBs(candidate), ptCandBs);
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), ptCandBs);
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), ptCandBs);
-        registry.fill(HIST("hMassRecSig"), invMassBsToDsPi(candidate), ptCandBs);
+        registry.fill(HIST("hMassRecSig"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBs);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandBs);
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), ptCandBs);
@@ -228,15 +229,15 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
         }
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandBs);
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBs);
-        registry.fill(HIST("hRapidityRecBg"), yBs(candidate), ptCandBs);
+        registry.fill(HIST("hRapidityRecBg"), hfHelper.yBs(candidate), ptCandBs);
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), ptCandBs);
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), ptCandBs);
-        registry.fill(HIST("hMassRecBg"), invMassBsToDsPi(candidate), ptCandBs);
+        registry.fill(HIST("hMassRecBg"), hfHelper.invMassBsToDsPi(candidate), ptCandBs);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBs);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandBs);
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), ptCandBs);
@@ -250,12 +251,12 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandBs, ptCandBs);
-          } else if (TESTBIT(flagMcMatchRecBs, DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
-          } else { // Other decay
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::NDecayTypeMc, invMassCandBs, ptCandBs);
+          if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          } else if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
+          } else {
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::NDecayTypeMc, invMassCandBs, ptCandBs);
           }
         }
       }
@@ -266,7 +267,7 @@ struct HfTaskBs {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBS));
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBS);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -278,7 +279,7 @@ struct HfTaskBs {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
           counter++;
         }
 

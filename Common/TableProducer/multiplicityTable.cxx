@@ -22,6 +22,8 @@ using namespace o2::framework;
 #include "TableHelper.h"
 #include "iostream"
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
   Produces<aod::FV0Mults> multFV0;

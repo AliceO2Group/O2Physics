@@ -21,11 +21,12 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include "Rtypes.h"
 #include "TNamed.h"
 #include "TMath.h"
+
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed
 {
@@ -123,22 +124,14 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // bool isITSonly_pos = pos.hasITS() & !pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
-    // bool isITSonly_ele = ele.hasITS() & !ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
-    // if (isITSonly_pos && isITSonly_ele) {
-    //  if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
-    //    return false;
-    //  }
-    //}
-
     if (pos.hasITS() && ele.hasITS()) {
       if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
         return false;
       }
     }
 
-    bool isTPConly_pos = !pos.hasITS() & pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
-    bool isTPConly_ele = !ele.hasITS() & ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
+    bool isTPConly_pos = isTPConlyTrack(pos);
+    bool isTPConly_ele = isTPConlyTrack(ele);
     if (isTPConly_pos && isTPConly_ele) {
       if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
         return false;
@@ -165,7 +158,20 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
-      bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTOF() & !track.hasTRD();
+      bool isITSonly = isITSonlyTrack(track);
+      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
+      if (isITSonly && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
+
+      bool isITSTPC = isITSTPCTrack(track);
+      auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
+      if (isITSTPC && !its_ob_only_itstpc) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {
@@ -322,10 +328,7 @@ class V0PhotonCut : public TNamed
         // }
 
         float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
-        if (dxy > margin_xy) { // cut in XY plane first
-          return false;
-        }
-        return true;
+        return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
         const float margin_x = 2.0;                                         // cm
@@ -407,28 +410,25 @@ class V0PhotonCut : public TNamed
         }
 
         const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
-        if (track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY())) {
-          return false;
-        }
-        return true;
+        return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY()));
       }
       case V0PhotonCuts::kRequireITSTPC:
-        return track.hasITS() & track.hasTPC();
+        return isITSTPCTrack(track);
 
       case V0PhotonCuts::kRequireITSonly:
-        return track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+        return isITSonlyTrack(track);
 
       case V0PhotonCuts::kRequireTPConly:
-        return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
+        return isTPConlyTrack(track);
 
       case V0PhotonCuts::kRequireTPCTRD:
-        return track.hasTPC() & track.hasTRD() & !track.hasITS();
+        return isTPCTRDTrack(track);
 
       case V0PhotonCuts::kRequireTPCTOF:
-        return track.hasTPC() & track.hasTOF() & !track.hasITS();
+        return isTPCTOFTrack(track);
 
       case V0PhotonCuts::kRequireTPCTRDTOF:
-        return track.hasTPC() & track.hasTOF() & !track.hasITS() & track.hasTRD();
+        return isTPCTRDTOFTrack(track);
 
       default:
         return false;
@@ -477,6 +477,9 @@ class V0PhotonCut : public TNamed
   void print() const;
 
  private:
+  static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
+  static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
+  static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement_ITSTPC;
   // v0 cuts
   float mMinMee{0.f}, mMaxMee{0.1f};
   float mMinV0Pt{0.f}, mMaxV0Pt{1e10f};      // range in pT

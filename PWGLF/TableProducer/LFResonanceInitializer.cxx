@@ -89,6 +89,8 @@ struct reso2initializer {
 
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<int> trackSphDef{"trackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
+  Configurable<int> trackSphMin{"trackSphMin", 10, "Number of tracks for Spherocity Calculation"};
 
   // EventCorrection for MC
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1.0, 5.0, 10., 15., 20., 30., 40., 50., 70., 100.0, 105.}, "Binning of the centrality axis"};
@@ -353,6 +355,59 @@ struct reso2initializer {
         returnValue = ResoEvents.multFT0M();
     }
     return returnValue;
+  }
+
+  /// Compute the spherocity of an event
+  /// Important here is that the filter on tracks does not interfere here!
+  /// In Run 2 we used here global tracks within |eta| < 0.8
+  /// \tparam T type of the tracks
+  /// \param tracks All tracks
+  /// \return value of the spherocity of the event
+  template <typename T>
+  float ComputeSpherocity(T const& tracks, int nTracksMin, int spdef)
+  {
+    // if number of tracks is not enough for spherocity estimation.
+    int ntrks = tracks.size();
+    if (ntrks < nTracksMin)
+      return -99.;
+
+    // start computing spherocity
+
+    float ptSum = 0.;
+    for (auto const& track : tracks) {
+      if (ConfFillQA) {
+        qaRegistry.fill(HIST("Phi"), track.phi());
+      }
+      if (spdef == 0) {
+        ptSum += 1.;
+      } else {
+        ptSum += track.pt();
+      }
+    }
+
+    float tempSph = 1.;
+    for (int i = 0; i < 360 / 0.1; ++i) {
+      float sum = 0., pt = 0.;
+      float phiparm = (TMath::Pi() * i * 0.1) / 180.;
+      float nx = TMath::Cos(phiparm);
+      float ny = TMath::Sin(phiparm);
+      for (auto const& trk : tracks) {
+        pt = trk.pt();
+        if (spdef == 0) {
+          pt = 1.;
+        }
+        float phi = trk.phi();
+        float px = pt * TMath::Cos(phi);
+        float py = pt * TMath::Sin(phi);
+        // sum += pt * abs(sin(phiparm - phi));
+        sum += TMath::Abs(px * ny - py * nx);
+      }
+      float sph = TMath::Power((sum / ptSum), 2);
+      if (sph < tempSph)
+        tempSph = sph;
+    }
+
+    return TMath::Power(TMath::Pi() / 2., 2) * tempSph;
   }
 
   // Filter for all tracks
@@ -785,6 +840,7 @@ struct reso2initializer {
       qaRegistry.add("hGoodMCV0Indices", "hGoodMCV0Indices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
+      qaRegistry.add("Phi", "#phi distribution", kTH1F, {{65, -0.1, 6.4}});
     }
     // MC histograms
     if (doprocessMCGenCount) {
@@ -852,9 +908,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -929,9 +985,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -953,9 +1009,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -976,9 +1032,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -1002,9 +1058,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -1030,9 +1086,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), MultEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
