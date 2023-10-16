@@ -72,8 +72,7 @@ auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sideban
 auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
 auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
+std::vector<double> efficiencyDmeson;
 
 /// Dplus-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDplusHadrons {
@@ -88,7 +87,7 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for D meson specie under study"};
 
   HistogramRegistry registry{
     "registry",
