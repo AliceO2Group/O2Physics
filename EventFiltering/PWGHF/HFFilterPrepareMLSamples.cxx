@@ -37,9 +37,10 @@
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod::hffilters;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hffilters;
 
 struct HfFilterPrepareMlSamples { // Main struct
 
@@ -49,7 +50,7 @@ struct HfFilterPrepareMlSamples { // Main struct
   // parameters for production of training samples
   Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -131,7 +132,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       }
 
       float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < downSampleBkgFactor)) {
         train2P(invMassD0, invMassD0bar, pt2Prong, trackParPos.getPt(), dcaPos[0], dcaPos[1], trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
                 trackParNeg.getPt(), dcaNeg[0], dcaNeg[1], trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(), flag, isInCorrectColl);
       }
@@ -238,7 +239,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       }
 
       float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < downSampleBkgFactor)) {
         train3P(invMassDplus, invMassDsToKKPi, invMassDsToPiKK, invMassLcToPKPi, invMassLcToPiKP, invMassXicToPKPi, invMassXicToPiKP, pt3Prong, deltaMassKKFirst, deltaMassKKSecond,
                 trackParFirst.getPt(), dcaFirst[0], dcaFirst[1], trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
                 trackParSecond.getPt(), dcaSecond[0], dcaSecond[1], trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),

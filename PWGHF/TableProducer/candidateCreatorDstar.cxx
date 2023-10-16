@@ -17,7 +17,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
@@ -26,8 +25,6 @@ using namespace o2::framework;
 /// Reconstruction of D* decay candidates
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-
-  HfHelper hfHelper;
 
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};

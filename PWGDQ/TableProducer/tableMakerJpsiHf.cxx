@@ -59,11 +59,6 @@ struct tableMakerJpsiHf {
   Produces<RedJpDmD0Masss> redD0Masses;
   Produces<RedJpDmDileptons> redDileptons;
 
-  // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
-  Configurable<std::string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-  // comment: add list of subgroups (must define subgroups under )
-  Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
-
   // HF configurables
   // cuts on BDT output scores to be applied only for the histograms
   Configurable<LabeledArray<float>> bdtCutsForHistos{"bdtCutsForHistos", {cutsBdt[0], 1, 3, labelsEmpty, labelsBdt}, "Additional bdt cut values only for histograms"};
@@ -94,6 +89,8 @@ struct tableMakerJpsiHf {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->AddHistClass("Dmeson");
+    fHistMan->AddHistClass("JPsi");
     fHistMan->AddHistClass("JPsiDmeson");
     dqhistograms::DefineHistograms(fHistMan, "Dmeson", "dilepton-charmhadron", "dmeson");
     dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsi");
