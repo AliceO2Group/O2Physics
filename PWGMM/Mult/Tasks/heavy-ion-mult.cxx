@@ -65,6 +65,8 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
   TrackSelectionFlags::kTPCChi2NDF;
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
+  TrackSelectionFlags::kDCAxy;
 
 AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
@@ -128,7 +130,8 @@ struct HeavyIonMultiplicity {
                                                   ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
                                                   ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-                                                  ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ, ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+                                                  ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
+                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
 
   void processData(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
   {
