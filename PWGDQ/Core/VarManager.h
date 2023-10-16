@@ -233,6 +233,9 @@ class VarManager : public TObject
     kIsSPDany,
     kIsSPDfirst,
     kIsSPDboth,
+    kIsITSibAny,
+    kIsITSibFirst,
+    kIsITSibAll,
     kITSncls,
     kITSchi2,
     kITSlayerHit,
@@ -402,6 +405,12 @@ class VarManager : public TObject
     kDeltaPhiSym,
     kNCorrelationVariables,
 
+    // DQ-HF correlation variables
+    kMassCharmHadron,
+    kPtCharmHadron,
+    kRapCharmHadron,
+    kPhiCharmHadron,
+
     // Index used to scan bit maps
     kBitMapIndex,
 
@@ -418,6 +427,12 @@ class VarManager : public TObject
     kTPCProtonMean,
     kTPCProtonSigma,
     kNCalibObjects
+  };
+
+  enum DileptonCharmHadronTypes {
+    kJPsiToMuMu = 0,
+    kD0ToPiK,
+    kD0barToKPi
   };
 
   static TString fgVariableNames[kNVars]; // variable names
@@ -480,6 +495,11 @@ class VarManager : public TObject
 
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
+
+  static void SetMagneticField(float magField)
+  {
+    fgMagField = magField;
+  }
 
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
@@ -555,6 +575,10 @@ class VarManager : public TObject
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T>
   static void FillHadron(T const& hadron, float* values = nullptr, float hadronMass = 0.0f);
+  template <int partType, typename Cand, typename H>
+  static void FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values = nullptr);
+  template <int partTypeCharmHad, typename DQ, typename HF, typename H>
+  static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values = nullptr);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -599,6 +623,7 @@ class VarManager : public TObject
   static bool fgUsedKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
+  static float fgMagField;
   static std::map<int, int> fgRunMap;     // map of runs to be used in histogram axes
   static TString fgRunStr;                // semi-colon separated list of runs, to be used for histogram axis labels
   static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
@@ -988,6 +1013,17 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kITSClusterMap]) {
       values[kITSClusterMap] = track.itsClusterMap();
     }
+
+    if (fgUsedVars[kIsITSibFirst]) {
+      values[kIsITSibFirst] = (track.itsClusterMap() & uint8_t(1)) > 0;
+    }
+    if (fgUsedVars[kIsITSibAny]) {
+      values[kIsITSibAny] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 || (track.itsClusterMap() & (1 << uint8_t(1))) > 0 || (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+    }
+    if (fgUsedVars[kIsITSibAll]) {
+      values[kIsITSibAll] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 && (track.itsClusterMap() & (1 << uint8_t(1))) > 0 && (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+    }
+
     values[kTrackTime] = track.trackTime();
     values[kTrackTimeRes] = track.trackTimeRes();
     values[kTrackTimeResRelative] = track.trackTimeRes() / track.trackTime();
@@ -1306,9 +1342,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kPsiPair]) {
-    values[kDeltaPhiPair] = (t1.sign() > 0) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
+    values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = (t1.sign() > 0) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
+    values[kPsiPair] = (t1.sign() * fgMagField > 0.) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
   }
 
   if (fgUsedVars[kOpeningAngle]) {
@@ -2132,6 +2168,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
 }
+
 template <typename T>
 void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
 {
@@ -2146,4 +2183,39 @@ void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
   values[kPhi] = hadron.phi();
   values[kRap] = vhadron.Rapidity();
 }
+
+template <int partType, typename Cand, typename H>
+void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr (partType == kJPsiToMuMu) {
+    values[kMass] = candidate.mass();
+    values[kPt] = candidate.pt();
+    values[kPhi] = candidate.phi();
+    values[kRap] = candidate.rap();
+  }
+  if constexpr (partType == kD0ToPiK) {
+    values[kMassCharmHadron] = hfHelper.invMassD0ToPiK(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yD0(candidate);
+  }
+  if constexpr (partType == kD0barToKPi) {
+    values[kMassCharmHadron] = hfHelper.invMassD0barToKPi(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yD0(candidate);
+  }
+}
+
+template <int partTypeCharmHad, typename DQ, typename HF, typename H>
+void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values)
+{
+  FillSingleDileptonCharmHadron<kJPsiToMuMu>(dilepton, hfHelper, values);
+  FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, values);
+}
+
 #endif // PWGDQ_CORE_VARMANAGER_H_

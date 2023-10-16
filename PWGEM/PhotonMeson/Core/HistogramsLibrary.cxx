@@ -144,9 +144,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     }
 
     const int ndim = 4; // m, pt, dca, phiv
-    const int nbins[ndim] = {nm - 1, npt - 1, ndca - 1, 90};
+    const int nbins[ndim] = {nm - 1, npt - 1, ndca - 1, 32};
     const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0};
-    const double xmax[ndim] = {5.0, 10.0, 20.0, TMath::Pi()};
+    const double xmax[ndim] = {5.0, 10.0, 20.0, 3.2};
 
     THnSparseF* hs_dilepton_uls = new THnSparseF("hs_dilepton_uls", "hs_dilepton_uls;m_{ee} (GeV/c);p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
     hs_dilepton_uls->SetBinEdges(0, mee);

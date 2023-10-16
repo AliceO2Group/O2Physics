@@ -19,7 +19,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -112,7 +111,6 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 

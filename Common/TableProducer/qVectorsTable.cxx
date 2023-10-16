@@ -50,7 +50,7 @@ using namespace o2::framework;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected,
                                aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
 
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 
 struct qVectorsTable {
   // Configurables.
@@ -72,8 +72,11 @@ struct qVectorsTable {
   // FIXME: 6 correction factors for each centrality and 8 centrality intervals are hard-coded.
 
   Configurable<std::vector<float>> cfgCorr{"cfgCorr", std::vector<float>{0.0}, "Correction constants for detector"};
-  Configurable<std::vector<float>> cfgBPosCorr{"cfgBPosCent", std::vector<float>{0.0}, "Correction constants for positive TPC tracks"};
-  Configurable<std::vector<float>> cfgBNegCorr{"cfgBNegCent", std::vector<float>{0.0}, "Correction constants for negative TPC tracks"};
+  Configurable<std::vector<float>> cfgBPosCorr{"cfgBPosCorr", std::vector<float>{0.0}, "Correction constants for positive TPC tracks"};
+  Configurable<std::vector<float>> cfgBNegCorr{"cfgBNegCorr", std::vector<float>{0.0}, "Correction constants for negative TPC tracks"};
+
+  Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
+  Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -146,6 +149,33 @@ struct qVectorsTable {
     AxisSpec axixCent = {20, 0, 100};
 
     histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
+  }
+
+  template <typename TrackType>
+  bool SelTrack(const TrackType track)
+  {
+    if (track.pt() < cfgMinPtOnTPC)
+      return false;
+    if (track.pt() > cfgMaxPtOnTPC)
+      return false;
+    if (!track.passedITSNCls())
+      return false;
+    if (!track.passedITSChi2NDF())
+      return false;
+    if (!track.passedITSHits())
+      return false;
+    if (!track.passedITSNCls())
+      return false;
+    if (!track.passedTPCCrossedRowsOverNCls())
+      return false;
+    if (!track.passedTPCChi2NDF())
+      return false;
+    if (!track.passedDCAxy())
+      return false;
+    if (!track.passedDCAz())
+      return false;
+
+    return true;
   }
 
   void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
@@ -261,20 +291,24 @@ struct qVectorsTable {
     qVectBNeg[0] = 0.;
     qVectBNeg[1] = 0.;
 
+    int nTrkBPos = 0;
+    int nTrkBNeg = 0;
     for (auto& trk : tracks) {
-      if (!trk.isGlobalTrack())
+      if (!SelTrack(trk))
         continue;
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
       if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
         continue;
       if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi());
-        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi());
+        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        nTrkBPos++;
       } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi());
-        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi());
+        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        nTrkBNeg++;
       }
-    }
+    } // FIXME: ARBITRARY SCALE FACTOR OF 20
 
     /// TODO: Repeat here the procedure for any other Qvector columns.
     /// Do not forget to add the configurable for the correction constants.
@@ -329,8 +363,8 @@ struct qVectorsTable {
 
     helperEP.DoRecenter(qVector_rectr[0], qVector_rectr[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
 
-    helperEP.DoRecenter(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
-    helperEP.DoTwist(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 4), cfgCorr->at(cBin * 6 + 5));
+    helperEP.DoRecenter(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
 
     helperEP.DoRecenter(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
     helperEP.DoTwist(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
@@ -361,7 +395,8 @@ struct qVectorsTable {
             qVectBPos_uncor[0], qVectBPos_uncor[1], qVectBPos_rectr[0], qVectBPos_rectr[1],
             qVectBPos_twist[0], qVectBPos_twist[1], qVectBPos_final[0], qVectBPos_final[1],
             qVectBNeg_uncor[0], qVectBNeg_uncor[1], qVectBNeg_rectr[0], qVectBNeg_rectr[1],
-            qVectBNeg_twist[0], qVectBNeg_twist[1], qVectBNeg_final[0], qVectBNeg_final[1]);
+            qVectBNeg_twist[0], qVectBNeg_twist[1], qVectBNeg_final[0], qVectBNeg_final[1],
+            nTrkBPos, nTrkBNeg);
   } // End process.
 };
 

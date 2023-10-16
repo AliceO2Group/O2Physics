@@ -25,7 +25,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Tools/ML/model.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -72,7 +71,6 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   o2::ccdb::CcdbApi ccdbApi;
   OnnxModel model;
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
