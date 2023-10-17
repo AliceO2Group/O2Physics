@@ -74,6 +74,40 @@ def enforce_trailing_slash(path: str) -> str:
 
     return path
 
+#pylint: disable=too-many-arguments
+def configure_canvas(
+    name_canvas: str,
+    pt_min: Union[int, float],
+    min_y_axis: Union[int, float],
+    pt_max: Union[int, float],
+    max_y_axis: Union[int, float],
+    title: str,
+    log_y_axis: bool) -> TCanvas:
+    """
+    Helper method to configure canvas
+
+    Parameters
+    ----------
+    - name_canvas: name of the canvas
+    - pt_min: lower limit of x axis
+    - min_y_axis: lower limit of y axis
+    - pt_max: upper limit of x axis
+    - max_y_axis: upper limit of y axis
+    - title: title of the canvas
+    - log_y_axis: switch for log scale along y axis
+
+    Returns
+    ----------
+    - c_eff: TCanvas instance
+    """
+
+    c_eff = TCanvas(name_canvas, '', 800, 800)
+    c_eff.DrawFrame(pt_min, min_y_axis, pt_max, max_y_axis, title)
+    if log_y_axis:
+        c_eff.SetLogy()
+
+    return c_eff
+
 def save_canvas(
     canvas: TCanvas,
     out_dir: str,
@@ -93,12 +127,29 @@ def save_canvas(
     for ext in extension:
         canvas.SaveAs(out_dir + name_file + '.' + ext)
 
+def __set_object_style(obj: Union[TEfficiency, TH1], key: str) -> None:
+    """
+    Helper method to set style of TEfficiency or TH1 object with local options
+
+    Parameters
+    ----------
+    - obj: TEfficiency or TH1 object
+    - key: key of options dictionary
+    """
+
+    set_object_style(
+                obj,
+                color=COLOR[key],
+                markerstyle=MARKERSTYLE[key],
+                linewidth=LINEWIDTH[key],
+                linestyle=LINESTYLE[key])
+
 def compute_efficiency(
     h_rec: Union[TH1, TH2],
     h_gen: Union[TH1, TH2],
-    rapidity_cut: float = None,
     axis_rapidity: str = 'Y',
-    pt_bins_limits: np.float64 = None) -> TEfficiency:
+    rapidity_cut: Union[float, None] = None,
+    pt_bins_limits: Union[np.float64, None] = None) -> TEfficiency:
     """
     Helper method to compute the efficiency as function of the feature in axis.
 
@@ -141,16 +192,8 @@ def compute_efficiency(
     # rebin histograms, if enabled
     if pt_bins_limits is not None:
         n_bins = len(pt_bins_limits) - 1
-
         h_rec = h_rec.Rebin(n_bins, 'hRec', pt_bins_limits)
         h_gen = h_gen.Rebin(n_bins, 'hGen', pt_bins_limits)
-        # using Scale causes weights-related complications in TEfficiency
-        # trick: we SetBinContent + Sumw2 (gives same result as w/o rebinning)
-        for i_bin in range(1, n_bins + 1):
-            h_rec.SetBinContent(i_bin, h_rec.GetBinContent(i_bin) / h_rec.GetBinWidth(i_bin))
-            h_gen.SetBinContent(i_bin, h_gen.GetBinContent(i_bin) / h_gen.GetBinWidth(i_bin))
-        h_rec.Sumw2()
-        h_gen.Sumw2()
 
     efficiency = TEfficiency(h_rec, h_gen)
 
@@ -188,57 +231,6 @@ def get_th1_from_tefficiency(
 
     return h_eff
 
-#pylint: disable=too-many-arguments
-def configure_canvas(
-    name_canvas: str,
-    pt_min: Union[int, float],
-    min_y_axis: Union[int, float],
-    pt_max: Union[int, float],
-    max_y_axis: Union[int, float],
-    title: str,
-    log_y_axis: bool) -> TCanvas:
-    """
-    Helper method to configure canvas
-
-    Parameters
-    ----------
-    - name_canvas: name of the canvas
-    - pt_min: lower limit of x axis
-    - min_y_axis: lower limit of y axis
-    - pt_max: upper limit of x axis
-    - max_y_axis: upper limit of y axis
-    - title: title of the canvas
-    - log_y_axis: switch for log scale along y axis
-
-    Returns
-    ----------
-    - c_eff: TCanvas instance
-    """
-
-    c_eff = TCanvas(name_canvas, '', 800, 800)
-    c_eff.DrawFrame(pt_min, min_y_axis, pt_max, max_y_axis, title)
-    if log_y_axis:
-        c_eff.SetLogy()
-
-    return c_eff
-
-def __set_object_style(obj: Union[TEfficiency, TH1], key: str) -> None:
-    """
-    Helper method to set style of TEfficiency or TH1 object with local options
-
-    Parameters
-    ----------
-    - obj: TEfficiency or TH1 object
-    - key: key of options dictionary
-    """
-
-    set_object_style(
-                obj,
-                color=COLOR[key],
-                markerstyle=MARKERSTYLE[key],
-                linewidth=LINEWIDTH[key],
-                linestyle=LINESTYLE[key])
-
 #pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def main(
     cfg: dict,
@@ -261,7 +253,8 @@ def main(
     name_tree = enforce_trailing_slash(name_tree) if name_tree is not None else ''
 
     # fill dictionaries with histograms
-    dic_rec, dic_gen = {}, {}
+    dic_rec: dict[str, Union[TH1, TH2, None]] = {}
+    dic_gen: dict[str, Union[TH1, TH2, None]] = {}
     for key, histoname in cfg['input']['histoname']['reconstructed'].items():
         if histoname is None:
             dic_rec[key] = None
@@ -304,7 +297,7 @@ def main(
     save_th1 = cfg['output']['save']['TH1']
     save_tcanvas_individual = cfg['output']['save']['TCanvas']['individual']
     save_tcanvas_overlap = cfg['output']['save']['TCanvas']['overlap']
-    extension = enforce_list(cfg['output']['save']['TCanvas']['extension'])
+    extension: list = enforce_list(cfg['output']['save']['TCanvas']['extension'])
 
     if os.path.isdir(out_dir):
         print((f'\033[93mWARNING: Output directory \'{out_dir}\' already exists,'
@@ -330,7 +323,7 @@ def main(
 
             # compute efficiency, store it in TEfficiency instance and configure it
             efficiencies[key] = compute_efficiency(
-                h_rec, h_gen, rapidity_cut, axis_rapidity, pt_bins_limits)
+                h_rec, h_gen, axis_rapidity, rapidity_cut, pt_bins_limits)
             efficiencies[key].SetName('TEfficiency_' + out_label + key)
             efficiencies[key].SetTitle(title)
             __set_object_style(efficiencies[key], key)
