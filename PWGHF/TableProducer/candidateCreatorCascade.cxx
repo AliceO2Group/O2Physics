@@ -28,6 +28,7 @@
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 
 // #define MY_DEBUG
