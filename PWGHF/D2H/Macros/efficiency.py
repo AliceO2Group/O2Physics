@@ -298,10 +298,11 @@ def main(
     save_tcanvas_individual = cfg['output']['save']['TCanvas']['individual']
     save_tcanvas_overlap = cfg['output']['save']['TCanvas']['overlap']
     extension = enforce_list(cfg['output']['save']['TCanvas']['extension'])
-    if (save_tcanvas_individual or save_tcanvas_overlap) and extension is None:
-        print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
-              ' setting \'.pdf\' as default.\033[0m')
-        extension = ['pdf']
+    if extension is None:
+        extension = ['pdf'] # default value
+        if save_tcanvas_individual or save_tcanvas_overlap:
+            print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
+                ' \'.pdf\' set as default.\033[0m')
 
     if os.path.isdir(out_dir):
         print((f'\033[93mWARNING: Output directory \'{out_dir}\' already exists,'
