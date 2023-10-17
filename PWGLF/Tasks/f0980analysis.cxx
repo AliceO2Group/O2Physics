@@ -92,7 +92,7 @@ struct f0980analysis {
 
     AxisSpec PIDqaAxis = {120, -6, 6};
     AxisSpec pTqaAxis = {200, 0, 20};
-    AxisSpec phiqaAxis = {72, -constants::math::PI, constants::math::PI};
+    AxisSpec phiqaAxis = {72, 0., 2.0 * constants::math::PI};
 
     histos.add("hInvMass_f0980_US", "unlike invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
