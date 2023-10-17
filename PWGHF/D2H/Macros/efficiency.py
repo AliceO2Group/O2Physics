@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+# All rights not expressly granted are reserved.
+
+# This software is distributed under the terms of the GNU General Public
+# License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+
+# In applying this license CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
 """
 file: efficiency.py
 brief: script for (acceptance-times-)efficiency computation
@@ -10,7 +21,7 @@ author: Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 import argparse
 import os
 import sys
-from typing import Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
@@ -34,7 +45,7 @@ LINESTYLE = {'All': 1,
          'Prompt': 2,
          'Nonprompt': 7}
 
-def enforce_list(x: Union[str, list, None]) -> Union[list, None]:
+def enforce_list(x: Union[str, List[str]]) -> List[str]:
     """
     Helper method to enforce list type
 
@@ -44,10 +55,10 @@ def enforce_list(x: Union[str, list, None]) -> Union[list, None]:
 
     Returns
     ----------
-    - x_list if x was not a list (and not None), x itself otherwise
+    - x_list if x was not a list, x itself otherwise
     """
 
-    if not isinstance(x, list) and x is not None:
+    if not isinstance(x, list):
         # handle possible whitespaces in config file entry
         x_list = x.split(',')
         for i, element in enumerate(x_list):
@@ -112,7 +123,7 @@ def save_canvas(
     canvas: TCanvas,
     out_dir: str,
     name_file: str,
-    extension: Union[list, None]) -> None:
+    extension: List[str]) -> None:
     """
     Save canvas in formats chosen by extension
 
@@ -124,11 +135,8 @@ def save_canvas(
     - extension: file format
     """
 
-    if extension is not None:
-        for ext in extension:
-            canvas.SaveAs(out_dir + name_file + '.' + ext)
-    else:
-        canvas.SaveAs(out_dir + name_file + '.pdf') # pdf as default extension
+    for ext in extension:
+        canvas.SaveAs(out_dir + name_file + '.' + ext)
 
 def __set_object_style(obj: Union[TEfficiency, TH1], key: str) -> None:
     """
@@ -151,8 +159,8 @@ def compute_efficiency(
     h_rec: Union[TH1, TH2],
     h_gen: Union[TH1, TH2],
     axis_rapidity: str = 'Y',
-    rapidity_cut: Union[float, None] = None,
-    pt_bins_limits: Union[np.float64, None] = None) -> TEfficiency:
+    rapidity_cut: Optional[float] = None,
+    pt_bins_limits: Optional[np.ndarray] = None) -> TEfficiency:
     """
     Helper method to compute the efficiency as function of the feature in axis.
 
@@ -194,7 +202,7 @@ def compute_efficiency(
 
     # rebin histograms, if enabled
     if pt_bins_limits is not None:
-        n_bins = len(pt_bins_limits) - 1
+        n_bins = pt_bins_limits.shape[0] - 1
         h_rec = h_rec.Rebin(n_bins, 'hRec', pt_bins_limits)
         h_gen = h_gen.Rebin(n_bins, 'hGen', pt_bins_limits)
 
@@ -236,7 +244,7 @@ def get_th1_from_tefficiency(
 
 #pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def main(
-    cfg: dict,
+    cfg: Dict,
     batch: bool) -> None:
     """
     Main function
@@ -256,8 +264,8 @@ def main(
     name_tree = enforce_trailing_slash(name_tree) if name_tree is not None else ''
 
     # fill dictionaries with histograms
-    dic_rec: dict[str, Union[TH1, TH2, None]] = {}
-    dic_gen: dict[str, Union[TH1, TH2, None]] = {}
+    dic_rec: Dict[str, Optional[Union[TH1, TH2]]] = {}
+    dic_gen: Dict[str, Optional[Union[TH1, TH2]]] = {}
     for key, histoname in cfg['input']['histoname']['reconstructed'].items():
         if histoname is None:
             dic_rec[key] = None
@@ -270,9 +278,10 @@ def main(
             dic_gen[key] = file.Get(name_tree + histoname)
 
     # configure pt binning
-    pt_bins_limits = enforce_list(cfg['pt_bins_limits'])
-    if pt_bins_limits is not None:
-        pt_bins_limits =  np.array(pt_bins_limits, 'd')
+    pt_bins_limits: Optional[np.ndarray] = None
+    if cfg['pt_bins_limits'] is not None:
+        print(type(cfg['pt_bins_limits']))
+        pt_bins_limits = np.asarray(enforce_list(cfg['pt_bins_limits']), 'd')
         pt_min, pt_max = pt_bins_limits[0], pt_bins_limits[-1]
         is_retrieved_pt_interval = True
     else:
@@ -293,17 +302,22 @@ def main(
     if name_axis is None:
         name_axis = '#varepsilon' # default value
     title = ';#it{p}_{T} (GeV/#it{c});' + name_axis + ';'
-    overlap = enforce_list(cfg['output']['plots']['overlap'])
+    overlap: Optional[List[str]] = None
+    if cfg['output']['plots']['overlap']:
+        overlap = enforce_list(cfg['output']['plots']['overlap'])
 
     # output save options
     save_tefficiency = cfg['output']['save']['TEfficiency']
     save_th1 = cfg['output']['save']['TH1']
     save_tcanvas_individual = cfg['output']['save']['TCanvas']['individual']
     save_tcanvas_overlap = cfg['output']['save']['TCanvas']['overlap']
-    extension = enforce_list(cfg['output']['save']['TCanvas']['extension'])
-    if (save_tcanvas_individual or save_tcanvas_overlap) and extension is None:
-        print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
-            ' \'.pdf\' set as default.\033[0m')
+    extension: List[str] = ['pdf'] # default value
+    if cfg['output']['save']['TCanvas']['extension'] is None:
+        if save_tcanvas_individual or save_tcanvas_overlap:
+            print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
+                ' \'.pdf\' set as default.\033[0m')
+    else:
+        extension = enforce_list(cfg['output']['save']['TCanvas']['extension'])
 
     if os.path.isdir(out_dir):
         print((f'\033[93mWARNING: Output directory \'{out_dir}\' already exists,'
