@@ -1009,8 +1009,8 @@ struct strangenessFilter {
       const auto trackCasc = trackedCascade.track_as<DaughterTracks>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
+      // QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
+      // QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
       QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.matchingChi2());
@@ -1050,6 +1050,7 @@ struct strangenessFilter {
         nsigma[0] = negTrack.tpcNSigmaPr();
         nsigma[1] = posTrack.tpcNSigmaPi();
       }
+
       const auto v0mass = RecoDecay::m(momenta, masses);
       QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), v0mass);
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPrTrkCascV0"), nsigma[0]);
@@ -1057,19 +1058,32 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascBachelor"), bachelor.tpcNSigmaPi());
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcKaTrkCascBachelor"), bachelor.tpcNSigmaKa());
 
+      momenta[0] = {posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz()};
+      momenta[1] = {bachelor.px(), bachelor.py(), bachelor.pz()};
+      masses = {RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kK0)};
+      const auto massOmega = RecoDecay::m(momenta, masses);
+      if (posTrack.hasTPC() && negTrack.hasTPC()) {
+        QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
+      }
+      masses = {RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kPi0)};
+      const auto massXi = RecoDecay::m(momenta, masses);
+      if (posTrack.hasTPC() && negTrack.hasTPC()) {
+        QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
+      }
+
       if ((trackCasc.pt() > minPtTrackedCascade) &&
           (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
           (std::abs(v0mass - RecoDecay::getMassPDG(kLambda0)) < massWindowLambda) &&
           (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) &&
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
         // Xi
-        if ((std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) < massWindowTrackedXi) &&
+        if ((std::abs(massXi - RecoDecay::getMassPDG(kXiMinus)) < massWindowTrackedXi) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
         }
         // Omega
-        if ((std::abs(trackedCascade.omegaMass() - RecoDecay::getMassPDG(kOmegaMinus)) < massWindowTrackedOmega) &&
-            (std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) >= massWindowXiExclTrackedOmega) &&
+        if ((std::abs(massOmega - RecoDecay::getMassPDG(kOmegaMinus)) < massWindowTrackedOmega) &&
+            (std::abs(massXi - RecoDecay::getMassPDG(kXiMinus)) >= massWindowXiExclTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
         }
