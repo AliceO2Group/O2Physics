@@ -280,7 +280,6 @@ def main(
     # configure pt binning
     pt_bins_limits: Optional[np.ndarray] = None
     if cfg['pt_bins_limits'] is not None:
-        print(type(cfg['pt_bins_limits']))
         pt_bins_limits = np.asarray(enforce_list(cfg['pt_bins_limits']), 'd')
         pt_min, pt_max = pt_bins_limits[0], pt_bins_limits[-1]
         is_retrieved_pt_interval = True
@@ -302,9 +301,10 @@ def main(
     if name_axis is None:
         name_axis = '#varepsilon' # default value
     title = ';#it{p}_{T} (GeV/#it{c});' + name_axis + ';'
-    overlap: Optional[List[str]] = None
-    if cfg['output']['plots']['overlap']:
+    do_overlap = False
+    if cfg['output']['plots']['overlap'] is not None:
         overlap = enforce_list(cfg['output']['plots']['overlap'])
+        do_overlap = True
 
     # output save options
     save_tefficiency = cfg['output']['save']['TEfficiency']
@@ -389,7 +389,7 @@ def main(
             print(f'\033[94mEfficiency for {key} not computed.\033[0m')
 
     # overlap plots, if enabled
-    if overlap is not None:
+    if do_overlap:
         c_overlap = configure_canvas(
             f"cOverlap{''.join(overlap)}",
             pt_min,
