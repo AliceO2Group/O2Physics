@@ -48,7 +48,7 @@ using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFE
 using MyV0Photon = MyV0Photons::iterator;
 
 struct MaterialBudgetMC {
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
   Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
   Configurable<float> CentMax{"CentMax", 999, "max. centrality"};

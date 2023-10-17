@@ -24,14 +24,14 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_xicc;
-using namespace o2::framework::expressions; // FIXME not sure if this is needed
+using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -58,9 +58,11 @@ struct HfCandidateCreatorXicc {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massK = RecoDecay::getMassPDG(kKPlus);
-  double massXic = RecoDecay::getMassPDG(static_cast<int>(pdg::Code::kXiCPlus));
+  HfHelper hfHelper;
+
+  double massPi{0.};
+  double massK{0.};
+  double massXic{0.};
   double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -68,6 +70,13 @@ struct HfCandidateCreatorXicc {
   OutputObj<TH1F> hMassXic{TH1F("hMassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massK = o2::analysis::pdg::MassKPlus;
+    massXic = o2::analysis::pdg::MassXiCPlus;
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
@@ -100,10 +109,10 @@ struct HfCandidateCreatorXicc {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
-        hMassXic->Fill(invMassXicToPKPi(xicCand), xicCand.pt());
+        hMassXic->Fill(hfHelper.invMassXicToPKPi(xicCand), xicCand.pt());
       }
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
-        hMassXic->Fill(invMassXicToPiKP(xicCand), xicCand.pt());
+        hMassXic->Fill(hfHelper.invMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.prong0_as<aod::TracksWCov>();
       auto track1 = xicCand.prong1_as<aod::TracksWCov>();
@@ -172,7 +181,7 @@ struct HfCandidateCreatorXicc {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << DecayType::XiccToXicPi;
+        int hfFlag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
 
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
@@ -232,7 +241,7 @@ struct HfCandidateCreatorXiccMc {
         // Ξc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = 1 << DecayType::XiccToXicPi;
+          flag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
         } else {
           debug = 1;
           LOGF(info, "WARNING: Ξc±± in decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -250,7 +259,7 @@ struct HfCandidateCreatorXiccMc {
         // Ξc± → p± K∓ π±
         auto candXicMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
         if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
-          flag = sign * (1 << DecayType::XiccToXicPi);
+          flag = sign * (1 << aod::hf_cand_xicc::DecayType::XiccToXicPi);
         }
       }
       rowMcMatchGen(flag, origin);

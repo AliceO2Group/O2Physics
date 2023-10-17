@@ -48,8 +48,3 @@ o2physics_add_dpl_workflow(flow
                     SOURCES dqFlow.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-jpsi-hf
-                    SOURCES taskJpsiHf.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)

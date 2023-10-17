@@ -26,12 +26,14 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -82,6 +84,8 @@ struct HfDataCreatorD0PiReduced {
   Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  HfHelper hfHelper;
 
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -153,9 +157,9 @@ struct HfDataCreatorD0PiReduced {
     runNumber = 0;
 
     // invariant-mass window cut
-    massPi = pdg->Mass(kPiPlus);
-    massD0 = pdg->Mass(pdg::Code::kD0);
-    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massD0 = o2::analysis::pdg::MassD0;
+    massBplus = o2::analysis::pdg::MassBPlus;
     invMass2D0PiMin = (massBplus - invMassWindowD0Pi) * (massBplus - invMassWindowD0Pi);
     invMass2D0PiMax = (massBplus + invMassWindowD0Pi) * (massBplus + invMassWindowD0Pi);
   }
@@ -258,11 +262,11 @@ struct HfDataCreatorD0PiReduced {
         float invMassD0{-1.f}, invMassD0bar{-1.f};
 
         if (candD0.isSelD0() >= selectionFlagD0) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0ToPiK(candD0);
+          invMassD0 = hfHelper.invMassD0ToPiK(candD0);
           registry.fill(HIST("hMassD0ToKPi"), invMassD0);
         }
         if (candD0.isSelD0bar() >= selectionFlagD0bar) {
-          invMassD0bar = o2::aod::hf_cand_2prong::invMassD0barToKPi(candD0);
+          invMassD0bar = hfHelper.invMassD0barToKPi(candD0);
           registry.fill(HIST("hMassD0ToKPi"), invMassD0bar);
         }
         registry.fill(HIST("hPtD0"), candD0.pt());

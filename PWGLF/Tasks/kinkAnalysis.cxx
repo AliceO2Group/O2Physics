@@ -735,6 +735,12 @@ struct kinkAnalysis {
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
+              // 28/9/2023
+              Printf("reco mother sign = %d, reco daughter sign = %d", trackM.sign(), trackDgh.sign());
+              Printf("reco mother pdg = %d, reco daughter pdg = %d", motherPdg, daughterPdg);
+
+              // end
+
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
                   histos.fill(HIST("hcodes"), motherPdg, daughterPdg);

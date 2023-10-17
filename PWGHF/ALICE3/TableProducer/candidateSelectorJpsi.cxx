@@ -22,13 +22,13 @@
 #include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 namespace o2::aod
 {
@@ -81,8 +81,9 @@ struct HfCandidateSelectorJpsi {
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], hf_cuts_jpsi_to_e_e::nBinsPt, hf_cuts_jpsi_to_e_e::nCutVars, hf_cuts_jpsi_to_e_e::labelsPt, hf_cuts_jpsi_to_e_e::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
+  HfHelper hfHelper;
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;
 
@@ -122,12 +123,12 @@ struct HfCandidateSelectorJpsi {
     }
 
     // cut on e+ e− invariant mass
-    if (std::abs(invMassJpsiToEE(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassJpsiToEE(candidate) - o2::analysis::pdg::MassJPsi) > cuts->get(pTBin, "m")) {
       selEE = 0;
     }
 
     // cut on μ+ μ− invariant mass
-    if (std::abs(invMassJpsiToMuMu(candidate) - RecoDecay::getMassPDG(pdg::Code::kJPsi)) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassJpsiToMuMu(candidate) - o2::analysis::pdg::MassJPsi) > cuts->get(pTBin, "m")) {
       selMuMu = 0;
     }
 
@@ -163,7 +164,7 @@ struct HfCandidateSelectorJpsi {
     // looping over 2-prong candidates
     for (const auto& candidate : candidates) {
 
-      if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);
         // hfSelJpsiCandidate(0, 0);
         continue;
@@ -235,7 +236,7 @@ struct HfCandidateSelectorJpsi {
     // looping over 2-prong candidates
     for (const auto& candidate : candidates) {
 
-      if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);
         // hfSelJpsiCandidate(0, 0);
         continue;

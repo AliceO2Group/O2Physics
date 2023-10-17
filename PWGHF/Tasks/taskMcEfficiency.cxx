@@ -16,18 +16,20 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskMcEfficiency {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -40,6 +42,9 @@ struct HfTaskMcEfficiency {
 
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+  HfHelper hfHelper;
 
   enum HFStep { kHFStepMC = 0,
                 kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
@@ -199,19 +204,19 @@ struct HfTaskMcEfficiency {
         /// all candidates
         if (isHypoMass1TrackStep) {
           if (pdgCode == pdg::kLambdaCPlus) {
-            massHypo1 = invMassLcToPKPi(candidate);
+            massHypo1 = hfHelper.invMassLcToPKPi(candidate);
           } else if (pdgCode == pdg::kDPlus) {
-            massHypo1 = invMassDplusToPiKPi(candidate);
+            massHypo1 = hfHelper.invMassDplusToPiKPi(candidate);
           } else if (pdgCode == pdg::kDS) {
-            massHypo1 = invMassDsToKKPi(candidate);
+            massHypo1 = hfHelper.invMassDsToKKPi(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched, origin);
         }
         if (isHypoMass2TrackStep) {
           if (pdgCode == pdg::kLambdaCPlus) {
-            massHypo2 = invMassLcToPiKP(candidate);
+            massHypo2 = hfHelper.invMassLcToPiKP(candidate);
           } else if (pdgCode == pdg::kDS) {
-            massHypo2 = invMassDsToPiKK(candidate);
+            massHypo2 = hfHelper.invMassDsToPiKK(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched, origin);
         }
@@ -313,10 +318,10 @@ struct HfTaskMcEfficiency {
         float pt = candidate.pt();
         bool selected = false;
         if (pdgCode == pdg::kD0) {
-          mass = invMassD0ToPiK(candidate);
+          mass = hfHelper.invMassD0ToPiK(candidate);
           selected = candidate.isSelD0() >= selectionFlagD0;
         } else if (pdgCode == pdg::kD0Bar) {
-          mass = invMassD0barToKPi(candidate);
+          mass = hfHelper.invMassD0barToKPi(candidate);
           selected = candidate.isSelD0bar() >= selectionFlagD0bar;
         }
         LOGP(debug, "Candidate {} has prong {} and prong {} and pT {} and mass {}", candidate.globalIndex(), candidate.prong0Id(), candidate.prong1Id(), candidate.pt(), mass);
@@ -390,7 +395,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) {
-      auto mass = RecoDecay::getMassPDG(pdgCode);
+      auto mass = pdg->Mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() != pdgCode) {
@@ -503,7 +508,7 @@ struct HfTaskMcEfficiency {
     }
 
     for (const auto pdgCode : pdgCodes) { /// loop over PDG codes
-      auto mass = RecoDecay::getMassPDG(pdgCode);
+      auto mass = pdg->Mass(pdgCode);
 
       for (const auto& mcParticle : mcParticles) { /// loop over MC particles
 
