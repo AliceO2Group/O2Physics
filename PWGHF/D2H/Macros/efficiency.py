@@ -279,13 +279,15 @@ def main(
 
     # configure pt binning
     pt_bins_limits: Optional[np.ndarray] = None
+    pt_min, pt_max = 0., 36. # default values
+    is_retrieved_pt_interval = False
     if cfg['pt_bins_limits'] is not None:
-        pt_bins_limits = np.asarray(enforce_list(cfg['pt_bins_limits']), 'd')
-        pt_min, pt_max = pt_bins_limits[0], pt_bins_limits[-1]
+        pt_bins_limits = np.array(enforce_list(cfg['pt_bins_limits']), 'd')
+
+    if pt_bins_limits is not None:
+        pt_min = pt_bins_limits[0]
+        pt_max = pt_bins_limits[-1]
         is_retrieved_pt_interval = True
-    else:
-        pt_min, pt_max = 0., 36. # default values
-        is_retrieved_pt_interval = False
 
     #  configure possible cut on rapidity
     rapidity_cut = cfg['rapidity']['cut']
@@ -301,10 +303,10 @@ def main(
     if name_axis is None:
         name_axis = '#varepsilon' # default value
     title = ';#it{p}_{T} (GeV/#it{c});' + name_axis + ';'
-    do_overlap = False
+
+    overlap: Union[str, List[str]] = str()
     if cfg['output']['plots']['overlap'] is not None:
         overlap = enforce_list(cfg['output']['plots']['overlap'])
-        do_overlap = True
 
     # output save options
     save_tefficiency = cfg['output']['save']['TEfficiency']
@@ -389,7 +391,7 @@ def main(
             print(f'\033[94mEfficiency for {key} not computed.\033[0m')
 
     # overlap plots, if enabled
-    if do_overlap:
+    if overlap:
         c_overlap = configure_canvas(
             f"cOverlap{''.join(overlap)}",
             pt_min,
