@@ -12,9 +12,9 @@ import os
 import sys
 from typing import Union
 
-import numpy as np
-import yaml
-#pylint: disable=no-name-in-module
+import numpy as np  # pylint: disable=import-error
+import yaml  # pylint: disable=import-error
+#pylint: disable=import-error, no-name-in-module
 from ROOT import (TH1, TH1F, TH2, TCanvas, TEfficiency, TFile, TLatex, TLegend,
                   kAzure, kBlack, kFullCircle, kFullSquare, kOpenSquare, kRed)
 from style_formatter import set_global_style, set_object_style
@@ -112,7 +112,7 @@ def save_canvas(
     canvas: TCanvas,
     out_dir: str,
     name_file: str,
-    extension: list) -> None:
+    extension: Union[list, None]) -> None:
     """
     Save canvas in formats chosen by extension
 
@@ -124,8 +124,11 @@ def save_canvas(
     - extension: file format
     """
 
-    for ext in extension:
-        canvas.SaveAs(out_dir + name_file + '.' + ext)
+    if extension is not None:
+        for ext in extension:
+            canvas.SaveAs(out_dir + name_file + '.' + ext)
+    else:
+        canvas.SaveAs(out_dir + name_file + '.pdf') # pdf as default extension
 
 def __set_object_style(obj: Union[TEfficiency, TH1], key: str) -> None:
     """
@@ -298,11 +301,9 @@ def main(
     save_tcanvas_individual = cfg['output']['save']['TCanvas']['individual']
     save_tcanvas_overlap = cfg['output']['save']['TCanvas']['overlap']
     extension = enforce_list(cfg['output']['save']['TCanvas']['extension'])
-    if extension is None:
-        extension = ['pdf'] # default value
-        if save_tcanvas_individual or save_tcanvas_overlap:
-            print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
-                ' \'.pdf\' set as default.\033[0m')
+    if (save_tcanvas_individual or save_tcanvas_overlap) and extension is None:
+        print('\033[93mWARNING: No extension provided for saving canvas in extra file,' \
+            ' \'.pdf\' set as default.\033[0m')
 
     if os.path.isdir(out_dir):
         print((f'\033[93mWARNING: Output directory \'{out_dir}\' already exists,'
