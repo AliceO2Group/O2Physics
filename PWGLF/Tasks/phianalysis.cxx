@@ -61,7 +61,7 @@ struct phianalysis {
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
-  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"};   // Use only TOF track for PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
@@ -154,11 +154,10 @@ struct phianalysis {
       if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
         tofPIDPassed = true;
       }
-      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa()*candidate.tpcNSigmaKa() + candidate.tofNSigmaKa()*candidate.tofNSigmaKa() < nsigmaCutCombinedKaon*nsigmaCutCombinedKaon)) {
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
         tofPIDPassed = true;
       }
-    }
-    else {
+    } else {
       tofPIDPassed = true;
     }
     if (tpcPIDPassed && tofPIDPassed) {
