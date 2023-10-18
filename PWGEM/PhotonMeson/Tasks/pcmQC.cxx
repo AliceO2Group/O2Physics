@@ -164,7 +164,6 @@ struct PCMQC {
           if (cut.IsSelected<aod::V0Legs>(v0)) {
             o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
             nv0++;
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hV0R_minTrackX"))->Fill(v0.recalculatedVtxR(), std::min(pos.x(), ele.x()));
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrTgl"))->Fill(ele.tgl(), pos.tgl());
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrZ"))->Fill(ele.z(), pos.z());
             for (auto& leg : {pos, ele}) {
