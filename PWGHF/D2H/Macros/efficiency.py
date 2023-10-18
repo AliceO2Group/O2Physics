@@ -43,6 +43,7 @@ from ROOT import (
     kOpenSquare,
     kRed,
 )
+
 from style_formatter import set_global_style, set_object_style
 
 # options for object style
@@ -99,9 +100,9 @@ def enforce_trailing_slash(path: str) -> str:
 def configure_canvas(
     name_canvas: str,
     pt_min: Union[int, float],
-    min_y_axis: Union[int, float],
+    y_axis_min: Union[int, float],
     pt_max: Union[int, float],
-    max_y_axis: Union[int, float],
+    y_axis_max: Union[int, float],
     title: str,
     log_y_axis: bool,
 ) -> TCanvas:
@@ -112,9 +113,9 @@ def configure_canvas(
     ----------
     - name_canvas: name of the canvas
     - pt_min: lower limit of x axis
-    - min_y_axis: lower limit of y axis
+    - y_axis_min: lower limit of y axis
     - pt_max: upper limit of x axis
-    - max_y_axis: upper limit of y axis
+    - y_axis_max: upper limit of y axis
     - title: title of the canvas
     - log_y_axis: switch for log scale along y axis
 
@@ -124,7 +125,7 @@ def configure_canvas(
     """
 
     c_eff = TCanvas(name_canvas, "", 800, 800)
-    c_eff.DrawFrame(pt_min, min_y_axis, pt_max, max_y_axis, title)
+    c_eff.DrawFrame(pt_min, y_axis_min, pt_max, y_axis_max, title)
     if log_y_axis:
         c_eff.SetLogy()
 
@@ -242,10 +243,8 @@ def get_th1_from_tefficiency(teff: TEfficiency, h_eff: TH1) -> TH1:
             > 1e-02
         ):
             print(
-                (
-                    f"\033[93mWARNING: efficiency error is asymmetric in bin {i_bin},"
-                    " setting the maximum error in the histogram!\033[0m"
-                )
+                f"\033[93mWARNING: efficiency error is asymmetric in bin {i_bin},"
+                " setting the maximum error in the histogram!\033[0m"
             )
             # TH1 can't handle asymmetric errors so we take the max
             err = max(teff.GetEfficiencyErrorLow(i_bin), teff.GetEfficiencyErrorUp(i_bin))
@@ -310,8 +309,8 @@ def main(cfg: Dict, batch: bool) -> None:
     out_dir = enforce_trailing_slash(cfg["output"]["dir"])
     out_label = cfg["output"]["plots"]["label"]
     name_axis = cfg["output"]["plots"]["y_axis"]["name"]
-    min_y_axis = cfg["output"]["plots"]["y_axis"]["min"]
-    max_y_axis = cfg["output"]["plots"]["y_axis"]["max"]
+    y_axis_min = cfg["output"]["plots"]["y_axis"]["min"]
+    y_axis_max = cfg["output"]["plots"]["y_axis"]["max"]
     log_y_axis = cfg["output"]["plots"]["y_axis"]["log_scale"]
     if name_axis is None:
         name_axis = "#varepsilon"  # default value
@@ -372,7 +371,7 @@ def main(cfg: Dict, batch: bool) -> None:
                 is_retrieved_pt_interval = True
 
             # plot efficiency on canvas
-            c_eff = configure_canvas(f"c{out_label + key}", pt_min, min_y_axis, pt_max, max_y_axis, title, log_y_axis)
+            c_eff = configure_canvas(f"c{out_label + key}", pt_min, y_axis_min, pt_max, y_axis_max, title, log_y_axis)
             efficiencies[key].Draw("same")  # to draw TEfficiency in TCanvas
             latex.DrawLatex(0.18, 0.92, watermark)
             c_eff.Write()
@@ -404,7 +403,7 @@ def main(cfg: Dict, batch: bool) -> None:
     # overlap plots, if enabled
     if overlap:
         c_overlap = configure_canvas(
-            f"cOverlap{''.join(overlap)}", pt_min, min_y_axis, pt_max, max_y_axis, title, log_y_axis
+            f"cOverlap{''.join(overlap)}", pt_min, y_axis_min, pt_max, y_axis_max, title, log_y_axis
         )
 
         leg = TLegend(0.6, 0.2, 0.8, 0.4)
