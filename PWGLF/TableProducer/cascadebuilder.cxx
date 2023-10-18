@@ -1109,7 +1109,9 @@ struct cascadeBuilder {
         return false;
 
       // save classical DCA daughters
-      cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+      // cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+      // if (cascadecandidate.dcacascdau > dcacascdau)
+      //   return false;
 
       v0TrackParCov = fitter.getTrack(0);
       lBachelorTrack = fitter.getTrack(1);
@@ -1150,6 +1152,17 @@ struct cascadeBuilder {
     }
     KFXi.TransportToDecayVertex();
     KFOmega.TransportToDecayVertex();
+
+    // get DCA of updated daughters at vertex
+    KFParticle kfpBachPionUpd = kfpBachPion;
+    KFParticle kfpV0Upd = kfpV0;
+    kfpBachPionUpd.SetProductionVertex(KFXi);
+    kfpV0Upd.SetProductionVertex(KFXi);
+    LOG(info) << "Distance kfpBachPionUpd to kfpV0Upd = " << kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    LOG(info) << "Distance kfpV0Upd to kfpBachPionUpd = " << kfpV0Upd.GetDistanceFromParticle(kfpBachPionUpd);
+    cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    if (cascadecandidate.dcacascdau > dcacascdau)
+        return false;
 
     //__________________________________________
     //*>~<* step 5 : propagate cascade to primary vertex with material corrections if asked
