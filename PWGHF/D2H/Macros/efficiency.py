@@ -43,7 +43,6 @@ from ROOT import (
     kOpenSquare,
     kRed,
 )
-
 from style_formatter import set_global_style, set_object_style
 
 # options for object style
