@@ -168,8 +168,8 @@ struct phianalysis {
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();
       auto trk1ptKa = trk1.pt();
       auto trk1NSigmaKaTPC = trk1.tpcNSigmaKa();
       auto trk1NSigmaKaTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
