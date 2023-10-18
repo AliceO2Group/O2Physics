@@ -935,14 +935,14 @@ struct tofSpectra {
           }
         }
       }
-      if (track.hasITS() && track.isQualityTrackITS()) {
+      if (track.hasITS() && track.isQualityTrackITS() && track.isInAcceptanceTrack()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its"), track.pt());
         } else {
           histos.fill(HIST("Data/neg/pt/its"), track.pt());
         }
       }
-      if (track.hasTPC() && track.isQualityTrackTPC()) {
+      if (track.hasTPC() && track.isQualityTrackTPC() && track.isInAcceptanceTrack()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
         } else {
