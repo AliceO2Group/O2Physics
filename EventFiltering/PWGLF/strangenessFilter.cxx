@@ -34,6 +34,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "PWGHF/Core/PDG.h"
 #include "../filterTables.h"
 
 using namespace o2;
@@ -388,8 +389,8 @@ struct strangenessFilter {
       // Total momentum
       xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       // Proper lifetime
-      xiproperlifetime = RecoDecay::getMassPDG(3312) * xipos / (xiptotmom + 1e-13);
-      omegaproperlifetime = RecoDecay::getMassPDG(3334) * xipos / (xiptotmom + 1e-13);
+      xiproperlifetime = o2::analysis::pdg::MassXiMinus * xipos / (xiptotmom + 1e-13);
+      omegaproperlifetime = o2::analysis::pdg::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
 
       if (casc.sign() == 1) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
@@ -456,30 +457,30 @@ struct strangenessFilter {
       isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
              (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-             (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
-             (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+             (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
+             (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
                (casc.cascradius() > lowerradiusXiYN) &&
-               (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
-               (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+               (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
+               (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
       isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (casc.cascradius() < upperradiusOmega) &&
-                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
-                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
+                (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
       isOmegalargeR = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                       (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                       (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                       (casc.cascradius() > lowerradiusOmega) &&
-                      (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
-                      (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                      (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
                       (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                       (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
 
@@ -490,7 +491,7 @@ struct strangenessFilter {
         // Plot for estimates
         if (tracks.size() > 0)
           triggcounterForEstimates = 1;
-        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
+        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
       }
@@ -653,8 +654,8 @@ struct strangenessFilter {
       // Total momentum
       xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       // Proper lifetime
-      xiproperlifetime = RecoDecay::getMassPDG(3312) * xipos / (xiptotmom + 1e-13);
-      omegaproperlifetime = RecoDecay::getMassPDG(3334) * xipos / (xiptotmom + 1e-13);
+      xiproperlifetime = o2::analysis::pdg::MassXiMinus * xipos / (xiptotmom + 1e-13);
+      omegaproperlifetime = o2::analysis::pdg::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
 
       if (casc.sign() > 0) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
@@ -758,21 +759,21 @@ struct strangenessFilter {
       isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
              (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-             (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
-             (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+             (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
+             (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity);
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
                (casc.cascradius() > lowerradiusXiYN) &&
-               (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
-               (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+               (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
+               (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity);
       isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
-                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
+                (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
                 (casc.cascradius() < upperradiusOmega) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity);
@@ -780,8 +781,8 @@ struct strangenessFilter {
                       (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                       (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                       (casc.cascradius() > lowerradiusOmega) &&
-                      (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
-                      (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                      (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
                       (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                       (TMath::Abs(casc.yOmega()) < rapidity);
 
@@ -834,7 +835,7 @@ struct strangenessFilter {
           if (triggcounterForEstimates > 0)
             break;
         }
-        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
+        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
       }
@@ -1009,8 +1010,8 @@ struct strangenessFilter {
       const auto trackCasc = trackedCascade.track_as<DaughterTracks>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
+      // QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
+      // QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
       QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.matchingChi2());
@@ -1034,7 +1035,7 @@ struct strangenessFilter {
       const auto negTrack = v0.negTrack_as<DaughterTracks>();
       const auto posTrack = v0.posTrack_as<DaughterTracks>();
 
-      std::array<double, 2> masses{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiMinus)};
+      std::array<double, 2> masses{o2::analysis::pdg::MassProton, o2::analysis::pdg::MassPiMinus};
       std::array<std::array<float, 3>, 2> momenta;
       std::array<double, 2> nsigma;
       if (trackCasc.sign() < 0) {
@@ -1050,6 +1051,7 @@ struct strangenessFilter {
         nsigma[0] = negTrack.tpcNSigmaPr();
         nsigma[1] = posTrack.tpcNSigmaPi();
       }
+
       const auto v0mass = RecoDecay::m(momenta, masses);
       QAHistosStrangenessTracking.fill(HIST("hMassV0TrkCasc"), v0mass);
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPrTrkCascV0"), nsigma[0]);
@@ -1057,19 +1059,32 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascBachelor"), bachelor.tpcNSigmaPi());
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcKaTrkCascBachelor"), bachelor.tpcNSigmaKa());
 
+      momenta[0] = {posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz()};
+      momenta[1] = {bachelor.px(), bachelor.py(), bachelor.pz()};
+      masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassK0};
+      const auto massOmega = RecoDecay::m(momenta, masses);
+      if (posTrack.hasTPC() && negTrack.hasTPC()) {
+        QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
+      }
+      masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassPi0};
+      const auto massXi = RecoDecay::m(momenta, masses);
+      if (posTrack.hasTPC() && negTrack.hasTPC()) {
+        QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
+      }
+
       if ((trackCasc.pt() > minPtTrackedCascade) &&
           (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
-          (std::abs(v0mass - RecoDecay::getMassPDG(kLambda0)) < massWindowLambda) &&
+          (std::abs(v0mass - o2::analysis::pdg::MassLambda0) < massWindowLambda) &&
           (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) &&
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
         // Xi
-        if ((std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) < massWindowTrackedXi) &&
+        if ((std::abs(massXi - o2::analysis::pdg::MassXiMinus) < massWindowTrackedXi) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
         }
         // Omega
-        if ((std::abs(trackedCascade.omegaMass() - RecoDecay::getMassPDG(kOmegaMinus)) < massWindowTrackedOmega) &&
-            (std::abs(trackedCascade.xiMass() - RecoDecay::getMassPDG(kXiMinus)) >= massWindowXiExclTrackedOmega) &&
+        if ((std::abs(massOmega - o2::analysis::pdg::MassOmegaMinus) < massWindowTrackedOmega) &&
+            (std::abs(massXi - o2::analysis::pdg::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
         }
