@@ -226,7 +226,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkPr.hasTOF()) {
           trk1HasTOF = true;
           for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
             if (trkPr.pt() < prTofPIDpt[i]) {
@@ -253,7 +253,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkKa.hasTOF()) {
           trk2HasTOF = true;
           for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
             if (trkKa.pt() < kaTofPIDpt[i]) {

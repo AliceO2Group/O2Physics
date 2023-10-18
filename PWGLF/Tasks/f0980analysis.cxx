@@ -156,9 +156,7 @@ struct f0980analysis {
   template <typename TrackType>
   bool SelPion(const TrackType track)
   {
-    if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) !=
-          aod::resodaughter::kHasTOF ||
-        !cfgUseTOF) {
+    if (track.hasTOF() || !cfgUseTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
         return false;
       }

@@ -164,11 +164,11 @@ struct k892analysis {
 
     return true;
   }
-  // PID selection tools from phianalysisrun3
+  // PID selection tools
   template <typename T>
   bool selectionPIDPion(const T& candidate, bool hasTOF)
   {
-    if (hasTOF && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+    if (hasTOF && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCutCombinedPion * nsigmaCutCombinedPion))) {
       return true;
     } else if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
       return true;
@@ -178,7 +178,7 @@ struct k892analysis {
   template <typename T>
   bool selectionPIDKaon(const T& candidate, bool hasTOF)
   {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
+    if (hasTOF && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
       return true;
     } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
       return true;
@@ -200,9 +200,8 @@ struct k892analysis {
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto trk1ptPi = trk1.pt();
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
       auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
       auto trk2ptKa = trk2.pt();
