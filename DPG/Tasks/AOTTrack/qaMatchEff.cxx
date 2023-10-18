@@ -60,7 +60,7 @@ struct qaMatchEff {
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<float> dcaXYMaxCut{"dcaXYMaxCut", 1000000.0f, "Maximum dcaXY (cm)"};
+  Configurable<std::vector<float>> dcaMaxCut{"dcaMaxCut", {1000000.0f, 1000000.0f}, "Maximum dcaXY and dcaZ (cm)"};
   Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   //  Configurable<bool> b_useTPCinnerWallPtForITS{"b_useTPCinnerWallPtForITS", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off just for ITS-tagged (not TPC tagged) histos."};
   // TPC
@@ -200,11 +200,13 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
+    auto dcaSetMax = (std::vector<float>)dcaMaxCut;
     if (b_useTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
-      cutObject.SetMaxDcaXY(dcaXYMaxCut); /// max for dca implementend by hand in isTrackSelectedKineCuts
+      cutObject.SetMaxDcaXY(dcaSetMax.at(0)); /// max for dca implementend by hand in isTrackSelectedKineCuts
+      cutObject.SetMaxDcaZ(dcaSetMax.at(1));  /// max for dca implementend by hand in isTrackSelectedKineCuts
       // TPC
       cutObject.SetMinNClustersTPC(tpcNClusterMin);
       cutObject.SetMinNCrossedRowsTPC(tpcNCrossedRowsMin);
@@ -251,6 +253,20 @@ struct qaMatchEff {
     histos.add("data/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("data/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("data/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
+    histos.add("data/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    //
+    histos.add("data/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    //
+    histos.add("data/PID/zDCA_tpc_noid", "DCA along z - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/xyDCA_tpc_noid", "DCA in x-y plane - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/zDCA_tpcits_noid", "DCA along z - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/PID/xyDCA_tpcits_noid", "DCA in x-y plane - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     /// compare pt's (tracking and innerParamTPC)
     if (makept2d) {
@@ -573,6 +589,10 @@ struct qaMatchEff {
     histos.add("MC/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
+    histos.add("MC/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     /// compare pt's (tracking and innerParamTPC)
     if (makept2d) {
@@ -664,6 +684,11 @@ struct qaMatchEff {
     //
     // pions only
     // all
+    histos.add("MC/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
     histos.add("MC/PID/pthist_tpc_pi", "#it{p}_{T} distribution - #pi MC TPC tag", kTH1D, {axisPt}, true);
     histos.add("MC/PID/etahist_tpc_pi", "#eta distribution - #pi MC TPC tag", kTH1D, {axisEta}, true);
     histos.add("MC/PID/phihist_tpc_pi", "#phi distribution - #pi MC TPC tag", kTH1D, {axisPhi}, true);
@@ -824,6 +849,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
+    auto dcaSetMax = (std::vector<float>)dcaMaxCut;
     if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
@@ -836,9 +862,8 @@ struct qaMatchEff {
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAxy))
       return false;
     // dcaZ selection to simulate the dca cut in QC ()
-    // if ( abs(track.dcaZ()) < sqrt( dcaMaxCut*dcaMaxCut -
-    // track.dcaXY()*track.dcaXY() ) )
-    //  return false;
+    if (abs(track.dcaZ()) > dcaSetMax.at(1))
+      return false;
     return true;
   }
   /// Function applying the TPC selections
@@ -1060,7 +1085,11 @@ struct qaMatchEff {
       // all tracks, no conditions
       //
       if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-        if constexpr (IS_MC) { // MC
+        if constexpr (IS_MC) { ////////////////////////   MC
+          //
+          histos.fill(HIST("MC/control/zDCA_tpc"), track.dcaZ());
+          histos.fill(HIST("MC/control/xyDCA_tpc"), track.dcaXY());
+          //
           if (makept2d) {
             histos.fill(HIST("MC/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
             if (!trkWITS)
@@ -1075,7 +1104,11 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("MC/phihist_toftpc"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_toftpc"))->Fill(track.eta());
           }
-        } else { // DATA
+        } else { ////////////////////////   DATA
+          //
+          histos.fill(HIST("data/control/zDCA_tpc"), track.dcaZ());
+          histos.fill(HIST("data/control/xyDCA_tpc"), track.dcaXY());
+          //
           if (makept2d) {
             histos.fill(HIST("data/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
             if (!trkWITS)
@@ -1106,6 +1139,9 @@ struct qaMatchEff {
           //
           // PID is applied
           if (isPion) {
+            histos.get<TH1>(HIST("data/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
+            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
+            //
             histos.get<TH1>(HIST("data/PID/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_pi"))->Fill(track.eta());
@@ -1262,6 +1298,8 @@ struct qaMatchEff {
           }
           // end protons
           if (!isPion && !isKaon && !isProton && (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired)) {
+            histos.get<TH1>(HIST("data/PID/zDCA_tpc_noid"))->Fill(track.dcaZ());
+            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_noid"))->Fill(track.dcaXY());
             histos.get<TH1>(HIST("data/PID/pthist_tpc_noid"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_noid"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_noid"))->Fill(track.eta());
@@ -1278,7 +1316,9 @@ struct qaMatchEff {
         }   // end if DATA
         //
         if (trkWITS && isTrackSelectedITSCuts(track)) { ////////////////////////////////////////////   ITS tag inside TPC tagged
-          if constexpr (IS_MC) {                        // MC
+          if constexpr (IS_MC) {                        ////////////////////////   MC
+            histos.get<TH1>(HIST("MC/control/zDCA_tpcits"))->Fill(track.dcaZ());
+            histos.get<TH1>(HIST("MC/control/xyDCA_tpcits"))->Fill(track.dcaXY());
             if (makept2d)
               histos.fill(HIST("MC/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(track.signed1Pt());
@@ -1290,13 +1330,18 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/phihist_toftpcits"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/etahist_toftpcits"))->Fill(track.eta());
             }
-          } else { // DATA
+          } else { ////////////////////////   DATA
+            histos.get<TH1>(HIST("data/control/zDCA_tpcits"))->Fill(track.dcaZ());
+            histos.get<TH1>(HIST("data/control/xyDCA_tpcits"))->Fill(track.dcaXY());
             if (makept2d)
               histos.fill(HIST("data/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(track.signed1Pt());
             //
             //  PID is applied
             if (isPion) {
+              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
+              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
+              //
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_pi"))->Fill(track.eta());
@@ -1469,6 +1514,8 @@ struct qaMatchEff {
             //
             // not identified
             if (!isPion && !isKaon && !isProton) {
+              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_noid"))->Fill(track.dcaZ());
+              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_noid"))->Fill(track.dcaXY());
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_noid"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_noid"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_noid"))->Fill(track.eta());
@@ -1501,17 +1548,17 @@ struct qaMatchEff {
           for (unsigned int i = 0; i < 7; i++) {
             if (track.itsClusterMap() & (1 << i)) {
               trkHasITS = true;
-              if (IS_MC) {
+              if (IS_MC) { ////////////////////////   MC
                 histos.fill(HIST("MC/control/itsHitsMatched"), i, itsNhits);
-              } else {
+              } else { ////////////////////////   DATA
                 histos.fill(HIST("data/control/itsHitsMatched"), i, itsNhits);
               }
             }
           }
           if (!trkHasITS) {
-            if (IS_MC) {
+            if (IS_MC) { ////////////////////////   MC
               histos.fill(HIST("MC/control/itsHitsMatched"), -1, itsNhits);
-            } else {
+            } else { ////////////////////////   DATA
               histos.fill(HIST("data/control/itsHitsMatched"), -1, itsNhits);
             }
           }
@@ -1521,11 +1568,11 @@ struct qaMatchEff {
       // all tracks with pt>0.5
       if (trackPt > 0.5) {
         if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-          if constexpr (IS_MC) {
+          if constexpr (IS_MC) { ////////////////////////   MC
             histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(track.eta());
-          } else {
+          } else { ////////////////////////   DATA
             histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(track.eta());
@@ -1683,6 +1730,9 @@ struct qaMatchEff {
         //
         // pions only
         if (tpPDGCode == 211) {
+          histos.get<TH1>(HIST("MC/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
+          histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
+          //
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
             histos.get<TH1>(HIST("MC/PID/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_tpc_pi"))->Fill(track.phi());
@@ -1697,6 +1747,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/etahist_tpc_piminus"))->Fill(track.eta());
             }
             if (trkWITS && isTrackSelectedITSCuts(track)) {
+              histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
+              histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
+              //
               histos.get<TH1>(HIST("MC/PID/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi"))->Fill(track.eta());
