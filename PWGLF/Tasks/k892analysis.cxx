@@ -62,10 +62,14 @@ struct k892analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"};   // Use only TOF track for Pion PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"};   // Use only TOF track for Kaon PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -166,21 +170,47 @@ struct k892analysis {
   }
   // PID selection tools
   template <typename T>
-  bool selectionPIDPion(const T& candidate, bool hasTOF)
+  bool selectionPIDPion(const T& candidate)
   {
-    if (hasTOF && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCutCombinedPion * nsigmaCutCombinedPion))) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi()*candidate.tpcNSigmaPi() + candidate.tofNSigmaPi()*candidate.tofNSigmaPi() < nsigmaCutCombinedPion*nsigmaCutCombinedPion)) {
+        tofPIDPassed = true;
+      }
+    }
+    else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
   }
   template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
+  bool selectionPIDKaon(const T& candidate)
   {
-    if (hasTOF && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa()*candidate.tpcNSigmaKa() + candidate.tofNSigmaKa()*candidate.tofNSigmaKa() < nsigmaCutCombinedKaon*nsigmaCutCombinedKaon)) {
+        tofPIDPassed = true;
+      }
+    }
+    else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
@@ -232,7 +262,11 @@ struct k892analysis {
       }
 
       //// Apply the selection
-      if (!selectionPIDPion(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+      if (cUseOnlyTOFTrackPi && !isTrk1hasTOF)
+        continue;
+      if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
+        continue;
+      if (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2))
         continue;
 
       if constexpr (!IsMix) {

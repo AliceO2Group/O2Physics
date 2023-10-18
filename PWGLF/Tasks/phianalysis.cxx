@@ -61,10 +61,10 @@ struct phianalysis {
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"};   // Use only TOF track for PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
   Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -94,12 +94,12 @@ struct phianalysis {
     histos.add("QAbefore/trkpT", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
     histos.add("QAafter/trkpT", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
     // PID QA before cuts
-    histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {pidQAAxis, pidQAAxis}});
-    histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
+    histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {pidQAAxis, pidQAAxis}});
+    histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
     histos.add("QAbefore/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
     // PID QA after cuts
-    histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {pidQAAxis, pidQAAxis}});
-    histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
+    histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {pidQAAxis, pidQAAxis}});
+    histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
     histos.add("QAafter/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
 
     // 3d histogram
@@ -142,13 +142,26 @@ struct phianalysis {
 
     return true;
   }
-  // PID selection tools from phianalysisrun3
+  // PID selection tool
   template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
+  bool selectionPIDKaon(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa()*candidate.tpcNSigmaKa() + candidate.tofNSigmaKa()*candidate.tofNSigmaKa() < nsigmaCutCombinedKaon*nsigmaCutCombinedKaon)) {
+        tofPIDPassed = true;
+      }
+    }
+    else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
@@ -172,7 +185,7 @@ struct phianalysis {
       auto isTrk2hasTOF = trk2.hasTOF();
       auto trk1ptKa = trk1.pt();
       auto trk1NSigmaKaTPC = trk1.tpcNSigmaKa();
-      auto trk1NSigmaKaTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
+      auto trk1NSigmaKaTOF = (isTrk1hasTOF) ? trk1.tofNSigmaKa() : -999.;
       // auto trk2ptKa = trk2.pt();
       // auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       // auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
@@ -191,7 +204,9 @@ struct phianalysis {
       }
 
       //// Apply the selection
-      if (!selectionPIDKaon(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+      if (cUseOnlyTOFTrackKa && (!isTrk1hasTOF || !isTrk2hasTOF))
+        continue;
+      if (!selectionPIDKaon(trk1) || !selectionPIDKaon(trk2))
         continue;
 
       if constexpr (!IsMix) {
