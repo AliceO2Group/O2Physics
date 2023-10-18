@@ -53,9 +53,9 @@ struct k1analysis {
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
-  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"};   // Use only TOF track for Pion PID selection
-  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"};   // Use only TOF track for Kaon PID selection
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
+  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
@@ -207,11 +207,10 @@ struct k1analysis {
       if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
         tofPIDPassed = true;
       }
-      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi()*candidate.tpcNSigmaPi() + candidate.tofNSigmaPi()*candidate.tofNSigmaPi() < nsigmaCutCombinedPion*nsigmaCutCombinedPion)) {
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
         tofPIDPassed = true;
       }
-    }
-    else {
+    } else {
       tofPIDPassed = true;
     }
     if (tpcPIDPassed && tofPIDPassed) {
@@ -230,11 +229,10 @@ struct k1analysis {
       if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
         tofPIDPassed = true;
       }
-      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa()*candidate.tpcNSigmaKa() + candidate.tofNSigmaKa()*candidate.tofNSigmaKa() < nsigmaCutCombinedKaon*nsigmaCutCombinedKaon)) {
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
         tofPIDPassed = true;
       }
-    }
-    else {
+    } else {
       tofPIDPassed = true;
     }
     if (tpcPIDPassed && tofPIDPassed) {
