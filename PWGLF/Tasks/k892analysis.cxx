@@ -201,7 +201,8 @@ struct k892analysis {
         continue;
 
       auto isTrk1hasTOF = trk1.hasTOF();
-      auto isTrk2hasTOF = trk2.hasTOF();auto trk1ptPi = trk1.pt();
+      auto isTrk2hasTOF = trk2.hasTOF();
+      auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
       auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
       auto trk2ptKa = trk2.pt();
