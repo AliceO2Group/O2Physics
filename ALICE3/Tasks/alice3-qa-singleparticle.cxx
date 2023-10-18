@@ -21,6 +21,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
+#include "TMCProcess.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -105,6 +106,10 @@ struct Alice3SingleParticle {
     histos.add("particle/PDGs", "Particle PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/PDGsPrimaries", "Particle PDGs of Primaries", kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/PDGsSecondaries", "Particle PDGs of Secondaries", kTH2D, {axisPDGs, axisCharge});
+    auto h = histos.add<TH1>("particle/producedProcess", "Particle process of production " + tit, kTH1D, {{kMaxMCProcess, -0.5, -0.5 + kMaxMCProcess, "getProcess"}});
+    for (int i = 0; i < kMaxMCProcess; i++) {
+      h->GetXaxis()->SetBinLabel(i + 1, TMCProcessName[i]);
+    }
     histos.add("particle/Pt", "Particle Pt " + tit, kTH1D, {axisPt});
     histos.add("particle/P", "Particle P " + tit, kTH1D, {axisP});
     histos.add("particle/primariesPt", "Particle Pt (primary) " + tit, kTH1D, {axisPt});
@@ -222,6 +227,7 @@ struct Alice3SingleParticle {
       if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
         continue;
       }
+      histos.fill(HIST("particle/producedProcess"), mcParticle.getProcess());
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
       histos.fill(HIST("particle/P"), mcParticle.p());
       histos.fill(HIST("particle/Eta"), mcParticle.eta());
@@ -389,6 +395,7 @@ struct Alice3SingleParticle {
       if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
         continue;
       }
+      histos.fill(HIST("particle/producedProcess"), mcParticle.getProcess());
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
       histos.fill(HIST("particle/P"), mcParticle.p());
       histos.fill(HIST("particle/Eta"), mcParticle.eta());
