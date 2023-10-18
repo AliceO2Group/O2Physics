@@ -386,21 +386,21 @@ struct reso2initializer {
     }
 
     float tempSph = 1.;
-    for (auto const& trk1 : tracks) {
+    for (int i = 0; i < 360 / 0.1; ++i) {
       float sum = 0., pt = 0.;
-      float phi1 = trk1.phi();
-      // float nx = TMath::Cos(phi1);
-      // float ny = TMath::Sin(phi1);
-      for (auto const& trk2 : tracks) {
-        pt = trk2.pt();
+      float phiparm = (TMath::Pi() * i * 0.1) / 180.;
+      float nx = TMath::Cos(phiparm);
+      float ny = TMath::Sin(phiparm);
+      for (auto const& trk : tracks) {
+        pt = trk.pt();
         if (spdef == 0) {
           pt = 1.;
         }
-        float phi2 = trk2.phi();
-        // float px = pt * TMath::Cos(phi2);
-        // float py = pt * TMath::Sin(phi2);
-        sum += pt * abs(sin(phi1 - phi2));
-        // sum += TMath::Abs(px*ny - py*nx);
+        float phi = trk.phi();
+        float px = pt * TMath::Cos(phi);
+        float py = pt * TMath::Sin(phi);
+        // sum += pt * abs(sin(phiparm - phi));
+        sum += TMath::Abs(px * ny - py * nx);
       }
       float sph = TMath::Power((sum / ptSum), 2);
       if (sph < tempSph)
@@ -418,26 +418,6 @@ struct reso2initializer {
     for (auto& track : tracks) {
       if (!IsTrackSelected<isMC>(collision, track))
         continue;
-      // Add PID selection criteria here
-      uint8_t tpcPIDselections = 0;
-      uint8_t tofPIDselections = 0;
-      // TPC PID
-      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kPion;
-      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kKaon;
-      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kProton;
-      // TOF PID
-      if (track.hasTOF()) {
-        tofPIDselections |= aod::resodaughter::PDGtype::kHasTOF;
-        if (std::abs(track.tofNSigmaPi()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kPion;
-        if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kKaon;
-        if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kProton;
-      }
       reso2trks(resoCollisions.lastIndex(),
                 track.pt(),
                 track.px(),
@@ -451,8 +431,7 @@ struct reso2initializer {
                 track.dcaZ(),
                 track.x(),
                 track.alpha(),
-                tpcPIDselections,
-                tofPIDselections,
+                track.hasTOF(),
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),
                 track.tpcNSigmaPr(),

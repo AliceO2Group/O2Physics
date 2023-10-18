@@ -21,6 +21,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -52,6 +53,7 @@ struct qaMatchEff {
   //
   // Track selections
   Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
+  Configurable<int> filterbitTrackSelections{"filterbitTrackSelections", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
@@ -149,9 +151,6 @@ struct qaMatchEff {
   // Tracks selection object
   TrackSelection cutObject;
   //
-  // pt calculated at the inner wall of TPC
-  float trackPtInParamTPC = -1.;
-  //
   // do you want pt comparison 2d's ?
   Configurable<bool> makept2d{"makept2d", false, "choose if produce pt reco/TPC derived pt 2dims "};
   //
@@ -167,10 +166,16 @@ struct qaMatchEff {
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
   Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
+  Filter trackFilter = (filterbitTrackSelections.node() == 0) ||
+                       ((filterbitTrackSelections.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
+                       ((filterbitTrackSelections.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((filterbitTrackSelections.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((filterbitTrackSelections.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((filterbitTrackSelections.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   //
   //
   //
-  // Init function
+  //  Init function
   //
   void init(o2::framework::InitContext&)
   {
@@ -183,9 +188,9 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessData && doprocessDataNoColl && doprocessTrkIUMC)))
+    if ((!isitMC && (doprocessMCFilteredTracks || doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessDataFilteredTracks || doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
       LOGF(fatal, "Initialization set for MC and processData function flagged  (or viceversa)! Fix the configuration.");
-    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
+    if ((doprocessMCFilteredTracks && doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessDataFilteredTracks && doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
     if (doprocessTrkIUMC && makethn) {
       LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
@@ -1896,6 +1901,13 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
+  void processMCFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
+    fillGeneralHistos<true>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCFilteredTracks, "process MC with filtered tracks with filterbit selections", false);
+
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
@@ -1928,6 +1940,17 @@ struct qaMatchEff {
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+
+  void processDataFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>> const& tracks, BCsWithTimeStamp const& bcs)
+  {
+    if (enableMonitorVsTime) {
+      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
+    fillGeneralHistos<false>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processDataFilteredTracks, "process data with filtered tracks with filterbit selections", false);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///

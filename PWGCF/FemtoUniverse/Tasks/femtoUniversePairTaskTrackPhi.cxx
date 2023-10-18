@@ -63,8 +63,6 @@ struct femtoUniversePairTaskTrackPhi {
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
-    Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
     Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
     Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
     Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
@@ -92,7 +90,7 @@ struct femtoUniversePairTaskTrackPhi {
   /// Particle 2 --- PHI
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePhi{"ConfPDGCodePhi", 333, "Phi meson - PDG code"};
-    Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
+    // Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
     Configurable<int> ConfPIDPhi{"ConfPIDPhi", 2, "Phi meson - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
     // Configurable<float> ConfPtLowPhi{"ConfPtLowPhi", 0.5, "Lower limit for Pt for the Phi meson"}; // change according to wrzesa cuts
     // Configurable<float> ConfPtHighPhi{"ConfPtHighPhi", 1.5, "Higher limit for Pt for the Phi meson"};
@@ -136,7 +134,6 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
-  Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
@@ -377,16 +374,16 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
       // // Close Pair Rejection
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
-      // // Track Cleaning
-      // if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
-      //   continue;
-      // }
+      // Track Cleaning
+      if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
+        continue;
+      }
       sameEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
     }
@@ -465,11 +462,11 @@ struct femtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
       mixedEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);

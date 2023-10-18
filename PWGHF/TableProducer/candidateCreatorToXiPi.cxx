@@ -33,19 +33,19 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::analysis;
+// using namespace o2::analysis::pdg;
 using namespace o2::aod;
+using namespace o2::aod::cascdata;
+using namespace o2::aod::v0data;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::pdg;
-using namespace o2::aod::v0data;
-using namespace o2::aod::cascdata;
 
 // Reconstruction of omegac candidates
 struct HfCandidateCreatorToXiPi {
@@ -77,7 +77,6 @@ struct HfCandidateCreatorToXiPi {
   Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
   Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
 
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
