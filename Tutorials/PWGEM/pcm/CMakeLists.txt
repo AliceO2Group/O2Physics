@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(pcm-tutorial
                     SOURCES pcmtutorial.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME AnalysisTutorial)
