@@ -35,8 +35,7 @@ double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
   auto bc1 = std::get<aod::BC>(bccoll1);
   auto bc2 = std::get<aod::BC>(bccoll2);
   int64_t tmpDT = int64_t(bc1.globalBC()) - int64_t(bc2.globalBC());
-  double deltaT = tmpDT * LHCBunchSpacingNS
-                  + coll1.collisionTime() - coll2.collisionTime();
+  double deltaT = tmpDT * LHCBunchSpacingNS + coll1.collisionTime() - coll2.collisionTime();
   return deltaT;
 }
 }
