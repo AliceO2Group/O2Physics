@@ -26,18 +26,19 @@ using BCcoll = std::pair<aod::BC, aod::Collision>;
 
 namespace
 {
-  constexpr double LHCRFFreq = 400.789e6;
-  constexpr double LHCBunchSpacingNS = 10 * 1.e9 / LHCRFFreq;
-  double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2) {
-    auto coll1 = std::get<aod::Collision>(bccoll1);
-    auto coll2 = std::get<aod::Collision>(bccoll2);
-    auto bc1 = std::get<aod::BC>(bccoll1);
-    auto bc2 = std::get<aod::BC>(bccoll2);
-    int64_t tmpDT = int64_t(bc1.globalBC()) - int64_t(bc2.globalBC());
-    double deltaT = tmpDT * LHCBunchSpacingNS
-                    + coll1.collisionTime() - coll2.collisionTime();
-    return deltaT;
-  }
+constexpr double LHCRFFreq = 400.789e6;
+constexpr double LHCBunchSpacingNS = 10 * 1.e9 / LHCRFFreq;
+double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
+{
+  auto coll1 = std::get<aod::Collision>(bccoll1);
+  auto coll2 = std::get<aod::Collision>(bccoll2);
+  auto bc1 = std::get<aod::BC>(bccoll1);
+  auto bc2 = std::get<aod::BC>(bccoll2);
+  int64_t tmpDT = int64_t(bc1.globalBC()) - int64_t(bc2.globalBC());
+  double deltaT = tmpDT * LHCBunchSpacingNS
+                  + coll1.collisionTime() - coll2.collisionTime();
+  return deltaT;
+}
 }
 
 namespace o2::aod
@@ -174,21 +175,16 @@ struct vertexQA {
       }
     }
 
-    auto compareCollisions = [&](BCcoll other){
+    auto compareCollisions = [&](BCcoll other) {
       auto coll1 = std::get<aod::Collision>(colls.front());
       auto coll2 = std::get<aod::Collision>(other);
       double testZ = std::abs(coll1.posZ() - coll2.posZ()) / std::sqrt(coll1.covZZ() + coll2.covZZ());
       double distR = std::hypot(coll1.posX() - coll2.posX(), coll1.posY() - coll2.posY());
       double drdxCol = (coll1.posX() - coll2.posX()) / distR;
-      double drdxOther =  -(coll1.posX() - coll2.posX()) / distR;
+      double drdxOther = -(coll1.posX() - coll2.posX()) / distR;
       double drdyCol = (coll1.posY() - coll2.posY()) / distR;
       double drdyOther = -(coll1.posY() - coll2.posY()) / distR;
-      double covR = std::pow(drdxCol, 2) * coll1.covXX()
-                    + std::pow(drdxOther, 2) * coll2.covXX()
-                    + std::pow(drdyCol, 2) * coll1.covYY()
-                    + std::pow(drdxOther, 2) * coll2.covYY()
-                    + 2 * drdxCol * drdyCol * coll1.covXY()
-                    + 2 * drdxOther * drdyOther * coll2.covXY();
+      double covR = std::pow(drdxCol, 2) * coll1.covXX() + std::pow(drdxOther, 2) * coll2.covXX() + std::pow(drdyCol, 2) * coll1.covYY() + std::pow(drdxOther, 2) * coll2.covYY() + 2 * drdxCol * drdyCol * coll1.covXY() + 2 * drdxOther * drdyOther * coll2.covXY();
       double testR = distR / std::sqrt(covR);
       double deltaT = deltaTimeColl(colls.front(), other);
       double testT = std::abs(deltaT) / std::sqrt(std::pow(coll1.collisionTimeRes(), 2) + std::pow(coll2.collisionTimeRes(), 2));
