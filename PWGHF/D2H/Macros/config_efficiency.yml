@@ -23,7 +23,7 @@ output:
     TEfficiency: True # save TEfficiency instances in output .root file
     TH1: True # save TH1 histograms in output .root file
     TCanvas: # save TCanvas instances in extra files (on top of the standard output .root file)
-      individual: True # for inididual canvas (All, Prompt, Nonprompt separately)
+      individual: True # for individual canvas (All, Prompt, Nonprompt separately)
       overlap: True # for overlap canvas (see overlap entry below)
       extension: pdf, png # root not needed, all canvas are stored in .root file anyway
   plots:
