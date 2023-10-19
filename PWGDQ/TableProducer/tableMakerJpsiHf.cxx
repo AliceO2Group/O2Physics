@@ -58,6 +58,7 @@ struct tableMakerJpsiHf {
   Produces<RedJpDmDmesBdts> redDmesBdts;
   Produces<RedJpDmD0Masss> redD0Masses;
   Produces<RedJpDmDileptons> redDileptons;
+  Produces<RedJpDmColCounts> redCollCounter;
 
   // HF configurables
   // cuts on BDT output scores to be applied only for the histograms
@@ -183,15 +184,21 @@ struct tableMakerJpsiHf {
             redDmesBdts(scores[0], scores[1], scores[2]);
           }
 
-          if (dmeson.isSelD0() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+          if (dmeson.isSelD0() >= 1) {
+            massD0 = hfHelper.invMassD0ToPiK(dmeson);
+            if (scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
+              VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+              fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+              VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+            }
           }
-          if (dmeson.isSelD0bar() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+          if (dmeson.isSelD0bar() >= 1) {
+            massD0bar = hfHelper.invMassD0barToKPi(dmeson);
+            if (scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
+              VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+              fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+              VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+            }
           }
           redD0Masses(massD0, massD0bar);
         }
@@ -202,24 +209,26 @@ struct tableMakerJpsiHf {
   // process J/psi - D0
   void processJspiD0(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
+    redCollCounter(collisions.size());
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
       runDileptonDmeson<false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0, "Process J/psi - D0", true);
 
   // process J/psi - D0 adding the BDT output scores to the D0 table
   void processJspiD0WithBdt(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
   {
+    redCollCounter(collisions.size());
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
       runDileptonDmeson<true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-
-  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0, "Process J/psi - D0", true);
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0WithBdt, "Process J/psi - D0", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
