@@ -34,4 +34,3 @@ o2physics_add_dpl_workflow(fitvdm
         O2::DetectorsCommonDataFormats
         O2::DetectorsVertexing
         COMPONENT_NAME Analysis)
-        
