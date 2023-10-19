@@ -50,7 +50,7 @@ using namespace o2::framework;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected,
                                aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
 
-// using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 
 struct qVectorsTable {
   // Configurables.
@@ -64,43 +64,19 @@ struct qVectorsTable {
 
   Configurable<int> cfgCentEsti{"cfgCentEsti",
                                 2, "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
+
+  Configurable<std::string> cfgMultName{"cfgDetName", "FT0C", "The name of detector to be analyzed, available systems: FT0A, FT0C, FV0A, TPCF, TPCB"};
+
   // LOKI: We have here all centrality estimators for Run 3 (except FDDM and NTPV),
   // but the Q-vectors are calculated only for some of them.
+  // FIXME: 6 correction factors for each centrality and 8 centrality intervals are hard-coded.
 
-  //  Configurable<bool> cfgDoAnaTPC{"cfgDoAnaTPC", false, "flag for TPC track analysis"};
+  Configurable<std::vector<float>> cfgCorr{"cfgCorr", std::vector<float>{0.0}, "Correction constants for detector"};
+  Configurable<std::vector<float>> cfgBPosCorr{"cfgBPosCorr", std::vector<float>{0.0}, "Correction constants for positive TPC tracks"};
+  Configurable<std::vector<float>> cfgBNegCorr{"cfgBNegCorr", std::vector<float>{0.0}, "Correction constants for negative TPC tracks"};
 
-  struct : ConfigurableGroup {
-    Configurable<std::vector<float>> cfgFT0ACentBin0{"cfgFT0ACentBin0", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 0"};
-    Configurable<std::vector<float>> cfgFT0ACentBin1{"cfgFT0ACentBin1", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 1"};
-    Configurable<std::vector<float>> cfgFT0ACentBin2{"cfgFT0ACentBin2", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 2"};
-    Configurable<std::vector<float>> cfgFT0ACentBin3{"cfgFT0ACentBin3", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 3"};
-    Configurable<std::vector<float>> cfgFT0ACentBin4{"cfgFT0ACentBin4", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 4"};
-    Configurable<std::vector<float>> cfgFT0ACentBin5{"cfgFT0ACentBin5", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 5"};
-    Configurable<std::vector<float>> cfgFT0ACentBin6{"cfgFT0ACentBin6", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 6"};
-    Configurable<std::vector<float>> cfgFT0ACentBin7{"cfgFT0ACentBin7", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A, cent bin 7"};
-  } cfgCorrConstFT0A;
-
-  struct : ConfigurableGroup {
-    Configurable<std::vector<float>> cfgFT0CCentBin0{"cfgFT0CCentBin0", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 0"};
-    Configurable<std::vector<float>> cfgFT0CCentBin1{"cfgFT0CCentBin1", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 1"};
-    Configurable<std::vector<float>> cfgFT0CCentBin2{"cfgFT0CCentBin2", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 2"};
-    Configurable<std::vector<float>> cfgFT0CCentBin3{"cfgFT0CCentBin3", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 3"};
-    Configurable<std::vector<float>> cfgFT0CCentBin4{"cfgFT0CCentBin4", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 4"};
-    Configurable<std::vector<float>> cfgFT0CCentBin5{"cfgFT0CCentBin5", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 5"};
-    Configurable<std::vector<float>> cfgFT0CCentBin6{"cfgFT0CCentBin6", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 6"};
-    Configurable<std::vector<float>> cfgFT0CCentBin7{"cfgFT0CCentBin7", {0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C, cent bin 7"};
-  } cfgCorrConstFT0C;
-
-  struct : ConfigurableGroup {
-    Configurable<std::vector<float>> cfgFV0ACentBin0{"cfgFV0ACentBin0", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 0"};
-    Configurable<std::vector<float>> cfgFV0ACentBin1{"cfgFV0ACentBin1", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 1"};
-    Configurable<std::vector<float>> cfgFV0ACentBin2{"cfgFV0ACentBin2", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 2"};
-    Configurable<std::vector<float>> cfgFV0ACentBin3{"cfgFV0ACentBin3", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 3"};
-    Configurable<std::vector<float>> cfgFV0ACentBin4{"cfgFV0ACentBin4", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 4"};
-    Configurable<std::vector<float>> cfgFV0ACentBin5{"cfgFV0ACentBin5", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 5"};
-    Configurable<std::vector<float>> cfgFV0ACentBin6{"cfgFV0ACentBin6", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 6"};
-    Configurable<std::vector<float>> cfgFV0ACentBin7{"cfgFV0ACentBin7", {0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A, cent bin 7"};
-  } cfgCorrConstFV0A;
+  Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
+  Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -113,6 +89,8 @@ struct qVectorsTable {
 
   // Variables for other classes.
   EventPlaneHelper helperEP;
+
+  HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   void init(InitContext const&)
   {
@@ -144,6 +122,17 @@ struct qVectorsTable {
     } else {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
+
+    if (cfgCorr->size() < 48) {
+      LOGF(fatal, "No proper correction factor assigned");
+    }
+    if (cfgBPosCorr->size() < 48) {
+      LOGF(fatal, "No proper correction factor assigned");
+    }
+    if (cfgBNegCorr->size() < 48) {
+      LOGF(fatal, "No proper correction factor assigned");
+    }
+    //|| cfgBPosCent.size() != 48 || cfgBNegCent.size() != 48) {
     /*  // Debug printing.
       printf("Offset for FT0A: x = %.3f y = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
       printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
@@ -153,10 +142,44 @@ struct qVectorsTable {
 
     // LOKI: If we need to access the corrections from the CCDB, insert that here.
     // In the meantime, call upon the external files with all the configurables.
+
+    AxisSpec axisPt = {40, 0.0, 4.0};
+    AxisSpec axisEta = {32, -0.8, 0.8};
+    AxisSpec axisPhi = {32, -TMath::Pi(), TMath::Pi()};
+    AxisSpec axixCent = {20, 0, 100};
+
+    histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
   }
 
-  //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  template <typename TrackType>
+  bool SelTrack(const TrackType track)
+  {
+    if (track.pt() < cfgMinPtOnTPC)
+      return false;
+    if (track.pt() > cfgMaxPtOnTPC)
+      return false;
+    if (!track.passedITSNCls())
+      return false;
+    if (!track.passedITSChi2NDF())
+      return false;
+    if (!track.passedITSHits())
+      return false;
+    if (!track.passedITSNCls())
+      return false;
+    if (!track.passedTPCCrossedRowsOverNCls())
+      return false;
+    if (!track.passedTPCChi2NDF())
+      return false;
+    if (!track.passedDCAxy())
+      return false;
+    if (!track.passedDCAz())
+      return false;
+
+    return true;
+  }
+
+  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
+                                                                                                                          //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
     // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
@@ -175,12 +198,8 @@ struct qVectorsTable {
     float qVectFT0C[2] = {0.}; // Real and imaginary parts of the Q-vector in FT0C.
     float qVectFV0A[2] = {0.}; // Real and imaginary parts of the Q-vector in FV0A.
 
-    float qVectFT0C_uncor[2] = {0.};
-    float qVectFT0C_rectr[2] = {0.};
-    float qVectFT0C_twist[2] = {0.};
-
-    //    float qVectBPos[2] = {0.};
-    //    float qVectBNeg[2] = {0.};
+    float qVectBPos[2] = {0.};
+    float qVectBNeg[2] = {0.};
 
     TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
     double sumAmplDet = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
@@ -225,8 +244,6 @@ struct qVectorsTable {
         helperEP.SumQvectors(0, iChC + 96, ampl, QvecDet, sumAmplDet);
       }
 
-      printf("Total amp = %.3f \n", sumAmplDet);
-
       if (sumAmplDet > 1e-8) {
         QvecDet /= sumAmplDet;
         qVectFT0C[0] = QvecDet.Re();
@@ -268,21 +285,30 @@ struct qVectorsTable {
       qVectFV0A[0] = -999.;
       qVectFV0A[1] = -999.;
     }
-    /*
-        if( cfgDoAnaTPC ){
-          for (auto& trk : tracks) {
-            if( !trk.isGlobalTrack() ) continue;
-            if( abs( trk.eta() ) < 0.1 || abs( trk.eta() ) > 0.8 ) continue;
-            if( trk.eta() > 0 ){
-              qVectBPos[0] = trk.pt() * TMath::Cos( 2*trk.phi());
-              qVectBPos[1] = trk.pt() * TMath::Sin( 2*trk.phi());
-            } else if( trk.eta() < 0 ){
-              qVectBNeg[0] = trk.pt() * TMath::Cos( 2*trk.phi());
-              qVectBNeg[1] = trk.pt() * TMath::Sin( 2*trk.phi());
-            }
-          }
-        }
-    */
+
+    qVectBPos[0] = 0.;
+    qVectBPos[1] = 0.;
+    qVectBNeg[0] = 0.;
+    qVectBNeg[1] = 0.;
+
+    int nTrkBPos = 0;
+    int nTrkBNeg = 0;
+    for (auto& trk : tracks) {
+      if (!SelTrack(trk))
+        continue;
+      histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
+      if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
+        continue;
+      if (trk.eta() > 0) {
+        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        nTrkBPos++;
+      } else if (trk.eta() < 0) {
+        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
+        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        nTrkBNeg++;
+      }
+    } // FIXME: ARBITRARY SCALE FACTOR OF 20
 
     /// TODO: Repeat here the procedure for any other Qvector columns.
     /// Do not forget to add the configurable for the correction constants.
@@ -292,80 +318,85 @@ struct qVectorsTable {
     // A correction constant set to zero means this correction is not applied.
     // LOKI: Each detector must have their own vector of correction constants.
     int cBin = helperEP.GetCentBin(cent);
-    std::vector<float> corrConstFT0A;
-    std::vector<float> corrConstFT0C;
-    std::vector<float> corrConstFV0A;
-    switch (cBin) {
-      case 0:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin0;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin0;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin0;
-        break;
-      case 1:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin1;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin1;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin1;
-        break;
-      case 2:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin2;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin2;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin2;
-        break;
-      case 3:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin3;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin3;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin3;
-        break;
-      case 4:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin4;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin4;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin4;
-        break;
-      case 5:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin5;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin5;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin5;
-        break;
-      case 6:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin6;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin6;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin6;
-        break;
-      case 7:
-        corrConstFT0A = cfgCorrConstFT0A.cfgFT0ACentBin7;
-        corrConstFT0C = cfgCorrConstFT0C.cfgFT0CCentBin7;
-        corrConstFV0A = cfgCorrConstFV0A.cfgFV0ACentBin7;
-        break;
+
+    float qVector_final[2] = {0.};
+    if (cfgMultName.value == "FT0A") {
+      qVector_final[0] = qVectFT0A[0];
+      qVector_final[1] = qVectFT0A[1];
+    } else if (cfgMultName.value == "FT0C") {
+      qVector_final[0] = qVectFT0C[0];
+      qVector_final[1] = qVectFT0C[1];
+    } else if (cfgMultName.value == "FV0A") {
+      qVector_final[0] = qVectFV0A[0];
+      qVector_final[1] = qVectFV0A[1];
     }
+
+    float qVector_uncor[2];
+    float qVector_rectr[2];
+    float qVector_twist[2];
+
+    float qVectBPos_uncor[2];
+    float qVectBPos_rectr[2];
+    float qVectBPos_twist[2];
+    float qVectBPos_final[2];
+
+    float qVectBNeg_uncor[2];
+    float qVectBNeg_rectr[2];
+    float qVectBNeg_twist[2];
+    float qVectBNeg_final[2];
 
     for (int i = 0; i < 2; i++) {
-      qVectFT0C_uncor[i] = qVectFT0C[i];
-      qVectFT0C_rectr[i] = qVectFT0C[i];
-      qVectFT0C_twist[i] = qVectFT0C[i];
+      qVector_uncor[i] = qVector_final[i];
+      qVector_rectr[i] = qVector_final[i];
+      qVector_twist[i] = qVector_final[i];
+
+      qVectBPos_uncor[i] = qVectBPos[i];
+      qVectBPos_rectr[i] = qVectBPos[i];
+      qVectBPos_twist[i] = qVectBPos[i];
+      qVectBPos_final[i] = qVectBPos[i];
+
+      qVectBNeg_uncor[i] = qVectBNeg[i];
+      qVectBNeg_rectr[i] = qVectBNeg[i];
+      qVectBNeg_twist[i] = qVectBNeg[i];
+      qVectBNeg_final[i] = qVectBNeg[i];
     }
 
-    helperEP.DoCorrections(qVectFT0A[0], qVectFT0A[1], corrConstFT0A);
-    helperEP.DoCorrections(qVectFT0C[0], qVectFT0C[1], corrConstFT0C);
-    helperEP.DoCorrections(qVectFV0A[0], qVectFV0A[1], corrConstFV0A);
+    helperEP.DoRecenter(qVector_rectr[0], qVector_rectr[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
 
-    helperEP.DoRecenter(qVectFT0C_rectr[0], qVectFT0C_rectr[1], corrConstFT0C[0], corrConstFT0C[1]);
-    helperEP.DoRecenter(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0C[0], corrConstFT0C[1]);
-    helperEP.DoTwist(qVectFT0C_twist[0], qVectFT0C_twist[1], corrConstFT0C[2], corrConstFT0C[3]);
+    helperEP.DoRecenter(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
 
-    std::vector<float>().swap(corrConstFT0A);
-    std::vector<float>().swap(corrConstFT0C);
-    std::vector<float>().swap(corrConstFV0A);
+    helperEP.DoRecenter(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6 + 2), cfgCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVector_final[0], qVector_final[1], cfgCorr->at(cBin * 6 + 4), cfgCorr->at(cBin * 6 + 5));
+
+    helperEP.DoRecenter(qVectBPos_rectr[0], qVectBPos_rectr[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
+
+    helperEP.DoRecenter(qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBPos_twist[0], qVectBPos_twist[1], cfgBPosCorr->at(cBin * 6 + 2), cfgBPosCorr->at(cBin * 6 + 3));
+
+    helperEP.DoRecenter(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6), cfgBPosCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6 + 2), cfgBPosCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVectBPos_final[0], qVectBPos_final[1], cfgBPosCorr->at(cBin * 6 + 4), cfgBPosCorr->at(cBin * 6 + 5));
+
+    helperEP.DoRecenter(qVectBNeg_rectr[0], qVectBNeg_rectr[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
+
+    helperEP.DoRecenter(qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBNeg_twist[0], qVectBNeg_twist[1], cfgBNegCorr->at(cBin * 6 + 2), cfgBNegCorr->at(cBin * 6 + 3));
+
+    helperEP.DoRecenter(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6), cfgBNegCorr->at(cBin * 6 + 1));
+    helperEP.DoTwist(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6 + 2), cfgBNegCorr->at(cBin * 6 + 3));
+    helperEP.DoRescale(qVectBNeg_final[0], qVectBNeg_final[1], cfgBNegCorr->at(cBin * 6 + 4), cfgBNegCorr->at(cBin * 6 + 5));
 
     // Fill the columns of the Qvectors table.
-    qVector(cent,
-            qVectFT0A[0], qVectFT0A[1],
-            qVectFT0C[0], qVectFT0C[1],
-            qVectFV0A[0], qVectFV0A[1],
-            1.0, 2.0,
-            2.0, 1.0,
-            qVectFT0C_uncor[0], qVectFT0C_uncor[1],
-            qVectFT0C_rectr[0], qVectFT0C_rectr[1],
-            qVectFT0C_twist[0], qVectFT0C_twist[1]);
+    qVector(cent, cBin,
+            qVector_uncor[0], qVector_uncor[1], qVector_rectr[0], qVector_rectr[1],
+            qVector_twist[0], qVector_twist[1], qVector_final[0], qVector_final[1],
+            qVectBPos_uncor[0], qVectBPos_uncor[1], qVectBPos_rectr[0], qVectBPos_rectr[1],
+            qVectBPos_twist[0], qVectBPos_twist[1], qVectBPos_final[0], qVectBPos_final[1],
+            qVectBNeg_uncor[0], qVectBNeg_uncor[1], qVectBNeg_rectr[0], qVectBNeg_rectr[1],
+            qVectBNeg_twist[0], qVectBNeg_twist[1], qVectBNeg_final[0], qVectBNeg_final[1],
+            nTrkBPos, nTrkBNeg);
   } // End process.
 };
 

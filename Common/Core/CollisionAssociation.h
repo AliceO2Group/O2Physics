@@ -55,6 +55,7 @@ class CollisionAssociation
   void setUsePvAssociation(bool enable = true) { mUsePvAssociation = enable; }
   void setIncludeUnassigned(bool enable = true) { mIncludeUnassigned = enable; }
   void setFillTableOfCollIdsPerTrack(bool fill = true) { mFillTableOfCollIdsPerTrack = fill; }
+  void setBcWindow(int bcWindow = 115) { mBcWindowForOneSigma = bcWindow; }
 
   template <typename TTracks, typename Slice, typename Assoc, typename RevIndices>
   void runStandardAssoc(o2::aod::Collisions const& collisions,
@@ -132,6 +133,10 @@ class CollisionAssociation
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
+              if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+                globalBC.push_back(-1);
+                break;
+              }
               globalBC.push_back(ambTrack.bc().begin().globalBC());
               break;
             }
@@ -150,7 +155,7 @@ class CollisionAssociation
 
     // loop over collisions to find time-compatible tracks
     auto trackBegin = tracks.begin();
-    constexpr auto bOffsetMax = 241; // 6 mus (ITS)
+    auto bOffsetMax = mBcWindowForOneSigma * mNumSigmaForTimeCompat + mTimeMargin / o2::constants::lhc::LHCBunchSpacingNS;
     for (const auto& collision : collisions) {
       const float collTime = collision.collisionTime();
       const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
@@ -160,12 +165,16 @@ class CollisionAssociation
         if (!mIncludeUnassigned && !track.has_collision()) {
           continue;
         }
-        const int64_t bcOffset = (int64_t)globalBC[track.filteredIndex()] - (int64_t)collBC;
-        if (std::abs(bcOffset) > bOffsetMax) {
+
+        float trackTime = track.trackTime();
+        if (globalBC[track.filteredIndex()] < 0) {
+          continue;
+        }
+        const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
+        if (std::abs(bcOffsetWindow) > bOffsetMax) {
           continue;
         }
 
-        float trackTime = track.trackTime();
         float trackTimeRes = track.trackTimeRes();
         if constexpr (isCentralBarrel) {
           if (mUsePvAssociation && track.isPVContributor()) {
@@ -174,6 +183,7 @@ class CollisionAssociation
           }
         }
 
+        const int64_t bcOffset = (int64_t)globalBC[track.filteredIndex()] - (int64_t)collBC;
         const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, globalBC[track.filteredIndex()], deltaTime);
@@ -238,6 +248,7 @@ class CollisionAssociation
   bool mUsePvAssociation{true};                                                      // use the information of PV contributors
   bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
   bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
+  int mBcWindowForOneSigma{115};                                                     // BC window to be multiplied by the number of sigmas to define maximum window to be considered
 };
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_

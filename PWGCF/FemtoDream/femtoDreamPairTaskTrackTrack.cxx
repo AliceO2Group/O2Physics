@@ -62,6 +62,8 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  Configurable<bool> ConfExtendedPlots{"ConfExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+  Configurable<float> ConfHighkstarCut{"ConfHighkstarCut", 6., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -143,8 +145,8 @@ struct femtoDreamPairTaskTrackTrack {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
-    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
+    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D, ConfExtendedPlots, ConfHighkstarCut);
+    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D, ConfExtendedPlots, ConfHighkstarCut);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
@@ -194,7 +196,7 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      trackHistoPartOne.fillQA<isMC, false>(part, 0);
+      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
     }
 
     if (!ConfIsSame) {
@@ -212,7 +214,7 @@ struct femtoDreamPairTaskTrackTrack {
                                ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
-        trackHistoPartTwo.fillQA<isMC, false>(part, 0);
+        trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
       }
     }
     /// Now build the combinations
@@ -249,7 +251,7 @@ struct femtoDreamPairTaskTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
     }
   }
 
@@ -328,7 +330,7 @@ struct femtoDreamPairTaskTrackTrack {
         }
       }
 
-      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
     }
   }
 

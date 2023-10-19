@@ -20,14 +20,20 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
+
+/// Struct to extend TracksPid tables
+struct HfCandidateSelectorDplusToPiKPiExpressions {
+  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
+  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
+};
 
 /// Struct for applying Dplus to piKpi selection cuts
 struct HfCandidateSelectorDplusToPiKPi {
@@ -50,7 +56,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 3., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Dplus candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], hf_cuts_dplus_to_pi_k_pi::nBinsPt, hf_cuts_dplus_to_pi_k_pi::nCutVars, hf_cuts_dplus_to_pi_k_pi::labelsPt, hf_cuts_dplus_to_pi_k_pi::labelsCutVar}, "Dplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -68,13 +74,12 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   o2::analysis::HfMlResponse<float> hfMlResponse;
   std::vector<float> outputMl = {};
-
   o2::ccdb::CcdbApi ccdbApi;
-
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
+  HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
   HistogramRegistry registry{"registry"};
 
@@ -139,7 +144,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(invMassDplusToPiKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDPlus)) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::analysis::pdg::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {
@@ -195,7 +200,7 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       auto ptCand = candidate.pt();
 
-      if (!TESTBIT(candidate.hfflag(), DecayType::DplusToPiKPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
           hfMlDplusToPiKPiCandidate(outputMl);
@@ -245,19 +250,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
 
       if (applyMl) {
-        // tracks without TPC nor TOF already rejected at PID selection level
-        // tag tracks with TPC and TOF, only TPC, only TOF
-        auto tagPIDPos1 = o2::analysis::tagPID(trackPos1);
-        auto tagPIDNeg = o2::analysis::tagPID(trackNeg);
-        auto tagPIDPos2 = o2::analysis::tagPID(trackPos2);
-
-        auto combinedNSigmaPiPos1 = o2::analysis::getCombinedNSigma(trackPos1.tpcNSigmaPi(), trackPos1.tofNSigmaPi(), tagPIDPos1);
-        auto combinedNSigmaKaPos1 = o2::analysis::getCombinedNSigma(trackPos1.tpcNSigmaKa(), trackPos1.tofNSigmaKa(), tagPIDPos1);
-        auto combinedNSigmaPiNeg = o2::analysis::getCombinedNSigma(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi(), tagPIDNeg);
-        auto combinedNSigmaKaNeg = o2::analysis::getCombinedNSigma(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa(), tagPIDNeg);
-        auto combinedNSigmaPiPos2 = o2::analysis::getCombinedNSigma(trackPos2.tpcNSigmaPi(), trackPos2.tofNSigmaPi(), tagPIDPos2);
-        auto combinedNSigmaKaPos2 = o2::analysis::getCombinedNSigma(trackPos2.tpcNSigmaKa(), trackPos2.tofNSigmaKa(), tagPIDPos2);
-
         // ML selections
         std::vector<float> inputFeatures{candidate.ptProng0(),
                                          candidate.impactParameter0(),
@@ -270,12 +262,12 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          candidate.cpa(),
                                          candidate.cpaXY(),
                                          candidate.maxNormalisedDeltaIP(),
-                                         combinedNSigmaPiPos1,
-                                         combinedNSigmaKaPos1,
-                                         combinedNSigmaPiNeg,
-                                         combinedNSigmaKaNeg,
-                                         combinedNSigmaPiPos2,
-                                         combinedNSigmaKaPos2};
+                                         trackPos1.tpcTofNSigmaPi(),
+                                         trackPos1.tpcTofNSigmaKa(),
+                                         trackNeg.tpcTofNSigmaPi(),
+                                         trackNeg.tpcTofNSigmaKa(),
+                                         trackPos2.tpcTofNSigmaPi(),
+                                         trackPos2.tpcTofNSigmaKa()};
 
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
@@ -298,5 +290,6 @@ struct HfCandidateSelectorDplusToPiKPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorDplusToPiKPiExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorDplusToPiKPi>(cfgc)};
 }

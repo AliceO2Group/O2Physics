@@ -311,7 +311,12 @@ struct kinkAnalysis {
     histos.add("generatedPt", "generatedPt", kTH1F, {axisPt});
     histos.add("hPtMinusRecMcTrth", "hPtMinusRecMcTrth", kTH2F, {axisSigmaMass, axisPt});
     histos.add("hPtPlusRecMcTrth", "hPtPlusRecMcTrth", kTH2F, {axisSigmaMass, axisPt});
-    histos.add("hcodes", "hcodes", kTH1F, {axisPdgCodes});
+    histos.add("hcodes", "hcodes", kTH2F, {axisPdgCodes, axisPdgCodes});
+    histos.add("hptMtrue", "hptMtrue", kTH2F, {axisPt, axisPt});
+    histos.add("hptMDtrue", "hptMDtrue", kTH2F, {axisPt, axisPt});
+    histos.add("hptMDelse", "hptMDelse", kTH2F, {axisPt, axisPt});
+    histos.add("hPtMinusRecMcTrthM", "hPtMinusRecMcTrthM", kTH2F, {axisSigmaMass, axisPt});
+    histos.add("hPtMinusRecMcTrthelse", "hPtMinusRecMcTrthelse", kTH2F, {axisSigmaMass, axisPt});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -483,7 +488,8 @@ struct kinkAnalysis {
 
     const int poolCh1 = chargeM < 0 ? 1 : 0;
     const int poolCh2 = chargeD < 0 ? 1 : 0;
-    int motherPdg = 3112;
+    int motherPdg = 999;
+    int daughterPdg = 777;
 
     switch (particleName) {
       case SigmaMinus:
@@ -596,20 +602,25 @@ struct kinkAnalysis {
         }
 
         const auto& trackDgh = tracks.iteratorAt(static_cast<uint64_t>(seedD.Idxtr));
+
+        if ((seedD.mcParticleIdx != -1) && partTable) {
+          auto mcParticle = partTable->rawIteratorAt(seedD.mcParticleIdx);
+          daughterPdg = mcParticle.pdgCode();
+        }
         PionTr = getTrackParCov(trackDgh);
 
         SigmaTr2.getPxPyPzGlo(sigmaPin);
 
         if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == Xi) || (particleName == OmegaToXi)) {
-          if (trackDgh.tpcNSigmaPi() > 3.)
+          if (trackDgh.tpcNSigmaPi() > cfgNsigmaTPCdaughter)
             continue;
         }
         if (particleName == SigmaPlusToProton) {
-          if (trackDgh.tpcNSigmaPr() > 3.)
+          if (trackDgh.tpcNSigmaPr() > cfgNsigmaTPCdaughter)
             continue;
         }
         if (particleName == OmegaToL) {
-          if (trackDgh.tpcNSigmaKa() > 3.)
+          if (trackDgh.tpcNSigmaKa() > cfgNsigmaTPCdaughter)
             continue;
         }
 
@@ -704,6 +715,10 @@ struct kinkAnalysis {
                     continue;
               }
 
+              if (!cfgIsMC)
+                if (sigmaPt < 1.6)
+                  continue;
+
               if (theta * radToDeg < 0.5)
                 continue;
 
@@ -722,9 +737,17 @@ struct kinkAnalysis {
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
-                  histos.fill(HIST("hcodes"), motherPdg);
-                  if (motherPdg == particlePdgCode)
+                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
+                  if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg == -211)) {
                     histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
+                    histos.fill(HIST("hptMDtrue"), sigmaPt, PionTr.getPt());
+                  } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
+                    histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
+                    histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
+                  } else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
+                    histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
+                    histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
+                  }
                 }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }

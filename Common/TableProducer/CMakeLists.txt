@@ -31,6 +31,11 @@ o2physics_add_dpl_workflow(multiplicity-table
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(multiplicity-extra-table
+                    SOURCES multiplicityExtraTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(centrality-table
                     SOURCES centralityTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

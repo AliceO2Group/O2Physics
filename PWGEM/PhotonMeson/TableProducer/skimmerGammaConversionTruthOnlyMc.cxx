@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct skimmerGammaConversionsTruthOnlyMc {
+struct skimmerGammaConversionTruthOnlyMc {
 
   Produces<aod::McGammasTrue> fFuncTableMcGammas;
   Produces<aod::McDaughterTrue> fFuncTableMcDaughter;
@@ -109,5 +109,5 @@ struct skimmerGammaConversionsTruthOnlyMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsTruthOnlyMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionTruthOnlyMc>(cfgc, TaskName{"skimmer-gamma-conversion-truthonlymc"})};
 }

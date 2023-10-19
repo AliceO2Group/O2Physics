@@ -131,39 +131,6 @@ class CollisonCuts
     }
   }
 
-  /// Compute the spherocity of an event
-  /// Important here is that the filter on tracks does not interfere here!
-  /// In Run 2 we used here global tracks within |eta| < 0.8
-  /// \tparam T1 type of the collision
-  /// \tparam T2 type of the tracks
-  /// \param col Collision
-  /// \param tracks All tracks
-  /// \return value of the sphericity of the event
-  template <typename T1, typename T2>
-  float computeSpherocity(T1 const& col, T2 const& tracks)
-  {
-    int size = tracks.size();
-    float Sp = 1;
-    for (auto const& trk1 : tracks) {
-      float sum1 = 0;
-      float phi1 = trk1.phi();
-      int ctr = 0;
-      for (auto const& trk2 : tracks) {
-        ++ctr;
-        if (trk1.index() == trk2.index())
-          continue;
-        float phi2 = trk2.phi();
-        sum1 += abs(sin(phi1 - phi2));
-      }
-      float sph = pow(sum1 / static_cast<float>(size), 2);
-      if (sph < Sp) {
-        Sp = sph;
-      }
-    }
-    float spherocity = pow(M_PI_2, 2) * Sp;
-    return spherocity;
-  }
-
  private:
   HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
   bool mCutsSet = false;                           ///< Protection against running without cuts

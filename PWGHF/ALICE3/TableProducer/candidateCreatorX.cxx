@@ -23,15 +23,14 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -61,9 +60,11 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massJpsi = RecoDecay::getMassPDG(443);
-  double massJpsiPiPi;
+  HfHelper hfHelper;
+
+  double massPi{0.};
+  double massJpsi{0.};
+  double massJpsiPiPi{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
@@ -75,6 +76,12 @@ struct HfCandidateCreatorX {
   OutputObj<TH1F> hMassXToJpsiToMuMuPiPi{TH1F("hMassXToJpsiToMuMuPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massJpsi = o2::analysis::pdg::MassJPsi;
+  }
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
@@ -109,20 +116,20 @@ struct HfCandidateCreatorX {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (std::abs(invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(hfHelper.invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (std::abs(invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(hfHelper.invMassJpsiToMuMu(jpsiCand));
       }
 
       hPtJpsi->Fill(jpsiCand.pt());

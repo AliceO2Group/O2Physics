@@ -52,10 +52,14 @@ struct k1analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
+  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -191,23 +195,47 @@ struct k1analysis {
     return true;
   }
 
-  // PID selection tools from phianalysisrun3
+  // PID selection tools
   template <typename T>
-  bool selectionPIDPion(const T& candidate, bool hasTOF)
+  bool selectionPIDPion(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
   }
   template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
+  bool selectionPIDKaon(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
@@ -262,8 +290,8 @@ struct k1analysis {
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();
       auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
       auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
@@ -272,7 +300,11 @@ struct k1analysis {
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
       //// PID selections
-      if (!selectionPIDPion(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+      if (cUseOnlyTOFTrackPi && !isTrk1hasTOF)
+        continue;
+      if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
+        continue;
+      if (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2))
         continue;
 
       //// QA plots after the selection
@@ -340,11 +372,11 @@ struct k1analysis {
 
         auto bTrkPt = bTrack.pt();
         auto bTrkTPCnSigmaPi = bTrack.tpcNSigmaPi();
-        auto isbTrkhasTOF = ((bTrack.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+        auto isbTrkhasTOF = bTrack.hasTOF();
         auto bTrack_TOFnSigma = (isbTrkhasTOF) ? bTrack.tofNSigmaPi() : -999.;
 
         // PID selection
-        if (!selectionPIDPion(bTrack, isbTrkhasTOF))
+        if (!selectionPIDPion(bTrack))
           continue;
 
         if constexpr (!IsMix) {
@@ -507,11 +539,10 @@ struct k1analysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
-
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

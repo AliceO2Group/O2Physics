@@ -22,17 +22,15 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::constants::math;
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
@@ -95,6 +93,8 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
+
+  HfHelper hfHelper;
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
@@ -190,14 +190,14 @@ struct HfCorrelatorDMesonPairs {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassD0)) > yCandMax) {
         return false;
       }
     } else {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus))) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassDPlus)) > yCandMax) {
         return false;
       }
     }
@@ -235,9 +235,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEtaMcRec"), candidate.eta());
       registry.fill(HIST("hPhiMcRec"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hYMcRec"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0)));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassD0));
       } else {
-        registry.fill(HIST("hYMcRec"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus)));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassDPlus));
       }
     } else {
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -246,9 +246,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hY"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0)));
+        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassD0));
       } else {
-        registry.fill(HIST("hY"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus)));
+        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassDPlus));
       }
     }
   }
@@ -330,10 +330,12 @@ struct HfCorrelatorDMesonPairs {
     registry.fill(HIST("hMcEvtCount"), 0);
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0 && std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      auto pdgCode = std::abs(particle1.pdgCode());
+      if (pdgCode != pdg::Code::kD0 && pdgCode != pdg::Code::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      auto massD = pdgCode == pdg::Code::kD0 ? o2::analysis::pdg::MassD0 : o2::analysis::pdg::MassDPlus;
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, massD);
       if (!kinematicCutsGen(particle1)) {
         continue;
       }
@@ -372,8 +374,8 @@ struct HfCorrelatorDMesonPairs {
                       particle2.pt(),
                       particle1.y(),
                       particle2.y(),
-                      RecoDecay::getMassPDG(pdg::Code::kD0),
-                      RecoDecay::getMassPDG(pdg::Code::kD0),
+                      o2::analysis::pdg::MassD0,
+                      o2::analysis::pdg::MassD0,
                       candidateType1,
                       candidateType2,
                       2);
@@ -389,8 +391,8 @@ struct HfCorrelatorDMesonPairs {
                          particle2.pt(),
                          particle1.y(),
                          particle2.y(),
-                         RecoDecay::getMassPDG(pdg::Code::kDPlus),
-                         RecoDecay::getMassPDG(pdg::Code::kDPlus),
+                         o2::analysis::pdg::MassDPlus,
+                         o2::analysis::pdg::MassDPlus,
                          candidateType1,
                          candidateType2,
                          2);
@@ -420,7 +422,7 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
-      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1); // Candidate type attribution.
 
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
@@ -438,10 +440,10 @@ struct HfCorrelatorDMesonPairs {
                     candidate2.eta() - candidate1.eta(),
                     candidate1.pt(),
                     candidate2.pt(),
-                    yD0(candidate1),
-                    yD0(candidate2),
-                    invMassD0ToPiK(candidate1),
-                    invMassD0barToKPi(candidate2),
+                    hfHelper.yD0(candidate1),
+                    hfHelper.yD0(candidate2),
+                    hfHelper.invMassD0ToPiK(candidate1),
+                    hfHelper.invMassD0barToKPi(candidate2),
                     candidateType1,
                     candidateType2,
                     0);
@@ -469,7 +471,7 @@ struct HfCorrelatorDMesonPairs {
         fillInfoHists(candidate1, true, true);
       }
 
-      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
 
       int8_t origin1 = 0, matchedRec1 = 0;
@@ -505,10 +507,10 @@ struct HfCorrelatorDMesonPairs {
                     candidate2.eta() - candidate1.eta(),
                     candidate1.pt(),
                     candidate2.pt(),
-                    yD0(candidate1),
-                    yD0(candidate2),
-                    invMassD0ToPiK(candidate1),
-                    invMassD0barToKPi(candidate2),
+                    hfHelper.yD0(candidate1),
+                    hfHelper.yD0(candidate2),
+                    hfHelper.invMassD0ToPiK(candidate1),
+                    hfHelper.invMassD0barToKPi(candidate2),
                     candidateType1,
                     candidateType2,
                     1);
@@ -555,7 +557,7 @@ struct HfCorrelatorDMesonPairs {
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, outerParticleSign);
       fillInfoHists(candidate1, false, false);
-      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
@@ -578,10 +580,10 @@ struct HfCorrelatorDMesonPairs {
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
-                       yDplus(candidate1),
-                       yDplus(candidate2),
-                       invMassDplusToPiKPi(candidate1),
-                       invMassDplusToPiKPi(candidate2),
+                       hfHelper.yDplus(candidate1),
+                       hfHelper.yDplus(candidate2),
+                       hfHelper.invMassDplusToPiKPi(candidate1),
+                       hfHelper.invMassDplusToPiKPi(candidate2),
                        candidateType1,
                        candidateType2,
                        0);
@@ -614,7 +616,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, outerParticleSign);
-      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
+      registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       int8_t origin1 = 0, matchedRec1 = 0;
       if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
@@ -655,10 +657,10 @@ struct HfCorrelatorDMesonPairs {
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
-                       yDplus(candidate1),
-                       yDplus(candidate2),
-                       invMassDplusToPiKPi(candidate1),
-                       invMassDplusToPiKPi(candidate2),
+                       hfHelper.yDplus(candidate1),
+                       hfHelper.yDplus(candidate2),
+                       hfHelper.invMassDplusToPiKPi(candidate1),
+                       hfHelper.invMassDplusToPiKPi(candidate2),
                        candidateType1,
                        candidateType2,
                        1);

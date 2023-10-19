@@ -561,6 +561,68 @@ DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 
 // bit information for particle species.
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
+
+DECLARE_SOA_TABLE(RedJpDmColls, "AOD", "REDJPDMCOLL", //!
+                  o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::NumContrib);
+
+namespace jpsidmescorr
+{
+DECLARE_SOA_INDEX_COLUMN(RedJpDmColl, redJpDmColl);    //!
+DECLARE_SOA_COLUMN(MassD0, massD0, float);             //!
+DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);       //!
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(DecVtxX, decVtxX, float);           //!
+DECLARE_SOA_COLUMN(DecVtxY, decVtxY, float);           //!
+DECLARE_SOA_COLUMN(DecVtxZ, decVtxZ, float);           //!
+DECLARE_SOA_COLUMN(BdtBkg, bdtBkg, float);             //!
+DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);       //!
+DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float); //!
+DECLARE_SOA_COLUMN(NumColls, numColls, uint64_t);      //!
+} // namespace jpsidmescorr
+
+DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
+                  o2::soa::Index<>,
+                  jpsidmescorr::RedJpDmCollId,
+                  jpsidmescorr::Px,
+                  jpsidmescorr::Py,
+                  jpsidmescorr::Pz,
+                  reducedpair::Mass,
+                  reducedpair::Sign,
+                  reducedpair::McDecision,
+                  reducedpair::Tauz,
+                  reducedpair::Lz,
+                  reducedpair::Lxy);
+
+DECLARE_SOA_TABLE(RedJpDmColCounts, "AOD", "REDJPDMCOLCOUNT", //!
+                  jpsidmescorr::NumColls);
+
+DECLARE_SOA_TABLE(RedJpDmDmesons, "AOD", "REDJPDMDMESON", //!
+                  o2::soa::Index<>,
+                  jpsidmescorr::RedJpDmCollId,
+                  jpsidmescorr::Px,
+                  jpsidmescorr::Py,
+                  jpsidmescorr::Pz,
+                  jpsidmescorr::DecVtxX,
+                  jpsidmescorr::DecVtxY,
+                  jpsidmescorr::DecVtxZ,
+                  reducedpair::Sign,
+                  reducedpair::McDecision);
+
+DECLARE_SOA_TABLE(RedJpDmD0Masss, "AOD", "REDJPDMD0MASS", //!
+                  jpsidmescorr::MassD0,
+                  jpsidmescorr::MassD0bar);
+
+DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
+                  jpsidmescorr::BdtBkg,
+                  jpsidmescorr::BdtPrompt,
+                  jpsidmescorr::BdtNonprompt);
+
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
