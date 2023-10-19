@@ -31,12 +31,30 @@
 #include "Framework/runDataProcessing.h"
 
 //
+namespace extConfPar
+{
+static constexpr int nParDCA = 1;
+static constexpr int nParVaDCA = 2;
+static const std::vector<std::string> parClassDCA{"TrVtx"};
+static const std::vector<std::string> parNameDCA{"dcaXY", "dcaZ"};
+static const float parTableDCA[nParDCA][nParVaDCA]{{9999.f, 99999.f}};
+static constexpr int nParPID = 2;
+static constexpr int nParVaPID = 6;
+static const std::vector<std::string> parClassPID{"TPC", "TOF"};
+static const std::vector<std::string> parNamePID{"nSigPionMin", "nSigPionMax", "nSigKaonMin", "nSigKaonMax", "nSigProtonMin", "nSigProtonMax"};
+static const float parTablePID[nParPID][nParVaPID]{
+  {-99999.f, 999999.f, -99999.f, 999999.f, -99999.f, 999999.f},
+  {-99999.f, 999999.f, -99999.f, 999999.f, -99999.f, 999999.f}};
+} // namespace extConfPar
+//
 // base namespaces
 using namespace o2;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace extConfPar;
+//
 //
 struct qaMatchEff {
   int lastRunNumber = -1;
@@ -60,9 +78,10 @@ struct qaMatchEff {
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<std::vector<float>> dcaMaxCut{"dcaMaxCut", {1000000.0f, 1000000.0f}, "Maximum dcaXY and dcaZ (cm)"};
   Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
-  //  Configurable<bool> b_useTPCinnerWallPtForITS{"b_useTPCinnerWallPtForITS", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off just for ITS-tagged (not TPC tagged) histos."};
+  // DCA and PID cuts
+  Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
+  Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
   // TPC
   Configurable<int> tpcNClusterMin{"tpcNClusterMin", 0, "Minimum number of clusters in TPC"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of crossed rows in TPC"};
@@ -134,19 +153,6 @@ struct qaMatchEff {
   AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
   AxisSpec thnLabelSignAxis{thnLabelSign, "+/- 1 for part./antipart."};
   AxisSpec thnSpecAxis{thnSpec, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
-  // PID stuff
-  Configurable<float> nSigmaTPCPionMin{"nSigmaTPCPionMin", -99999.f, "Minimum nSigma value in TPC, pion hypothesis"};
-  Configurable<float> nSigmaTPCPionMax{"nSigmaTPCPionMax", 99999.f, "Maximum nSigma value in TPC, pion hypothesis"};
-  Configurable<float> nSigmaTPCKaonMin{"nSigmaTPCKaonMin", -99999.f, "Minimum nSigma value in TPC, kaon hypothesis"};
-  Configurable<float> nSigmaTPCKaonMax{"nSigmaTPCKaonMax", 99999.f, "Maximum nSigma value in TPC, kaon hypothesis"};
-  Configurable<float> nSigmaTPCProtonMin{"nSigmaTPCProtonMin", -99999.f, "Minimum nSigma value in TPC, proton hypothesis"};
-  Configurable<float> nSigmaTPCProtonMax{"nSigmaTPCProtonMax", 99999.f, "Maximum nSigma value in TPC, proton hypothesis"};
-  Configurable<float> nSigmaTOFPionMin{"nSigmaTOFPionMin", -99999.f, "Minimum nSigma value in TOF, pion hypothesis"};
-  Configurable<float> nSigmaTOFPionMax{"nSigmaTOFPionMax", 99999.f, "Maximum nSigma value in TOF, pion hypothesis"};
-  Configurable<float> nSigmaTOFKaonMin{"nSigmaTOFKaonMin", -99999.f, "Minimum nSigma value in TOF, kaon hypothesis"};
-  Configurable<float> nSigmaTOFKaonMax{"nSigmaTOFKaonMax", 99999.f, "Maximum nSigma value in TOF, kaon hypothesis"};
-  Configurable<float> nSigmaTOFProtonMin{"nSigmaTOFProtonMin", -99999.f, "Minimum nSigma value in TOF, proton hypothesis"};
-  Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
   //
   // Tracks selection object
   TrackSelection cutObject;
@@ -200,13 +206,12 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
-    auto dcaSetMax = (std::vector<float>)dcaMaxCut;
     if (b_useTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
-      cutObject.SetMaxDcaXY(dcaSetMax.at(0)); /// max for dca implementend by hand in isTrackSelectedKineCuts
-      cutObject.SetMaxDcaZ(dcaSetMax.at(1));  /// max for dca implementend by hand in isTrackSelectedKineCuts
+      cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY")); /// max for dca implementend by hand in isTrackSelectedKineCuts
+      cutObject.SetMaxDcaZ(dcaMaxCut->get("TrVtx", "dcaZ"));   /// max for dca implementend by hand in isTrackSelectedKineCuts
       // TPC
       cutObject.SetMinNClustersTPC(tpcNClusterMin);
       cutObject.SetMinNCrossedRowsTPC(tpcNCrossedRowsMin);
@@ -849,7 +854,6 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    auto dcaSetMax = (std::vector<float>)dcaMaxCut;
     if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
@@ -862,7 +866,7 @@ struct qaMatchEff {
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAxy))
       return false;
     // dcaZ selection to simulate the dca cut in QC ()
-    if (abs(track.dcaZ()) > dcaSetMax.at(1))
+    if (abs(track.dcaZ()) > dcaMaxCut->get("TrVtx", "dcaZ"))
       return false;
     return true;
   }
@@ -1008,23 +1012,23 @@ struct qaMatchEff {
       const bool trkWTOF = track.hasTOF();
       const bool trkWTPC = track.hasTPC();
       const bool trkWITS = track.hasITS();
-      bool pionPIDwithTPC = (nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax);
-      bool pionPIDwithTOF = (nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax);
-      bool kaonPIDwithTPC = (nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax);
-      bool kaonPIDwithTOF = (nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax);
-      bool protonPIDwithTPC = (nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax);
-      bool protonPIDwithTOF = (nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax);
+      bool pionPIDwithTPC = (nSigmaPID->get("TPC", "nSigPionMin") < tpcNSigmaPion && tpcNSigmaPion < nSigmaPID->get("TPC", "nSigPionMax"));
+      bool pionPIDwithTOF = (nSigmaPID->get("TOF", "nSigPionMin") < tofNSigmaPion && tofNSigmaPion < nSigmaPID->get("TOF", "nSigPionMax"));
+      bool kaonPIDwithTPC = (nSigmaPID->get("TPC", "nSigKaonMin") < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaPID->get("TPC", "nSigKaonMax"));
+      bool kaonPIDwithTOF = (nSigmaPID->get("TOF", "nSigKaonMin") < tofNSigmaKaon && tofNSigmaKaon < nSigmaPID->get("TOF", "nSigKaonMax"));
+      bool protonPIDwithTPC = (nSigmaPID->get("TPC", "nSigProtonMin") < tpcNSigmaProton && tpcNSigmaProton < nSigmaPID->get("TPC", "nSigProtonMax"));
+      bool protonPIDwithTOF = (nSigmaPID->get("TOF", "nSigProtonMin") < tofNSigmaProton && tofNSigmaProton < nSigmaPID->get("TOF", "nSigProtonMax"));
       // isPion
       bool isPion = false;
-      if (isPIDPionRequired && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && ((!trkWTOF) || (nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax)))
+      if (isPIDPionRequired && pionPIDwithTPC && ((!trkWTOF) || pionPIDwithTOF))
         isPion = true;
       // isKaon
       bool isKaon = false;
-      if (isPIDKaonRequired && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && ((!trkWTOF) || (nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax)))
+      if (isPIDKaonRequired && kaonPIDwithTPC && ((!trkWTOF) || kaonPIDwithTOF))
         isKaon = true;
       // isProton
       bool isProton = false;
-      if (isPIDProtonRequired && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && ((!trkWTOF) || (nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax)))
+      if (isPIDProtonRequired && protonPIDwithTPC && ((!trkWTOF) || protonPIDwithTOF))
         isProton = true;
       //
       int sayPrim = -1, signPDGCode = -2, specind = 0;
