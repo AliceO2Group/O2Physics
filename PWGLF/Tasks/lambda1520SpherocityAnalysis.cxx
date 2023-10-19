@@ -406,10 +406,8 @@ struct lambdaAnalysis {
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::McParticles const& mcParticles)
   {
 
-    histos.fill(HIST("Event/hCent"), collision.multV0M());
-    histos.fill(HIST("Event/hSph"), collision.spherocity());
-    histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
-    
+    histos.add(HIST("Event/hSphRec"), collision.spherocity());
+    histos.add(HIST("Event/hSpCentRec"), collision.multV0M(), collision.spherocity());
     fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
   PROCESS_SWITCH(lambdaAnalysis, processMC, "Process Event for MC", false);
