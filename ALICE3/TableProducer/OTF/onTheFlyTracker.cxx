@@ -480,7 +480,7 @@ struct OnTheFlyTracker {
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
-        tracksExtra(0.0f, (uint32_t)0, (uint32_t)0, (uint8_t)0,
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0,
                     (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -524,7 +524,7 @@ struct OnTheFlyTracker {
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
-        tracksExtra(0.0f, (uint32_t)0, (uint32_t)0, (uint8_t)0,
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0,
                     (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
