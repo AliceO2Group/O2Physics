@@ -38,7 +38,7 @@ double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
   double deltaT = tmpDT * LHCBunchSpacingNS + coll1.collisionTime() - coll2.collisionTime();
   return deltaT;
 }
-}
+} // namespace
 
 namespace o2::aod
 {
