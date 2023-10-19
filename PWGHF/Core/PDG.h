@@ -70,6 +70,7 @@ constexpr double MassPhi = 1.019455;
 constexpr double MassSigmaC0 = 2.45376;
 constexpr double MassSigmaCPlusPlus = 2.45402;
 constexpr double MassX3872 = 3.87165;
+constexpr double MassXiB0 = 5.7924;
 constexpr double MassXiCCPlusPlus = 3.62155;
 constexpr double MassXiCPlus = 2.4679;
 constexpr double MassXiCZero = 2.471;
