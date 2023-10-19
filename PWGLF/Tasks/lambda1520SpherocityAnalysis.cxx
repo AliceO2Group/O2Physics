@@ -140,6 +140,8 @@ struct lambdaAnalysis {
 
     // MC
     if (doprocessMC) {
+      histos.add("Event/hSphRec", "Reconstructed S_{0}", kTH1F, {axisSp});
+      histos.add("Event/hSpCentRec", "Reconstructed S_{0} vs FT0M(%)", kTH2F, {axisCent, axisSp});
       histos.add("QAMCTrue/DcaZ_pr", "dca_{z}^{MC} Protons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaZ_ka", "dca_{z}^{MC} Kaons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaXY_pr", "dca_{xy}^{MC} Protons", kTH2F, {axisPtQA, axisDCAxy});
@@ -372,7 +374,7 @@ struct lambdaAnalysis {
         } else {
           histos.fill(HIST("Analysis/hLambdaRecAnti"), p.Pt());
           histos.fill(HIST("Analysis/hInvMassLambdaRecAnti"), p.M());
-          histos.fill(HIST("Analysis/h4InvMassLambdaAnti"), p.M(), p.Pt(), sph, mult);
+          histos.fill(HIST("Analysis/h4InvMassLambdaRecAnti"), p.M(), p.Pt(), sph, mult);
         }
       }
 
@@ -403,6 +405,11 @@ struct lambdaAnalysis {
   void processMC(resoCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::McParticles const& mcParticles)
   {
+
+    histos.fill(HIST("Event/hCent"), collision.multV0M());
+    histos.fill(HIST("Event/hSph"), collision.spherocity());
+    histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
+    
     fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
   PROCESS_SWITCH(lambdaAnalysis, processMC, "Process Event for MC", false);
