@@ -27,8 +27,6 @@
 #include "TH1F.h"
 #include "TH2F.h"
 
-
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -72,9 +70,8 @@ struct fitLumi {
 
     for (auto const& ft0 : ft0s) {
       auto bc = ft0.bc_as<BCsWithTimestamps>();
-      if (!bc.timestamp())
-      {
-          continue;
+      if (!bc.timestamp()) {
+        continue;
       }
       std::bitset<8> fT0Triggers = ft0.triggerMask();
       auto localBC = bc.globalBC() % nBCsPerOrbit;
@@ -91,9 +88,8 @@ struct fitLumi {
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
-      if (!bc.timestamp())
-      {
-          continue;
+      if (!bc.timestamp()) {
+        continue;
       }
       std::bitset<8> fddTriggers = fdd.triggerMask();
       auto localBC = bc.globalBC() % nBCsPerOrbit;
