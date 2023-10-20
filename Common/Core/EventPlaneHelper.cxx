@@ -107,7 +107,7 @@ void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TCom
     printf("Error on phi. Skip\n");
     return;
   } // TODO: ensure proper safety check.
-  Qvec += TComplex(ampl * TMath::Cos(phi*nmod), ampl * TMath::Sin(phi*nmod));
+  Qvec += TComplex(ampl * TMath::Cos(phi * nmod), ampl * TMath::Sin(phi * nmod));
   sum += ampl;
 }
 

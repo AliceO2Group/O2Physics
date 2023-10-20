@@ -77,7 +77,7 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
-  Configurable<int> cfgnMod{"cfgnMod",2, "Modulation of interest"};
+  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -301,12 +301,12 @@ struct qVectorsTable {
       if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
         continue;
       if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi()*cfgnMod) / 20.;
-        qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi()*cfgnMod) / 20.;
+        qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod) / 20.;
+        qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod) / 20.;
         nTrkBPos++;
       } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi()*cfgnMod) / 20.;
-        qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi()*cfgnMod) / 20.;
+        qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod) / 20.;
+        qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod) / 20.;
         nTrkBNeg++;
       }
     } // FIXME: ARBITRARY SCALE FACTOR OF 20
