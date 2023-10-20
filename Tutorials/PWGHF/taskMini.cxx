@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file task-mini.cxx
-/// \brief Mini version of the HF analysis chain
+/// \file taskMini.cxx
+/// \brief Mini version of the D0 analysis chain
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
