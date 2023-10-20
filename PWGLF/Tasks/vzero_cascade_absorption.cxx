@@ -122,13 +122,13 @@ struct vzero_cascade_absorption {
 
     // Lambda and Antilambda
     registryData.add("Lambda_before_target_data", "Lambda before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryData.add("Lambda_before_target_data", "Lambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryData.add("Lambda_after_target_data", "Lambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
     registryData.add("AntiLambda_before_target_data", "AntiLambda before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryData.add("AntiLambda_before_target_data", "AntiLambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryData.add("AntiLambda_after_target_data", "AntiLambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
     registryMC.add("Lambda_before_target_mc", "Lambda before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("Lambda_before_target_mc", "Lambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("Lambda_after_target_mc", "Lambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
     registryMC.add("AntiLambda_before_target_mc", "AntiLambda before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("AntiLambda_before_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("AntiLambda_after_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
 
     // Resolution
     registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
