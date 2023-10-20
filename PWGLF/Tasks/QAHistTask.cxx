@@ -319,6 +319,8 @@ struct QAHistTask {
       // fill QA histograms (proton)
       if (TMath::Abs(nSigmaSpecies) < nsigmacut) {
         if (track.sign() > 0) {
+          QA_species_pos.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
+          QA_species_pos.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           QA_species_pos.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
           QA_species_pos.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
           QA_species_pos.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
@@ -357,6 +359,8 @@ struct QAHistTask {
           }
         }
         if (track.sign() < 0) {
+          QA_species_neg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
+          QA_species_neg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           QA_species_neg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
           QA_species_neg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
           QA_species_neg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
