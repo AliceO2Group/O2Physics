@@ -41,11 +41,14 @@ struct MultiplicityExtraTable {
     float multFT0C = 0.f;
     float multFT0A = 0.f;
     float multFV0A = 0.f;
+    uint8_t multFV0TriggerBits = 0;
+    uint64_t multBCTriggerMask = bc.triggerMask();
 
     if (bc.has_ft0()) {
       auto ft0 = bc.ft0();
       std::bitset<8> triggers = ft0.triggerMask();
       Tvx = triggers[o2::fit::Triggers::bitVertex];
+      multFV0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
 
       // calculate T0 charge
       for (auto amplitude : ft0.amplitudeA()) {
@@ -66,7 +69,7 @@ struct MultiplicityExtraTable {
       } // fv0
     }
 
-    multBC(multFT0A, multFT0C, multFV0A, Tvx, isFV0OrA);
+    multBC(multFT0A, multFT0C, multFV0A, Tvx, isFV0OrA, multFV0TriggerBits, multBCTriggerMask);
   }
 };
 
