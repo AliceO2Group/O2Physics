@@ -29,14 +29,26 @@ enum InputFeaturesDplusToPiKPi : int8_t {
   ptProng0 = 0,
   ptProng1,
   ptProng2,
-  impactParameter0,
-  impactParameter1,
-  impactParameter2,
+  impactParameterXY0,
+  impactParameterXY1,
+  impactParameterXY2,
   decayLength,
   decayLengthXYNormalised,
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
+  tpcNSigmaPi0,
+  tpcNSigmaKa0,
+  tpcNSigmaPi1,
+  tpcNSigmaKa1,
+  tpcNSigmaPi2,
+  tpcNSigmaKa2,
+  tofNSigmaPi0,
+  tofNSigmaKa0,
+  tofNSigmaPi1,
+  tofNSigmaKa1,
+  tofNSigmaPi2,
+  tofNSigmaKa2,
   tpcTofNSigmaPi0,
   tpcTofNSigmaPi1,
   tpcTofNSigmaPi2,
@@ -70,14 +82,29 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
         CHECK_AND_FILL_VEC(ptProng0);
         CHECK_AND_FILL_VEC(ptProng1);
         CHECK_AND_FILL_VEC(ptProng2);
-        CHECK_AND_FILL_VEC(impactParameter0);
-        CHECK_AND_FILL_VEC(impactParameter1);
-        CHECK_AND_FILL_VEC(impactParameter2);
+        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY0, impactParameter0);
+        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY1, impactParameter1);
+        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY2, impactParameter2);
         CHECK_AND_FILL_VEC(decayLength);
         CHECK_AND_FILL_VEC(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC(cpa);
         CHECK_AND_FILL_VEC(cpaXY);
         CHECK_AND_FILL_VEC(maxNormalisedDeltaIP);
+        // TPC PID variables
+        CHECK_AND_FILL_VEC_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
+        // TOF PID variables
+        CHECK_AND_FILL_VEC_FULL(prong0, tofNSigmaPi0, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong1, tofNSigmaKa1, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
+        // Combined PID variables
         CHECK_AND_FILL_VEC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
@@ -98,14 +125,29 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
       FILL_MAP(ptProng0),
       FILL_MAP(ptProng1),
       FILL_MAP(ptProng2),
-      FILL_MAP(impactParameter0),
-      FILL_MAP(impactParameter1),
-      FILL_MAP(impactParameter2),
+      FILL_MAP(impactParameterXY0),
+      FILL_MAP(impactParameterXY1),
+      FILL_MAP(impactParameterXY2),
       FILL_MAP(decayLength),
       FILL_MAP(decayLengthXYNormalised),
       FILL_MAP(cpa),
       FILL_MAP(cpaXY),
       FILL_MAP(maxNormalisedDeltaIP),
+      // TPC PID variables
+      FILL_MAP(tpcNSigmaPi0),
+      FILL_MAP(tpcNSigmaKa0),
+      FILL_MAP(tpcNSigmaPi1),
+      FILL_MAP(tpcNSigmaKa1),
+      FILL_MAP(tpcNSigmaPi2),
+      FILL_MAP(tpcNSigmaKa2),
+      // TOF PID variables
+      FILL_MAP(tofNSigmaPi0),
+      FILL_MAP(tofNSigmaKa0),
+      FILL_MAP(tofNSigmaPi1),
+      FILL_MAP(tofNSigmaKa1),
+      FILL_MAP(tofNSigmaPi2),
+      FILL_MAP(tofNSigmaKa2),
+      // Combined PID variables
       FILL_MAP(tpcTofNSigmaPi0),
       FILL_MAP(tpcTofNSigmaPi1),
       FILL_MAP(tpcTofNSigmaPi2),
