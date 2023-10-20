@@ -11,10 +11,10 @@
 
 o2physics_add_dpl_workflow(skim-creator-mini
                     SOURCES skimCreatorMini.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(task-mini
                     SOURCES taskMini.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME AnalysisTutorial)
