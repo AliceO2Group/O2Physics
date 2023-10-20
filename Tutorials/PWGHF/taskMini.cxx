@@ -32,7 +32,6 @@
 #include "Tutorials/PWGHF/DataModelMini.h"
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -44,6 +43,7 @@ using namespace o2::framework::expressions;
 struct HfCandidateCreator2Prong {
   Produces<aod::HfCandProng2Base> rowCandidateBase;
 
+  // vertexing parameters
   Configurable<double> magneticField{"magneticField", 5., "magnetic field [kG]"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -52,8 +52,7 @@ struct HfCandidateCreator2Prong {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  HfHelper hfHelper;
-
+  o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
   double massPiK{0.};
   double massKPi{0.};
 
@@ -61,20 +60,22 @@ struct HfCandidateCreator2Prong {
 
   OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
 
+  void init(InitContext&)
+  {
+    // Configure the vertexer
+    fitter.setBz(magneticField);
+    fitter.setPropagateToPCA(propToDCA);
+    fitter.setMaxR(maxR);
+    fitter.setMaxDZIni(maxDZIni);
+    fitter.setMinParamChange(minParamChange);
+    fitter.setMinRelChi2Change(minRelChi2Change);
+    fitter.setUseAbsDCA(useAbsDCA);
+  }
+
   void process(aod::Collisions const&,
                aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
                TracksWithCov const&)
   {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df;
-    df.setBz(magneticField);
-    df.setPropagateToPCA(propToDCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
       auto track0 = rowTrackIndexProng2.prong0_as<TracksWithCov>();
@@ -84,12 +85,12 @@ struct HfCandidateCreator2Prong {
       auto collision = track0.collision();
 
       // reconstruct the 2-prong secondary vertex
-      if (df.process(trackParVarPos1, trackParVarNeg1) == 0) {
+      if (fitter.process(trackParVarPos1, trackParVarNeg1) == 0) {
         continue;
       }
-      const auto& secondaryVertex = df.getPCACandidate();
-      auto trackParVar0 = df.getTrack(0);
-      auto trackParVar1 = df.getTrack(1);
+      const auto& secondaryVertex = fitter.getPCACandidate();
+      auto trackParVar0 = fitter.getTrack(0);
+      auto trackParVar1 = fitter.getTrack(1);
 
       // get track momenta
       std::array<float, 3> pVec0;

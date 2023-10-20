@@ -27,11 +27,10 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 // PWGHF
-#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/PDG.h"
 #include "Tutorials/PWGHF/DataModelMini.h"
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -118,7 +117,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  HfHelper hfHelper;
+  o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
 
   using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::HfSelTrack>>;
 
@@ -134,21 +133,19 @@ struct HfTrackIndexSkimCreator {
 
   void init(InitContext&)
   {
+    // Configure the vertexer
+    fitter.setBz(magneticField);
+    fitter.setPropagateToPCA(propToDCA);
+    fitter.setMaxR(maxR);
+    fitter.setMaxDZIni(maxDZIni);
+    fitter.setMinParamChange(minParamChange);
+    fitter.setMinRelChi2Change(minRelChi2Change);
+    fitter.setUseAbsDCA(useAbsDCA);
   }
 
   void process(aod::Collision const&,
                SelectedTracks const& tracks)
   {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(magneticField);
-    df2.setPropagateToPCA(propToDCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-
     // loop over positive tracks
     for (const auto& trackPos1 : tracks) {
       if (trackPos1.signed1Pt() < 0) {
@@ -164,16 +161,16 @@ struct HfTrackIndexSkimCreator {
         auto trackParVarNeg1 = getTrackParCov(trackNeg1);
 
         // secondary vertex reconstruction and further 2-prong selections
-        if (df2.process(trackParVarPos1, trackParVarNeg1) == 0) {
+        if (fitter.process(trackParVarPos1, trackParVarNeg1) == 0) {
           continue;
         }
         //  get secondary vertex
-        const auto& secondaryVertex = df2.getPCACandidate();
+        const auto& secondaryVertex = fitter.getPCACandidate();
         // get track momenta
         std::array<float, 3> pVec0;
         std::array<float, 3> pVec1;
-        df2.getTrack(0).getPxPyPzGlo(pVec0);
-        df2.getTrack(1).getPxPyPzGlo(pVec1);
+        fitter.getTrack(0).getPxPyPzGlo(pVec0);
+        fitter.getTrack(1).getPxPyPzGlo(pVec1);
 
         // fill table row
         rowTrackIndexProng2(trackPos1.globalIndex(),
