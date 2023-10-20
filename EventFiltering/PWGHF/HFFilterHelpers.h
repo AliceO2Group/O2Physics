@@ -171,11 +171,13 @@ static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = 
 constexpr int activeFemtoChannels[1][5] = {{1, 1, 1, 1, 0}}; // pD0, pD+, pDs, pLc, pXic
 static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero", "protonDPlus", "protonDs", "protonLc", "protonXic"};
 
-// min pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsMinPt[1][4] = {{0.5, 0.1, 0.8, 0.5}}; // beauty, D*, femto, charm baryons
-static const std::vector<std::string> labelsColumnsMinPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon"};
+// min and max pT for all tracks combined  (except for V0 and cascades)
+constexpr float cutsPt[2][4] = {{1., 0.1, 0.8, 0.5},
+                                {100000., 2., 5., 100000.}}; // beauty, D*, femto, charm baryons
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon"};
+static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
-// min pT for all tracks combined  (except for V0 and cascades)
+// PID cuts
 constexpr float cutsNsigma[3][5] = {{3., 3., 3., 5., 3.},           // TPC proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
                                     {3., 3., 3., 2.5, 3.},          // TOF proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
                                     {999., 999., 999., 2.5, 999.}}; // Sum in quadrature of TPC and TOF (used only for femto for pT < 4 GeV/c)
@@ -222,14 +224,32 @@ class HfFilterHelper
 
   // setters
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
-  void setMinPtBeautyBachelor(float minPt) { mPtMinBeautyBachelor = minPt; }
-  void setMinPtDstarSoftPion(float minPt) { mPtMinSoftPionForDstar = minPt; }
   void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
   }
-  void setMinPtProtonForFemto(float minPt) { mPtMinProtonForFemto = minPt; }
+  void setPtLimitsProtonForFemto(float minPt, float maxPt)
+  {
+    mPtMinProtonForFemto = minPt;
+    mPtMaxProtonForFemto = maxPt;
+  }
+  void setPtLimitsBeautyBachelor(float minPt, float maxPt)
+  {
+    mPtMinBeautyBachelor = minPt;
+    mPtMaxBeautyBachelor = maxPt;
+  }
+  void setPtLimitsDstarSoftPion(float minPt, float maxPt)
+  {
+    mPtMinSoftPionForDstar = minPt;
+    mPtMaxSoftPionForDstar = maxPt;
+  }
+  void setPtLimitsCharmBaryonBachelor(float minPt, float maxPt)
+  {
+    mPtMinCharmBaryonBachelor = minPt;
+    mPtMaxCharmBaryonBachelor = maxPt;
+  }
+
   void setPtThresholdPidStrategyForFemto(float ptThreshold) { mPtThresholdPidStrategyForFemto = ptThreshold; }
   void setNsigmaProtonCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
@@ -268,7 +288,6 @@ class HfFilterHelper
     mMaxNsigmaXiDau = nSigma;
   }
   void setCutsSingleTrackCharmBaryonBachelor(o2::framework::LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
-  void setMinPtCharmBaryonBachelor(float minPt) { mPtMinCharmBaryonBachelor = minPt; }
   void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc;
@@ -348,6 +367,11 @@ class HfFilterHelper
   float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
   float mPtMinBeautyBachelor{0.5};                                           // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                                           // minimum pt for the proton for femto
+  float mPtMinCharmBaryonBachelor{0.5};                                      // minimum pt for the bachelor pion from Xic/Omegac decays
+  float mPtMaxSoftPionForDstar{2.};                                          // maximum pt for the D*+ soft pion
+  float mPtMaxBeautyBachelor{100000.};                                       // maximum pt for the b-hadron pion daughter
+  float mPtMaxProtonForFemto{5.0};                                           // maximum pt for the proton for femto
+  float mPtMaxCharmBaryonBachelor{100000.};                                  // maximum pt for the bachelor pion from Xic/Omegac decays
   float mPtThresholdPidStrategyForFemto{8.};                                 // pt threshold to change strategy for proton PID for femto
   std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                    // cut values for Nsigma TPC, TOF, combined for femto protons
   float mNSigmaTpcPrCutForCharmBaryons{3.};                                  // maximum Nsigma TPC for protons in Lc and Xic decays
@@ -370,7 +394,6 @@ class HfFilterHelper
   float mCosPaLambdaFromXi{0.99};                                            // minimum cosp for Xi in Xic/Omegac decays
   float mMaxDcaXyXi{0.3};                                                    // maximum dca for Xi in Xic/Omegac decays
   float mMaxNsigmaXiDau{3.};                                                 // maximum Nsigma TPC and TOF for Xi daughter tracks
-  float mPtMinCharmBaryonBachelor{0.5};                                      // minimum pt for the bachelor pion from Xic/Omegac decays
   o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
   float mNSigmaTpcPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TPC for pions in Xic/Omegac decays
   float mNSigmaTofPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TOF for pions in Xic/Omegac decays
@@ -402,7 +425,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
     return kRejected;
   }
 
-  if (pT < mPtMinSoftPionForDstar) { // soft pion should be less stringent than usual tracks
+  if (pT < mPtMinSoftPionForDstar || pT > mPtMaxSoftPionForDstar) { // soft pion should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -415,7 +438,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
   }
 
   // below only regular beauty tracks, not required for soft pions
-  if (pT < mPtMinBeautyBachelor) {
+  if (pT < mPtMinBeautyBachelor || pT > mPtMaxBeautyBachelor) {
     CLRBIT(retValue, kForBeauty);
   }
 
@@ -451,7 +474,8 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
 template <typename T1, typename T2, typename H2>
 inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
-  if (trackPar.getPt() < mPtMinProtonForFemto) {
+  float pt = trackPar.getPt();
+  if (pt < mPtMinProtonForFemto || pt > mPtMaxProtonForFemto) {
     return false;
   }
 
@@ -1057,11 +1081,12 @@ inline int8_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, c
     return kRejected;
   }
 
-  if (track.pt() < mPtMinCharmBaryonBachelor) {
+  float pt = track.pt();
+  if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
     return kRejected;
   }
 
-  auto pTBinTrack = findBin(mPtBinsTracks, track.pt());
+  auto pTBinTrack = findBin(mPtBinsTracks, pt);
   if (pTBinTrack == -1) {
     return kRejected;
   }
