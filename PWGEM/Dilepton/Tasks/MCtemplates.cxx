@@ -316,6 +316,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+  Configurable<bool> fConfigDoSecVertProp{"cfgDoSecVertProp", false, "Propagate tracks to secondary vertex"};
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
   // TODO:   special AnalysisCuts to be prepared in this direction
@@ -431,7 +432,7 @@ struct AnalysisSameEventPairing {
       }
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
-      if constexpr (TPairType == VarManager::kDecayToEE) {
+      if constexpr (cfgDoSecVertProp && TPairType == VarManager::kDecayToEE) {
         VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA, VarManager::fgValues);
       }
 
