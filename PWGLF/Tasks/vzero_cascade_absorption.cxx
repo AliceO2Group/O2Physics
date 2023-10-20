@@ -131,12 +131,12 @@ struct vzero_cascade_absorption {
     registryMC.add("AntiLambda_after_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
 
     // Resolution
-    registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
-    registryMC.add("K0_Rresolution_after_target", "K0 Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
-    registryMC.add("Lambda_Rresolution_before_target", "Lambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
-    registryMC.add("Lambda_Rresolution_after_target", "Lambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
-    registryMC.add("AntiLambda_Rresolution_before_target", "AntiLambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
-    registryMC.add("AntiLambda_Rresolution_after_target", "AntiLambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, 0, 5, "#Delta R (cm)"}});
+    registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("K0_Rresolution_after_target", "K0 Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("Lambda_Rresolution_before_target", "Lambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("Lambda_Rresolution_after_target", "Lambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("AntiLambda_Rresolution_before_target", "AntiLambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("AntiLambda_Rresolution_after_target", "AntiLambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
 
     /*
     registryData.add("Csi_before_target", "Csi_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.305, 1.34, "m (GeV/c)"}});
