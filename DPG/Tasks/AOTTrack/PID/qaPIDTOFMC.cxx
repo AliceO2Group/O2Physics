@@ -326,6 +326,9 @@ struct pidTOFTaskQAMC {
       histos.add("event/tofbetaPrm", "Primaries", HistType::kTH2F, {pAxis, betaAxis});
       histos.add("event/tofbetaSec", "Secondaries", HistType::kTH2F, {pAxis, betaAxis});
     }
+    // Print output histograms statistics
+    LOG(info) << "Size of the histograms in qaPIDTOFMC";
+    histos.print();
   }
 
   template <uint8_t mcID, typename T>
