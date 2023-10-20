@@ -62,8 +62,7 @@ struct evtPlanesResolution {
   EventPlaneHelper helperEP;
 
   Configurable<int> cfgMinTPCTracks{"cfgMinTPCTracks", 20, "minimum TPC tracks participating in Q-vector reconstruction"};
-  Configurable<int> cfgnMod{"cfgnMod",2, "Modulation of interest"};
-
+  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
 
   void init(InitContext const&)
   {
@@ -114,8 +113,8 @@ struct evtPlanesResolution {
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), vec.evtPlBNegFinal());
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlResolution"),
-                  std::sqrt(std::cos((vec.evtPlFinal() - vec.evtPlBPosFinal())*cfgnMod) * std::cos((vec.evtPlFinal() - vec.evtPlBNegFinal())*cfgnMod) /
-                            std::cos((vec.evtPlBPosFinal() - vec.evtPlBNegFinal())*cfgnMod)));
+                  std::sqrt(std::cos((vec.evtPlFinal() - vec.evtPlBPosFinal()) * cfgnMod) * std::cos((vec.evtPlFinal() - vec.evtPlBNegFinal()) * cfgnMod) /
+                            std::cos((vec.evtPlBPosFinal() - vec.evtPlBNegFinal()) * cfgnMod)));
   }
 
   void process(aod::EvtPlane const& evPl)
