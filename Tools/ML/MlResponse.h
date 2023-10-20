@@ -28,6 +28,21 @@
 
 #include "Tools/ML/model.h"
 
+#define FILL_MAP(FEATURE) \
+  {                       \
+#FEATURE, U::FEATURE  \
+  }
+
+#define CHECK_AND_FILL_VEC(GETTER)                  \
+  case U::GETTER:                                   \
+    inputFeatures.emplace_back(candidate.GETTER()); \
+    break
+
+#define CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER) \
+  case U::FEATURE:                                       \
+    inputFeatures.emplace_back(OBJECT.GETTER());         \
+    break
+
 namespace o2
 {
 namespace cuts_ml
@@ -41,7 +56,7 @@ enum CutDirection {
 } // namespace cuts_ml
 namespace analysis
 {
-template <typename T = float>
+template <typename T = float, typename U = int8_t>
 class MlResponse
 {
  public:
@@ -110,6 +125,20 @@ class MlResponse
     for (const auto& path : mPaths) {
       mModels[counterModel].initModel(path, enableOptimizations, threads);
       ++counterModel;
+    }
+  }
+
+  /// Method to translate configurable input features strings into integers
+  /// \param cfgInputFeatures array of input features names
+  void cacheInputFeaturesIndices(std::vector<std::string> const& cfgInputFeatures)
+  {
+    setAvailableInputFeatures();
+    for (const auto& inputFeature : cfgInputFeatures) {
+      if (mAvailableInputFeatures.count(inputFeature)) {
+        mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
+      } else {
+        LOG(fatal) << "Input feature not available. Please check your configurables.";
+      }
     }
   }
 
@@ -193,13 +222,16 @@ class MlResponse
   }
 
  protected:
-  std::vector<o2::ml::OnnxModel> mModels;         // OnnxModel objects, one for each bin
-  uint8_t mNModels = 1;                           // number of bins
-  uint8_t mNClasses = 3;                          // number of model classes
-  std::vector<double> mBinsLimits = {};           // bin limits of the variable (e.g. pT) used to select which model to use
-  std::vector<std::string> mPaths = {""};         // paths to the models, one for each bin
-  std::vector<int> mCutDir = {};                  // direction of the cuts on the model scores (no cut is also supported)
-  o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
+  std::vector<o2::ml::OnnxModel> mModels;              // OnnxModel objects, one for each bin
+  uint8_t mNModels = 1;                                // number of bins
+  uint8_t mNClasses = 3;                               // number of model classes
+  std::vector<double> mBinsLimits = {};                // bin limits of the variable (e.g. pT) used to select which model to use
+  std::vector<std::string> mPaths = {""};              // paths to the models, one for each bin
+  std::vector<int> mCutDir = {};                       // direction of the cuts on the model scores (no cut is also supported)
+  o2::framework::LabeledArray<double> mCuts = {};      // array of cut values to apply on the model scores
+  std::map<std::string, U> mAvailableInputFeatures;    // map of available input features
+  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
+  std::vector<U> mCachedIndices;                       // vector of indices correspondance between configurable and available input features
 };
 
 } // namespace analysis
