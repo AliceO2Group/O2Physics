@@ -215,7 +215,7 @@ struct HfDataCreatorDplusPiReduced {
     return true;
   }
 
-  template <bool doMc = false, bool withMl = false, typename P, typename T, typename C>
+  template <bool doMc, bool withMl, typename P, typename T, typename C>
   void runDataCreation(aod::Collision const& collision,
                        C const& candsD,
                        aod::TrackAssoc const& trackIndices,
