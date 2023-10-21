@@ -582,7 +582,8 @@ struct pidTOFTaskQAMC {
   }
 
   template <uint8_t mcID, uint8_t massID, typename T, typename TT>
-  void fillPIDInfoForPdg(const T& track, const TT& particle) {
+  void fillPIDInfoForPdg(const T& track, const TT& particle)
+  {
     switch (mcID) {
       case 0:
         if (!doEl) {
@@ -742,7 +743,7 @@ struct pidTOFTaskQAMC {
       histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
       histos.fill(HIST("event/vertexz"), collision.posZ());
     } // collision loop
-  } // process()
+  }   // process()
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTOFTaskQAMC>(cfgc)}; }
