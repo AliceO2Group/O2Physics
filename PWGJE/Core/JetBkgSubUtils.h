@@ -80,11 +80,11 @@ class JetBkgSubUtils
   std::tuple<double, double> estimateRhoPerpCone(const std::vector<fastjet::PseudoJet>& inputParticles, const std::vector<fastjet::PseudoJet>& jets);
 
   /// @brief method that subtracts the background from jets using the area method
-  /// @param jets (all jets in the event)
+  /// @param jet input jet to be background subtracted
   /// @param rhoParam the underlying evvent density vs pT (to be set)
   /// @param rhoParam the underlying evvent density vs jet mass (to be set)
-  /// @return jets, a vector of background subtracted jets
-  std::vector<fastjet::PseudoJet> doRhoAreaSub(std::vector<fastjet::PseudoJet>& jets, double& rhoParam, double& rhoMParam);
+  /// @return jet, background subtracted jet
+  fastjet::PseudoJet doRhoAreaSub(fastjet::PseudoJet& jet, double& rhoParam, double& rhoMParam);
 
   /// @brief method that subtracts the background from the input particles using the event-wise cosntituent subtractor
   /// @param inputParticles (all the tracks/clusters/particles in the event)
