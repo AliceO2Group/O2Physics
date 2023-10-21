@@ -214,7 +214,7 @@ struct TagAndProbe {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 

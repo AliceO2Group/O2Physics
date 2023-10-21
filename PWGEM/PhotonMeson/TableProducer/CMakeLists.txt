@@ -19,6 +19,11 @@ o2physics_add_dpl_workflow(skimmer-gamma-conversion-truthonlymc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(photon-conversion-builder
+                    SOURCES photonconversionbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(create-pcm
                     SOURCES createPCM.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore

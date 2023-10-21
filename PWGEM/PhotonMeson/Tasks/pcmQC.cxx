@@ -124,7 +124,6 @@ struct PCMQC {
     fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
   }
 
-  // Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
   void processQC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {

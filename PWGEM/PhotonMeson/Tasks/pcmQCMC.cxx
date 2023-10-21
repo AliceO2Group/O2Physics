@@ -129,7 +129,7 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::emreducedeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {

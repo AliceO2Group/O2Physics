@@ -367,7 +367,7 @@ struct PhotonHBT {
     }         // end of different collision combinations
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
