@@ -18,14 +18,17 @@
 using namespace o2;
 using namespace o2::framework;
 
+using CollisionRec = aod::Collision;
+using CollisionSim = aod::McCollision;
+
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;
 
 using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>::iterator;
 
-using TracksSim = soa::Join<aod::Tracks, aod::McTrackLabels>;          // TBI 20231018 only temporarily defined this way, check still aod::McParticles
-using TrackSim = soa::Join<aod::Tracks, aod::McTrackLabels>::iterator; // TBI 20231018 only temporarily defined this way check still aod::McParticles
+using TracksSim = aod::McParticles;
+using TrackSim = aod::McParticles::iterator;
 
 // ROOT:
 #include "TList.h"
@@ -122,53 +125,29 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // A) Process only reconstructed data;
   // B) Process both reconstructed and simulated data;
   // C) Process only simulated data.
-  // TBI 20231017 There is a (minor) code bloat here obviously. Fix this when it becomes possible to post the last argument to PROCESS_SWITCH via variable (ideally Configurable)
+
+  // -------------------------------------------
 
   // A) Process only reconstructed data:
-  void processRec(aod::Collision const& collision, aod::BCs const&, TracksRec const& tracksRec) // called once per collision found in the time frame
+  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
   {
     // ...
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
-      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
-    }
 
     // *) TBI 20231020 Temporary here (use configurable 'cfWhatToProcess' to set this flag corerectly):
     if (!gProcessRec) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
-    // *) Do all thingies before starting to process data (e.g. count number of events, fetch the run number, etc.):
-    Preprocess(collision, eRec);
-
-    // *) Fill event histograms for reconstructed data before event cuts:
-    FillEventHistograms(collision, tracksRec, eRec, eBefore);
-
-    // *) Event cuts:
-    if (!EventCuts(collision, tracksRec)) {
-      return;
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
+              // from subsequent processing (which will also dump the output file, etc.). When that's possible,
+              // move this to a member function Steer*(...)
     }
 
-    // *) Fill event histograms for reconstructed data after event cuts:
-    FillEventHistograms(collision, tracksRec, eRec, eAfter);
-
-    // *) Main loop over reconstructed particles:
-    // MainLoopOverParticles(tracksRec, eRec); TBI 20231020 yes, this is a bug, becase I call track.has_mcParticle() there, etc. Re-think how to re-implement this
-
-    // *) Fill remaining event histograms for reconstructed data after event AND after particle cuts:
-    ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
-
-    // *) Remaining event cuts which can be applied only after the loop over particles is performed:
-    if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
-      return;
-    }
-
-    // *) Calculate everything for selected events and particles:
-    CalculateEverything();
-
-    // *) Reset event-by-event quantities:
-    ResetEventByEventQuantities();
+    // *) Steer all analysis steps:
+    SteerRec(collision, tracks);
+    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
 
   } // void processRec(...)
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed information", false);
@@ -176,54 +155,25 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // B) Process both reconstructed and simulated data:
-  void processRecSim(aod::Collision const& collision, aod::BCs const&, TracksRecSim const& tracksRecSim, aod::McParticles const&) // called once per collision found in the time frame
+  void processRecSim(CollisionRec const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&)
   {
-    // Remark: Implemented separately to processRec(...), because here I need to subscribe also to Monte Carlo tables.
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
-      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
-    }
+    // ...
 
     // *) TBI 20231020 Temporary here (use configurable 'cfWhatToProcess' to set this flag corerectly):
     if (!gProcessRecSim) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
-    // *) Do all thingies before starting to process data (e.g. count number of events, fetch the run number, etc.):
-    Preprocess(collision, eRec);
-
-    // *) Fill event histograms for reconstructed and simulated data before event cuts:
-    FillEventHistograms(collision, tracksRecSim, eRec, eBefore);
-    FillEventHistograms(collision, tracksRecSim, eSim, eBefore);
-
-    // *) Event cuts:
-    if (!EventCuts(collision, tracksRecSim)) {
-      return;
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
+              // from subsequent processing (which will also dump the output file, etc.). When that's possible,
+              // move this to a member function Steer(...)
     }
 
-    // *) Fill event histograms for reconstructed and simulated data after event cuts:
-    FillEventHistograms(collision, tracksRecSim, eRec, eAfter);
-    FillEventHistograms(collision, tracksRecSim, eSim, eAfter);
-
-    // *) Main loop over reconstructed particles:
-    //    For simulated particles there is NO separate loop, if flag gProcessRecSim = true (via configurable "cfWhatToProcess"), MC info is accessed via label.
-    MainLoopOverParticles(tracksRecSim, eRec);
-
-    // *) Fill remaining event histograms for reconstructed and simulated data after event AND after particle cuts:
-    ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
-    // ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks); // TBI 20231020 do I really need this one?
-
-    // *) Remaining event cuts which can be applied only after the loop over particles is performed:
-    if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
-      return;
-    }
-
-    // *) Calculate everything for selected events and particles:
-    CalculateEverything();
-
-    // *) Reset event-by-event quantities:
-    ResetEventByEventQuantities();
+    // *) Steer all analysis steps:
+    SteerRecSim(collision, tracks);
+    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
 
   } // void processRecSim(...)
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and simulated information", true);
@@ -231,7 +181,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // C) Process only simulated data:
-  void processSim(aod::Collision const& collision, aod::BCs const&, TracksSim const& tracksSim, aod::McParticles const&) // called once per collision found in the time frame
+  void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
   {
     // ...
 
@@ -245,37 +195,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
-    // *) Do all thingies before starting to process data (e.g. count number of events, fetch the run number, etc.):
-    Preprocess(collision, eSim);
-
-    // *) Fill event histograms for simulated data before event cuts:
-    FillEventHistograms(collision, tracksSim, eRec, eBefore);
-
-    // *) Event cuts:
-    if (!EventCuts(collision, tracksSim)) {
-      return;
-    }
-
-    // *) Fill event histograms for simulated data after event cuts:
-    FillEventHistograms(collision, tracksSim, eSim, eAfter);
-
-    // *) Main loop over reconstructed particles:
-    //    For simulated particles there is NO separate loop, if flag gProcessRecSim = true (via configurable "cfWhatToProcess"), MC info is accessed via label.
-    // MainLoopOverParticles(tracksSim, eSim); // TBI 20231020 it will NOT work this way + re-think the definition of tracksSim in the preamble
-
-    // *) Fill remaining event histograms for reconstructed and simulated data after event AND after particle cuts:
-    ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks);
-
-    // *) Remaining event cuts which can be applied only after the loop over particles is performed:
-    if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
-      return;
-    }
-
-    // *) Calculate everything for selected events and particles:
-    CalculateEverything();
-
-    // *) Reset event-by-event quantities:
-    ResetEventByEventQuantities();
+    // *) Steer all analysis steps:
+    SteerSim(collision, tracks);
+    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
 
   } // void processSim(...)
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated information", false);

@@ -22,7 +22,8 @@ enum eConfiguration {
 };
 
 enum eRecSim { eRec = 0,
-               eSim = 1 };
+               eSim = 1,
+               eRecAndSim = 2 }; // TBI 20231021 find a better name?
 
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };

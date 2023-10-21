@@ -38,17 +38,22 @@
 // void BookResultsHistograms()
 
 // b) Called directly in process(...):
-// void Preprocess(aod::Collision const& collision, eRecSim rs);
-//   Bool_t MaxNumberOfEvents(const Int_t rs);
-//   void GetParticleWeights();
-//   void DetermineAndPropagateRunNumber(aod::Collision const& collision);
-//   void CheckCurrentRunNumber(aod::Collision const& collision);
-// template <typename T> void FillEventHistograms(aod::Collision const& collision, T const& tracks, const Int_t rs, eBeforeAfter ba)
-// template <typename T> Bool_t EventCuts(aod::Collision const& collision, T const& tracks)
-// template <typename T> void MainLoopOverParticles(T const& tracks, eRecSim rs)
-//   template <typename T> void FillParticleHistograms(T const& track, eRecSim rs, eBeforeAfter ba)
-//   template <typename T> void ParticleCuts(T const& track, eRecSim rs)
-// void ResetEventByEventQuantities();
+// void SteerRec(CollisionRec const& collision, TracksRec const& tracks)
+// void SteerRecSim(CollisionRec const& collision, TracksRecSim const& tracks)
+// void SteerSim(CollisionSim const& collision, TracksSim const& tracks)
+//   template <typename T> void Preprocess(T const& collision)
+//     Bool_t MaxNumberOfEvents(const Int_t rs);
+//     void GetParticleWeights();
+//     template <typename T> void DetermineAndPropagateRunNumber(T const& collision)
+//     template <typename T> void CheckCurrentRunNumber(T const& collision);
+//   template <eRecSim rs, typename T1, typename T2> void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
+//   template <typename T1, typename T2> Bool_t EventCuts(T1 const& collision, T2 const& tracks)
+//   void MainLoopOverParticlesRec(TracksRec const& tracks)
+//   void MainLoopOverParticlesRecSim(TracksRecSim const& tracks)
+//   void MainLoopOverParticlesSim(TracksSim const& tracks)
+//     template <eRecSim rs, typename T> void FillParticleHistograms(T const& track, eBeforeAfter ba)
+//     template <typename T> void ParticleCuts(T const& track, eRecSim rs)
+//   void ResetEventByEventQuantities();
 
 // Double_t Weight(const Double_t &value, const char *variable)
 // void CalculateEverything();
@@ -984,7 +989,8 @@ void BookResultsHistograms()
 
 //============================================================
 
-void Preprocess(aod::Collision const& collision, eRecSim rs)
+template <typename T>
+void Preprocess(T const& collision)
 {
   // Do all thingies before starting to process data (e.g. count number of events, fetch the run number, etc.).
 
@@ -993,7 +999,7 @@ void Preprocess(aod::Collision const& collision, eRecSim rs)
   }
 
   // *) If I reached max number of events, ignore the remaining collisions:
-  if (MaxNumberOfEvents(rs)) {
+  if (MaxNumberOfEvents()) {
     fProcessRemainingEvents = kFALSE;
   }
 
@@ -1014,21 +1020,12 @@ void Preprocess(aod::Collision const& collision, eRecSim rs)
     }
   }
 
-  // *) Check if gProcessRec, gProcessRecSim and gProcessSim global flags are in sync with eRecSim rs in this PROCESS_SWITCH:
-  // TBI 20231020 I need to perform this check only once + implement something also for gProcessRecSim
-  if (gProcessRec && rs != eRec) {
-    LOGF(error, "\033[1;33m%s gProcessRec && rs != eRec \033[0m", __PRETTY_FUNCTION__);
-    LOGF(fatal, "gProcessRec = %d, rs = %d", gProcessRec, eRec);
-  } else if (gProcessSim && rs != eSim) {
-    LOGF(error, "\033[1;33m%s gProcessSim && rs != eSim \033[0m", __PRETTY_FUNCTION__);
-    LOGF(fatal, "gProcessSim = %d, rs = %d", gProcessSim, eSim);
-  }
-
-} // void Preprocess(aod::Collision const& collision, eRecSim rs)
+} // template <typename T> void Preprocess(T const& collision)
 
 //============================================================
 
-void DetermineAndPropagateRunNumber(aod::Collision const& collision)
+template <typename T>
+void DetermineAndPropagateRunNumber(T const& collision)
 {
   // Determine and propagate run number info to already booked objects, wherever it's relevant.
   // Make sure in process(...) that this function is called only once.
@@ -1054,13 +1051,13 @@ void DetermineAndPropagateRunNumber(aod::Collision const& collision)
   // b) Propagate run number to all booked objects, wherever that info is relevant:
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", fRunNumber.Data()));
   // ...
-  ;
 
-} // void DetermineAndPropagateRunNumber(aod::Collision const& collision)
+} // template <typename T> void DetermineAndPropagateRunNumber(T const& collision)
 
 //============================================================
 
-void CheckCurrentRunNumber(aod::Collision const& collision)
+template <typename T>
+void CheckCurrentRunNumber(T const& collision)
 {
   // Insanity check for the current run number.
 
@@ -1069,7 +1066,7 @@ void CheckCurrentRunNumber(aod::Collision const& collision)
     LOGF(fatal, "fRunNumber = %s, collision.bc().runNumber() = %d", fRunNumber.Data(), collision.bc().runNumber());
   }
 
-} // void CheckCurrentRunNumber(aod::Collision const& collision)
+} // template <typename T> void CheckCurrentRunNumber(aod::Collision const& collision)
 
 //============================================================
 
@@ -1121,62 +1118,8 @@ void ResetEventByEventQuantities()
 
 //============================================================
 
-Bool_t EventCuts(aod::Collision const& collision, TracksRec const& tracksRec)
-{
-  // Event cuts on reconstructed data.
-
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
-  }
-
-  // NumberOfEvents: => cut directly in void process( ... )
-
-  // TotalMultiplicity:
-  if ((tracksRec.size() < ceh_a.fEventCuts[eTotalMultiplicity][eMin]) ||
-      (tracksRec.size() > ceh_a.fEventCuts[eTotalMultiplicity][eMax])) {
-    return kFALSE;
-  }
-
-  // SelectedTracks: => cut directly in void process( ... )
-
-  // Centrality: TBI
-  //  if ((  TBI   < ceh_a.fEventCuts[eCentrality][eMin]) || (  TBI   >
-  //  ceh_a.fEventCuts[eCentrality][eMax])) {
-  //    return kFALSE;
-  //  }
-
-  // Vertex_x:
-  if ((collision.posX() < ceh_a.fEventCuts[eVertex_x][eMin]) ||
-      (collision.posX() > ceh_a.fEventCuts[eVertex_x][eMax])) {
-    return kFALSE;
-  }
-
-  // Vertex_y:
-  if ((collision.posY() < ceh_a.fEventCuts[eVertex_y][eMin]) ||
-      (collision.posY() > ceh_a.fEventCuts[eVertex_y][eMax])) {
-    return kFALSE;
-  }
-
-  // Vertex_z:
-  if ((collision.posZ() < ceh_a.fEventCuts[eVertex_z][eMin]) ||
-      (collision.posZ() > ceh_a.fEventCuts[eVertex_z][eMax])) {
-    return kFALSE;
-  }
-
-  // NContributors:
-  if ((collision.numContrib() < ceh_a.fEventCuts[eNContributors][eMin]) ||
-      (collision.numContrib() > ceh_a.fEventCuts[eNContributors][eMax])) {
-    return kFALSE;
-  }
-
-  return kTRUE;
-
-} // void EventCuts(aod::Collision const& collision, TracksRec const& tracksRec)
-
-//============================================================
-
-template <typename T>
-Bool_t EventCuts(aod::Collision const& collision, T const& tracks)
+template <typename T1, typename T2>
+Bool_t EventCuts(T1 const& collision, T2 const& tracks)
 {
 
   // Event cuts on reconstructed and simulated data.
@@ -1233,8 +1176,8 @@ Bool_t EventCuts(aod::Collision const& collision, T const& tracks)
 
 //============================================================
 
-template <typename T>
-void FillEventHistograms(aod::Collision const& collision, T const& tracks, eRecSim rs, eBeforeAfter ba)
+template <eRecSim rs, typename T1, typename T2>
+void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 {
   // Fill all event histograms for reconstructed or simulated data.
 
@@ -1247,47 +1190,47 @@ void FillEventHistograms(aod::Collision const& collision, T const& tracks, eRecS
   }
 
   // a) Common to both reconstructed and simulated;
-
-  cout << Form("ceh_a.fEventHistograms[eNumberOfEvents][%d][%d] = ", rs, ba) << ceh_a.fEventHistograms[eNumberOfEvents][rs][ba] << endl;
-
   ceh_a.fEventHistograms[eNumberOfEvents][rs][ba]->Fill(0.5);
 
-  switch (rs) {
-    // b) Only reconstructed:
-    case eRec:
-      ceh_a.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size());
-      // SelectedTracks => filled directly in void process( ... )
-      // ceh_a.fEventHistograms[eCentrality][eRec][ba]->Fill(  TBI  );  => TBI
-      // 20231007 not ready yet
-      ceh_a.fEventHistograms[eVertex_x][eRec][ba]->Fill(collision.posX());
-      ceh_a.fEventHistograms[eVertex_y][eRec][ba]->Fill(collision.posY());
-      ceh_a.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
-      ceh_a.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
-      break;
+  // b) Only reconstructed:
+  if constexpr (rs == eRec) {
+    ceh_a.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size());
+    // SelectedTracks => filled directly in void process( ... )
+    // ceh_a.fEventHistograms[eCentrality][eRec][ba]->Fill(  TBI  );  => TBI
+    // 20231007 not ready yet
+    ceh_a.fEventHistograms[eVertex_x][eRec][ba]->Fill(collision.posX());
+    ceh_a.fEventHistograms[eVertex_y][eRec][ba]->Fill(collision.posY());
+    ceh_a.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
+    ceh_a.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
+  } // if constexpr (rs == eRec) {
 
-    // c) Only simulated:
-    case eSim:
-      ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size());
-      // SelectedTracks => filled directly in void process( ... )
-      // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(  TBI  );  => TBI
-      // 20231007 not ready yet
-      /*
-      ceh_a.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.posX());
-      ceh_a.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.posY());
-      ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.posZ());
-      ceh_a.fEventHistograms[eNContributors][eSim][ba]->Fill(collision.numContrib());
-      */
-      break;
-  } // switch(rs) {
+  // c) Only simulated:
+  if constexpr (rs == eSim) {
 
-} // template <typename T> void FillEventHistograms(...)
+    // TBI 20231021 here I need to access info from CollisionSim = aod::McCollision;
+
+    // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size());
+    // SelectedTracks => filled directly in void process( ... )
+    // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(  TBI  );  => TBI
+    // 20231007 not ready yet
+    /* 
+    ceh_a.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.posX());
+    ceh_a.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.posY());
+    ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.posZ());
+    ceh_a.fEventHistograms[eNContributors][eSim][ba]->Fill(collision.numContrib());
+    */
+  } // if constexpr (rs == eSim) {
+
+} // template <eRecSim rs, typename T1, typename T2> void FillEventHistograms(...)
 
 //============================================================
 
 template <typename T>
-Bool_t ParticleCuts(T const& track, eRecSim rs)
+Bool_t ParticleCuts(T const& track)
 {
   // Particles cuts.
+
+  // TBI 20231021 implement remaining cuts
 
   if (fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -1298,12 +1241,13 @@ Bool_t ParticleCuts(T const& track, eRecSim rs)
   }
 
   return kTRUE;
-}
+
+} // template <typename T> Bool_t ParticleCuts(T const& track)
 
 //============================================================
 
-template <typename T>
-void FillParticleHistograms(T const& track, eRecSim rs, eBeforeAfter ba)
+template <eRecSim rs, typename T>
+void FillParticleHistograms(T const& track, eBeforeAfter ba)
 {
   // Fill all particle histograms for reconstructed and simulated data.
 
@@ -1311,28 +1255,17 @@ void FillParticleHistograms(T const& track, eRecSim rs, eBeforeAfter ba)
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  // From aod::Tracks
-  cph_a.fParticleHistograms[ePhi][rs][ba]->Fill(track.phi());
-  cph_a.fParticleHistograms[ePt][rs][ba]->Fill(track.pt());
-  cph_a.fParticleHistograms[eEta][rs][ba]->Fill(track.eta());
+  if constexpr (rs == eRec) {
+    cph_a.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi());
+    cph_a.fParticleHistograms[ePt][eRec][ba]->Fill(track.pt());
+    cph_a.fParticleHistograms[eEta][eRec][ba]->Fill(track.eta());
+  }
 
-  switch (rs) {
-    // a) Only reconstructed:
-    case eRec:
-      cph_a.fParticleHistograms[ePhi][rs][ba]->Fill(track.phi());
-      cph_a.fParticleHistograms[ePt][rs][ba]->Fill(track.pt());
-      cph_a.fParticleHistograms[eEta][rs][ba]->Fill(track.eta());
-      break;
-
-    // b) Only simulated:
-    case eSim:
-      /* TBI 20231019 not ready yet
-      cph_a.fParticleHistograms[ePhi][rs][ba]->Fill(track.phi());
-      cph_a.fParticleHistograms[ePt][rs][ba]->Fill(track.pt());
-      cph_a.fParticleHistograms[eEta][rs][ba]->Fill(track.eta());
-*/
-      break;
-  } // switch(rs) {
+  if constexpr (rs == eSim) {
+    cph_a.fParticleHistograms[ePhi][eSim][ba]->Fill(track.phi());
+    cph_a.fParticleHistograms[ePt][eSim][ba]->Fill(track.pt());
+    cph_a.fParticleHistograms[eEta][eSim][ba]->Fill(track.eta());
+  }
 
   /* TBI 20231019 use also these + check further
   // From aod::TracksExtra
@@ -1341,9 +1274,9 @@ void FillParticleHistograms(T const& track, eRecSim rs, eBeforeAfter ba)
   // From aod::TracksDCA
   cph_a.fParticleHistograms[eDCA_xy][rs][ba]->Fill(track.dcaXY());
   cph_a.fParticleHistograms[eDCA_z][rs][ba]->Fill(track.dcaZ());
-*/
+  */
 
-} // template <typename T> void FillParticleHistograms(T const& track, eRecSim rs, eBeforeAfter ba)
+} // template <eRecSim rs, typename T> void FillParticleHistograms(...)
 
 //============================================================
 
@@ -2294,7 +2227,7 @@ void GetParticleWeights()
 
 //============================================================
 
-Bool_t MaxNumberOfEvents(const Int_t rs)
+Bool_t MaxNumberOfEvents()
 {
   // Check if max number of events was reached. See also configurable cNumberOfEvents_max.
 
@@ -2302,23 +2235,35 @@ Bool_t MaxNumberOfEvents(const Int_t rs)
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
+  // *) Return value:
   Bool_t reachedMaxNumberOfEvents = kFALSE;
 
+  // *) Determine from which histogram the relevant info will be taken:
+  Int_t rs = -44; // reconstructed or simulated
+  if (gProcessRec || gProcessRecSim) {
+    rs = eRec;
+  } else if (gProcessSim) {
+    rs = eSim;
+  } else {
+    LOGF(fatal, "in function \033[1;31m%s at line %d, not a single flag gProcess* is true \033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // *) Okay, do the thing:
   if (ceh_a.fEventHistograms[eNumberOfEvents][rs][eAfter]->GetBinContent(1) >= ceh_a.fEventCuts[eNumberOfEvents][eMax]) {
     reachedMaxNumberOfEvents = kTRUE;
   }
 
+  // *) Hasta la vista:
   return reachedMaxNumberOfEvents;
 
 } // void MaxNumberOfEvents()
 
 //============================================================
 
-template <typename T>
-void MainLoopOverParticles(T const& tracks, eRecSim rs)
+void MainLoopOverParticlesRec(TracksRec const& tracks)
 {
   // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
-  // If I want to access both rec and sim info in this loop, set gProcessRecSim = true via configurable "cfWhatToProcess"
+  // Only 'rec' info is processed in this loop, set gProcessRec = true via configurable "cfWhatToProcess"
 
   if (fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -2332,49 +2277,21 @@ void MainLoopOverParticles(T const& tracks, eRecSim rs)
   for (auto& track : tracks) {
 
     // *) Fill particle histograms for reconstructed particle before particle cuts:
-    FillParticleHistograms(track, rs, eBefore);
-
-    // *) Fill particle histograms for corresponding simulated particle before particle cuts:
-    if (gProcessRecSim) {
-      if (track.has_mcParticle()) {
-        auto mcParticle = track.mcParticle();
-        FillParticleHistograms(mcParticle, eSim, eBefore); // great, this works straight like this, thanks O2 people!
-      } else {
-        LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
-      }
-    } // if (gProcessRecSim) {
+    FillParticleHistograms<eRec>(track, eBefore);
 
     // *) Particle cuts:
-    if (!ParticleCuts(track, rs)) {
+    if (!ParticleCuts(track)) {
       continue;
     }
 
     // *) Fill particle histograms for reconstructed data after particle cuts:
-    FillParticleHistograms(track, rs, eAfter);
-
-    // *) Fill particle histograms for corresponding simulated particle after particle cuts:
-    // TBI 20231020 there is a duplication of code here, see above. I should get 'mcParticle' only once for this 'track' in this loop
-    if (gProcessRecSim) {
-      if (track.has_mcParticle()) {
-        auto mcParticle = track.mcParticle();
-        FillParticleHistograms(mcParticle, eSim, eAfter); // great, this works straight like this, thanks O2 people!
-      } else {
-        LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
-      }
-    } // if (gProcessRecSim) {
+    FillParticleHistograms<eRec>(track, eAfter);
 
     // *) Fill Q-vectors:
-    if (gProcessRec || gProcessRecSim) {
-      //  Take kinematics from reconstructed particles:
-      dPhi = track.phi();
-      dPt = track.pt();
-      dEta = track.eta();
-    } else if (gProcessSim) {
-      //  Take kinematics from simulated particles:
-      dPhi = track.mcParticle().phi();
-      dPt = track.mcParticle().pt();
-      dEta = track.mcParticle().eta();
-    }
+    //  Take kinematics from reconstructed particles:
+    dPhi = track.phi();
+    dPt = track.pt();
+    dEta = track.eta();
 
     // Particle weights:
     if (pw_a.fUseWeights[wPHI]) {
@@ -2429,7 +2346,130 @@ void MainLoopOverParticles(T const& tracks, eRecSim rs)
 
   } // for (auto& track : tracks)
 
-} // template <typename T> void MainLoopOverParticles(T const& tracks)
+} // void MainLoopOverParticlesRec(TracksRec const& tracks)
+
+//============================================================
+
+void MainLoopOverParticlesRecSim(TracksRecSim const& tracks)
+{
+  // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
+  // Both 'rec' and 'sim' info are processed in this loop, set gProcessRecSim = true via configurable "cfWhatToProcess"
+  // It sufficcess to pass only rec info, because here I access sim info via labels.
+
+  if (fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
+  Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pT weight
+  Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
+  Double_t wToPowerP = 1.;       // weight raised to power p
+  fSelectedTracks = 0;           // reset number of selected tracks
+  for (auto& track : tracks) {
+
+    // *) Fill particle histograms for reconstructed particle before particle cuts:
+    FillParticleHistograms<eRec>(track, eBefore);
+
+    // *) Fill particle histograms for corresponding simulated particle before particle cuts:
+    if (track.has_mcParticle()) {
+      auto mcParticle = track.mcParticle();
+      FillParticleHistograms<eSim>(mcParticle, eBefore); // great, this works straight like this, thanks O2 people!
+    } else {
+      LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) Particle cuts:
+    if (!ParticleCuts(track)) {
+      continue;
+    }
+
+    // *) Fill particle histograms for reconstructed data after particle cuts:
+    FillParticleHistograms<eRec>(track, eAfter);
+
+    // *) Fill particle histograms for corresponding simulated particle after particle cuts:
+    // TBI 20231020 there is a duplication of code here, see above. I should get 'mcParticle' only once for this 'track' in this loop
+    if (track.has_mcParticle()) {
+      auto mcParticle = track.mcParticle();
+      FillParticleHistograms<eSim>(mcParticle, eAfter); // great, this works straight like this, thanks O2 people!
+    } else {
+      LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) Fill Q-vectors:
+    //  Take kinematics from reconstructed particles:
+    dPhi = track.phi();
+    dPt = track.pt();
+    dEta = track.eta();
+
+    // Particle weights:
+    if (pw_a.fUseWeights[wPHI]) {
+      wPhi = Weight(dPhi, "phi"); // corresponding phi weight
+      if (!(wPhi > 0.)) {
+        LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
+        continue;
+      }
+    } // if(pw_a.fUseWeights[wPHI])
+    if (pw_a.fUseWeights[wPT]) {
+      wPt = Weight(dPt, "pt"); // corresponding pt weight
+      if (!(wPt > 0.)) {
+        LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
+        continue;
+      }
+    } // if(pw_a.fUseWeights[wPT])
+    if (pw_a.fUseWeights[wETA]) {
+      wEta = Weight(dEta, "eta"); // corresponding eta weight
+      if (!(wEta > 0.)) {
+        LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
+        continue;
+      }
+    } // if(pw_a.fUseWeights[wETA])
+
+    for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+      for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
+        if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) {
+          wToPowerP = pow(wPhi * wPt * wEta, wp);
+        }
+        qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
+      } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
+    }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
+
+    // *) Nested loops containers:
+    if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
+      if (nl_a.ftaNestedLoops[0]) {
+        nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
+      } // remember that the 2nd argument here must start from 0
+      if (nl_a.ftaNestedLoops[1]) {
+        nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
+      } // remember that the 2nd argument here must start from 0
+    }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
+
+    // *) Counter of selected tracks in the current event:
+    fSelectedTracks++;
+    if (fSelectedTracks >= cSelectedTracks_max) {
+      break;
+    }
+
+  } // for (auto& track : tracks)
+
+} // void MainLoopOverParticlesRecSim(TracksRecSim const& tracks)
+
+//============================================================
+
+void MainLoopOverParticlesSim(TracksSim const& tracks)
+{
+  // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
+  // Only 'sim' info is processed in this loop, set gProcessSim = true via configurable "cfWhatToProcess"
+
+  if (fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  // TBI 20231021 tbc...
+
+} // void MainLoopOverParticlesSim(TracksSim const& tracks)
 
 //============================================================
 
@@ -2458,5 +2498,105 @@ void CalculateEverything()
 } // void CalculateEverything()
 
 //============================================================
+
+void SteerRec(CollisionRec const& collision, TracksRec const& tracks)
+{
+  // This is the only function to be called in processRec(...), processRecSim(...), and processSim(...).
+  // All analysis workflow is defined step-by-step here, via dedicated function calls.
+  // Order of function calls obviously does matter.
+
+  if (fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  // *) Do all thingies before starting to process data from this collision (e.g. count number of events, fetch the run number, etc.):
+  Preprocess(collision); // see enum eRecSim for possible values of 'rsb'
+
+  // *) Fill event histograms for reconstructed data before event cuts:
+  FillEventHistograms<eRec>(collision, tracks, eBefore);
+
+  // *) Event cuts:
+  if (!EventCuts(collision, tracks)) {
+    return;
+  }
+
+  // *) Fill event histograms for reconstructed data after event cuts:
+  FillEventHistograms<eRec>(collision, tracks, eAfter);
+
+  // *) Main loop over particles:
+  MainLoopOverParticlesRec(tracks);
+
+  // *) Fill remaining event histograms for reconstructed data after event AND after particle cuts:
+  ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
+
+  // *) Remaining event cuts which can be applied only after the loop over particles is performed:
+  if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
+    return;
+  }
+
+  // *) Calculate everything for selected events and particles:
+  CalculateEverything();
+
+  // *) Reset event-by-event quantities:
+  ResetEventByEventQuantities();
+
+} // void SteerRec(CollisionRec const& collision, TracksRec const& tracks)
+
+//============================================================
+
+void SteerRecSim(CollisionRec const& collision, TracksRecSim const& tracks)
+{
+  // This is the only function to be called in processRec(...), processRecSim(...), and processSim(...).
+  // All analysis workflow is defined step-by-step here, via dedicated function calls.
+  // Order of function calls obviously does matter.
+
+  if (fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  // *) Do all thingies before starting to process data from this collision (e.g. count number of events, fetch the run number, etc.):
+  Preprocess(collision); // see enum eRecSim for possible values of 'rsb'
+
+  // *) Fill event histograms for reconstructed data before event cuts:
+  FillEventHistograms<eRec>(collision, tracks, eBefore);
+  FillEventHistograms<eSim>(collision, tracks, eBefore);
+
+  // *) Event cuts:
+  if (!EventCuts(collision, tracks)) {
+    return;
+  }
+
+  // *) Fill event histograms for reconstructed data after event cuts:
+  FillEventHistograms<eRec>(collision, tracks, eAfter);
+  FillEventHistograms<eSim>(collision, tracks, eAfter);
+
+  // *) Main loop over particles:
+  MainLoopOverParticlesRecSim(tracks);
+
+  // *) Fill remaining event histograms for reconstructed data after event AND after particle cuts:
+  ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
+  // ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks); // TBI 20231020 do I really need this one?
+
+  // *) Remaining event cuts which can be applied only after the loop over particles is performed:
+  if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
+    return;
+  }
+
+  // *) Calculate everything for selected events and particles:
+  CalculateEverything();
+
+  // *) Reset event-by-event quantities:
+  ResetEventByEventQuantities();
+
+} // void SteerRecSim(CollisionRec const& collision, TracksRecSim const& tracks)
+
+//============================================================
+
+void SteerSim(CollisionSim const& collision, TracksSim const& tracks)
+{
+
+  // TBI 20231021 tbc...
+
+} // void SteerSim(CollisionSim const& collision, TracksSim const& tracks)
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
