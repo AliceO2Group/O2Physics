@@ -73,13 +73,13 @@ struct fitLumi {
       }
       std::bitset<8> fT0Triggers = ft0.triggerMask();
       auto localBC = bc.globalBC() % nBCsPerOrbit;
-      auto pos = std::find(collBCArray.begin(), collBCArray.end(), localBC);
+      auto pos = std::find(collBCArray->begin(), collBCArray->end(), localBC);
       bool vertex = fT0Triggers[o2::fdd::Triggers::bitVertex];
       auto tsInSecond = ((bc.timestamp() * 1.e-3) - startTimeInS); // covert ts from ms to second
       if (vertex) {
         registry.get<TH1>(HIST("FT0/VtxTrig"))->Fill(tsInSecond);
-        if (pos != collBCArray.end()) {
-          registry.get<TH2>(HIST("FT0/VtxTrigPerBC"))->Fill(tsInSecond, std::distance(collBCArray.begin(), pos));
+        if (pos != collBCArray->end()) {
+          registry.get<TH2>(HIST("FT0/VtxTrigPerBC"))->Fill(tsInSecond, std::distance(collBCArray->begin(), pos));
         }
       } // vertex
     }   // ft0
@@ -91,13 +91,13 @@ struct fitLumi {
       }
       std::bitset<8> fddTriggers = fdd.triggerMask();
       auto localBC = bc.globalBC() % nBCsPerOrbit;
-      auto pos = std::find(collBCArray.begin(), collBCArray.end(), localBC);
+      auto pos = std::find(collBCArray->begin(), collBCArray->end(), localBC);
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
       auto tsInSecond = ((bc.timestamp() * 1.e-3) - startTimeInS); // covert ts from ms to second
       if (vertex) {
         registry.get<TH1>(HIST("FDD/VtxTrig"))->Fill(tsInSecond);
-        if (pos != collBCArray.end()) {
-          registry.get<TH2>(HIST("FDD/VtxTrigPerBC"))->Fill(tsInSecond, std::distance(collBCArray.begin(), pos));
+        if (pos != collBCArray->end()) {
+          registry.get<TH2>(HIST("FDD/VtxTrigPerBC"))->Fill(tsInSecond, std::distance(collBCArray->begin(), pos));
         }
       } // vertex
     }   // fdd
