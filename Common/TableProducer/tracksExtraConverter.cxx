@@ -16,14 +16,14 @@ using namespace o2;
 using namespace o2::framework;
 
 // Converts TracksExtra table from version 000 to 001
-struct tracksextraConverter {
+struct tracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void process(aod::TracksExtra_000 const& tracksExtra_000)
   {
 
     // dummy itsClusterSizes, fill with overflows if a hit in the layer is present
 
-    for (auto& track0 : tracksExtra_000) {
+    for (const auto& track0 : tracksExtra_000) {
 
       uint32_t itsClusterSizes = 0;
       for (int layer = 0; layer < 7; layer++) {
@@ -56,7 +56,7 @@ struct tracksextraConverter {
   }
 };
 
-struct trackExtraSpawner {
+struct tracksExtraSpawner {
   // spawn the extended table for TracksExtra001 to avoid the call to the internal spawner and the circular dependency
   Spawns<aod::TracksExtra_001> tracksExtra_001;
 };
@@ -64,7 +64,7 @@ struct trackExtraSpawner {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<tracksextraConverter>(cfgc),
-    adaptAnalysisTask<trackExtraSpawner>(cfgc),
+    adaptAnalysisTask<tracksExtraConverter>(cfgc),
+    adaptAnalysisTask<tracksExtraSpawner>(cfgc),
   };
 }
