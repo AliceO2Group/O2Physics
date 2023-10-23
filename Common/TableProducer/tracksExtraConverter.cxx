@@ -8,6 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file tracksExtraConverter.cxx
+/// \brief Converts TracksExtra table from version 000 to 001
+
+/// This task allows for the conversion of the TracksExtra table from version 000 to 001.
+/// The conversion is needed because the table has been extended with the ITSClusterSize column
+/// and the ITSClusterMap column is evaluated dynamically from it.
+/// In the converter a dummy ITSClusterSize column is filled with overflows if a hit in the layer is present
+
+/// \author F.Mazzaschi <fmazzasc@cern.ch>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -15,13 +26,10 @@
 using namespace o2;
 using namespace o2::framework;
 
-// Converts TracksExtra table from version 000 to 001
-struct tracksExtraConverter {
+struct TracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void process(aod::TracksExtra_000 const& tracksExtra_000)
   {
-
-    // dummy itsClusterSizes, fill with overflows if a hit in the layer is present
 
     for (const auto& track0 : tracksExtra_000) {
 
@@ -56,15 +64,15 @@ struct tracksExtraConverter {
   }
 };
 
-struct tracksExtraSpawner {
-  // spawn the extended table for TracksExtra001 to avoid the call to the internal spawner and the circular dependency
+/// Spawn the extended table for TracksExtra001 to avoid the call to the internal spawner and a consequent circular dependency
+struct TracksExtraSpawner {
   Spawns<aod::TracksExtra_001> tracksExtra_001;
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<tracksExtraConverter>(cfgc),
-    adaptAnalysisTask<tracksExtraSpawner>(cfgc),
+    adaptAnalysisTask<TracksExtraConverter>(cfgc),
+    adaptAnalysisTask<TracksExtraSpawner>(cfgc),
   };
 }
