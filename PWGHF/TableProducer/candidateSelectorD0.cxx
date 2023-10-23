@@ -36,6 +36,7 @@ struct HfCandidateSelectorD0 {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> impPard0Norm{"impPard0Norm", 0.5, "Lower bound of impPard0Norm"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
@@ -158,13 +159,10 @@ struct HfCandidateSelectorD0 {
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
-
-    // decay exponentail law, with tau = beta*gamma*ctau
-    // decay length > ctau retains (1-1/e)
-    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
+    if (std::abs(candidate.impactParameterNormalised0()) < impPard0Norm || std::abs(candidate.impactParameterNormalised1()) < impPard0Norm) {
       return false;
     }
-    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, cuts->get(pTBin, "minimum decay length"));
+    double decayLengthCut = cuts->get(pTBin, "minimum decay length");
     if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
       return false;
     }
@@ -174,9 +172,9 @@ struct HfCandidateSelectorD0 {
     if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
       return false;
     }
-    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
+   //if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
       // return false; // add back when getter fixed
-    }
+   //  }
     return true;
   }
 
