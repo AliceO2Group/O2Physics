@@ -239,8 +239,9 @@ struct rhoanalysis {
 
   void processMixedEvent(Event const& events, TrackPi const& tracks)
   {
+    auto tracksTuple = std::make_tuple(tracks);
     BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
-    SameKindPair<Event, TrackPi, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
+    SameKindPair<Event, TrackPi, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, events, tracksTuple, &cache};
 
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
 
@@ -285,7 +286,7 @@ struct rhoanalysis {
       }
     }
   }
-  PROCESS_SWITCH(rhoanalysis, processMixedEvent, "Process Mixed event", isMixed.kind);
+  PROCESS_SWITCH(rhoanalysis, processMixedEvent, "Process Mixed event", isMixed);
 
   using EventMC = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
   using TrackMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::pidTPCFullPi, aod::McTrackLabels>>;
@@ -377,7 +378,7 @@ struct rhoanalysis {
       }
     }
   }
-  PROCESS_SWITCH(rhoanalysis, processGen, "Process Generated", isMC.kind);
+  PROCESS_SWITCH(rhoanalysis, processGen, "Process Generated", isMC);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
