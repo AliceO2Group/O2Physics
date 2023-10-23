@@ -111,6 +111,7 @@ struct strangenessFilter {
   Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi-"};
   Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda (ST)"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
+  Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
 
   Configurable<float> maxNSigmaBachelorTrackedXi{"maxNSigmaBachelorTrackedXi", 3., "Max Nsigma for bachelor of tracked Xi (pi)"};
   Configurable<float> maxNSigmaBachelorTrackedOmega{"maxNSigmaBachelorTrackedOmega", 3., "Max Nsigma for bachelor of tracked Xi (Ka)"};
@@ -1010,8 +1011,6 @@ struct strangenessFilter {
       const auto trackCasc = trackedCascade.track_as<DaughterTracks>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      // QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), trackedCascade.omegaMass());
-      // QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), trackedCascade.xiMass());
       QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.matchingChi2());
       QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.matchingChi2());
@@ -1062,12 +1061,12 @@ struct strangenessFilter {
       momenta[0] = {posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz()};
       momenta[1] = {bachelor.px(), bachelor.py(), bachelor.pz()};
       masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassK0};
-      const auto massOmega = RecoDecay::m(momenta, masses);
+      const auto massOmega = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.omegaMass();
       if (posTrack.hasTPC() && negTrack.hasTPC()) {
         QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
       }
       masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassPi0};
-      const auto massXi = RecoDecay::m(momenta, masses);
+      const auto massXi = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.xiMass();
       if (posTrack.hasTPC() && negTrack.hasTPC()) {
         QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
       }
