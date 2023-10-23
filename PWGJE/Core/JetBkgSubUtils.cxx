@@ -142,6 +142,9 @@ fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double&
 {
 
   fastjet::Subtractor sub = fastjet::Subtractor(rhoParam, rhoMParam);
+  if (doRhoMassSub) {
+    sub.set_safe_mass();
+  }
   return sub(jet);
 }
 
@@ -153,7 +156,7 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fast
   constituentSub.set_max_distance(constSubRMax);
   constituentSub.set_alpha(constSubAlpha);
   constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
-  constituentSub.set_max_eta(bkgEtaMax);
+  constituentSub.set_max_eta(maxEtaEvent);
   if (removeHFCand) {
     constituentSub.set_particle_selector(&selRemoveHFCand);
   }
@@ -163,7 +166,7 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fast
     constituentSub.set_do_mass_subtraction();
   }
 
-  return constituentSub.subtract_event(inputParticles);
+  return constituentSub.subtract_event(inputParticles, maxEtaEvent);
 }
 
 std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double& rhoParam, double& rhoMParam)

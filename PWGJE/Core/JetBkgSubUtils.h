@@ -117,6 +117,7 @@ class JetBkgSubUtils
     constSubAlpha = alpha_out;
     constSubRMax = rmax_out;
   }
+  void setMaxEtaEvent(float etaMaxEvent) { maxEtaEvent = etaMaxEvent; }
   void setDoRhoMassSub(bool doMSub_out = true) { doRhoMassSub = doMSub_out; }
   void setRemoveHFCandidate(bool removecandidate = true) { removeHFCand = removecandidate; }
   void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec_out) { ghostAreaSpec = ghostAreaSpec_out; }
@@ -130,6 +131,7 @@ class JetBkgSubUtils
   float getPhiMax() const { return bkgPhiMax; }
   float getEtaMin() const { return bkgEtaMin; }
   float getEtaMax() const { return bkgEtaMax; }
+  float getEtaMaxEvent() const { return maxEtaEvent; }
   float getConstSubAlpha() const { return constSubAlpha; }
   float getConstSubRMax() const { return constSubRMax; }
   float getDoRhoMassSub() const { return doRhoMassSub; }
@@ -148,6 +150,7 @@ class JetBkgSubUtils
   float constSubRMax = 0.6;
   float bkgEtaMin = -0.9;
   float bkgEtaMax = 0.9;
+  float maxEtaEvent = 0.9;
   float bkgPhiMin = -99.0;
   float bkgPhiMax = 99.0;
   bool doRhoMassSub = false; /// flag whether to do jet mass subtraction with the const sub

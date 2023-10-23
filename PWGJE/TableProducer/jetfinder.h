@@ -153,6 +153,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
 
     // JetBkgSubUtils bkgSub(jetFinder.jetR, 1., 0.6, jetFinder.jetEtaMin, jetFinder.jetEtaMax, jetFinder.jetPhiMin, jetFinder.jetPhiMax, jetFinder.ghostAreaSpec);
+    // bkgSub.setMaxEtaEvent(jetFinder.etaMax);
     // auto[rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, false);
     // jets = jetFinder.selJets(bkgSub.doRhoAreaSub(jets, rho, rhoM));
 
