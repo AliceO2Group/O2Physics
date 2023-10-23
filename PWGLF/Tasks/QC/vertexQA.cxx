@@ -54,13 +54,14 @@ DECLARE_SOA_TABLE(VtxQAtable, "AOD", "VTXQATABLE",
                   collision::CollisionTime,
                   collision::CollisionTimeRes,
                   collision::NumContrib)
-}
+} // namespace o2::aod
+
 struct vertexQA {
   Produces<o2::aod::VtxQAtable> vtxQAtable;
 
   Configurable<int> storeTree{"storeTree", 1000, "Store in tree collisions from BC's with more than 'storeTree' vertices, for in-depth analysis"};
 
-  Configurable<long unsigned int> nCollMax{"nCollMax", 20, "Maximum size of collision buffer"};
+  Configurable<uint64_t> nCollMax{"nCollMax", 20, "Maximum size of collision buffer"};
   Configurable<double> nSigmaZ{"nSigmaZ", 1000., "Number of sigmas for z of vertices"};
   Configurable<double> nSigmaR{"nSigmaR", 1000., "Number of sigmas for transverse displacement of vertices"};
   Configurable<double> nSigmaT{"nSigmaT", 1000., "Number of sigmas for time of vertices"};
@@ -170,7 +171,7 @@ struct vertexQA {
 
     if (colls.size() > nCollMax) {
       auto delta = colls.size() - nCollMax;
-      for (long unsigned int iC{0}; iC < delta; ++iC) {
+      for (uint64_t iC{0}; iC < delta; ++iC) {
         histos.fill(HIST("nVtxTimeSeriesHistogram"), 1);
         colls.pop_front();
       }
