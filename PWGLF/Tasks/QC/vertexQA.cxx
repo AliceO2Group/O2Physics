@@ -67,18 +67,21 @@ struct vertexQA {
   Configurable<double> maxTime{"maxTime", 100000., "Maximum time difference between split vertices in ns"};
 
   ConfigurableAxis xVtxAxis{"xVtxBins", {100, -0.1f, 0.1f}, "Binning for the vertex x (y) in cm"};
-  ConfigurableAxis zVtxAxis{"zVtxBins", {100, -10.f, 10.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis tVtxAxis{"tVtxBins", {100, -20.f, 20.f}, "Binning for the vertex t in ns"};
 
-  ConfigurableAxis xDiffVtxAxis{"xDiffVtxBins", {200, -0.1f, 0.1f}, "Binning for the vertex x (y) distance in cm"};
-  ConfigurableAxis xyDiffVtxAxis{"xyDiffVtxBins", {200, 0.f, 0.1f}, "Binning for the vertex xy distance in cm"};
+  ConfigurableAxis xDiffVtxAxis{"xDiffVtxBins", {200, -0.05f, 0.05f}, "Binning for the vertex x (y) distance in cm"};
+  ConfigurableAxis xyDiffVtxAxis{"xyDiffVtxBins", {200, 0.f, 0.05f}, "Binning for the vertex xy distance in cm"};
   ConfigurableAxis zDiffVtxAxis{"zDiffVtxBins", {200, -10.f, 10.f}, "Binning for the vertex z distance in cm"};
-  ConfigurableAxis tDiffVtxAxis{"tDiffVtxBins", {200, 0.f, 50.f}, "Binning for the vertex t distance in ns"};
+  ConfigurableAxis zDiffVtxAxis2{"zDiffVtxBins2", {1000, -0.5f, 0.5f}, "Binning for the vertex z distance in cm (2)"};
+  ConfigurableAxis tDiffVtxAxis{"tDiffVtxBins", {300, 0.f, 30.f}, "Binning for the vertex t distance in ns"};
   ConfigurableAxis tDiffVtxAxisExtend{"tDiffVtxBinsExtend", {1000, 0.f, 100000.f}, "Binning for the vertex t distance in ns, extended range"};
+  ConfigurableAxis tDiffVtxAxisExtendSigned{"tDiffVtxBinsExtendSigned", {1000, -100000.f, 100000.f}, "Binning for the vertex t distance in ns, extended range, signed"};
 
   ConfigurableAxis nVtxAxis{"nVtxBins", {11, -0.5, 10.5}, "Binning for the number of reconstructed vertices per BC"};
   ConfigurableAxis nVtxTwoAxis{"nVtxTwoBins", {2, 0.5, 2.5}, "Binning for the number of reconstructed vertices vs. time"};
   ConfigurableAxis nContribAxis{"nContribBins", {1000, 0, 5000}, "Binning for number of contributors to PV"};
+  ConfigurableAxis nContribDiffAxis{"nContribDiffBins", {1000, -5000, 5000}, "Binning for the difference in number of contributors to PV"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -103,11 +106,12 @@ struct vertexQA {
     histos.add<TH2>("tTwoVtxHistogram", ";#it{t}_{vtx}^{1} (ns);#it{t}_{vtx}^{2} (ns)", HistType::kTH2F, {tVtxAxis, tVtxAxis});
 
     histos.add<TH1>("nVtxTimeSeriesHistogram", ";#it{N}_{vtx}^{rec};Entries", HistType::kTH1F, {nVtxTwoAxis});
-    histos.add<TH1>("zDistVtxTimeSeriesHistogram", ";#Delta#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zDiffVtxAxis});
+    histos.add<TH1>("zDistVtxTimeSeriesHistogram", ";#Delta#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zDiffVtxAxis2});
     histos.add<TH1>("tDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH1F, {tDiffVtxAxisExtend});
-    histos.add<TH2>("tCollTwoVtxTimeSeriesHistogram", ";#Delta#it{t}^{coll}_{vtx,1} (ns);#Delta#it{t}^{coll}_{vtx,2} (ns)", HistType::kTH2F, {tVtxAxis, tVtxAxis});
-    histos.add<TH2>("zDistVsTDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{z}_{vtx} (cm)", HistType::kTH2F, {tDiffVtxAxisExtend, zDiffVtxAxis});
-    histos.add<TH2>("nContribTwoVtxTimeSeriesHistogram", ";#it{N}_{vtx,1};#it{N}_{vtx,2}", HistType::kTH2F, {nContribAxis, nContribAxis});
+    histos.add<TH2>("tCollTwoVtxTimeSeriesHistogram", ";#Delta#it{t}_{coll}^{1} (ns);#Delta#it{t}_{coll}^{2} (ns)", HistType::kTH2F, {tVtxAxis, tVtxAxis});
+    histos.add<TH2>("zDistVsTDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{z}_{vtx} (cm)", HistType::kTH2F, {tDiffVtxAxisExtend, zDiffVtxAxis2});
+    histos.add<TH2>("nContribTwoVtxTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
+    histos.add<TH2>("nContribVsTDistTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{N}_{contrib}", HistType::kTH2F, {tDiffVtxAxisExtendSigned, nContribDiffAxis});
   }
 
   std::deque<BCcoll> colls;
@@ -147,6 +151,8 @@ struct vertexQA {
       histos.fill(HIST("yVtxHistogram"), posY);
       histos.fill(HIST("zVtxHistogram"), posZ);
       histos.fill(HIST("tVtxHistogram"), posT);
+
+      colls.emplace_back(bc, collision);
     }
 
     if (collSize == 2) {
@@ -160,10 +166,6 @@ struct vertexQA {
       histos.fill(HIST("yTwoVtxHistogram"), collPosY[0], collPosY[1]);
       histos.fill(HIST("zTwoVtxHistogram"), collPosZ[0], collPosZ[1]);
       histos.fill(HIST("tTwoVtxHistogram"), collPosT[0], collPosT[1]);
-    }
-
-    for (auto col : collisions) {
-      colls.emplace_back(bc, col);
     }
 
     if (colls.size() > nCollMax) {
@@ -196,11 +198,12 @@ struct vertexQA {
         auto coll1 = std::get<aod::Collision>(colls.front());
         auto coll2 = std::get<aod::Collision>(*id);
         double deltaT = deltaTimeColl(colls.front(), *id);
-        histos.fill(HIST("zDistVtxTimeSeriesHistogram"), coll1.posZ() - coll2.posZ());
+        histos.fill(HIST("zDistVtxTimeSeriesHistogram"), coll2.posZ() - coll1.posZ());
         histos.fill(HIST("tDistVtxTimeSeriesHistogram"), std::abs(deltaT));
         histos.fill(HIST("tCollTwoVtxTimeSeriesHistogram"), coll1.collisionTime(), coll2.collisionTime());
-        histos.fill(HIST("zDistVsTDistVtxTimeSeriesHistogram"), std::abs(deltaT), coll1.posZ() - coll2.posZ());
+        histos.fill(HIST("zDistVsTDistVtxTimeSeriesHistogram"), std::abs(deltaT), coll2.posZ() - coll1.posZ());
         histos.fill(HIST("nContribTwoVtxTimeSeriesHistogram"), coll1.numContrib(), coll2.numContrib());
+        histos.fill(HIST("nContribVsTDistTimeSeriesHistogram"), -deltaT, coll2.numContrib() - coll1.numContrib());
         histos.fill(HIST("nVtxTimeSeriesHistogram"), 2);
         colls.erase(id);
         colls.pop_front();
