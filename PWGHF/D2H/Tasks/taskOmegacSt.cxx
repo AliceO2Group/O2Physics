@@ -47,82 +47,73 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// namespace o2::aod
-// {
-// namespace stomegac
-// {
+namespace o2::aod
+{
+namespace stomegac
+{
 
-// /// definition of tables
-// namespace hfsttraining
-// {
-// DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                 //!
-// DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);           //!
-// DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float);           //!
-// DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);     //!
-// DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);     //!
-// DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float);     //!
-// DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float);     //!
-// DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float);   //!
-// DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float);   //!
-// DECLARE_SOA_COLUMN(PT2Prong, pT2Prong, float);                   //!
-// DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
-// DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
-// DECLARE_SOA_COLUMN(DeltaMassKKSecond, deltaMassKKSecond, float); //!
-// DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
-// DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);               //!
-// DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);                 //!
-// DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float);           //!
-// DECLARE_SOA_COLUMN(PT2, pT2, float);                             //!
-// DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);               //!
-// DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);                 //!
-// DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float);           //!
-// DECLARE_SOA_COLUMN(PT3, pT3, float);                             //!
-// DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);               //!
-// DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);                 //!
-// DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTPC3, nsigmaKaTPC3, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTPC3, nsigmaPrTPC3, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPiTOF3, nsigmaPiTOF3, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float);           //!
-// DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float);           //!
-// DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
-// DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
-// DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
-// DECLARE_SOA_COLUMN(IsInCorrectColl, isInCorrectColl, bool);      //!
-// } // namespace hfsttraining
+/// definition of tables
+namespace hfsttraining
+{
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                 //!
+DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);           //!
+DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float);           //!
+DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);     //!
+DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);     //!
+DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float);     //!
+DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float);     //!
+DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float);   //!
+DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float);   //!
+DECLARE_SOA_COLUMN(PT2Prong, pT2Prong, float);                   //!
+DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
+DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
+DECLARE_SOA_COLUMN(DeltaMassKKSecond, deltaMassKKSecond, float); //!
+DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
+DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);               //!
+DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);                 //!
+DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float);           //!
+DECLARE_SOA_COLUMN(PT2, pT2, float);                             //!
+DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);               //!
+DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);                 //!
+DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float);           //!
+DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
+DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
+DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
+DECLARE_SOA_COLUMN(IsInCorrectColl, isInCorrectColl, bool);      //!
+} // namespace hfsttraining
+}
 
-// DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST", //!
-//                   hfsttraining::InvMassD0,
-//                   hfsttraining::InvMassD0bar,
-//                   hfsttraining::PT2Prong,
-//                   hfsttraining::PT1,
-//                   hfsttraining::DCAPrimXY1,
-//                   hfsttraining::DCAPrimZ1,
-//                   hfsttraining::NsigmaPiTPC1,
-//                   hfsttraining::NsigmaKaTPC1,
-//                   hfsttraining::NsigmaPiTOF1,
-//                   hfsttraining::NsigmaKaTOF1,
-//                   hfsttraining::PT2,
-//                   hfsttraining::DCAPrimXY2,
-//                   hfsttraining::DCAPrimZ2,
-//                   hfsttraining::NsigmaPiTPC2,
-//                   hfsttraining::NsigmaKaTPC2,
-//                   hfsttraining::NsigmaPiTOF2,
-//                   hfsttraining::NsigmaKaTOF2,
-//                   hfsttraining::FlagOrigin,
-//                   hfsttraining::IsInCorrectColl);
-// }
-// }
+DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
+                  stomegac::hfsttraining::InvMassD0,
+                  stomegac::hfsttraining::InvMassD0bar,
+                  stomegac::hfsttraining::PT2Prong,
+                  stomegac::hfsttraining::PT1,
+                  stomegac::hfsttraining::DCAPrimXY1,
+                  stomegac::hfsttraining::DCAPrimZ1,
+                  stomegac::hfsttraining::NsigmaPiTPC1,
+                  stomegac::hfsttraining::NsigmaKaTPC1,
+                  stomegac::hfsttraining::NsigmaPiTOF1,
+                  stomegac::hfsttraining::NsigmaKaTOF1,
+                  stomegac::hfsttraining::PT2,
+                  stomegac::hfsttraining::DCAPrimXY2,
+                  stomegac::hfsttraining::DCAPrimZ2,
+                  stomegac::hfsttraining::NsigmaPiTPC2,
+                  stomegac::hfsttraining::NsigmaKaTPC2,
+                  stomegac::hfsttraining::NsigmaPiTOF2,
+                  stomegac::hfsttraining::NsigmaKaTOF2,
+                  stomegac::hfsttraining::FlagOrigin,
+                  stomegac::hfsttraining::IsInCorrectColl);
+}
 
 struct HfTaskOmegacSt {
   Configurable<double> bz{"bz", -5., "magnetic field"};
@@ -138,7 +129,7 @@ struct HfTaskOmegacSt {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  // Produces<aod::stomegac::HfOmegacSt> outputTable;
+  Produces<aod::HfOmegacSt> outputTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
 
@@ -155,7 +146,7 @@ struct HfTaskOmegacSt {
       {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
       {"hDcaXYVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{xy} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaZ", "DCA;DCA_{z} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
-      {"hDcaZVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{z} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
+      {"hDcaZVsPt", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaVsPt", "DCA;DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}}}},
       {"hDcaVsR", "DCA;DCA (cm);R (cm)", {HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}}}},
       {"hDecayLength", "Decay length;L (#mum)", {HistType::kTH1D, {{200, 0., 500.}}}},
@@ -249,7 +240,7 @@ struct HfTaskOmegacSt {
       const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
       const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
 
-      std::array<double, 3> m{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiMinus), RecoDecay::getMassPDG(kKMinus)};
+      std::array<double, 3> m{o2::analysis::pdg::MassProton, o2::analysis::pdg::MassPiMinus, o2::analysis::pdg::MassKMinus};
       std::array<std::array<float, 3>, 3> p;
       p[0] = {v0TrackPos.px(), v0TrackPos.py(), v0TrackPos.pz()};
       p[1] = {v0TrackNeg.px(), v0TrackNeg.py(), v0TrackNeg.pz()};
@@ -270,14 +261,14 @@ struct HfTaskOmegacSt {
       registry.fill(HIST("hMassVsPt"), massOmega1, trackCasc.pt());
       registry.fill(HIST("hMassVsPt"), massOmega2, trackCasc.pt());
 
-      if ((std::abs(massOmega1 - RecoDecay::getMassPDG(kOmegaMinus)) < .1) ||
-          (std::abs(massOmega2 - RecoDecay::getMassPDG(kOmegaMinus)) < .1)) {
+      if ((std::abs(massOmega1 - o2::analysis::pdg::MassOmegaMinus) < .1) ||
+          (std::abs(massOmega2 - o2::analysis::pdg::MassOmegaMinus) < .1)) {
         LOGF(debug, "found candidate in mass range");
         if ((std::abs(bachelor.tpcNSigmaKa()) < 3.) &&
             (((std::abs(v0TrackPos.tpcNSigmaPr()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPi()) < 3.)) ||
              ((std::abs(v0TrackPos.tpcNSigmaPi()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPr()) < 3.)))) {
           LOGF(debug, ".. species compatible with Omega");
-          std::array<double, 2> masses{RecoDecay::getMassPDG(kOmegaMinus), RecoDecay::getMassPDG(kPiPlus)};
+          std::array<double, 2> masses{o2::analysis::pdg::MassOmegaMinus, o2::analysis::pdg::MassPiPlus};
           std::array<std::array<float, 3>, 2> momenta;
           std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
@@ -300,9 +291,9 @@ struct HfTaskOmegacSt {
               if (df2.process(trackParCovTrk, trackParCovPion)) {
                 const auto& secondaryVertex = df2.getPCACandidate();
                 const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                if (std::abs(RecoDecay::m(momenta, masses) - RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0)) < 0.02) {
+                if (std::abs(RecoDecay::m(momenta, masses) - o2::analysis::pdg::MassOmegaC0) < 0.02) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                  registry.fill(HIST("hDecayLengthScaled"), decayLength * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                  registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                 }
               }
             }
@@ -342,15 +333,6 @@ struct HfTaskOmegacSt {
       } else {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, matCorr, &impactParameterTrk);
       }
-
-      // registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
-      // registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
-      // registry.fill(HIST("hDcaXYVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getY());
-      // registry.fill(HIST("hDcaZ"), impactParameterTrk.getZ());
-      // registry.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
-      // registry.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
-      // registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      // registry.fill(HIST("hMassVsPt"), trackedCascade.omegaMass(), trackCasc.pt());
 
       const auto& casc = trackedCascade.cascade();
       const auto& bachelor = casc.bachelor_as<TracksExtMc>();
@@ -408,20 +390,18 @@ struct HfTaskOmegacSt {
                 if (df2.process(trackParCovTrk, trackParCovPion)) {
                   const auto& secondaryVertex = df2.getPCACandidate();
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                  // if (std::abs(RecoDecay::m(momenta, masses) - RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0)) < 0.02) {
-                  // registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                  // registry.fill(HIST("hDecayLengthScaled"), decayLength * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                  // }
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
                     if (std::abs(cand.pdgCode()) == analysis::pdg::Code::kOmegaC0 && mcpart.has_mothers()) {
                       if (mcpart.mothersIds()[0] == cand.globalIndex()) {
-                        std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
-                        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                         registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
                         registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+
+                        std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
+                        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                         registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+
                         registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
                       }
                     }
