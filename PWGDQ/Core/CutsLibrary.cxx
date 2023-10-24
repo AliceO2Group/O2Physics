@@ -408,6 +408,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("ITSalonebAny_prefilter")) {
+    cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+    return cut;
+  }
+
   if (!nameStr.compare("TPCalone_prefilter")) {
     cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
