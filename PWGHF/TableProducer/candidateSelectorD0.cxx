@@ -158,14 +158,13 @@ struct HfCandidateSelectorD0 {
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
-    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "impPard0 norm") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "impPard0 norm")) {
+    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpParX") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpParX")) {
       return false;
     }
-    double decayLengthCut = cuts->get(pTBin, "minimum decay length");
-    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
+    if (candidate.decayLength() < cuts->get(pTBin, "minimum decay length")) {
       return false;
     }
-    if (candidate.decayLength() > cuts->get(pTBin, "decay length")) {
+    if (candidate.decayLength() > cuts->get(pTBin, "max decay length")) {
       return false;
     }
     if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
