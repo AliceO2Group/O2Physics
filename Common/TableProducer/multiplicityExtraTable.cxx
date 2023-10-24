@@ -65,26 +65,26 @@ struct MultiplicityExtraTable {
     int localBC = bc.globalBC() % nBCsPerOrbit;
 
     if (newRunNumber != oldRunNumber) {
-        uint64_t ts{};
-        std::map<string, string> metadataRCT, headers;
-        headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-        ts = atol(headers["SOR"].c_str());
+      uint64_t ts{};
+      std::map<string, string> metadataRCT, headers;
+      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
+      ts = atol(headers["SOR"].c_str());
 
-        LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
-        oldRunNumber = newRunNumber;
-        std::map<std::string, std::string> mapMetadata;
-        std::map<std::string, std::string> mapHeader;
-        auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-        CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
-        for (int i = 0; i < (int)CollidingBunch.size(); i++) {
-            if (CollidingBunch.test(i)) {
-                LOG(info) << i << "  ";
-            }
+      LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
+      oldRunNumber = newRunNumber;
+      std::map<std::string, std::string> mapMetadata;
+      std::map<std::string, std::string> mapHeader;
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
+      for (int i = 0; i < (int)CollidingBunch.size(); i++) {
+        if (CollidingBunch.test(i)) {
+          LOG(info) << i << "  ";
         }
+      }
     } // new run number
 
-    bool collidingBC = CollidingBunch.test(localBC); 
-    
+    bool collidingBC = CollidingBunch.test(localBC);
+
     if (bc.has_ft0()) {
       auto ft0 = bc.ft0();
       std::bitset<8> triggers = ft0.triggerMask();
