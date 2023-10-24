@@ -100,11 +100,6 @@ struct lmeelfcocktail {
   TH1F* fhwMultmT2;
   TH1F* fhKW;
   TF1* ffVPHpT;
-  TObjArray* fArr;
-  TObjArray* fArrResoPt;
-  TObjArray* fArrResoEta;
-  TObjArray* fArrResoPhi_Pos;
-  TObjArray* fArrResoPhi_Neg;
 
   std::vector<std::shared_ptr<TH1>> fmee_orig, fmotherpT_orig, fphi_orig, frap_orig, fmee_orig_wALT, fmotherpT_orig_wALT, fmee, fphi, frap, fmee_wALT;
   std::vector<std::shared_ptr<TH2>> fpteevsmee_wALT, fpteevsmee_orig_wALT, fpteevsmee_orig, fpteevsmee;
@@ -135,10 +130,7 @@ struct lmeelfcocktail {
   Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
   Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
   Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0.050, "minimum opening angle"};
-  Configurable<bool> fConfigDoRapidityCut{"cfgDoRapidityCut", false, "apply rapidity cut"};
-  Configurable<float> fConfigRapidityCut{"cfgRapidityCut", 1.0, "rapdity cut"};
   Configurable<int> fConfigNBinsPhi{"cfgNBinsPhi", 240, "number of bins in phi"};
-  Configurable<float> fConfigMaxAbsPhi{"cfgMaxAbsPhi", TMath::TwoPi() / 2, "bin range in phi"};
   Configurable<int> fConfigNBinsRap{"cfgNBinsRap", 240, "number of bins in rap"};
   Configurable<float> fConfigMaxAbsRap{"cfgMaxAbsRap", 1.2, "bin range in rap"};
   Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "hisogram name in efficiency file"};
@@ -160,9 +152,9 @@ struct lmeelfcocktail {
   Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  ConfigurableAxis fConfigMBins{"cfgMBins", {0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  ConfigurableAxis fConfigDCABins{"cfgDCABins", {0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH, 0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
+  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH, 0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
+  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
@@ -182,9 +174,7 @@ struct lmeelfcocktail {
     }
 
     GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
-
     InitSmearer(TString(fConfigResFileName), TString(fConfigResPtHistName), TString(fConfigResEtaHistName), TString(fConfigResPhiPosHistName), TString(fConfigResPhiNegHistName));
-
     GetDCATemplates(TString(fConfigDCAFileName), TString(fConfigDCAHistName));
     GetMultHisto(TString(fConfigMultFileName), TString(fConfigMultHistPtName), TString(fConfigMultHistPt2Name), TString(fConfigMultHistMtName), TString(fConfigMultHistMt2Name));
     if (fConfigDoVirtPh) {
@@ -300,6 +290,7 @@ struct lmeelfcocktail {
               continue;
           }
 
+          /*
           // Not sure about this cut. From GammaConv group. Harmless a priori.
           if (!(fabs(mctrack.GetEnergy() - mctrack.Pz()) > 0.))
             continue;
@@ -315,7 +306,7 @@ struct lmeelfcocktail {
           } else {
             if (yPre == 0.)
               continue;
-          }
+          }*/
 
           treeWords.fdectyp = mother.getLastDaughterTrackId() - mother.getFirstDaughterTrackId() + 1; // fdectyp: decay type (based on number of daughters).
           if (treeWords.fdectyp > 4)
@@ -444,14 +435,18 @@ struct lmeelfcocktail {
           dau1 = applySmearingPxPyPzE(ch1, dau1);
           dau2 = applySmearingPxPyPzE(ch2, dau2);
 
+          treeWords.fd1pt = dau1.Pt();
+          treeWords.fd1eta = dau1.Eta();
+          treeWords.fd2pt = dau2.Pt();
+          treeWords.fd2eta = dau2.Eta();
           treeWords.fpass = true;
-          if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
+          if (treeWords.fd1pt < fConfigMinPt || treeWords.fd2pt < fConfigMinPt)
             treeWords.fpass = false; // leg pT cut
-          if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
+          if (treeWords.fd1pt > fConfigMaxPt || treeWords.fd2pt > fConfigMaxPt)
             treeWords.fpass = false; // leg pT cut
           if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
             treeWords.fpass = false; // opening angle cut
-          if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
+          if (TMath::Abs(treeWords.fd1eta) > fConfigMaxEta || TMath::Abs(treeWords.fd2eta) > fConfigMaxEta)
             treeWords.fpass = false;
 
           // get the pair DCA (based in smeared pT)
@@ -467,13 +462,9 @@ struct lmeelfcocktail {
 
           // Fill tree words after resolution/acceptance
           ee = dau1 + dau2;
-          treeWords.fd1pt = dau1.Pt();
           treeWords.fd1p = dau1.P();
-          treeWords.fd1eta = dau1.Eta();
           treeWords.fd1phi = dau1.Phi();
-          treeWords.fd2pt = dau2.Pt();
           treeWords.fd2p = dau2.P();
-          treeWords.fd2eta = dau2.Eta();
           treeWords.fd2phi = dau2.Phi();
           treeWords.feept = ee.Pt();
           treeWords.feemt = ee.Mt();
@@ -737,7 +728,7 @@ struct lmeelfcocktail {
 
     AxisSpec ptAxis = {fConfigNBinsPtee, fConfigMinPtee, fConfigMaxPtee, "#it{p}_{T,ee} (GeV/c)"};
     AxisSpec mAxis = {fConfigNBinsMee, fConfigMinMee, fConfigMaxMee, "#it{m}_{ee} (GeV/c^{2})"};
-    AxisSpec phiAxis = {fConfigNBinsPhi, -fConfigMaxAbsPhi, fConfigMaxAbsPhi, "#it{phi}_{ee}"};
+    AxisSpec phiAxis = {fConfigNBinsPhi, -TMath::TwoPi() / 2, TMath::TwoPi() / 2, "#it{phi}_{ee}"};
     AxisSpec rapAxis = {fConfigNBinsRap, -fConfigMaxAbsRap, fConfigMaxAbsRap, "#it{y}_{ee}"};
 
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
