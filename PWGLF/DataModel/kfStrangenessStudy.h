@@ -87,7 +87,11 @@ DECLARE_SOA_COLUMN(VtxZrecErrKF, vtxzrecerrkf, float);
 DECLARE_SOA_COLUMN(VtxXMC, vtxxmc, float);
 DECLARE_SOA_COLUMN(VtxYMC, vtxymc, float);
 DECLARE_SOA_COLUMN(VtxZMC, vtxzmc, float);
+DECLARE_SOA_COLUMN(ProdVtxXMC, prodvtxxmc, float);
+DECLARE_SOA_COLUMN(ProdVtxYMC, prodvtxymc, float);
+DECLARE_SOA_COLUMN(ProdVtxZMC, prodvtxzmc, float);
 DECLARE_SOA_COLUMN(IsTrueCasc, istruecasc, int);
+DECLARE_SOA_COLUMN(Source, source, int);
 
 
 
@@ -167,6 +171,9 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::VtxXMC,
                   kfStrangenessStudy::VtxYMC,
                   kfStrangenessStudy::VtxZMC,
+                  kfStrangenessStudy::ProdVtxXMC,
+                  kfStrangenessStudy::ProdVtxYMC,
+                  kfStrangenessStudy::ProdVtxZMC,
                   kfStrangenessStudy::DCAXYCascToPV,
                   kfStrangenessStudy::DCAXYCascToPVKF,
                   kfStrangenessStudy::DCAZCascToPV,
@@ -192,7 +199,8 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::PAV0ToPVKF,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF,
-                  kfStrangenessStudy::IsTrueCasc);
+                  kfStrangenessStudy::IsTrueCasc,
+                  kfStrangenessStudy::Source);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_KFSTRANGENESSSTUDY_H_
