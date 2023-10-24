@@ -1680,13 +1680,108 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pair_prefilter1")) {
-    cut->AddCut(GetAnalysisCut("pair_prefilter1"));
+  if (!nameStr.compare("paira_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter1"));
     return cut;
   }
 
-  if (!nameStr.compare("pair_prefilter2")) {
-    cut->AddCut(GetAnalysisCut("pair_prefilter2"));
+  if (!nameStr.compare("paira_prefilter2")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter3")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter4")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter4"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter5")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter6")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter6"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter7")) {
+    cut->AddCut(GetAnalysisCut("paira_prefilter7"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter2")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter3")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter4")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter4"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter5")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter6")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter6"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter7")) {
+    cut->AddCut(GetAnalysisCut("pairb_prefilter7"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter2")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter3")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter4")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter4"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter5")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter6")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter6"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter7")) {
+    cut->AddCut(GetAnalysisCut("pairc_prefilter7"));
     return cut;
   }
 
@@ -3158,14 +3253,126 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pair_prefilter1")) {
+  if (!nameStr.compare("paira_prefilter1")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.06);
     return cut;
   }
 
-  if (!nameStr.compare("pair_prefilter2")) {
+  if (!nameStr.compare("paira_prefilter2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.025);
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter3")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.06);
     cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter4")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.075);
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter5")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter6")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.125);
+    return cut;
+  }
+
+  if (!nameStr.compare("paira_prefilter7")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.06);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter1")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.025);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter3")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter4")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.075);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter5")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter6")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.125);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairb_prefilter7")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.05);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter1")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.025);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter3")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter4")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.075);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter5")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter6")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.125);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairc_prefilter7")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
     return cut;
   }
 
