@@ -38,7 +38,7 @@ using namespace o2::framework::expressions;
 // Track selection =====================================================================
 
 /// Track selection
-struct HfTagSelTracks {
+struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
 
   // 2-prong cuts
@@ -46,7 +46,7 @@ struct HfTagSelTracks {
   Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. pseudorapidity for 2 prong candidate"};
   Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
 
-  using TracksWithDca = soa::Join<aod::Tracks, aod::TracksDCA>;
+  using TracksWDcaSel = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>;
 
   HistogramRegistry registry{
     "registry",
@@ -63,7 +63,7 @@ struct HfTagSelTracks {
     registry.add("hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};" + strEntries, {HistType::kTH1F, {{static_cast<int>(1.2 * etaTrackMax * 100), -1.2 * etaTrackMax, 1.2 * etaTrackMax}}});
   }
 
-  void process(TracksWithDca const& tracks)
+  void process(TracksWDcaSel const& tracks)
   {
     for (const auto& track : tracks) {
       bool statusProng = true;
@@ -79,6 +79,11 @@ struct HfTagSelTracks {
       // eta cut
       auto etaTrack = track.eta();
       if (statusProng && std::abs(etaTrack) > etaTrackMax) {
+        statusProng = false;
+      }
+
+      // quality cut
+      if (!track.isGlobalTrackWoDCA()) {
         statusProng = false;
       }
 
@@ -110,8 +115,8 @@ struct HfTrackIndexSkimCreator {
 
   // vertexing parameters
   Configurable<double> magneticField{"magneticField", 5., "magnetic field [kG]"};
-  Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -135,7 +140,7 @@ struct HfTrackIndexSkimCreator {
   {
     // Configure the vertexer
     fitter.setBz(magneticField);
-    fitter.setPropagateToPCA(propToDCA);
+    fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
     fitter.setMaxDZIni(maxDZIni);
     fitter.setMinParamChange(minParamChange);
@@ -192,6 +197,6 @@ struct HfTrackIndexSkimCreator {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTagSelTracks>(cfgc),
+    adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc),
     adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc)};
 }

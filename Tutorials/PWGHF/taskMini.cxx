@@ -45,8 +45,8 @@ struct HfCandidateCreator2Prong {
 
   // vertexing parameters
   Configurable<double> magneticField{"magneticField", 5., "magnetic field [kG]"};
-  Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -64,7 +64,7 @@ struct HfCandidateCreator2Prong {
   {
     // Configure the vertexer
     fitter.setBz(magneticField);
-    fitter.setPropagateToPCA(propToDCA);
+    fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
     fitter.setMaxDZIni(maxDZIni);
     fitter.setMinParamChange(minParamChange);
