@@ -42,8 +42,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
 
   // 2-prong cuts
-  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT for 2 prong candidate"};
-  Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. pseudorapidity for 2 prong candidate"};
+  Configurable<double> ptTrackMin{"ptTrackMin", 0.3, "min. track pT for 2 prong candidate"};
+  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "max. pseudorapidity for 2 prong candidate"};
   Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
 
   using TracksWDcaSel = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>;
