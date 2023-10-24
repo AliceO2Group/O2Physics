@@ -138,11 +138,9 @@ struct lmeelfcocktail {
   Configurable<bool> fConfigDoRapidityCut{"cfgDoRapidityCut", false, "apply rapidity cut"};
   Configurable<float> fConfigRapidityCut{"cfgRapidityCut", 1.0, "rapdity cut"};
   Configurable<int> fConfigNBinsPhi{"cfgNBinsPhi", 240, "number of bins in phi"};
-  Configurable<float> fConfigMinPhi{"cfgMinPhi", 0.0, "lowerst bin in phi"};
-  Configurable<float> fConfigMaxPhi{"cfgMaxPhi", TMath::TwoPi(), "hightest bin in phi"};
+  Configurable<float> fConfigMaxAbsPhi{"cfgMaxAbsPhi", TMath::TwoPi() / 2, "bin range in phi"};
   Configurable<int> fConfigNBinsRap{"cfgNBinsRap", 240, "number of bins in rap"};
-  Configurable<float> fConfigMinRap{"cfgMinRap", -1.2, "lowest bin in rap"};
-  Configurable<float> fConfigMaxRap{"cfgMaxRap", 1.2, "hightest bin in rap"};
+  Configurable<float> fConfigMaxAbsRap{"cfgMaxAbsRap", 1.2, "bin range in rap"};
   Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "hisogram name in efficiency file"};
   Configurable<std::string> fConfigResPHistName{"cfgResPHistName", "ptSlices", "histogram name for p in resolution file"};
   Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
@@ -156,17 +154,15 @@ struct lmeelfcocktail {
   Configurable<std::string> fConfigMultHistPt2Name{"cfgMultHistPt2Name", "fhwMultpT_upperlimit", "histogram name for pt 2 in multiplicity file"};
   Configurable<std::string> fConfigMultHistMtName{"cfgMultHistMtName", "fhwMultmT", "histogram name for mt in multiplicity file"};
   Configurable<std::string> fConfigMultHistMt2Name{"cfgMultHistMt2Name", "fhwMultmT_upperlimit", "histogram name for mt 2 in multiplicity file"};
-  Configurable<int> fConfigKWNBins{"cfgKWNBins", 10000, "number of bins for Kroll-Wada"};
   Configurable<float> fConfigKWMax{"cfgKWMax", 1.1, "upper bound of Kroll-Wada"};
   Configurable<bool> fConfigDoVirtPh{"cfgDoVirtPh", false, "generate one virt. photon for each pion"};
   Configurable<std::string> fConfigPhotonPtFileName{"cfgPhotonPtFileName", "", "file name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
-  // Configurable axes crashed the task. Take them out for the moment
-  // ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH, 0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  // ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH, 0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  // ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
+  ConfigurableAxis fConfigMBins{"cfgMBins", {0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
+  ConfigurableAxis fConfigDCABins{"cfgDCABins", {0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
@@ -736,8 +732,8 @@ struct lmeelfcocktail {
 
     AxisSpec ptAxis = {fConfigNBinsPtee, fConfigMinPtee, fConfigMaxPtee, "#it{p}_{T,ee} (GeV/c)"};
     AxisSpec mAxis = {fConfigNBinsMee, fConfigMinMee, fConfigMaxMee, "#it{m}_{ee} (GeV/c^{2})"};
-    AxisSpec phiAxis = {fConfigNBinsPhi, fConfigMinPhi, fConfigMaxPhi, "#it{phi}_{ee}"};
-    AxisSpec rapAxis = {fConfigNBinsRap, fConfigMinRap, fConfigMaxRap, "#it{y}_{ee}"};
+    AxisSpec phiAxis = {fConfigNBinsPhi, -fConfigMaxAbsPhi, fConfigMaxAbsPhi, "#it{phi}_{ee}"};
+    AxisSpec rapAxis = {fConfigNBinsRap, -fConfigMaxAbsRap, fConfigMaxAbsRap, "#it{y}_{ee}"};
 
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
@@ -751,15 +747,8 @@ struct lmeelfcocktail {
       registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
     }
 
-    // configurable axes crashed the task. Take them out for the moment
-    // registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {{fConfigMBins, "#it{m}_{ee} (GeV/c^{2})"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
-    // registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {{fConfigPtBins, "#it{p}_{T,ee} (GeV/c)"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
-    // replace them with hard coded axes
-    AxisSpec configPtBins = {{0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "#it{p}_{T,ee} (GeV/c)"};
-    AxisSpec configMBins = {{0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "#it{m}_{ee} (GeV/c^{2})"};
-    AxisSpec configDcaBins = {{0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA_{xy}^{ee} (cm)"};
-    registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {configMBins, configDcaBins}, true);
-    registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {configPtBins, configDcaBins}, true);
+    registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {{fConfigMBins, "#it{m}_{ee} (GeV/c^{2})"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
+    registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {{fConfigPtBins, "#it{p}_{T,ee} (GeV/c)"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
 
     for (auto& particle : fParticleListNames) {
       fmee.push_back(registry.add<TH1>(Form("mee_%s", particle.Data()), Form("mee_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
@@ -987,12 +976,11 @@ struct lmeelfcocktail {
   {
     // Build Kroll-wada for virtual photon mass parametrization:
     Double_t KWmass = 0.;
-    // Int_t KWnbins = 10000;
+    Int_t KWnbins = 10000;
     Float_t KWmin = 2. * eMass;
-    // Float_t KWmax         = 1.1;
-    Double_t KWbinwidth = (fConfigKWMax - KWmin) / (Double_t)fConfigKWNBins;
-    fhKW = new TH1F("fhKW", "fhKW", fConfigKWNBins, KWmin, fConfigKWMax);
-    for (Int_t ibin = 1; ibin <= fConfigKWNBins; ibin++) {
+    Double_t KWbinwidth = (fConfigKWMax - KWmin) / (Double_t)KWnbins;
+    fhKW = new TH1F("fhKW", "fhKW", KWnbins, KWmin, fConfigKWMax);
+    for (Int_t ibin = 1; ibin <= KWnbins; ibin++) {
       KWmass = KWmin + (Double_t)(ibin - 1) * KWbinwidth + KWbinwidth / 2.0;
       fhKW->AddBinContent(ibin, 2. * (1. / 137.03599911) / 3. / 3.14159265359 / KWmass * sqrt(1. - 4. * eMass * eMass / KWmass / KWmass) * (1. + 2. * eMass * eMass / KWmass / KWmass));
     }
