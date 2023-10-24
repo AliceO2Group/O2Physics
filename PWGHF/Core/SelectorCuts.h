@@ -300,7 +300,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 24"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "max decay length", "decay length XY", "minimum decay length","norm dauImpParX"};
+static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "max decay length", "decay length XY", "minimum decay length","norm dauImpPar XY"};
 } // namespace hf_cuts_d0_to_pi_k
 
 namespace hf_cuts_lc_to_p_k_pi

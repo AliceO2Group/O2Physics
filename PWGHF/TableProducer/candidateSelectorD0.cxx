@@ -158,7 +158,7 @@ struct HfCandidateSelectorD0 {
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
-    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpParX") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpParX")) {
+    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpPar XY") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpPar XY")) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "minimum decay length")) {
