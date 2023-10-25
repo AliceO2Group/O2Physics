@@ -28,8 +28,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"

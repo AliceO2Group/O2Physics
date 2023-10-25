@@ -30,7 +30,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
+#include "Common/Core/RecoDecay.h" // FIXME: Remove RecoDecay::getMassPDG
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "PWGHF/Core/SelectorCuts.h"

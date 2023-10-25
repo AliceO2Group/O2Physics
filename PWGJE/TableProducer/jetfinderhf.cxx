@@ -14,6 +14,7 @@
 // Authors: Nima Zardoshti, Jochen Klein
 
 #include "PWGJE/TableProducer/jetfinder.h"
+#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::analysis;
