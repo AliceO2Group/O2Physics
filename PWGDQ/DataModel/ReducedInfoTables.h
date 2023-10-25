@@ -184,14 +184,14 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
                   track::TRDSignal);
 
 // barrel collision information (joined with ReducedTracks) allowing to connect different tables (cross PWGs)
-DECLARE_SOA_TABLE(ReducedTracksInfo, "AOD", "RTBARRELINFO",
+DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
                   reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
 using ReducedTrackBarrelCov = ReducedTracksBarrelCov::iterator;
 using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
-using ReducedTrackInfo = ReducedTracksInfo::iterator;
+using ReducedTrackBarrelInfo = ReducedTracksBarrelInfo::iterator;
 
 namespace reducedtrackMC
 {

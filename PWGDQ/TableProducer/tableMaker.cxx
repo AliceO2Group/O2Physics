@@ -127,7 +127,7 @@ struct TableMaker {
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
-  Produces<ReducedTracksInfo> trackBarrelInfo;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
