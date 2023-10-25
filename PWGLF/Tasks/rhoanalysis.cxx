@@ -84,22 +84,22 @@ struct rhoanalysis {
 
       histos.add("fTPCSignal", "TPCSignal;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {2000, -100.f, 1000.f}}});
 
-      histos.add("hrhosame", "Invariant mass of rho", kTHnSparseD, {invmassAxis, ptAxiss, multAxis, rapidityAxis});
+      histos.add("hrhoUnlike", "Invariant mass of rho", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
     }
 
     if (isLike) {
-      histos.add("hrholike", "Invariant mass of rho", kTHnSparseD, {invmassAxis, ptAxiss, multAxis, rapidityAxis});
+      histos.add("hrhoLike", "Invariant mass of rho", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
     }
     if (isMixed) {
-      histos.add("hrhomassmixed", "Invariant mass of rho mixed event", kTHnSparseD, {invmassAxis, ptAxiss, multAxis, rapidityAxis});
+      histos.add("hrhoMixed", "Invariant mass of rho mixed event", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
     }
 
     if (isMC) {
 
       histos.add("hNsigmaPionTPCvspT", "NsigmaPion TPC distribution Vs pT", kTH2F, {ptAxis, {100, -10.0f, 10.0f}});
-      histos.add("hrhomassMc", "Invariant mass of rho mc", kTHnSparseD, {invmassAxis, ptAxiss, multAxis, rapidityAxis});
+      histos.add("hrhoRec", "Invariant mass of rho mc", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
 
-      histos.add("hrhoGen", "Gen mass of rho mc", kTHnSparseD, {ptAxiss, {30, 100, 130, "pdg code"}, rapidityAxis});
+      histos.add("hrhoGen", "Gen mass of rho mc", kTHnSparseF, {ptAxiss, {30, 100, 130, "pdg code"}});
     }
   }
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
@@ -117,7 +117,7 @@ struct rhoanalysis {
   double recMass{0.};
   double pT{0.};
   double rapidity;
-  void processSame(Event::iterator const& events, TrackPi const& tracks)
+  void processUnlike(Event::iterator const& events, TrackPi const& tracks)
   {
 
     histos.fill(HIST("hmultTPC"), events.multTPC());
@@ -175,11 +175,11 @@ struct rhoanalysis {
         if (std::abs(rapidity) >= 0.5)
           continue;
 
-        histos.fill(HIST("hrhosame"), mass, pT, multiplicity, rapidity);
+        histos.fill(HIST("hrhoUnlike"), mass, pT, multiplicity);
       }
     }
   }
-  PROCESS_SWITCH(rhoanalysis, processSame, "Process Same event", isUnlike);
+  PROCESS_SWITCH(rhoanalysis, processUnlike, "Process Same event", isUnlike);
 
   void processlike(Event::iterator const& events, TrackPi const& tracks)
   {
@@ -224,12 +224,12 @@ struct rhoanalysis {
         if (std::abs(rapidity) >= 0.5)
           continue;
 
-        histos.fill(HIST("hrholike"), mass, pT, multiplicity, rapidity);
+        histos.fill(HIST("hrhoLike"), mass, pT, multiplicity);
       }
     }
   }
 
-  PROCESS_SWITCH(rhoanalysis, processlike, "Process Same event", isLike);
+  PROCESS_SWITCH(rhoanalysis, processlike, "Process Same event with like sign track", isLike);
 
   ConfigurableAxis axisVertex{"axisVertex", {VARIABLE_WIDTH, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12}, "vertex axis for bin"};
 
@@ -282,7 +282,7 @@ struct rhoanalysis {
         if (std::abs(rapidity) >= 0.5)
           continue;
 
-        histos.fill(HIST("hrhomassmixed"), mass, pT, multiplicity, rapidity);
+        histos.fill(HIST("hrhoMixed"), mass, pT, multiplicity);
       }
     }
   }
@@ -341,7 +341,7 @@ struct rhoanalysis {
             pvec1 = std::array{track2.px(), track2.py(), track2.pz()};
             auto arrMomrec = std::array{pvec0, pvec1};
             recMass = RecoDecay::m(arrMomrec, std::array{massPi, massPi});
-            histos.fill(HIST("hrhomassMc"), recMass, mothertrack1.pt(), multiplicity, mothertrack1.y());
+            histos.fill(HIST("hrhoRec"), recMass, mothertrack1.pt(), multiplicity);
           }
         }
       }
@@ -373,7 +373,7 @@ struct rhoanalysis {
 
         if ((kCurrentDaughter.pdgCode() == 211 || kCurrentDaughter.pdgCode() == -211)) {
 
-          histos.fill(HIST("hrhoGen"), mcParticle.pt(), mcParticle.pdgCode(), mcParticle.y());
+          histos.fill(HIST("hrhoGen"), mcParticle.pt(), mcParticle.pdgCode());
         }
       }
     }
