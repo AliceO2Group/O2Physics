@@ -617,6 +617,7 @@ struct Alice3Dilepton {
 
     } // end of collision loop
   }   // end of processRec
+<<<<<<< HEAD
 
   template <typename TTrack>
   bool electronIDTOF(TTrack const& track)
@@ -641,6 +642,8 @@ struct Alice3Dilepton {
     isElectron = isEleRICH && isNotPionRICH;
     return isElectron;
   }
+=======
+>>>>>>> 8e999b32 (ALICE3: fix bug)
 
   PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);
