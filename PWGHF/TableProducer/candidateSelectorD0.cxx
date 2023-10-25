@@ -148,7 +148,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // normalised decay length in XY plane
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normalized decay length XY")) {
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "min norm decay length XY")) {
       return false;
     }
     // candidate DCA
@@ -158,25 +158,19 @@ struct HfCandidateSelectorD0 {
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
+    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpPar XY") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpPar XY")) {
+      return false;
+    }
+    if (candidate.decayLength() < cuts->get(pTBin, "min decay length")) {
+      return false;
+    }
+    if (candidate.decayLength() > cuts->get(pTBin, "max decay length")) {
+      return false;
+    }
+    if (candidate.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
+      return false;
+    }
 
-    // decay exponentail law, with tau = beta*gamma*ctau
-    // decay length > ctau retains (1-1/e)
-    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
-      return false;
-    }
-    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, cuts->get(pTBin, "minimum decay length"));
-    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
-      return false;
-    }
-    if (candidate.decayLength() > cuts->get(pTBin, "decay length")) {
-      return false;
-    }
-    if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
-      return false;
-    }
-    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      // return false; // add back when getter fixed
-    }
     return true;
   }
 
