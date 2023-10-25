@@ -4,7 +4,7 @@
 
 Welcome to the heavy-flavour analysis tutorial!
 
-This directory contains the code and configuration for running a minimalistic version of the D<sup>0</sup> analysis.
+This directory contains the code and configuration for running a minimalistic version of the D<sup>0</sup> analysis on Run 3 real data.
 
 See the [official PWG-HF O<sup>2</sup> documentation](https://aliceo2group.github.io/analysis-framework/docs/advanced-specifics/pwghf.html) for the overview of the full heavy-flavour analysis framework.
 
@@ -53,6 +53,8 @@ Organise your working environment so that you can easily switch between running 
 
 When you execute the bash script, the terminal output is saved in the `stdout.log` log file in the working directory.
 If an error occurs, the script will report the non-zero exit code and ask you to check the log file to find the problem.
+
+The full O<sup>2</sup> configuration is dumped at the end of processing into the `dpl-config.json` file in the working directory.
 
 See the [rebuilding instructions](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html#building-partially-for-development-using-ninja) in the official O<sup>2</sup> analysis framework documentation for advice on compiling your code changes.
 

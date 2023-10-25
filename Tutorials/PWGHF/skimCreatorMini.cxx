@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskMini.cxx
-/// \brief Mini version of the D0 analysis chain
+/// \brief Mini version of the track index skim creator
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
