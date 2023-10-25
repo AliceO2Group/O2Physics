@@ -46,7 +46,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
   if (TString(histClass) == "V0Leg") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 1000, -50, 50));
+    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 200, -50.0f, 50.0f, 200, -50.0f, 50.0f));
     list->Add(new TH1F("hNclsTPC", "number of TPC clusters", 161, -0.5, 160.5));
@@ -86,7 +86,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hKFChi2vsY", "KF chi2 vs. recalc. conversion point in Y;Y (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-    list->Add(new TH2F("hV0R_minTrackX", "V0R vs. trackiu x;R_{xy} of V0 (cm);min TrackIU X (cm)", 200, 0.0f, 200.0f, 400, 0.f, 200.0f));
     list->Add(new TH2F("hCorrTgl", "correlation of track tgl between e^{+} and e^{-};e^{-} track tgl;e^{+} track tgl", 300, -1.5f, 1.5f, 300, -1.5f, 1.5f));
     list->Add(new TH2F("hCorrZ", "correlation of track iu z between e^{+} and e^{-};e^{-} track iu Z (cm);e^{+} track iu Z (cm)", 400, -100.f, 100.f, 400, -100.f, 100.f));
 

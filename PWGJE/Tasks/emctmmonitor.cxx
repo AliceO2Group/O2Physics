@@ -104,11 +104,11 @@ struct TrackMatchingMonitor {
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeEnergyBinningAliPhysics(), "E_{clus} (GeV)"};
     const o2Axis amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplitude (GeV)"};
-    const o2Axis dEtaAxis{100, -0.4, 0.4, "d#it{#eta}"};
-    const o2Axis dPhiAxis{100, -0.4, 0.4, "d#it{#varphi} (rad)"};
-    const o2Axis dRAxis{100, 0.0, 0.4, "d#it{R}"};
+    const o2Axis dEtaAxis{100, -0.01, 0.01, "d#it{#eta}"};
+    const o2Axis dPhiAxis{100, -0.01, 0.01, "d#it{#varphi} (rad)"};
+    const o2Axis dRAxis{150, 0.0, 0.015, "d#it{R}"};
     const o2Axis eoverpAxis{500, 0, 10, "#it{E}_{cluster}/#it{p}_{track}"};
-    const o2Axis nSigmaAxis{100, -10., +3., "N#sigma"};
+    const o2Axis nSigmaAxis{130, -10., +3., "N#sigma"};
     const o2Axis trackptAxis{makePtBinning(), "#it{p}_{T,track}"};
     const o2Axis trackpAxis{200, 0, 100, "#it{p}_{track}"};
     const o2Axis clusterptAxis{makePtBinning(), "#it{p}_{T}"};
@@ -289,7 +289,7 @@ struct TrackMatchingMonitor {
           dEta = match.track_as<tracksPID>().eta() - cluster.eta();
           dPhi = match.track_as<tracksPID>().phi() - cluster.phi();
         }
-        if (dEta >= minDEta || dPhi >= minDPhi) { // dEta and dPhi cut
+        if (fabs(dEta) >= minDEta || fabs(dPhi) >= minDPhi) { // dEta and dPhi cut
           continue;
         }
         double eOverP = cluster.energy() / abs_p;

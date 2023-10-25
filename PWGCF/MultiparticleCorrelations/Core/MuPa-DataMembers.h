@@ -42,18 +42,24 @@ UInt_t fRandomSeed = 0;    // argument to TRandom3 constructor. By default is 0,
 TString fTaskName = "";  // task name - this one is used to get the right weights
                          // programatically for this analysis
 TString fRunNumber = ""; // over which run number this task is executed
+Bool_t fRunNumberIsDetermined =
+  kFALSE; // ensures that run number is determined in process() and propagated to already booked objects only once
 Bool_t fVerbose =
   kFALSE; // print additional info like Green(__PRETTY_FUNCTION__); etc., to
           // be used during debugging, but not for function calls per particle
 Bool_t fVerboseForEachParticle =
   kFALSE; // print additional info like Green(__PRETTY_FUNCTION__); etc., to
           // be used during debugging, also for function calls per particle
+Bool_t fDoAdditionalInsanityChecks =
+  kFALSE; // do additional insanity checks at run time, at the expense of losing a bit of performance
+          // For instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.
 Bool_t fUseCCDB =
   kFALSE; // access personal files from CCDB (kTRUE, this is set as default in
           // Configurables), or from home dir in AliEn (kFALSE, use with care,
           // as this is discouraged)
-// TString fModusOperandi; // "Rec" = process only reconstructed, "Sim" =
-// process only simulated, "RecSim" = process both reconstructed and simulated
+Bool_t fProcessRemainingEvents =
+  kTRUE;                        // if certain criteria is reached, e.g. max number of processed events, ignore all subsequent events TBI 20231019 I need instead graceful exit, see preamble of MaxNumberOfEvents()
+TString fWhatToProcess = "Rec"; // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
 // UInt_t fRandomSeed; // argument to TRandom3 constructor. By default it is 0,
 // use SetRandomSeed(...) to change it Bool_t fUseFisherYates; // use
 // SetUseFisherYates(kTRUE); in the steering macro to randomize particle indices
@@ -141,7 +147,8 @@ struct ParticleWeights_Arrays {
 } pw_a;                                     // "pw_a" labels an instance of this group of histograms, e.g.
                                             // pw_a.fWeightsHist[0]
 TString fFileWithWeights =
-  ""; // path to external ROOT file which holds all particle weights
+  "";                                       // path to external ROOT file which holds all particle weights
+Bool_t fParticleWeightsAreFetched = kFALSE; // ensures that particle weights are fetched only once
 
 // *) Nested loops:
 TList* fNestedLoopsList = NULL; // list to hold all nested loops objects

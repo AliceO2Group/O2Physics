@@ -993,6 +993,9 @@ struct AnalysisSameEventPairing {
       dileptonFilterMap = twoTrackFilter;
 
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+      if constexpr (TPairType == pairTypeMuMu) {
+        dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+      }
 
       constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
       if constexpr ((TPairType == pairTypeEE) && trackHasCov) {
@@ -1002,7 +1005,6 @@ struct AnalysisSameEventPairing {
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
         // LOGP(info, "mu1 collId = {}, mu2 collId = {}", t1.collisionId(), t2.collisionId());
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
-        dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
         if (fConfigFlatTables.value) {
           dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
                         -999., -999., -999.,
