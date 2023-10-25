@@ -11,12 +11,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# @brief Bash script to execute the D0 mini task on Run 2 MC input
+# @brief Bash script to produce derived data AnalysisResults_trees.root with 2-prong mini skims from Run 3 real-data input for the D0 mini task
 #
-# The paths of input AO2D.root files are expected in the "list_o2.txt" file in the working directory.
+# The input AO2D.root file is expected in the working directory.
 #
 # @author Vít Kučera <vit.kucera@cern.ch>, Inha University
-# @date 2023-04-20
+# @date 2023-10-25
 
 # log file where the terminal output will be saved
 LOGFILE="stdout.log"
