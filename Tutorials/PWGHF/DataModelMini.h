@@ -14,8 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#ifndef PWGHF_DATAMODELMINI_H_
-#define PWGHF_DATAMODELMINI_H_
+#ifndef TUTORIALS_PWGHF_DATAMODELMINI_H_
+#define TUTORIALS_PWGHF_DATAMODELMINI_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -120,4 +120,4 @@ DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //! table with D0 sele
                   hf_selcandidate_d0::IsSelD0bar);
 } // namespace o2::aod
 
-#endif // PWGHF_DATAMODELMINI_H_
+#endif // TUTORIALS_PWGHF_DATAMODELMINI_H_
