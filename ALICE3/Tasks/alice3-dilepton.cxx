@@ -591,8 +591,8 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
         // implement pid
 
-        bool isElectronTOF = electronIDTOF();
-        bool isElectronRICH = electronIDRICH();
+        bool isElectronTOF = electronIDTOF(track);
+        bool isElectronRICH = electronIDRICH(track);
 
         if (isElectronTOF || isElectronRICH) {
           registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
