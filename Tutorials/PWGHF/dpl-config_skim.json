@@ -13,17 +13,17 @@
     "bc-converter": "",
     "timestamp-task": {
         "verbose": "false",
-        "rct-path": "RCT\/Info\/RunInformation",
-        "orbit-reset-path": "CTP\/Calib\/OrbitReset",
-        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "rct-path": "RCT/Info/RunInformation",
+        "orbit-reset-path": "CTP/Calib/OrbitReset",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
         "isRun2MC": "false"
     },
     "track-propagation": {
-        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
-        "lutPath": "GLO\/Param\/MatLUT",
-        "geoPath": "GLO\/Config\/GeometryAligned",
-        "grpmagPath": "GLO\/Config\/GRPMagField",
-        "mVtxPath": "GLO\/Calib\/MeanVertex",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "lutPath": "GLO/Param/MatLUT",
+        "geoPath": "GLO/Config/GeometryAligned",
+        "grpmagPath": "GLO/Config/GRPMagField",
+        "mVtxPath": "GLO/Calib/MeanVertex",
         "minPropagationDistance": "83.0999985",
         "processStandard": "false",
         "processCovariance": "true"
