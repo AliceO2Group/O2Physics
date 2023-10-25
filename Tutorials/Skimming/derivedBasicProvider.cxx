@@ -39,7 +39,7 @@ struct DerivedBasicProvider {
   // Look at primary tracks only
   Filter trackFilter = nabs(aod::track::dcaXY) < 0.2f && nabs(aod::track::eta) < 0.5f && aod::track::pt > minPt;
 
-  //This is an example of a convenient declaration of "using"
+  // This is an example of a convenient declaration of "using"
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using myFilteredTracks = soa::Filtered<myCompleteTracks>; // do not forget this!
 
@@ -57,9 +57,10 @@ struct DerivedBasicProvider {
     histos.fill(HIST("eventCounter"), 0.5);
     outputCollisions(collision.posZ());
     for (const auto& track : tracks) {
-      if( track.tpcNClsCrossedRows() < 70 ) continue; //remove badly tracked
+      if (track.tpcNClsCrossedRows() < 70)
+        continue; // remove badly tracked
       histos.get<TH1>(HIST("ptHistogram"))->Fill(track.pt());
-      outputTracks( outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi() ); // all that I need for posterior analysis! 
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi()); // all that I need for posterior analysis!
     }
   }
 };
