@@ -148,7 +148,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // normalised decay length in XY plane
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normalized decay length XY")) {
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "min norm decay length XY")) {
       return false;
     }
     // candidate DCA
@@ -161,7 +161,7 @@ struct HfCandidateSelectorD0 {
     if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpPar XY") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpPar XY")) {
       return false;
     }
-    if (candidate.decayLength() < cuts->get(pTBin, "minimum decay length")) {
+    if (candidate.decayLength() < cuts->get(pTBin, "min decay length")) {
       return false;
     }
     if (candidate.decayLength() > cuts->get(pTBin, "max decay length")) {
