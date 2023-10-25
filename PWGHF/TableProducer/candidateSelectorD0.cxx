@@ -167,7 +167,7 @@ struct HfCandidateSelectorD0 {
     if (candidate.decayLength() > cuts->get(pTBin, "max decay length")) {
       return false;
     }
-    if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
+    if (candidate.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
       return false;
     }
 
