@@ -567,7 +567,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
         // implement pid
 
-        bool isElectronTOF  = electronIDTOF();
+        bool isElectronTOF = electronIDTOF();
         bool isElectronRICH = electronIDRICH();
 
         if (isElectronTOF || isElectronRICH) {
@@ -590,8 +590,9 @@ struct Alice3Dilepton {
 
     } // end of collision loop
   }   // end of processRec
-
-  bool electronIDTOF()
+  
+  template <typename TTrack>
+  bool electronIDTOF(TTrack const& track)
   {
     bool isElectron = false;
     bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
@@ -604,7 +605,8 @@ struct Alice3Dilepton {
     return isElectron;
   }
 
-  bool electronIDRICH()
+  template <typename TTrack>
+  bool electronIDRICH(TTrack const& track)
   {
     bool isElectron = false;
     bool isEleRICH = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaElectronRich;
