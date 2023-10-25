@@ -44,7 +44,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGHF/Core/PDG.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -100,7 +100,7 @@ struct phianalysisrun3 {
     }
   }
 
-  double massKa = RecoDecay::getMassPDG(kKPlus);
+  double massKa = o2::analysis::pdg::MassKPlus;
   double rapidity;
   double genMass, recMass, resolution;
   double mass{0.};
