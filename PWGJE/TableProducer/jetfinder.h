@@ -120,13 +120,13 @@ void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& c
 template <typename T>
 bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, int candPDG, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate)
 {
-  if (candidate.y(RecoDecay::getMassPDG(candPDG)) < candYMin || candidate.y(RecoDecay::getMassPDG(candPDG)) > candYMax) {
+  if (candidate.y(RecoDecay::getMassPDG(candPDG)) < candYMin || candidate.y(RecoDecay::getMassPDG(candPDG)) > candYMax) { // FIXME: Remove RecoDecay::getMassPDG
     return false;
   }
   if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
     return false;
   }
-  FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+  FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG)); // FIXME: Remove RecoDecay::getMassPDG
   return true;
 }
 
@@ -234,7 +234,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
         continue;
       }
     }
-    FastJetUtilities::fillTracks(particle, inputParticles, particle.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(particle.pdgCode()));
+    FastJetUtilities::fillTracks(particle, inputParticles, particle.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdgParticle->Mass());
   }
 }
 
