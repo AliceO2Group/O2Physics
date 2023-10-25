@@ -37,7 +37,12 @@ The mini task workflow `o2-analysistutorial-hf-task-mini` (implemented in [`task
 - the D<sup>0</sup> candidate selector,
 - the D<sup>0</sup> analysis task.
 
-The first step (candidate creator) consumes the track index skim table and therefore needs the derived `AnalysisResults_trees.root` file as input, which requires access to the parent `AO2D.root` file.
+The first step (candidate creator) consumes the track index skim table and therefore needs the derived `AnalysisResults_trees.root` file as input.
+
+Processing the derived file requires access to the parent `AO2D.root` file.
+The absolute path to the parent file is stored in the derived file but it can be overridden with the parameter `aod-parent-base-path-replacement` in the JSON configuration,
+where one has to provide a replacement mask in the format `"old-path-to-parent;new-path-to-parent"`.
+(If the parent and the derived files are both in the same directory, `new-path-to-parent` can be empty.)
 
 Run the mini task by executing the [`run_task.sh`](run_task.sh) bash script in the working directory:
 

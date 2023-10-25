@@ -9,7 +9,7 @@
         "step-value-enumeration": "1",
         "aod-file": "AnalysisResults_trees.root",
         "aod-parent-access-level": "1",
-        "aod-parent-base-path-replacement": ";"
+        "aod-parent-base-path-replacement": "old-path-to-parent;new-path-to-parent"
     },
     "internal-dpl-aod-spawner": "",
     "bc-converter": "",
