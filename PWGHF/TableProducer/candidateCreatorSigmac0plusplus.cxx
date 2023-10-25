@@ -83,6 +83,9 @@ struct HfCandidateCreatorSigmac0plusplus {
   // Preslice<CandidatesLc> hf3ProngPerCollision = aod::track_association::collisionId;
   Preslice<CandidatesLc> hf3ProngPerCollision = aod::hf_cand::collisionId;
 
+  /// TRIAL
+  Preslice<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>> presliceRandom = aod::track_association::collisionId;
+
   HistogramRegistry histos;
 
   /// @brief init function, to define the soft pion selections and histograms
@@ -129,19 +132,17 @@ struct HfCandidateCreatorSigmac0plusplus {
     runNumber = 0;
   }
 
-  /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction considering also reassigned tracks for soft pions
-  /// @param collision is a o2::aod::Collision
+  /// @param collisions are o2::aod::Collisions
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(aod::Collisions const& collisions,
-               aod::TrackAssoc const& trackIndices,
+  template <bool withTimeAssoc, typename TRK>
+  void createSigmaC(aod::Collisions::iterator const& collision,
+               TRK const& trackIdsThisCollision,
                aod::TracksWDcaExtra const& tracks,
                CandidatesLc const& candidates,
                aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
-    for (const auto& collision : collisions) {
-      histos.fill(HIST("hCounter"), 1);
       auto thisCollId = collision.globalIndex();
 
       /// loop over Λc+ → pK-π+ (and charge conj.) candidates
@@ -176,10 +177,16 @@ struct HfCandidateCreatorSigmac0plusplus {
         histos.fill(HIST("hCounter"), 3);
 
         /// loop over tracks
-        auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) {
 
-          auto trackSoftPi = trackId.track_as<aod::TracksWDcaExtra>();
+          aod::TracksWDcaExtra::unfiltered_iterator trackSoftPi;
+          if constexpr(withTimeAssoc) {
+            trackSoftPi = trackId.template track_as<aod::TracksWDcaExtra>();
+          } else {
+            // in this case trackIdsThisCollision are already the Tracks grouped by collision
+            trackSoftPi = trackId;
+          }
+
           // auto trackSoftPi = tracks.rawIteratorAt(trackId.trackId());
           histos.fill(HIST("hCounter"), 4);
 
@@ -251,9 +258,27 @@ struct HfCandidateCreatorSigmac0plusplus {
         } /// end loop over tracks
       }   /// end loop over candidates
 
-    } /// end loop over collisions
+    
 
   } /// end processWithAmbTracks
+
+  /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction considering also reassigned tracks for soft pions
+  void process(aod::Collisions const& collisions,
+               aod::TrackAssoc const& trackIndices,
+               aod::TracksWDcaExtra const& tracks,
+               CandidatesLc const& candidates,
+               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    for (const auto& collision : collisions) {
+
+      histos.fill(HIST("hCounter"), 1);
+
+      // slice by hand the assoc. track with time per collision
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      createSigmaC<true>(collision, trackIdsThisCollision, tracks, candidates, bcWithTimeStamps);
+    } // end loop over collisions
+  }
+
 };
 
 /// Extends the base table with expression columns.
