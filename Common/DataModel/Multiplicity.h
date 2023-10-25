@@ -116,6 +116,7 @@ DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);       //!
 DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool); //!
 DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
 } // namespace multDebug
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
@@ -124,7 +125,8 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCTVX,
                   multBC::MultBCFV0OrA,
                   multBC::MultBCV0triggerBits,
-                  multBC::MultBCTriggerMask);
+                  multBC::MultBCTriggerMask,
+                  multBC::MultBCColliding);
 using MultBC = MultsBC::iterator;
 
 } // namespace o2::aod
