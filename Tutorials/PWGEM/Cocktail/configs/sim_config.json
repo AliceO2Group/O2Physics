@@ -4,7 +4,7 @@
     "selectedMothers": 63,
     "paramFile": "PATH/Cocktail/files/parametrizations/PbPb_5TeV.json",
     "paramFileDir": "5TeV_0005_wRatio",
-    "numberOfParticles": 350,
+    "numberOfParticles": 100,
     "minPt": 0.0,
     "maxPt": 30.0,
     "yGenRange": 1.1,
