@@ -73,8 +73,8 @@ struct cascadeSelector {
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor"};
   Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 3, "TPC NSigma proton <- lambda"};
   Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda"};
-  Configurable<int>   minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
-  Configurable<int>   minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
+  Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
+  Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
   // Configurable<bool>  doTPConly{"doTPConly", false, "use TPC-only tracks"}; // TODO: maybe do this for high pT only? as cascade decays after IB
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
@@ -111,26 +111,26 @@ struct cascadeSelector {
       auto negTrack = v0data.negTrack_as<FullTracksExtIUWithPID>();
 
       // TPC N crossed rows
-      if (posTrack.tpcNClsCrossedRows() < minTPCCrossedRows || negTrack.tpcNClsCrossedRows() < minTPCCrossedRows || bachTrack.tpcNClsCrossedRows() < minTPCCrossedRows){
+      if (posTrack.tpcNClsCrossedRows() < minTPCCrossedRows || negTrack.tpcNClsCrossedRows() < minTPCCrossedRows || bachTrack.tpcNClsCrossedRows() < minTPCCrossedRows) {
         cascflags(0);
         continue;
       }
       // ITS N clusters
-      if (posTrack.itsNCls() < minITSClusters || negTrack.itsNCls() < minITSClusters || bachTrack.itsNCls() < minITSClusters){
+      if (posTrack.itsNCls() < minITSClusters || negTrack.itsNCls() < minITSClusters || bachTrack.itsNCls() < minITSClusters) {
         cascflags(0);
         continue;
       }
 
-      //// TOPO CUTS //// TODO: improve! 
+      //// TOPO CUTS //// TODO: improve!
       double pvx = collision.posX();
       double pvy = collision.posY();
       double pvz = collision.posZ();
       if (casc.v0radius() < v0setting_radius ||
-        casc.cascradius() < cascadesetting_cascradius ||
-        casc.v0cosPA(pvx, pvy, pvz) < v0setting_cospa ||
-        casc.casccosPA(pvx, pvy, pvz) < cascadesetting_cospa ||
-        casc.dcav0topv(pvx, pvy, pvz) < cascadesetting_mindcav0topv ||
-        TMath::Abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow) {
+          casc.cascradius() < cascadesetting_cascradius ||
+          casc.v0cosPA(pvx, pvy, pvz) < v0setting_cospa ||
+          casc.casccosPA(pvx, pvy, pvz) < cascadesetting_cospa ||
+          casc.dcav0topv(pvx, pvy, pvz) < cascadesetting_mindcav0topv ||
+          TMath::Abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow) {
         // It failed at least one topo selection
         cascflags(0);
         continue;
@@ -237,7 +237,7 @@ struct cascadeCorrelations {
   Filter Selector = aod::cascadeflags::isSelected > 0;
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
-  { 
+  {
     if (!collision.sel8()) {
       return;
     }
