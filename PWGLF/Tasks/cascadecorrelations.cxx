@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TFile.h>
 #include <TH2F.h>
@@ -69,9 +70,27 @@ struct cascadeSelector {
   Produces<aod::CascadeFlags> cascflags;
 
   // Configurables
-  Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor (>10 is no cut)"};
-  Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 3, "TPC NSigma proton <- lambda (>10 is no cut)"};
-  Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda (>10 is no cut)"};
+  Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor"};
+  Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 3, "TPC NSigma proton <- lambda"};
+  Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda"};
+  Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
+  Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
+  // Configurable<bool>  doTPConly{"doTPConly", false, "use TPC-only tracks"}; // TODO: maybe do this for high pT only? as cascade decays after IB
+
+  // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.95, "v0setting_cospa"};
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
   {
@@ -83,19 +102,47 @@ struct cascadeSelector {
       }
       auto v0data = v0.v0Data();
 
-      // TODO: inv mass selection, other cuts.
+      // TODO: make QA histo with info on where cascades fail selections
 
-      // Let's try to do some PID
+      // Let's try to do some PID & track quality cuts
       // these are the tracks:
       auto bachTrack = casc.bachelor_as<FullTracksExtIUWithPID>();
       auto posTrack = v0data.posTrack_as<FullTracksExtIUWithPID>();
       auto negTrack = v0data.negTrack_as<FullTracksExtIUWithPID>();
 
-      // PID
+      // TPC N crossed rows
+      if (posTrack.tpcNClsCrossedRows() < minTPCCrossedRows || negTrack.tpcNClsCrossedRows() < minTPCCrossedRows || bachTrack.tpcNClsCrossedRows() < minTPCCrossedRows) {
+        cascflags(0);
+        continue;
+      }
+      // ITS N clusters
+      if (posTrack.itsNCls() < minITSClusters || negTrack.itsNCls() < minITSClusters || bachTrack.itsNCls() < minITSClusters) {
+        cascflags(0);
+        continue;
+      }
+
+      //// TOPO CUTS //// TODO: improve!
+      double pvx = collision.posX();
+      double pvy = collision.posY();
+      double pvz = collision.posZ();
+      if (casc.v0radius() < v0setting_radius ||
+          casc.cascradius() < cascadesetting_cascradius ||
+          casc.v0cosPA(pvx, pvy, pvz) < v0setting_cospa ||
+          casc.casccosPA(pvx, pvy, pvz) < cascadesetting_cospa ||
+          casc.dcav0topv(pvx, pvy, pvz) < cascadesetting_mindcav0topv ||
+          TMath::Abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow) {
+        // It failed at least one topo selection
+        cascflags(0);
+        continue;
+      }
+
+      // TODO: TOF (for pT > 2 GeV per track?)
+
+      //// TPC ////
       // Lambda check
       if (casc.sign() < 0) {
         // Proton check:
-        if (TMath::Abs(posTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99) {
+        if (TMath::Abs(posTrack.tpcNSigmaPr()) > tpcNsigmaProton) {
           cascflags(0);
           continue;
         }
@@ -140,8 +187,9 @@ struct cascadeCorrelations {
   AxisSpec deltaPhiAxis = {100, -PI / 2, 1.5 * PI, "#Delta#varphi"};
   AxisSpec deltaEtaAxis = {40, -2, 2, "#Delta#eta"};
   AxisSpec ptAxis = {200, 0, 15, "#it{p}_{T}"};
-  AxisSpec selectionFlagAxis = {4, -0.05f, 3.5f, "Selection flag of casc candidate"};
+  AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec vertexAxis = {1000, -10.0f, 10.0f, "cm"};
+  AxisSpec multiplicityAxis{100, 0, 100, "Multiplicity (MultFT0M?)"};
 
   HistogramRegistry registry{
     "registry",
@@ -166,7 +214,7 @@ struct cascadeCorrelations {
       {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "Inv. Mass (GeV/c^{2})"}}}},
 
       {"hSelectionFlag", "hSelectionFlag", {HistType::kTH1I, {selectionFlagAxis}}},
-      {"hAutoCorrelation", "hAutoCorrelation", {HistType::kTH1I, {{4, -0.05f, 3.5f, "Types of autocorrelation"}}}},
+      {"hAutoCorrelation", "hAutoCorrelation", {HistType::kTH1I, {{4, -0.5f, 3.5f, "Types of autocorrelation"}}}},
       {"hPhi", "hPhi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}}},
       {"hEta", "hEta", {HistType::kTH1F, {{100, -2, 2, "#eta"}}}},
 
@@ -174,15 +222,26 @@ struct cascadeCorrelations {
       {"hDeltaPhiSS", "hDeltaPhiSS", {HistType::kTH1F, {deltaPhiAxis}}},
       {"hDeltaPhiOS", "hDeltaPhiOS", {HistType::kTH1F, {deltaPhiAxis}}},
       // THnSparses containing all relevant dimensions, to be extended with e.g. multiplicity
-      {"hSparseOS", "hSparseOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis}}},
-      {"hSparseSS", "hSparseSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis}}},
+      // TODO: maybe use a seperate table/tree for this?
+      {"hXiXiOS", "hXiXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hXiXiSS", "hXiXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hXiOmOS", "hXiOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hXiOmSS", "hXiOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hOmXiOS", "hOmXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hOmXiSS", "hOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hOmOmOS", "hOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"hOmOmSS", "hOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
     },
   };
 
   Filter Selector = aod::cascadeflags::isSelected > 0;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
+    if (!collision.sel8()) {
+      return;
+    }
+
     // Some QA on the cascades
     for (auto& casc : Cascades) {
 
@@ -244,10 +303,18 @@ struct cascadeCorrelations {
       double deta = trigger.eta() - assoc.eta();
       double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -0.5 * PI);
 
+      double invMassXiTrigg = trigger.mXi();
+      double invMassOmTrigg = trigger.mOmega();
+      double invMassXiAssoc = assoc.mXi();
+      double invMassOmAssoc = assoc.mOmega();
+
       // Fill the correct histograms based on same-sign or opposite-sign
       if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
         registry.fill(HIST("hDeltaPhiOS"), dphi);
-        registry.fill(HIST("hSparseOS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected(), collision.posZ());
+        registry.fill(HIST("hXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
       } else { // same-sign
         // make sure to check for autocorrelations - only possible in same-sign correlations
         if (v0dataTrigg.v0Id() == v0dataAssoc.v0Id()) {
@@ -286,7 +353,10 @@ struct cascadeCorrelations {
           }
         }
         registry.fill(HIST("hDeltaPhiSS"), dphi);
-        registry.fill(HIST("hSparseSS"), dphi, deta, trigger.pt(), assoc.pt(), trigger.isSelected(), assoc.isSelected(), collision.posZ());
+        registry.fill(HIST("hXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
       }
     } // correlations
   }   // process
