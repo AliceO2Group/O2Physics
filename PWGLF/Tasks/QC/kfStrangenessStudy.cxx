@@ -39,7 +39,8 @@ using std::array;
 
 // allows for candidate-by-candidate comparison using Cascade to []CascData link table
 using CascadesCrossLinked = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink>;
-using CascadesCrossLinkedLabeled = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink, aod::McCascLabels>;
+using CascDataLabeled = soa::Join<aod::CascDatas, aod::McCascLabels>;
+using KFCascDataLabeled = soa::Join<aod::KFCascDatas, aod::McKFCascLabels>;
 
 struct kfStrangenessStudy {
 
@@ -125,8 +126,8 @@ struct kfStrangenessStudy {
     
   }
 
-  template <typename TCollision, typename TCascTable, typename TCascDatas, typename TKFCascDatas>
-  void getCascDatas(TCollision const& collision, TCascTable const& cascade, TCascDatas const& cascdatas, TKFCascDatas const& kfcascdatas)
+  template <typename TCollision, typename TCascade, typename TCascDatas, typename TKFCascDatas>
+  void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const& cascdatas, TKFCascDatas const& kfcascdatas)
   {
     if (cascade.has_cascData()) {
       // check aod::Cascades -> aod::CascData link
@@ -154,6 +155,7 @@ struct kfStrangenessStudy {
       vtxZErr = sqrt(cascdata.positionCovMat()[5]);
       V0Rad = cascdata.v0radius();
       v0PointingAngle = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      LOG(debug) << "All casc data collected!";
 
       // fill QA histos
       histos.fill(HIST("hVertexX"), vtxX);  
@@ -165,8 +167,11 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
       histos.fill(HIST("hV0PointingAngle"), v0PointingAngle);
       histos.fill(HIST("hCosV0PointingAngle"), cos(v0PointingAngle));
+      LOG(debug) << "QA casc data histos filled!";
     }
+
     if (cascade.has_kfCascData()) {
+      LOG(debug) << "Cascade has KFcascData!";
       // check aod::Cascades -> aod::KFCascData link
       // if present: this candidate was accepted by KF building
       isKF = 1;
@@ -204,6 +209,53 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
       histos.fill(HIST("hKFV0PointingAngle"), v0PointingAngleKF);
       histos.fill(HIST("hKFCosV0PointingAngle"), cos(v0PointingAngleKF));
+    }
+  }
+
+  template <typename TCollision, typename TCascData, typename TMCParticle>
+  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TMCParticle const& mcparticles) {
+    if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
+      auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
+
+      if (MCcascade.has_daughters()) {
+        ptGen = MCcascade.pt();
+        prodVtxXgen = MCcascade.vx();
+        prodVtxYgen = MCcascade.vy();
+        prodVtxZgen = MCcascade.vz();
+        vtxXgen_firstDau = MCcascade.template daughters_as<TMCParticle>().begin().vx();
+        vtxYgen_firstDau = MCcascade.template daughters_as<TMCParticle>().begin().vy();
+        vtxZgen_firstDau = MCcascade.template daughters_as<TMCParticle>().begin().vz();
+        vtxXgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vx();
+        vtxYgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vy();
+        vtxZgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vz();
+
+        if (abs(MCcascade.pdgCode()) == 3312) { // Xi
+          isTrueCasc = 1;
+        } else {
+          isTrueCasc = 0;
+        }
+        if (MCcascade.isPhysicalPrimary()) {
+          source = 1;
+        } else if (MCcascade.getProcess() == 4) { // from particle decay
+          source = 2;
+        } else if (MCcascade.fromBackgroundEvent()) {
+          source = -1;
+        } else {
+          source = -2;
+        }
+        // fill cascade table
+        fillCascMCTable(collision);
+
+        // fill QA histos --> vertex position from daughters!
+        histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxXgen_firstDau);
+        histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxYgen_firstDau);
+        histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxZgen_firstDau);
+        histos.fill(HIST("hGenDecayVtxX_lastDau"), vtxXgen_lastDau);
+        histos.fill(HIST("hGenDecayVtxY_lastDau"), vtxYgen_lastDau);
+        histos.fill(HIST("hGenDecayVtxZ_lastDau"), vtxZgen_lastDau);
+
+        histos.fill(HIST("hGenSource"), source);
+      }
     }
   }
 
@@ -289,7 +341,7 @@ struct kfStrangenessStudy {
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinkedLabeled const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas,  aod::TracksIU const&, aod::McParticles const& particlesMC) 
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, CascDataLabeled const&, KFCascDataLabeled const&, aod::TracksIU const&, aod::McParticles const& particlesMC) 
   {
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -297,7 +349,7 @@ struct kfStrangenessStudy {
     if (!(abs(collision.posZ()) < 10.)) return;
     histos.fill(HIST("hEventSelectionFlow"), 2.f);
 
-    for (auto& cascade : Cascades) { // allows for cross-referencing everything
+    for (auto& cascade : Cascades) {
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
@@ -311,55 +363,23 @@ struct kfStrangenessStudy {
       // get cascade data
       getCascDatas(collision, cascade, CascDatas, KFCascDatas);
 
-      // get cascade MC information
-      if (cascade.has_cascData() || cascade.has_kfCascData()) {
-        if (cascade.mcParticleId() != -1 && cascade.mcParticleId() <= particlesMC.size()) {
-          auto MCcascade = cascade.mcParticle_as<aod::McParticles>();
-          if (MCcascade.has_daughters()) {
-            //auto MCcascDau = MCcascade.daughters_as<aod::McParticles>();
-
-            ptGen = MCcascade.pt();
-            prodVtxXgen = MCcascade.vx();
-            prodVtxYgen = MCcascade.vy();
-            prodVtxZgen = MCcascade.vz();
-            vtxXgen_firstDau = MCcascade.daughters_as<aod::McParticles>().begin().vx();
-            vtxYgen_firstDau = MCcascade.daughters_as<aod::McParticles>().begin().vy();
-            vtxZgen_firstDau = MCcascade.daughters_as<aod::McParticles>().begin().vz();
-            vtxXgen_lastDau = (MCcascade.daughters_as<aod::McParticles>().begin() + 1).vx();
-            vtxYgen_lastDau = (MCcascade.daughters_as<aod::McParticles>().begin() + 1).vy();
-            vtxZgen_lastDau = (MCcascade.daughters_as<aod::McParticles>().begin() + 1).vz();
-
-            if (abs(MCcascade.pdgCode()) == 3312) { // Xi
-              isTrueCasc = 1;
-            } else {
-              isTrueCasc = 0;
-            }
-            if (MCcascade.isPhysicalPrimary()) {
-              source = 1;
-            } else if (MCcascade.getProcess() == 4) { // from particle decay
-              source = 2;
-            } else if (MCcascade.fromBackgroundEvent()) {
-              source = -1;
-            } else {
-              source = -2;
-            }
-
-            // fill cascade table
-            fillCascMCTable(collision);
-          }
-
-          // fill QA histos --> vertex position from daughters!
-          histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxXgen_firstDau);
-          histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxYgen_firstDau);
-          histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxZgen_firstDau);
-          histos.fill(HIST("hGenDecayVtxX_lastDau"), vtxXgen_lastDau);
-          histos.fill(HIST("hGenDecayVtxY_lastDau"), vtxYgen_lastDau);
-          histos.fill(HIST("hGenDecayVtxZ_lastDau"), vtxZgen_lastDau);
-
-          histos.fill(HIST("hGenSource"), source);
-
-        }
-      } // end has_cascData
+      // ========== get cascade MC information ===========
+      if (cascade.has_kfCascData() && cascade.has_cascData()) {
+        LOG(debug) << "Both fitters were successful!";
+        auto cascdata = cascade.cascData_as<CascDataLabeled>();
+        getCascMCdata(collision, cascdata, particlesMC);
+      }
+      if (cascade.has_kfCascData() && !cascade.has_cascData()) {
+        LOG(debug) << "Only KF was successful!";
+        auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
+        getCascMCdata(collision, cascdata, particlesMC);
+      }
+      if (!cascade.has_kfCascData() && cascade.has_cascData()) {
+        LOG(debug) << "Only DCA fitter was successful!";
+        auto cascdata = cascade.cascData_as<CascDataLabeled>();
+        getCascMCdata(collision, cascdata, particlesMC);
+      }
+      
     } // end cascade loop
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processMC, "process MC", false);

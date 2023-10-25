@@ -259,6 +259,7 @@ struct cascadeLabelBuilder {
   }
 
   PROCESS_SWITCH(cascadeLabelBuilder, processCascades, "Produce regular cascade label tables", true);
+  PROCESS_SWITCH(cascadeLabelBuilder, processKFCascades, "Produce KF cascade label tables", true);
   PROCESS_SWITCH(cascadeLabelBuilder, processTrackedCascades, "Produce tracked cascade label tables", false);
   PROCESS_SWITCH(cascadeLabelBuilder, processBBTags, "Produce cascade bach-baryon correlation tags", true);
 };
