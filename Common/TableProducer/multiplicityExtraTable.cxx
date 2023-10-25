@@ -9,27 +9,43 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/ConfigParamSpec.h"
-
-using namespace o2;
-using namespace o2::framework;
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "DataFormatsFIT/Triggers.h"
 #include "TableHelper.h"
-#include "iostream"
+
+#include "CCDB/CcdbApi.h"
+#include "CommonDataFormat/BunchFilling.h"
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <bitset>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using BCPattern = std::bitset<o2::constants::lhc::LHCMaxBunches>;
+const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
   Produces<aod::MultsBC> multBC;
 
-  unsigned int randomSeed = 0;
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  BCPattern CollidingBunch;
+
+  int newRunNumber = -999;
+  int oldRunNumber = -999;
+
   void init(InitContext& context)
   {
-    // empty for now
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -43,6 +59,31 @@ struct MultiplicityExtraTable {
     float multFV0A = 0.f;
     uint8_t multFV0TriggerBits = 0;
     uint64_t multBCTriggerMask = bc.triggerMask();
+
+    // initialize - from Arvind
+    newRunNumber = bc.runNumber();
+    int localBC = bc.globalBC() % nBCsPerOrbit;
+
+    if (newRunNumber != oldRunNumber) {
+      uint64_t ts{};
+      std::map<string, string> metadataRCT, headers;
+      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
+      ts = atol(headers["SOR"].c_str());
+
+      LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
+      oldRunNumber = newRunNumber;
+      std::map<std::string, std::string> mapMetadata;
+      std::map<std::string, std::string> mapHeader;
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
+      for (int i = 0; i < (int)CollidingBunch.size(); i++) {
+        if (CollidingBunch.test(i)) {
+          LOG(info) << i << "  ";
+        }
+      }
+    } // new run number
+
+    bool collidingBC = CollidingBunch.test(localBC);
 
     if (bc.has_ft0()) {
       auto ft0 = bc.ft0();
@@ -69,7 +110,7 @@ struct MultiplicityExtraTable {
       } // fv0
     }
 
-    multBC(multFT0A, multFT0C, multFV0A, Tvx, isFV0OrA, multFV0TriggerBits, multBCTriggerMask);
+    multBC(multFT0A, multFT0C, multFV0A, Tvx, isFV0OrA, multFV0TriggerBits, multBCTriggerMask, collidingBC);
   }
 };
 
