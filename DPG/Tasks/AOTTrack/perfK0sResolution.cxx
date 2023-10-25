@@ -14,7 +14,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGHF/Core/PDG.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -73,7 +73,7 @@ struct perfK0sResolution {
       return kFALSE;
     if (v0.v0radius() < v0setting_radius)
       return kFALSE;
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) > 2.684 * v0lifetime)
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short > 2.684 * v0lifetime)
       return kFALSE;
 
     // Apply selections on V0 daughters
