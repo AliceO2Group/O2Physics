@@ -100,7 +100,8 @@ class VarManager : public TObject
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
     TrackTPCPID = BIT(22),
-    TrackMFT = BIT(23)
+    TrackMFT = BIT(23),
+    ReducedTrackCollInfo = BIT(24) // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
   };
 
   enum PairCandidateType {
@@ -430,7 +431,7 @@ class VarManager : public TObject
   };
 
   enum DileptonCharmHadronTypes {
-    kJPsiToMuMu = 0,
+    kJPsi = 0,
     kD0ToPiK,
     kD0barToKPi
   };
@@ -2191,7 +2192,7 @@ void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper
     values = fgValues;
   }
 
-  if constexpr (partType == kJPsiToMuMu) {
+  if constexpr (partType == kJPsi) {
     values[kMass] = candidate.mass();
     values[kPt] = candidate.pt();
     values[kPhi] = candidate.phi();
@@ -2214,7 +2215,7 @@ void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper
 template <int partTypeCharmHad, typename DQ, typename HF, typename H>
 void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values)
 {
-  FillSingleDileptonCharmHadron<kJPsiToMuMu>(dilepton, hfHelper, values);
+  FillSingleDileptonCharmHadron<kJPsi>(dilepton, hfHelper, values);
   FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, values);
 }
 

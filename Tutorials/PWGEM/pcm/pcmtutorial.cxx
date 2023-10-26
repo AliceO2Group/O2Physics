@@ -43,9 +43,12 @@ struct PCMTutorial {
     "fRegistry",
     {
       {"hVertexZ", "z vtx; z vtx (cm);Number of Events", {HistType::kTH1F, {{100, -50.f, +50.f}}}},
-      {"hV0Pt", "p_{T} of V0;V0 p_{T} (GeV?c)", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
-      {"hV0EtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{90, 0.f, TMath::TwoPi()}, {20, -1.f, +1.f}}}},
-      {"hMgg", "2-photon invariant mass", {HistType::kTH1F, {{200, 0.f, 0.8f}}}},
+      {"hV0Pt", "p_{T} of V0;V0 p_{T} (GeV/c)", {HistType::kTH1F, {{1000, 0.f, 10.f}}}},
+      {"hV0MK0S", "mass K0S;m_{#pi^{+}#pi^{-}} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.4f, 0.6f}}}},
+      {"hV0MGamma", "mass #gamma;m_{ee} (GeV/c^{2})", {HistType::kTH1F, {{100, 0.f, 0.1f}}}},
+      {"hV0EtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.f, TMath::TwoPi()}, {200, -1.f, +1.f}}}},
+      {"hV0AP", "Armenteros Podolanski;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{200, -1, +1}, {250, 0.0, 0.25f}}}},
+      {"hMgg", "2-photon invariant mass;m_{#gamma#gamma} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.f, 0.8f}}}},
     },
   };
 
@@ -116,12 +119,16 @@ struct PCMTutorial {
 
       auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       for (auto& v0 : v0s_per_coll) {
+        fRegistry.fill(HIST("hV0AP"), v0.alpha(), v0.qtarm());
+
         if (!checkV0<MyTracks>(v0)) {
           continue;
         }
 
         fRegistry.fill(HIST("hV0Pt"), v0.pt());
         fRegistry.fill(HIST("hV0EtaPhi"), v0.phi(), v0.eta());
+        fRegistry.fill(HIST("hV0MK0S"), v0.mK0Short());
+        fRegistry.fill(HIST("hV0MGamma"), v0.mGamma());
 
       } // end of v0 loop
 

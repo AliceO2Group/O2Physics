@@ -1,9 +1,9 @@
 {
     "em-lmee-lf-cocktail": {
-        "cfgResFileName": "PATH/Cocktail/files/resolution/Resolution_PbPb5TeV.root",
-        "cfgEffFileName": "PATH/Cocktail/files/resolution/EffMult.root",
-        "cfgMultFileName": "PATH/Cocktail/files/resolution/EffMult.root",
-        "cfgDCAFileName": "PATH/Cocktail/files/resolution/DCA.root",
+        "cfgResFileName": "alien:///alice/cern.ch/user/d/dsamitz/cocktail_tutorial/Resolution_PbPb5TeV.root",
+        "cfgEffFileName": "alien:///alice/cern.ch/user/d/dsamitz/cocktail_tutorial/EffMult.root",
+        "cfgMultFileName": "alien:///alice/cern.ch/user/d/dsamitz/cocktail_tutorial/EffMult.root",
+        "cfgDCAFileName": "alien:///alice/cern.ch/user/d/dsamitz/cocktail_tutorial/DCA.root",
         "cfgWriteTTree": "false",
         "cfgDoPairing": "false",
         "cfgMaxEta": "0.8",
