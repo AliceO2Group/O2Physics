@@ -1158,8 +1158,6 @@ struct cascadeBuilder {
     KFParticle kfpV0Upd = kfpV0;
     kfpBachPionUpd.SetProductionVertex(KFXi);
     kfpV0Upd.SetProductionVertex(KFXi);
-    LOG(info) << "Distance kfpBachPionUpd to kfpV0Upd = " << kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
-    LOG(info) << "Distance kfpV0Upd to kfpBachPionUpd = " << kfpV0Upd.GetDistanceFromParticle(kfpBachPionUpd);
     cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
     if (cascadecandidate.dcacascdau > dcacascdau)
         return false;

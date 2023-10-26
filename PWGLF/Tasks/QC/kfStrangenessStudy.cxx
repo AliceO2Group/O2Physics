@@ -130,10 +130,12 @@ struct kfStrangenessStudy {
   void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const& cascdatas, TKFCascDatas const& kfcascdatas)
   {
     if (cascade.has_cascData()) {
+      LOG(info) << "Cascade has CascData!";
       // check aod::Cascades -> aod::CascData link
       // if present: this candidate was accepted by default DCAfitter building
       isDCAfitter = 1;
       auto cascdata = cascade.template cascData_as<TCascDatas>();
+      LOG(info) << "cascdatas->size() = " << cascdatas.size();
       pt = cascdata.pt();
       massLambda = cascdata.mLambda();
       massXi = cascdata.mXi();
@@ -155,7 +157,7 @@ struct kfStrangenessStudy {
       vtxZErr = sqrt(cascdata.positionCovMat()[5]);
       V0Rad = cascdata.v0radius();
       v0PointingAngle = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-      LOG(debug) << "All casc data collected!";
+      LOG(info) << "All casc data collected!";
 
       // fill QA histos
       histos.fill(HIST("hVertexX"), vtxX);  
@@ -167,37 +169,39 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
       histos.fill(HIST("hV0PointingAngle"), v0PointingAngle);
       histos.fill(HIST("hCosV0PointingAngle"), cos(v0PointingAngle));
-      LOG(debug) << "QA casc data histos filled!";
+      LOG(info) << "QA casc data histos filled!";
     }
 
     if (cascade.has_kfCascData()) {
-      LOG(debug) << "Cascade has KFcascData!";
+      LOG(info) << "Cascade has KFcascData!";
       // check aod::Cascades -> aod::KFCascData link
       // if present: this candidate was accepted by KF building
       isKF = 1;
-      auto cascdata = cascade.template kfCascData_as<TKFCascDatas>();
-      ptKF = cascdata.pt();
-      massLambdaKF = cascdata.mLambda();
-      massXiKF = cascdata.mXi();
-      massOmegaKF = cascdata.mOmega();
-      dcaXYCascToPVKF = cascdata.dcaXYCascToPV();
-      dcaZCascToPVKF = cascdata.dcaZCascToPV();
-      dcaCascDaughtersKF = cascdata.dcacascdaughters();
-      dcaV0DaughtersKF = cascdata.dcaV0daughters();
-      dcaPosToPVKF = cascdata.dcapostopv();
-      dcaNegToPVKF = cascdata.dcanegtopv();
-      dcaBachToPVKF = cascdata.dcabachtopv();
-      cascPointingAngleKF = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-      cascRadKF = cascdata.cascradius();
-      vtxXKF = cascdata.x();
-      vtxYKF = cascdata.y();
-      vtxZKF = cascdata.z();
-      vtxXErrKF = sqrt(cascdata.kfTrackCovMat()[0]);
-      vtxYErrKF = sqrt(cascdata.kfTrackCovMat()[2]);
-      vtxZErrKF = sqrt(cascdata.kfTrackCovMat()[5]);
-      V0RadKF = cascdata.v0radius();
-      cascChi2geoKF = cascdata.kfCascadeChi2();
-      v0PointingAngleKF = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      auto cascdatakf = cascade.template kfCascData_as<TKFCascDatas>();
+      LOG(info) << "kfcascdatas->size() = " << kfcascdatas.size();
+      ptKF = cascdatakf.pt();
+      massLambdaKF = cascdatakf.mLambda();
+      massXiKF = cascdatakf.mXi();
+      massOmegaKF = cascdatakf.mOmega();
+      dcaXYCascToPVKF = cascdatakf.dcaXYCascToPV();
+      dcaZCascToPVKF = cascdatakf.dcaZCascToPV();
+      dcaCascDaughtersKF = cascdatakf.dcacascdaughters();
+      dcaV0DaughtersKF = cascdatakf.dcaV0daughters();
+      dcaPosToPVKF = cascdatakf.dcapostopv();
+      dcaNegToPVKF = cascdatakf.dcanegtopv();
+      dcaBachToPVKF = cascdatakf.dcabachtopv();
+      cascPointingAngleKF = TMath::ACos(cascdatakf.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      cascRadKF = cascdatakf.cascradius();
+      vtxXKF = cascdatakf.x();
+      vtxYKF = cascdatakf.y();
+      vtxZKF = cascdatakf.z();
+      vtxXErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
+      vtxYErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
+      vtxZErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+      V0RadKF = cascdatakf.v0radius();
+      cascChi2geoKF = cascdatakf.kfCascadeChi2();
+      v0PointingAngleKF = TMath::ACos(cascdatakf.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      LOG(info) << "All casc data collected!";
 
       // fill QA histos
       histos.fill(HIST("hKFVertexX"), vtxXKF);
@@ -209,6 +213,7 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
       histos.fill(HIST("hKFV0PointingAngle"), v0PointingAngleKF);
       histos.fill(HIST("hKFCosV0PointingAngle"), cos(v0PointingAngleKF));
+      LOG(info) << "QA casc data histos filled!";
     }
   }
 
@@ -245,6 +250,7 @@ struct kfStrangenessStudy {
         }
         // fill cascade table
         fillCascMCTable(collision);
+        LOG(info) << "MC Casc table filled!";
 
         // fill QA histos --> vertex position from daughters!
         histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxXgen_firstDau);
@@ -321,7 +327,7 @@ struct kfStrangenessStudy {
     if (!(abs(collision.posZ()) < 10.)) return;
     histos.fill(HIST("hEventSelectionFlow"), 2.f);
    
-   for (auto& cascade : Cascades) { // allows for cross-referencing everything
+    for (auto& cascade : Cascades) { // allows for cross-referencing everything
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
@@ -361,21 +367,23 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hChargeCounter"), charge);
 
       // get cascade data
+      LOG(info) << "CascDatas size: " << CascDatas.size();
+      LOG(info) << "KFCascDatas size: " << KFCascDatas.size();
       getCascDatas(collision, cascade, CascDatas, KFCascDatas);
 
       // ========== get cascade MC information ===========
       if (cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(debug) << "Both fitters were successful!";
+        LOG(info) << "Both fitters were successful!";
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, particlesMC);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
-        LOG(debug) << "Only KF was successful!";
+        LOG(info) << "Only KF was successful!";
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
         getCascMCdata(collision, cascdata, particlesMC);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(debug) << "Only DCA fitter was successful!";
+        LOG(info) << "Only DCA fitter was successful!";
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, particlesMC);
       }
