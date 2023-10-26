@@ -26,6 +26,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 
 /// Struct for applying D0 selection cuts
@@ -59,6 +60,7 @@ struct HfCandidateSelectorD0 {
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<bool> enableDebugMl{"enableDebugMl", false, "Flag to enable histograms to monitor BDT application"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
@@ -88,7 +90,7 @@ struct HfCandidateSelectorD0 {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
 
-    if (applyMl) {
+    if (applyMl && enableDebugMl) {
       registry.add("DebugBdt/hBdtScore1VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
       registry.add("DebugBdt/hBdtScore2VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
       registry.add("DebugBdt/hBdtScore3VsStatus", ";BDT score;status", {HistType::kTH2F, {axisBdtScore, axisSelStatus}});
@@ -146,7 +148,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // normalised decay length in XY plane
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normalized decay length XY")) {
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "min norm decay length XY")) {
       return false;
     }
     // candidate DCA
@@ -156,25 +158,19 @@ struct HfCandidateSelectorD0 {
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
     //   if (candidate.kfTopolChi2OverNdf() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
     // }
+    if (std::abs(candidate.impactParameterNormalised0()) < cuts->get(pTBin, "norm dauImpPar XY") || std::abs(candidate.impactParameterNormalised1()) < cuts->get(pTBin, "norm dauImpPar XY")) {
+      return false;
+    }
+    if (candidate.decayLength() < cuts->get(pTBin, "min decay length")) {
+      return false;
+    }
+    if (candidate.decayLength() > cuts->get(pTBin, "max decay length")) {
+      return false;
+    }
+    if (candidate.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
+      return false;
+    }
 
-    // decay exponentail law, with tau = beta*gamma*ctau
-    // decay length > ctau retains (1-1/e)
-    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
-      return false;
-    }
-    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, cuts->get(pTBin, "minimum decay length"));
-    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
-      return false;
-    }
-    if (candidate.decayLength() > cuts->get(pTBin, "decay length")) {
-      return false;
-    }
-    if (candidate.decayLengthXY() > cuts->get(pTBin, "decay length XY")) {
-      return false;
-    }
-    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
-      // return false; // add back when getter fixed
-    }
     return true;
   }
 
@@ -377,14 +373,19 @@ struct HfCandidateSelectorD0 {
           statusD0 = 0;
           statusD0bar = 0;
         }
-        registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0);
-        registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0bar);
-        registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0);
-        registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
-        registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
-        registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
-        if (statusD0 != 0 || statusD0bar != 0) {
-          registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
+        if (enableDebugMl) {
+          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0bar);
+          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
+          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
+          if (statusD0 > 0) {
+            registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
+          }
+          if (statusD0bar > 0) {
+            registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0barToKPi(candidate));
+          }
         }
       }
       hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);

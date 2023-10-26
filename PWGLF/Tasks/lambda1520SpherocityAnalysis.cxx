@@ -140,6 +140,8 @@ struct lambdaAnalysis {
 
     // MC
     if (doprocessMC) {
+      histos.add("Event/hSphRec", "Reconstructed S_{0}", kTH1F, {axisSp});
+      histos.add("Event/hSpCentRec", "Reconstructed S_{0} vs FT0M(%)", kTH2F, {axisCent, axisSp});
       histos.add("QAMCTrue/DcaZ_pr", "dca_{z}^{MC} Protons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaZ_ka", "dca_{z}^{MC} Kaons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaXY_pr", "dca_{xy}^{MC} Protons", kTH2F, {axisPtQA, axisDCAxy});
@@ -226,7 +228,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkPr.hasTOF()) {
           trk1HasTOF = true;
           for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
             if (trkPr.pt() < prTofPIDpt[i]) {
@@ -253,7 +255,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkKa.hasTOF()) {
           trk2HasTOF = true;
           for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
             if (trkKa.pt() < kaTofPIDpt[i]) {
@@ -359,10 +361,10 @@ struct lambdaAnalysis {
           continue;
 
         // Track selection check.
-        histos.fill(HIST("QAMCTrue/DcaXY_pr"), trkPr.dcaXY());
-        histos.fill(HIST("QAMCTrue/DcaXY_ka"), trkKa.dcaXY());
-        histos.fill(HIST("QAMCTrue/DcaZ_pr"), trkPr.dcaZ());
-        histos.fill(HIST("QAMCTrue/DcaZ_ka"), trkKa.dcaZ());
+        histos.fill(HIST("QAMCTrue/DcaXY_pr"), trkPr.pt(), trkPr.dcaXY());
+        histos.fill(HIST("QAMCTrue/DcaXY_ka"), trkKa.pt(), trkKa.dcaXY());
+        histos.fill(HIST("QAMCTrue/DcaZ_pr"), trkPr.pt(), trkPr.dcaZ());
+        histos.fill(HIST("QAMCTrue/DcaZ_ka"), trkKa.pt(), trkKa.dcaZ());
 
         // MC histograms
         if (trkPr.motherPDG() > 0) {
@@ -372,7 +374,7 @@ struct lambdaAnalysis {
         } else {
           histos.fill(HIST("Analysis/hLambdaRecAnti"), p.Pt());
           histos.fill(HIST("Analysis/hInvMassLambdaRecAnti"), p.M());
-          histos.fill(HIST("Analysis/h4InvMassLambdaAnti"), p.M(), p.Pt(), sph, mult);
+          histos.fill(HIST("Analysis/h4InvMassLambdaRecAnti"), p.M(), p.Pt(), sph, mult);
         }
       }
 
@@ -403,6 +405,9 @@ struct lambdaAnalysis {
   void processMC(resoCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::McParticles const& mcParticles)
   {
+
+    histos.fill(HIST("Event/hSphRec"), collision.spherocity());
+    histos.fill(HIST("Event/hSpCentRec"), collision.multV0M(), collision.spherocity());
     fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
   PROCESS_SWITCH(lambdaAnalysis, processMC, "Process Event for MC", false);

@@ -583,6 +583,7 @@ DECLARE_SOA_COLUMN(DecVtxZ, decVtxZ, float);           //!
 DECLARE_SOA_COLUMN(BdtBkg, bdtBkg, float);             //!
 DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);       //!
 DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float); //!
+DECLARE_SOA_COLUMN(NumColls, numColls, uint64_t);      //!
 } // namespace jpsidmescorr
 
 DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
@@ -597,6 +598,9 @@ DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
                   reducedpair::Tauz,
                   reducedpair::Lz,
                   reducedpair::Lxy);
+
+DECLARE_SOA_TABLE(RedJpDmColCounts, "AOD", "REDJPDMCOLCOUNT", //!
+                  jpsidmescorr::NumColls);
 
 DECLARE_SOA_TABLE(RedJpDmDmesons, "AOD", "REDJPDMDMESON", //!
                   o2::soa::Index<>,

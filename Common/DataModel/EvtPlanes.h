@@ -43,12 +43,15 @@ DECLARE_SOA_COLUMN(EvtPlBNegRectr, evtPlBNegRectr, float);
 DECLARE_SOA_COLUMN(EvtPlBNegTwist, evtPlBNegTwist, float);
 DECLARE_SOA_COLUMN(EvtPlBNegFinal, evtPlBNegFinal, float);
 
+DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);
+DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);
 } // namespace ep
 DECLARE_SOA_TABLE(EvtPlanes, "AOD", "EVTPLANES", //! Table with all event planes.
                   ep::Cent,
                   ep::EvtPlUncor, ep::EvtPlRectr, ep::EvtPlTwist, ep::EvtPlFinal,
                   ep::EvtPlBPosUncor, ep::EvtPlBPosRectr, ep::EvtPlBPosTwist, ep::EvtPlBPosFinal,
-                  ep::EvtPlBNegUncor, ep::EvtPlBNegRectr, ep::EvtPlBNegTwist, ep::EvtPlBNegFinal);
+                  ep::EvtPlBNegUncor, ep::EvtPlBNegRectr, ep::EvtPlBNegTwist, ep::EvtPlBNegFinal,
+                  ep::NTrkBPos, ep::NTrkBNeg);
 using EvtPlane = EvtPlanes::iterator;
 } // namespace o2::aod
 

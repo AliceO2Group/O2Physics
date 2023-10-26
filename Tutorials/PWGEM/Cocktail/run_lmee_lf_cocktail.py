@@ -120,7 +120,6 @@ def run_only_simulation(args):
 
 
 def run_only_analysis_task(args):
-    sim_log_name = "readerlog"
     ana_log_name = "analog"
     name="kineReader"
 
@@ -132,52 +131,28 @@ def run_only_analysis_task(args):
 
     kin_file = abspath(args.input)
     json_file = abspath(args.ana_config_file)
-    sim_log_file = join(output_dir,sim_log_name)
     ana_log_file = join(output_dir,ana_log_name)
 
     if not exists(output_dir):
         os.makedirs(output_dir)
     os.chdir(output_dir)
 
-    f = root.TFile(kin_file)
-    tree = f.Get("o2sim")
-    nEvents = tree.GetEntries()
-    print(f"Found {nEvents} events in {kin_file}")
+    publisher_command_to_run = ['o2-sim-kine-publisher','--kineFileName',kin_file,'--aggregate-timeframe','1','-b']
+    ana_command_to_run = ['o2-analysis-em-lmee-lf-cocktail','--configuration','json://'+json_file,'-b']
 
-    sim_command_to_run = ['o2-sim','-g','extkinO2','-n',str(nEvents),'-o',output_name,'--extKinFile',kin_file,'--noGeant','--forwardKine','--noDiscOutput']
-    print("running reader with: ",end='')
-    print(*sim_command_to_run)
-    print("redirect reader output to "+sim_log_file)
-
-    fs = open(sim_log_file, "w")
-    simproc = subprocess.Popen(sim_command_to_run, stdout=fs, stderr=subprocess.STDOUT)
-
-    proxy_command_to_run = ['o2-sim-mctracks-proxy','--nevents',str(nEvents),'--o2sim-pid',str(simproc.pid)]
-    ana_command_to_run = ['o2-analysis-em-lmee-lf-cocktail', '--configuration','json://'+json_file,'-b']
     print("running analysis with: ",end='')
-    print(*proxy_command_to_run,end='')
+    print(*publisher_command_to_run,end='')
     print(" | ",end='')
     print(*ana_command_to_run)
     print("redirect analysis output to "+ana_log_file)
 
-    fa = open(ana_log_file,"w")
-    proxyproc = subprocess.Popen(proxy_command_to_run, stdout=subprocess.PIPE)
-    anaproc = subprocess.Popen(ana_command_to_run, stdin=proxyproc.stdout, stdout=fa, stderr=subprocess.STDOUT)
+    command=' '.join(publisher_command_to_run) + ' | ' + ' '.join(ana_command_to_run)
 
     print("\nrunning...\n")
-    simproc.communicate()
-    if not simproc.returncode==0:
-        print("ERROR: Reader finished with error. See "+abspath(join(args.output,name+"_serverlog"))+" and "+sim_log_file+" for details\n")
-        proxyproc.kill();
-        anaproc.kill();
-    proxyproc.communicate()
-    anaproc.communicate()
-    fs.close()
-    fa.close()
+    returncode = os.system(command+' > '+ana_log_file)
     print("...done\n")
 
-
-    if not anaproc.returncode==0:
+    if not returncode==0:
         print("ERROR: Analysis task finished with error. See "+abspath(join(args.output,"analog"))+" for details\n")
     else:
         print("Analysis task finished successful. Histograms in "+output_dir+"/AnalysisResults.root\n")
@@ -186,10 +161,10 @@ def run_only_analysis_task(args):
 
     clean(args.output,name,False)
 
-    if (not simproc.returncode) and (not anaproc.returncode):
-        return 0
-    else:
+    if not returncode==0:
         return 1
+    else:
+        return 0
 
 def run_full(args):
     sim_log_name = "simlog"
@@ -221,7 +196,7 @@ def run_full(args):
     fs = open(sim_log_file, "w")
     simproc = subprocess.Popen(sim_command_to_run, stdout=fs, stderr=subprocess.STDOUT)
 
-    proxy_command_to_run = ['o2-sim-mctracks-proxy','--nevents',args.nEvents,'--o2sim-pid',str(simproc.pid)]
+    proxy_command_to_run = ['o2-sim-mctracks-proxy','--nevents',args.nEvents,'--o2sim-pid',str(simproc.pid),'--aggregate-timeframe','1','-b']
     ana_command_to_run = ['o2-analysis-em-lmee-lf-cocktail','--configuration','json://'+json_file,'-b']
     print("running analysis with: ",end='')
     print(*proxy_command_to_run,end='')

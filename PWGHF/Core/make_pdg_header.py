@@ -105,6 +105,7 @@ class Pdg(Enum):
     kSigmaC0 = 4112
     kSigmaCPlusPlus = 4222
     kX3872 = 9920443
+    kXiB0 = 5232
     kXiCCPlusPlus = 4422
     kXiCPlus = 4232
     kXiCZero = 4132

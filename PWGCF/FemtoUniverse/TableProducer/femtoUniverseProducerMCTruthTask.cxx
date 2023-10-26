@@ -176,8 +176,7 @@ struct femtoUniverseProducerMCTruthTask {
     for (auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
-      if (!particle.isPhysicalPrimary())
-        continue;
+
       if (particle.eta() < -ConfFilteringTracks.ConfEtaFilterCut || particle.eta() > ConfFilteringTracks.ConfEtaFilterCut)
         continue;
       if (particle.pt() < ConfFilteringTracks.ConfPtLowFilterCut || particle.pt() > ConfFilteringTracks.ConfPtHighFilterCut)
@@ -190,7 +189,12 @@ struct femtoUniverseProducerMCTruthTask {
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            pass = true;
+            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+              pass = true;
+            } else {
+              if (particle.isPhysicalPrimary())
+                pass = true;
+            }
           }
         }
         if (!pass)

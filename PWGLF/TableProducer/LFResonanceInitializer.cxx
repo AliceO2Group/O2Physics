@@ -418,26 +418,6 @@ struct reso2initializer {
     for (auto& track : tracks) {
       if (!IsTrackSelected<isMC>(collision, track))
         continue;
-      // Add PID selection criteria here
-      uint8_t tpcPIDselections = 0;
-      uint8_t tofPIDselections = 0;
-      // TPC PID
-      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kPion;
-      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kKaon;
-      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kProton;
-      // TOF PID
-      if (track.hasTOF()) {
-        tofPIDselections |= aod::resodaughter::PDGtype::kHasTOF;
-        if (std::abs(track.tofNSigmaPi()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kPion;
-        if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kKaon;
-        if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kProton;
-      }
       reso2trks(resoCollisions.lastIndex(),
                 track.pt(),
                 track.px(),
@@ -451,8 +431,7 @@ struct reso2initializer {
                 track.dcaZ(),
                 track.x(),
                 track.alpha(),
-                tpcPIDselections,
-                tofPIDselections,
+                track.hasTOF(),
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),
                 track.tpcNSigmaPr(),
