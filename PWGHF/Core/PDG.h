@@ -43,6 +43,7 @@ enum Code {
   kSigmaC0 = 4112,
   kSigmaCPlusPlus = 4222,
   kX3872 = 9920443,
+  kXi0 = 3322,
   kXiB0 = 5232,
   kXiCCPlusPlus = 4422,
   kXiCPlus = 4232,
@@ -71,6 +72,7 @@ constexpr double MassPhi = 1.019455;
 constexpr double MassSigmaC0 = 2.45376;
 constexpr double MassSigmaCPlusPlus = 2.45402;
 constexpr double MassX3872 = 3.87165;
+constexpr double MassXi0 = 1.31486;
 constexpr double MassXiB0 = 5.7924;
 constexpr double MassXiCCPlusPlus = 3.62155;
 constexpr double MassXiCPlus = 2.4679;
