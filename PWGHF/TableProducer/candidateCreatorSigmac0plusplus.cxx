@@ -272,7 +272,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       auto candidatesThisColl = candidates.sliceBy(hf3ProngPerCollision, thisCollId);
       makeSoftPiLcPair(trackSoftPi, candidatesThisColl, tracks);
     } else {
-      /// tracks already grouped by collision at the level of process function
+      /// tracks and candidates already grouped by collision at the level of process function
       makeSoftPiLcPair(trackSoftPi, candidates, tracks);
     }
 
