@@ -206,8 +206,8 @@ struct mftmchMatchingML {
     for (auto& [fwdtrack, mfttrack] : combinations(CombinationsFullIndexPolicy(fwdtracks, mfttracks))) {
 
       if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-        if (fwdtrack.has_collision() && mfttrack.has_collision()){
-          if (0 <= fwdtrack.collisionId() - mfttrack.collisionId() && fwdtrack.collisionId() - mfttrack.collisionId() < cfgColWindow){
+        if (fwdtrack.has_collision() && mfttrack.has_collision()) {
+          if (0 <= fwdtrack.collisionId() - mfttrack.collisionId() && fwdtrack.collisionId() - mfttrack.collisionId() < cfgColWindow) {
             double result = matchONNX(fwdtrack, mfttrack);
             if (result > cfgThrScore) {
               double mftchi2 = mfttrack.chi2();
