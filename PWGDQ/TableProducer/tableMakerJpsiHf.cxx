@@ -66,6 +66,7 @@ struct tableMakerJpsiHf {
   Configurable<LabeledArray<float>> bdtCutsForHistos{"bdtCutsForHistos", {cutsBdt[0], 1, 3, labelsEmpty, labelsBdt}, "Additional bdt cut values only for histograms"};
   Configurable<double> yCandDmesonMax{"yCandDmesonMax", -1., "max. cand. rapidity"};
   // DQ configurables
+  Configurable<std::string> dileptonDecayChannel{"dileptonDecayChannel", "JPsiToMuMu", "Dilepton decay channel (JPsiToMuMu/JPsiToEE)"};
   Configurable<double> massDileptonCandMin{"massDileptonCandMin", 1, "minimum dilepton mass"};
   Configurable<double> massDileptonCandMax{"massDileptonCandMax", 5, "maximum dilepton mass"};
   // General configurables
@@ -96,8 +97,14 @@ struct tableMakerJpsiHf {
     fHistMan->AddHistClass("JPsi");
     fHistMan->AddHistClass("JPsiDmeson");
     dqhistograms::DefineHistograms(fHistMan, "Dmeson", "dilepton-charmhadron", "dmeson");
-    dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsi");
-    dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsidmeson");
+    if (dileptonDecayChannel.value == "JPsiToMuMu") {
+      dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsitomumu");
+      dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsitomumudmeson");
+    }
+    if (dileptonDecayChannel.value == "JPsiToEE") {
+      dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsitoee");
+      dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsitoeedmeson");
+    }
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
