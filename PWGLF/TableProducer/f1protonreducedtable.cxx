@@ -47,7 +47,7 @@ using namespace o2::framework::expressions;
 struct f1protonreducedtable {
 
   // Produce derived tables
-  Produces<aod::ReducedF1ProtonEvents> reducedf1protonevents;
+  Produces<aod::RedF1PEvents> redf1pevents;
   Produces<aod::F1Tracks> f1track;
   Produces<aod::ProtonTracks> protontrack;
 
@@ -739,8 +739,8 @@ struct f1protonreducedtable {
         qaRegistry.fill(HIST("hEventstat"), 2.5);
         auto eventspherocity = ComputeSpherocity(tracks, trackSphMin, trackSphDef);
         /////////// Fill collision table///////////////
-        reducedf1protonevents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), eventspherocity);
-        auto indexEvent = reducedf1protonevents.lastIndex();
+        redf1pevents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), eventspherocity);
+        auto indexEvent = redf1pevents.lastIndex();
         //// Fill track table for F1//////////////////
         for (auto if1 = f1resonance.begin(); if1 != f1resonance.end(); ++if1) {
           auto i5 = std::distance(f1resonance.begin(), if1);
