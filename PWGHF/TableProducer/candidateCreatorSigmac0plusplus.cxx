@@ -292,9 +292,9 @@ struct HfCandidateCreatorSigmac0plusplus {
     for (const auto& collision : collisions) {
 
       histos.fill(HIST("hCounter"), 1);
-      LOG(info) << "[processDataTimeAssoc] Collision with globalIndex " << collision.globalIndex();
-      LOG(info) << "[processDataTimeAssoc]     - number of tracks: " << tracks.size();
-      LOG(info) << "[processDataTimeAssoc]     - number of Lc candidates: " << candidates.size();
+      // LOG(info) << "[processDataTimeAssoc] Collision with globalIndex " << collision.globalIndex();
+      // LOG(info) << "[processDataTimeAssoc]     - number of tracks: " << tracks.size();
+      // LOG(info) << "[processDataTimeAssoc]     - number of Lc candidates: " << candidates.size();
 
       // slice by hand the assoc. track with time per collision
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
@@ -324,9 +324,9 @@ struct HfCandidateCreatorSigmac0plusplus {
   {
 
     histos.fill(HIST("hCounter"), 1);
-    LOG(info) << "[processDataNoTimeAssoc] Collision with globalIndex " << collision.globalIndex();
-    LOG(info) << "[processDataNoTimeAssoc]     - number of tracks: " << tracks.size();
-    LOG(info) << "[processDataNoTimeAssoc]     - number of Lc candidates: " << candidates.size();
+    // LOG(info) << "[processDataNoTimeAssoc] Collision with globalIndex " << collision.globalIndex();
+    // LOG(info) << "[processDataNoTimeAssoc]     - number of tracks: " << tracks.size();
+    // LOG(info) << "[processDataNoTimeAssoc]     - number of Lc candidates: " << candidates.size();
 
     /// loop over tracks for soft pion
     /// In this case, they are already grouped by collision, using the track::CollisionId
