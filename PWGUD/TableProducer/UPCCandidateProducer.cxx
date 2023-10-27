@@ -973,6 +973,7 @@ struct UpcCandProducer {
 
     auto nFT0s = mapGlobalBcWithT0.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
+    auto nBcsWithMCH = bcsMatchedTrIdsMCH.size();
 
     // todo: calculate position of UD collision?
     float dummyX = 0.;
@@ -990,8 +991,8 @@ struct UpcCandProducer {
       if (nMIDs > fNFwdProngs) // too many tracks
         continue;
       uint64_t closestBcMCH = 0;
-      if (nMIDs < fNFwdProngs) { // adding MCH tracks
-        auto itClosestBcMCH = findClosestTrackBCiter(globalBC, bcsMatchedTrIdsMID);
+      if (nMIDs < fNFwdProngs && nBcsWithMCH > 0) { // adding MCH tracks
+        auto itClosestBcMCH = findClosestTrackBCiter(globalBC, bcsMatchedTrIdsMCH);
         closestBcMCH = itClosestBcMCH->first;
         int64_t distClosestBcMCH = globalBC - static_cast<int64_t>(closestBcMCH);
         if (std::abs(distClosestBcMCH) > 20)
