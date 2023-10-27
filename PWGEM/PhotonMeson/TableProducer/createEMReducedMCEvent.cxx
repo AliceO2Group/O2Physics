@@ -196,8 +196,8 @@ struct createEMReducedMCEvent {
           auto ele = v0.template negTrack_as<aod::V0Legs>();
           auto pos = v0.template posTrack_as<aod::V0Legs>();
 
-          //auto o2track_ele = ele.template track_as<TracksMC>();
-          //auto o2track_pos = pos.template track_as<TracksMC>();
+          // auto o2track_ele = ele.template track_as<TracksMC>();
+          // auto o2track_pos = pos.template track_as<TracksMC>();
 
           auto o2track_ele = o2tracks.iteratorAt(pos.trackId());
           auto o2track_pos = o2tracks.iteratorAt(ele.trackId());
@@ -207,7 +207,7 @@ struct createEMReducedMCEvent {
           }
 
           for (auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
-            //auto o2track = leg.template track_as<TracksMC>();
+            // auto o2track = leg.template track_as<TracksMC>();
             auto o2track = o2tracks.iteratorAt(leg.trackId());
             auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
 

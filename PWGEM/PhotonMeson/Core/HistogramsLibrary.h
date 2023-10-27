@@ -75,16 +75,16 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hAPplot"))->Fill(obj.alpha(), obj.qtarm());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma"))->Fill(obj.v0radius(), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma_recalc"))->Fill(obj.recalculatedVtxR(), obj.mGamma());
-//    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_Rxy"))->Fill(obj.recalculatedVtxR(), obj.mGammaKFSV());
+    //    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_Rxy"))->Fill(obj.recalculatedVtxR(), obj.mGammaKFSV());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy"))->Fill(obj.vx(), obj.vy());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy_recalc"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsR"))->Fill(obj.recalculatedVtxR(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsX"))->Fill(obj.recalculatedVtxX(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsY"))->Fill(obj.recalculatedVtxY(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsZ"))->Fill(obj.recalculatedVtxZ(), obj.chiSquareNDF());
-//    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_PV_SV"))->Fill(obj.mGammaKFPV(), obj.mGammaKFSV());
-    //reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PsiPair"))->Fill(abs(obj.psipair()), obj.mGammaKFSV());
-    //reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PhiV"))->Fill(obj.phiv(), obj.mGammaKFSV());
+    //    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_PV_SV"))->Fill(obj.mGammaKFPV(), obj.mGammaKFSV());
+    // reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PsiPair"))->Fill(abs(obj.psipair()), obj.mGammaKFSV());
+    // reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PhiV"))->Fill(obj.phiv(), obj.mGammaKFSV());
   } else if constexpr (htype == EMHistType::kV0Leg) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());

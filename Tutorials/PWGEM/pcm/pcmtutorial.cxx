@@ -48,7 +48,7 @@ struct PCMTutorial {
       {"V0/hMGamma", "mass #gamma;m_{ee} (GeV/c^{2})", {HistType::kTH1F, {{100, 0.f, 0.1f}}}},
       {"V0/hEtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.f, TMath::TwoPi()}, {200, -1.f, +1.f}}}},
       {"V0/hAP", "Armenteros Podolanski;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{200, -1, +1}, {250, 0.0, 0.25f}}}},
-      {"V0Leg/hdEdx_Pin", "dE/dx in TPC;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200,0,200}}}},
+      {"V0Leg/hdEdx_Pin", "dE/dx in TPC;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
       {"Diphoton/hMgg", "2-photon invariant mass;m_{#gamma#gamma} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.f, 0.8f}}}},
     },
   };
@@ -136,8 +136,8 @@ struct PCMTutorial {
         for (auto& leg : {pos, ele}) {
           fRegistry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
 
-        }// end of leg loop
-      } // end of v0 loop
+        } // end of leg loop
+      }   // end of v0 loop
 
       for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0s_per_coll, v0s_per_coll))) {
         if (!checkV0<MyTracks>(g1) || !checkV0<MyTracks>(g2)) {

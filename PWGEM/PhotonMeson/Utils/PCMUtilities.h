@@ -34,12 +34,12 @@ bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, co
 }
 //_______________________________________________________________________
 float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
- {
-   float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-   float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-   float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
- }
+{
+  float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+  float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+  return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
+}
 //_______________________________________________________________________
 float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
@@ -96,15 +96,13 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                     matCorr
-      );
+                     matCorr);
   prop->propagateToX(trackNegInformationCopy,
                      vertexNegRot.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                     matCorr
-      );
+                     matCorr);
 
   // TODO: This is still off and needs to be checked...
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
