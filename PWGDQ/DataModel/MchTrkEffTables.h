@@ -19,30 +19,28 @@
 
 #include "Framework/AnalysisDataModel.h"
 
-
 namespace o2::aod
 {
 
 namespace mch_trk_eff
 {
 // Define the selection columns
-DECLARE_SOA_COLUMN(Eta, eta, float);              //! reconstructed eta
-DECLARE_SOA_COLUMN(Pt, pt, float);                //! reconstructed pt
-DECLARE_SOA_COLUMN(Phi, phi, float);              //! reconstructed phi
-DECLARE_SOA_COLUMN(MchBitMap, mchBitMap, uint16_t);    //! mch bit map
-DECLARE_SOA_COLUMN(EtaGen, etaGen, float);        //! simulated eta
-DECLARE_SOA_COLUMN(PtGen, ptGen, float);          //! simulated pt
-DECLARE_SOA_COLUMN(PhiGen, phiGen, float);        //! simulated phi
-} // namespace muon_trk_eff
+DECLARE_SOA_COLUMN(Eta, eta, float);                //! reconstructed eta
+DECLARE_SOA_COLUMN(Pt, pt, float);                  //! reconstructed pt
+DECLARE_SOA_COLUMN(Phi, phi, float);                //! reconstructed phi
+DECLARE_SOA_COLUMN(MchBitMap, mchBitMap, uint16_t); //! mch bit map
+DECLARE_SOA_COLUMN(EtaGen, etaGen, float);          //! simulated eta
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);            //! simulated pt
+DECLARE_SOA_COLUMN(PhiGen, phiGen, float);          //! simulated phi
+} // namespace mch_trk_eff
 
 // Table
-DECLARE_SOA_TABLE(MchTrkEffBase, "AOD","MCHTRKEFFBASE",   //! table with muon track properties and mch bit map
+DECLARE_SOA_TABLE(MchTrkEffBase, "AOD", "MCHTRKEFFBASE", //! table with muon track properties and mch bit map
                   mch_trk_eff::Eta, mch_trk_eff::Pt, mch_trk_eff::Phi, mch_trk_eff::MchBitMap);
 
-DECLARE_SOA_TABLE(MchTrkEffGen,"AOD","MCHTRKEFFGEN",      //! table with simulated muon track properties
+DECLARE_SOA_TABLE(MchTrkEffGen, "AOD", "MCHTRKEFFGEN", //! table with simulated muon track properties
                   mch_trk_eff::EtaGen, mch_trk_eff::PtGen, mch_trk_eff::PhiGen);
 
 } // namespace o2::aod
-
 
 #endif // PWGDQ_DATAMODEL_MCHTRKEFFTABLES_H_
