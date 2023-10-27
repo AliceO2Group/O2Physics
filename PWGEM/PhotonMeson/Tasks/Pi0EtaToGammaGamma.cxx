@@ -377,6 +377,7 @@ struct Pi0EtaToGammaGamma {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }

@@ -75,10 +75,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
-    list->Add(new TH2F("hMassGammaKF_SV_Rxy", "recalc. hMassGamma KF SV;R_{xy} (cm);m_{ee} (GeV/c^{2})", 400, 0.0f, 200.0f, 300, 0.0f, 0.3f));
-    list->Add(new TH2F("hMassGammaKF_PV_SV", "hMassGamma;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", 300, 0.0f, 0.3f, 300, 0.0f, 0.3f));
-    list->Add(new TH2F("hMassGammaKF_SV_PsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} at SV (GeV/c^{2})", 150, 0, TMath::PiOver2(), 300, 0.0f, 0.3f));
-    list->Add(new TH2F("hMassGammaKF_SV_PhiV", "#varphi_{V} for photon conversion;#varphi_{V} (rad.);m_{ee} at SV (GeV/c^{2})", 100, 0, TMath::Pi(), 300, 0.0f, 0.3f));
+    list->Add(new TH2F("hMassGammaKF_SV_Rxy", "recalc. hMassGamma KF SV;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_PV_SV", "hMassGamma;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", 100, 0.0f, 0.1f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} at SV (GeV/c^{2})", 150, 0, TMath::PiOver2(), 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PhiV", "#varphi_{V} for photon conversion;#varphi_{V} (rad.);m_{ee} at SV (GeV/c^{2})", 100, 0, TMath::Pi(), 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 200, 0.0f, 200.0f, 100, 0.f, 100.0f));
