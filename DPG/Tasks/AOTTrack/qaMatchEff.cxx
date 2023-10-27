@@ -262,26 +262,6 @@ struct qaMatchEff {
     histos.add("data/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("data/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("data/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    //
-    histos.add("data/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    //
-    histos.add("data/PID/zDCA_tpc_ka", "DCA along z - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpc_ka", "DCA in x-y plane - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/zDCA_tpcits_ka", "DCA along z - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpcits_ka", "DCA in x-y plane - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    //
-    histos.add("data/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    //
-    histos.add("data/PID/zDCA_tpc_noid", "DCA along z - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpc_noid", "DCA in x-y plane - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/zDCA_tpcits_noid", "DCA along z - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/PID/xyDCA_tpcits_noid", "DCA in x-y plane - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     /// compare pt's (tracking and innerParamTPC)
     if (makept2d) {
@@ -318,6 +298,11 @@ struct qaMatchEff {
     //
     // if you want just pions
     if (isPIDPionRequired) {
+      histos.add("data/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
       histos.add("data/PID/pthist_tpc_pi", "#it{p}_{T} distribution - data TPC tag - pions", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpc_pi", "#eta distribution - data TPC tag - pions", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpc_pi", "#phi distribution - data TPC tag - pions", kTH1D, {axisPhi}, true);
@@ -388,6 +373,11 @@ struct qaMatchEff {
     //
     // if you want just kaons
     if (isPIDKaonRequired) {
+      histos.add("data/PID/zDCA_tpc_ka", "DCA along z - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpc_ka", "DCA in x-y plane - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/zDCA_tpcits_ka", "DCA along z - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpcits_ka", "DCA in x-y plane - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
       histos.add("data/PID/pthist_tpc_ka", "#it{p}_{T} distribution - data TPC tag - kaons", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpc_ka", "#eta distribution - data TPC tag - kaons", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpc_ka", "#phi distribution - data TPC tag - kaons", kTH1D, {axisPhi}, true);
@@ -458,6 +448,12 @@ struct qaMatchEff {
     //
     // if you want just protons
     if (isPIDProtonRequired) {
+      //
+      histos.add("data/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
       histos.add("data/PID/pthist_tpc_pr", "#it{p}_{T} distribution - data TPC tag - protons", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpc_pr", "#eta distribution - data TPC tag - protons", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpc_pr", "#phi distribution - data TPC tag - protons", kTH1D, {axisPhi}, true);
@@ -551,6 +547,11 @@ struct qaMatchEff {
       histos.add("data/PID/pthist_tpcits_noidminus", "#it{p}_{T} distribution - data TPC+ITS tag - neg. no ident.", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpcits_noidminus", "#eta distribution - data TPC+ITS tag - neg. no ident.", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpcits_noidminus", "#phi distribution - data TPC+ITS tag - neg. no ident. ", kTH1D, {axisPhi}, true);
+      //
+      histos.add("data/PID/zDCA_tpc_noid", "DCA along z - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpc_noid", "DCA in x-y plane - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/zDCA_tpcits_noid", "DCA along z - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      histos.add("data/PID/xyDCA_tpcits_noid", "DCA in x-y plane - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     }
     //
 
@@ -1567,7 +1568,7 @@ struct qaMatchEff {
             }
             //
             // not identified
-            if (!isPion && !isKaon && !isProton) {
+            if (!isPion && !isKaon && !isProton && (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired)) {
               histos.get<TH1>(HIST("data/PID/zDCA_tpcits_noid"))->Fill(track.dcaZ());
               histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_noid"))->Fill(track.dcaXY());
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_noid"))->Fill(trackPt);
