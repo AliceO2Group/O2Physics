@@ -1011,8 +1011,8 @@ struct UpcCandProducer {
         continue;
       auto ft0Id = mapGlobalBcWithT0.at(closestBcT0) - 1;
       auto fv0aId = mapGlobalBcWithV0A.at(closestBcV0A) - 1;
-      const auto& ft0 = ft0s.iteratorAt(ft0Id);
-      const auto& fv0a = fv0as.iteratorAt(fv0aId);
+      auto ft0 = ft0s.iteratorAt(ft0Id);
+      auto fv0a = fv0as.iteratorAt(fv0aId);
       const auto& t0AmpsA = ft0.amplitudeA();
       const auto& t0AmpsC = ft0.amplitudeC();
       const auto& v0Amps = fv0a.amplitude();
