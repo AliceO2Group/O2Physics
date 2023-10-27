@@ -17,10 +17,10 @@ ConfigFile="${2:-config.json}"
 Options=("-b" "--configuration" "json://${ConfigFile}")
 
 # command to be executed
-Command="o2-analysistutorial-cf-femtodream-tutorial-${Task} ${Options[@]}"
+Command="o2-analysistutorial-cf-femtodream-tutorial-${Task} ${Options[*]}"
 
 # print comand before executing it
-echo $Command
-eval $Command
+echo "$Command"
+eval "$Command"
 
 exit 0
