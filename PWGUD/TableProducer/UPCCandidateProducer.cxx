@@ -1035,7 +1035,7 @@ struct UpcCandProducer {
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
       for (auto id : fwdTrackIDs) {
-        const auto& tr = fwdTracks.iteratorAt(id);
+        auto tr = fwdTracks.iteratorAt(id);
         netCharge += tr.sign();
       }
       // store used tracks
