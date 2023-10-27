@@ -257,6 +257,9 @@ struct EventSelectionQaTask {
     histos.add("hNcontribAccTRD", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribMisTOF", "", kTH1F, {axisNcontrib});
 
+    histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
+    histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
+
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcColMC", "", kTH1F, {axisBCs});
@@ -1035,7 +1038,10 @@ struct EventSelectionQaTask {
       if (!col.sel8()) {
         continue;
       }
-
+      histos.fill(HIST("hMultT0MVsNcontribAcc"), multT0A + multT0C, nContributors);
+      if (col.selection_bit(kNoITSROFrameBorder)) {
+        histos.fill(HIST("hMultT0MVsNcontribCut"), multT0A + multT0C, nContributors);
+      }
       histos.fill(HIST("hTimeV0Aacc"), timeV0A);
       histos.fill(HIST("hTimeZNAacc"), timeZNA);
       histos.fill(HIST("hTimeZNCacc"), timeZNC);
