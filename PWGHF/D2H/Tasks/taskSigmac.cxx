@@ -38,6 +38,25 @@ struct HfTaskSigmac {
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandMax{"yCandMax", -1, "Sc rapidity"};
 
+  /// THn for candidate Λc+ and Σc0,++ cut variation
+  Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {16, 0, 16}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, "decay length #Lambda_{c}^{+} (cm)"};
+  ConfigurableAxis thnConfigAxisDecLengthXY{"thnConfigAxisDecLengthXY", {10, 0, 0.05}, "decay length XY #Lambda_{c}^{+} (cm)"};
+  ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, "cosine of pointing angle #Lambda_{c}^{+}"};
+  ConfigurableAxis thnConfigAxisCPAXY{"thnConfigAxisCPAXY", {20, 0.8, 1}, "cosine of pointing angle XY #Lambda_{c}^{+}"};
+  AxisSpec thnAxisMassLambdaC{600, 1.98, 2.58, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+  AxisSpec thnAxisDeltaMassSigmaC{200, 0.13, 0.23, "#it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2})"};
+  AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+  AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+  AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
+  AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
+  AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
+  AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
+  AxisSpec thnAxisOriginMc{3, -0.5, 2.5, "0: none, 1: prompt, 2: non-prompt"};
+  AxisSpec thnAxisChargeSigmaC{3, -0.5, 2.5, "#Sigma_{c}-baryon charge"};
+  AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
+
   HfHelper hfHelper;
 
   /// analysis histograms
@@ -191,6 +210,13 @@ struct HfTaskSigmac {
       registry.add("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
       registry.add("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} reconstructed non-prompt signal; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c}); channel (0: direct  1,2,3: resonant);", {HistType::kTH3D, {{200, 0.13, 0.23}, {36, 0., 36.}, {4, -0.5, 3.5}}});
     }
+
+    /// THn for candidate Λc+ and Σc0,++ cut variation
+    if (enableTHn) {
+      registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel});
+      registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC});
+    }
+
   }; /// end init
 
   /// @brief Function to determine if the reconstructed candidate Σc0,++ decays into Λc+ → pK-π+, Λc+ → π+K-p or both
@@ -218,7 +244,7 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
   void process(aod::HfCandSc const& candidatesSc,
-               RecoLc const&,
+               RecoLc const& candidatesLc,
                aod::Tracks const&)
   {
 
@@ -238,6 +264,8 @@ struct HfTaskSigmac {
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
       double phiSc(candSc.phi()), phiLc(candidateLc.phi());
       double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+      double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
+      double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
         massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
@@ -290,6 +318,13 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hEtaLcFromSc0PlusPlus"), etaLc);
           registry.fill(HIST("Data/hPhiLcFromSc0PlusPlus"), phiLc);
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
+        }
+        /// THn for candidate Σc0,++ cut variation
+        if (enableTHn) {
+          if(!doprocessMc) {
+            /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+          }
         }
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
@@ -345,8 +380,37 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hPhiLcFromSc0PlusPlus"), phiLc);
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
         }
+        /// THn for candidate Σc0,++ cut variation
+        if (enableTHn) {
+          /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
+          if(!doprocessMc) {
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
+          }
+        }
       } /// end candidate Λc+ → π+K-p (and charge conjugate)
     }   /// end loop over the candidate Σc0,++
+
+    /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
+    if(enableTHn) {
+      /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
+      if(!doprocessMc) {
+        /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
+        for (const auto& candidateLc : candidatesLc) {
+          double massLc(-1.);
+          double ptLc(candidateLc.pt());
+          double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
+          double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
+          if(candidateLc.isSelLcToPKPi() >= 1) {
+            massLc = hfHelper.invMassLcToPKPi(candidateLc);
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
+          }
+          if (candidateLc.isSelLcToPiKP() >= 1) {
+            massLc = hfHelper.invMassLcToPiKP(candidateLc);
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
+          }
+        }
+      }
+    }   /// end THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
   };    /// end process
 
   /// @brief process function to fill the histograms needed in analysis (MC)
@@ -357,7 +421,7 @@ struct HfTaskSigmac {
                  aod::McParticles const& mcParticles,
                  soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
-                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&,
+                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidatesLc,
                  aod::TracksWMc const&)
   {
 
@@ -516,6 +580,8 @@ struct HfTaskSigmac {
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
         double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
+        double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
+        double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
@@ -531,8 +597,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0Sig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0Sig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0Sig"), deltaMass, ptSc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc); // Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc);
+          } else if(origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc);
+          } ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0Sig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0Sig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0Sig"), etaSoftPi, origin, channel);
@@ -542,8 +611,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0Sig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0Sig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0Sig"), deltaMass, ptLc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc); // Λc+ ← Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc);
+          } ////////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -551,8 +623,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc); // Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc);
+          } ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
@@ -562,8 +637,16 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          if(origin==1) {
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
+          /// THn for candidate Σc0,++ cut variation
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
+          }
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
@@ -578,8 +661,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0Sig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0Sig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0Sig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc, channel); // Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc, channel);
+          } else if(origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0Sig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0Sig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0Sig"), etaSoftPi, origin, channel);
@@ -589,8 +675,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0Sig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0Sig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0Sig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc, channel);
+          } else if(origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -598,8 +687,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel); // Σc0,++ signal
+          if (origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
@@ -609,8 +701,16 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
+          /// THn for candidate Σc0,++ cut variation
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
+          }
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
         /// end reconstructed Σc0 signal
@@ -635,6 +735,8 @@ struct HfTaskSigmac {
         double phiSc(candSc.phi()), phiLc(candidateLc.phi());
         double ptSoftPi(candSc.prong1_as<aod::TracksWMc>().pt()), etaSoftPi(candSc.prong1_as<aod::TracksWMc>().eta()), phiSoftPi(candSc.prong1_as<aod::TracksWMc>().phi());
         double ptGenSc(particleSc.pt()), ptGenLc(particleLc.pt()), ptGenSoftPi(particleSoftPi.pt());
+        double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
+        double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
@@ -650,8 +752,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel); // Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
+          } //////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, origin, channel);
@@ -661,8 +766,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromScPlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromScPlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } //////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -670,8 +778,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel); // Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
+          } /////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
@@ -681,8 +792,16 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } ////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
+          /// THn for candidate Σc0,++ cut variation
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
+          }
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
@@ -697,8 +816,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel); // Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
+          } ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, origin, channel);
@@ -708,8 +830,11 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromScPlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromScPlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0 signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } ///////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -717,24 +842,58 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel); // Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
+          } else if (origin==2){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
+          } ///////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSc0PlusPlusSig"), phiSoftPi, origin, channel); // π ← Σc0,++ signal
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiSc0PlusPlusSig"), phiSoftPi, origin, channel);// π ← Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtLcFromSc0PlusPlusSig"), ptLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenLcFromSc0PlusPlusSig"), ptGenLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          if(origin==1){
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+          } else if(origin==2) {
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
+          } //////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
+          /// THn for candidate Σc0,++ cut variation
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
+          }
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
       }   /// end reconstructed Σc++ signal
 
     } /// end loop on reconstructed Σc0,++
+
+    /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
+    if(enableTHn) {
+        /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
+        for (const auto& candidateLc : candidatesLc) {
+          double massLc(-1.);
+          double ptLc(candidateLc.pt());
+          double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
+          double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
+          int origin = candidateLc.originMcRec();
+          auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+          if(candidateLc.isSelLcToPKPi() >= 1 && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+            massLc = hfHelper.invMassLcToPKPi(candidateLc);
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
+          }
+          if (candidateLc.isSelLcToPiKP() >= 1 && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+            massLc = hfHelper.invMassLcToPiKP(candidateLc);
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
+          }
+        }
+      
+    }   /// end THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
+
 
   }; /// end processMc
   PROCESS_SWITCH(HfTaskSigmac, processMc, "Process MC", false);
