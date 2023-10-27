@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+// ========================
+//
+// This code produces photon data tables.
+//    Please write to: daiki.sekihata@cern.ch
 
 #include <cmath>
 #include <array>
