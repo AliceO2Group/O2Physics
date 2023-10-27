@@ -321,7 +321,7 @@ struct BcSelectionTask {
       }
       // Fill counters and lumi histograms for Pb-Pb lumi monitoring
       // TODO: introduce pileup correction
-      if (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen) : 0) {
+      if (bc.has_ft0() ? (TESTBIT(selection, kIsTriggerTVX) && TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) : 0) {
         histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, 1. / csTCE);
       }
