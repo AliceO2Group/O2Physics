@@ -345,12 +345,14 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
-    KFParticle gammaKF_PV = gammaKF_DecayVtx;
-    gammaKF_PV.SetProductionVertex(KFPV);
-    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_PV.GetPx(), gammaKF_PV.GetPy());
-    float v0eta = RecoDecay::eta(std::array{gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz()});
-    float v0phi = RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) : RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) + TMath::TwoPi();
+    //// Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
+    // KFParticle gammaKF_PV = gammaKF_DecayVtx;
+    // gammaKF_PV.SetProductionVertex(KFPV);
+
+    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
+    float v0eta = RecoDecay::eta(std::array{gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz()});
+    float v0phi = RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) : RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) + TMath::TwoPi();
+
     if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
       return;
     }
