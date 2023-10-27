@@ -73,3 +73,13 @@ o2physics_add_dpl_workflow(upcspectra-task-skim-analyser
                     SOURCES spectraUPCAnalyser.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(derived-basic-provider
+                    SOURCES derivedBasicProvider.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(derived-basic-consumer
+                    SOURCES derivedBasicConsumer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME AnalysisTutorial)
