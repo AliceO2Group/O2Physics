@@ -304,8 +304,8 @@ struct UpcCandProducer {
       double trTime = track.trackTime();
       double mchmidChi2 = track.chi2MatchMCHMID();
       if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) {
-        trTime = (globalBC - closestBcMCH) * o2::constants::lhc::LHCBunchSpacingNS; // track time relative to MCH-MID track
-        mchmidChi2 = -999.;                                                         // no MID match
+        trTime = (static_cast<int64_t>(globalBC) - static_cast<int64_t>(closestBcMCH)) * o2::constants::lhc::LHCBunchSpacingNS; // track time relative to MCH-MID track
+        mchmidChi2 = -999.;                                                                                                     // no MID match
       }
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
       udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2,
