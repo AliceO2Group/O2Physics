@@ -956,22 +956,23 @@ struct UpcCandProducer {
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::map<uint64_t, int32_t> mapGlobalBcWithT0{};
-
-    for (const auto& ft0 : ft0s) {
-      int64_t globalBC = ft0.bc().globalBC();
+    for (auto ft0 : ft0s) {
       if (std::abs(ft0.timeA()) > 2.)
         continue;
-      mapGlobalBcWithT0[globalBC] = ft0.globalIndex() + 1;
+      uint64_t globalBC = ft0.bc().globalBC();
+      mapGlobalBcWithT0[globalBC] = ft0.globalIndex();
     }
 
     std::map<uint64_t, int32_t> mapGlobalBcWithV0A{};
-
-    for (const auto& fv0a : fv0as) {
-      int64_t globalBC = fv0a.bc().globalBC();
+    for (auto fv0a : fv0as) {
       if (std::abs(fv0a.time()) > 15.)
         continue;
-      mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex() + 1;
+      uint64_t globalBC = fv0a.bc().globalBC();
+      mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
+
+    auto nFT0s = mapGlobalBcWithT0.size();
+    auto nFV0As = mapGlobalBcWithV0A.size();
 
     // todo: calculate position of UD collision?
     float dummyX = 0.;
@@ -996,41 +997,51 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcMCH) > 20)
           continue;
         auto& mchTracks = itClosestBcMCH->second;
-        int nMCHs = mchTracks.size();
+        int32_t nMCHs = mchTracks.size();
         if (nMCHs + nMIDs > fNFwdProngs)
           continue;
         fwdTrackIDs.insert(fwdTrackIDs.end(), mchTracks.begin(), mchTracks.end());
       }
-      uint64_t closestBcT0 = findClosestBC(globalBC, mapGlobalBcWithT0);
-      int64_t distClosestBcT0 = globalBC - static_cast<int64_t>(closestBcT0);
-      if (std::abs(distClosestBcT0) < fFilterFT0)
-        continue;
-      uint64_t closestBcV0A = findClosestBC(globalBC, mapGlobalBcWithV0A);
-      int64_t distClosestBcV0A = globalBC - static_cast<int64_t>(closestBcV0A);
-      if (std::abs(distClosestBcV0A) < fFilterFV0)
-        continue;
-      auto ft0Id = mapGlobalBcWithT0.at(closestBcT0) - 1;
-      auto fv0aId = mapGlobalBcWithV0A.at(closestBcV0A) - 1;
-      auto ft0 = ft0s.iteratorAt(ft0Id);
-      auto fv0a = fv0as.iteratorAt(fv0aId);
-      const auto& t0AmpsA = ft0.amplitudeA();
-      const auto& t0AmpsC = ft0.amplitudeC();
-      const auto& v0Amps = fv0a.amplitude();
       upchelpers::FITInfo fitInfo{};
-      fitInfo.timeFT0A = ft0.timeA();
-      fitInfo.timeFT0C = ft0.timeC();
-      fitInfo.timeFV0A = fv0a.time();
-      fitInfo.ampFT0A = 0.;
-      fitInfo.ampFT0C = 0.;
-      fitInfo.ampFV0A = 0.;
-      for (auto amp : t0AmpsA)
-        fitInfo.ampFT0A += amp;
-      for (auto amp : t0AmpsC)
-        fitInfo.ampFT0C += amp;
-      for (auto amp : v0Amps)
-        fitInfo.ampFV0A += amp;
-      fitInfo.BBFT0Apf = distClosestBcT0;
-      fitInfo.BBFV0Apf = distClosestBcV0A;
+      fitInfo.timeFT0A = -999.f;
+      fitInfo.timeFT0C = -999.f;
+      fitInfo.timeFV0A = -999.f;
+      fitInfo.ampFT0A = 0.f;
+      fitInfo.ampFT0C = 0.f;
+      fitInfo.ampFV0A = 0.f;
+      fitInfo.BBFT0Apf = -999;
+      fitInfo.BBFV0Apf = -999;
+      if (nFT0s > 0) {
+        uint64_t closestBcT0 = findClosestBC(globalBC, mapGlobalBcWithT0);
+        LOGP(info, "closestBcT0={}", closestBcT0);
+        int64_t distClosestBcT0 = globalBC - static_cast<int64_t>(closestBcT0);
+        if (std::abs(distClosestBcT0) < fFilterFT0)
+          continue;
+        fitInfo.BBFT0Apf = distClosestBcT0;
+        auto ft0Id = mapGlobalBcWithT0.at(closestBcT0);
+        auto ft0 = ft0s.iteratorAt(ft0Id);
+        fitInfo.timeFT0A = ft0.timeA();
+        fitInfo.timeFT0C = ft0.timeC();
+        const auto& t0AmpsA = ft0.amplitudeA();
+        const auto& t0AmpsC = ft0.amplitudeC();
+        for (auto amp : t0AmpsA)
+          fitInfo.ampFT0A += amp;
+        for (auto amp : t0AmpsC)
+          fitInfo.ampFT0C += amp;
+      }
+      if (nFV0As > 0) {
+        uint64_t closestBcV0A = findClosestBC(globalBC, mapGlobalBcWithV0A);
+        int64_t distClosestBcV0A = globalBC - static_cast<int64_t>(closestBcV0A);
+        if (std::abs(distClosestBcV0A) < fFilterFV0)
+          continue;
+        fitInfo.BBFV0Apf = distClosestBcV0A;
+        auto fv0aId = mapGlobalBcWithV0A.at(closestBcV0A);
+        auto fv0a = fv0as.iteratorAt(fv0aId);
+        fitInfo.timeFV0A = fv0a.time();
+        const auto& v0Amps = fv0a.amplitude();
+        for (auto amp : v0Amps)
+          fitInfo.ampFV0A += amp;
+      }
       uint16_t numContrib = fNFwdProngs;
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
