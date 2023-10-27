@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2023 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -10,9 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 // ========================
+// \file photonconversionbuilder.cxx
+// \brief this task produces photon data table with KFParticle.
 //
-// This code produces photon data tables.
-//    Please write to: daiki.sekihata@cern.ch
+// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
 #include <cmath>
 #include <array>
