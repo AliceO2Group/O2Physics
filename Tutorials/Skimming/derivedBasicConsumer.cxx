@@ -54,8 +54,8 @@ struct DerivedBasicConsumer {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Partition<aod::DerivedTracks> triggerTracks = aod::track::pt > minPtTrig;
-  Partition<aod::DerivedTracks> assocTracks = aod::track::pt > minPtAssoc&& aod::track::pt < maxPtAssoc;
+  Partition<aod::DrTracks> triggerTracks = aod::track::pt > minPtTrig;
+  Partition<aod::DrTracks> assocTracks = aod::track::pt > minPtAssoc&& aod::track::pt < maxPtAssoc;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -73,13 +73,13 @@ struct DerivedBasicConsumer {
     histos.add("correlationFunction", "correlationFunction", kTH1F, {axisDeltaPhi});
   }
 
-  void process(aod::DerivedCollision const& collision, aod::DerivedTracks const& tracks)
+  void process(aod::DrCollision const& collision, aod::DrTracks const& tracks)
   {
     histos.fill(HIST("eventCounter"), 0.5);
 
     // partitions are not grouped by default
-    auto triggerTracksGrouped = triggerTracks->sliceByCached(aod::exampleTrackSpace::derivedCollisionId, collision.globalIndex(), cache);
-    auto assocTracksGrouped = assocTracks->sliceByCached(aod::exampleTrackSpace::derivedCollisionId, collision.globalIndex(), cache);
+    auto triggerTracksGrouped = triggerTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
+    auto assocTracksGrouped = assocTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
 
     // Inspect the trigger and associated populations
     for (auto& track : triggerTracksGrouped) {                         //<- only for a subset
