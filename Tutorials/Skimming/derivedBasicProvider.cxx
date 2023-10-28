@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
@@ -33,8 +32,8 @@ struct DerivedBasicProvider {
   Configurable<float> etaWindow{"etaWindow", 0.8, "eta window"};
 
   // This marks that this task produces a standard derived table
-  Produces<aod::DerivedCollisions> outputCollisions;
-  Produces<aod::DerivedTracks> outputTracks;
+  Produces<aod::DrCollisions> outputCollisions;
+  Produces<aod::DrTracks> outputTracks;
 
   // Look at primary tracks only
   Filter trackFilter = nabs(aod::track::dcaXY) < 0.2f && nabs(aod::track::eta) < 0.5f && aod::track::pt > minPt;
