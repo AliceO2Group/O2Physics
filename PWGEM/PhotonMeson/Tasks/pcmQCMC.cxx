@@ -213,8 +213,8 @@ struct PCMQCMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffZ_recalc"))->Fill(elemc.vz(), v0.recalculatedVtxZ() - elemc.vz());
 
             nv0++;
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrTgl"))->Fill(ele.tgl(), pos.tgl());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrZ"))->Fill(ele.z(), pos.z());
+            // reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrTgl"))->Fill(ele.tgl(), pos.tgl());
+            // reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrZ"))->Fill(ele.z(), pos.z());
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }

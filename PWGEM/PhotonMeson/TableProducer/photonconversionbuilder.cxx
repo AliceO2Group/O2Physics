@@ -92,6 +92,7 @@ struct PhotonConversionBuilder {
   Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
+  Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
 
   int mRunNumber;
   float d_bz;
@@ -331,8 +332,9 @@ struct PhotonConversionBuilder {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters, 2);
-    // gammaKF.SetNonlinearMassConstraint(0.0f);
-
+    if (kfMassConstrain > -0.1) {
+      gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+    }
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 
@@ -403,6 +405,7 @@ struct PhotonConversionBuilder {
       return;
     }
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
+    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = cospa_kf;
 
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
@@ -455,8 +458,9 @@ struct PhotonConversionBuilder {
   }
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
-
-  std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> pca_map; //(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> pca
+  std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> pca_map;   //(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> pca
+  std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> cospa_map; //(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
+  std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                     //(pos.globalIndex(), ele.globalIndex())
 
   void process(aod::Collisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -468,45 +472,65 @@ struct PhotonConversionBuilder {
       auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
       for (auto& v0 : v0s_per_coll) {
+        // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
         fillV0Table<aod::Collisions, MyTracksIU>(v0, false);
       } // end of v0 loop
     }   // end of collision loop
 
+    stored_v0Ids.reserve(pca_map.size()); // number of photon candidates per DF
+
     // find minimal pca
     for (const auto& [key, value] : pca_map) {
       auto v0Id = std::get<0>(key);
-      // auto collisionId = std::get<1>(key);
+      auto collisionId = std::get<1>(key);
       auto posId = std::get<2>(key);
       auto eleId = std::get<3>(key);
       float v0pca = value;
+      float cospa = cospa_map[key];
       bool is_closest_v0 = true;
+      bool is_most_aligned_v0 = true;
 
       for (const auto& [key_tmp, value_tmp] : pca_map) {
+        auto v0Id_tmp = std::get<0>(key_tmp);
+        auto collisionId_tmp = std::get<1>(key_tmp);
         auto posId_tmp = std::get<2>(key_tmp);
         auto eleId_tmp = std::get<3>(key_tmp);
         float v0pca_tmp = value_tmp;
+        float cospa_tmp = cospa_map[key_tmp];
 
-        if (eleId == eleId_tmp && posId == posId_tmp) { // skip exactly the same V0
+        if (v0Id == v0Id_tmp) { // skip exactly the same v0
           continue;
         }
+
+        if (collisionId != collisionId_tmp && eleId == eleId_tmp && posId == posId_tmp && cospa < cospa_tmp) { // same ele and pos, but attached to different collision
+          // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , cospa1 = %f , cospa2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, cospa, cospa_tmp);
+          is_most_aligned_v0 = false;
+          break;
+        }
+
         if ((eleId == eleId_tmp || posId == posId_tmp) && v0pca > v0pca_tmp) {
           // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, v0pca, v0pca_tmp);
           is_closest_v0 = false;
           break;
         }
-      } // end of pca_map loop
+      } // end of pca_map tmp loop
 
-      if (is_closest_v0) {
+      bool is_stored = std::find(stored_v0Ids.begin(), stored_v0Ids.end(), std::make_pair(posId, eleId)) != stored_v0Ids.end();
+      if (is_closest_v0 && is_most_aligned_v0 && !is_stored) {
         auto v0 = v0s.rawIteratorAt(v0Id);
         // auto collision = collisions.rawIteratorAt(collisionId);
         // auto pos = tracks.rawIteratorAt(posId);
         // auto ele = tracks.rawIteratorAt(eleId);
-        // LOGF(info, "!accept! | collision id = %d | posid1 = %d , eleid1 = %d , pca1 = %f", collisionId, posId, eleId, v0pca);
+        // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
         fillV0Table<aod::Collisions, MyTracksIU>(v0, true);
+        stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
       }
     } // end of pca_map loop
     // LOGF(info, "pca_map.size() = %d", pca_map.size());
     pca_map.clear();
+    cospa_map.clear();
+    stored_v0Ids.clear();
+    stored_v0Ids.shrink_to_fit();
   } // end of process
 };
 
