@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
@@ -54,8 +53,8 @@ struct DerivedBasicConsumer {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Partition<aod::DerivedTracks> triggerTracks = aod::track::pt > minPtTrig;
-  Partition<aod::DerivedTracks> assocTracks = aod::track::pt > minPtAssoc&& aod::track::pt < maxPtAssoc;
+  Partition<aod::DrTracks> triggerTracks = aod::track::pt > minPtTrig;
+  Partition<aod::DrTracks> assocTracks = aod::track::pt > minPtAssoc&& aod::track::pt < maxPtAssoc;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -73,7 +72,7 @@ struct DerivedBasicConsumer {
     histos.add("correlationFunction", "correlationFunction", kTH1F, {axisDeltaPhi});
   }
 
-  void process(aod::DerivedCollision const& collision, aod::DerivedTracks const& tracks)
+  void process(aod::DrCollision const& collision, aod::DrTracks const& tracks)
   {
     histos.fill(HIST("eventCounter"), 0.5);
 
