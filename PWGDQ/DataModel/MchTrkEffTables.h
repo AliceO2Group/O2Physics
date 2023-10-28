@@ -35,10 +35,10 @@ DECLARE_SOA_COLUMN(PhiGen, phiGen, float);          //! simulated phi
 } // namespace mch_trk_eff
 
 // Table
-DECLARE_SOA_TABLE(MchTrkEffBase,"AOD","MCHTRKEFFBASE", //! table with muon track properties and mch bit map
+DECLARE_SOA_TABLE(MchTrkEffBase, "AOD", "MCHTRKEFFBASE", //! table with muon track properties and mch bit map
                   mch_trk_eff::Eta, mch_trk_eff::Pt, mch_trk_eff::Phi, mch_trk_eff::MchBitMap);
 
-DECLARE_SOA_TABLE(MchTrkEffGen,"AOD","MCHTRKEFFGEN", //! table with simulated muon track properties
+DECLARE_SOA_TABLE(MchTrkEffGen, "AOD", "MCHTRKEFFGEN", //! table with simulated muon track properties
                   mch_trk_eff::EtaGen, mch_trk_eff::PtGen, mch_trk_eff::PhiGen);
 
 } // namespace o2::aod
