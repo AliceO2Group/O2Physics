@@ -18,7 +18,7 @@
 
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(DerivedCollisions, "AOD", "DERCOLLS", o2::soa::Index<>,
+DECLARE_SOA_TABLE(DerivedCollisions, "AOD", "DERIVEDCOLLISION", o2::soa::Index<>,
                   o2::aod::collision::PosZ);
 using DerivedCollision = DerivedCollisions::iterator;
 
@@ -29,7 +29,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 } // namespace exampleTrackSpace
-DECLARE_SOA_TABLE(DerivedTracks, "AOD", "DERTRACKS", o2::soa::Index<>, exampleTrackSpace::DerivedCollisionId,
+DECLARE_SOA_TABLE(DerivedTracks, "AOD", "DERIVEDTRACK", o2::soa::Index<>, exampleTrackSpace::DerivedCollisionId,
                   exampleTrackSpace::Pt, exampleTrackSpace::Eta, exampleTrackSpace::Phi);
 using DerivedTrack = DerivedTracks::iterator;
 } // namespace o2::aod
