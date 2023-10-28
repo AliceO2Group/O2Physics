@@ -77,8 +77,8 @@ struct DerivedBasicConsumer {
     histos.fill(HIST("eventCounter"), 0.5);
 
     // partitions are not grouped by default
-    auto triggerTracksGrouped = triggerTracks->sliceByCached(aod::exampleTrackSpace::derivedCollisionId, collision.globalIndex(), cache);
-    auto assocTracksGrouped = assocTracks->sliceByCached(aod::exampleTrackSpace::derivedCollisionId, collision.globalIndex(), cache);
+    auto triggerTracksGrouped = triggerTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
+    auto assocTracksGrouped = assocTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
 
     // Inspect the trigger and associated populations
     for (auto& track : triggerTracksGrouped) {                         //<- only for a subset
