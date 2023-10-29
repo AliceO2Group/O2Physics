@@ -40,7 +40,7 @@
             ]
         },
         "loadModelsFromCCDB": "false",
-        "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
+        "ccdbUrl": "http://alice-ccdb.cern.ch",
         "modelPathsCCDB": "",
         "timestampCCDB": "-1"
     },
