@@ -74,7 +74,7 @@ class MlResponse
   void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models different from the one set! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
 
     uint8_t counterModel{0};
@@ -95,7 +95,7 @@ class MlResponse
   void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models different from the one set! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
 
     mPaths = onnxFiles;
