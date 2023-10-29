@@ -225,7 +225,7 @@ struct DGCandAnalyzer {
     // count collisions
     registry.fill(HIST("stat/candCaseAll"), 0., 1.);
     registry.fill(HIST("stat/nPVtracks"), dgcand.numContrib(), 1.);
-    
+
     // accept only selected run numbers
     int run = dgcand.runNumber();
     if (!grsel.isGoodRun(run)) {
