@@ -16,7 +16,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataModel/DerivedExampleTable.h"
-#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::framework;

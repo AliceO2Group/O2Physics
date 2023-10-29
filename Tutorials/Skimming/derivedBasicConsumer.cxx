@@ -17,7 +17,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataModel/DerivedExampleTable.h"
-#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -26,8 +25,6 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 struct DerivedBasicConsumer {
-  SliceCache cache;
-
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
   /// \param phi2 second phi value
@@ -43,58 +40,19 @@ struct DerivedBasicConsumer {
     return deltaPhi;
   }
 
-  Configurable<float> minPtAssoc{"minPtAssoc", 2.0, "min pT associated"};
-  Configurable<float> maxPtAssoc{"maxPtAssoc", 4.0, "max pT associated"};
-  Configurable<float> minPtTrig{"minPtTrig", 4.0, "min pT trigger"};
-
-  ConfigurableAxis axisPhi{"axisPhi", {72, 0, 2 * TMath::Pi()}, "#phi"};
-  ConfigurableAxis axisEta{"axisEta", {80, -0.8, +0.8}, "#eta"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {36, -o2::constants::math::PIHalf, o2::constants::math::PIHalf * 3}, "delta #varphi axis for histograms"};
-
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Partition<aod::DrTracks> triggerTracks = aod::track::pt > minPtTrig;
-  Partition<aod::DrTracks> assocTracks = aod::track::pt > minPtAssoc&& aod::track::pt < maxPtAssoc;
-
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   void init(InitContext const&)
   {
     // define axes you want to use
     const AxisSpec axisCounter{1, 0, +1, ""};
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-
-    // for correlation study
-    histos.add("etaHistogramTrigger", "etaHistogramTrigger", kTH1F, {axisEta});
-    histos.add("etaHistogramAssoc", "etaHistogramAssoc", kTH1F, {axisEta});
-    histos.add("phiHistogramTrigger", "phiHistogramTrigger", kTH1F, {axisPhi});
-    histos.add("phiHistogramAssoc", "phiHistogramAssoc", kTH1F, {axisPhi});
-    histos.add("correlationFunction", "correlationFunction", kTH1F, {axisDeltaPhi});
   }
 
-  void process(aod::DrCollision const& collision, aod::DrTracks const& tracks)
+  void process(aod::DrCollision const& collision)
   {
     histos.fill(HIST("eventCounter"), 0.5);
-
-    // partitions are not grouped by default
-    auto triggerTracksGrouped = triggerTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
-    auto assocTracksGrouped = assocTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
-
-    // Inspect the trigger and associated populations
-    for (auto& track : triggerTracksGrouped) {                         //<- only for a subset
-      histos.get<TH1>(HIST("etaHistogramTrigger"))->Fill(track.eta()); //<- this should show the selection
-      histos.get<TH1>(HIST("ptHistogramTrigger"))->Fill(track.pt());
-    }
-    for (auto& track : assocTracksGrouped) {                         //<- only for a subset
-      histos.get<TH1>(HIST("etaHistogramAssoc"))->Fill(track.eta()); //<- this should show the selection
-      histos.get<TH1>(HIST("ptHistogramAssoc"))->Fill(track.pt());
-    }
-
-    // Now we do two-particle correlations, using "combinations"
-    for (auto& [trackTrigger, trackAssoc] : combinations(o2::soa::CombinationsFullIndexPolicy(triggerTracksGrouped, assocTracksGrouped))) {
-      histos.get<TH1>(HIST("correlationFunction"))->Fill(ComputeDeltaPhi(trackTrigger.phi(), trackAssoc.phi()));
-    }
   }
 };
 
