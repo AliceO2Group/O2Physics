@@ -46,7 +46,7 @@ struct applyMlSelection {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  
+
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
   HfHelper hfHelper;
@@ -55,15 +55,12 @@ struct applyMlSelection {
 
   // Add objects needed for ML inference
   std::vector<float> outputMl = {};
-  
+
   // Add histograms for other BDT scores and for distributions after selections
   HistogramRegistry registry{
     "registry",
     {{"hMassBeforeSel", "Ds candidates before selection;inv. mass (KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.77, 2.17}}}},
-     {"hPromptScoreBeforeSel", "Prompt score before selection;BDT first score;entries", {HistType::kTH1F, {{100, 0., 1.}}}}
-    }
-  };
-
+     {"hPromptScoreBeforeSel", "Prompt score before selection;BDT first score;entries", {HistType::kTH1F, {{100, 0., 1.}}}}}};
 
   void init(InitContext const&)
   {
@@ -75,7 +72,6 @@ struct applyMlSelection {
     // Configure and initialise the ML class
 
     // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
-
   }
 
   void process(soa::Filtered<aod::HfCand3Prong> const& candidates)
@@ -94,7 +90,7 @@ struct applyMlSelection {
       if (candpT < ptCandMin || candpT > ptCandMax) {
         continue;
       }
-       // Check that the candidate rapidity is within the analysis range
+      // Check that the candidate rapidity is within the analysis range
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -118,7 +114,6 @@ struct applyMlSelection {
       // Fill BDT score histograms before selection
       registry.fill(HIST("hPromptScoreBeforeSel"), outputMl[0]);
 
-
       // Fill histograms for selected candidates
       bool isSelectedMlPiKK = true;
       if (isSelectedMlPiKK) {
@@ -127,7 +122,6 @@ struct applyMlSelection {
       }
 
       outputMl.clear(); // not necessary in this case but for good measure
-
 
       // Perform ML selections for other mass hypothesis (Ds -> PhiPi -> KKPi)
       std::vector<float> inputFeaturesKKPi{candidate.cpa(),
@@ -145,7 +139,7 @@ struct applyMlSelection {
 
       // Fill histograms for selected candidates
 
-       outputMl.clear(); // not necessary in this case but for good measure
+      outputMl.clear(); // not necessary in this case but for good measure
     }
   }
 };
@@ -154,4 +148,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<applyMlSelection>(cfgc)};
 }
-
