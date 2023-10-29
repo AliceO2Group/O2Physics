@@ -161,7 +161,7 @@ struct vzero_cascade_absorption {
   bool passedSingleTrackSelection(const T1& track, const C& collision)
   {
     // Single-Track Selections
-    if (!track.hasITS())
+    if (requirehitsITS && (!track.hasITS()))
       return false;
     if (!track.hasTPC())
       return false;
