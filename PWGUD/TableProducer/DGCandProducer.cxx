@@ -136,8 +136,8 @@ struct DGCandProducer {
     // add histograms for the different process functions
     registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
     registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
-    registry.add("reco/TPCsignal1", "2 prong events, TPC signal of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
-    registry.add("reco/TPCsignal2", "2 prong events, TPC signal of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
+    registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
+    registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/sig1VsSig2TPC", "2 prong events, TPC signal versus TPC signal", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
   }
 
@@ -208,7 +208,7 @@ struct DGCandProducer {
       }
 
       // produce TPC signal histograms for 2-track events
-      LOGF(info, "DG candidate: number of PV tracks %d", collision.numContrib());
+      LOGF(debug, "DG candidate: number of PV tracks %d", collision.numContrib());
       if (collision.numContrib() == 2) {
         auto cnt = 0;
         float pt1 = 0., pt2 = 0.;
@@ -261,13 +261,8 @@ struct McDGCandProducer {
     "registry",
     {}};
 
-  // this function properly updates UDMcCollisions and UDMcParticles and returns the value
-  // deltaIndex, which is needed to correct the McParticles indices
-  // For a given McCollision all associated McParticles are saved
-  template <typename TMcCollision, typename TMcParticles>
-  void updateMcUDTables(TMcCollision const& mccol,
-                        TMcParticles const& McParts,
-                        int64_t& deltaIndex)
+  template <typename TMcCollision>
+  void updateUDMcCollisions(TMcCollision const& mccol)
   {
     // save mccol
     outputMcCollisions(mccol.bcId(),
@@ -278,7 +273,36 @@ struct McDGCandProducer {
                        mccol.t(),
                        mccol.weight(),
                        mccol.impactParameter());
+  }
 
+  template <typename TMcParticle>
+  void updateUDMcParticle(TMcParticle const& McPart,
+                          int64_t& deltaIndex)
+  {
+    // save McPart
+    // mother and daughter indices are set to -1
+    // ATTENTION: this can be improved to also include mother and daughter indices
+    std::vector<int32_t> newmids;
+    int32_t newdids[2] = {-1, -1};
+
+    // update UDMcParticles
+    outputMcParticles(outputMcCollisions.lastIndex(),
+                      McPart.pdgCode(),
+                      McPart.statusCode(),
+                      McPart.flags(),
+                      newmids,
+                      newdids,
+                      McPart.weight(),
+                      McPart.px(),
+                      McPart.py(),
+                      McPart.pz(),
+                      McPart.e());
+  }
+
+  template <typename TMcParticles>
+  void updateUDMcParticles(TMcParticles const& McParts,
+                           int64_t& deltaIndex)
+  {
     // save McParts
     // calculate conversion from old indices to new indices
     // old = mcpart.globalIndex()
@@ -324,22 +348,93 @@ struct McDGCandProducer {
     }
   }
 
+  template <typename TTrack>
+  void updateUDMcTrackLabel(TTrack const& udtrack, int64_t const& deltaIndex)
+  {
+    // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
+    auto trackId = udtrack.trackId();
+    if (trackId >= 0) {
+      auto track = udtrack.template track_as<TCs>();
+      auto mcTrackId = track.mcParticleId();
+      if (mcTrackId >= 0) {
+        auto udMcTrackId = mcTrackId + deltaIndex;
+        outputMcTrackLabels(udMcTrackId, track.mcMask());
+      } else {
+        outputMcTrackLabels(-1, track.mcMask());
+      }
+    } else {
+      outputMcTrackLabels(-1, -1);
+    }
+  }
+
+  template <typename TTrack>
+  void updateUDMcTrackLabels(TTrack const& udtracks, int64_t const& deltaIndex)
+  {
+    // loop over all tracks
+    for (auto udtrack : udtracks) {
+      // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
+      auto trackId = udtrack.trackId();
+      if (trackId >= 0) {
+        auto track = udtrack.template track_as<TCs>();
+        auto mcTrackId = track.mcParticleId();
+        if (mcTrackId >= 0) {
+          auto udMcTrackId = mcTrackId + deltaIndex;
+          outputMcTrackLabels(udMcTrackId, track.mcMask());
+        } else {
+          outputMcTrackLabels(-1, track.mcMask());
+        }
+      } else {
+        outputMcTrackLabels(-1, -1);
+      }
+    }
+  }
+
   void init(InitContext& context)
   {
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMC")) {
       registry.add("mcTruth/collisions", "Number of associated collisions", {HistType::kTH1F, {{11, -0.5, 10.5}}});
-      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("mcTruth/IVMpt", "Invariant mass versus p_{T}", {HistType::kTH2F, {{150, 0.0, 3.0}, {150, 0.0, 3.0}}});
     }
   }
 
   // process function for MC data
-  // save all GRANIITTI diffractive events and the MC truth of the DG events
+  // save the MC truth of all events of interest and of the DG events
   void processMC(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
                  UDCCs const& dgcands, UDTCs const& udtracks,
                  CCs const& collisions, BCs const& bcs, TCs const& tracks)
   {
+    LOGF(info, "Number of McCollisions %d", mccols.size());
+    LOGF(info, "Number of DG candidates %d", dgcands.size());
+    LOGF(info, "Number of UD tracks %d", udtracks.size());
+
+/*
+  example code for a list with dgcnad and mccol
+
+    std::vector<std::vector<int>> qq;
+    qq.push_back(std::vector<int>{1,1});
+    qq.push_back(std::vector<int>{2,2});
+    qq.push_back(std::vector<int>{3,-1});
+    qq.push_back(std::vector<int>{5,-1});
+    qq.push_back(std::vector<int>{7,9});
+    qq.push_back(std::vector<int>{-1,3});
+    qq.push_back(std::vector<int>{-1,4});
+    qq.push_back(std::vector<int>{-1,5});
+    
+    std::sort(qq.begin(), qq.end(),
+      [](const std::vector<int>& a, const std::vector<int>& b) {
+        if (a[1] != -1 && b[1] != -1) {
+          return a[1] < b[1];
+        } else {
+          return a[0] < b[0];
+        }
+    });
+    
+    for (auto q : qq) {
+      LOGF(info, " q[0] %d q [1] %d", q[0], q[1]);
+    }
+*/
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
@@ -349,114 +444,124 @@ struct McDGCandProducer {
 
     int64_t lastSaved = -1;
     int64_t deltaIndex = 0;
-    int64_t firstIndex = 0, lastIndex = 0;
-    while (true) {
-      // determine the next dgcand with an associated collision
-      while (!dgcand.has_collision() && dgcand != lastdgcand) {
-        outputMcCollsLabels(-1);
-        dgcand++;
-      }
+
+    // advance dgcand and mccol until both are AtEnd
+    int64_t mccolId = mccol.globalIndex();
+    int64_t mcdgId = -1;
+    auto dgcandAtEnd = dgcand == lastdgcand;
+    auto mccolAtEnd = mccol == lastmccol;
+    bool goon = true;
+    while (goon) {
+      // check if dgcand has an associated McCollision
       if (!dgcand.has_collision()) {
-        // no dgcand left
-        outputMcCollsLabels(-1);
-        break;
-      }
-
-      // related mc truth
-      auto dgcandCol = dgcand.collision_as<CCs>();
-      if (!dgcandCol.has_mcCollision()) {
-        // this collision has no MC truth
-        outputMcCollsLabels(-1);
-        continue;
-      }
-      auto mcdg = dgcandCol.mcCollision();
-      auto dgmcId = mcdg.globalIndex();
-
-      // save also all GRANIITTI diffractive events
-      // keep UD Mc sorted according to AOD Mc
-      auto mccolId = mccol.globalIndex();
-      while (mccolId <= dgmcId) {
-        auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccol.globalIndex());
-        bool isGraniittiDiff = udhelpers::isGraniittiCDE(mcPartsSlice);
-        bool isPythiaDiff = udhelpers::isPythiaCDE(mcPartsSlice);
-        registry.get<TH1>(HIST("mcTruth/collType"))->Fill(0., 1.);
-        registry.get<TH1>(HIST("mcTruth/collType"))->Fill(1., (!isPythiaDiff && !isGraniittiDiff) * 1.);
-        registry.get<TH1>(HIST("mcTruth/collType"))->Fill(2., isPythiaDiff * 1.);
-        registry.get<TH1>(HIST("mcTruth/collType"))->Fill(3., isGraniittiDiff * 1.);
-
-        if (isGraniittiDiff || isPythiaDiff) {
-          firstIndex = outputMcParticles.lastIndex() + 1;
-          updateMcUDTables(mccol, mcPartsSlice, deltaIndex);
-          lastSaved = mccolId;
-
-          auto ivm = udhelpers::ivmGraniittiCDE(mcPartsSlice);
-          registry.get<TH2>(HIST("mcTruth/IVMpt"))->Fill(ivm.M(), ivm.Perp());
-        }
-        if (mccol == lastmccol) {
-          break;
-        }
-        mccol++;
-        mccolId = mccol.globalIndex();
-      }
-
-      // save the MC truth of the actual dgcand
-      // but check if this has not been added to the table yet
-      if (lastSaved != dgmcId) {
-        auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccol.globalIndex());
-        firstIndex = outputMcParticles.lastIndex() + 1;
-        updateMcUDTables(mccol, mcPartsSlice, deltaIndex);
-        lastSaved = mccolId;
-
-        auto ivm = udhelpers::ivmGraniittiCDE(mcPartsSlice);
-        registry.get<TH2>(HIST("mcTruth/IVMpt"))->Fill(ivm.M(), ivm.Perp());
-      }
-      outputMcCollsLabels(outputMcCollisions.lastIndex());
-
-      // save the mclabels of the related tracks into outputMcTrackLabels
-      lastIndex = outputMcParticles.lastIndex();
-      auto colTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
-      for (auto colTrack : colTracks) {
-        // colTrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
-        auto trackId = colTrack.trackId();
-        if (trackId >= 0) {
-          auto track = colTrack.track_as<TCs>();
-          auto mcTrackId = track.mcParticleId();
-          if (mcTrackId >= 0) {
-            auto udMcTrackId = mcTrackId + deltaIndex;
-            outputMcTrackLabels(udMcTrackId, track.mcMask());
-          } else {
-            outputMcTrackLabels(-1, track.mcMask());
-          }
+        mcdgId = -1;
+      } else {
+        auto dgcandCol = dgcand.collision_as<CCs>();
+        if (!dgcandCol.has_mcCollision()) {
+          mcdgId = -1;
         } else {
-          outputMcTrackLabels(-1, -1);
+          mcdgId = dgcandCol.mcCollision().globalIndex();
+        }
+      }
+      LOGF(info, "\nstart of loop mcdgId %d mccolId %d", mcdgId, mccolId);
+
+      // get dgcand tracks
+      auto dgTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
+
+      // two cases to consider
+      // 1. the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
+      // 2. the event to process is an event of interest. In this case only the Mc tables are updated
+      if ((!dgcandAtEnd && !mccolAtEnd && (mcdgId <= mccolId)) || mccolAtEnd) {
+        // this is case 1.
+        LOGF(info, "doing case 1 with mcdgId %d", mcdgId);
+
+        // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+        // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+
+        // If the dgcand has an associated McCollision then the McCollision and all associated
+        // McParticles are saved
+        if (mcdgId != lastSaved) {
+          if (mcdgId >= 0) {
+            LOGF(info, "  saving McCollision %d", mcdgId);
+            // update UDMcCollisions
+            auto dgcandMcCol = dgcand.collision_as<CCs>().mcCollision();
+            updateUDMcCollisions(dgcandMcCol);
+
+            // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+            outputMcCollsLabels(outputMcCollisions.lastIndex());
+
+            // update lastSaved
+            lastSaved = mcdgId;
+
+            // update UDMcParticles
+            auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
+            updateUDMcParticles(mcPartsSlice, deltaIndex);
+
+            // update UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+            updateUDMcTrackLabels(dgTracks, deltaIndex);
+
+          } else {
+            // If the dgcand has no associated McCollision then only the McParticles which are associated
+            // with the tracks of the dgcand are saved
+            LOGF(info, "  saving McCollision %d", -1);
+            
+            // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+            outputMcCollsLabels(-1);
+
+            // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+            // loop over tracks of dgcand
+            for (auto dgtrack : dgTracks) {
+              if (dgtrack.has_track()) {
+                auto track = dgtrack.track_as<TCs>();
+                if (track.has_mcParticle()) {
+                  auto mcPart = track.mcParticle();
+                  updateUDMcParticle(mcPart, deltaIndex);
+                  updateUDMcTrackLabel(dgtrack, deltaIndex);
+                } else {
+                  outputMcTrackLabels(-1, track.mcMask());
+                }
+              } else {
+                outputMcTrackLabels(-1, -1);
+              }
+            }
+          }
+        }
+        // advance dgcand
+        if (dgcand != lastdgcand) {
+          dgcand++;
+        } else {
+          dgcandAtEnd = true;
+        }
+      } else {
+        // this is case 2.
+        LOGF(info, "doing case 2");
+
+        // update UDMcCollisions and UDMcParticles
+        if (mccolId != lastSaved) {
+          LOGF(info, "  saving McCollision %d", mccolId);
+          
+          // update UDMcCollisions
+          updateUDMcCollisions(mccol);
+        
+          // update UDMcParticles
+          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
+          updateUDMcParticles(mcPartsSlice, deltaIndex);
+          
+          // update lastSaved
+          lastSaved = mccolId;
+        }
+
+        // advance mccol
+        if (mccol != lastmccol) {
+          mccol++;
+          mccolId = mccol.globalIndex();
+        } else {
+          mccolAtEnd = true;
         }
       }
 
-      // next dg candidate
-      if (dgcand == lastdgcand) {
-        break;
-      }
-      dgcand++;
-    }
-
-    // save remaining GRANIITTI diffractive events
-    while (mccol != lastmccol) {
-      auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccol.globalIndex());
-      bool isGraniittiDiff = udhelpers::isGraniittiCDE(mcPartsSlice);
-      bool isPythiaDiff = udhelpers::isPythiaCDE(mcPartsSlice);
-      registry.get<TH1>(HIST("mcTruth/collType"))->Fill(0., 1.);
-      registry.get<TH1>(HIST("mcTruth/collType"))->Fill(1., (!isPythiaDiff && !isGraniittiDiff) * 1.);
-      registry.get<TH1>(HIST("mcTruth/collType"))->Fill(2., isPythiaDiff * 1.);
-      registry.get<TH1>(HIST("mcTruth/collType"))->Fill(3., isGraniittiDiff * 1.);
-
-      if (isGraniittiDiff || isPythiaDiff) {
-        updateMcUDTables(mccol, mcPartsSlice, deltaIndex);
-
-        // update IVM versus pT
-        auto ivm = udhelpers::ivmGraniittiCDE(mcPartsSlice);
-        registry.get<TH2>(HIST("mcTruth/IVMpt"))->Fill(ivm.M(), ivm.Perp());
-      }
-      mccol++;
+      goon = !dgcandAtEnd || !mccolAtEnd;
+      LOGF(info, "end of loop mcdgId %d mccolId %d", mcdgId, mccolId);
     }
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);
