@@ -39,13 +39,16 @@ using std::array;
 
 // allows for candidate-by-candidate comparison using Cascade to []CascData link table
 using CascadesCrossLinked = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink>;
-using CascDataLabeled = soa::Join<aod::CascDatas, aod::McCascLabels>;
-using KFCascDataLabeled = soa::Join<aod::KFCascDatas, aod::McKFCascLabels>;
+using CascDataLabeled = soa::Join<aod::CascDatas, aod::CascCovs, aod::McCascLabels>;
+using KFCascDataLabeled = soa::Join<aod::KFCascDatas, aod::KFCascCovs, aod::McKFCascLabels>;
 
 struct kfStrangenessStudy {
 
   Produces<aod::CascCand> rowCasc;
   Produces<aod::CascCandMC> rowCascMC;
+
+  /// Configurables
+  Configurable<bool> isMC{"isMC", false, "filling MC table if running over MC"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -135,8 +138,23 @@ struct kfStrangenessStudy {
       // if present: this candidate was accepted by default DCAfitter building
       isDCAfitter = 1;
       auto cascdata = cascade.template cascData_as<TCascDatas>();
-      LOG(info) << "cascdatas->size() = " << cascdatas.size();
-      pt = cascdata.pt();
+      if (isMC) {
+        ptRec = cascdata.pt();
+        vtxXrec = cascdata.x();
+        vtxYrec = cascdata.y();
+        vtxZrec = cascdata.z();
+        vtxXrecErr = sqrt(cascdata.positionCovMat()[0]);
+        vtxYrecErr = sqrt(cascdata.positionCovMat()[2]);
+        vtxZrecErr = sqrt(cascdata.positionCovMat()[5]);
+      } else {
+        pt = cascdata.pt();
+        vtxX = cascdata.x();
+        vtxY = cascdata.y();
+        vtxZ = cascdata.z();
+        vtxXErr = sqrt(cascdata.positionCovMat()[0]);
+        vtxYErr = sqrt(cascdata.positionCovMat()[2]);
+        vtxZErr = sqrt(cascdata.positionCovMat()[5]);
+      }
       massLambda = cascdata.mLambda();
       massXi = cascdata.mXi();
       massOmega = cascdata.mOmega();
@@ -149,15 +167,8 @@ struct kfStrangenessStudy {
       dcaBachToPV = cascdata.dcabachtopv();
       cascPointingAngle = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       cascRad = cascdata.cascradius();
-      vtxX = cascdata.x();
-      vtxY = cascdata.y();
-      vtxZ = cascdata.z();
-      vtxXErr = sqrt(cascdata.positionCovMat()[0]);
-      vtxYErr = sqrt(cascdata.positionCovMat()[2]);
-      vtxZErr = sqrt(cascdata.positionCovMat()[5]);
       V0Rad = cascdata.v0radius();
       v0PointingAngle = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-      LOG(info) << "All casc data collected!";
 
       // fill QA histos
       histos.fill(HIST("hVertexX"), vtxX);  
@@ -169,7 +180,6 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hCosPointingAngle"), cos(cascPointingAngle));
       histos.fill(HIST("hV0PointingAngle"), v0PointingAngle);
       histos.fill(HIST("hCosV0PointingAngle"), cos(v0PointingAngle));
-      LOG(info) << "QA casc data histos filled!";
     }
 
     if (cascade.has_kfCascData()) {
@@ -178,8 +188,23 @@ struct kfStrangenessStudy {
       // if present: this candidate was accepted by KF building
       isKF = 1;
       auto cascdatakf = cascade.template kfCascData_as<TKFCascDatas>();
-      LOG(info) << "kfcascdatas->size() = " << kfcascdatas.size();
-      ptKF = cascdatakf.pt();
+      if (isMC) {
+        ptRecKF = cascdatakf.pt();
+        vtxXrecKF = cascdatakf.x();
+        vtxYrecKF = cascdatakf.y();
+        vtxZrecKF = cascdatakf.z();
+        vtxXrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
+        vtxYrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
+        vtxZrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+      } else {
+        ptKF = cascdatakf.pt();
+        vtxXKF = cascdatakf.x();
+        vtxYKF = cascdatakf.y();
+        vtxZKF = cascdatakf.z();
+        vtxXErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
+        vtxYErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
+        vtxZErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+      }
       massLambdaKF = cascdatakf.mLambda();
       massXiKF = cascdatakf.mXi();
       massOmegaKF = cascdatakf.mOmega();
@@ -201,7 +226,6 @@ struct kfStrangenessStudy {
       V0RadKF = cascdatakf.v0radius();
       cascChi2geoKF = cascdatakf.kfCascadeChi2();
       v0PointingAngleKF = TMath::ACos(cascdatakf.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-      LOG(info) << "All casc data collected!";
 
       // fill QA histos
       histos.fill(HIST("hKFVertexX"), vtxXKF);
@@ -213,7 +237,6 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hKFCosPointingAngle"), cos(cascPointingAngleKF));
       histos.fill(HIST("hKFV0PointingAngle"), v0PointingAngleKF);
       histos.fill(HIST("hKFCosV0PointingAngle"), cos(v0PointingAngleKF));
-      LOG(info) << "QA casc data histos filled!";
     }
   }
 
@@ -223,6 +246,7 @@ struct kfStrangenessStudy {
       auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
 
       if (MCcascade.has_daughters()) {
+        LOG(info) << "MC cascade has daughters, getting MC info.";
         ptGen = MCcascade.pt();
         prodVtxXgen = MCcascade.vx();
         prodVtxYgen = MCcascade.vy();
@@ -250,7 +274,6 @@ struct kfStrangenessStudy {
         }
         // fill cascade table
         fillCascMCTable(collision);
-        LOG(info) << "MC Casc table filled!";
 
         // fill QA histos --> vertex position from daughters!
         histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxXgen_firstDau);
@@ -299,7 +322,7 @@ struct kfStrangenessStudy {
               massOmega, massOmegaKF,
               cascRad, cascRadKF,
               vtxXrec, vtxYrec, vtxZrec, vtxXrecErr, vtxYrecErr, vtxZrecErr,
-              vtxXrecKF, vtxXrecKF, vtxXrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
+              vtxXrecKF, vtxYrecKF, vtxZrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
               vtxXgen_firstDau, vtxYgen_firstDau, vtxZgen_firstDau,
               prodVtxXgen, prodVtxYgen, prodVtxZgen,
               dcaXYCascToPV, dcaXYCascToPVKF,
@@ -317,6 +340,7 @@ struct kfStrangenessStudy {
               isDCAfitter, isKF,
               isTrueCasc,
               source);
+    LOG(info) << "CascMCTable filled!";
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, aod::TracksIU const&)
@@ -347,7 +371,7 @@ struct kfStrangenessStudy {
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, CascDataLabeled const&, KFCascDataLabeled const&, aod::TracksIU const&, aod::McParticles const& particlesMC) 
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, aod::TracksIU const&, aod::McParticles const& particlesMC)
   {
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -367,8 +391,6 @@ struct kfStrangenessStudy {
       histos.fill(HIST("hChargeCounter"), charge);
 
       // get cascade data
-      LOG(info) << "CascDatas size: " << CascDatas.size();
-      LOG(info) << "KFCascDatas size: " << KFCascDatas.size();
       getCascDatas(collision, cascade, CascDatas, KFCascDatas);
 
       // ========== get cascade MC information ===========
