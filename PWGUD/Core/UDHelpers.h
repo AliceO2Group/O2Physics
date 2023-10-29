@@ -654,22 +654,22 @@ bool isGraniittiCDE(T MCparts)
 template <typename T>
 int isOfInterest(T MCparts)
 {
-  
+
   // PYTHIA CDE
   if (isPythiaCDE(MCparts)) {
     return 1;
   }
-  
+
   // GRANIITTI CDE
   if (isGraniittiCDE(MCparts)) {
     return 2;
   }
-  
+
   // STARLIGHT rho -> mu+ + mu-
   if (isSTARLightRhomumu(MCparts)) {
     return 3;
   }
-  
+
   return 0;
 }
 

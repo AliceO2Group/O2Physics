@@ -409,32 +409,32 @@ struct McDGCandProducer {
     LOGF(info, "Number of DG candidates %d", dgcands.size());
     LOGF(info, "Number of UD tracks %d", udtracks.size());
 
-/*
-  example code for a list with dgcnad and mccol
+    /*
+      example code for a list with dgcnad and mccol
 
-    std::vector<std::vector<int>> qq;
-    qq.push_back(std::vector<int>{1,1});
-    qq.push_back(std::vector<int>{2,2});
-    qq.push_back(std::vector<int>{3,-1});
-    qq.push_back(std::vector<int>{5,-1});
-    qq.push_back(std::vector<int>{7,9});
-    qq.push_back(std::vector<int>{-1,3});
-    qq.push_back(std::vector<int>{-1,4});
-    qq.push_back(std::vector<int>{-1,5});
-    
-    std::sort(qq.begin(), qq.end(),
-      [](const std::vector<int>& a, const std::vector<int>& b) {
-        if (a[1] != -1 && b[1] != -1) {
-          return a[1] < b[1];
-        } else {
-          return a[0] < b[0];
+        std::vector<std::vector<int>> qq;
+        qq.push_back(std::vector<int>{1,1});
+        qq.push_back(std::vector<int>{2,2});
+        qq.push_back(std::vector<int>{3,-1});
+        qq.push_back(std::vector<int>{5,-1});
+        qq.push_back(std::vector<int>{7,9});
+        qq.push_back(std::vector<int>{-1,3});
+        qq.push_back(std::vector<int>{-1,4});
+        qq.push_back(std::vector<int>{-1,5});
+
+        std::sort(qq.begin(), qq.end(),
+          [](const std::vector<int>& a, const std::vector<int>& b) {
+            if (a[1] != -1 && b[1] != -1) {
+              return a[1] < b[1];
+            } else {
+              return a[0] < b[0];
+            }
+        });
+
+        for (auto q : qq) {
+          LOGF(info, " q[0] %d q [1] %d", q[0], q[1]);
         }
-    });
-    
-    for (auto q : qq) {
-      LOGF(info, " q[0] %d q [1] %d", q[0], q[1]);
-    }
-*/
+    */
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
@@ -504,7 +504,7 @@ struct McDGCandProducer {
             // If the dgcand has no associated McCollision then only the McParticles which are associated
             // with the tracks of the dgcand are saved
             LOGF(info, "  saving McCollision %d", -1);
-            
+
             // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
             outputMcCollsLabels(-1);
 
@@ -539,14 +539,14 @@ struct McDGCandProducer {
         // update UDMcCollisions and UDMcParticles
         if (mccolId != lastSaved) {
           LOGF(info, "  saving McCollision %d", mccolId);
-          
+
           // update UDMcCollisions
           updateUDMcCollisions(mccol);
-        
+
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
           updateUDMcParticles(mcPartsSlice, deltaIndex);
-          
+
           // update lastSaved
           lastSaved = mccolId;
         }
