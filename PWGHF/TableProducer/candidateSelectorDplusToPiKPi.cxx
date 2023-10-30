@@ -73,7 +73,8 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponseDplusToPiKPi<> hfMlResponse;
+  o2::analysis::HfMlResponseDplusToPiKPi<float, o2::analysis::InputFeaturesDplusToPiKPi> hfMlResponse;
+  std::vector<float> outputMlNotPreselected = {};
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
@@ -113,13 +114,14 @@ struct HfCandidateSelectorDplusToPiKPi {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames,
+                                       ccdbApi, modelPathsCCDB.value, timestampCCDB);
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
-      hfMlResponse.init();
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
+      hfMlResponse.init();
+      // outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -205,7 +207,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -225,7 +227,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -242,7 +244,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -256,6 +258,9 @@ struct HfCandidateSelectorDplusToPiKPi {
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
+
+        LOG(info) << "pt prong0: " << candidate.ptProng0() << " " << inputFeatures[0];
+        LOG(info) << "cpa: " << candidate.cpa() << " " << inputFeatures[8];
 
         if (!isSelectedMl) {
           hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);

@@ -25,7 +25,7 @@
 namespace o2::analysis
 {
 
-enum InputFeaturesDplusToPiKPi : int8_t {
+enum class InputFeaturesDplusToPiKPi : uint8_t {
   ptProng0 = 0,
   ptProng1,
   ptProng2,
@@ -57,8 +57,8 @@ enum InputFeaturesDplusToPiKPi : int8_t {
   tpcTofNSigmaKa2
 };
 
-template <typename T = float, typename U = InputFeaturesDplusToPiKPi>
-class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
+template <typename TypeOutputScore = float, class EnumInputFeatures = InputFeaturesDplusToPiKPi>
+class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore, EnumInputFeatures>
 {
  public:
   /// Default constructor
@@ -73,11 +73,12 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
   /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
   template <typename T1, typename T2>
-  std::vector<T> getInputFeatures(T1 const& candidate, T2 const& prong0, T2 const& prong1, T2 const& prong2) const
+  std::vector<float> getInputFeatures(T1 const& candidate,
+                                      T2 const& prong0, T2 const& prong1, T2 const& prong2)
   {
-    std::vector<T> inputFeatures;
+    std::vector<float> inputFeatures;
 
-    for (const auto& idx : MlResponse<T, U>::mCachedIndices) {
+    for (const auto& idx : MlResponse<TypeOutputScore, EnumInputFeatures>::mCachedIndices) {
       switch (idx) {
         CHECK_AND_FILL_VEC(ptProng0);
         CHECK_AND_FILL_VEC(ptProng1);
@@ -121,7 +122,7 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
   /// Method to fill the map of available input features
   void setAvailableInputFeatures()
   {
-    MlResponse<T, U>::mAvailableInputFeatures = {
+    MlResponse<TypeOutputScore, EnumInputFeatures>::mAvailableInputFeatures = {
       FILL_MAP(ptProng0),
       FILL_MAP(ptProng1),
       FILL_MAP(ptProng2),
@@ -158,5 +159,9 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<T, U>
 };
 
 } // namespace o2::analysis
+
+#undef FILL_MAP
+#undef CHECK_AND_FILL_VEC_FULL
+#undef CHECK_AND_FILL_VEC
 
 #endif // PWGHF_CORE_HFMLRESPONSEDPLUSTOPIKPI_H_

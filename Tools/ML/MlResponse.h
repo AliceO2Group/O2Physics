@@ -28,20 +28,31 @@
 
 #include "Tools/ML/model.h"
 
-#define FILL_MAP(FEATURE) \
-  {                       \
-#FEATURE, U::FEATURE  \
+// Fill the map of available input features
+// the key is the feature's name (std::string)
+// the value is the corresponding value in EnumInputFeatures
+#define FILL_MAP(FEATURE)                                        \
+  {                                                              \
+#FEATURE, static_cast < uint8_t>(EnumInputFeatures::FEATURE) \
   }
 
-#define CHECK_AND_FILL_VEC(GETTER)                  \
-  case U::GETTER:                                   \
-    inputFeatures.emplace_back(candidate.GETTER()); \
-    break
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER from OBJECT
+#define CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER)   \
+  case static_cast<uint8_t>(EnumInputFeatures::FEATURE): { \
+    inputFeatures.emplace_back(OBJECT.GETTER());           \
+    break;                                                 \
+  }
 
-#define CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER) \
-  case U::FEATURE:                                       \
-    inputFeatures.emplace_back(OBJECT.GETTER());         \
-    break
+// Specific case of CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER)
+// where OBJECT is named candidate and FEATURE = GETTER
+#define CHECK_AND_FILL_VEC(GETTER)                        \
+  case static_cast<uint8_t>(EnumInputFeatures::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());       \
+    break;                                                \
+  }
 
 namespace o2
 {
@@ -56,7 +67,10 @@ enum CutDirection {
 } // namespace cuts_ml
 namespace analysis
 {
-template <typename T = float, typename U = int8_t>
+
+// TypeOutputScore is the type of the output score from o2::ml::OnnxModel (float by default)
+// EnumInputFeatures is the enumerator containing available input features of a given decay channel (type uint8_t by default)
+template <typename TypeOutputScore = float, class EnumInputFeatures = uint8_t>
 class MlResponse
 {
  public:
@@ -128,7 +142,7 @@ class MlResponse
     }
   }
 
-  /// Method to translate configurable input features strings into integers
+  /// Method to translate configurable input-feature strings into integers
   /// \param cfgInputFeatures array of input features names
   void cacheInputFeaturesIndices(std::vector<std::string> const& cfgInputFeatures)
   {
@@ -137,7 +151,7 @@ class MlResponse
       if (mAvailableInputFeatures.count(inputFeature)) {
         mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
       } else {
-        LOG(fatal) << "Input feature not available. Please check your configurables.";
+        LOG(fatal) << "Input feature " << inputFeature << " not available. Please check your configurables.";
       }
     }
   }
@@ -147,10 +161,10 @@ class MlResponse
   /// \param nModel is the model index
   /// \return model prediction for each class and the selected model
   template <typename T1, typename T2>
-  std::vector<T> getModelOutput(T1& input, const T2& nModel)
+  std::vector<TypeOutputScore> getModelOutput(T1& input, const T2& nModel)
   {
-    T* outputPtr = mModels[nModel].evalModel(input);
-    return std::vector<T>{outputPtr, outputPtr + mNClasses};
+    TypeOutputScore* outputPtr = mModels[nModel].evalModel(input);
+    return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
 
   /// Finds pT bin in an array.
@@ -201,7 +215,7 @@ class MlResponse
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& pt, std::vector<T>& output)
+  bool isSelectedMl(T1& input, const T2& pt, std::vector<TypeOutputScore>& output)
   {
     auto nModel = findBin(&mBinsLimits, pt);
     output = getModelOutput(input, nModel);
@@ -222,16 +236,17 @@ class MlResponse
   }
 
  protected:
-  std::vector<o2::ml::OnnxModel> mModels;              // OnnxModel objects, one for each bin
-  uint8_t mNModels = 1;                                // number of bins
-  uint8_t mNClasses = 3;                               // number of model classes
-  std::vector<double> mBinsLimits = {};                // bin limits of the variable (e.g. pT) used to select which model to use
-  std::vector<std::string> mPaths = {""};              // paths to the models, one for each bin
-  std::vector<int> mCutDir = {};                       // direction of the cuts on the model scores (no cut is also supported)
-  o2::framework::LabeledArray<double> mCuts = {};      // array of cut values to apply on the model scores
-  std::map<std::string, U> mAvailableInputFeatures;    // map of available input features
+  std::vector<o2::ml::OnnxModel> mModels;                 // OnnxModel objects, one for each bin
+  uint8_t mNModels = 1;                                   // number of bins
+  uint8_t mNClasses = 3;                                  // number of model classes
+  std::vector<double> mBinsLimits = {};                   // bin limits of the variable (e.g. pT) used to select which model to use
+  std::vector<std::string> mPaths = {""};                 // paths to the models, one for each bin
+  std::vector<int> mCutDir = {};                          // direction of the cuts on the model scores (no cut is also supported)
+  o2::framework::LabeledArray<double> mCuts = {};         // array of cut values to apply on the model scores
+  std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
+  std::vector<uint8_t> mCachedIndices;                    // vector of indices correspondance between configurable and available input features
+
   virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
-  std::vector<U> mCachedIndices;                       // vector of indices correspondance between configurable and available input features
 };
 
 } // namespace analysis
