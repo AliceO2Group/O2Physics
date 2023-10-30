@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,7 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file tableMakerMuonMchTrkEfficiency.cxx
-/// \brief task to prepare the tables and some plots required for evaluating the muon tracking efficiency uncertainty
+/// \brief task to prepare the tables and some plots required for evaluating the
+/// muon tracking efficiency uncertainty
 ///
 /// @param muon MCH tracking efficiency table
 /// Struct for filling the histos and writing the table needed to compute the
@@ -18,33 +19,33 @@
 ///
 /// \author Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
-#include <iostream>
-#include <vector>
-#include <algorithm>
+#include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
-#include <TString.h>
 #include <TLorentzVector.h>
-#include "TDatabasePDG.h"
+#include <TString.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
 //
 #include "Common/DataModel/TrackSelectionTables.h"
 //
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
 //
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/DataModel/MchTrkEffTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -52,44 +53,22 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// default histogram output binning
-namespace muon_trk_eff_bins
-{
+namespace muon_trk_eff_bins {
 static constexpr int nBinsPt = 24;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
-  0., 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0,
-  2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0,
-  15.0, 18.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0};
+    0.,  0.25, 0.5,  0.75, 1.0,  1.25, 1.5,  1.75, 2.0,  2.5,  3.0,  4.0, 5.0,
+    6.0, 8.0,  10.0, 12.0, 15.0, 18.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{
-  "pT bin 0",
-  "pT bin 1",
-  "pT bin 2",
-  "pT bin 3",
-  "pT bin 4",
-  "pT bin 5",
-  "pT bin 6",
-  "pT bin 7",
-  "pT bin 8",
-  "pT bin 9",
-  "pT bin 10",
-  "pT bin 11",
-  "pT bin 12",
-  "pT bin 13",
-  "pT bin 14",
-  "pT bin 15",
-  "pT bin 16",
-  "pT bin 17",
-  "pT bin 18",
-  "pT bin 19",
-  "pT bin 20",
-  "pT bin 21",
-  "pT bin 22",
-  "pT bin 23",
-  "pT bin 24"};
+    "pT bin 0",  "pT bin 1",  "pT bin 2",  "pT bin 3",  "pT bin 4",
+    "pT bin 5",  "pT bin 6",  "pT bin 7",  "pT bin 8",  "pT bin 9",
+    "pT bin 10", "pT bin 11", "pT bin 12", "pT bin 13", "pT bin 14",
+    "pT bin 15", "pT bin 16", "pT bin 17", "pT bin 18", "pT bin 19",
+    "pT bin 20", "pT bin 21", "pT bin 22", "pT bin 23", "pT bin 24"};
 
 } // namespace muon_trk_eff_bins
 // Constants
@@ -104,51 +83,82 @@ struct tableMakerMuonMchTrkEfficiency {
   Produces<aod::MchTrkEffGen> rowCandidateGen;
 
   /// Configure the task variables
-  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};                   /// Event selection list
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"}; /// List of muon selections
+  Configurable<std::string> fConfigEventCuts{
+      "cfgEventCuts", "eventStandard",
+      "Event selection"}; /// Event selection list
+  Configurable<std::string> fConfigMuonCuts{
+      "cfgMuonCuts", "muonQualityCuts",
+      "Comma separated list of muon cuts"}; /// List of muon selections
 
-  Configurable<double> ptMuonMin{"ptMin", 0., "Lower bound of pT"};       /// Muon minimum pt to be studied
-  Configurable<double> etaMuonMin{"etaMin", 2.5, "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
-  Configurable<double> etaMuonMax{"etaMax", 4.0, "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
+  Configurable<double> ptMuonMin{
+      "ptMin", 0., "Lower bound of pT"}; /// Muon minimum pt to be studied
+  Configurable<double> etaMuonMin{
+      "etaMin", 2.5,
+      "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
+  Configurable<double> etaMuonMax{
+      "etaMax", 4.0,
+      "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
   ///
-  Configurable<std::vector<double>> binsMuonPt{"binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt}, "pT bin limits"}; /// Pt intervals for the histograms
-  Configurable<int> nEtaBins{"nEtaBins", 8, "Number of Eta bins"};                                                            /// Number of eta bins for output histograms
-  Configurable<int> nPhiBins{"nPhiBins", 6, "Number of Phi bins"};                                                            /// Number of phi bins for output histograms
-  Configurable<bool> fillBitMapCorr{"fillCorr", false, "Fill bit map correlation sparse"};                                    /// Boolean to fill or not the THnSparse of correlations
+  Configurable<std::vector<double>> binsMuonPt{
+      "binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt},
+      "pT bin limits"}; /// Pt intervals for the histograms
+  Configurable<int> nEtaBins{
+      "nEtaBins", 8,
+      "Number of Eta bins"}; /// Number of eta bins for output histograms
+  Configurable<int> nPhiBins{
+      "nPhiBins", 6,
+      "Number of Phi bins"}; /// Number of phi bins for output histograms
+  Configurable<bool> fillBitMapCorr{
+      "fillCorr", false,
+      "Fill bit map correlation sparse"}; /// Boolean to fill or not the
+                                          /// THnSparse of correlations
 
-  AnalysisCompositeCut* fEventCut;             //! Event selection cut
+  AnalysisCompositeCut *fEventCut;             //! Event selection cut
   std::vector<AnalysisCompositeCut> fMuonCuts; //! Muon track cuts
 
   /// Declarations of various short names
   using myEvents = soa::Join<aod::Collisions, aod::EvSels>;
-  using myEventsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using myReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
-  using myReducedEventsMC = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
+  using myEventsMC =
+      soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using myReducedEvents =
+      soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+  using myReducedEventsMC =
+      soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended,
+                aod::ReducedMCEventLabels>;
 
   using myMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
-  using myMuonsMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-  using myReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
-  using myReducedMuonsMC = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsLabels, aod::ReducedMuonsInfo>;
+  using myMuonsMC =
+      soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+  using myReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra,
+                                   aod::ReducedMuonsInfo>;
+  using myReducedMuonsMC =
+      soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra,
+                aod::ReducedMuonsLabels, aod::ReducedMuonsInfo>;
 
   // bit maps used for the Fill functions of the VarManager
-  constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
-  constexpr static uint32_t gkReducedEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-  constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
-  constexpr static uint32_t gkReducedEventMCFillMap = VarManager::ObjTypes::ReducedEventMC;
+  constexpr static uint32_t gkEventFillMap =
+      VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+  constexpr static uint32_t gkReducedEventFillMap =
+      VarManager::ObjTypes::ReducedEvent |
+      VarManager::ObjTypes::ReducedEventExtended;
+  constexpr static uint32_t gkEventMCFillMap =
+      VarManager::ObjTypes::CollisionMC;
+  constexpr static uint32_t gkReducedEventMCFillMap =
+      VarManager::ObjTypes::ReducedEventMC;
 
   constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
-  constexpr static uint32_t gkReducedMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
-  constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
+  constexpr static uint32_t gkReducedMuonFillMap =
+      VarManager::ObjTypes::ReducedMuon |
+      VarManager::ObjTypes::ReducedMuonExtra;
+  constexpr static uint32_t gkParticleMCFillMap =
+      VarManager::ObjTypes::ParticleMC;
 
   /// Histogram registry: an object to hold your histograms
   HistogramRegistry registry{
-    "registry",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
+      "registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   ///  Initialize: configure, create specifics
-  void init(o2::framework::InitContext&)
-  {
+  void init(o2::framework::InitContext &) {
     LOGF(debug, "Initialization");
 
     /// set event cuts
@@ -163,18 +173,23 @@ struct tableMakerMuonMchTrkEfficiency {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         LOGF(debug, ">> Muon cut added: %s", objArray->At(icut)->GetName());
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(
+            *dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
+    VarManager::SetUseVars(
+        AnalysisCut::fgUsedVars); // provide the list of required variables so
+                                  // that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
 
     // define histograms to be added
     LOGF(debug, " Creating histograms");
     const AxisSpec axisEvt{10, -0.5, 9.5, ""};
-    const char* elabels[6] = {"all", "selected", "sel >0 muon", "sel >1 muon", "sel >2 muon", "sel >3 muon"};
-    registry.add("hEventCounter", "hEventCounter", {HistType::kTH1F, {axisEvt}});
+    const char *elabels[6] = {"all",         "selected",    "sel >0 muon",
+                              "sel >1 muon", "sel >2 muon", "sel >3 muon"};
+    registry.add("hEventCounter", "hEventCounter",
+                 {HistType::kTH1F, {axisEvt}});
     auto hEvent = registry.get<TH1>(HIST("hEventCounter"));
     for (int i = 0; i < 6; i++)
       hEvent->GetXaxis()->SetBinLabel(i + 1, elabels[i]);
@@ -192,13 +207,17 @@ struct tableMakerMuonMchTrkEfficiency {
     const AxisSpec axisPhiGenRed{nPhiBins, -3.14, 3.14, "#varphi Gen"};
     const AxisSpec axisBitMap{1031, -0.5, 1030.5, "mchbitMap"};
     const int nChHitBins = 4;
-    // Number of hits in chamber i = (Nij, Ni0, N0j) correspond to hit on i-j, hit on i not on j, hit on j not on i
-    const AxisSpec axisNhits{nChHitBins, 0.5, nChHitBins + 0.5, "isHitInChamber"};
+    // Number of hits in chamber i = (Nij, Ni0, N0j) correspond to hit on i-j,
+    // hit on i not on j, hit on j not on i
+    const AxisSpec axisNhits{nChHitBins, 0.5, nChHitBins + 0.5,
+                             "isHitInChamber"};
     const AxisSpec axisX{60, -3., 3., "X"};
     const AxisSpec axisY{60, -3., 3., "Y"};
 
-    HistogramConfigSpec defaultNhitsPerChamber({HistType::kTH3F, {{axisNhits}, {axisX}, {axisY}}});
-    HistogramConfigSpec defaultMchBitmap({HistType::kTHnF, {axisBitMap, axisEtaRed, axisPt, axisPhiRed}});
+    HistogramConfigSpec defaultNhitsPerChamber(
+        {HistType::kTH3F, {{axisNhits}, {axisX}, {axisY}}});
+    HistogramConfigSpec defaultMchBitmap(
+        {HistType::kTHnF, {axisBitMap, axisEtaRed, axisPt, axisPhiRed}});
 
     registry.add("hEta", "hEta", {HistType::kTH1F, {axisEta}});
     registry.add("hPt", "hPt", {HistType::kTH1F, {axisPt}});
@@ -206,42 +225,58 @@ struct tableMakerMuonMchTrkEfficiency {
     registry.add("hMchBitMap", "hMchBitMap", {HistType::kTH1F, {axisBitMap}});
 
     // keep also histos per muon selection
-    registry.add("selected/hEta", Form("hEta_%s", cutNamesStr.Data()), {HistType::kTH1F, {axisEta}});
-    registry.add("selected/hPt", Form("hPt_%s", cutNamesStr.Data()), {HistType::kTH1F, {axisPt}});
-    registry.add("selected/hPhi", Form("hPhi_%s", cutNamesStr.Data()), {HistType::kTH1F, {axisPhi}});
-    registry.add("selected/hMchBitMap", Form("hMchBitMap_%s", cutNamesStr.Data()), {HistType::kTH1F, {axisBitMap}});
+    registry.add("selected/hEta", Form("hEta_%s", cutNamesStr.Data()),
+                 {HistType::kTH1F, {axisEta}});
+    registry.add("selected/hPt", Form("hPt_%s", cutNamesStr.Data()),
+                 {HistType::kTH1F, {axisPt}});
+    registry.add("selected/hPhi", Form("hPhi_%s", cutNamesStr.Data()),
+                 {HistType::kTH1F, {axisPhi}});
+    registry.add("selected/hMchBitMap",
+                 Form("hMchBitMap_%s", cutNamesStr.Data()),
+                 {HistType::kTH1F, {axisBitMap}});
 
-    registry.add("hPtRecPtGen", "hPtRecPtGen", {HistType::kTH2F, {{axisPt}, {axisPtGen}}});
-    registry.add("hEtaRecEtaGen", "hEtaRecEtaGen", {HistType::kTH2F, {{axisEtaRed}, {axisEtaGenRed}}});
-    registry.add("hPhiRecPhiGen", "hPhiRecPhiGen", {HistType::kTH2F, {{axisPhiRed}, {axisPhiGenRed}}});
-    registry.add("selected/hPtRecPtGen", "hPtRecPtGen", {HistType::kTH2F, {{axisPt}, {axisPtGen}}});
-    registry.add("selected/hEtaRecEtaGen", "hEtaRecEtaGen", {HistType::kTH2F, {{axisEtaRed}, {axisEtaGenRed}}});
-    registry.add("selected/hPhiRecPhiGen", "hPhiRecPhiGen", {HistType::kTH2F, {{axisPhiRed}, {axisPhiGenRed}}});
+    registry.add("hPtRecPtGen", "hPtRecPtGen",
+                 {HistType::kTH2F, {{axisPt}, {axisPtGen}}});
+    registry.add("hEtaRecEtaGen", "hEtaRecEtaGen",
+                 {HistType::kTH2F, {{axisEtaRed}, {axisEtaGenRed}}});
+    registry.add("hPhiRecPhiGen", "hPhiRecPhiGen",
+                 {HistType::kTH2F, {{axisPhiRed}, {axisPhiGenRed}}});
+    registry.add("selected/hPtRecPtGen", "hPtRecPtGen",
+                 {HistType::kTH2F, {{axisPt}, {axisPtGen}}});
+    registry.add("selected/hEtaRecEtaGen", "hEtaRecEtaGen",
+                 {HistType::kTH2F, {{axisEtaRed}, {axisEtaGenRed}}});
+    registry.add("selected/hPhiRecPhiGen", "hPhiRecPhiGen",
+                 {HistType::kTH2F, {{axisPhiRed}, {axisPhiGenRed}}});
 
-    registry.add("hEtaPtPhi", "hEtaPtPhi", {HistType::kTH3F, {{axisEtaRed}, {axisPt}, {axisPhiRed}}});
-    registry.add("selected/hEtaPtPhi", Form("hEtaPtPhi_%s", cutNamesStr.Data()), {HistType::kTH3F, {{axisEtaRed}, {axisPt}, {axisPhiRed}}});
+    registry.add("hEtaPtPhi", "hEtaPtPhi",
+                 {HistType::kTH3F, {{axisEtaRed}, {axisPt}, {axisPhiRed}}});
+    registry.add("selected/hEtaPtPhi", Form("hEtaPtPhi_%s", cutNamesStr.Data()),
+                 {HistType::kTH3F, {{axisEtaRed}, {axisPt}, {axisPhiRed}}});
 
     for (int i = 0; i < 10; i++) {
-      registry.add(Form("selected/hNhitsPerChamber_%i", i), Form("hNhitsPerChamber_%i_%s", i, cutNamesStr.Data()), defaultNhitsPerChamber, false);
+      registry.add(Form("selected/hNhitsPerChamber_%i", i),
+                   Form("hNhitsPerChamber_%i_%s", i, cutNamesStr.Data()),
+                   defaultNhitsPerChamber, false);
     }
 
-    registry.add("selected/hMchBitMapEtaPtPhi", Form("hMchBitMapEtaPtPhi_%s", cutNamesStr.Data()), defaultMchBitmap);
+    registry.add("selected/hMchBitMapEtaPtPhi",
+                 Form("hMchBitMapEtaPtPhi_%s", cutNamesStr.Data()),
+                 defaultMchBitmap);
 
     LOGF(debug, "End of initialization");
 
   }; //! end of Initialize: configure, create specifics
 
   /// check whether a given chamber has hits
-  bool ischamberhit(uint16_t map, int ich)
-  { // i = 0..9
+  bool ischamberhit(uint16_t map, int ich) { // i = 0..9
     LOGF(debug, " map %i --> %i", map, (map >> ich) & 1);
     return (map >> ich) & 1;
   }
 
   /// extrapolate tracks to a given r value (spherical coordinates)
   ///   to mimic the (x,y) position in a given chamber
-  void extrapolate(TLorentzVector vec, int ich, double& x, double& y)
-  { // i = 0..9
+  void extrapolate(TLorentzVector vec, int ich, double &x,
+                   double &y) { // i = 0..9
     double zposCh[10] = {5, 5, 7, 7, 10, 10, 12.5, 12.5, 14.5, 14.5};
     double theta = vec.Theta();
     double phi = vec.Phi();
@@ -253,8 +288,8 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   /// process to fill histograms
-  void FillHistos(double mEta, double mPhi, double mPt, uint16_t mchBitmap, bool isSel)
-  {
+  void FillHistos(double mEta, double mPhi, double mPt, uint16_t mchBitmap,
+                  bool isSel) {
 
     /// fill histograms
     registry.fill(HIST("hEta"), mEta);
@@ -272,7 +307,8 @@ struct tableMakerMuonMchTrkEfficiency {
       registry.fill(HIST("selected/hMchBitMap"), (double)mchBitmap);
       registry.fill(HIST("selected/hEtaPtPhi"), mEta, mPt, mPhi);
       if (fillBitMapCorr)
-        registry.fill(HIST("selected/hMchBitMapEtaPtPhi"), mchBitmap, mEta, mPt, mPhi);
+        registry.fill(HIST("selected/hMchBitMapEtaPtPhi"), mchBitmap, mEta, mPt,
+                      mPhi);
 
       /// Study the Nhit distribution vs X-Y
       const int nChambers = 10;
@@ -358,8 +394,8 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   /// process to fill histograms
-  void FillHistosMC(double mEta, double mPhi, double mPt, uint16_t mchBitmap, bool isSel, double mGenEta, double mGenPt, double mGenPhi)
-  {
+  void FillHistosMC(double mEta, double mPhi, double mPt, uint16_t mchBitmap,
+                    bool isSel, double mGenEta, double mGenPt, double mGenPhi) {
 
     registry.fill(HIST("hPtRecPtGen"), mPt, mGenPt);
     registry.fill(HIST("hEtaRecEtaGen"), mEta, mGenEta);
@@ -375,8 +411,7 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   /// Kinematic selection
-  bool IsInKinematics(double eta, double pt)
-  {
+  bool IsInKinematics(double eta, double pt) {
     bool isSelected = true;
 
     if (pt < ptMuonMin) {
@@ -390,10 +425,10 @@ struct tableMakerMuonMchTrkEfficiency {
 
   /// Event selection
   template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSelection(TEvent event)
-  {
+  void runEventSelection(TEvent event) {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    VarManager::FillEvent<TEventFillMap>(event); // extract event information and place it in the fValues array
+    VarManager::FillEvent<TEventFillMap>(
+        event); // extract event information and place it in the fValues array
 
     /// Analyse only selected events
     registry.fill(HIST("hEventCounter"), 0);
@@ -405,8 +440,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
   /// Muon selection and info filling
   template <uint32_t TMuonFillMap, typename TMuons>
-  void runMuonSelection(TMuons const& tracksMuon)
-  {
+  void runMuonSelection(TMuons const &tracksMuon) {
     /// loop on all muons
     LOGF(debug, " muon fwd tracks %i", tracksMuon.size());
     const int ncuts = fMuonCuts.size();
@@ -415,11 +449,12 @@ struct tableMakerMuonMchTrkEfficiency {
       nselmuons[i] = 0;
 
     rowCandidateBase.reserve(tracksMuon.size());
-    for (auto& muon : tracksMuon) {
+    for (auto &muon : tracksMuon) {
 
       VarManager::FillTrack<TMuonFillMap>(muon);
 
-      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
+      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(),
+           muon.pt(), muon.p());
       double mPt = muon.pt();
       double mEta = TMath::Abs(muon.eta());
       double mPhi = muon.phi();
@@ -467,8 +502,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
   /// Muon selection and info filling
   template <uint32_t TMuonFillMap, typename TMuons>
-  void runSimulatedMuonSelection(TMuons const& tracksMuon)
-  {
+  void runSimulatedMuonSelection(TMuons const &tracksMuon) {
     /// loop on all muons
     LOGF(debug, " muon fwd tracks %i", tracksMuon.size());
     const int ncuts = fMuonCuts.size();
@@ -478,9 +512,10 @@ struct tableMakerMuonMchTrkEfficiency {
 
     rowCandidateBase.reserve(tracksMuon.size());
     rowCandidateGen.reserve(tracksMuon.size());
-    for (auto& muon : tracksMuon) {
+    for (auto &muon : tracksMuon) {
       ///
-      /// First compute MC matched quantities using either the DQ skimmed or the Framework data models
+      /// First compute MC matched quantities using either the DQ skimmed or the
+      /// Framework data models
       double mGenPt = 0., mGenEta = 0., mGenPhi = 0.;
       LOGF(debug, " Looking for the correspondent MC particle");
       if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
@@ -527,7 +562,8 @@ struct tableMakerMuonMchTrkEfficiency {
       /// look the reconstructed quantities
       VarManager::FillTrack<TMuonFillMap>(muon);
 
-      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
+      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(),
+           muon.pt(), muon.p());
       double mPt = muon.pt();
       double mEta = TMath::Abs(muon.eta());
       double mPhi = muon.phi();
@@ -554,7 +590,8 @@ struct tableMakerMuonMchTrkEfficiency {
 
       /// fill histograms
       FillHistos(mEta, mPhi, mPt, mchBitmap, isMuonSelectedAny);
-      FillHistosMC(mEta, mPhi, mPt, mchBitmap, isMuonSelectedAny, mGenEta, mGenPt, mGenPhi);
+      FillHistosMC(mEta, mPhi, mPt, mchBitmap, isMuonSelectedAny, mGenEta,
+                   mGenPt, mGenPhi);
 
       if (isMuonSelectedAny) {
         rowCandidateBase(mEta, mPt, mPhi, mchBitmap);
@@ -576,30 +613,33 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   //! process function for full muon information
-  void processReco(myEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs, myMuons const& muons)
-  {
+  void processReco(myEvents::iterator const &collision,
+                   aod::BCsWithTimestamps const &bcs, myMuons const &muons) {
     /// Run event selection
     runEventSelection<gkEventFillMap>(collision);
     /// Run muon selection and fill output histograms
     runMuonSelection<gkMuonFillMap>(muons);
   }
-  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processReco, "process reconstructed information", false);
+  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processReco,
+                 "process reconstructed information", false);
 
   //! process function for reduced muon information
-  void processRecoReduced(myReducedEvents::iterator const& event, myReducedMuons const& muons)
-  {
+  void processRecoReduced(myReducedEvents::iterator const &event,
+                          myReducedMuons const &muons) {
     /// Run event selection
     runEventSelection<gkReducedEventFillMap>(event);
     /// Run muon selection and fill output histograms
     runMuonSelection<gkReducedMuonFillMap>(muons);
   }
-  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processRecoReduced, "process reconstructed reduced information", true);
+  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processRecoReduced,
+                 "process reconstructed reduced information", true);
 
   //! process function for simulated muon information
   //! group according to reconstructed Collisions
-  void processSim(myEventsMC::iterator const& collision, aod::BCsWithTimestamps const& bcs, myMuonsMC const& muons,
-                  aod::McParticles_001 const& mcParticles, aod::McCollisions const& mcCollisions)
-  {
+  void processSim(myEventsMC::iterator const &collision,
+                  aod::BCsWithTimestamps const &bcs, myMuonsMC const &muons,
+                  aod::McParticles_001 const &mcParticles,
+                  aod::McCollisions const &mcCollisions) {
     // TODO: investigate the collisions without corresponding mcCollision
     if (!collision.has_mcCollision()) {
       return;
@@ -615,13 +655,15 @@ struct tableMakerMuonMchTrkEfficiency {
     /// Run muon selection and histo filling
     runSimulatedMuonSelection<gkMuonFillMap>(muons);
   }
-  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processSim, "process simulation information", false);
+  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processSim,
+                 "process simulation information", false);
 
   //! process function for reducedsimulated muon information
   //! group according to reconstructed Collisions
-  void processSimReduced(myReducedEventsMC::iterator const& collision, myReducedMuonsMC const& muons,
-                         aod::McParticles_001 const& mcParticles, aod::McCollisions const& mcCollisions)
-  {
+  void processSimReduced(myReducedEventsMC::iterator const &collision,
+                         myReducedMuonsMC const &muons,
+                         aod::McParticles_001 const &mcParticles,
+                         aod::McCollisions const &mcCollisions) {
 
     /// Run event selection
     ///
@@ -635,11 +677,10 @@ struct tableMakerMuonMchTrkEfficiency {
     //        VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     runSimulatedMuonSelection<gkReducedMuonFillMap>(muons);
   }
-  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processSimReduced, "process reconstructed reduced information", false);
+  PROCESS_SWITCH(tableMakerMuonMchTrkEfficiency, processSimReduced,
+                 "process reconstructed reduced information", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<tableMakerMuonMchTrkEfficiency>(cfgc)};
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+  return WorkflowSpec{adaptAnalysisTask<tableMakerMuonMchTrkEfficiency>(cfgc)};
 }
