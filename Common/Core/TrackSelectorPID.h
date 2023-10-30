@@ -13,6 +13,7 @@
 /// \brief PID track selector class
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
 #ifndef COMMON_CORE_TRACKSELECTORPID_H_
 #define COMMON_CORE_TRACKSELECTORPID_H_
@@ -439,6 +440,63 @@ class TrackSelectorPidBase
       return TrackSelectorPID::Rejected;
     }
     return TrackSelectorPID::NotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
+  }
+  
+
+  /// Returns status of combined PID (TPC and TOF) selection for a given track. Rejects the PID hypothesis only if either both TPC and TOF information
+  /// are not available or both TPC and TOF reject the PID hypothesis
+  /// \param track  track
+  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
+  template <typename T>
+  TrackSelectorPID::Status statusTpcAndTofConservative(const T& track)
+  {
+
+    if (!track.hasTPC() && !track.hasTOF()) {
+      return TrackSelectorPID::Rejected;
+    } else if (track.hasTPC() && track.hasTOF()) {
+
+      double nSigmaTpc = 100.;
+      double nSigmaTof = 100.;
+
+      //TPC  nsigma info with no pt or TOF constraints
+      if constexpr (pdg == kElectron) {
+        nSigmaTpc = track.tpcNSigmaEl();
+      } else if constexpr (pdg == kMuonMinus) {
+        nSigmaTpc = track.tpcNSigmaMu();
+      } else if constexpr (pdg == kPiPlus) {
+        nSigmaTpc = track.tpcNSigmaPi();
+      } else if constexpr (pdg == kKPlus) {
+        nSigmaTpc = track.tpcNSigmaKa();
+      } else if constexpr (pdg == kProton) {
+        nSigmaTpc = track.tpcNSigmaPr();
+      } else {
+        errorPdg();
+      }
+
+      //TOF  nsigma info with no pt or TPC constraints
+      if constexpr (pdg == kElectron) {
+        nSigmaTof = track.tofNSigmaEl();
+      } else if constexpr (pdg == kMuonMinus) {
+        nSigmaTof = track.tofNSigmaMu();
+      } else if constexpr (pdg == kPiPlus) {
+        nSigmaTof = track.tofNSigmaPi();
+      } else if constexpr (pdg == kKPlus) {
+        nSigmaTof = track.tofNSigmaKa();
+      } else if constexpr (pdg == kProton) {
+        nSigmaTof = track.tofNSigmaPr();
+      } else {
+        errorPdg();
+      }
+
+      if((nSigmaTpc < mNSigmaTpcMin || nSigmaTpc > mNSigmaTpcMax) && (nSigmaTof < mNSigmaTofMin || nSigmaTof > mNSigmaTofMax)) {
+        return TrackSelectorPID::Rejected
+      } else {
+        return TrackSelectorPID::Accepted;
+      }
+    } else {
+      return TrackSelectorPID::Accepted;
+    }
+
   }
 
   /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
