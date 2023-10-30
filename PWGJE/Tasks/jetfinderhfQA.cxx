@@ -27,6 +27,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -37,13 +38,11 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 #include "Framework/runDataProcessing.h"
 
 template <typename JetTableData, typename JetConstituentTableData, typename CandidateTableData, typename JetTableMCD, typename JetConstituentTableMCD, typename JetMatchingTableMCDMCP, typename JetTableMCDWeighted, typename CandidateTableMCD, typename JetTableMCP, typename JetConstituentTableMCP, typename JetMatchingTableMCPMCD, typename JetTableMCPWeighted, typename ParticleTableMCP>
 struct JetFinderHFQATask {
-
   HistogramRegistry registry;
 
   Configurable<float> selectedJetsRadius{"selectedJetsRadius", 0.4, "resolution parameter for histograms without radius"};
@@ -59,6 +58,8 @@ struct JetFinderHFQATask {
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
   Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
+
+  HfHelper hfHelper;
   std::string trackSelection;
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
@@ -162,6 +163,13 @@ struct JetFinderHFQATask {
       registry.add("h3_jet_r_jet_pt_candidate_y_Triggered", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});y_{candidate}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
     }
 
+    if (doprocessTracks) {
+      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+    }
+
     if (doprocessMCCollisionsWeighted) {
       AxisSpec weightAxis = {{VARIABLE_WIDTH, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0}, "weights"};
       registry.add("h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}});
@@ -234,26 +242,26 @@ struct JetFinderHFQATask {
       if (jet.r() == round(selectedJetsRadius * 100.0f)) {
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>) {
           if (hfcandidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
           if (hfcandidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
 
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>) {
           if (hfcandidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassLcToPKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassLcToPKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
           if (hfcandidate.isSelLcToPiKP() >= selectionFlagLcToPiPK) {
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassLcToPiKP(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassLcToPiKP(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
 
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>) {
           if (hfcandidate.isSelBplusToD0Pi() >= selectionFlagBplus) {
-            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
-            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), hfHelper.invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+            registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), hfHelper.invMassBplusToD0Pi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
           }
         }
       }
@@ -298,9 +306,9 @@ struct JetFinderHFQATask {
   template <typename T, typename U, typename M, typename O>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
-    if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {
-      const auto& mcpjet = mcdjet.template matchedJetCand_as<std::decay_t<U>>();
-
+    // if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {old version
+    //   const auto& mcpjet = mcdjet.template matchedJetCand_as<std::decay_t<U>>();old version
+    for (auto& mcpjet : mcdjet.template matchedJetCand_as<std::decay_t<U>>()) {
       auto mcdCandPt = 0.0;
       auto mcdCandPhi = 0.0;
       auto mcdCandEta = 0.0;
@@ -352,24 +360,7 @@ struct JetFinderHFQATask {
 
   void processJetsData(typename JetTableDataJoined::iterator const& jet, CandidateTableData const& candidates, JetTracks const& tracks)
   {
-
     fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet);
-    auto leadingTrackpT = -1.0;
-    for (auto const& track : tracks) {
-      if (!selectTrack(track)) {
-        continue;
-      }
-      if (track.pt() > leadingTrackpT)
-        leadingTrackpT = track.pt();
-    }
-
-    for (auto& hfcandidate : jet.template hfcandidates_as<CandidateTableData>()) {
-      if (hfcandidate.pt() > leadingTrackpT) {
-        leadingTrackpT = hfcandidate.pt();
-      }
-    }
-
-    registry.fill(HIST("h3_jet_r_jet_pt_leadingtrack_pt"), jet.r() / 100.0, jet.pt(), leadingTrackpT);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
 
@@ -509,6 +500,26 @@ struct JetFinderHFQATask {
   }
 
   PROCESS_SWITCH(JetFinderHFQATask, processTriggeredData, "QA for charged jet trigger", false);
+
+  void processTracks(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                     JetTracks const& tracks)
+  {
+
+    registry.fill(HIST("h_collisions"), 0.5);
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("h_collisions"), 1.5);
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt"), track.pt());
+      registry.fill(HIST("h_track_eta"), track.eta());
+      registry.fill(HIST("h_track_phi"), track.phi());
+    }
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processTracks, "QA for charged tracks", false);
 };
 
 using JetFinderD0QATask = JetFinderHFQATask<aod::D0ChargedJets, aod::D0ChargedJetConstituents, soa::Join<aod::HfCand2Prong, aod::HfSelD0>, aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets, aod::D0ChargedMCDetectorLevelJetEventWeights, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>, aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets, aod::D0ChargedMCParticleLevelJetEventWeights, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;

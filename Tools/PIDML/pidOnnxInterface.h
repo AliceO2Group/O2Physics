@@ -45,11 +45,8 @@ static const std::vector<std::string> cutVarLabels = {
   "TPC", "TPC + TOF", "TPC + TOF + TRD"};
 } // namespace pidml_pt_cuts
 
-using namespace pidml_pt_cuts;
-using namespace o2::framework;
-
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{pids.size()}, mPTLimits{pTLimits}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, o2::framework::LabeledArray<double> const& pTLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{pids.size()}, mPTLimits{pTLimits}
   {
     if (pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
@@ -119,12 +116,12 @@ struct PidONNXInterface {
   void fillDefaultConfiguration(std::vector<double>& minCertainties)
   {
     // FIXME: A more sophisticated strategy should be based on pid values as well
-    mPTLimits = LabeledArray{cuts[0], nPids, nCutVars, pidLabels, cutVarLabels};
+    mPTLimits = o2::framework::LabeledArray{pidml_pt_cuts::cuts[0], pidml_pt_cuts::nPids, pidml_pt_cuts::nCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels};
     minCertainties = std::vector<double>(mNPids, 0.5);
   }
 
   std::vector<PidONNXModel> mModels;
   std::size_t mNPids;
-  LabeledArray<double> mPTLimits;
+  o2::framework::LabeledArray<double> mPTLimits;
 };
 #endif // TOOLS_PIDML_PIDONNXINTERFACE_H_

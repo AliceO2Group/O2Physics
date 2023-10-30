@@ -181,6 +181,11 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     if (gRandom->Uniform() > eff)
       isReconstructed = false;
   }
+
+  // return false already now in case not reco'ed
+  if (!isReconstructed && mSkipUnreconstructed)
+    return false;
+
   // transform params vector and smear
   double params_[5];
   for (int i = 0; i < 5; ++i) {
@@ -239,9 +244,29 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto sigmatgl = sqrt(lutEntry->covm[9]);           // sigmatgl2
-  auto etaRes = 1 / (sqrt(1 + sigmatgl * sigmatgl)); // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta;                           // relative uncertainty
+  auto sigmatgl = sqrt(lutEntry->covm[9]);                   // sigmatgl2
+  auto etaRes = fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  etaRes /= lutEntry->eta;                                   // relative uncertainty
+  return etaRes;
+}
+/*****************************************************************/
+// absolute uncertainty on pt
+double TrackSmearer::getAbsPtRes(int pdg, float nch, float eta, float pt)
+{
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  auto val = sqrt(lutEntry->covm[14]) * pow(lutEntry->pt, 2);
+  return val;
+}
+
+/*****************************************************************/
+// absolute uncertainty on eta
+double TrackSmearer::getAbsEtaRes(int pdg, float nch, float eta, float pt)
+{
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  auto sigmatgl = sqrt(lutEntry->covm[9]);                   // sigmatgl2
+  auto etaRes = fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   return etaRes;
 }
 /*****************************************************************/

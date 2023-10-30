@@ -21,7 +21,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -34,12 +33,13 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 using namespace o2;
+using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::soa;
-using std::array;
+using namespace o2::pwgem::photonmeson;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 // using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
@@ -83,18 +83,26 @@ struct createPCM {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max chi2/NclsITS"};
-  Configurable<float> maxpt_itsonly{"maxpt_itsonly", 1.0, "max pT for ITSonly tracks"};
+  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
+  Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.5, "max pT for ITSonly tracks"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
+  Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> max_diff_tgl{"max_diff_tgl", 999.0, "max difference in track iu tgl between ele and pos"};
+  Configurable<float> max_diff_z_itstpc{"max_diff_z_itstpc", 999.0, "max difference in track iu z between ele and pos for ITS-TPC tracks"};
+  Configurable<float> max_diff_z_itsonly{"max_diff_z_itsonly", 999.0, "max difference in track iu z between ele and pos for ITSonly tracks"};
+  Configurable<float> max_diff_z_tpconly{"max_diff_z_tpconly", 999.0, "max difference in track iu z between ele and pos for TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<2> fitter;
+  // Material correction in the DCA fitter
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   void init(InitContext& context)
   {
@@ -126,12 +134,12 @@ struct createPCM {
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
-    // Material correction in the DCA fitter
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-    if (useMatCorrType == 1)
+    if (useMatCorrType == 1) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    if (useMatCorrType == 2)
+    }
+    if (useMatCorrType == 2) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
     fitter.setMatCorrType(matCorr);
   }
 
@@ -155,16 +163,16 @@ struct createPCM {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
+    auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (grpo != nullptr) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
+      if (grpmag == nullptr) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -183,29 +191,58 @@ struct createPCM {
     }
   }
 
-  float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+  static float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
   {
     float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-    float lQlNeg = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-    float lQlPos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+    float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+    float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
     return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
   }
-  float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+  static float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
   {
     float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-    float dp = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
+    float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
     return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot);
   }
 
   template <typename TTrack>
   bool reconstructV0(TTrack const& ele, TTrack const& pos)
   {
+    bool isITSonly_pos = pos.hasITS() && !pos.hasTPC();
+    bool isITSonly_ele = ele.hasITS() && !ele.hasTPC();
+    bool isTPConly_pos = !pos.hasITS() && pos.hasTPC();
+    bool isTPConly_ele = !ele.hasITS() && ele.hasTPC();
+    bool isITSTPC_pos = pos.hasITS() && pos.hasTPC();
+    bool isITSTPC_ele = ele.hasITS() && ele.hasTPC();
+
+    if ((isITSonly_pos && isTPConly_ele) || (isITSonly_ele && isTPConly_pos)) {
+      return false;
+    }
+
+    if (abs(ele.tgl() - pos.tgl()) > max_diff_tgl) {
+      return false;
+    }
+
+    if (isITSTPC_pos && isITSTPC_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itstpc) {
+        return false;
+      }
+    } else if (isTPConly_pos && isTPConly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_tpconly) {
+        return false;
+      }
+    } else if (isITSonly_pos && isITSonly_ele) {
+      if (abs(ele.z() - pos.z()) > max_diff_z_itsonly) {
+        return false;
+      }
+    }
+
     // fitter is memeber variable.
     auto pTrack = getTrackParCov(pos); // positive
     auto nTrack = getTrackParCov(ele); // negative
-    array<float, 3> svpos = {0.};      // secondary vertex position
-    array<float, 3> pvec0 = {0.};
-    array<float, 3> pvec1 = {0.};
+    std::array<float, 3> svpos = {0.}; // secondary vertex position
+    std::array<float, 3> pvec0 = {0.};
+    std::array<float, 3> pvec1 = {0.};
 
     int nCand = fitter.process(pTrack, nTrack);
     if (nCand != 0) {
@@ -220,7 +257,7 @@ struct createPCM {
       return false;
     }
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     if (v0dca > maxdcav0dau) {
       return false;
     }
@@ -233,14 +270,17 @@ struct createPCM {
     }
 
     float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
-    float recalculatedVtxR = sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
+    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
+    float recalculatedVtxR = std::sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
       return false;
     }
 
-    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
+    if (recalculatedVtxR < max_r_req_its && (!pos.hasITS() || !ele.hasITS())) {
+      return false;
+    }
+    if (recalculatedVtxR < min_r_tpconly && (!pos.hasITS() && !ele.hasITS())) {
       return false;
     }
 
@@ -250,10 +290,10 @@ struct createPCM {
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos, const bool filltable)
   {
-    array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
-    array<float, 3> svpos = {0.}; // secondary vertex position
-    array<float, 3> pvec0 = {0.};
-    array<float, 3> pvec1 = {0.};
+    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    std::array<float, 3> svpos = {0.}; // secondary vertex position
+    std::array<float, 3> pvec0 = {0.};
+    std::array<float, 3> pvec1 = {0.};
 
     auto pTrack = getTrackParCov(pos); // positive
     auto nTrack = getTrackParCov(ele); // negative
@@ -271,12 +311,10 @@ struct createPCM {
       return;
     }
 
-    float px = pvec0[0] + pvec1[0];
-    float py = pvec0[1] + pvec1[1];
-    float pz = pvec0[2] + pvec1[2];
+    std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
-    float v0CosinePA = RecoDecay::cpa(pVtx, array{svpos[0], svpos[1], svpos[2]}, array{px, py, pz});
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
+    float v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
 
     if (v0dca > maxdcav0dau) {
@@ -286,7 +324,7 @@ struct createPCM {
       return;
     }
 
-    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]))) { // store only photon conversions
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, max_qt_arm)) { // store only photon conversions
       return;
     }
 
@@ -321,6 +359,10 @@ struct createPCM {
       return false;
     }
 
+    if (track.hasITS() && !track.hasTPC() && (track.hasTRD() || track.hasTOF())) { // remove unrealistic track. this should not happen.
+      return false;
+    }
+
     if (track.hasTPC()) {
       if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
         return false;
@@ -330,15 +372,18 @@ struct createPCM {
       }
     }
 
-    bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTRD() & !track.hasTOF();
-    if (isITSonly) {
+    if (track.hasITS()) {
       if (track.itsChi2NCl() > maxchi2its) {
         return false;
       }
-      if (track.pt() > maxpt_itsonly) {
-        return false;
+      bool isITSonly = isITSonlyTrack(track);
+      if (isITSonly) {
+        if (track.pt() > maxpt_itsonly) {
+          return false;
+        }
       }
     }
+
     return true;
   }
 
@@ -352,8 +397,8 @@ struct createPCM {
   // Partition<MyFilteredTracks> orphan_negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::collisionId < int32_t(0);
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
-  vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
-  vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
+  std::vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
+  std::vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
 
   void processSA(MyFilteredTracks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {

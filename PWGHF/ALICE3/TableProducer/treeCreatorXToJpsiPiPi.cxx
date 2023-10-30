@@ -20,13 +20,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_x;
 
 namespace o2::aod
 {
@@ -144,20 +144,24 @@ struct HfTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullPs> rowCandidateFullParticles;
 
+  HfHelper hfHelper;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   void init(InitContext const&)
   {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const& mcCollisions,
                soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
-               aod::BigTracksPID const& tracks)
+               TracksWPid const& tracks)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -171,7 +175,7 @@ struct HfTreeCreatorXToJpsiPiPi {
     // Filling candidate properties
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!candidate.isSelXToJpsiToMuMuPiPi()) {
         continue;
       }
@@ -187,8 +191,8 @@ struct HfTreeCreatorXToJpsiPiPi {
                            float FunctionPiBalance) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.prong1_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.prong1_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.prong1_as<TracksWPid>().collision().bcId(),
+            candidate.prong1_as<TracksWPid>().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -207,12 +211,12 @@ struct HfTreeCreatorXToJpsiPiPi {
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.impactParameter2(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPr(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPi(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaKa(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPr(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaPi(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaKa(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaPr(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
@@ -232,20 +236,20 @@ struct HfTreeCreatorXToJpsiPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), invMassXToJpsiPiPi(candidate), ctX(candidate), yX(candidate), qX(candidate), dRX(candidate, 1), dRX(candidate, 2), balancePtPionsX(candidate));
+      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), hfHelper.invMassXToJpsiPiPi(candidate), hfHelper.ctX(candidate), hfHelper.yX(candidate), hfHelper.qX(candidate), hfHelper.dRX(candidate, 1), hfHelper.dRX(candidate, 2), hfHelper.balancePtPionsX(candidate));
     }
 
     // Filling particle properties
     float massX = 3.872;
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi || std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massX),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massX),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

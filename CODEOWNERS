@@ -14,6 +14,7 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
+/Common/Tools/ML @alibuild @fcatalan92 @fmazzasc
 /ALICE3 @alibuild @njacazio @vkucera @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
@@ -30,11 +31,7 @@
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
-/PWGHF @alibuild @vkucera @fcolamar @adubla
-/PWGHF/D2H @alibuild @vkucera @fcolamar @adubla @fcatalan92 @lvermunt
-/PWGHF/HFC @alibuild @vkucera @fcolamar @adubla @mmazzilli @deepathoms
-/PWGHF/HFJ @alibuild @vkucera @fcolamar @adubla @nzardosh @rvertesi
-/PWGHF/HFL @alibuild @vkucera @fcolamar @adubla @NicoleBastid @gtaillepied
+/PWGHF @alibuild @vkucera @fcolamar @adubla @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid @gtaillepied
 /PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin

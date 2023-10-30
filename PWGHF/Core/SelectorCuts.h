@@ -15,60 +15,11 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <algorithm> // std::upper_bound
-#include <iterator>  // std::distance
 #include <string>    // std::string
 #include <vector>    // std::vector
 
 namespace o2::analysis
 {
-namespace pdg
-{
-/// \brief Declarations of named PDG codes of HF particles missing in ROOT PDG_t.
-/// \note Follow kCamelCase naming convention
-/// \link https://root.cern/doc/master/TPDGCode_8h.html
-enum Code {
-  kB0 = 511,
-  kB0Bar = -511,
-  kBPlus = 521,
-  kBS = 531,
-  kD0 = 421,
-  kD0Bar = -421,
-  kDMinus = -411,
-  kDPlus = 411,
-  kDS = 431,
-  kDStar = 413,
-  kChiC1 = 20443,
-  kJPsi = 443,
-  kLambdaB0 = 5122,
-  kLambdaCPlus = 4122,
-  kOmegaC0 = 4332,
-  kPhi = 333,
-  kSigmaC0 = 4112,
-  kSigmaCPlusPlus = 4222,
-  kX3872 = 9920443,
-  kXiCCPlusPlus = 4422,
-  kXiCPlus = 4232,
-  kXiCZero = 4132
-};
-} // namespace pdg
-
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
-/// \return index of the pT bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
-template <typename T1, typename T2>
-int findBin(T1 const& binsPt, T2 value)
-{
-  if (value < binsPt->front()) {
-    return -1;
-  }
-  if (value >= binsPt->back()) {
-    return -1;
-  }
-  return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
-}
 
 // namespace per channel
 
@@ -89,13 +40,21 @@ constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   1000.0};
 auto vecBinsPtTrack = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
-// default values for the cuts
+// default values for the cuts of displaced tracks
 constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
                                                            {0.0025, 10.},  /* 0.5 < pt < 1 */
                                                            {0.0025, 10.},  /* 1   < pt < 1.5 */
                                                            {0.0025, 10.},  /* 1.5 < pt < 2 */
                                                            {0.0000, 10.},  /* 2   < pt < 3 */
                                                            {0.0000, 10.}}; /* 3   < pt < 1000 */
+
+// default values for the cuts of primary tracks (e.g. D* soft pions)
+constexpr double cutsTrackPrimary[nBinsPtTrack][nCutVarsTrack] = {{0.0000, 2.},  /* 0   < pt < 0.5 */
+                                                                  {0.0000, 2.},  /* 0.5 < pt < 1 */
+                                                                  {0.0000, 2.},  /* 1   < pt < 1.5 */
+                                                                  {0.0000, 2.},  /* 1.5 < pt < 2 */
+                                                                  {0.0000, 2.},  /* 2   < pt < 3 */
+                                                                  {0.0000, 2.}}; /* 3   < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{};
@@ -135,12 +94,17 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
-static constexpr int nBinsPt = 1;
+static constexpr int nBinsPt = 6;
 static constexpr int nCutScores = 3;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
-  1000};
+  1.,
+  2.,
+  4.,
+  6.,
+  10.,
+  50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the ML model paths, one model per pT bin
@@ -152,11 +116,23 @@ constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {{0.5, 0.5, 0.5}};
+constexpr double cuts[nBinsPt][nCutScores] = {
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
-  "pT bin 0"};
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+};
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
@@ -210,10 +186,33 @@ static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
 
+namespace hf_cuts_presel_dstar
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 2;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.,
+  5.,
+  1000.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.17, 0.05},  /* 1 < pt < 5 */
+                                            {0.17, 0.08}}; /* 5 < pt < 1000 */
+
+// row labels
+static const std::vector<std::string> labelsPt{};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"deltaMassMax", "deltaMassD0"};
+} // namespace hf_cuts_presel_dstar
+
 namespace hf_cuts_d0_to_pi_k
 {
 static constexpr int nBinsPt = 25;
-static constexpr int nCutVars = 14;
+static constexpr int nCutVars = 15;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
@@ -246,31 +245,31 @@ constexpr double binsPt[nBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06},   /* 0   < pT < 0.5 */
-                                            {0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06},   /* 0.5 < pT < 1   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06},  /* 1   < pT < 1.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06},  /* 1.5 < pT < 2   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -20000. * 1E-8, 0.90, 0., 0., 10., 10., 0.06},  /* 2   < pT < 2.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -20000. * 1E-8, 0.90, 0., 0., 10., 10., 0.06},  /* 2.5 < pT < 3   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -12000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 3   < pT < 3.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -12000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 3.5 < pT < 4   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 4   < pT < 4.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 4.5 < pT < 5   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 5   < pT < 5.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 5.5 < pT < 6   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 6   < pT < 6.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 6.5 < pT < 7   */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -7000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 7   < pT < 7.5 */
-                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -7000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 7.5 < pT < 8   */
-                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 8   < pT < 9   */
-                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 9   < pT < 10  */
-                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 10  < pT < 12  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 10000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},   /* 12  < pT < 16  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 16  < pT < 20  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 20  < pT < 24  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 24  < pT < 36  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06},  /* 36  < pT < 50  */
-                                            {0.400, 300. * 1E-4, 1.0, 0.6, 0.6, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.80, 0., 0., 10., 10., 0.06}}; /* 50  < pT < 100 */
+constexpr double cuts[nBinsPt][nCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5},   /* 0   < pT < 0.5 */
+                                            {0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5},   /* 0.5 < pT < 1   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5},  /* 1   < pT < 1.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5},  /* 1.5 < pT < 2   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -20000. * 1E-8, 0.90, 0., 0., 10., 10., 0.06, 0.5},  /* 2   < pT < 2.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -20000. * 1E-8, 0.90, 0., 0., 10., 10., 0.06, 0.5},  /* 2.5 < pT < 3   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -12000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 3   < pT < 3.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -12000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 3.5 < pT < 4   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 4   < pT < 4.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 4.5 < pT < 5   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 5   < pT < 5.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 5.5 < pT < 6   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 6   < pT < 6.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -8000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 6.5 < pT < 7   */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -7000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 7   < pT < 7.5 */
+                                            {0.400, 300. * 1E-4, 0.8, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -7000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 7.5 < pT < 8   */
+                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 8   < pT < 9   */
+                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 9   < pT < 10  */
+                                            {0.400, 300. * 1E-4, 0.9, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 10  < pT < 12  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 10000. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},   /* 12  < pT < 16  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 16  < pT < 20  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 20  < pT < 24  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 24  < pT < 36  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.7, 0.7, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.85, 0., 0., 10., 10., 0.06, 0.5},  /* 36  < pT < 50  */
+                                            {0.400, 300. * 1E-4, 1.0, 0.6, 0.6, 1000. * 1E-4, 1000. * 1E-4, 999999. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5}}; /* 50  < pT < 100 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -301,7 +300,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 24"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "decay length", "decay length XY", "minimum decay length"};
+static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "min norm decay length XY", "max decay length", "max decay length XY", "min decay length", "norm dauImpPar XY"};
 } // namespace hf_cuts_d0_to_pi_k
 
 namespace hf_cuts_lc_to_p_k_pi
@@ -696,6 +695,32 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 D", "d0 Pi", "pT D", "pT Pi", "B0 decLen", "B0 decLenXY", "Imp. Par. Product", "DeltaMD", "Cos ThetaStar"};
 } // namespace hf_cuts_b0_to_d_pi
+
+namespace hf_cuts_bs_to_ds_pi
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 10;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  0,
+  1.0,
+  2.0};
+
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+// DeltaM CPA chi2PCA d0Ds d0Pi pTDs pTPi BsDecayLength BsDecayLengthXY IPProd
+constexpr double cuts[nBinsPt][nCutVars] = {{1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 0 < pt < 1 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.}}; /* 1 < pt < 2 */
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Ds", "d0 Pi", "pT Ds", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product"};
+} // namespace hf_cuts_bs_to_ds_pi
 
 namespace hf_cuts_bplus_to_d0_pi
 {

@@ -191,6 +191,7 @@ struct DQBarrelTrackSelection {
   Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 110.0, "Maximum TPC signal"};
   Configurable<int> fConfigCollisionTrackAssoc{"cfgCollisionTrackAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - track matching (in ns)"};
+  Configurable<float> fConfigSigmaForTimeCompat{"cfgSigmaForTimeCompat", 4.0, "nSigma window when doing collision - track matching "};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   // o2::ccdb::CcdbApi fCCDB_api;                /// API to access CCDB headers
@@ -289,7 +290,7 @@ struct DQBarrelTrackSelection {
       return;
     }
     float timeMargin = fConfigAssocTimeMargin.value;
-    float nSigmaForTimeCompat = 4.0;
+    float nSigmaForTimeCompat = fConfigSigmaForTimeCompat.value;
 
     auto trackBegin = fSelectedTracks.begin();
     const auto bOffsetMax = 241; // 6 mus (ITS)
@@ -556,6 +557,7 @@ struct DQMuonsSelection {
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 0.5f, "Low pt cut for muons"};
   Configurable<int> fConfigCollisionMuonAssoc{"cfgCollisionMuonAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - muon matching (in ns)"};
+  Configurable<float> fConfigSigmaForTimeCompat{"cfgSigmaForTimeCompat", 4.0, "nSigma window when doing collision - track matching "};
   Configurable<float> fSigmaTrack{"cfgSigmaTrack", 1.0, "Number of sigma for track time window"};
   Configurable<float> fSigmaVtx{"cfgSigmaVtx", 4.0, "Number of sigma for vertex time window"};
   Configurable<float> fTimeMarginTrack{"cfgTimeMarginTrack", 0.0, "Number of sigma for track time window"};
@@ -685,7 +687,7 @@ struct DQMuonsSelection {
       return;
     }
     float timeMargin = fConfigAssocTimeMargin.value;
-    float nSigmaForTimeCompat = 4.0;
+    float nSigmaForTimeCompat = fConfigSigmaForTimeCompat.value;
 
     auto trackBegin = fSelectedMuons.begin();
     const auto bOffsetMax = 200; // check 200 BCs in past and future

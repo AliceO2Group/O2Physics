@@ -50,8 +50,10 @@ struct femtoUniverseDebugTrack {
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+    Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
     Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
     Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 1, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
+    Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
   } trackonefilter;
 
   struct : o2::framework::ConfigurableGroup {
@@ -72,11 +74,11 @@ struct femtoUniverseDebugTrack {
   FemtoUniverseTrackSelection trackCuts;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)); // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(trackonefilter.ConfTrackSign)); // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
   Preslice<FemtoFullParticles> perColReco = aod::femtouniverseparticle::fdCollisionId;
 
   using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
-  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)); // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(trackonefilter.ConfTrackSign)); // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
   Preslice<FemtoFullParticlesMC> perColGen = aod::femtouniverseparticle::fdCollisionId;
 
   /// Histogramming for Event
@@ -107,7 +109,7 @@ struct femtoUniverseDebugTrack {
       } else {
         return false;
       }
-    } else if (mom > 0.4) {
+    } else if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < generalPIDcuts.ConfNsigmaCombinedProton) {
         return true;
       } else {
@@ -126,22 +128,41 @@ struct femtoUniverseDebugTrack {
     // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
     // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.5
     // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.5
-    if (true) {
-      if (mom < 0.5) {
-        if (TMath::Abs(nsigmaTPCK) < generalPIDcuts.ConfNsigmaTPCKaon) {
-          return true;
-        } else {
-          return false;
-        }
-      } else if (mom > 0.5) {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < generalPIDcuts.ConfNsigmaCombinedKaon) {
-          return true;
-        } else {
-          return false;
-        }
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
       }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
+          return true;
+        }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
-    return false;
   }
 
   bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
@@ -170,16 +191,20 @@ struct femtoUniverseDebugTrack {
     return false;
   }
 
-  bool IsParticleNSigma(int8_t particle_number, float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
+  bool IsParticleNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
-    switch (trackonefilter.ConfTrackChoicePartOne) {
-      case 0: // Proton
+    switch (trackonefilter.ConfPDGCodePartOne) {
+      case 2212:  // Proton
+      case -2212: // anty Proton
         return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
         break;
-      case 1: // Pion
+      case 211:  // Pion
+      case -211: // Pion-
+      case 111:  // Pion 0
         return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
         break;
-      case 2: // Kaon
+      case 321:  // Kaon+
+      case -321: // Kaon-
         return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
         break;
       default:
@@ -208,8 +233,10 @@ struct femtoUniverseDebugTrack {
       // if (!isFullPIDSelected(part.pidcut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
       //   continue;
       // }
-      if (!IsParticleNSigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
-        continue;
+      if (trackonefilter.ConfIsTrackIdentified) {
+        if (!IsParticleNSigma(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+          continue;
+        }
       }
       trackHisto.fillQA<isMC, true>(part);
     }

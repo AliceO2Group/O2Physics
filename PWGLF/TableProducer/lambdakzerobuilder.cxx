@@ -129,6 +129,7 @@ struct lambdakzeroBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // generate and fill extra QA histograms is requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
@@ -446,8 +447,10 @@ struct lambdakzeroBuilder {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
@@ -732,11 +735,14 @@ struct lambdakzeroBuilder {
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", false);
 
-  void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
     // Fire up CCDB
-    auto collision = collisions.begin();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collisions.size() ? collisions.begin().bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+    if (!bcs.size()) {
+      LOGF(warn, "No BC found, skipping this DF.");
+      return;
+    }
     initCCDB(bc);
     buildStrangenessTables<FullTracksExtIU>(V0s);
   }
@@ -754,6 +760,7 @@ struct lambdakzeroPreselector {
   Configurable<bool> dIfMCgenerateHypertriton{"dIfMCgenerateHypertriton", false, "if MC, generate MC true hypertritons (yes/no)"};
   Configurable<bool> dIfMCgenerateAntiHypertriton{"dIfMCgenerateAntiHypertriton", false, "if MC, generate MC true antihypertritons (yes/no)"};
   Configurable<int> dIfMCselectV0MotherPDG{"dIfMCselectV0MotherPDG", 0, "if MC, selects based on mother particle (zero for no selection)"};
+  Configurable<bool> dIfMCselectPhysicalPrimary{"dIfMCselectPhysicalPrimary", true, "if MC, select MC physical primary (yes/no)"};
 
   Configurable<bool> ddEdxPreSelectK0Short{"ddEdxPreSelectK0Short", true, "pre-select dE/dx compatibility with K0Short (yes/no)"};
   Configurable<bool> ddEdxPreSelectLambda{"ddEdxPreSelectLambda", true, "pre-select dE/dx compatibility with Lambda (yes/no)"};
@@ -828,7 +835,7 @@ struct lambdakzeroPreselector {
       if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
         for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
-            if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
+            if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
 
               // additionally check PDG of the mother particle if requested
@@ -970,7 +977,7 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {

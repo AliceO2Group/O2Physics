@@ -20,14 +20,12 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_correlation_d_dbar;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
-using namespace o2::constants::math;
 
 namespace o2::aod
 {
@@ -158,7 +156,7 @@ struct HfTaskCorrelationDDbar {
      {"hDeltaPtDDbarMCGen", stringMCParticles + stringDeltaPt + "entries", {HistType::kTH1F, {{144, -36., 36.}}}},
      {"hDeltaPtMaxMinMCGen", stringMCParticles + stringDeltaPtMaxMin + "entries", {HistType::kTH1F, {{72, 0., 36.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;
@@ -234,7 +232,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -282,7 +280,7 @@ struct HfTaskCorrelationDDbar {
         registry.fill(HIST("hDeltaPtDDbarSidebands"), ptDbar - ptD, efficiencyWeight);
         registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptDbar - ptD), efficiencyWeight);
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processData, "Process data", false);
@@ -291,7 +289,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processMcRec(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -429,7 +427,7 @@ struct HfTaskCorrelationDDbar {
             break;
         }
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcRec, "Process MC Reco mode", true);
@@ -438,7 +436,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables (and if tables are filled with quark pairs as well)
   void processMcGen(aod::DDbarPair const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -456,7 +454,7 @@ struct HfTaskCorrelationDDbar {
       registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
       registry.fill(HIST("hDeltaPtDDbarMCGen"), ptDbar - ptD);
       registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptDbar - ptD));
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcGen, "Process MC Gen mode", false);

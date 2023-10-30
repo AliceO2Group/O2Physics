@@ -21,12 +21,13 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_casc;
 using namespace o2::framework::expressions;
 
 /// LcToK0sp analysis task
@@ -36,7 +37,11 @@ struct HfTaskLcToK0sP {
   Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
 
+  HfHelper hfHelper;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
+
+  using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"};
 
@@ -239,11 +244,10 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void
-    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
+               TracksWPid const&)
   {
-    // Printf("Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       /*
       // no such selection for LcK0sp for now - it is the only cascade
       if (!(candidate.hfflag() & 1 << D0ToPiK)) {
@@ -252,14 +256,13 @@ struct HfTaskLcToK0sP {
       */
 
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
-        // Printf("Candidate: eta rejection: %g", candidate.eta());
         continue;
       }
 
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = o2::aod::hf_cand_casc::invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -275,13 +278,13 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
-      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
+      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
+      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
+      auto ctLc = hfHelper.ctLc(candidate);
 
       registry.fill(HIST("hPtCand"), ptCand);
       registry.fill(HIST("hEtaCand"), eta);
@@ -335,7 +338,7 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hCtCand"), ctLc);
       registry.fill(HIST("hCtCandVsPtCand"), ctLc, ptCand);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
       registry.fill(HIST("hTPCNSigmaPrBach"), tpcNSigmaPr);
@@ -349,21 +352,20 @@ struct HfTaskLcToK0sP {
   }
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks, aod::BigTracksPID const&)
+                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
+                 aod::TracksWMc const& tracks,
+                 TracksWPid const&)
   {
     // MC rec.
-    // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
-        // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
       }
 
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = o2::aod::hf_cand_casc::invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -379,15 +381,15 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
-      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
+      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
+      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
+      auto ctLc = hfHelper.ctLc(candidate);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
 
@@ -512,10 +514,8 @@ struct HfTaskLcToK0sP {
       }
     }
     // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
-        // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;
       }
 

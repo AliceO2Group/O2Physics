@@ -105,6 +105,9 @@ struct femtoDreamPairTaskTrackV0 {
   /// Correlation part
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  Configurable<bool> ConfExtendedPlots{"ConfExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+  Configurable<float> ConfHighkstarCut{"ConfHighkstarCut", 6., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
+
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
@@ -138,9 +141,9 @@ struct femtoDreamPairTaskTrackV0 {
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, false, false);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, false, false);
 
-    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
+    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D, ConfExtendedPlots, ConfHighkstarCut);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
+    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D, ConfExtendedPlots, ConfHighkstarCut);
     mixedEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
@@ -162,7 +165,7 @@ struct femtoDreamPairTaskTrackV0 {
           !isFullPIDSelected(part.pidcut(), part.p(), ConfTrkCutTable->get("Track", "PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfTrkCutTable->get("Track", "nSigmaTPC"), ConfTrkCutTable->get("Track", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartOne.fillQA<isMC, false>(part, 0);
+      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
     }
     for (auto& part : groupPartsTwo) {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
@@ -173,9 +176,9 @@ struct femtoDreamPairTaskTrackV0 {
           !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartTwo.fillQA<isMC, false>(part, 0);
-      posChildHistos.fillQA<false, false>(posChild, 0);
-      negChildHistos.fillQA<false, false>(negChild, 0);
+      trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+      posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt);
+      negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt);
     }
 
     /// Now build the combinations
@@ -201,7 +204,7 @@ struct femtoDreamPairTaskTrackV0 {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
     }
   }
 
@@ -254,7 +257,7 @@ struct femtoDreamPairTaskTrackV0 {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
     }
   }
 

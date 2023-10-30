@@ -41,15 +41,39 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 
+// complementary / MultsExtra table
+DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, float); //!
+DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                           //!
+DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);       //!
+DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
+DECLARE_SOA_COLUMN(MultPVz, multPVz, float);                                 //!
+DECLARE_SOA_COLUMN(MultSel8, multSel8, bool);                                //!
+
+DECLARE_SOA_COLUMN(MultNTracksHasITS, multNTracksHasITS, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTPC, multNTracksHasTPC, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTOF, multNTracksHasTOF, int); //!
+DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
+
+// further QA
+DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
+DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
+DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
+
+DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
+
 } // namespace mult
-DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
+DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
+                  mult::MultFV0M<mult::MultFV0A, mult::MultFV0C>);
+DECLARE_SOA_TABLE(FT0Mults, "AOD", "FT0MULT", //! Multiplicity with the FT0 detector
                   mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>);
+DECLARE_SOA_TABLE(FDDMults, "AOD", "FDDMULT", //! Multiplicity with the FDD detector
                   mult::MultFDDA, mult::MultFDDC,
-                  mult::MultZNA, mult::MultZNC,
-                  mult::MultFV0M<mult::MultFV0A, mult::MultFV0C>,
-                  mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>,
-                  mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>,
+                  mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>);
+DECLARE_SOA_TABLE(ZDCMults, "AOD", "ZDCMULT", //! Multiplicity with the ZDC detector
+                  mult::MultZNA, mult::MultZNC);
+DECLARE_SOA_TABLE(BarrelMults, "AOD", "BARRELMULT", //! Multiplicity in the barrel
                   mult::MultTracklets,
                   mult::MultTPC,
                   mult::MultNTracksPV,
@@ -57,7 +81,15 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultNTracksPVetaHalf,
                   mult::IsInelGt0<mult::MultNTracksPVeta1>,
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
+using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using Mult = Mults::iterator;
+
+// for QA purposes
+DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
+                  mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
+                  mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
+                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, mult::BCNumber);
+using MultExtra = MultsExtra::iterator;
 
 namespace multZeq
 {
@@ -74,6 +106,29 @@ DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
                   multZeq::MultZeqFDDA, multZeq::MultZeqFDDC,
                   multZeq::MultZeqNTracksPV);
 using MultZeq = MultZeqs::iterator;
+
+namespace multBC
+{
+DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);    //!
+DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);       //!
+DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool); //!
+DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
+} // namespace multDebug
+DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
+                  multBC::MultBCFT0A,
+                  multBC::MultBCFT0C,
+                  multBC::MultBCFV0A,
+                  multBC::MultBCTVX,
+                  multBC::MultBCFV0OrA,
+                  multBC::MultBCV0triggerBits,
+                  multBC::MultBCTriggerMask,
+                  multBC::MultBCColliding);
+using MultBC = MultsBC::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_MULTIPLICITY_H_

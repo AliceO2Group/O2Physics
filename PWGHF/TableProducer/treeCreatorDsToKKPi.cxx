@@ -20,13 +20,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
 
 namespace o2::aod
 {
@@ -207,25 +207,27 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 1, "Selection flag for Ds"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
-  using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
-  using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  HfHelper hfHelper;
+
+  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
+  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
+  using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
 
-  Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
+  Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<candDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<candDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   void init(InitContext const&)
   {
@@ -262,18 +264,18 @@ struct HfTreeCreatorDsToKKPi {
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
     if constexpr (massHypo == 0) {
-      invMassDs = invMassDsToKKPi(candidate);
-      deltaMassPhiKK = deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = std::abs(cos3PiKDsToKKPi(candidate));
+      invMassDs = hfHelper.invMassDsToKKPi(candidate);
+      deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
+      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToKKPi(candidate));
     } else if constexpr (massHypo == 1) {
-      invMassDs = invMassDsToPiKK(candidate);
-      deltaMassPhiKK = deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = std::abs(cos3PiKDsToPiKK(candidate));
+      invMassDs = hfHelper.invMassDsToPiKK(candidate);
+      deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
+      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToPiKK(candidate));
     }
 
-    auto prong0 = candidate.template prong0_as<aod::BigTracksPID>();
-    auto prong1 = candidate.template prong1_as<aod::BigTracksPID>();
-    auto prong2 = candidate.template prong2_as<aod::BigTracksPID>();
+    auto prong0 = candidate.template prong0_as<TracksWPid>();
+    auto prong1 = candidate.template prong1_as<TracksWPid>();
+    auto prong2 = candidate.template prong2_as<TracksWPid>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -301,7 +303,7 @@ struct HfTreeCreatorDsToKKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        yDs(candidate),
+        hfHelper.yDs(candidate),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -360,11 +362,11 @@ struct HfTreeCreatorDsToKKPi {
         invMassDs,
         candidate.pt(),
         candidate.p(),
-        ctDs(candidate),
+        hfHelper.ctDs(candidate),
         candidate.eta(),
         candidate.phi(),
-        yDs(candidate),
-        eDs(candidate),
+        hfHelper.yDs(candidate),
+        hfHelper.eDs(candidate),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -382,12 +384,12 @@ struct HfTreeCreatorDsToKKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   candDsData const& candidates,
-                   aod::BigTracksPID const&)
+                   CandDsData const& candidates,
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -398,7 +400,7 @@ struct HfTreeCreatorDsToKKPi {
       rowCandidateFull.reserve(selectedDsToKKPiCand.size() + selectedDsToPiKKCand.size());
     }
 
-    for (auto const& candidate : selectedDsToKKPiCand) {
+    for (const auto& candidate : selectedDsToKKPiCand) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -408,7 +410,7 @@ struct HfTreeCreatorDsToKKPi {
       fillCandidateTable<false, 0>(candidate);
     }
 
-    for (auto const& candidate : selectedDsToPiKKCand) {
+    for (const auto& candidate : selectedDsToPiKKCand) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -423,13 +425,13 @@ struct HfTreeCreatorDsToKKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 candDsMcReco const& candidates,
-                 candDsMcGen const& particlesMC,
-                 aod::BigTracksPID const&)
+                 CandDsMcReco const& candidates,
+                 CandDsMcGen const& mcParticles,
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -499,14 +501,14 @@ struct HfTreeCreatorDsToKKPi {
     }
 
     // Filling particle properties
-    rowCandidateFullParticles.reserve(particlesMC.size());
-    for (auto const& particle : particlesMC) {
+    rowCandidateFullParticles.reserve(mcParticles.size());
+    for (const auto& particle : mcParticles) {
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

@@ -23,15 +23,14 @@
 
 #include "Common/Core/trackUtilities.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -61,9 +60,11 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massJpsi = RecoDecay::getMassPDG(443);
-  double massJpsiPiPi;
+  HfHelper hfHelper;
+
+  double massPi{0.};
+  double massJpsi{0.};
+  double massJpsiPiPi{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEE >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMu >= selectionFlagJpsi);
 
@@ -76,11 +77,17 @@ struct HfCandidateCreatorX {
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
+  void init(InitContext const&)
+  {
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massJpsi = o2::analysis::pdg::MassJPsi;
+  }
+
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
                  aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
-               aod::BigTracks const& tracks)
+               aod::TracksWCov const& tracks)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
@@ -105,33 +112,33 @@ struct HfCandidateCreatorX {
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over Jpsi candidates
-    for (auto& jpsiCand : jpsiCands) {
+    for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(jpsiCand)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(jpsiCand)) > yCandMax) {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (std::abs(invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToEE->Fill(invMassJpsiToEE(jpsiCand));
+        hMassJpsiToEE->Fill(hfHelper.invMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (std::abs(invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
+        if (std::abs(hfHelper.invMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiMax) {
           continue;
         }
-        hMassJpsiToMuMu->Fill(invMassJpsiToMuMu(jpsiCand));
+        hMassJpsiToMuMu->Fill(hfHelper.invMassJpsiToMuMu(jpsiCand));
       }
 
       hPtJpsi->Fill(jpsiCand.pt());
       hCPAJpsi->Fill(jpsiCand.cpa());
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
-      array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
-      auto prong0 = jpsiCand.prong0_as<aod::BigTracks>();
-      auto prong1 = jpsiCand.prong1_as<aod::BigTracks>();
+      std::array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
+      auto prong0 = jpsiCand.prong0_as<aod::TracksWCov>();
+      auto prong1 = jpsiCand.prong1_as<aod::TracksWCov>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
 
@@ -144,14 +151,14 @@ struct HfCandidateCreatorX {
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
-      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); // FIXME: also needs covxyz???
+      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov); // FIXME: also needs covxyz???
 
       // used to check that prongs used for Jpsi and X reco are not the same prongs
       int index0Jpsi = jpsiCand.prong0Id();
       int index1Jpsi = jpsiCand.prong1Id();
 
       // loop over pi+ candidates
-      for (auto& trackPos : tracks) {
+      for (const auto& trackPos : tracks) {
         if (trackPos.pt() < ptPionMin) {
           continue;
         }
@@ -163,7 +170,7 @@ struct HfCandidateCreatorX {
         }
 
         // loop over pi- candidates
-        for (auto& trackNeg : tracks) {
+        for (const auto& trackNeg : tracks) {
           if (trackNeg.pt() < ptPionMin) {
             continue;
           }
@@ -176,8 +183,8 @@ struct HfCandidateCreatorX {
 
           auto trackParVarPos = getTrackParCov(trackPos);
           auto trackParVarNeg = getTrackParCov(trackNeg);
-          array<float, 3> pvecPos;
-          array<float, 3> pvecNeg;
+          std::array<float, 3> pvecPos;
+          std::array<float, 3> pvecNeg;
 
           // reconstruct the 3-prong X vertex
           if (df3.process(trackJpsi, trackParVarPos, trackParVarNeg) == 0) {
@@ -209,7 +216,7 @@ struct HfCandidateCreatorX {
 
           // get uncertainty of the decay length
           double phi, theta;
-          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, XsecondaryVertex, phi, theta);
+          getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, XsecondaryVertex, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -236,8 +243,8 @@ struct HfCandidateCreatorX {
                            hfFlag);
 
           // calculate invariant mass
-          auto arrayMomenta = array{pvecJpsi, pvecPos, pvecNeg};
-          massJpsiPiPi = RecoDecay::m(std::move(arrayMomenta), array{massJpsi, massPi, massPi});
+          auto arrayMomenta = std::array{pvecJpsi, pvecPos, pvecNeg};
+          massJpsiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massJpsi, massPi, massPi});
           if (jpsiCand.isSelJpsiToEE() > 0) {
             hMassXToJpsiToEEPiPi->Fill(massJpsiPiPi);
           }
@@ -264,8 +271,8 @@ struct HfCandidateCreatorXMc {
 
   void process(aod::HfCandX const& candidates,
                aod::HfCand2Prong const&,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::TracksWMc const& tracks,
+               aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;
@@ -276,34 +283,37 @@ struct HfCandidateCreatorXMc {
     int8_t channel = 0;
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
-      // Printf("New rec. candidate");
+    for (const auto& candidate : candidates) {
       flag = 0;
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.prong0();
-      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
-      auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
-      auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(),
-                                  candidate.prong2_as<aod::BigTracksMC>(),
-                                  daughterPosJpsi,
-                                  daughterNegJpsi};
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::TracksWMc>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::TracksWMc>();
+      auto arrayJpsiDaughters = std::array{daughterPosJpsi, daughterNegJpsi};
+      auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(),
+                                       candidate.prong2_as<aod::TracksWMc>(),
+                                       daughterPosJpsi,
+                                       daughterNegJpsi};
 
-      // X → J/ψ π+ π-
-      // Printf("Checking X → J/ψ π+ π-");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true);
+      // X → J/ψ π+ π−
+
+      // J/ψ → e+ e−
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+      // X → π+ π− e+ e−
       if (indexRec > -1) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
         if (indexRec > -1) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
       }
 
+      // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJPsi, array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        // X → π+ π− μ+ μ−
         if (indexRec > -1) {
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
@@ -312,33 +322,32 @@ struct HfCandidateCreatorXMc {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchRec(flag, origin, channel);
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
-      // Printf("New gen. candidate");
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
       channel = 0;
 
-      // X → J/ψ π+ π-
-      // Printf("Checking X → J/ψ π+ π-");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
-        // Match J/psi --> e+e-
+      // X → J/ψ π+ π−
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeX, std::array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particle, &arrDaughter, array{pdgCodeJpsi}, 1);
-        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
+        RecoDecay::getDaughters(particle, &arrDaughter, std::array{pdgCodeJpsi}, 1);
+        auto jpsiCandMC = mcParticles.rawIteratorAt(arrDaughter[0]);
+        // J/ψ → e+ e−
+        if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
+        // J/ψ → μ+ μ−
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kMuonPlus, -kMuonPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdgCodeJpsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
         }
@@ -346,7 +355,7 @@ struct HfCandidateCreatorXMc {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
 
       rowMcMatchGen(flag, origin, channel);

@@ -31,8 +31,8 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity
-DECLARE_SOA_COLUMN(MultTPCtemp, multTPCtemp, float); //! TPC multiplicity (temporal)
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity percentile (run2: V0M, run3: FT0A/C/M)
+DECLARE_SOA_COLUMN(MultFT0, multFT0, int);           //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float);   //! Spherocity of the event
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);     //! Magnetic field
 } // namespace resocollision
@@ -42,7 +42,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   collision::PosY,
                   collision::PosZ,
                   resocollision::MultV0M,
-                  resocollision::MultTPCtemp,
+                  resocollision::MultFT0,
                   resocollision::Spherocity,
                   resocollision::BMagField,
                   timestamp::Timestamp);
@@ -52,21 +52,6 @@ using ResoCollision = ResoCollisions::iterator;
 // inspired from PWGCF/DataModel/FemtoDerived.h
 namespace resodaughter
 {
-enum PDGtype {
-  kPion = BIT(0),
-  kKaon = BIT(1),
-  kProton = BIT(2),
-  kHasTOF = BIT(6) // Save hasTOF info for TOF selection
-};
-
-#define requireTPCPIDCutInFilter(mask) ((aod::resodaughter::tpcPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask)
-#define requireTOFPIDCutInFilter(mask) (((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::kHasTOF) != (uint8_t)aod::resodaughter::kHasTOF) || (((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask) && ((aod::resodaughter::tofPIDselectionFlag & (uint8_t)aod::resodaughter::kHasTOF) == (uint8_t)aod::resodaughter::kHasTOF)))
-#define requireTPCPIDPionCutInFilter() requireTPCPIDCutInFilter(PDGtype::kPion)
-#define requireTPCPIDKaonCutInFilter() requireTPCPIDCutInFilter(PDGtype::kKaon)
-#define requireTPCPIDProtonCutInFilter() requireTPCPIDCutInFilter(PDGtype::kProton)
-#define requireTOFPIDPionCutInFilter() requireTOFPIDCutInFilter(PDGtype::kPion)
-#define requireTOFPIDKaonCutInFilter() requireTOFPIDCutInFilter(PDGtype::kKaon)
-#define requireTOFPIDProtonCutInFilter() requireTOFPIDCutInFilter(PDGtype::kProton)
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                                     //! p_T (GeV/c)
@@ -80,11 +65,10 @@ DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                     //! Obser
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                          //! Field for the track indices to remove auto-correlations
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t); //! TPC PID selection
-DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t); //! TOF PID selection
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);      //! Is global track without DCA
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);              //! Is primary track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);            //! Is primary vertex contributor
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                              //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
 DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);       //! DCA between daughters from cascade
@@ -127,8 +111,7 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
                   o2::aod::track::Alpha,
-                  resodaughter::TPCPIDselectionFlag,
-                  resodaughter::TOFPIDselectionFlag,
+                  resodaughter::HasTOF,
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,
                   o2::aod::pidtpc::TPCNSigmaPr,

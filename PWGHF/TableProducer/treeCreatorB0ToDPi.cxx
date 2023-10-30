@@ -19,14 +19,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_b0;
-using namespace o2::aod::hf_sel_candidate_b0;
 
 namespace o2::aod
 {
@@ -164,14 +163,16 @@ struct HfTreeCreatorB0ToDPi {
 
   Configurable<int> selectionFlagB0{"selectionB0", 1, "Selection Flag for B0"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
+  HfHelper hfHelper;
+
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
@@ -218,14 +219,14 @@ struct HfTreeCreatorB0ToDPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
-        invMassB0ToDPi(candidate),
+        hfHelper.invMassB0ToDPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        yB0(candidate),
+        hfHelper.yB0(candidate),
         flagMc,
         originMc);
     } else {
@@ -265,17 +266,17 @@ struct HfTreeCreatorB0ToDPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
-        invMassB0ToDPi(candidate),
+        hfHelper.invMassB0ToDPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        ctB0(candidate),
+        hfHelper.ctB0(candidate),
         candidate.eta(),
         candidate.phi(),
-        yB0(candidate),
-        eB0(candidate),
+        hfHelper.yB0(candidate),
+        hfHelper.eB0(candidate),
         flagMc,
         originMc);
     }
@@ -283,11 +284,11 @@ struct HfTreeCreatorB0ToDPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -296,14 +297,14 @@ struct HfTreeCreatorB0ToDPi {
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     }
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong1 = candidate.prong1_as<TracksWPid>();
       fillCandidateTable(candidate, prong1);
     }
   }
@@ -314,11 +315,11 @@ struct HfTreeCreatorB0ToDPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particles,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
@@ -329,7 +330,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else if (fillOnlyBackground) {
@@ -342,7 +343,7 @@ struct HfTreeCreatorB0ToDPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else {
@@ -351,21 +352,21 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto const& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
+    for (const auto& particle : particles) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassB0),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

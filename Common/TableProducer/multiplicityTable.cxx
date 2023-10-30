@@ -19,11 +19,19 @@ using namespace o2::framework;
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "TableHelper.h"
 #include "iostream"
+
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
-  Produces<aod::Mults> mult;
+  Produces<aod::FV0Mults> multFV0;
+  Produces<aod::FT0Mults> multFT0;
+  Produces<aod::FDDMults> multFDD;
+  Produces<aod::ZDCMults> multZDC;
+  Produces<aod::BarrelMults> multBarrel;
+  Produces<aod::MultsExtra> multExtra;
   Produces<aod::MultZeqs> multzeq;
 
   // For vertex-Z corrections in calibration
@@ -37,8 +45,12 @@ struct MultiplicityTableTaskIndexed {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
 
+  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+
   // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+  Configurable<bool> populateMultExtra{"populateMultExtra", true, "if 1: populate table with some extra QA information"};
+  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -50,13 +62,30 @@ struct MultiplicityTableTaskIndexed {
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
 
+  unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (doprocessRun2 == false && doprocessRun3 == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FV0Mults")) {
+      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    }
+    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FT0Mults")) {
+      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    }
+    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FDDMults")) {
+      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    }
+    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "ZDCMults")) {
+      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    }
+    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "BarrelMults")) {
+      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
     }
 
     mRunNumber = 0;
@@ -76,12 +105,12 @@ struct MultiplicityTableTaskIndexed {
   }
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision,
-                   Run2Tracks const& tracksExtra,
+                   Run2Tracks const&,
                    aod::BCs const&,
                    aod::Zdcs const&,
-                   aod::FV0As const& fv0as,
+                   aod::FV0As const&,
                    aod::FV0Cs const& fv0cs,
-                   aod::FT0s const& ft0s)
+                   aod::FT0s const&)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
@@ -126,35 +155,48 @@ struct MultiplicityTableTaskIndexed {
     }
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
+    multFV0(multFV0A, multFV0C);
+    multFT0(multFT0A, multFT0C);
+    multFDD(multFDDA, multFDDC);
+    multZDC(multZNA, multZNC);
+    multBarrel(multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run3Tracks> pvAllContribTracksIU = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<Run3Tracks> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   Run3Tracks const& tracksExtra,
-                   soa::Join<aod::BCs, aod::Timestamps> const& bcs,
-                   aod::Zdcs const& zdcs,
-                   aod::FV0As const& fv0as,
-                   aod::FT0s const& ft0s,
-                   aod::FDDs const& fdds)
+                   Run3Tracks const&,
+                   BCsWithRun3Matchings const&,
+                   aod::Zdcs const&,
+                   aod::FV0As const&,
+                   aod::FT0s const&,
+                   aod::FDDs const&)
   {
     // reserve memory
-    mult.reserve(collisions.size());
+    multFV0.reserve(collisions.size());
+    multFT0.reserve(collisions.size());
+    multFDD.reserve(collisions.size());
+    multZDC.reserve(collisions.size());
+    multBarrel.reserve(collisions.size());
     multzeq.reserve(collisions.size());
     for (auto const& collision : collisions) {
+      if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
+        return;
+      }
+
       float multFV0A = 0.f;
       float multFV0C = 0.f;
       float multFT0A = 0.f;
       float multFT0C = 0.f;
       float multFDDA = 0.f;
       float multFDDC = 0.f;
-      float multZNA = 0.f;
-      float multZNC = 0.f;
+      float multZNA = -1.f;
+      float multZNC = -1.f;
       int multTracklets = 0;
 
       float multZeqFV0A = 0.f;
@@ -165,6 +207,7 @@ struct MultiplicityTableTaskIndexed {
       float multZeqNContribs = 0.f;
 
       auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -174,7 +217,7 @@ struct MultiplicityTableTaskIndexed {
       int multNContribsEtaHalf = pvContribsEtaHalfGrouped.size();
 
       /* check the previous run number */
-      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+      const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
       if (doVertexZeq > 0) {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
@@ -198,6 +241,11 @@ struct MultiplicityTableTaskIndexed {
           }
         }
       }
+      if (bc.has_zdc()) {
+        multZNA = bc.zdc().amplitudeZNA();
+        multZNC = bc.zdc().amplitudeZNC();
+      }
+
       // using FT0 row index from event selection task
       if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
@@ -235,11 +283,42 @@ struct MultiplicityTableTaskIndexed {
       }
 
       LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-      mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
+      multFV0(multFV0A, multFV0C);
+      multFT0(multFT0A, multFT0C);
+      multFDD(multFDDA, multFDDC);
+      multZDC(multZNA, multZNC);
+      multBarrel(multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
       multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+
+      if (populateMultExtra) {
+        int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
+        int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
+        for (auto track : pvAllContribsGrouped) {
+          if (track.hasITS()) {
+            nHasITS++;
+            if (track.hasTPC())
+              nITSTPC++;
+            if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD())
+              nITSonly++;
+          }
+          if (track.hasTPC()) {
+            nHasTPC++;
+            if (!track.hasITS() && !track.hasTOF() && !track.hasTRD())
+              nTPConly++;
+          }
+          if (track.hasTOF())
+            nHasTOF++;
+          if (track.hasTRD())
+            nHasTRD++;
+        };
+
+        int bcNumber = bc.globalBC() % 3564;
+
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+      }
     }
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

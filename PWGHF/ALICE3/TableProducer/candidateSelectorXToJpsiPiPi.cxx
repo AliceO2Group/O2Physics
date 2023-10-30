@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -26,9 +27,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_x;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorXToJpsiPiPi {
@@ -47,7 +46,11 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], hf_cuts_x_to_jpsi_pi_pi::nBinsPt, hf_cuts_x_to_jpsi_pi_pi::nCutVars, hf_cuts_x_to_jpsi_pi_pi::labelsPt, hf_cuts_x_to_jpsi_pi_pi::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+
+  HfHelper hfHelper;
+
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -71,23 +74,22 @@ struct HfCandidateSelectorXToJpsiPiPi {
     auto candpT = hfCandX.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
-      // Printf("X topol selection failed at getpTBin");
+      // LOGF(debug, "X topol selection failed at getpTBin");
       return false;
     }
 
     if (candpT < ptCandMin || candpT >= ptCandMax) {
-      // Printf("X topol selection failed at cand pT check");
+      // LOGF(debug, "X topol selection failed at cand pT check");
       return false; // check that the candidate pT is within the analysis range
     }
 
-    // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
-    if (TMath::Abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
-      // Printf("X topol selection failed at mass diff check");
+    if (std::abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - o2::analysis::pdg::MassX3872) > cuts->get(pTBin, "m")) {
+      // LOGF(debug, "X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
 
     if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
-      // Printf("X topol selection failed at daughter pT check");
+      // LOGF(debug, "X topol selection failed at daughter pT check");
       return false; // cut on daughter pT
     }
 
@@ -95,9 +97,9 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
-        (TMath::Abs(hfCandX.impactParameter1()) > cuts->get(pTBin, "d0 Pi")) ||
-        (TMath::Abs(hfCandX.impactParameter2()) > cuts->get(pTBin, "d0 Pi"))) {
+    if ((std::abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
+        (std::abs(hfCandX.impactParameter1()) > cuts->get(pTBin, "d0 Pi")) ||
+        (std::abs(hfCandX.impactParameter2()) > cuts->get(pTBin, "d0 Pi"))) {
       return false; // DCA check on daughters
     }
 
@@ -113,7 +115,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
+    if (std::abs(track.pt()) < ptPidTpcMin || std::abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
     // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
@@ -127,7 +129,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   template <typename T>
   bool validTofPid(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
+    if (std::abs(track.pt()) < ptPidTofMin || std::abs(track.pt()) >= ptPidTofMax) {
       return false;
     }
     return true;
@@ -187,13 +189,15 @@ struct HfCandidateSelectorXToJpsiPiPi {
     // }
   }
 
-  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandX const& hfCandXs,
+               aod::HfCand2Prong const&,
+               TracksSel const& tracks)
   {
-    for (auto& hfCandX : hfCandXs) { // looping over X candidates
+    for (const auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandX.prong0();
-      auto trackPos = hfCandX.prong1_as<aod::BigTracksPID>(); // positive daughter
-      auto trackNeg = hfCandX.prong2_as<aod::BigTracksPID>(); // negative daughter
+      auto trackPos = hfCandX.prong1_as<TracksSel>(); // positive daughter
+      auto trackNeg = hfCandX.prong2_as<TracksSel>(); // negative daughter
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
@@ -215,7 +219,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       // daughter track validity selection
       if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at daughter selection");
+        // LOGF(debug, "X candidate selection failed at daughter selection");
         continue;
       }
 
@@ -224,18 +228,18 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
       if (!selectionTopol(hfCandX, candJpsi, trackPos, trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at selection topology");
+        // LOGF(debug, "X candidate selection failed at selection topology");
         continue;
       }
 
       if (selectionPID(trackPos) == 0 || selectionPID(trackNeg) == 0) {
         hfSelXToJpsiPiPiCandidate(0, 0);
-        // Printf("X candidate selection failed at selection PID");
+        // LOGF(debug, "X candidate selection failed at selection PID");
         continue;
       }
 
       hfSelXToJpsiPiPiCandidate(selJpsiToEE, selJpsiToMuMu);
-      // Printf("X candidate selection successful, candidate should be selected");
+      // LOGF(debug, "X candidate selection successful, candidate should be selected");
     }
   }
 };

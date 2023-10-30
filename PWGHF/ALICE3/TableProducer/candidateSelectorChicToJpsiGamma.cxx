@@ -18,6 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -25,9 +26,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
 
 /// Struct for applying Jpsi selection cuts
 struct HfCandidateSelectorChicToJpsiGamma {
@@ -46,7 +45,9 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], hf_cuts_chic_to_jpsi_gamma::nBinsPt, hf_cuts_chic_to_jpsi_gamma::nCutVars, hf_cuts_chic_to_jpsi_gamma::labelsPt, hf_cuts_chic_to_jpsi_gamma::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+
+  HfHelper hfHelper;
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -75,9 +76,9 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
-    if (TMath::Abs(invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
-      // Printf("Chic topol selection failed at mass diff check");
+    auto mchic = o2::analysis::pdg::MassChiC1; // chi_c1(1p)
+    if (std::abs(hfHelper.invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
+      // LOGF(debug, "Chic topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
 
@@ -93,7 +94,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
+    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) {   // adf: Warning: no cut on photon
       return false;                                                                  // DCA check on daughters
     }
 
@@ -109,7 +110,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   template <typename T>
   bool validTPCPID(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTpcMin || TMath::Abs(track.pt()) >= ptPidTpcMax) {
+    if (std::abs(track.pt()) < ptPidTpcMin || std::abs(track.pt()) >= ptPidTpcMax) {
       return false;
     }
     // if (track.TPCNClsFindable() < TPCNClsFindableMin) return false;
@@ -123,7 +124,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   template <typename T>
   bool validTofPid(const T& track)
   {
-    if (TMath::Abs(track.pt()) < ptPidTofMin || TMath::Abs(track.pt()) >= ptPidTofMax) {
+    if (std::abs(track.pt()) < ptPidTofMin || std::abs(track.pt()) >= ptPidTofMax) {
       return false;
     }
     return true;
@@ -178,9 +179,11 @@ struct HfCandidateSelectorChicToJpsiGamma {
 
   //---------------------------------------------------------------
 
-  void process(aod::HfCandChic const& hfCandChics, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks, aod::ECALs const& ecals)
+  void process(aod::HfCandChic const& hfCandChics,
+               aod::HfCand2Prong const&,
+               aod::ECALs const& ecals)
   {
-    for (auto& hfCandChic : hfCandChics) { // looping over chi_c candidates
+    for (const auto& hfCandChic : hfCandChics) { // looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandChic.prong0();
       auto gamma = hfCandChic.prong1_as<aod::ECALs>();
@@ -222,7 +225,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
       }
 
       hfSelChicToJpsiGammaCandidate(selJpsiToEE, selJpsiToMuMu);
-      // Printf("Chi_c candidate selection successful, candidate should be selected");
+      // LOGF(debug, "Chi_c candidate selection successful, candidate should be selected");
     }
   }
 };

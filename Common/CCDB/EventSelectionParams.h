@@ -15,7 +15,7 @@
 #include <Rtypes.h>
 #include <TMath.h>
 
-namespace evsel
+namespace o2::aod::evsel
 {
 // Event selection criteria
 enum EventSelectionFlags {
@@ -53,14 +53,13 @@ enum EventSelectionFlags {
   kNoPileupTPC,        // no pileup in TPC
   kIsTriggerTVX,       // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
   kIsINT1,             // SPDGFO >= 1 || V0A || V0C
+  kNoITSROFrameBorder, // bunch crossing is far from ITS RO Frame border
   kNsel                // counter
 };
 
 extern const char* selectionLabels[kNsel];
 
-} // namespace evsel
-
-using namespace evsel;
+} // namespace o2::aod::evsel
 
 class EventSelectionParams
 {
@@ -70,9 +69,9 @@ class EventSelectionParams
   void SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
   bool* GetSelection(int iSelection);
 
-  bool selectionBarrel[kNsel];
-  bool selectionMuonWithPileupCuts[kNsel];
-  bool selectionMuonWithoutPileupCuts[kNsel];
+  bool selectionBarrel[o2::aod::evsel::kNsel];
+  bool selectionMuonWithPileupCuts[o2::aod::evsel::kNsel];
+  bool selectionMuonWithoutPileupCuts[o2::aod::evsel::kNsel];
 
   // time-of-flight offset
   float fV0ADist = 329.00 / TMath::Ccgs() * 1e9; // ns
@@ -135,7 +134,7 @@ class EventSelectionParams
   float fV0CasymA = -25.f;
   float fV0CasymB = 0.15f;
 
-  ClassDefNV(EventSelectionParams, 3)
+  ClassDefNV(EventSelectionParams, 4)
 };
 
 #endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_

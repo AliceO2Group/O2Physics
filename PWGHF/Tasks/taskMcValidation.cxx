@@ -27,11 +27,10 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
 
 namespace
 {
@@ -118,7 +117,7 @@ struct HfTaskMcValidationGen {
      {"hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
      {"hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
       registry.get<TH2>(HIST("hPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
@@ -131,7 +130,7 @@ struct HfTaskMcValidationGen {
   }
 
   /// Primary-vertex selection
-  /// \param collision  mccollision table row
+  /// \param collision  mcCollision table row
   template <typename Col>
   bool selectVertex(const Col& collision)
   {
@@ -150,9 +149,10 @@ struct HfTaskMcValidationGen {
     return true;
   }
 
-  void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
+  void process(aod::McCollision const& mcCollision,
+               aod::McParticles const& mcParticles)
   {
-    if (!selectVertex(mccollision)) {
+    if (!selectVertex(mcCollision)) {
       return;
     }
 
@@ -163,7 +163,7 @@ struct HfTaskMcValidationGen {
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
     bool hasSignal = false;
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : mcParticles) {
       if (!particle.has_mothers()) {
         continue;
       }
@@ -210,7 +210,7 @@ struct HfTaskMcValidationGen {
         double sumPzDau = 0.;
         bool momentumCheck = true;
         for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
-          auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau) - particlesMC.offset());
+          auto daughter = mcParticles.rawIteratorAt(listDaughters.at(iDau) - mcParticles.offset());
           sumPxDau += daughter.px();
           sumPyDau += daughter.py();
           sumPzDau += daughter.pz();
@@ -235,7 +235,7 @@ struct HfTaskMcValidationGen {
         }
 
         hasSignal = true;
-        int origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         if (origin == RecoDecay::OriginType::Prompt) {
           counterPrompt[iD]++;
         } else if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -244,7 +244,7 @@ struct HfTaskMcValidationGen {
 
         auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+        double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (origin == RecoDecay::OriginType::Prompt) {
           if (std::abs(particle.y()) < 0.5) {
@@ -311,7 +311,7 @@ struct HfTaskMcValidationRec {
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
-  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TrackCompColls>;
+  using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
   using McCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
@@ -357,7 +357,7 @@ struct HfTaskMcValidationRec {
     return stdev;
   }
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
     histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
@@ -405,7 +405,7 @@ struct HfTaskMcValidationRec {
   void process(HfCand2ProngWithMCRec const& cand2Prongs,
                HfCand3ProngWithMCRec const& cand3Prongs,
                TracksWithSel const& tracks,
-               aod::McParticles const& particlesMC,
+               aod::McParticles const& mcParticles,
                McCollisionWithHFSignalInfo const& mcCollisions,
                CollisionsWithMCLabels const& collisions,
                aod::BCs const&)
@@ -428,7 +428,7 @@ struct HfTaskMcValidationRec {
       registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
       auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int nContributors = 0, nGoodContributors = 0;
-      for (auto& track : tracksColl1) {
+      for (const auto& track : tracksColl1) {
         if (!track.isPVContributor()) {
           continue;
         }
@@ -450,20 +450,20 @@ struct HfTaskMcValidationRec {
           float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
           float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
           int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
-          for (auto& trackColl1 : tracksColl1) {
+          for (const auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
               auto particleColl1 = trackColl1.mcParticle();
-              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl1, true);
+              auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleColl1, true);
               if (origin == RecoDecay::NonPrompt) {
                 nFromBeautyColl1++;
               }
             }
           }
           auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-          for (auto& trackColl2 : tracksColl2) {
+          for (const auto& trackColl2 : tracksColl2) {
             if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
               auto particleColl2 = trackColl2.mcParticle();
-              auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl2, true);
+              auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleColl2, true);
               if (origin == RecoDecay::NonPrompt) {
                 nFromBeautyColl2++;
               }
@@ -476,7 +476,7 @@ struct HfTaskMcValidationRec {
     }
 
     // loop over tracks
-    for (auto& track : tracksFilteredGlobalTrackWoDCA) {
+    for (const auto& track : tracksFilteredGlobalTrackWoDCA) {
       // check number of ITS hits
       int nITSlayers = 0;
       uint8_t ITSHitMap = track.itsClusterMap();
@@ -494,14 +494,14 @@ struct HfTaskMcValidationRec {
             continue;
           }
         }
-        auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
+        auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         histTracks->Fill(origin, track.pt());
         bool isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
           registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
           std::vector<double> ambCollPosZ{};
-          for (auto const& collIdx : track.compatibleCollIds()) {
+          for (const auto& collIdx : track.compatibleCollIds()) {
             auto ambCollision = collisions.rawIteratorAt(collIdx);
             ambCollPosZ.push_back(ambCollision.posZ());
           }
@@ -519,7 +519,7 @@ struct HfTaskMcValidationRec {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the default associated collision is not the good one, check if the tracks is ambiguous
             if (isAmbiguous) {
-              for (auto const& collIdx : track.compatibleCollIds()) {
+              for (const auto& collIdx : track.compatibleCollIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
 
                 if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
@@ -544,7 +544,7 @@ struct HfTaskMcValidationRec {
     }
 
     // loop over 2-prong candidates
-    for (auto& cand2Prong : cand2Prongs) {
+    for (const auto& cand2Prong : cand2Prongs) {
 
       // determine which kind of candidate it is
       bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
@@ -568,9 +568,9 @@ struct HfTaskMcValidationRec {
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
         if (cand2Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
-        auto mother = particlesMC.rawIteratorAt(indexParticle);
+        auto mother = mcParticles.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
         histDeltaPx[whichHad]->Fill(cand2Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand2Prong.py() - mother.py());
@@ -602,7 +602,7 @@ struct HfTaskMcValidationRec {
     } // end loop on 2-prong candidates
 
     // loop over 3-prong candidates
-    for (auto& cand3Prong : cand3Prongs) {
+    for (const auto& cand3Prong : cand3Prongs) {
 
       // determine which kind of candidate it is
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
@@ -633,9 +633,9 @@ struct HfTaskMcValidationRec {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand3Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
-        auto mother = particlesMC.rawIteratorAt(indexParticle);
+        auto mother = mcParticles.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
         histDeltaPx[whichHad]->Fill(cand3Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand3Prong.py() - mother.py());

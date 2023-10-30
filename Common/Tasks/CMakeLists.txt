@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(integrationtest
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(integrationtestccdb
+                    SOURCES integrationTestCCDB.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(validation
                     SOURCES validation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase
@@ -62,4 +67,14 @@ o2physics_add_dpl_workflow(ft0-qa
 o2physics_add_dpl_workflow(qa-cpv
                     SOURCES cpvQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qvectors-correction
+                    SOURCES qVectorsCorrection.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(evtplanes-resolution
+                    SOURCES evtPlanesResolution.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

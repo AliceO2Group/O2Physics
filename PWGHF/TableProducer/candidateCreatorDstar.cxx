@@ -26,9 +26,6 @@ using namespace o2::framework;
 struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtD0Prong0{TH1F("hPtD0Prong0", "D^{0} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
@@ -37,15 +34,18 @@ struct HfCandidateCreatorDstar {
 
   void process(aod::Collisions const&,
                aod::HfDstars const& rowsTrackIndexDstar,
-               aod::BigTracks const&,
+               aod::Tracks const&,
                aod::Hf2Prongs const&)
   {
+    auto massPi = o2::analysis::pdg::MassPiPlus;
+    auto massD0 = o2::analysis::pdg::MassD0;
+
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
-      auto trackPi = rowTrackIndexDstar.prong0_as<aod::BigTracks>();
+      auto trackPi = rowTrackIndexDstar.prong0();
       auto prongD0 = rowTrackIndexDstar.prongD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.prong0_as<aod::BigTracks>();
-      auto trackD0Prong1 = prongD0.prong1_as<aod::BigTracks>();
+      auto trackD0Prong0 = prongD0.prong0();
+      auto trackD0Prong1 = prongD0.prong1();
       // auto collisionPiId = trackPi.collisionId();
       // auto collisionD0Id = trackD0Prong0.collisionId();
 

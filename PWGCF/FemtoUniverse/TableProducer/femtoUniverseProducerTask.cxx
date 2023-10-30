@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
@@ -52,7 +53,7 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl,
+  soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
             aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
@@ -83,7 +84,6 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoUniverseProducerTask {
-
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
@@ -109,6 +109,9 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
   Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", true, "Activate filling of Phi into femtouniverse tables"};
+  Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
+  Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
@@ -116,40 +119,34 @@ struct femtoUniverseProducerTask {
   //     "ConfRejectITSHitandTOFMissing", false,
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
 
-  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
+  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"}; // only for checking the particle origin (particles for which PDG does not match are marked as "Fake")
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfUseGlobalTrack{"ConfUseGlobalTrack", true, "Use global track cuts (as defined in the official o2 documentation)"};
-    Configurable<float> ConfPtLowGlobalTrack{"ConfPtLowGlobalTrack", 0.14, "Lower limit for Pt for the global track"};             // pT low
-    Configurable<float> ConfPtHighGlobalTrack{"ConfPtHighGlobalTrack", 5.0, "Higher limit for Pt for the global track"};           // pT high
-    Configurable<float> ConfEtaLowGlobalTrack{"ConfEtaLowGlobalTrack", -0.8, "Lower limit for Eta for the global track"};          // eta low
-    Configurable<float> ConfEtaHighGlobalTrack{"ConfEtaHighGlobalTrack", 0.8, "Higher limit for Eta for the global track"};        // eta high
-    Configurable<float> ConfDcaXYGlobalTrack{"ConfDcaXYGlobalTrack", 2.4, "Value for DCA_XY for the global track"};                // max dca to vertex XY
-    Configurable<float> ConfDcaZGlobalTrack{"ConfDcaZGlobalTrack", 3.2, "Value for DCA_Z for the global track"};                   // max dca to vertex Z
-    Configurable<int> ConfTpcClGlobalTrack{"ConfTpcClGlobalTrack", 88, "Number of tpc clasters for the global track"};             // min number of found TPC clusters
-    Configurable<int> ConfTpcCrosRoGlobalTrack{"ConfTpcCrosRoGlobalTrack", 70, "Number of tpc crossed rows for the global track"}; // min number of crossed rows
-    Configurable<float> ConfChi2TpcGlobalTrack{"ConfChi2TpcGlobalTrack", 4.0, "Chi2 / cluster for the TPC track segment for the global track"};
-    Configurable<float> ConfChi2ItsGlobalTrack{"ConfChi2ItsGlobalTrack", 36.0, "Chi2 / cluster for the ITS track segment for the global track"};
-  } ConfGlobalTracks;
+    Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
+    Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
+    Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
+    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
+  } ConfFilterCuts;
 
   Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPtmax{
-    FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPtmax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkEta{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kEtaMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{80.f, 70.f, 60.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCnClsMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.7f, 0.83f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCfClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{70.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCnClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.83f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCfClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCcRowsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCcRowsMin, "ConfTrk"), std::vector<float>{70.f, 60.f, 80.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCcRowsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCsCls{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCsClsMax, "ConfTrk"), std::vector<float>{0.1f, 160.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCsClsMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kITSnClsMin, "ConfTrk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kITSnClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsIbMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kITSnClsIbMin, "ConfTrk"), std::vector<float>{-1.f, 1.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 3.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kDCAxyMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 3.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kDCAzMax, "Track selection: ")}; /// \todo Reintegrate PID to the general selection container
+  Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kDCAzMax, "Track selection: ")}; /// \todo Reintegrate PID to the general selection container
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
 
   // TrackSelection *o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
@@ -179,6 +176,14 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfV0RejectKaons{"ConfV0RejectKaons", false, "Switch to reject kaons"};
   Configurable<float> ConfV0InvKaonMassLowLimit{"ConfV0InvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfV0InvKaonMassUpLimit{"ConfV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+
+  Filter GlobalCutFilter = requireGlobalTrackInFilter();
+
+  Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
+                             (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
+                             (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
+                             (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut) &&
+                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut);
 
   // PHI
   FemtoUniversePhiSelection phiCuts;
@@ -228,22 +233,42 @@ struct femtoUniverseProducerTask {
     // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
     // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
     // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
-    if (ConfPhiCommon.ConfNsigmaTPCTOFKaon) {
-      if (mom < 0.4) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiCommon.ConfNsigmaTPCKaon) {
-          return true;
-        } else {
-          return false;
-        }
-      } else if (mom > 0.4) {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
-          return true;
-        } else {
-          return false;
-        }
+
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
       }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
+          return true;
+        }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
-    return false;
   }
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
@@ -261,12 +286,12 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && doprocessFullMC == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && doprocessFullMC == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC) == true) {
       LOGF(fatal,
-           "Cannot enable processFullData and processFullMC at the same time. "
+           "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
     }
 
@@ -338,30 +363,8 @@ struct femtoUniverseProducerTask {
     }
 
     if (ConfIsActivatePhi) {
-      // selection for Phi meson
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiSign, femtoUniversePhiSelection::kPhiSign, femtoUniverseSelection::kEqual);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiPtMin, femtoUniversePhiSelection::kPhipTMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiPtMax, femtoUniversePhiSelection::kPhipTMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiEtaMax, femtoUniversePhiSelection::kPhietaMax, femtoUniverseSelection::kAbsUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiDCADaughMax, femtoUniversePhiSelection::kPhiDCADaughMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiCPAMin, femtoUniversePhiSelection::kPhiCPAMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiTranRadMin, femtoUniversePhiSelection::kPhiTranRadMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiTranRadMax, femtoUniversePhiSelection::kPhiTranRadMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiDecVtxMax, femtoUniversePhiSelection::kPhiDecVtxMax, femtoUniverseSelection::kUpperLimit);
-
-      // selection for Phi meson daughters
-      phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-
       // initializing for Phi meson
-      LOGF(info, "DEBUG: before phicuts.init");
       phiCuts.init<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
-
-      // phiCuts setting and initializing
-      phiCuts.setInvMassLimits(ConfPhiCommon.ConfInvMassLowLimitPhi, ConfPhiCommon.ConfInvMassUpLimitPhi);
     }
 
     mRunNumber = 0;
@@ -373,30 +376,6 @@ struct femtoUniverseProducerTask {
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
-  }
-
-  // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
-  template <typename ParticleType>
-  bool isGlobalTrack(ParticleType const& track)
-  {
-    if (track.pt() < ConfGlobalTracks.ConfPtLowGlobalTrack || track.pt() > ConfGlobalTracks.ConfPtHighGlobalTrack) { // pT cut
-      return false;
-    } else if (track.eta() < ConfGlobalTracks.ConfEtaLowGlobalTrack || track.eta() > ConfGlobalTracks.ConfEtaHighGlobalTrack) { // eta cut
-      return false;
-    } else if (track.dcaXY() > ConfGlobalTracks.ConfDcaXYGlobalTrack) { // DCA XY cut
-      return false;
-    } else if (track.dcaZ() > ConfGlobalTracks.ConfDcaZGlobalTrack) { // DCA Z cut
-      return false;
-    } else if (track.tpcNClsFound() < (uint8_t)ConfGlobalTracks.ConfTpcClGlobalTrack) { // number of tpc clusters cut
-      return false;
-    } else if (track.tpcNClsCrossedRows() < (uint8_t)ConfGlobalTracks.ConfTpcCrosRoGlobalTrack) { // number of tpc clusters crossed rows cut
-      return false;
-    } else if (track.itsChi2NCl() > ConfGlobalTracks.ConfChi2ItsGlobalTrack) { // max chi^2 per cluster ITS cut
-      return false;
-    } else if (track.tpcChi2NCl() > ConfGlobalTracks.ConfChi2TpcGlobalTrack) { // max chi^2 per cluster TPC cut
-      return false;
-    }
-    return true;
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -533,6 +512,43 @@ struct femtoUniverseProducerTask {
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
   }
 
+  template <typename CollisionType, typename TrackType>
+  void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
+  {
+    const auto vtxZ = col.posZ();
+    const auto spher = 0; // colCuts.computeSphericity(col, tracks);
+    int mult = 0;
+    int multNtr = 0;
+    if (ConfIsRun3) {
+      mult = col.multFV0M();
+      multNtr = col.multNTracksPV();
+    } else {
+      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in
+                                     /// FemtoUniverseRun2 is defined V0M/2
+      multNtr = col.multTracklets();
+    }
+    if (ConfEvtUseTPCmult) {
+      multNtr = col.multTPC();
+    }
+
+    // check whether the basic event selection criteria are fulfilled
+    // if the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any
+    // particle candidates for such collisions
+
+    // CHECK WHAT CUTS SHOULD BE USED FOR MC TRUTH
+    //  if (!colCuts.isSelected(col)) {
+    //    if (ConfIsTrigger) {
+    //      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    //    }
+    //    return;
+    //  }
+
+    colCuts.fillQA(col);
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+  }
+
   template <bool isMC, typename TrackType>
   void fillTracks(TrackType const& tracks)
   {
@@ -544,10 +560,6 @@ struct femtoUniverseProducerTask {
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
-      } else if (ConfGlobalTracks.ConfUseGlobalTrack) {
-        if (!isGlobalTrack(track)) {
-          continue;
-        }
       }
 
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
@@ -672,29 +684,19 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
-      // global track cuts for phi meson daughters
-      if (ConfGlobalTracks.ConfUseGlobalTrack) { // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
-        // daughter 1 -- global track cut
-        if (!isGlobalTrack(p1)) {
-          continue;
-        }
-        // daughter 2 -- global track cut
-        if (!isGlobalTrack(p2)) {
-          continue;
-        }
-      }
       // implementing PID cuts for phi children
-      if (!(IsKaonNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+      if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
         continue;
       }
-      if (!(IsKaonNSigma(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+      if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+        continue;
+      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      // getting particle mass
       float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass();
       float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass();
 
@@ -705,20 +707,26 @@ struct femtoUniverseProducerTask {
       sumVec += part2Vec;
 
       float phiEta = sumVec.Eta();
+      if (TMath::Abs(phiEta) > 0.8) {
+        continue;
+      }
+
       float phiPt = sumVec.Pt();
-      // float phiP = sumVec.P();
+      if ((phiPt < 0.14) || (phiPt > 10.0)) {
+        continue;
+      }
+
       float phiPhi = sumVec.Phi();
       if (sumVec.Phi() < 0) {
         phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
       } else if (sumVec.Phi() >= 0) {
         phiPhi = sumVec.Phi();
       }
-      float phiM = sumVec.M(); // mass of the reconstructed Phi meson
+      float phiM = sumVec.M();
 
-      // this cut probably is not doing anything, check it
-      //  if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
-      //    continue;
-      //  }
+      if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
+        continue;
+      }
 
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
@@ -786,6 +794,57 @@ struct femtoUniverseProducerTask {
     }
   }
 
+  template <typename TrackType>
+  void fillParticles(TrackType const& tracks)
+  {
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+
+    for (auto& particle : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no
+      /// point looking further at the track
+      if (!particle.isPhysicalPrimary())
+        continue;
+
+      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+
+      if (ConfMCTruthAnalysisWithPID) {
+        bool pass = false;
+        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
+        for (uint32_t pdg : tmpPDGCodes) {
+          if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
+            pass = true;
+          }
+        }
+        if (!pass)
+          continue;
+      }
+
+      // we cannot use isSelectedMinimal since it takes Ncls
+      // if (!trackCuts.isSelectedMinimal(track)) {
+      //   continue;
+      // }
+
+      // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
+      //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
+      //  the bit-wise container of the systematic variations is obtained
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      // instead of the bitmask, the PDG of the particle is stored as uint32_t
+
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  0,
+                  pdgCode,
+                  pdgCode,
+                  childIDs,
+                  0,
+                  0);
+    }
+  }
+
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
   void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
@@ -827,7 +886,22 @@ struct femtoUniverseProducerTask {
     // fill the tables
     fillCollisionsAndTracksAndV0AndPhi<true>(col, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data", false);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data (tracks, V0, Phi)", false);
+
+  void
+    processTrackMC(aod::FemtoFullCollisionMC const& col,
+                   aod::BCsWithTimestamps const&,
+                   soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                   aod::McCollisions const& mcCollisions,
+                   aod::McParticles const&)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisions<true>(col, tracks);
+    fillTracks<true>(tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
   void
     processTrackData(aod::FemtoFullCollision const& col,
@@ -843,9 +917,10 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackData,
                  "Provide experimental data for track track", true);
 
+  // using FilteredFemtoFullTracks = soa::Filtered<FemtoFullTracks>;
   void processTrackPhiData(aod::FemtoFullCollision const& col,
                            aod::BCsWithTimestamps const&,
-                           aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+                           soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -856,6 +931,19 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiData,
                  "Provide experimental data for track phi", false);
+
+  void
+    processTrackMCTruth(aod::FemtoFullCollisionMC const& col,
+                        aod::BCsWithTimestamps const&,
+                        aod::McCollisions const& mcCollisions,
+                        aod::McParticles const& mcParticles)
+  {
+    // magnetic field for run not needed for mc truth
+    // fill the tables
+    fillMCTruthCollisions(col, mcParticles);
+    fillParticles(mcParticles);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -18,6 +18,8 @@
 #include <string_view>
 #include <TMath.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
@@ -57,16 +59,22 @@ struct fullJetFilter {
     kJetFullLowPt,
     kJetNeutralHighPt,
     kJetNeutralLowPt,
+    kGammaVeryHighPtEMCAL,
+    kGammaVeryHighPtDCAL,
     kGammaHighPtEMCAL,
     kGammaHighPtDCAL,
     kGammaLowPtEMCAL,
     kGammaLowPtDCAL,
+    kGammaVeryLowPtEMCAL,
+    kGammaVeryLowPtDCAL,
     kCategories
   };
 
   enum class ThresholdType_t {
+    VERY_HIGH_THRESHOLD,
     HIGH_THRESHOLD,
-    LOW_THRESHOLD
+    LOW_THRESHOLD,
+    VERY_LOW_THRESHOLD
   };
 
   enum class EMCALHWTriggerConfiguration {
@@ -75,11 +83,22 @@ struct fullJetFilter {
     UNKNOWN
   };
 
+  enum EMCALHardwareTrigger {
+    TRG_MB,
+    TRG_EMC7,
+    TRG_DMC7,
+    TRG_NTriggers
+  };
+
   Produces<aod::FullJetFilters> tags;
 
   OutputObj<TH1D> hProcessedEvents{"hProcessedEvents"};
   OutputObj<TH2F> hEmcClusterPtEta{"hEmcClusterPtEta"};
   OutputObj<TH2F> hEmcClusterPtPhi{"hEmcClusterPtPhi"};
+  OutputObj<TH2F> hEmcClusterPtEtaMinBias{"hEmcClusterPtEtaMinBias"};
+  OutputObj<TH2F> hEmcClusterPtPhiMinBias{"hEmcClusterPtPhiMinBias"};
+  OutputObj<TH2F> hEmcClusterPtEtaLevel0{"hEmcClusterPtEtaLevel0"};
+  OutputObj<TH2F> hEmcClusterPtPhiLevel0{"hEmcClusterPtPhiLevel0"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterEta"};
   OutputObj<TH2F> hSelectedClusterPtPhi{"hSelectedClusterPhi"};
   OutputObj<TH2F> hSelectedClusterPtEtaLow{"hSelectedClusterEtaLow"};
@@ -90,6 +109,10 @@ struct fullJetFilter {
   OutputObj<TH2F> hSelectedJetPtPhi{"hSelectedJetPhi"};
   OutputObj<TH2F> hSelectedJetPtEtaLow{"hSelectedJetEtaLow"};
   OutputObj<TH2F> hSelectedJetPtPhiLow{"hSelectedJetPhiLow"};
+  OutputObj<TH2F> hSelectedGammaEMCALPtEtaVeryHigh{"hSelectedGammaEMCALEtaVeryHigh"};
+  OutputObj<TH2F> hSelectedGammaEMCALPtPhiVeryHigh{"hSelectedGammaEMCALPhiVeryHigh"};
+  OutputObj<TH2F> hSelectedGammaDCALPtEtaVeryHigh{"hSelectedGammaDCALEtaVeryHigh"};
+  OutputObj<TH2F> hSelectedGammaDCALPtPhiVeryHigh{"hSelectedGammaDCALPhiVeryHigh"};
   OutputObj<TH2F> hSelectedGammaEMCALPtEta{"hSelectedGammaEMCALEta"};
   OutputObj<TH2F> hSelectedGammaEMCALPtPhi{"hSelectedGammaEMCALPhi"};
   OutputObj<TH2F> hSelectedGammaDCALPtEta{"hSelectedGammaDCALEta"};
@@ -98,15 +121,27 @@ struct fullJetFilter {
   OutputObj<TH2F> hSelectedGammaEMCALPtPhiLow{"hSelectedGammaEMCALPhiLow"};
   OutputObj<TH2F> hSelectedGammaDCALPtEtaLow{"hSelectedGammaDCALEtaLow"};
   OutputObj<TH2F> hSelectedGammaDCALPtPhiLow{"hSelectedGammaDCALPhiLow"};
+  OutputObj<TH2F> hSelectedGammaEMCALPtEtaVeryLow{"hSelectedGammaEMCALEtaVeryLow"};
+  OutputObj<TH2F> hSelectedGammaEMCALPtPhiVeryLow{"hSelectedGammaEMCALPhiVeryLow"};
+  OutputObj<TH2F> hSelectedGammaDCALPtEtaVeryLow{"hSelectedGammaDCALEtaVeryLow"};
+  OutputObj<TH2F> hSelectedGammaDCALPtPhiVeryLow{"hSelectedGammaDCALPhiVeryLow"};
   OutputObj<TH1D> hMaxJetPt{"hMaxJetPt"};
   OutputObj<TH1D> hSelectMaxJetPt{"hSelectMaxJetPt"};
   OutputObj<TH1D> hSelectMaxJetPtLow{"hSelectMaxJetPtLow"};
   OutputObj<TH1D> hMaxClusterEMCAL{"hMaxClusterEMCAL"};
   OutputObj<TH1D> hMaxClusterDCAL{"hMaxClusterDCAL"};
+  OutputObj<TH1D> hMaxClusterEMCALMinBias{"hMaxClusterEMCALMinBias"};
+  OutputObj<TH1D> hMaxClusterDCALMinBias{"hMaxClusterDCALMinBias"};
+  OutputObj<TH1D> hMaxClusterEMCALLevel0{"hMaxClusterEMCALLevel0"};
+  OutputObj<TH1D> hMaxClusterDCALLevel0{"hMaxClusterDCALLevel0"};
+  OutputObj<TH1D> hSelectGammaVeryHighMaxClusterEMCAL{"hSelectGammaVeryHighMaxClusterEMCAL"};
   OutputObj<TH1D> hSelectGammaMaxClusterEMCAL{"hSelectGammaMaxClusterEMCAL"};
-  OutputObj<TH1D> hSelectGammaLowMaxClusterEMCAL{"hSelectLowGammaMaxClusterEMCAL"};
+  OutputObj<TH1D> hSelectGammaLowMaxClusterEMCAL{"hSelectGammaLowMaxClusterEMCAL"};
+  OutputObj<TH1D> hSelectGammaVeryLowMaxClusterEMCAL{"hSelectGammaVeryLowMaxClusterEMCAL"};
+  OutputObj<TH1D> hSelectGammaVeryHighMaxClusterDCAL{"hSelectGammaVeryHighMaxClusterDCAL"};
   OutputObj<TH1D> hSelectGammaMaxClusterDCAL{"hSelectGammaMaxClusterDCAL"};
-  OutputObj<TH1D> hSelectGammaLowMaxClusterDCAL{"hSelectLowGammaMaxClusterDCAL"};
+  OutputObj<TH1D> hSelectGammaLowMaxClusterDCAL{"hSelectGammaLowMaxClusterDCAL"};
+  OutputObj<TH1D> hSelectGammaVeryLowMaxClusterDCAL{"hSelectGammaVertLowMaxClusterDCAL"};
 
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
@@ -118,10 +153,14 @@ struct fullJetFilter {
   Configurable<int> f_ObservalbeGammaTrigger{"fObservableGammaTrigger", 0, "Observable for the gamma trigger (0 - Energy, 1 - pt)"};
   Configurable<bool> b_PublishReadoutTrigger{"b_publishReadoutTrigger", false, "Publish EMCAL readout status as trigger flag"};
   Configurable<bool> b_PublishNeutralJetTrigger{"b_publishNeutralJetTrigger", false, "Publish trigger on neutral jets"};
+  Configurable<float> f_gammaPtMinEMCALVeryHigh{"f_gammaPtMinEMCALVeryHigh", 9.0, "minimum gamma pT cut in EMCAL very high threshold"};
   Configurable<float> f_gammaPtMinEMCALHigh{"f_gammaPtMinEMCALHigh", 4.0, "minimum gamma pT cut in EMCAL high threshold"};
   Configurable<float> f_gammaPtMinEMCALLow{"f_gammaPtMinEMCALLow", 1.5, "minimum gamma pT cut in EMCAL low threshold"};
+  Configurable<float> f_gammaPtMinEMCALVeryLow{"f_gammaPtMinEMCALVeryLow", 0.5, "minimum gamma pT cut in EMCAL very low threshold"};
+  Configurable<float> f_gammaPtMinDCALVeryHigh{"f_gammaPtMinDCALVeryHigh", 9.0, "minimum gamma pT cut in DCAL very high threshold"};
   Configurable<float> f_gammaPtMinDCALHigh{"f_gammaPtMinDCALHigh", 4.0, "minimum gamma pT cut in DCAL high threshold"};
   Configurable<float> f_gammaPtMinDCALLow{"f_gammaPtMinDCALLow", 1.5, "minimum gamma pT cut in DCAL low threshold"};
+  Configurable<float> f_gammaPtMinDCALVeryLow{"f_gammaPtMinDCALVeryLow", 0.5, "minimum gamma pT cut in DCAL very low threshold"};
   Configurable<float> f_gammaPtMinEMCALHighMB{"f_gammaPtMinEMCALHighMB", 4.0, "minimum gamma pT cut in EMCAL high threshold (MB-only runs)"};
   Configurable<float> f_gammaPtMinEMCALLowMB{"f_gammaPtMinEMCALLowMB", 1.5, "minimum gamma pT cut in EMCAL low threshold (MB-only runs)"};
   Configurable<float> f_gammaPtMinDCALHighMB{"f_gammaPtMinDCALHighMB", 4.0, "minimum gamma pT cut in DCAL high threshold (MB-only runs)"};
@@ -160,6 +199,10 @@ struct fullJetFilter {
 
     hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", Form("Emc Clusters;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", Form("Emc Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hEmcClusterPtEtaMinBias.setObject(new TH2F("hEmcClusterPtEtaMinBias", Form("Emc Clusters (MB);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hEmcClusterPtPhiMinBias.setObject(new TH2F("hEmcClusterPtPhiMinBias", Form("Emc Clusters (MB);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hEmcClusterPtEtaLevel0.setObject(new TH2F("hEmcClusterPtEtaLevel0", Form("Emc Clusters (L0);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hEmcClusterPtPhiLevel0.setObject(new TH2F("hEmcClusterPtPhiLevel0", Form("Emc Clusters (L0);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", Form("Selected Clusters;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", Form("Selected Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterPtEtaLow.setObject(new TH2F("hSelectedClusterPtEtaLow", Form("Selected Clusters (low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
@@ -170,6 +213,10 @@ struct fullJetFilter {
     hSelectedJetPtPhi.setObject(new TH2F("hSelectedJetPtPhi", "Selected Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetPtEtaLow.setObject(new TH2F("hSelectedJetPtEtaLow", "Selected Jets (low threshold);#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hSelectedJetPtPhiLow.setObject(new TH2F("hSelectedJetPtPhiLow", "Selected Jets (low threshold);#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaEMCALPtEtaVeryHigh.setObject(new TH2F("hSelectedGammaEMCALEtaVeryHigh", Form("Selected Gammas EMCAL (very high threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedGammaEMCALPtPhiVeryHigh.setObject(new TH2F("hSelectedGammaEMCALPhiVeryHigh", Form("Selected Gammas EMCAL (very high threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaDCALPtEtaVeryHigh.setObject(new TH2F("hSelectedGammaDCALEtaVeryHigh", Form("Selected Gammas DCAL (very high threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedGammaDCALPtPhiVeryHigh.setObject(new TH2F("hSelectedGammaDCALPhiVeryHigh", Form("Selected Gammas DCAL (very high threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaEMCALPtEta.setObject(new TH2F("hSelectedGammaEMCALPtEta", Form("Selected Gammas EMCAL;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaEMCALPtPhi.setObject(new TH2F("hSelectedGammaEMCALPtPhi", Form("Selected Gammas EMCAL;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaDCALPtEta.setObject(new TH2F("hSelectedGammaDCALPtEta", Form("Selected Gammas DCAL;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
@@ -178,16 +225,28 @@ struct fullJetFilter {
     hSelectedGammaEMCALPtPhiLow.setObject(new TH2F("hSelectedGammaEMCALPtPhiLow", Form("Selected Gammas EMCAL (low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaDCALPtEtaLow.setObject(new TH2F("hSelectedGammaDCALPtEtaLow", Form("Selected Gammas DCAL (low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaDCALPtPhiLow.setObject(new TH2F("hSelectedGammaDCALPtPhiLow", Form("Selected Gammas DCAL (low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaEMCALPtEtaVeryLow.setObject(new TH2F("hSelectedGammaEMCALEtaVeryLow", Form("Selected Gammas EMCAL (very low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedGammaEMCALPtPhiVeryLow.setObject(new TH2F("hSelectedGammaEMCALPhiVeryLow", Form("Selected Gammas EMCAL (very low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedGammaDCALPtEtaVeryLow.setObject(new TH2F("hSelectedGammaDCALEtaVeryLow", Form("Selected Gammas DCAL (very low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedGammaDCALPtPhiVeryLow.setObject(new TH2F("hSelectedGammaDCALPhiVeryLow", Form("Selected Gammas DCAL (very low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
 
     hMaxJetPt.setObject(new TH1D("hMaxJetPt", "Max. jet pt", nPtBins, kMinPt, kMaxPt));
     hSelectMaxJetPt.setObject(new TH1D("hSelectMaxJetPt", "Max. jet pt selected collisions", nPtBins, kMinPt, kMaxPt));
     hSelectMaxJetPtLow.setObject(new TH1D("hSelectMaxJetPtLow", "Max. jet pt selected collisions (low threshold)", nPtBins, kMinPt, kMaxPt));
     hMaxClusterEMCAL.setObject(new TH1D("hMaxClusterEMCAL", "Max.cluster pt EMCAL", nPtBins, kMinPt, kMaxPt));
     hMaxClusterDCAL.setObject(new TH1D("hMaxClusterDCAL", "Max. cluster pt DCAL", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterEMCALMinBias.setObject(new TH1D("hMaxClusterEMCALMinBias", "Max.cluster pt EMCAL (min. bias)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterDCALMinBias.setObject(new TH1D("hMaxClusterDCALMinBias", "Max. cluster pt DCAL (mib. bias)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterEMCALLevel0.setObject(new TH1D("hMaxClusterEMCALLevel0", "Max.cluster pt EMCAL (Level-0)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterDCALLevel0.setObject(new TH1D("hMaxClusterDCALLevel0", "Max. cluster pt DCAL (Level-0)", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaVeryHighMaxClusterEMCAL.setObject(new TH1D("hSelectGammaVeryHighMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (very high threshold)", nPtBins, kMinPt, kMaxPt));
     hSelectGammaMaxClusterEMCAL.setObject(new TH1D("hSelectGammaMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL", nPtBins, kMinPt, kMaxPt));
     hSelectGammaLowMaxClusterEMCAL.setObject(new TH1D("hSelectGammaLowMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (low threshold)", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaVeryLowMaxClusterEMCAL.setObject(new TH1D("hSelectGammaVeryLowMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (very low threshold)", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaVeryHighMaxClusterDCAL.setObject(new TH1D("hSelectGammaVeryHighMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL (very high threshold)", nPtBins, kMinPt, kMaxPt));
     hSelectGammaMaxClusterDCAL.setObject(new TH1D("hSelectGammaMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL", nPtBins, kMinPt, kMaxPt));
     hSelectGammaLowMaxClusterDCAL.setObject(new TH1D("hSelectGammaLowMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL (low threshold)", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaVeryLowMaxClusterDCAL.setObject(new TH1D("hSelectGammaVertLowMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL (very low threshold)", nPtBins, kMinPt, kMaxPt));
 
     LOG(info) << "Jet trigger: " << (b_doJetTrigger ? "on" : "off");
     LOG(info) << "Gamma trigger: " << (b_doJetTrigger ? "on" : "off");
@@ -224,7 +283,7 @@ struct fullJetFilter {
     EMCALHWTriggerConfiguration result = EMCALHWTriggerConfiguration::UNKNOWN;
     bool hasMinBias = false, hasL0 = false;
     for (auto& cls : ctpconfig.getCTPClasses()) {
-      std::string_view trgclsname = cls.name;
+      auto trgclsname = boost::algorithm::to_upper_copy(cls.name);
       if (trgclsname.find("-EMC") == std::string::npos) {
         // Not an EMCAL trigger class
         continue;
@@ -258,9 +317,14 @@ struct fullJetFilter {
   float getGammaThreshold(o2::emcal::AcceptanceType_t subdet, ThresholdType_t thresholdt, bool mblike)
   {
     float threshold = 0;
+    // Very-high and very-low threshold only needed and supported for trigger-like data
     switch (subdet) {
       case o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE: {
         switch (thresholdt) {
+          case ThresholdType_t::VERY_HIGH_THRESHOLD: {
+            threshold = mblike ? FLT_MAX : f_gammaPtMinEMCALVeryHigh;
+            break;
+          }
           case ThresholdType_t::HIGH_THRESHOLD: {
             threshold = mblike ? f_gammaPtMinEMCALHighMB : f_gammaPtMinEMCALHigh;
             break;
@@ -269,17 +333,29 @@ struct fullJetFilter {
             threshold = mblike ? f_gammaPtMinEMCALLowMB : f_gammaPtMinEMCALLow;
             break;
           }
+          case ThresholdType_t::VERY_LOW_THRESHOLD: {
+            threshold = mblike ? FLT_MAX : f_gammaPtMinEMCALVeryLow;
+            break;
+          }
         }
         break;
       }
       case o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE: {
         switch (thresholdt) {
+          case ThresholdType_t::VERY_HIGH_THRESHOLD: {
+            threshold = mblike ? FLT_MAX : f_gammaPtMinDCALVeryHigh;
+            break;
+          }
           case ThresholdType_t::HIGH_THRESHOLD: {
             threshold = mblike ? f_gammaPtMinDCALHighMB : f_gammaPtMinDCALHigh;
             break;
           }
           case ThresholdType_t::LOW_THRESHOLD: {
             threshold = mblike ? f_gammaPtMinDCALLowMB : f_gammaPtMinDCALLow;
+            break;
+          }
+          case ThresholdType_t::VERY_LOW_THRESHOLD: {
+            threshold = mblike ? FLT_MAX : f_gammaPtMinDCALVeryLow;
             break;
           }
         }
@@ -303,6 +379,9 @@ struct fullJetFilter {
       case ThresholdType_t::LOW_THRESHOLD:
         threshold = mblike ? f_jetPtMinLowMB : f_jetPtMinLow;
         break;
+      default:
+        // Very low and very high threshold not supported for jet trigger
+        threshold = FLT_MAX;
     }
     return threshold;
   }
@@ -381,14 +460,14 @@ struct fullJetFilter {
     return isEMCALMinBias(collision) || isEMCALLevel0(collision) || isEMCALLevel1(collision);
   }
 
-  void runGammaTrigger(const selectedClusters& clusters, std::array<bool, kCategories>& keepEvent)
+  void runGammaTrigger(const selectedClusters& clusters, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hardwaretriggers, std::array<bool, kCategories>& keepEvent)
   {
     double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1.;
-    static constexpr std::array<ThresholdType_t, 2> thresholds = {{ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD}};
+    static constexpr std::array<ThresholdType_t, 4> thresholds = {{ThresholdType_t::VERY_HIGH_THRESHOLD, ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD, ThresholdType_t::VERY_LOW_THRESHOLD}};
     static constexpr std::array<o2::emcal::AcceptanceType_t, 2> subdets = {{o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE, o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE}};
-    std::array<TH2*, 4> acceptanceHistsPtEta{{hSelectedGammaEMCALPtEta.object.get(), hSelectedGammaDCALPtEta.object.get(), hSelectedGammaEMCALPtEtaLow.object.get(), hSelectedGammaDCALPtEtaLow.object.get()}},
-      acceptanceHistsPtPhi{{hSelectedGammaEMCALPtPhi.object.get(), hSelectedGammaDCALPtPhi.object.get(), hSelectedGammaEMCALPtPhiLow.object.get(), hSelectedGammaDCALPtPhiLow.object.get()}};
-    std::array<TH1*, 4> maxClusterPtHists = {{hSelectGammaMaxClusterEMCAL.object.get(), hSelectGammaMaxClusterDCAL.object.get(), hSelectGammaLowMaxClusterEMCAL.object.get(), hSelectGammaLowMaxClusterDCAL.object.get()}};
+    std::array<TH2*, 8> acceptanceHistsPtEta{{hSelectedGammaEMCALPtEtaVeryHigh.object.get(), hSelectedGammaDCALPtEtaVeryHigh.object.get(), hSelectedGammaEMCALPtEta.object.get(), hSelectedGammaDCALPtEta.object.get(), hSelectedGammaEMCALPtEtaLow.object.get(), hSelectedGammaDCALPtEtaLow.object.get(), hSelectedGammaEMCALPtEtaVeryLow.object.get(), hSelectedGammaDCALPtEtaVeryLow.object.get()}},
+      acceptanceHistsPtPhi{{hSelectedGammaEMCALPtPhiVeryHigh.object.get(), hSelectedGammaDCALPtPhiVeryHigh.object.get(), hSelectedGammaEMCALPtPhi.object.get(), hSelectedGammaDCALPtPhi.object.get(), hSelectedGammaEMCALPtPhiLow.object.get(), hSelectedGammaDCALPtPhiLow.object.get(), hSelectedGammaEMCALPtPhiVeryLow.object.get(), hSelectedGammaDCALPtPhiVeryLow.object.get()}};
+    std::array<TH1*, 8> maxClusterPtHists = {{hSelectGammaVeryHighMaxClusterEMCAL.object.get(), hSelectGammaVeryHighMaxClusterDCAL.object.get(), hSelectGammaMaxClusterEMCAL.object.get(), hSelectGammaMaxClusterDCAL.object.get(), hSelectGammaLowMaxClusterEMCAL.object.get(), hSelectGammaLowMaxClusterDCAL.object.get(), hSelectGammaVeryLowMaxClusterEMCAL.object.get(), hSelectGammaVeryLowMaxClusterDCAL.object.get()}};
     struct ClusterData {
       float mTriggerObservable;
       float mEta;
@@ -410,15 +489,39 @@ struct fullJetFilter {
       }
       hEmcClusterPtEta->Fill(observableGamma, cluster.eta());
       hEmcClusterPtPhi->Fill(observableGamma, cluster.phi());
+      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7) || hardwaretriggers.test(EMCALHardwareTrigger::TRG_DMC7)) {
+        hEmcClusterPtEtaLevel0->Fill(observableGamma, cluster.eta());
+        hEmcClusterPtPhiLevel0->Fill(observableGamma, cluster.phi());
+      }
+      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
+        hEmcClusterPtEtaMinBias->Fill(observableGamma, cluster.eta());
+        hEmcClusterPtPhiMinBias->Fill(observableGamma, cluster.phi());
+      }
       analysedClusters.push_back({static_cast<float>(observableGamma), cluster.eta(), cluster.phi()});
     }
     hMaxClusterEMCAL->Fill(maxClusterObservableEMCAL);
     hMaxClusterDCAL->Fill(maxClusterObservableDCAL);
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
+      hMaxClusterEMCALMinBias->Fill(maxClusterObservableEMCAL);
+      hMaxClusterDCALMinBias->Fill(maxClusterObservableDCAL);
+    }
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7)) {
+      hMaxClusterEMCALLevel0->Fill(maxClusterObservableEMCAL);
+    }
+    if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_DMC7)) {
+      hMaxClusterDCALLevel0->Fill(maxClusterObservableDCAL);
+    }
     for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
+      if (thresholds[ithreshold] == ThresholdType_t::VERY_LOW_THRESHOLD) {
+        // Accept very-low threshold only in case of min. bias input to EMCAL/DCAL
+        if (!hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
+          continue;
+        }
+      }
       for (decltype(thresholds.size()) isubdet = 0; isubdet < subdets.size(); isubdet++) {
         if (isEvtSelectedGamma(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL, subdets[isubdet], thresholds[ithreshold])) {
           maxClusterPtHists[ithreshold * subdets.size() + isubdet]->Fill(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL);
-          keepEvent[kGammaHighPtEMCAL + ithreshold * subdets.size() + isubdet] = true;
+          keepEvent[kGammaVeryHighPtEMCAL + ithreshold * subdets.size() + isubdet] = true;
           for (auto& cluster : analysedClusters) {
             acceptanceHistsPtEta[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mEta);
             acceptanceHistsPtPhi[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mPhi);
@@ -477,6 +580,9 @@ struct fullJetFilter {
             case ThresholdType_t::LOW_THRESHOLD:
               triggerIndex = kJetFullLowPt;
               break;
+            default:
+              // Very high / very low thresholds not supported for jet trigger
+              break;
           }
         } else {
           switch (thresholds[ithreshold]) {
@@ -485,6 +591,9 @@ struct fullJetFilter {
               break;
             case ThresholdType_t::LOW_THRESHOLD:
               triggerIndex = kJetNeutralLowPt;
+              break;
+            default:
+              // Very high / very low thresholds not supported for jet trigger
               break;
           }
         }
@@ -514,11 +623,15 @@ struct fullJetFilter {
       constexpr bool isFullJets = std::is_same<JetCollection, filteredFullJets>::value;
       constexpr bool isNeutralJets = std::is_same<JetCollection, filteredNeutralJets>::value;
       int64_t ts = bcs.iteratorAt(0).timestamp();
-      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getForTimeStamp<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts)));
+      // Request run number in addition to timestamp in order to handle concurrent runs
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = std::to_string(run);
+      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata)));
       switch (mHardwareTriggerConfig) {
         case EMCALHWTriggerConfiguration::MB_ONLY: {
           LOG(info) << "Found hardware trigger configuration Min. bias only";
           LOG(info) << "Gamma thresholds: High " << f_gammaPtMinEMCALHighMB << ", Low " << f_gammaPtMinEMCALLowMB << " (EMCAL), High " << f_gammaPtMinDCALHighMB << ", Low " << f_gammaPtMinDCALLowMB << " (DCAL)";
+          LOG(info) << "No extreme gamma thresholds used";
           LOG(info) << "Jet thresholds: High " << f_jetPtMinMB << ", Low " << f_jetPtMinLowMB;
           LOG(info) << "Jet type: full jets " << (isFullJets ? "yes" : "no") << ", neutral jets " << (isNeutralJets ? "yes" : "no");
           break;
@@ -526,6 +639,7 @@ struct fullJetFilter {
         case EMCALHWTriggerConfiguration::EMC_TRIGGERD: {
           LOG(info) << "Found hardware trigger configuration L0-triggered";
           LOG(info) << "Gamma thresholds: High " << f_gammaPtMinEMCALHigh << ", Low " << f_gammaPtMinEMCALLow << " (EMCAL), High " << f_gammaPtMinDCALHigh << ", Low " << f_gammaPtMinDCALLow << " (DCAL)";
+          LOG(info) << "Extreme gamma thresholds: Very high " << f_gammaPtMinEMCALVeryHigh << ", very low " << f_gammaPtMinEMCALVeryLow << " (EMCAL), very high " << f_gammaPtMinDCALVeryHigh << ", very low " << f_gammaPtMinDCALVeryLow << " (DCAL)";
           LOG(info) << "Jet thresholds: High " << f_jetPtMin << ", Low " << f_jetPtMinLow;
           LOG(info) << "Jet type: full jets " << (isFullJets ? "yes" : "no") << ", neutral jets " << (isNeutralJets ? "yes" : "no");
           break;
@@ -541,7 +655,7 @@ struct fullJetFilter {
     std::fill(keepEvent.begin(), keepEvent.end(), false);
 
     if (!b_IgnoreEmcalFlag && !hasEMCALData(collision)) {
-      tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
+      tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12]);
       return; // Skip events where EMCAL is not live
     }
 
@@ -549,12 +663,23 @@ struct fullJetFilter {
       keepEvent[kEMCALReadout] = true;
     }
 
+    std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hardwaretriggers;
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_MB, true);
+    }
+    if (collision.alias_bit(triggerAliases::kEMC7)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_EMC7, true);
+    }
+    if (collision.alias_bit(triggerAliases::kDMC7)) {
+      hardwaretriggers.set(EMCALHardwareTrigger::TRG_DMC7, true);
+    }
+
     if (b_doJetTrigger) {
       runJetTrigger(jets, clusters, keepEvent);
     }
 
     if (b_doGammaTrigger) {
-      runGammaTrigger(clusters, keepEvent);
+      runGammaTrigger(clusters, hardwaretriggers, keepEvent);
     }
 
     for (int iDecision{0}; iDecision < kCategories; iDecision++) {
@@ -562,7 +687,7 @@ struct fullJetFilter {
         hProcessedEvents->Fill(iDecision);
       }
     }
-    tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
+    tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12]);
   }
 
   void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)

@@ -20,6 +20,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -27,10 +28,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 
 struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
@@ -39,7 +37,7 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -52,28 +50,28 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], hf_cuts_b0_to_d_pi::nBinsPt, hf_cuts_b0_to_d_pi::nCutVars, hf_cuts_b0_to_d_pi::labelsPt, hf_cuts_b0_to_d_pi::labelsCutVar}, "B0 candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
+
   bool selectionFlagDAndUsePidInSync = true;
+  TrackSelectorPi selectorPion;
+  HfHelper hfHelper;
 
-  TrackSelectorPID selectorPion;
-
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
     if (usePid) {
-      selectorPion.setPDG(kPiPlus);
-      selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-      selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-      selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-      selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-      selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-      selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+      selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+      selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+      selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+      selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
     if (activateQA) {
@@ -92,9 +90,9 @@ struct HfCandidateSelectorB0ToDPi {
 
     int selectionFlagD = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
+    for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-b0") == 0) {
-        for (auto const& option : device.options) {
+        for (const auto& option : device.options) {
           if (option.name.compare("selectionFlagD") == 0) {
             selectionFlagD = option.defaultValue.get<int>();
             LOGF(info, "selectionFlagD = %d", selectionFlagD);
@@ -114,7 +112,7 @@ struct HfCandidateSelectorB0ToDPi {
   }
 
   void process(aod::HfCandB0 const& hfCandsB0,
-               TracksPIDWithSel const&)
+               TracksPidWithSel const&)
   {
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;
@@ -135,7 +133,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
 
       // topological cuts
-      if (!hf_sel_candidate_b0::selectionTopol(hfCandB0, cuts, binsPt)) {
+      if (!hfHelper.selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
@@ -152,9 +150,9 @@ struct HfCandidateSelectorB0ToDPi {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
-        int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
-        if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+        auto trackPi = hfCandB0.prong1_as<TracksPidWithSel>();
+        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;

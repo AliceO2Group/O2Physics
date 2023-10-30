@@ -57,12 +57,14 @@ struct UpcCandProducer {
   MutableConfigurable<UPCCutparHolder> inputCuts{"UPCCuts", {}, "UPC event cuts"};
 
   // candidate producer flags
-  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0 signals"};
+  Configurable<int> fFilterFT0{"filterFT0", 0, "Filter candidates by FT0"};
+  Configurable<int> fFilterFV0{"filterFV0", 0, "Filter candidates by FV0"};
   Configurable<int> fFilterRangeFT0{"filterRangeFT0", 0, "BC range (+/-) for filtration by FT0 signals"};
   Configurable<int> fSearchITSTPC{"searchITSTPC", 0, "Search for ITS-TPC tracks near candidates"};
   Configurable<int> fSearchRangeITSTPC{"searchRangeITSTPC", 50, "BC range for ITS-TPC tracks search wrt TOF tracks"};
   Configurable<uint32_t> fNFwdProngs{"nFwdProngs", 0, "Matched forward tracks per candidate"};
   Configurable<uint32_t> fNBarProngs{"nBarProngs", 2, "Matched barrel tracks per candidate"};
+  Configurable<int> fMuonTrackTShift{"muonTrackTShift", 0, "Time shift for Muon tracks"};
 
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -73,7 +75,8 @@ struct UpcCandProducer {
 
   using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                      o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
-                                     o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+                                     o2::aod::TOFSignal, o2::aod::pidTOFbeta,
+                                     o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
 
   typedef std::pair<uint64_t, std::vector<int64_t>> BCTracksPair;
 
@@ -178,6 +181,36 @@ struct UpcCandProducer {
     return pass;
   }
 
+  uint64_t findClosestBC(uint64_t globalBC, std::map<uint64_t, int32_t>& bcs)
+  {
+    auto it = bcs.lower_bound(globalBC);
+    auto bc1 = it->first;
+    if (it != bcs.begin())
+      --it;
+    auto bc2 = it->first;
+    auto dbc1 = bc1 >= globalBC ? bc1 - globalBC : globalBC - bc1;
+    auto dbc2 = bc2 >= globalBC ? bc2 - globalBC : globalBC - bc2;
+    auto bc = (dbc1 <= dbc2) ? bc1 : bc2;
+    return bc;
+  }
+
+  auto findClosestTrackBCiter(uint64_t globalBC, std::vector<BCTracksPair>& bcs)
+  {
+    auto it = std::lower_bound(bcs.begin(), bcs.end(), globalBC,
+                               [](const BCTracksPair& p, uint64_t bc) {
+                                 return p.first < bc;
+                               });
+    auto bc1 = it->first;
+    auto it1 = it;
+    if (it != bcs.begin())
+      --it;
+    auto it2 = it;
+    auto bc2 = it->first;
+    auto dbc1 = bc1 >= globalBC ? bc1 - globalBC : globalBC - bc1;
+    auto dbc2 = bc2 >= globalBC ? bc2 - globalBC : globalBC - bc2;
+    return (dbc1 <= dbc2) ? it1 : it2;
+  }
+
   void skimMCInfo(o2::aod::McCollisions const& mcCollisions,
                   o2::aod::McParticles const& mcParticles,
                   BCsWithBcSels const& bcs)
@@ -191,6 +224,8 @@ struct UpcCandProducer {
     // and calculate new MC table IDs
     for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
       const auto& mcPart = mcParticles.iteratorAt(mcPartID);
+      if (!mcPart.has_mcCollision())
+        continue;
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
       bool isSignal = mcEvent.generatorsID() == fSignalGenID;
@@ -261,14 +296,19 @@ struct UpcCandProducer {
   void fillFwdTracks(ForwardTracks const& tracks,
                      std::vector<int64_t> const& trackIDs,
                      int32_t candID,
-                     uint64_t bc,
+                     uint64_t globalBC, uint64_t closestBcMCH,
                      const o2::aod::McFwdTrackLabels* mcTrackLabels)
   {
     for (auto trackID : trackIDs) {
       const auto& track = tracks.iteratorAt(trackID);
-      double trTime = track.trackTime() - std::round(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS) * o2::constants::lhc::LHCBunchSpacingNS;
-      udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
-      udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), track.chi2MatchMCHMID(),
+      double trTime = track.trackTime();
+      double mchmidChi2 = track.chi2MatchMCHMID();
+      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) {
+        trTime = (static_cast<int64_t>(globalBC) - static_cast<int64_t>(closestBcMCH)) * o2::constants::lhc::LHCBunchSpacingNS; // track time relative to MCH-MID track
+        mchmidChi2 = -999.;                                                                                                     // no MID match
+      }
+      udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
+      udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2,
                        track.mchBitMap(), track.midBitMap(), track.midBoards());
       // fill MC labels and masks if needed
       if (fDoMC) {
@@ -302,6 +342,7 @@ struct UpcCandProducer {
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
                     track.tpcSignal(), track.tofSignal(), track.trdSignal(), track.length(), track.tofExpMom(), track.detectorMap());
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                  track.beta(), track.betaerror(),
                   track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       udTracksDCA(track.dcaZ(), track.dcaXY());
       udTracksFlags(colId, track.isPVContributor());
@@ -350,6 +391,54 @@ struct UpcCandProducer {
                       o2::aod::FDDs const& fdds,
                       o2::aod::FV0As const& fv0as)
   {
+    auto it = std::find_if(v.begin(),
+                           v.end(),
+                           [midbc](const std::pair<uint64_t, int64_t>& p) { return p.first == midbc; });
+
+    if (it != v.end()) {
+      auto bcId = it->second;
+      auto bcEntry = bcs.iteratorAt(bcId);
+      if (bcEntry.has_foundFT0()) {
+        auto ft0 = bcEntry.foundFT0();
+        fitInfo.timeFT0A = ft0.timeA();
+        fitInfo.timeFT0C = ft0.timeC();
+        const auto& ampsA = ft0.amplitudeA();
+        const auto& ampsC = ft0.amplitudeC();
+        fitInfo.ampFT0A = 0.;
+        for (auto amp : ampsA)
+          fitInfo.ampFT0A += amp;
+        fitInfo.ampFT0C = 0.;
+        for (auto amp : ampsC)
+          fitInfo.ampFT0C += amp;
+        fitInfo.triggerMaskFT0 = ft0.triggerMask();
+      }
+      if (bcEntry.has_foundFV0()) {
+        auto fv0a = bcEntry.foundFV0();
+        fitInfo.timeFV0A = fv0a.time();
+        const auto& amps = fv0a.amplitude();
+        fitInfo.ampFV0A = 0.;
+        for (auto amp : amps)
+          fitInfo.ampFV0A += amp;
+        fitInfo.triggerMaskFV0A = fv0a.triggerMask();
+      }
+      if (bcEntry.has_foundFDD()) {
+        auto fdd = bcEntry.foundFDD();
+        fitInfo.timeFDDA = fdd.timeA();
+        fitInfo.timeFDDC = fdd.timeC();
+        const auto& ampsA = fdd.chargeA();
+        const auto& ampsC = fdd.chargeC();
+        fitInfo.ampFDDA = 0.;
+        for (auto amp : ampsA) {
+          fitInfo.ampFDDA += amp;
+        }
+        fitInfo.ampFDDC = 0.;
+        for (auto amp : ampsC) {
+          fitInfo.ampFDDC += amp;
+        }
+        fitInfo.triggerMaskFDD = fdd.triggerMask();
+      }
+    }
+
     const uint64_t range = 16;
     uint64_t left = midbc >= range ? midbc - range : 0;
     uint64_t right = fMaxBC >= midbc + range ? midbc + range : fMaxBC;
@@ -366,65 +455,26 @@ struct UpcCandProducer {
       uint64_t bit = curbc - (midbc - range);
       int64_t bcGlId = curit->second;
       const auto& bc = bcs.iteratorAt(bcGlId);
-      if (bc.has_foundFT0()) {
-        const auto& ft0 = bc.foundFT0();
-        fitInfo.timeFT0A = ft0.timeA();
-        fitInfo.timeFT0C = ft0.timeC();
-        const auto& ampsA = ft0.amplitudeA();
-        const auto& ampsC = ft0.amplitudeC();
-        fitInfo.ampFT0A = 0.;
-        for (auto amp : ampsA)
-          fitInfo.ampFT0A += amp;
-        fitInfo.ampFT0C = 0.;
-        for (auto amp : ampsC)
-          fitInfo.ampFT0C += amp;
-        fitInfo.triggerMaskFT0 = ft0.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGT0A))
-          SETBIT(fitInfo.BGFT0Apf, bit);
-        if (!bc.selection_bit(evsel::kNoBGT0C))
-          SETBIT(fitInfo.BGFT0Cpf, bit);
-        if (bc.selection_bit(evsel::kIsBBT0A))
-          SETBIT(fitInfo.BBFT0Apf, bit);
-        if (bc.selection_bit(evsel::kIsBBT0C))
-          SETBIT(fitInfo.BBFT0Cpf, bit);
-      }
-      if (bc.has_foundFV0()) {
-        const auto& fv0a = bc.foundFV0();
-        fitInfo.timeFV0A = fv0a.time();
-        const auto& amps = fv0a.amplitude();
-        fitInfo.ampFV0A = 0.;
-        for (auto amp : amps)
-          fitInfo.ampFV0A += amp;
-        fitInfo.triggerMaskFV0A = fv0a.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGV0A))
-          SETBIT(fitInfo.BGFV0Apf, bit);
-        if (bc.selection_bit(evsel::kIsBBV0A))
-          SETBIT(fitInfo.BBFV0Apf, bit);
-      }
-      if (bc.has_foundFDD()) {
-        const auto& fdd = bc.foundFDD();
-        fitInfo.timeFDDA = fdd.timeA();
-        fitInfo.timeFDDC = fdd.timeC();
-        const auto& ampsA = fdd.chargeA();
-        const auto& ampsC = fdd.chargeC();
-        fitInfo.ampFDDA = 0.;
-        for (auto amp : ampsA) {
-          fitInfo.ampFDDA += amp;
-        }
-        fitInfo.ampFDDC = 0.;
-        for (auto amp : ampsC) {
-          fitInfo.ampFDDC += amp;
-        }
-        fitInfo.triggerMaskFDD = fdd.triggerMask();
-        if (!bc.selection_bit(evsel::kNoBGFDA))
-          SETBIT(fitInfo.BGFDDApf, bit);
-        if (!bc.selection_bit(evsel::kNoBGFDC))
-          SETBIT(fitInfo.BGFDDCpf, bit);
-        if (bc.selection_bit(evsel::kIsBBFDA))
-          SETBIT(fitInfo.BBFDDApf, bit);
-        if (bc.selection_bit(evsel::kIsBBFDC))
-          SETBIT(fitInfo.BBFDDCpf, bit);
-      }
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
+        SETBIT(fitInfo.BGFT0Apf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
+        SETBIT(fitInfo.BGFT0Cpf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
+        SETBIT(fitInfo.BBFT0Apf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
+        SETBIT(fitInfo.BBFT0Cpf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
+        SETBIT(fitInfo.BGFV0Apf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
+        SETBIT(fitInfo.BBFV0Apf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
+        SETBIT(fitInfo.BGFDDApf, bit);
+      if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
+        SETBIT(fitInfo.BGFDDCpf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
+        SETBIT(fitInfo.BBFDDApf, bit);
+      if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
+        SETBIT(fitInfo.BBFDDCpf, bit);
       ++curit;
       if (curit == v.end())
         break;
@@ -494,7 +544,7 @@ struct UpcCandProducer {
       } else {
         trackBC = ambIter->second;
       }
-      int64_t tint = std::round(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
       uint64_t bc = trackBC + tint;
       if (bc > fMaxBC)
         continue;
@@ -512,7 +562,8 @@ struct UpcCandProducer {
     }
   }
 
-  void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIdsMID,
+  void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
+                            int typeFilter,
                             BCsWithBcSels const& bcs,
                             o2::aod::Collisions const& collisions,
                             ForwardTracks const& fwdTracks,
@@ -520,7 +571,7 @@ struct UpcCandProducer {
                             std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
   {
     for (const auto& trk : fwdTracks) {
-      if (trk.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
+      if (trk.trackType() != typeFilter)
         continue;
       if (!applyFwdCuts(trk))
         continue;
@@ -535,12 +586,11 @@ struct UpcCandProducer {
       } else {
         trackBC = ambIter->second;
       }
-      int64_t tint = std::round(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
-      if (bc > fMaxBC)
+      if (nContrib > upcCuts.getMaxNContrib())
         continue;
-      if (nContrib <= upcCuts.getMaxNContrib())
-        addTrack(bcsMatchedTrIdsMID, bc, trkId);
+      addTrack(bcsMatchedTrIds, bc, trkId);
     }
   }
 
@@ -737,6 +787,7 @@ struct UpcCandProducer {
     collectAmbTrackBCs<1>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
+                         o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
@@ -828,12 +879,13 @@ struct UpcCandProducer {
       uint32_t nMIDtracks = fwdTrackIDs.size();
       uint32_t nBarrelTracks = barrelTrackIDs.size(); // TOF + ITS-TPC tracks
       uint16_t numContrib = nBarrelTracks + nMIDtracks;
+      uint64_t bc = pairMID.first;
       // sanity check
-      if (nBarrelTracks != fNBarProngs || nMIDtracks != fNFwdProngs)
+      if (nBarrelTracks != fNBarProngs || nMIDtracks != fNFwdProngs) {
         continue;
+      }
       // fetching FT0, FDD, FV0 information
       // if there is no relevant signal, dummy info will be used
-      uint64_t bc = pairMID.first;
       upchelpers::FITInfo fitInfo{};
       processFITInfo(fitInfo, bc, indexBCglId, bcs, ft0s, fdds, fv0as);
       if (fFilterFT0) {
@@ -851,8 +903,8 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
-      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, mcFwdTrackLabels);
-      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambFwdTrBCs);
+      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, bc, mcFwdTrackLabels);
+      fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, mcBarrelTrackLabels, ambBarrelTrBCs);
       eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -868,6 +920,153 @@ struct UpcCandProducer {
     bcsMatchedTrIdsMID.clear();
     ambBarrelTrBCs.clear();
     bcsMatchedTrIdsTOFTagged.clear();
+  }
+
+  void createCandidatesFwd(ForwardTracks const& fwdTracks,
+                           o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                           BCsWithBcSels const& bcs,
+                           o2::aod::Collisions const& collisions,
+                           o2::aod::FT0s const& ft0s,
+                           o2::aod::FDDs const& fdds,
+                           o2::aod::FV0As const& fv0as,
+                           const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
+  {
+    // pairs of global BCs and vectors of matched track IDs:
+    std::vector<BCTracksPair> bcsMatchedTrIdsMID;
+    std::vector<BCTracksPair> bcsMatchedTrIdsMCH;
+
+    // trackID -> index in amb. track table
+    std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
+    collectAmbTrackBCs<1>(ambFwdTrBCs, ambFwdTracks);
+
+    collectForwardTracks(bcsMatchedTrIdsMID,
+                         o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
+                         bcs, collisions,
+                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
+
+    collectForwardTracks(bcsMatchedTrIdsMCH,
+                         o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack,
+                         bcs, collisions,
+                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
+
+    std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+
+    std::sort(bcsMatchedTrIdsMCH.begin(), bcsMatchedTrIdsMCH.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+
+    std::map<uint64_t, int32_t> mapGlobalBcWithT0{};
+    for (auto ft0 : ft0s) {
+      if (std::abs(ft0.timeA()) > 2.)
+        continue;
+      uint64_t globalBC = ft0.bc().globalBC();
+      mapGlobalBcWithT0[globalBC] = ft0.globalIndex();
+    }
+
+    std::map<uint64_t, int32_t> mapGlobalBcWithV0A{};
+    for (auto fv0a : fv0as) {
+      if (std::abs(fv0a.time()) > 15.)
+        continue;
+      uint64_t globalBC = fv0a.bc().globalBC();
+      mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
+    }
+
+    auto nFT0s = mapGlobalBcWithT0.size();
+    auto nFV0As = mapGlobalBcWithV0A.size();
+    auto nBcsWithMCH = bcsMatchedTrIdsMCH.size();
+
+    // todo: calculate position of UD collision?
+    float dummyX = 0.;
+    float dummyY = 0.;
+    float dummyZ = 0.;
+
+    int32_t runNumber = bcs.iteratorAt(0).runNumber();
+
+    // storing n-prong matches
+    int32_t candID = 0;
+    for (auto& pair : bcsMatchedTrIdsMID) {
+      auto globalBC = pair.first;
+      auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
+      int32_t nMIDs = fwdTrackIDs.size();
+      if (nMIDs > fNFwdProngs) // too many tracks
+        continue;
+      uint64_t closestBcMCH = 0;
+      if (nMIDs < fNFwdProngs && nBcsWithMCH > 0) { // adding MCH tracks
+        auto itClosestBcMCH = findClosestTrackBCiter(globalBC, bcsMatchedTrIdsMCH);
+        closestBcMCH = itClosestBcMCH->first;
+        int64_t distClosestBcMCH = globalBC - static_cast<int64_t>(closestBcMCH);
+        if (std::abs(distClosestBcMCH) > 20)
+          continue;
+        auto& mchTracks = itClosestBcMCH->second;
+        int32_t nMCHs = mchTracks.size();
+        if (nMCHs + nMIDs > fNFwdProngs)
+          continue;
+        fwdTrackIDs.insert(fwdTrackIDs.end(), mchTracks.begin(), mchTracks.end());
+      }
+      upchelpers::FITInfo fitInfo{};
+      fitInfo.timeFT0A = -999.f;
+      fitInfo.timeFT0C = -999.f;
+      fitInfo.timeFV0A = -999.f;
+      fitInfo.ampFT0A = 0.f;
+      fitInfo.ampFT0C = 0.f;
+      fitInfo.ampFV0A = 0.f;
+      fitInfo.BBFT0Apf = -999;
+      fitInfo.BBFV0Apf = -999;
+      if (nFT0s > 0) {
+        uint64_t closestBcT0 = findClosestBC(globalBC, mapGlobalBcWithT0);
+        LOGP(info, "closestBcT0={}", closestBcT0);
+        int64_t distClosestBcT0 = globalBC - static_cast<int64_t>(closestBcT0);
+        if (std::abs(distClosestBcT0) < fFilterFT0)
+          continue;
+        fitInfo.BBFT0Apf = distClosestBcT0;
+        auto ft0Id = mapGlobalBcWithT0.at(closestBcT0);
+        auto ft0 = ft0s.iteratorAt(ft0Id);
+        fitInfo.timeFT0A = ft0.timeA();
+        fitInfo.timeFT0C = ft0.timeC();
+        const auto& t0AmpsA = ft0.amplitudeA();
+        const auto& t0AmpsC = ft0.amplitudeC();
+        for (auto amp : t0AmpsA)
+          fitInfo.ampFT0A += amp;
+        for (auto amp : t0AmpsC)
+          fitInfo.ampFT0C += amp;
+      }
+      if (nFV0As > 0) {
+        uint64_t closestBcV0A = findClosestBC(globalBC, mapGlobalBcWithV0A);
+        int64_t distClosestBcV0A = globalBC - static_cast<int64_t>(closestBcV0A);
+        if (std::abs(distClosestBcV0A) < fFilterFV0)
+          continue;
+        fitInfo.BBFV0Apf = distClosestBcV0A;
+        auto fv0aId = mapGlobalBcWithV0A.at(closestBcV0A);
+        auto fv0a = fv0as.iteratorAt(fv0aId);
+        fitInfo.timeFV0A = fv0a.time();
+        const auto& v0Amps = fv0a.amplitude();
+        for (auto amp : v0Amps)
+          fitInfo.ampFV0A += amp;
+      }
+      uint16_t numContrib = fNFwdProngs;
+      int8_t netCharge = 0;
+      float RgtrwTOF = 0.;
+      for (auto id : fwdTrackIDs) {
+        auto tr = fwdTracks.iteratorAt(id);
+        netCharge += tr.sign();
+      }
+      // store used tracks
+      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
+                          fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
+                          fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
+                          fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
+                          fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+                          fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      candID++;
+    }
+
+    ambFwdTrBCs.clear();
+    bcsMatchedTrIdsMID.clear();
+    bcsMatchedTrIdsMCH.clear();
+    mapGlobalBcWithT0.clear();
+    mapGlobalBcWithV0A.clear();
   }
 
   // data processors
@@ -958,10 +1157,47 @@ struct UpcCandProducer {
     fNewPartIDs.clear();
   }
 
+  // create candidates for forward region
+  // forward: n fwd tracks
+  void processForward(ForwardTracks const& fwdTracks,
+                      o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                      BCsWithBcSels const& bcs,
+                      o2::aod::Collisions const& collisions,
+                      o2::aod::FT0s const& ft0s,
+                      o2::aod::FDDs const& fdds,
+                      o2::aod::FV0As const& fv0as)
+  {
+    fDoMC = false;
+    createCandidatesFwd(fwdTracks, ambFwdTracks,
+                        bcs, collisions,
+                        ft0s, fdds, fv0as,
+                        (o2::aod::McFwdTrackLabels*)nullptr);
+  }
+
+  void processForwardMC(ForwardTracks const& fwdTracks,
+                        o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                        BCsWithBcSels const& bcs,
+                        o2::aod::Collisions const& collisions,
+                        o2::aod::FT0s const& ft0s,
+                        o2::aod::FDDs const& fdds,
+                        o2::aod::FV0As const& fv0as,
+                        o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
+                        o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
+  {
+    fDoMC = true;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
+    createCandidatesFwd(fwdTracks, ambFwdTracks,
+                        bcs, collisions,
+                        ft0s, fdds, fv0as,
+                        &mcFwdTrackLabels);
+  }
+
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
   PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward/forward region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processForward, "Produce caniddates in forward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

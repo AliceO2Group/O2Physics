@@ -26,27 +26,27 @@ using namespace o2;
 namespace o2::aod
 {
 namespace fullEvent
-{                                 // Events
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
+{ // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(MultFV0M, multFV0M, float);
+DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 } // namespace fullEvent
-DECLARE_SOA_TABLE(LfCandNucleusEvents, "AOD", "LFNUCLEvent",
+DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   o2::soa::Index<>,
-                  fullEvent::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  fullEvent::MultFV0M,
+                  fullEvent::CentFV0M,
+                  fullEvent::CentFT0M,
                   fullEvent::IsEventReject,
                   fullEvent::RunNumber);
-using LfCandNucleusEvent = LfCandNucleusEvents::iterator;
+using LfNuclEvent = LfNuclEvents::iterator;
 
 namespace full
 {
-DECLARE_SOA_INDEX_COLUMN(LfCandNucleusEvent, lfCandNucleusFullEvent);
+DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfNuclEvent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * cosh(eta); });
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -99,6 +99,7 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
+
 } // namespace full
 namespace dummy
 {
@@ -141,14 +142,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFExpMom, tofExpMom,
 /*
 namespace fullMC
 {
-DECLARE_SOA_INDEX_COLUMN(LfCandNucleusEvent, lfCandNucleusFullEvent);
+DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfCandNucleusFullEvent);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 }
 */
 
 DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   o2::soa::Index<>,
-                  full::LfCandNucleusEventId,
+                  full::LfNuclEventId,
                   full::DcaXY, full::DcaZ,
                   full::TPCNSigmaDe, full::TPCNSigmaHe,
                   full::TOFNSigmaDe, full::TOFNSigmaHe,
@@ -179,7 +180,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
 DECLARE_SOA_TABLE_FULL(LfCandNucleusDummy, "LfCandNucleus", "AOD", "LFNUCL",
                        o2::soa::Index<>,
-                       full::LfCandNucleusEventId,
+                       full::LfNuclEventId,
                        full::DcaXY, full::DcaZ,
                        full::TPCNSigmaDe, full::TPCNSigmaHe,
                        full::TOFNSigmaDe, full::TOFNSigmaHe,
@@ -228,7 +229,10 @@ DECLARE_SOA_TABLE(LfCandNucleusExtra, "AOD", "LFNUCLEXTRA",
 DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,
                   full::IsPhysicalPrimary,
-                  full::ProducedByGenerator);
+                  full::ProducedByGenerator,
+                  mcparticle::Px,
+                  mcparticle::Py,
+                  mcparticle::Pz);
 
 using LfCandNucleusFull = soa::Join<LfCandNucleus, LfCandNucleusExtra>;
 

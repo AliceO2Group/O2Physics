@@ -23,8 +23,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
 namespace o2::aod
 {
@@ -310,13 +308,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, -7, -7);
     }
   }
@@ -328,13 +326,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }
