@@ -33,13 +33,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "PWGHF/Core/PDG.h"
 #include "PWGHF/Core/SelectorCuts.h"
 
@@ -383,10 +377,9 @@ struct HfTaskOmegacSt {
                               0., // stomegac::Chi2TopologicalOmegaC,
                               0., // stomegac::Chi2TopologicalOmega,
                               decayLength,
-                              0., // stomegac::DecayLengthXYOmegaC,
-                              0., // stomegac::DecayLengthOmega,
-                              0.  // stomegac::DecayLengthXYOmega
-                  );
+                              0.,  // stomegac::DecayLengthXYOmegaC,
+                              0.,  // stomegac::DecayLengthOmega,
+                              0.); // stomegac::DecayLengthXYOmega
                 }
               }
             }
