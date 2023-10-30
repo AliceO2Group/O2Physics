@@ -432,9 +432,8 @@ struct UDTutorial04 {
       if (verbosity > 0) {
         LOGF(info, "This collision has no associated McCollision");
       }
-      return;
     }
-    auto mccollision = collision.udMcCollision();
+    //auto mccollision = collision.udMcCollision();
 
     // select 2 muon candidates using the reconstructed information
     // MC truth is not considered in this step
