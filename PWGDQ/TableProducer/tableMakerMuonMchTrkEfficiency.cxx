@@ -106,7 +106,7 @@ struct tableMakerMuonMchTrkEfficiency {
   /// Configure the task variables
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};                   /// Event selection list
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"}; /// List of muon selections
-
+  ///
   Configurable<double> ptMuonMin{"ptMin", 0., "Lower bound of pT"};       /// Muon minimum pt to be studied
   Configurable<double> etaMuonMin{"etaMin", 2.5, "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
   Configurable<double> etaMuonMax{"etaMax", 4.0, "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
