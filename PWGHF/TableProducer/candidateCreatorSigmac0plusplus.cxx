@@ -100,10 +100,10 @@ struct HfCandidateCreatorSigmac0plusplus {
     h->GetXaxis()->SetBinLabel(7, "#Sigma_{c}");
 
     /// process function switches
-    std::array<int, 2> arrProcess = {doprocessDataTimeAssoc, doprocessDataNoTimeAssoc};
+    std::array<int, 2> arrProcess = {doprocessDataTrackToCollAssoc, doprocessDataNoTrackToCollAssoc};
     int processes = std::accumulate(arrProcess.begin(), arrProcess.end(), 0);
     if (processes != 1) {
-      LOG(fatal) << "Check the enabled process functions. doprocessDataTimeAssoc=" << doprocessDataTimeAssoc << ", doprocessDataNoTimeAssoc=" << doprocessDataNoTimeAssoc;
+      LOG(fatal) << "Check the enabled process functions. doprocessDataTrackToCollAssoc=" << doprocessDataTrackToCollAssoc << ", doprocessDataNoTrackToCollAssoc=" << doprocessDataNoTrackToCollAssoc;
     }
 
     ////////////////////////////////////////
@@ -243,24 +243,33 @@ struct HfCandidateCreatorSigmac0plusplus {
     if (!softPiCuts.IsSelected(trackSoftPi)) {
       return;
     }
-    /// dcaXY, dcaZ selections
-    /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
-    /// TODO: to be properly adapted in case of PV refit usage
-    if (trackSoftPi.collisionId() == thisCollId) {
-      /// this is a track originally assigned to the current collision
-      /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
-      if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
-        return;
+    if constexpr (withTimeAssoc) {
+      /// dcaXY, dcaZ selections
+      /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
+      /// TODO: to be properly adapted in case of PV refit usage
+      if (trackSoftPi.collisionId() == thisCollId) {
+        /// this is a track originally assigned to the current collision
+        /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
+        if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
+          return;
+        }
+      } else {
+        /// this is a reassigned track
+        /// therefore we need to calculate the dcaXY, dcaZ with respect to this new primary vertex
+        auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+        initCCDB(bc, runNumber, ccdb, isRun2Ccdb ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2Ccdb);
+        auto trackParSoftPi = getTrackPar(trackSoftPi);
+        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
+        if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
+          return;
+        }
       }
     } else {
-      /// this is a reassigned track
-      /// therefore we need to calculate the dcaXY, dcaZ with respect to this new primary vertex
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-      initCCDB(bc, runNumber, ccdb, isRun2Ccdb ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2Ccdb);
-      auto trackParSoftPi = getTrackPar(trackSoftPi);
-      o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
-      if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
+      /// this is a track originally assigned to the current collision
+      /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
+      /// No need to consider the time-reassociated tracks, since withTimeAssoc == false here
+      if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
         return;
       }
     }
@@ -283,18 +292,18 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param trackIndices are the indices of tracks reassigned to collisions, as obtained from the track-to-collision-associator
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void processDataTimeAssoc(aod::Collisions const& collisions,
-                            aod::TrackAssoc const& trackIndices,
-                            aod::TracksWDcaExtra const& tracks,
-                            CandidatesLc const& candidates,
-                            aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void processDataTrackToCollAssoc(aod::Collisions const& collisions,
+                                   aod::TrackAssoc const& trackIndices,
+                                   aod::TracksWDcaExtra const& tracks,
+                                   CandidatesLc const& candidates,
+                                   aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     for (const auto& collision : collisions) {
 
       histos.fill(HIST("hCounter"), 1);
-      // LOG(info) << "[processDataTimeAssoc] Collision with globalIndex " << collision.globalIndex();
-      // LOG(info) << "[processDataTimeAssoc]     - number of tracks: " << tracks.size();
-      // LOG(info) << "[processDataTimeAssoc]     - number of Lc candidates: " << candidates.size();
+      // LOG(info) << "[processDataTrackToCollAssoc] Collision with globalIndex " << collision.globalIndex();
+      // LOG(info) << "[processDataTrackToCollAssoc]     - number of tracks: " << tracks.size();
+      // LOG(info) << "[processDataTrackToCollAssoc]     - number of Lc candidates: " << candidates.size();
 
       // slice by hand the assoc. track with time per collision
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
@@ -311,22 +320,22 @@ struct HfCandidateCreatorSigmac0plusplus {
 
     } // end loop over collisions
   }
-  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplus, processDataTimeAssoc, "Process data using also time-reassociated tracks", true);
+  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplus, processDataTrackToCollAssoc, "Process data using also time-reassociated tracks", true);
 
   /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction without considering time-reassigned tracks for soft pions
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void processDataNoTimeAssoc(aod::Collision const& collision,
-                              aod::TracksWDcaExtra const& tracks,
-                              CandidatesLc const& candidates,
-                              aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void processDataNoTrackToCollAssoc(aod::Collision const& collision,
+                                     aod::TracksWDcaExtra const& tracks,
+                                     CandidatesLc const& candidates,
+                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
     histos.fill(HIST("hCounter"), 1);
-    // LOG(info) << "[processDataNoTimeAssoc] Collision with globalIndex " << collision.globalIndex();
-    // LOG(info) << "[processDataNoTimeAssoc]     - number of tracks: " << tracks.size();
-    // LOG(info) << "[processDataNoTimeAssoc]     - number of Lc candidates: " << candidates.size();
+    // LOG(info) << "[processDataNoTrackToCollAssoc] Collision with globalIndex " << collision.globalIndex();
+    // LOG(info) << "[processDataNoTrackToCollAssoc]     - number of tracks: " << tracks.size();
+    // LOG(info) << "[processDataNoTrackToCollAssoc]     - number of Lc candidates: " << candidates.size();
 
     /// loop over tracks for soft pion
     /// In this case, they are already grouped by collision, using the track::CollisionId
@@ -337,7 +346,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
     } /// end loop over tracks for soft pion
   }
-  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplus, processDataNoTimeAssoc, "Process data using time reassociated tracks", false);
+  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplus, processDataNoTrackToCollAssoc, "Process data using time reassociated tracks", false);
 };
 
 /// Extends the base table with expression columns.
