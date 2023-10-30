@@ -441,7 +441,6 @@ class TrackSelectorPidBase
     }
     return TrackSelectorPID::NotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
   }
-  
 
   /// Returns status of combined PID (TPC and TOF) selection for a given track. Rejects the PID hypothesis only if either both TPC and TOF information
   /// are not available or both TPC and TOF reject the PID hypothesis
@@ -458,7 +457,7 @@ class TrackSelectorPidBase
       double nSigmaTpc = 100.;
       double nSigmaTof = 100.;
 
-      //TPC  nsigma info with no pt or TOF constraints
+      // TPC  nsigma info with no pt or TOF constraints
       if constexpr (pdg == kElectron) {
         nSigmaTpc = track.tpcNSigmaEl();
       } else if constexpr (pdg == kMuonMinus) {
@@ -473,7 +472,7 @@ class TrackSelectorPidBase
         errorPdg();
       }
 
-      //TOF  nsigma info with no pt or TPC constraints
+      // TOF  nsigma info with no pt or TPC constraints
       if constexpr (pdg == kElectron) {
         nSigmaTof = track.tofNSigmaEl();
       } else if constexpr (pdg == kMuonMinus) {
@@ -488,15 +487,14 @@ class TrackSelectorPidBase
         errorPdg();
       }
 
-      if((nSigmaTpc < mNSigmaTpcMin || nSigmaTpc > mNSigmaTpcMax) && (nSigmaTof < mNSigmaTofMin || nSigmaTof > mNSigmaTofMax)) {
-        return TrackSelectorPID::Rejected;
+      if ((nSigmaTpc < mNSigmaTpcMin || nSigmaTpc > mNSigmaTpcMax) && (nSigmaTof < mNSigmaTofMin || nSigmaTof > mNSigmaTofMax)) {
+        return TrackSelectorPID::Rejected
       } else {
         return TrackSelectorPID::Accepted;
       }
     } else {
       return TrackSelectorPID::Accepted;
     }
-
   }
 
   /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
