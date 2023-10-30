@@ -467,9 +467,9 @@ struct QAHistTask {
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 };
 
-  //****************************************************************************************************
+//****************************************************************************************************
 
-  // MC particles
+// MC particles
 struct MCHistograms {
 
   OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 100, 0.0, 100.0)};
@@ -524,10 +524,9 @@ struct MCHistograms {
     MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
 
     // MC diff (truth - reconstructed)
-    MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff ,PDGBINNING});
-    MC_recon_diff_reg.add("histEtaDiff", "MC t", HistType::kTH2F, {ptAxis_diff ,PDGBINNING});
-    MC_recon_diff_reg.add("histPtDiff", "MC t", HistType::kTH2F, {ptAxis_diff ,PDGBINNING});
-
+    MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
+    MC_recon_diff_reg.add("histEtaDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
+    MC_recon_diff_reg.add("histPtDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
   }
 
   Filter trackAcceptance = (nabs(aod::track::eta) < 0.8f);
@@ -540,7 +539,8 @@ struct MCHistograms {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
@@ -588,13 +588,11 @@ struct MCHistograms {
 
       MC_recon_diff_reg.fill(HIST("histPhiDiff"), delta, pdgbin);
       MC_recon_diff_reg.fill(HIST("histPtDiff"), particle.pt() - track.pt(), pdgbin);
-
     }
   }
 };
 
- //****************************************************************************************************
-
+//****************************************************************************************************
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
