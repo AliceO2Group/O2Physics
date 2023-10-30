@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2023 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -42,10 +42,13 @@ struct PCMTutorial {
   HistogramRegistry fRegistry{
     "fRegistry",
     {
-      {"hVertexZ", "z vtx; z vtx (cm);Number of Events", {HistType::kTH1F, {{100, -50.f, +50.f}}}},
-      {"hV0Pt", "p_{T} of V0;V0 p_{T} (GeV?c)", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
-      {"hV0EtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{90, 0.f, TMath::TwoPi()}, {20, -1.f, +1.f}}}},
-      {"hMgg", "2-photon invariant mass", {HistType::kTH1F, {{200, 0.f, 0.8f}}}},
+      {"Event/hVertexZ", "z vtx; z vtx (cm);Number of Events", {HistType::kTH1F, {{100, -50.f, +50.f}}}},
+      {"V0/hPt", "p_{T} of V0;V0 p_{T} (GeV/c)", {HistType::kTH1F, {{1000, 0.f, 10.f}}}},
+      {"V0/hMGamma", "mass #gamma;m_{ee} (GeV/c^{2})", {HistType::kTH1F, {{100, 0.f, 0.1f}}}},
+      {"V0/hEtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.f, TMath::TwoPi()}, {200, -1.f, +1.f}}}},
+      {"V0/hAP", "Armenteros Podolanski;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{200, -1, +1}, {250, 0.0, 0.25f}}}},
+      {"V0Leg/hdEdx_Pin", "dE/dx in TPC;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"Diphoton/hMgg", "2-photon invariant mass;m_{#gamma#gamma} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.f, 0.8f}}}},
     },
   };
 
@@ -112,18 +115,27 @@ struct PCMTutorial {
         continue;
       }
       fRegistry.fill(HIST("hEventCounter"), 3);
-      fRegistry.fill(HIST("hVertexZ"), collision.posZ());
+      fRegistry.fill(HIST("Event/hVertexZ"), collision.posZ());
 
       auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       for (auto& v0 : v0s_per_coll) {
+        fRegistry.fill(HIST("V0/hAP"), v0.alpha(), v0.qtarm());
+
         if (!checkV0<MyTracks>(v0)) {
           continue;
         }
 
-        fRegistry.fill(HIST("hV0Pt"), v0.pt());
-        fRegistry.fill(HIST("hV0EtaPhi"), v0.phi(), v0.eta());
+        fRegistry.fill(HIST("V0/hPt"), v0.pt());
+        fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
+        fRegistry.fill(HIST("V0/hMGamma"), v0.mGamma());
 
-      } // end of v0 loop
+        auto pos = v0.template posTrack_as<MyTracks>(); // positive daughter
+        auto ele = v0.template negTrack_as<MyTracks>(); // negative daughter
+        for (auto& leg : {pos, ele}) {
+          fRegistry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
+
+        } // end of leg loop
+      }   // end of v0 loop
 
       for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0s_per_coll, v0s_per_coll))) {
         if (!checkV0<MyTracks>(g1) || !checkV0<MyTracks>(g2)) {
@@ -133,7 +145,7 @@ struct PCMTutorial {
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        fRegistry.fill(HIST("hMgg"), v12.M());
+        fRegistry.fill(HIST("Diphoton/hMgg"), v12.M());
       } // end of pairing loop
     }   // end of collision loop
   }

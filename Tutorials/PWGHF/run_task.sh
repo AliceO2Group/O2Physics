@@ -11,34 +11,36 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# @brief Bash script to execute the D0 mini task on Run 2 MC input
+# @brief Bash script to execute the D0 mini task on Run 3 real-data input
 #
-# The paths of input AO2D.root files are expected in the "list_o2.txt" file in the working directory.
+# The input AO2D.root, AnalysisResults_trees.root files are expected in the working directory.
 #
 # @author Vít Kučera <vit.kucera@cern.ch>, Inha University
-# @date 2023-04-20
+# @date 2023-10-25
 
 # log file where the terminal output will be saved
-LOGFILE="log.txt"
+LOGFILE="stdout.log"
 
 # directory of this script
 DIR_THIS="$(dirname "$(realpath "$0")")"
 
 # O2 configuration file (in the same directory)
-JSON="$DIR_THIS/dpl-config_mini.json"
+JSON="$DIR_THIS/dpl-config_task.json"
 
 # command line options of O2 workflows
-OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --min-failure-level error"
+OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --min-failure-level error"
 
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
 o2-analysistutorial-hf-task-mini $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
-o2-analysis-trackextension $OPTIONS | \
+o2-analysis-track-propagation $OPTIONS | \
+o2-analysis-event-selection $OPTIONS | \
 o2-analysis-pid-tpc-base $OPTIONS | \
 o2-analysis-pid-tpc-full $OPTIONS | \
 o2-analysis-pid-tof-base $OPTIONS | \
-o2-analysis-pid-tof-full $OPTIONS \
+o2-analysis-pid-tof-full $OPTIONS | \
+o2-analysis-bc-converter $OPTIONS \
 > "$LOGFILE" 2>&1
 
 # report status

@@ -203,7 +203,7 @@ struct tpcPidFull {
     }
   }
 
-  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterMap > (uint8_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
+  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   void process(Coll const& collisions, Trks const& tracks,

@@ -8,100 +8,130 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief Femtodream Tutorial 3
-/// \author Luca Barioglio, Anton Riedel
 
-// O2 includes
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+/// \author Anton Riedel
+
+/// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+/// FemtoDream includes
+#include "PWGCF/FemtoDream/FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/FemtoUtils.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// STEP 2
-// Example task illustrating how to create and use partitions
-
-namespace o2::aod
-{
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-using MyTracks =
-  soa::Join<aod::FullTracks, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-            aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe>;
-using MyCollision = MyCollisions::iterator;
-using MyTrack = MyTracks::iterator;
-} // namespace o2::aod
+using namespace o2::analysis::femtoDream;
 
 struct CFTutorialTask3 {
-  HistogramRegistry histos{
-    "Histos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
 
-  // Defining configurables
-  Configurable<float> ConfZvtxCut{"ConfZvtxCut", 10, "Z vtx cut"};
-  Configurable<float> ConfEtaCut{"ConfEtaCut", 0.8, "Pseudorapidity cut"};
-  Configurable<float> ConfMaxPtCut{"ConfMaxPtCut", 3.0, "Max Pt cut"};
-  Configurable<float> ConfMinPtCut{"ConfMinPtCut", 0.5, "Min Pt cut"};
-  Configurable<float> ConfMinNSigmaTPCCut{"ConfMinNSigmaTPCCut", 3.,
-                                          "N-sigma TPC cut"};
+  // Define additional analysis level cuts applied as filters
+  Configurable<float> ConfZvtxMin{"ConfZvtxMin", -10, "Min Z vtx cut"};
+  Configurable<float> ConfZvtxMax{"ConfZvtxMax", 10, "Max Z vtx cut"};
+  Configurable<float> ConfEtaMin{"ConfEtaMin", -0.8, "Pseudorapidity cut"};
+  Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8, "Pseudorapidity cut"};
+  Configurable<float> ConfPtMin{"ConfPtMin", 0.5, "Max Pt cut"};
+  Configurable<float> ConfPtMax{"ConfPtMax", 4.0, "Min Pt cut"};
 
   // Defining filters
-  Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZvtxCut);
-  Filter trackFilter = (nabs(aod::track::eta) < ConfEtaCut) &&
-                       (aod::track::pt > ConfMinPtCut) &&
-                       (aod::track::pt < ConfMaxPtCut);
 
-  // Applying filters
-  using MyFilteredCollisions = soa::Filtered<o2::aod::MyCollisions>;
-  using MyFilteredCollision = MyFilteredCollisions::iterator;
+  Filter collisionFilter = (aod::collision::posZ > ConfZvtxMin) && (aod::collision::posZ < ConfZvtxMax);
+  Filter trackFilter = (aod::femtodreamparticle::eta > ConfEtaMin) && (aod::femtodreamparticle::eta < ConfEtaMax) && (aod::femtodreamparticle::pt > ConfPtMin) && (aod::femtodreamparticle::pt < ConfPtMax);
 
-  // TODO
-  // Create partitions for tracks with positive and negative charge
+  // Apply filters
+  using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
+  using FilteredFDCollision = FilteredFDCollisions::iterator;
 
-  // Equivalent of the AliRoot task UserCreateOutputObjects
+  using FilteredFDParts = soa::Filtered<aod::FDParticles>;
+  using FilteredFDPart = FilteredFDParts::iterator;
+
+  // selections for particles
+  Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
+
+  // TODO:
+  // add configurables for PID selection of particles similar to FemtoDreamPairTaskTrackTrack
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
+  // additional configurables for particle 1
+  // ...
+
+  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
+  // additional configurables for particle 1
+  // ...
+
+  // more configurables for PID selection
+  // ...
+
+  /// Partitions for particle 1 and particle 2
+  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+
+  HistogramRegistry HistRegistry{"FemtoTutorial", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  /// mixing
+  SliceCache cache;
+  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+
+  // create analysis objects like histograms
   void init(o2::framework::InitContext&)
   {
-    // Define your axes
-    // Constant bin width axis
-    AxisSpec vtxZAxis = {100, -20, 20};
-    // Variable bin width axis
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1,
-                                     1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0,
-                                     2.2, 2.4, 2.8, 3.2, 3.6, 4.};
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
-    // Add histograms to histogram manager (as in the output object of in AliPhysics)
-    histos.add("hZvtx", ";Z (cm)", kTH1F, {vtxZAxis});
+    // Add histograms to histogram registry
+    HistRegistry.add("Event/hZvtx", ";Z (cm)", kTH1F, {{240, -12, 12}});
 
-    histos.add("hChargePos", ";z;", kTH1F, {{3, -1.5, 1.5}});
-    histos.add("hPPos", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.5, 4.}});
-    histos.add("hEtaPos", ";#it{p} (GeV/#it{c})", kTH1F, {{100, -1.5, 1.5}});
-    histos.add("hPtPos", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hNsigmaTPCPos", ";#it{p} (GeV/#it{c}); n#sigma_{TPC}^{proton}", kTH2F, {{35, 0.5, 4.}, {100, -5., 5.}});
-    histos.add("hkstarPos", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Particle1/hPt", ";#it{p_{T}} (GeV/#it{c})", kTH1F, {{100, 0, 4}});
+    HistRegistry.add("Particle1/hEta", ";#eta", kTH1F, {{100, -1., 1.}});
+    HistRegistry.add("Particle1/hPhi", ";#phi", kTH1F, {{360, 0, 6.28}});
 
-    histos.add("hChargeNeg", ";z;", kTH1F, {{3, -1.5, 1.5}});
-    histos.add("hPNeg", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.5, 4.}});
-    histos.add("hEtaNeg", ";#it{p} (GeV/#it{c})", kTH1F, {{100, -1.5, 1.5}});
-    histos.add("hPtNeg", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hNsigmaTPCNeg", ";#it{p} (GeV/#it{c}); n#sigma_{TPC}^{antiproton}", kTH2F, {{35, 0.5, 4.}, {100, -5., 5.}});
-    histos.add("hkstarNeg", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Particle2/hPt", ";#it{p_{T}} (GeV/#it{c})", kTH1F, {{100, 0, 4}});
+    HistRegistry.add("Particle2/hEta", ";#eta", kTH1F, {{100, -1., 1.}});
+    HistRegistry.add("Particle2/hPhi", ";#phi", kTH1F, {{360, 0, 6.28}});
+
+    HistRegistry.add("Pair/hSE", ";k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Pair/hME", ";k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
   }
 
-  // Equivalent of the AliRoot task UserExec
-  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
+  // process same event
+  void process(FilteredFDCollision const& col, FilteredFDParts const& parts)
   {
 
-    // TODO
-    // partition the track table into tracks with positive and negative charge
+    /// event QA
+    HistRegistry.fill(HIST("Event/hZvtx"), col.posZ());
 
-    // TODO
-    // loop over both partitions seperately and fill histograms
+    // generate partition of particels
+    auto GroupPartsOne = PartsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto GroupPartsTwo = PartsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+
+    /// QA for particle 1
+    for (auto& part : GroupPartsOne) {
+
+      // TODO:
+      // add function for PID selection from FemtoUtils
+      // if (PID cut) {
+
+      HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
+      HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
+      HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
+
+      // }
+    }
+
+    /// QA for particle 2
+    /// skip QA if particle 1 & 2 are the same
+    if (ConfIsSame.value == false) {
+      for (auto& part : GroupPartsTwo) {
+        // TODO:
+        // add function for PID selection from FemtoUtils
+        // if (PID cut) {
+
+        HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
+        HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
+        HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
+
+        // }
+      }
+    }
   }
 };
 

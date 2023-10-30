@@ -1,0 +1,60 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "AO2D.root"
+    },
+    "internal-dpl-aod-spawner": "",
+    "bc-converter": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT/Info/RunInformation",
+        "orbit-reset-path": "CTP/Calib/OrbitReset",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "isRun2MC": "false"
+    },
+    "track-propagation": {
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "lutPath": "GLO/Param/MatLUT",
+        "geoPath": "GLO/Config/GeometryAligned",
+        "grpmagPath": "GLO/Config/GRPMagField",
+        "mVtxPath": "GLO/Calib/MeanVertex",
+        "minPropagationDistance": "83.0999985",
+        "processStandard": "false",
+        "processCovariance": "true"
+    },
+    "track-selection": {
+        "isRun3": "true",
+        "produceTable": "-1",
+        "produceFBextendedTable": "-1",
+        "compatibilityIU": "false",
+        "itsMatching": "0",
+        "dcaSetup": "0",
+        "ptMin": "0.1",
+        "ptMax": "1e+10",
+        "etaMin": "-0.8",
+        "etaMax": "0.8"
+    },
+    "hf-track-index-skim-creator-tag-sel-tracks": {
+        "ptTrackMin": "0.3",
+        "etaTrackMax": "0.8",
+        "dcaTrackMin": "0.0025"
+    },
+    "hf-track-index-skim-creator": {
+        "magneticField": "5",
+        "propagateToPCA": "true",
+        "useAbsDCA": "false",
+        "maxR": "200",
+        "maxDZIni": "4",
+        "minParamChange": "0.001",
+        "minRelChi2Change": "0.9"
+    },
+    "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-injected-dummy-sink": ""
+}

@@ -101,6 +101,8 @@ struct createPCM {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<2> fitter;
+  // Material correction in the DCA fitter
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   void init(InitContext& context)
   {
@@ -132,8 +134,6 @@ struct createPCM {
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
-    // Material correction in the DCA fitter
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     }
@@ -257,7 +257,7 @@ struct createPCM {
       return false;
     }
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     if (v0dca > maxdcav0dau) {
       return false;
     }
@@ -270,7 +270,7 @@ struct createPCM {
     }
 
     float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
+    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float recalculatedVtxR = std::sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
@@ -313,7 +313,7 @@ struct createPCM {
 
     std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     float v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
 
@@ -324,7 +324,7 @@ struct createPCM {
       return;
     }
 
-    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]))) { // store only photon conversions
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, max_qt_arm)) { // store only photon conversions
       return;
     }
 

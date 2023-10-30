@@ -148,25 +148,33 @@ using EMPrimaryTrackMCLabel = EMPrimaryTrackMCLabels::iterator;
 
 namespace v0leg
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);           //!
-DECLARE_SOA_COLUMN(Sign, sign, int);              //!
-DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool); //!
-
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
+DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+DECLARE_SOA_COLUMN(Px, px, float);                 //! Px at SV
+DECLARE_SOA_COLUMN(Py, py, float);                 //! Py at SV
+DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Pz at SV
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+// DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool); //!
 } // namespace v0leg
 DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
-                  o2::soa::Index<>, v0leg::CollisionId,
-                  v0leg::TrackId, v0leg::Sign, v0leg::IsAmbTrack,
-                  track::Pt, track::Eta, track::Phi, track::P,
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
+                  v0leg::Px, v0leg::Py, v0leg::Pz,
                   track::DcaXY, track::DcaZ,
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                   track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
-                  track::X, track::Y, track::Z, track::Snp, track::Tgl, track::Alpha, track::Signed1Pt,
+                  track::X, track::Y, track::Z, track::Tgl, track::Signed1Pt,
 
                   // dynamic column
-                  track::IsWithinBeamPipe<track::X>,
+                  v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Pt<v0leg::Px, v0leg::Py>,
+                  v0leg::Eta<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Phi<v0leg::Px, v0leg::Py>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
@@ -178,92 +186,24 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
 // iterators
 using V0Leg = V0Legs::iterator;
 
-namespace v0photon
-{
-DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);               //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
-DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
-DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
-DECLARE_SOA_COLUMN(Vx, vx, float);                                      //!
-DECLARE_SOA_COLUMN(Vy, vy, float);                                      //!
-DECLARE_SOA_COLUMN(Vz, vz, float);                                      //!
-DECLARE_SOA_COLUMN(PxPosAtSV, pxposatsv, float);                        //!
-DECLARE_SOA_COLUMN(PyPosAtSV, pyposatsv, float);                        //!
-DECLARE_SOA_COLUMN(PzPosAtSV, pzposatsv, float);                        //!
-DECLARE_SOA_COLUMN(PxNegAtSV, pxnegatsv, float);                        //!
-DECLARE_SOA_COLUMN(PyNegAtSV, pynegatsv, float);                        //!
-DECLARE_SOA_COLUMN(PzNegAtSV, pznegatsv, float);                        //!
-DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
-DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
-
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pxpos, float pxneg) -> float { return pxpos + pxneg; });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pypos, float pyneg) -> float { return pypos + pyneg; });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pzpos, float pzneg) -> float { return pzpos + pzneg; });
-DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float pxpos, float pxneg, float pypos, float pyneg, float pzpos, float pzneg, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::eta(std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::phi(pxpos + pxneg, pypos + pyneg); });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg); });
-DECLARE_SOA_DYNAMIC_COLUMN(PPos, ppos, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
-DECLARE_SOA_DYNAMIC_COLUMN(PNeg, pneg, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
-
-} // namespace v0photon
-// reconstructed v0 information
-DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
-                  o2::soa::Index<>, v0photon::CollisionId, v0photon::PosTrackId, v0photon::NegTrackId,
-                  v0photon::Vx, v0photon::Vy, v0photon::Vz,
-                  v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV,
-                  v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV,
-                  v0photon::CosPA, v0photon::PCA,
-
-                  // dynamic column
-                  v0photon::Px<v0photon::PxPosAtSV, v0photon::PxNegAtSV>,
-                  v0photon::Py<v0photon::PyPosAtSV, v0photon::PyNegAtSV>,
-                  v0photon::Pz<v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
-                  v0photon::E<v0photon::PxPosAtSV, v0photon::PxNegAtSV, v0photon::PyPosAtSV, v0photon::PyNegAtSV, v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
-                  v0photon::Pt<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
-                  v0photon::Eta<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-                  v0photon::Phi<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
-                  v0photon::P<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-                  v0photon::PPos<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV>,
-                  v0photon::PNeg<v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-                  v0data::V0Radius<v0photon::Vx, v0photon::Vy>,
-                  v0data::Alpha<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-                  v0data::QtArm<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-                  v0data::PsiPair<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
-
-                  // invariant mass mee
-                  v0data::MGamma<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>);
-// iterators
-using V0Photon = V0Photons::iterator;
-
-DECLARE_SOA_TABLE(V0EMReducedEventIds, "AOD", "V0EMEVENTID", v0photon::EMReducedEventId); // To be joined with V0Photons table at analysis level.
-// iterators
-using V0EMReducedEventId = V0EMReducedEventIds::iterator;
-
 namespace v0photonkf
 {
 DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);               //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
-DECLARE_SOA_INDEX_COLUMN(V0Photon, v0photon);                           //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                      //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
-DECLARE_SOA_COLUMN(Vx, vx, float);                                      //!
-DECLARE_SOA_COLUMN(Vy, vy, float);                                      //!
-DECLARE_SOA_COLUMN(Vz, vz, float);                                      //!
-DECLARE_SOA_COLUMN(Px, px, float);
-DECLARE_SOA_COLUMN(Py, py, float);
-DECLARE_SOA_COLUMN(Pz, pz, float);
-DECLARE_SOA_COLUMN(MGamma, mGamma, float);
-DECLARE_SOA_COLUMN(MGammaKFPV, mGammaKFPV, float);
-DECLARE_SOA_COLUMN(MGammaKFSV, mGammaKFSV, float);
-DECLARE_SOA_COLUMN(CosPA, cospa, float); //!
-DECLARE_SOA_COLUMN(PCA, pca, float);     //!
+DECLARE_SOA_COLUMN(Vx, vx, float);                                      //! secondary vertex x
+DECLARE_SOA_COLUMN(Vy, vy, float);                                      //! secondary vertex y
+DECLARE_SOA_COLUMN(Vz, vz, float);                                      //! secondary vertex z
+DECLARE_SOA_COLUMN(Px, px, float);                                      //! px for photon kf
+DECLARE_SOA_COLUMN(Py, py, float);                                      //! py for photon kf
+DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! pz for photon kf
+DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! invariant mass of dielectron
 
-DECLARE_SOA_COLUMN(Alpha, alpha, float);
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);
-DECLARE_SOA_COLUMN(PsiPair, psipair, float);
-DECLARE_SOA_COLUMN(PhiV, phiv, float);
+DECLARE_SOA_COLUMN(CosPA, cospa, float);               //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                   //!
+DECLARE_SOA_COLUMN(Alpha, alpha, float);               //!
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);               //!
 DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
@@ -272,16 +212,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, [](float vx, float vy) -> float { return RecoDecay::sqrtSumOfSquares(vx, vy); });
-
 } // namespace v0photonkf
 DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
-                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0PhotonId, v0photon::PosTrackId, v0photon::NegTrackId,
+                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                  v0photonkf::MGamma, v0photonkf::MGammaKFPV, v0photonkf::MGammaKFSV,
+                  v0photonkf::MGamma,
                   v0photonkf::CosPA, v0photonkf::PCA,
-                  v0photonkf::Alpha, v0photonkf::QtArm, v0photonkf::PsiPair, v0photonkf::PhiV,
+                  v0photonkf::Alpha, v0photonkf::QtArm,
                   v0photonkf::ChiSquareNDF,
+
                   // dynamic column
                   v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
                   v0photonkf::Pt<v0photonkf::Px, v0photonkf::Py>,
@@ -397,13 +337,13 @@ DECLARE_SOA_TABLE(McDaughterTrue, "AOD", "MCDAUTRUE",
 
 namespace gammamctrue
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(V0Photon, v0photon, int, V0Photons, "_V0Photon"); //!
-DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);                                      //! Used as reference for the daughters
-DECLARE_SOA_COLUMN(NDaughters, nDaughters, int);                                //! Number of daughters
-DECLARE_SOA_COLUMN(Eta, eta, float);                                            //! Pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                                            //! Angle phi in rad
-DECLARE_SOA_COLUMN(Pt, pt, float);                                              //! Transversal momentum in GeV/c
-DECLARE_SOA_COLUMN(Y, y, float);                                                //! Rapidity
+DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF, v0photonkf, int, V0PhotonsKF, "_V0Photon"); //!
+DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);                                            //! Used as reference for the daughters
+DECLARE_SOA_COLUMN(NDaughters, nDaughters, int);                                      //! Number of daughters
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                  //! Pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                  //! Angle phi in rad
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                    //! Transversal momentum in GeV/c
+DECLARE_SOA_COLUMN(Y, y, float);                                                      //! Rapidity
 
 DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point in cm
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
@@ -419,7 +359,7 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::McCollisionId,
                   gammamctrue::Gamma,
                   // v0data::V0Id, // reference to reconstructed v0 (if its a task with reconstucted info)
-                  gammamctrue::V0PhotonId, // reference to reconstructed v0 (if its a task with reconstucted info)
+                  gammamctrue::V0PhotonKFId, // reference to reconstructed v0 (if its a task with reconstucted info)
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
@@ -547,7 +487,7 @@ using SkimEMCMT = SkimEMCMTs::iterator;
 namespace gammareco
 {
 DECLARE_SOA_COLUMN(Method, method, int);                                         //! cut bit for PCM photon candidates
-DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, V0Photons, "");       //! reference to the gamma in the skimmed PCM table
+DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, V0PhotonsKF, "");     //! reference to the gamma in the skimmed PCM table
 DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPHOS, skimmedPHOS, int, PHOSClusters, "");  //! reference to the gamma in the skimmed PHOS table
 DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedEMC, skimmedEMC, int, SkimEMCClusters, ""); //! reference to the gamma in the skimmed EMCal table
 DECLARE_SOA_COLUMN(PCMCutBit, pcmcutbit, uint64_t);                              //! cut bit for PCM photon candidates

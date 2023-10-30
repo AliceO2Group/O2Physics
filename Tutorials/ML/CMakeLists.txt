@@ -10,7 +10,12 @@
 # or submit itself to any jurisdiction.
 
 
-o2physics_add_dpl_workflow(onnx-example
+o2physics_add_dpl_workflow(apply-onnx-model
                   SOURCES applyOnnxModel.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(apply-ml-selection
+                  SOURCES applyMlSelection.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                   COMPONENT_NAME AnalysisTutorial)

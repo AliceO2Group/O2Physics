@@ -432,6 +432,13 @@ struct Pi0EtaToGammaGamma {
                 ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
                 if constexpr (pairtype == PairType::kPCMDalitz) {
                   v2.SetM(g2.mee());
+                  auto pos_sv = g1.template posTrack_as<aod::V0Legs>();
+                  auto ele_sv = g1.template negTrack_as<aod::V0Legs>();
+                  auto pos_pv = g2.template posTrack_as<aod::EMPrimaryTracks>();
+                  auto ele_pv = g2.template negTrack_as<aod::EMPrimaryTracks>();
+                  if (pos_sv.trackId() == pos_pv.trackId() || ele_sv.trackId() == ele_pv.trackId()) {
+                    continue;
+                  }
                 }
                 ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
                 if (abs(v12.Rapidity()) > maxY) {
