@@ -147,8 +147,7 @@ DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
                   stomegacgen::DecayLengthXYOmegaC,
                   stomegacgen::DecayLengthOmega,
                   stomegacgen::DecayLengthXYOmega);
-}
-
+} // namespace o2::aod
 
 struct HfTaskOmegacSt {
   Configurable<double> bz{"bz", -5., "magnetic field"};
@@ -231,8 +230,8 @@ struct HfTaskOmegacSt {
   {
     for (const auto& mcParticle : mcParticles) {
       if ((mcParticle.pdgCode() == kOmegaMinus) &&
-           mcParticle.has_mothers() && 
-           (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == analysis::pdg::Code::kOmegaC0)) {
+          mcParticle.has_mothers() &&
+          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == analysis::pdg::Code::kOmegaC0)) {
         const auto& mcColl = mcParticle.mcCollision();
         std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
         std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
@@ -315,7 +314,7 @@ struct HfTaskOmegacSt {
 
           auto trackParCovPr = getTrackParCov(v0TrackPos); // TODO: depends on charge!
           auto trackParCovKa = getTrackParCov(v0TrackNeg); // TODO: depends on charge!
-          auto trackParCovPi = getTrackParCov(bachelor); 
+          auto trackParCovPi = getTrackParCov(bachelor);
           o2::dataformats::DCA impactParameterPr;
           o2::dataformats::DCA impactParameterKa;
           o2::dataformats::DCA impactParameterPi;
@@ -353,7 +352,7 @@ struct HfTaskOmegacSt {
                 if (std::abs(massOmegaC - o2::analysis::pdg::MassOmegaC0) < 0.02) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                   registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                  outputTable(massOmegaC, 
+                  outputTable(massOmegaC,
                               massOmega1, // TODO: need to choose according to supposed sign
                               track.tpcNSigmaPi(),
                               track.tofNSigmaPi(),
@@ -383,11 +382,11 @@ struct HfTaskOmegacSt {
                               impactParameterPi.getZ(),
                               0., // stomegac::Chi2TopologicalOmegaC,
                               0., // stomegac::Chi2TopologicalOmega,
-                              decayLength, 
+                              decayLength,
                               0., // stomegac::DecayLengthXYOmegaC,
                               0., // stomegac::DecayLengthOmega,
-                              0. // stomegac::DecayLengthXYOmega
-                              );
+                              0.  // stomegac::DecayLengthXYOmega
+                  );
                 }
               }
             }
