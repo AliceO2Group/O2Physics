@@ -19,6 +19,7 @@
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,14 +65,20 @@ struct UDTutorial04 {
       registry.add("MC/selEtaPt", "Selected events in acceptance; eta (1); Pt (GeV/c)", {HistType::kTH2F, {{300, -1.5, 1.5}, {250, 0.0, 5.0}}});
       registry.add("MC/selRap", "Selected events in acceptance; Rapidity (1)", {HistType::kTH1F, {{300, -1.5, 1.5}}});
       registry.add("MC/selMPt", "Selected events in acceptance; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH2F, {{250, 2.5, 5.0}, {100, 0.0, 1.0}}});
+      registry.add("MC/pDiff", "McTruth - reconstructed track momentum; McTruth - reconstructed track momentum; Entries", {HistType::kTH2F, {{240, -6., 6.}, {3, -1.5, 1.5}}});
+    }
 
+    if (context.mOptions.get<bool>("processReco")) {
+      registry.add("Reco/Stat", "Count reconstruted events; ; Entries", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("Reco/nTracks", "Number of reconstructed tracks per collision; Number of reconstructed tracks; Entries", {HistType::kTH1F, {{51, -0.5, 50.5}}});
       registry.add("Reco/nPVContributors", "Number of PV contributors per collision; Number of PV contributors; Entries", {HistType::kTH1F, {{51, -0.5, 50.5}}});
       registry.add("Reco/selEtaPt", "Selected events in acceptance; eta (1); Pt (GeV/c)", {HistType::kTH2F, {{300, -1.5, 1.5}, {250, 0.0, 5.0}}});
       registry.add("Reco/selRap", "Selected events in acceptance; Rapidity (1)", {HistType::kTH1F, {{300, -1.5, 1.5}}});
       registry.add("Reco/selMPt", "Reconstructed events in acceptance; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH2F, {{250, 2.5, 5.0}, {100, 0.0, 1.0}}});
-
-      registry.add("general/pDiff", "McTruth - reconstructed track momentum; McTruth - reconstructed track momentum; Entries", {HistType::kTH2F, {{240, -6., 6.}, {3, -1.5, 1.5}}});
+      registry.add("Reco/mcEtaPt", "Generated events in acceptance; eta (1); Pt (GeV/c)", {HistType::kTH2F, {{300, -1.5, 1.5}, {250, 0.0, 5.0}}});
+      registry.add("Reco/mcRap", "Generated events in acceptance; Rapidity (1)", {HistType::kTH1F, {{300, -1.5, 1.5}}});
+      registry.add("Reco/mcMPt", "Generated events in acceptance; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH2F, {{250, 2.5, 5.0}, {100, 0.0, 1.0}}});
+      registry.add("Reco/pDiff", "McTruth - reconstructed track momentum; McTruth - reconstructed track momentum; Entries", {HistType::kTH2F, {{240, -6., 6.}, {3, -1.5, 1.5}}});
     }
   }
 
@@ -102,12 +109,9 @@ struct UDTutorial04 {
     std::vector<int64_t> selectedParts;
 
     // in this case we expect the data files to contain events of the type rho0 -> mu+ + mu-
-    // the first 3 particles in the particle stack are expected to have a pid of:  443013, +-(13, -13)
-    if (parts.size() > 3) {
-      if (parts.iteratorAt(0).pdgCode() == 443013 && abs(parts.iteratorAt(1).pdgCode()) == 13 && parts.iteratorAt(2).pdgCode() == -parts.iteratorAt(1).pdgCode()) {
-        selectedParts.push_back(1);
-        selectedParts.push_back(2);
-      }
+    if (udhelpers::isSTARLightRhomumu(parts)) {
+      selectedParts.push_back(1);
+      selectedParts.push_back(2);
     }
     return selectedParts;
   }
@@ -134,7 +138,7 @@ struct UDTutorial04 {
   template <typename McPart>
   std::vector<int64_t> getDaughterTracks_gen(McPart const& parts, std::vector<int64_t> partIds, TCs const& tracks)
   {
-    // it is expected that getDaughterParts_gen(parts) returns exactly 2 indices
+    // return a vector of track indices
     std::vector<int64_t> emptySelection;
     std::vector<int64_t> selectedTracks;
 
@@ -240,8 +244,7 @@ struct UDTutorial04 {
   }
 
   // check a reconstructed pair of tracks to be a candidate for an event of the type rho0 -> mu+ + mu-
-  template <typename TTrack>
-  bool isSelected_rec(TTrack const& tracks, std::vector<int64_t> const& trackIds)
+  bool isSelected_rec(TCs const& tracks, std::vector<int64_t> const& trackIds)
   {
     // tracks is expected to contain two tracks
     if (trackIds.size() != 2) {
@@ -268,9 +271,9 @@ struct UDTutorial04 {
       return false;
     }
     // select generated events which are in the acceptance
-    if (!isInAcceptance(lv1, lv2, lv)) {
-      return false;
-    }
+    // (!isInAcceptance(lv1, lv2, lv)) {
+    //  return false;
+    //}
 
     // check tracks to be muon candidates
     if (!isMuonCandidate_rec(tr1)) {
@@ -321,44 +324,19 @@ struct UDTutorial04 {
         LOGF(info, "Number of McParts %d", partSlice.size());
       }
 
-      // loop over McParticles
-      for (auto McPart : partSlice) {
-        // get track which corresponds to McPart
-        auto trackSlice = tracks.sliceBy(trackPerMcParticle, McPart.globalIndex());
-        registry.get<TH1>(HIST("MC/nRecTracks"))->Fill(trackSlice.size(), 1.);
-
-        // compute momentum difference between MCTruth and Reconstruction
-        if (trackSlice.size() > 0) {
-          for (auto track : trackSlice) {
-            auto pTrack = sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
-            auto pPart = sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
-            auto pDiff = pTrack - pPart;
-            registry.get<TH2>(HIST("general/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
-            if (verbosity > 0) {
-              LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
-            }
-          }
-        } else {
-          registry.get<TH2>(HIST("general/pDiff"))->Fill(-5.9, -1, 1.);
-          if (verbosity > 0) {
-            LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: No dP: nan", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess());
-          }
-        }
-      }
-      if (verbosity > 0) {
-        LOGF(info, "");
-      }
-
       // compute M versus Pt distributions for 3 cases
-      // 1. MC/genMPt - using all generated events and McTruth values
-      // 2. MC/accMPt - generated events which are within detector acceptance and McTruth values
-      // 3. MC/selMPt - events which path selection criteria and reconstructed values
+      // 1. MC/genMPt - using all generated events, McTruth values
+      // 2. MC/accMPt - generated events which are within detector acceptance, McTruth values
+      // 3. MC/selMPt - events which path selection criteria, reconstructed values
 
       // select generated events of interest
       // retrieve the index of the daughter particles in partSlice
       // we expect there to be exactly 2
       auto daughterPartIds = getDaughterParts_gen(partSlice);
       if (daughterPartIds.size() != 2) {
+        if (verbosity > 0) {
+          LOGF(info, "This is not a good event!");
+        }
         continue;
       }
 
@@ -372,7 +350,7 @@ struct UDTutorial04 {
       registry.get<TH1>(HIST("MC/genRap"))->Fill(lv_gen->Rapidity(), 1.);
       registry.get<TH2>(HIST("MC/genMPt"))->Fill(lv_gen->M(), lv_gen->Pt(), 1.);
       if (verbosity > 0) {
-        LOGF(info, "IVMgen %f pT %f", lv_gen->M(), lv_gen->Pt());
+        LOGF(info, "IVMgen %f pT %f Rap %f", lv_gen->M(), lv_gen->Pt(), lv_gen->Rapidity());
       }
 
       // select generated events which are in the acceptance
@@ -386,6 +364,7 @@ struct UDTutorial04 {
 
       // now obtain the reconstructed tracks
       // which are the tracks associated with the McParticles
+      // we expect there to be exactly 2
       auto daughterTrackIds = getDaughterTracks_gen(partSlice, daughterPartIds, tracks);
       if (daughterTrackIds.size() != 2) {
         continue;
@@ -405,10 +384,32 @@ struct UDTutorial04 {
       registry.get<TH1>(HIST("MC/selRap"))->Fill(lv_rec->Rapidity(), 1.);
       registry.get<TH2>(HIST("MC/selMPt"))->Fill(lv_rec->M(), lv_rec->Pt(), 1.);
 
-      if (colSlice.size() == 1) {
-        LOGF(info, "This is a nice collision.");
-        LOGF(info, "  McCollision: %d", mccollision.globalIndex());
-        LOGF(info, "  Collision:   %d", colSlice.iteratorAt(0).globalIndex());
+      // compute the difference between generated and reconstructed particle momentum
+      for (auto McPart : partSlice) {
+        // get track which corresponds to McPart
+        auto trackSlice = tracks.sliceBy(trackPerMcParticle, McPart.globalIndex());
+        registry.get<TH1>(HIST("MC/nRecTracks"))->Fill(trackSlice.size(), 1.);
+
+        // compute momentum difference between MCTruth and Reconstruction
+        if (trackSlice.size() > 0) {
+          for (auto track : trackSlice) {
+            auto pTrack = sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
+            auto pPart = sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
+            auto pDiff = pTrack - pPart;
+            registry.get<TH2>(HIST("MC/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
+            if (verbosity > 0) {
+              LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
+            }
+          }
+        } else {
+          registry.get<TH2>(HIST("MC/pDiff"))->Fill(-5.9, -1, 1.);
+          if (verbosity > 0) {
+            LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: No dP: nan", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess());
+          }
+        }
+      }
+      if (verbosity > 0) {
+        LOGF(info, "");
       }
     }
   }
@@ -417,6 +418,7 @@ struct UDTutorial04 {
   // ...............................................................................................................
   void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
   {
+    registry.get<TH1>(HIST("Reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("Reco/nTracks"))->Fill(tracks.size(), 1.);
     Partition<TCs> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(tracks);
@@ -426,14 +428,9 @@ struct UDTutorial04 {
     TLorentzVector* lv1_rec = new TLorentzVector();
     TLorentzVector* lv2_rec = new TLorentzVector();
     TLorentzVector* lv_rec = new TLorentzVector();
-
-    // get McCollision belonging to collision
-    if (!collision.has_udMcCollision()) {
-      if (verbosity > 0) {
-        LOGF(info, "This collision has no associated McCollision");
-      }
-    }
-    // auto mccollision = collision.udMcCollision();
+    TLorentzVector* lv1_gen = new TLorentzVector();
+    TLorentzVector* lv2_gen = new TLorentzVector();
+    TLorentzVector* lv_gen = new TLorentzVector();
 
     // select 2 muon candidates using the reconstructed information
     // MC truth is not considered in this step
@@ -444,15 +441,13 @@ struct UDTutorial04 {
       }
       return;
     }
+    registry.get<TH1>(HIST("Reco/Stat"))->Fill(1., 1.);
 
-    // both muon candidates are required to have an associated McParticle
-    auto daughterPartIds = getDaughterParts_rec(tracks, daughterTrackIds, McParts);
-    if (daughterPartIds.size() != 2) {
-      if (verbosity > 0) {
-        LOGF(info, "Found %d daughter McParticles.", daughterPartIds.size());
-      }
+    // apply all selection cuts on the selected reconstructed tracks
+    if (!isSelected_rec(tracks, daughterTrackIds)) {
       return;
     }
+    registry.get<TH1>(HIST("Reco/Stat"))->Fill(2., 1.);
 
     // compute the invariant mass using the reconstructed information
     if (!computeIVM(tracks, daughterTrackIds, lv1_rec, lv2_rec, lv_rec)) {
@@ -467,6 +462,60 @@ struct UDTutorial04 {
     registry.get<TH2>(HIST("Reco/selEtaPt"))->Fill(lv2_rec->Eta(), lv2_rec->Pt(), 1.);
     registry.get<TH1>(HIST("Reco/selRap"))->Fill(lv_rec->Rapidity(), 1.);
     registry.get<TH2>(HIST("Reco/selMPt"))->Fill(lv_rec->M(), lv_rec->Pt(), 1.);
+
+    // now access the McTruth information
+    // get McCollision belonging to collision
+    if (collision.has_udMcCollision()) {
+      // auto mccollision = collision.udMcCollision();
+      registry.get<TH1>(HIST("Reco/Stat"))->Fill(3., 1.);
+    } else {
+      if (verbosity > 0) {
+        LOGF(info, "This collision has no associated McCollision");
+      }
+    }
+
+    // compute the difference between generated and reconstructed momentum
+    for (auto track : tracks) {
+      // is there an associated McParticle?
+      if (track.has_udMcParticle()) {
+        auto pTrack = sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
+        auto McPart = track.udMcParticle();
+        auto pPart = sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
+        auto pDiff = pTrack - pPart;
+        registry.get<TH2>(HIST("Reco/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
+        if (verbosity > 0) {
+          LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
+        }
+      } else {
+        registry.get<TH2>(HIST("Reco/pDiff"))->Fill(-5.9, -1, 1.);
+        if (verbosity > 0) {
+          LOGF(info, "  This track has no associated McParticle");
+        }
+      }
+    }
+    if (verbosity > 0) {
+      LOGF(info, "");
+    }
+
+    // both muon candidates are required to have an associated McParticle
+    auto daughterPartIds = getDaughterParts_rec(tracks, daughterTrackIds, McParts);
+    if (daughterPartIds.size() != 2) {
+      if (verbosity > 0) {
+        LOGF(info, "Found %d daughter McParticles.", daughterPartIds.size());
+      }
+      return;
+    } else {
+      registry.get<TH1>(HIST("Reco/Stat"))->Fill(4., 1.);
+
+      // compute invariant mass using McTruth
+      if (!computeIVM(McParts, daughterPartIds, lv1_gen, lv2_gen, lv_gen)) {
+        return;
+      }
+      registry.get<TH2>(HIST("Reco/mcEtaPt"))->Fill(lv1_gen->Eta(), lv1_gen->Pt(), 1.);
+      registry.get<TH2>(HIST("Reco/mcEtaPt"))->Fill(lv2_gen->Eta(), lv2_gen->Pt(), 1.);
+      registry.get<TH1>(HIST("Reco/mcRap"))->Fill(lv_gen->Rapidity(), 1.);
+      registry.get<TH2>(HIST("Reco/mcMPt"))->Fill(lv_gen->M(), lv_gen->Pt(), 1.);
+    }
   }
   PROCESS_SWITCH(UDTutorial04, processReco, "Process reconstructed data", true);
 };

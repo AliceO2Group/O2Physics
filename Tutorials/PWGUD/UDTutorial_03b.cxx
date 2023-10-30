@@ -141,8 +141,8 @@ struct UDTutorial03b {
   }
 
   // retrieve the reconstructed tracks which are associated with the given McParticles
-  template <typename MCTrack>
-  std::vector<int64_t> getDaughterTracks_gen(MCTrack const& parts, std::vector<int64_t> partIds, TCs const& tracks)
+  template <typename McPart>
+  std::vector<int64_t> getDaughterTracks_gen(McPart const& parts, std::vector<int64_t> partIds, TCs const& tracks)
   {
     // return a vector of track indices
     std::vector<int64_t> emptySelection;
@@ -311,7 +311,7 @@ struct UDTutorial03b {
     TLorentzVector* lv2_rec = new TLorentzVector();
     TLorentzVector* lv_rec = new TLorentzVector();
 
-    // loop over all genererated collisions
+    // loop over all generated collisions
     for (auto mccollision : mccollisions) {
       registry.get<TH1>(HIST("MC/Stat"))->Fill(0., 1.);
 
