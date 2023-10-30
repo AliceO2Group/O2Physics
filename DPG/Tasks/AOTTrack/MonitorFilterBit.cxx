@@ -114,45 +114,44 @@ struct CheckFilterBit {
   }
   PROCESS_SWITCH(CheckFilterBit, processData, "process data", true);
 
-    template <typename T> int isFromStrangeDecay(const T& particlesMC,const typename T::iterator& particle){
+  template <typename T>
+  int isFromStrangeDecay(const T& particlesMC, const typename T::iterator& particle)
+  {
 
     std::vector<std::vector<int64_t>> arrayIds{};
     std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec);
-    
-    int stage=0;
-    int strangeness=0;
-    while(stage<4 && arrayIds[stage].size()>0 && strangeness==0){
+
+    int stage = 0;
+    int strangeness = 0;
+    while (stage < 4 && arrayIds[stage].size() > 0 && strangeness == 0) {
       std::vector<int64_t> arrayIdsStage{};
-      for(auto &iPart : arrayIds[stage]){
-	auto particleMother=particlesMC.rawIteratorAt(iPart-particlesMC.offset());
-	if(particleMother.has_mothers()){
-	  for(auto iMother=particleMother.mothersIds().front();iMother<=particleMother.mothersIds().back();++iMother){
-	    if(std::find(arrayIdsStage.begin(),arrayIdsStage.end(),iMother)!=arrayIdsStage.end()){
-	      continue;
-	    }
-	    auto mother=particlesMC.rawIteratorAt(iMother-particlesMC.offset());
-	    auto motherPDG=std::abs(mother.pdgCode());
-	    if(motherPDG/1000==3){//strange baryon
-	      strangeness=1;
-	      break;	      
-	    }
-	    else if(motherPDG/1000==0 && motherPDG/100==3){
-	      strangeness=1;
-	      break;
-	    }
-	    arrayIdsStage.push_back(iMother);
-	  }
-	}
-	arrayIds.push_back(arrayIdsStage);
-	  
+      for (auto& iPart : arrayIds[stage]) {
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) {
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            auto motherPDG = std::abs(mother.pdgCode());
+            if (motherPDG / 1000 == 3) { // strange baryon
+              strangeness = 1;
+              break;
+            } else if (motherPDG / 1000 == 0 && motherPDG / 100 == 3) {
+              strangeness = 1;
+              break;
+            }
+            arrayIdsStage.push_back(iMother);
+          }
+        }
+        arrayIds.push_back(arrayIdsStage);
       }
       stage++;
     }
     return strangeness;
-    
   }
-  
+
   void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   { // this will loop over data (PV) collisions
 
@@ -169,16 +168,16 @@ struct CheckFilterBit {
         /// the track is not fake
         auto mcparticle = track.mcParticle();
         // auto collReco = track.collision_as<CollisionTableMC>();
-	auto collMC = mcparticle.mcCollision();
+        auto collMC = mcparticle.mcCollision();
         auto mcCollID_recoColl = collision.mcCollisionId();
         auto mcCollID_particle = mcparticle.mcCollisionId();
         bool indexMatchOK = (mcCollID_recoColl == mcCollID_particle);
         // double pvZdiff = collision.posZ() - collMC.posZ();
         if (indexMatchOK) {
-          double prodRadius2 = (mcparticle.vx()-collMC.posX()) * (mcparticle.vx()-collMC.posX()) + (mcparticle.vy()-collMC.posY()) * (mcparticle.vy()-collMC.posY());
+          double prodRadius2 = (mcparticle.vx() - collMC.posX()) * (mcparticle.vx() - collMC.posX()) + (mcparticle.vy() - collMC.posY()) * (mcparticle.vy() - collMC.posY());
           int partpdg = std::abs(mcparticle.pdgCode());
           if (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13) {
-	    int isFromStrange=isFromStrangeDecay(mcParticles,mcparticle);
+            int isFromStrange = isFromStrangeDecay(mcParticles, mcparticle);
             if (mcparticle.isPhysicalPrimary()) {
               int isHF = RecoDecay::getCharmHadronOrigin(mcParticles, mcparticle, false);
               if (std::abs(track.eta()) < 0.9) {
@@ -265,11 +264,11 @@ struct CheckFilterBit {
       return;
     ncollisionCounter++;
     for (auto& mcpart : mcParticles) {
-      //if(!mcpart.producedByGenerator())continue;
-      double prodRadius2 = (mcpart.vx()-mcCollision.posX()) * (mcpart.vx()-mcCollision.posX()) + (mcpart.vy()-mcCollision.posY()) * (mcpart.vy()-mcCollision.posY());
+      // if(!mcpart.producedByGenerator())continue;
+      double prodRadius2 = (mcpart.vx() - mcCollision.posX()) * (mcpart.vx() - mcCollision.posX()) + (mcpart.vy() - mcCollision.posY()) * (mcpart.vy() - mcCollision.posY());
       if (std::abs(mcpart.pdgCode()) == 211 || std::abs(mcpart.pdgCode()) == 321 || std::abs(mcpart.pdgCode()) == 2212 || std::abs(mcpart.pdgCode()) == 11 || std::abs(mcpart.pdgCode()) == 13) {
         int isHF = RecoDecay::getCharmHadronOrigin(mcParticles, mcpart, false);
-        int isFromStrange=isFromStrangeDecay(mcParticles,mcpart);
+        int isFromStrange = isFromStrangeDecay(mcParticles, mcpart);
         if (mcpart.isPhysicalPrimary()) {
           if (std::abs(mcpart.eta()) < 0.9) {
             histos.fill(HIST("Tracks/MCgen/histMCgenpt"), mcpart.pt());
