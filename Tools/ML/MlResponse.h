@@ -28,32 +28,6 @@
 
 #include "Tools/ML/model.h"
 
-// Fill the map of available input features
-// the key is the feature's name (std::string)
-// the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP(FEATURE)                                        \
-  {                                                              \
-#FEATURE, static_cast < uint8_t>(EnumInputFeatures::FEATURE) \
-  }
-
-// Check if the index of mCachedIndices (index associated to a FEATURE)
-// matches the entry in EnumInputFeatures associated to this FEATURE
-// if so, the inputFeatures vector is filled with the FEATURE's value
-// by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER)   \
-  case static_cast<uint8_t>(EnumInputFeatures::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());           \
-    break;                                                 \
-  }
-
-// Specific case of CHECK_AND_FILL_VEC_FULL(OBJECT, FEATURE, GETTER)
-// where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC(GETTER)                        \
-  case static_cast<uint8_t>(EnumInputFeatures::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());       \
-    break;                                                \
-  }
-
 namespace o2
 {
 namespace cuts_ml
@@ -69,8 +43,7 @@ namespace analysis
 {
 
 // TypeOutputScore is the type of the output score from o2::ml::OnnxModel (float by default)
-// EnumInputFeatures is the enumerator containing available input features of a given decay channel (type uint8_t by default)
-template <typename TypeOutputScore = float, class EnumInputFeatures = uint8_t>
+template <typename TypeOutputScore = float>
 class MlResponse
 {
  public:

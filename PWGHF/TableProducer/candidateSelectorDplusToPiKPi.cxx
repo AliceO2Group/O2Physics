@@ -73,7 +73,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponseDplusToPiKPi<float, o2::analysis::InputFeaturesDplusToPiKPi> hfMlResponse;
+  o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponse;
   std::vector<float> outputMlNotPreselected = {};
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -121,7 +121,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-      // outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -258,9 +257,6 @@ struct HfCandidateSelectorDplusToPiKPi {
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
-
-        LOG(info) << "pt prong0: " << candidate.ptProng0() << " " << inputFeatures[0];
-        LOG(info) << "cpa: " << candidate.cpa() << " " << inputFeatures[8];
 
         if (!isSelectedMl) {
           hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);

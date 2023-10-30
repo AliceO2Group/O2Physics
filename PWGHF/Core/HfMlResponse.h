@@ -22,8 +22,8 @@
 namespace o2::analysis
 {
 
-template <typename TypeOutputScore = float, class EnumInputFeatures = uint8_t>
-class HfMlResponse : public MlResponse<TypeOutputScore, EnumInputFeatures>
+template <typename TypeOutputScore = float>
+class HfMlResponse : public MlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor

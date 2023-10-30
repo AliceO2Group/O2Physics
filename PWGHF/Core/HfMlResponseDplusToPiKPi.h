@@ -22,6 +22,32 @@
 
 #include "PWGHF/Core/HfMlResponse.h"
 
+// Fill the map of available input features
+// the key is the feature's name (std::string)
+// the value is the corresponding value in EnumInputFeatures
+#define FILL_MAP_DPLUS(FEATURE)                                          \
+  {                                                                      \
+#FEATURE, static_cast < uint8_t>(InputFeaturesDplusToPiKPi::FEATURE) \
+  }
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER from OBJECT
+#define CHECK_AND_FILL_VEC_DPLUS_FULL(OBJECT, FEATURE, GETTER)     \
+  case static_cast<uint8_t>(InputFeaturesDplusToPiKPi::FEATURE): { \
+    inputFeatures.emplace_back(OBJECT.GETTER());                   \
+    break;                                                         \
+  }
+
+// Specific case of CHECK_AND_FILL_VEC_DPLUS_FULL(OBJECT, FEATURE, GETTER)
+// where OBJECT is named candidate and FEATURE = GETTER
+#define CHECK_AND_FILL_VEC_DPLUS(GETTER)                          \
+  case static_cast<uint8_t>(InputFeaturesDplusToPiKPi::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());               \
+    break;                                                        \
+  }
+
 namespace o2::analysis
 {
 
@@ -57,8 +83,8 @@ enum class InputFeaturesDplusToPiKPi : uint8_t {
   tpcTofNSigmaKa2
 };
 
-template <typename TypeOutputScore = float, class EnumInputFeatures = InputFeaturesDplusToPiKPi>
-class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore, EnumInputFeatures>
+template <typename TypeOutputScore = float>
+class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
@@ -78,40 +104,40 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore, EnumInputF
   {
     std::vector<float> inputFeatures;
 
-    for (const auto& idx : MlResponse<TypeOutputScore, EnumInputFeatures>::mCachedIndices) {
+    for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC(ptProng0);
-        CHECK_AND_FILL_VEC(ptProng1);
-        CHECK_AND_FILL_VEC(ptProng2);
-        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY0, impactParameter0);
-        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY1, impactParameter1);
-        CHECK_AND_FILL_VEC_FULL(candidate, impactParameterXY2, impactParameter2);
-        CHECK_AND_FILL_VEC(decayLength);
-        CHECK_AND_FILL_VEC(decayLengthXYNormalised);
-        CHECK_AND_FILL_VEC(cpa);
-        CHECK_AND_FILL_VEC(cpaXY);
-        CHECK_AND_FILL_VEC(maxNormalisedDeltaIP);
+        CHECK_AND_FILL_VEC_DPLUS(ptProng0);
+        CHECK_AND_FILL_VEC_DPLUS(ptProng1);
+        CHECK_AND_FILL_VEC_DPLUS(ptProng2);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY0, impactParameter0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY1, impactParameter1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_DPLUS(decayLength);
+        CHECK_AND_FILL_VEC_DPLUS(decayLengthXYNormalised);
+        CHECK_AND_FILL_VEC_DPLUS(cpa);
+        CHECK_AND_FILL_VEC_DPLUS(cpaXY);
+        CHECK_AND_FILL_VEC_DPLUS(maxNormalisedDeltaIP);
         // TPC PID variables
-        CHECK_AND_FILL_VEC_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_FULL(prong0, tofNSigmaPi0, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong1, tofNSigmaKa1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tofNSigmaPi0, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tofNSigmaKa1, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
         // Combined PID variables
-        CHECK_AND_FILL_VEC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
       }
     }
 
@@ -122,46 +148,46 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore, EnumInputF
   /// Method to fill the map of available input features
   void setAvailableInputFeatures()
   {
-    MlResponse<TypeOutputScore, EnumInputFeatures>::mAvailableInputFeatures = {
-      FILL_MAP(ptProng0),
-      FILL_MAP(ptProng1),
-      FILL_MAP(ptProng2),
-      FILL_MAP(impactParameterXY0),
-      FILL_MAP(impactParameterXY1),
-      FILL_MAP(impactParameterXY2),
-      FILL_MAP(decayLength),
-      FILL_MAP(decayLengthXYNormalised),
-      FILL_MAP(cpa),
-      FILL_MAP(cpaXY),
-      FILL_MAP(maxNormalisedDeltaIP),
+    MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
+      FILL_MAP_DPLUS(ptProng0),
+      FILL_MAP_DPLUS(ptProng1),
+      FILL_MAP_DPLUS(ptProng2),
+      FILL_MAP_DPLUS(impactParameterXY0),
+      FILL_MAP_DPLUS(impactParameterXY1),
+      FILL_MAP_DPLUS(impactParameterXY2),
+      FILL_MAP_DPLUS(decayLength),
+      FILL_MAP_DPLUS(decayLengthXYNormalised),
+      FILL_MAP_DPLUS(cpa),
+      FILL_MAP_DPLUS(cpaXY),
+      FILL_MAP_DPLUS(maxNormalisedDeltaIP),
       // TPC PID variables
-      FILL_MAP(tpcNSigmaPi0),
-      FILL_MAP(tpcNSigmaKa0),
-      FILL_MAP(tpcNSigmaPi1),
-      FILL_MAP(tpcNSigmaKa1),
-      FILL_MAP(tpcNSigmaPi2),
-      FILL_MAP(tpcNSigmaKa2),
+      FILL_MAP_DPLUS(tpcNSigmaPi0),
+      FILL_MAP_DPLUS(tpcNSigmaKa0),
+      FILL_MAP_DPLUS(tpcNSigmaPi1),
+      FILL_MAP_DPLUS(tpcNSigmaKa1),
+      FILL_MAP_DPLUS(tpcNSigmaPi2),
+      FILL_MAP_DPLUS(tpcNSigmaKa2),
       // TOF PID variables
-      FILL_MAP(tofNSigmaPi0),
-      FILL_MAP(tofNSigmaKa0),
-      FILL_MAP(tofNSigmaPi1),
-      FILL_MAP(tofNSigmaKa1),
-      FILL_MAP(tofNSigmaPi2),
-      FILL_MAP(tofNSigmaKa2),
+      FILL_MAP_DPLUS(tofNSigmaPi0),
+      FILL_MAP_DPLUS(tofNSigmaKa0),
+      FILL_MAP_DPLUS(tofNSigmaPi1),
+      FILL_MAP_DPLUS(tofNSigmaKa1),
+      FILL_MAP_DPLUS(tofNSigmaPi2),
+      FILL_MAP_DPLUS(tofNSigmaKa2),
       // Combined PID variables
-      FILL_MAP(tpcTofNSigmaPi0),
-      FILL_MAP(tpcTofNSigmaPi1),
-      FILL_MAP(tpcTofNSigmaPi2),
-      FILL_MAP(tpcTofNSigmaKa0),
-      FILL_MAP(tpcTofNSigmaKa1),
-      FILL_MAP(tpcTofNSigmaKa2)};
+      FILL_MAP_DPLUS(tpcTofNSigmaPi0),
+      FILL_MAP_DPLUS(tpcTofNSigmaPi1),
+      FILL_MAP_DPLUS(tpcTofNSigmaPi2),
+      FILL_MAP_DPLUS(tpcTofNSigmaKa0),
+      FILL_MAP_DPLUS(tpcTofNSigmaKa1),
+      FILL_MAP_DPLUS(tpcTofNSigmaKa2)};
   }
 };
 
 } // namespace o2::analysis
 
-#undef FILL_MAP
-#undef CHECK_AND_FILL_VEC_FULL
-#undef CHECK_AND_FILL_VEC
+#undef FILL_MAP_DPLUS
+#undef CHECK_AND_FILL_VEC_DPLUS_FULL
+#undef CHECK_AND_FILL_VEC_DPLUS
 
 #endif // PWGHF_CORE_HFMLRESPONSEDPLUSTOPIKPI_H_
