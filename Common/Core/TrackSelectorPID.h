@@ -489,7 +489,7 @@ class TrackSelectorPidBase
       }
 
       if((nSigmaTpc < mNSigmaTpcMin || nSigmaTpc > mNSigmaTpcMax) && (nSigmaTof < mNSigmaTofMin || nSigmaTof > mNSigmaTofMax)) {
-        return TrackSelectorPID::Rejected
+        return TrackSelectorPID::Rejected;
       } else {
         return TrackSelectorPID::Accepted;
       }
