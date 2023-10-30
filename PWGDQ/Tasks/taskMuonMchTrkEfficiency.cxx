@@ -33,54 +33,58 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// default histogram output binning
-namespace muon_trk_eff_bins {
+namespace muon_trk_eff_bins
+{
 static constexpr int nBinsPt = 24;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
-    0.,  0.25, 0.5,  0.75, 1.0,  1.25, 1.5,  1.75, 2.0,  2.5,  3.0,  4.0, 5.0,
-    6.0, 8.0,  10.0, 12.0, 15.0, 18.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0};
+  0., 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0,
+  6.0, 8.0, 10.0, 12.0, 15.0, 18.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{
-    "pT bin 0",  "pT bin 1",  "pT bin 2",  "pT bin 3",  "pT bin 4",
-    "pT bin 5",  "pT bin 6",  "pT bin 7",  "pT bin 8",  "pT bin 9",
-    "pT bin 10", "pT bin 11", "pT bin 12", "pT bin 13", "pT bin 14",
-    "pT bin 15", "pT bin 16", "pT bin 17", "pT bin 18", "pT bin 19",
-    "pT bin 20", "pT bin 21", "pT bin 22", "pT bin 23", "pT bin 24"};
+  "pT bin 0", "pT bin 1", "pT bin 2", "pT bin 3", "pT bin 4",
+  "pT bin 5", "pT bin 6", "pT bin 7", "pT bin 8", "pT bin 9",
+  "pT bin 10", "pT bin 11", "pT bin 12", "pT bin 13", "pT bin 14",
+  "pT bin 15", "pT bin 16", "pT bin 17", "pT bin 18", "pT bin 19",
+  "pT bin 20", "pT bin 21", "pT bin 22", "pT bin 23", "pT bin 24"};
 
 } // namespace muon_trk_eff_bins
 
 struct taskMuonMchTrkEfficiency {
 
   Configurable<double> ptMuonMin{
-      "ptMin", 0., "Lower bound of pT"}; /// Muon minimum pt to be studied
+    "ptMin", 0., "Lower bound of pT"}; /// Muon minimum pt to be studied
   Configurable<double> etaMuonMin{
-      "etaMin", 2.5,
-      "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
+    "etaMin", 2.5,
+    "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
   Configurable<double> etaMuonMax{
-      "etaMax", 4.0,
-      "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
+    "etaMax", 4.0,
+    "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
 
   Configurable<std::vector<double>> binsMuonPt{
-      "binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt},
-      "pT bin limits"}; /// Pt intervals for the histograms
+    "binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt},
+    "pT bin limits"}; /// Pt intervals for the histograms
   Configurable<int> nEtaBins{
-      "nEtaBins", 8,
-      "Number of Eta bins"}; /// Number of eta bins for output histograms
+    "nEtaBins", 8,
+    "Number of Eta bins"}; /// Number of eta bins for output histograms
   Configurable<int> nPhiBins{
-      "nPhiBins", 6,
-      "Number of Phi bins"}; /// Number of phi bins for output histograms
+    "nPhiBins", 6,
+    "Number of Phi bins"}; /// Number of phi bins for output histograms
 
   using muonFull = soa::Join<aod::MchTrkEffBase, aod::MchTrkEffGen>;
 
   /// Histogram registry: an object to hold your histograms
   HistogramRegistry registry{
-      "registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "registry",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
   ///  Initialize: configure, create specifics
-  void init(o2::framework::InitContext &) {
+  void init(o2::framework::InitContext&)
+  {
     LOGF(debug, "Initialization");
 
     // define axes to be used
@@ -99,12 +103,12 @@ struct taskMuonMchTrkEfficiency {
     // Labels for the chambers hit per station, numbering starting from 1
     // i.e. (Nij, N0j, Ni0) correspond to hit on i-j, hit on j not on i, hit on
     // i not on j
-    const char *elabels[15] = {"N12", "N10", "N02",  "N34", "N30",
-                               "N04", "N56", "N50",  "N06", "N78",
+    const char* elabels[15] = {"N12", "N10", "N02", "N34", "N30",
+                               "N04", "N56", "N50", "N06", "N78",
                                "N70", "N08", "N910", "N90", "N010"};
 
     HistogramConfigSpec defaultNhitsEtaPtPhi(
-        {HistType::kTHnF, {{axisNhits}, {axisEta}, {axisPt}, {axisPhi}}});
+      {HistType::kTHnF, {{axisNhits}, {axisEta}, {axisPt}, {axisPhi}}});
 
     // define histograms to be added
     LOGF(debug, " Creating histograms");
@@ -127,13 +131,15 @@ struct taskMuonMchTrkEfficiency {
   }; //! end of Initialize: configure, create specifics
 
   /// check whether a given chamber has hits
-  bool ischamberhit(uint16_t map, int ich) { // i = 0..9
+  bool ischamberhit(uint16_t map, int ich)
+  { // i = 0..9
     LOGF(debug, " map %i --> %i", map, (map >> ich) & 1);
     return (map >> ich) & 1;
   }
 
   /// Kinematic selection
-  bool IsInKinematics(double eta, double pt) {
+  bool IsInKinematics(double eta, double pt)
+  {
     bool isSelected = true;
 
     if (pt < ptMuonMin) {
@@ -150,7 +156,8 @@ struct taskMuonMchTrkEfficiency {
   ///  TO BE UPDATED with realistic distributions and probably using input TF1
   ///  as weights
   void FillHistosWeight(double eta, double pt, double phi, uint16_t map,
-                        double etaGen, double ptGen, double phiGen) {
+                        double etaGen, double ptGen, double phiGen)
+  {
     double weighteta = 1, weightpt = 1,
            weightphi = 1; // default weight set to unity for now: no effect
     double etaw = eta * weighteta;
@@ -161,7 +168,8 @@ struct taskMuonMchTrkEfficiency {
 
   /// Filling histograms from generated & reconstructed information
   void FillHistosMC(double eta, double pt, double phi, uint16_t map,
-                    double etaGen, double ptGen, double phiGen) {
+                    double etaGen, double ptGen, double phiGen)
+  {
     registry.fill(HIST("hPtRecPtGen"), pt, ptGen);
     registry.fill(HIST("hEtaRecEtaGen"), eta, etaGen);
     registry.fill(HIST("hPhiRecPhiGen"), phi, phiGen);
@@ -169,7 +177,8 @@ struct taskMuonMchTrkEfficiency {
   }
 
   /// Filling histograms from reconstructed quantities
-  void FillHistos(double eta, double pt, double phi, uint16_t map) {
+  void FillHistos(double eta, double pt, double phi, uint16_t map)
+  {
     registry.fill(HIST("hmchBitmap"), (double)map);
 
     bool iN[10];
@@ -212,8 +221,9 @@ struct taskMuonMchTrkEfficiency {
   }
 
   //! process function for reconstructed muon information
-  void processReco(aod::MchTrkEffBase const &mchtrkeffbases) {
-    for (auto &mchtrkeffbase : mchtrkeffbases) {
+  void processReco(aod::MchTrkEffBase const& mchtrkeffbases)
+  {
+    for (auto& mchtrkeffbase : mchtrkeffbases) {
       if (IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
         FillHistos(mchtrkeffbase.eta(), mchtrkeffbase.pt(), mchtrkeffbase.phi(),
                    mchtrkeffbase.mchBitMap());
@@ -223,8 +233,9 @@ struct taskMuonMchTrkEfficiency {
                  "process reconstructed information", true);
 
   //! process function for simulated muon information
-  void processSim(muonFull const &mchtrkeffbases) {
-    for (auto &mchtrkeffbase : mchtrkeffbases) {
+  void processSim(muonFull const& mchtrkeffbases)
+  {
+    for (auto& mchtrkeffbase : mchtrkeffbases) {
       if (IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
         FillHistosMC(mchtrkeffbase.eta(), mchtrkeffbase.pt(),
                      mchtrkeffbase.phi(), mchtrkeffbase.mchBitMap(),
@@ -236,6 +247,7 @@ struct taskMuonMchTrkEfficiency {
                  "process reconstructed information", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<taskMuonMchTrkEfficiency>(cfgc)};
 }

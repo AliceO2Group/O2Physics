@@ -19,9 +19,11 @@
 
 #include "Framework/AnalysisDataModel.h"
 
-namespace o2::aod {
+namespace o2::aod
+{
 
-namespace mch_trk_eff {
+namespace mch_trk_eff
+{
 // Define the selection columns
 DECLARE_SOA_COLUMN(Eta, eta, float);                //! reconstructed eta
 DECLARE_SOA_COLUMN(Pt, pt, float);                  //! reconstructed pt
@@ -34,10 +36,10 @@ DECLARE_SOA_COLUMN(PhiGen, phiGen, float);          //! simulated phi
 
 // Table
 DECLARE_SOA_TABLE(
-    MchTrkEffBase, "AOD",
-    "MCHTRKEFFBASE", //! table with muon track properties and mch bit map
-    mch_trk_eff::Eta, mch_trk_eff::Pt, mch_trk_eff::Phi,
-    mch_trk_eff::MchBitMap);
+  MchTrkEffBase, "AOD",
+  "MCHTRKEFFBASE", //! table with muon track properties and mch bit map
+  mch_trk_eff::Eta, mch_trk_eff::Pt, mch_trk_eff::Phi,
+  mch_trk_eff::MchBitMap);
 
 DECLARE_SOA_TABLE(MchTrkEffGen, "AOD",
                   "MCHTRKEFFGEN", //! table with simulated muon track properties
