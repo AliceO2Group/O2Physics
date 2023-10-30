@@ -465,9 +465,6 @@ struct McDGCandProducer {
       }
       LOGF(info, "\nstart of loop mcdgId %d mccolId %d", mcdgId, mccolId);
 
-      // get dgcand tracks
-      auto dgTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
-
       // two cases to consider
       // 1. the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
       // 2. the event to process is an event of interest. In this case only the Mc tables are updated
@@ -477,6 +474,8 @@ struct McDGCandProducer {
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
         // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+        // get dgcand tracks
+        auto dgTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
 
         // If the dgcand has an associated McCollision then the McCollision and all associated
         // McParticles are saved
@@ -544,7 +543,7 @@ struct McDGCandProducer {
           updateUDMcCollisions(mccol);
 
           // update UDMcParticles
-          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
+          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccolId);
           updateUDMcParticles(mcPartsSlice, deltaIndex);
 
           // update lastSaved
