@@ -33,7 +33,6 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "TPDGCode.h"
 #include <TH1F.h>
-#include "Framework/HistogramRegistry.h"
 
 using namespace o2;
 using namespace o2::framework;
