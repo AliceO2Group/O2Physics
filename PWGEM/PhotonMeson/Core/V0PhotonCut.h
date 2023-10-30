@@ -124,8 +124,13 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
+    float ptee = std::sqrt(std::pow(pos.px() + ele.px(), 2) + std::pow(pos.py() + ele.py(), 2));
+    if (abs(ptee - v0.pt()) / v0.pt() > 0.3) {
+      return false;
+    }
+
     // if (pos.hasITS() && ele.hasITS()) {
-    //   if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
+    //   if (v0.recalculatedVtxR() > std::min(pos.x(), ele.x()) + 0.2) {
     //     return false;
     //   }
     // }
