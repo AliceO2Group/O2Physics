@@ -1,0 +1,16 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "AO2D.root"
+    },
+    "internal-dpl-aod-spawner": "",
+    "all-tracks": "",
+    "single-tracks": "",
+    "internal-dpl-injected-dummy-sink": ""
+}
