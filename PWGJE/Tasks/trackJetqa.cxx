@@ -312,7 +312,7 @@ struct TrackJetQa {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());    
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
         }
       }
     }
@@ -333,7 +333,7 @@ struct TrackJetQa {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt()); 
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
         }
       }
     }
