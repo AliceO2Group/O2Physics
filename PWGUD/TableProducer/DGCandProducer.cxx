@@ -544,7 +544,7 @@ struct McDGCandProducer {
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccolId);
           updateUDMcParticles(mcPartsSlice, deltaIndex, mcColIsSaved[mccolId]);
         }
-
+        
         // advance mccol
         if (mccol != lastmccol) {
           mccol++;
