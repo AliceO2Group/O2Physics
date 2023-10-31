@@ -597,10 +597,10 @@ bool isPythiaCDE(T MCparts)
 }
 
 // -----------------------------------------------------------------------------
-// In rho -> mu+ + mu- events generated with STARlight the stack starts with
+// In J/Psi -> mu+ + mu- events generated with STARlight the stack starts with
 // 443013, 13, -13 or 443013, -13, 13
 template <typename T>
-bool isSTARLightRhomumu(T MCparts)
+bool isSTARLightJPsimumu(T MCparts)
 {
   if (MCparts.size() < 3) {
     return false;
@@ -665,8 +665,8 @@ int isOfInterest(T MCparts)
     return 2;
   }
 
-  // STARLIGHT rho -> mu+ + mu-
-  if (isSTARLightRhomumu(MCparts)) {
+  // STARLIGHT J/Psi -> mu+ + mu-
+  if (isSTARLightJPsimumu(MCparts)) {
     return 3;
   }
 
