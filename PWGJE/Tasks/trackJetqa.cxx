@@ -153,7 +153,7 @@ struct TrackJetQa {
     histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {binsPercentile, {nBins, 0, 200}, {nBins, 0, 200}});
     histos.add("TrackEventPar/Sigma1PtFT0Mmult", "Sigma1Pt vs pT vs FT0M multiplicity", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
     histos.add("TrackEventPar/Sigma1PtNTracksPV", "Sigma1Pt vs pT vs NTracksPV", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
-    histos.add("TrackEventPar/Sigma1PtTrackslets", "Sigma1Pt vs pT vs NTrackslets", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("TrackEventPar/Sigma1PtTracklets", "Sigma1Pt vs pT vs NTrackslets", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
     // ITS histograms
     histos.add("ITS/itsNCls", "number of found ITS clusters;#it{p}_{T} [GeV/c];# clusters ITS", {HistType::kTH2F, {{nBins, 0, 200}, {8, -0.5, 7.5}}});
     histos.add("ITS/itsChi2NCl", "chi2 per ITS cluster;#it{p}_{T} [GeV/c];chi2 / cluster ITS", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 40}}});
