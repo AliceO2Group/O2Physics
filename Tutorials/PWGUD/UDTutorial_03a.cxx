@@ -145,7 +145,7 @@ struct UDTutorial03a {
   }
 
   // compute the 2-track invariant mass using muon hypothesis
-  //bool computeIVM_gen(aod::McParticles const& parts, std::vector<int64_t> partIds, TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
+  // bool computeIVM_gen(aod::McParticles const& parts, std::vector<int64_t> partIds, TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   template <typename TMcPart>
   bool computeIVM_gen(TMcPart const& parts, std::vector<int64_t> partIds, TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   {
