@@ -592,12 +592,17 @@ struct Alice3Dilepton {
         // implement pid
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         bool isElectronTOF = electronIDTOF(track);
         bool isElectronRICH = electronIDRICH(track);
 =======
         bool isElectronTOF = electronIDTOF();
         bool isElectronRICH = electronIDRICH();
 >>>>>>> 1b0adb20 (ALICE3: Templated functions for pid)
+=======
+        bool isElectronTOF = electronIDTOF(track);
+        bool isElectronRICH = electronIDRICH(track);
+>>>>>>> d43b5419 (ALICE3: fix bug2)
 
         if (isElectronTOF || isElectronRICH) {
           registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
