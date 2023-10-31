@@ -498,7 +498,6 @@ class TrackSelectorPidBase
 
     return TrackSelectorPID::Accepted;
   }
-}
 
 /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
 /// \param track  track
