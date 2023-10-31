@@ -37,7 +37,7 @@ using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct spectraDerivedMaker {
+struct jetspectraDerivedMaker {
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
@@ -150,8 +150,8 @@ struct spectraDerivedMaker {
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
 
-  Produces<o2::aod::SpColls> tableColl;
-  Produces<o2::aod::SpTracks> tableTrack;
+  Produces<o2::aod::JeColls> tableColl;
+  Produces<o2::aod::JeTracks> tableTrack;
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate::iterator const& collision,
                    TrackCandidates const& tracks,
@@ -187,22 +187,28 @@ struct spectraDerivedMaker {
                  trk.tgl(),
                  trk.isPVContributor(),
                  trk.hasTRD(),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()),
+                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaXY()),
+                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaZ()),
                  trk.isGlobalTrack(),
                  trk.isGlobalTrackWoDCA(),
                  trk.isGlobalTrackWoPtEta(),
+                 trk.flags(),
                  trk.length(),
-                 trk.tpcSignal(),
                  trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
                  trk.tpcNClsShared(),
                  trk.tpcNClsFindable(),
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
-                 trk.itsClusterMap());
+                 trk.itsClusterMap(),
+                 trk.itsNCls(),
+                 trk.tpcFractionSharedCls(),
+                 trk.tpcNClsFound(),
+                 trk.tpcNClsCrossedRows(),
+                 trk.tpcCrossedRowsOverFindableCls(),
+                 trk.tpcFoundOverFindableCls());
     }
   }
-  PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);
+  PROCESS_SWITCH(jetspectraDerivedMaker, processData, "Process data for derived dataset production", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<spectraDerivedMaker>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<jetspectraDerivedMaker>(cfgc)}; }
