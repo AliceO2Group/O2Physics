@@ -308,8 +308,8 @@ struct MultiplicityCounter {
           }
         }
         for (auto& col : cols) {
-          float c = -1;
           if constexpr (hasCentrality) {
+            float c = -1;
             if constexpr (C::template contains<aod::CentFT0Cs>()) {
               c = col.centFT0C();
             } else if constexpr (C::template contains<aod::CentFT0Ms>()) {
@@ -855,7 +855,6 @@ struct MultiplicityCounter {
   {
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
 
-    float c_rec = -1;
     float c_gen = -1;
     // add generated centrality estimation
     if constexpr (hasCent<MC>()) {
@@ -908,7 +907,7 @@ struct MultiplicityCounter {
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
-      c_rec = -1;
+      float c_rec = -1;
       if constexpr (hasCentrality) {
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
           c_rec = collision.centFT0C();
