@@ -51,5 +51,5 @@ o2physics_add_dpl_workflow(flow
 
 o2physics_add_dpl_workflow(task-muon-mch-trk-eff
                     SOURCES taskMuonMchTrkEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
