@@ -452,7 +452,9 @@ class TrackSelectorPidBase
 
     if (!track.hasTPC() && !track.hasTOF()) {
       return TrackSelectorPID::Rejected;
-    } else if (track.hasTPC() && track.hasTOF()) {
+    } 
+    
+    if (track.hasTPC() && track.hasTOF()) {
 
       double nSigmaTpc = 999.;
       double nSigmaTof = 999.;
