@@ -40,7 +40,7 @@ using namespace o2::framework::expressions;
 // Derived data model for cut variation
 namespace o2::aod
 {
-namespace spectra
+namespace jetspectra
 {
 
 template <typename binningType>
@@ -114,7 +114,6 @@ DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                         
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
                            [](float signed1Pt, float eta, float mass) -> float {
                              const auto pt = std::abs(signed1Pt);
@@ -126,64 +125,82 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
 DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; }); // Dummy
 
-} // namespace spectra
+DECLARE_SOA_COLUMN(Length, length, float);
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
+DECLARE_SOA_COLUMN(TOFChi2, tofChi2, float);
+DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, int);
+DECLARE_SOA_COLUMN(TPCNClsFindable, tpcNClsFindable, int);
+DECLARE_SOA_COLUMN(TPCNClsFindableMinusFound, tpcNClsFindableMinusFound, int);
+DECLARE_SOA_COLUMN(TPCNClsFindableMinusCrossedRows, tpcNClsFindableMinusCrossedRows, int);
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int);
+DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, int);
+DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);
+DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, int);
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int);
+DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
+DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 
-DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
+
+} // namespace jetspectra
+
+DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
                   o2::soa::Index<>,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  spectra::Sel8,
-                  spectra::MultNTracksPV,
-                  spectra::MultTracklets,
-                  spectra::MultFT0M,
-                  spectra::CentFT0M,
-                  spectra::RunNumber);
-using SpColl = SpColls::iterator;
+                  jetspectra::Sel8,
+                  jetspectra::MultNTracksPV,
+                  jetspectra::MultTracklets,
+                  jetspectra::MultFT0M,
+                  jetspectra::CentFT0M,
+                  jetspectra::RunNumber);
+using JeColl = JeColls::iterator;
 
-DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
+DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   o2::soa::Index<>,
-                  spectra::CollisionId,
-                  spectra::Signed1Pt, spectra::Eta, spectra::Phi, spectra::Pt,
-                  spectra::Sigma1Pt,
-                  spectra::Alpha,
-                  spectra::X,
-                  spectra::Y,
-                  spectra::Z,
-                  spectra::Snp,
-                  spectra::Tgl,
-                  spectra::IsPVContributor,
-                  spectra::HasTRD,
-                  spectra::DCAxyStore,
-                  spectra::DCAzStore,
-                  spectra::DCAxy<spectra::DCAxyStore>,
-                  spectra::DCAz<spectra::DCAzStore>,
-                  spectra::IsGlobalTrack,
-                  spectra::IsGlobalTrackWoDCA,
-                  spectra::IsGlobalTrackWoPtEta,
-                  // spectra::Pt<spectra::PtSigned>,
-                  // spectra::P<spectra::PtSigned, spectra::Eta>,
-                  // spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
-                  spectra::Flags<track::TOFChi2>,
-                  spectra::TrackType<track::TOFChi2>,
-                  spectra::IsQualityTrackITS<track::TOFChi2>,
-                  spectra::IsQualityTrackTPC<track::TOFChi2>,
-                  // track::Sign<spectra::PtSigned>,
-                  track::Length,
-                  track::TPCSignal,
-                  track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
-                  track::TPCNClsShared,
-                  track::TPCNClsFindable,
-                  track::TPCNClsFindableMinusFound,
-                  track::TPCNClsFindableMinusCrossedRows,
-                  track::ITSClusterMap,
-                  track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
-                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
+                  jetspectra::CollisionId,
+                  jetspectra::Signed1Pt, jetspectra::Eta, jetspectra::Phi, jetspectra::Pt,
+                  jetspectra::Sigma1Pt,
+                  jetspectra::Alpha,
+                  jetspectra::X,
+                  jetspectra::Y,
+                  jetspectra::Z,
+                  jetspectra::Snp,
+                  jetspectra::Tgl,
+                  jetspectra::IsPVContributor,
+                  jetspectra::HasTRD,
+                  jetspectra::DCAxyStore,
+                  jetspectra::DCAzStore,
+                  jetspectra::DCAxy<jetspectra::DCAxyStore>,
+                  jetspectra::DCAz<jetspectra::DCAzStore>,
+                  jetspectra::IsGlobalTrack,
+                  jetspectra::IsGlobalTrackWoDCA,
+                  jetspectra::IsGlobalTrackWoPtEta,
+                  // jetspectra::Pt<jetspectra::PtSigned>,
+                  // jetspectra::P<jetspectra::PtSigned, jetspectra::Eta>,
+                  // jetspectra::Rapidity<jetspectra::PtSigned, jetspectra::Eta>,
+                  jetspectra::Flags<track::TOFChi2>,
+                  jetspectra::TrackType<track::TOFChi2>,
+                  jetspectra::IsQualityTrackITS<track::TOFChi2>,
+                  jetspectra::IsQualityTrackTPC<track::TOFChi2>,
+                  // track::Sign<jetspectra::PtSigned>,
+                  jetspectra::Length,
+                  jetspectra::TPCChi2NCl, jetspectra::ITSChi2NCl, track::TOFChi2,
+                  jetspectra::TPCNClsShared,
+                  jetspectra::TPCNClsFindable,
+                  jetspectra::TPCNClsFindableMinusFound,
+                  jetspectra::TPCNClsFindableMinusCrossedRows,
+                  jetspectra::ITSClusterMap,
+                  jetspectra::ITSNCls,
+                  jetspectra::ITSNClsInnerBarrel,
+                  jetspectra::TPCFractionSharedCls,
+                  jetspectra::TPCNClsFound,
+                  jetspectra::TPCNClsCrossedRows,
+                  jetspectra::TPCCrossedRowsOverFindableCls,
+                  jetspectra::TPCFoundOverFindableCls);
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_TRACKJETQA_H_

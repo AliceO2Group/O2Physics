@@ -312,28 +312,28 @@ struct TrackJetQa {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
         }
       }
     }
   }
   PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
 
-  Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
+  Preslice<aod::JeTracks> jePerCol = aod::jetspectra::collisionId;
   SliceCache cacheTrk;
-  void processDerived(aod::SpColls const& collisions,
-                      aod::SpTracks const& tracks)
+  void processDerived(aod::JeColls const& collisions,
+                      aod::JeTracks const& tracks)
   {
     for (const auto& collision : collisions) {
       fillEventQa(collision);
-      const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
+      const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIndex(), cacheTrk);
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());
         }
       }
     }
