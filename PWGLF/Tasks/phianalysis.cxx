@@ -280,7 +280,7 @@ struct phianalysis {
   PROCESS_SWITCH(phianalysis, processDataLight, "Process Event for data", false);
 
   void processMCLight(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }

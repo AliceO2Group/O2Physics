@@ -403,7 +403,7 @@ struct lambdaAnalysis {
   PROCESS_SWITCH(lambdaAnalysis, processData, "Process for Same Event Data", true);
 
   void processMC(resoCols::iterator const& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks)
   {
 
     histos.fill(HIST("Event/hSphRec"), collision.spherocity());

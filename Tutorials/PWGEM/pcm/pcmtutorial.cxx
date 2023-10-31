@@ -44,7 +44,6 @@ struct PCMTutorial {
     {
       {"Event/hVertexZ", "z vtx; z vtx (cm);Number of Events", {HistType::kTH1F, {{100, -50.f, +50.f}}}},
       {"V0/hPt", "p_{T} of V0;V0 p_{T} (GeV/c)", {HistType::kTH1F, {{1000, 0.f, 10.f}}}},
-      {"V0/hMK0S", "mass K0S;m_{#pi^{+}#pi^{-}} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.4f, 0.6f}}}},
       {"V0/hMGamma", "mass #gamma;m_{ee} (GeV/c^{2})", {HistType::kTH1F, {{100, 0.f, 0.1f}}}},
       {"V0/hEtaPhi", "#eta vs. #varphi of V0;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.f, TMath::TwoPi()}, {200, -1.f, +1.f}}}},
       {"V0/hAP", "Armenteros Podolanski;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{200, -1, +1}, {250, 0.0, 0.25f}}}},
@@ -128,7 +127,6 @@ struct PCMTutorial {
 
         fRegistry.fill(HIST("V0/hPt"), v0.pt());
         fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
-        fRegistry.fill(HIST("V0/hMK0S"), v0.mK0Short());
         fRegistry.fill(HIST("V0/hMGamma"), v0.mGamma());
 
         auto pos = v0.template posTrack_as<MyTracks>(); // positive daughter

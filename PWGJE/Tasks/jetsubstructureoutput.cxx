@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CollisionTable, typename McCollisionTable, typename JetTableData, typename OutputTableData, typename SubstructureOutputTableData, typename JetTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename JetTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP>
+template <typename CollisionTable, typename McCollisionTable, typename TrackTable, typename ParticleTable, typename JetTableData, typename OutputTableData, typename SubstructureOutputTableData, typename JetTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename JetTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP>
 struct JetSubstructureOutputTask {
   Produces<OutputTableData> jetOutputTableData;
   Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
@@ -68,7 +68,8 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
   void processOutputData(typename CollisionTable::iterator const& collision,
-                         JetTableData const& jets)
+                         JetTableData const& jets,
+                         TrackTable const& tracks)
   {
     std::vector<int> geoMatching{-1};
     std::vector<int> ptMatching{-1};
@@ -85,7 +86,8 @@ struct JetSubstructureOutputTask {
 
   void processOutputMCD(typename CollisionTable::iterator const& collision,
                         JetTableMCD const& mcdjets,
-                        JetTableMCP const& mcpjets)
+                        JetTableMCP const& mcpjets,
+                        TrackTable const& tracks)
   {
     std::vector<int> candMatching{-1};
     for (const auto& mcdjet : mcdjets) {
@@ -108,7 +110,8 @@ struct JetSubstructureOutputTask {
 
   void processOutputMCP(typename McCollisionTable::iterator const& collision,
                         JetTableMCP const& mcpjets,
-                        JetTableMCD const& mcdjets)
+                        JetTableMCD const& mcdjets,
+                        ParticleTable const& particles)
   {
     std::vector<int> candMatching{-1};
     for (const auto& mcpjet : mcpjets) {
@@ -129,7 +132,7 @@ struct JetSubstructureOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCP, "jet substructure output MCP", false);
 };
-using JetSubstructureOutput = JetSubstructureOutputTask<aod::Collisions, aod::McCollisions, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutput = JetSubstructureOutputTask<aod::Collisions, aod::McCollisions, aod::Tracks, aod::McParticles, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

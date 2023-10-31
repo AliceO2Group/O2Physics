@@ -532,7 +532,7 @@ struct lambda1520analysis {
   PROCESS_SWITCH(lambda1520analysis, processData, "Process Event for data without partition", false);
 
   void processMC(aod::ResoCollision& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
