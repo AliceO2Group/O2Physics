@@ -451,7 +451,7 @@ class TrackSelectorPidBase
   {
 
     if (!track.hasTPC() && !track.hasTOF()) {
-      return TrackSelectorPID::Rejected;
+      return TrackSelectorPID::NotApplicable;
     } 
     
     if (track.hasTPC() && track.hasTOF()) {
