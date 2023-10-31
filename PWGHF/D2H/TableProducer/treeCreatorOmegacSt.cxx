@@ -18,10 +18,6 @@
 #include <TPDGCode.h>
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -33,6 +29,11 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGHF/Core/PDG.h"
 #include "PWGHF/Core/SelectorCuts.h"
@@ -43,9 +44,9 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace stomegac
+namespace st_omegac
 {
-DECLARE_SOA_COLUMN(MassOmegaC, massOmegaC, float);
+DECLARE_SOA_COLUMN(MassOmegac, massOmegac, float);
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
 DECLARE_SOA_COLUMN(NSigmaTpcPion, nSigmaTpcPion, float); // TODO: better name?
 DECLARE_SOA_COLUMN(NSigmaTofPion, nSigmaTofPion, float); // TODO: better name?
@@ -61,7 +62,7 @@ DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
 DECLARE_SOA_COLUMN(PxPion, pxPion, float); // TODO: what about sign?
 DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
-DECLARE_SOA_COLUMN(CpaOmegaC, cpaOmegaC, float);
+DECLARE_SOA_COLUMN(CpaOmegac, cpaOmegac, float);
 DECLARE_SOA_COLUMN(CpaOmega, cpaOmega, float);
 DECLARE_SOA_COLUMN(DcaXYOmega, dcaXYOmega, float);
 DECLARE_SOA_COLUMN(DcaZOmega, dcaZOmega, float);
@@ -73,77 +74,78 @@ DECLARE_SOA_COLUMN(DcaXYKa, dcaXYKa, float);
 DECLARE_SOA_COLUMN(DcaZKa, dcaZKa, float);
 DECLARE_SOA_COLUMN(DcaXYPi, dcaXYPi, float);
 DECLARE_SOA_COLUMN(DcaZPi, dcaZPi, float);
-DECLARE_SOA_COLUMN(Chi2TopologicalOmegaC, chi2TopologicalOmegaC, float);
+DECLARE_SOA_COLUMN(Chi2TopologicalOmegac, chi2TopologicalOmegac, float);
 DECLARE_SOA_COLUMN(Chi2TopologicalOmega, chi2TopologicalOmega, float);
-DECLARE_SOA_COLUMN(DecayLengthOmegaC, decayLengthOmegaC, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmegaC, decayLengthXYOmegaC, float);
+DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
+DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
 DECLARE_SOA_COLUMN(DecayLengthXYOmega, decayLengthXYOmega, float);
-} // namespace stomegac
+} // namespace st_omegac
 
-namespace stomegacgen
+namespace st_omegac_gen
 {
-DECLARE_SOA_COLUMN(PxOmegaC, pxOmegaC, float); // TODO: what about sign?
-DECLARE_SOA_COLUMN(PyOmegaC, pyOmegaC, float);
-DECLARE_SOA_COLUMN(PzOmegaC, pzOmegaC, float);
+DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float); // TODO: what about sign?
+DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
+DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
 DECLARE_SOA_COLUMN(PxOmega, pxOmega, float); // TODO: what about sign?
 DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
 DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(DecayLengthOmegaC, decayLengthOmegaC, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmegaC, decayLengthXYOmegaC, float);
+DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
+DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
 DECLARE_SOA_COLUMN(DecayLengthXYOmega, decayLengthXYOmega, float);
-} // namespace stomegacgen
+} // namespace st_omegac_gen
 
 DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
-                  stomegac::MassOmegaC,
-                  stomegac::MassOmega,
-                  stomegac::NSigmaTpcPion,
-                  stomegac::NSigmaTofPion,
-                  stomegac::NSigmaTpcPr,
-                  stomegac::NSigmaTofPr,
-                  stomegac::NSigmaTpcKa,
-                  stomegac::NSigmaTofKa,
-                  stomegac::NSigmaTpcPi,
-                  stomegac::NSigmaTofPi,
-                  stomegac::PxOmega,
-                  stomegac::PyOmega,
-                  stomegac::PzOmega,
-                  stomegac::PxPion,
-                  stomegac::PyPion,
-                  stomegac::PzPion,
-                  stomegac::CpaOmegaC,
-                  stomegac::CpaOmega,
-                  stomegac::DcaXYOmega,
-                  stomegac::DcaZOmega,
-                  stomegac::DcaXYPion,
-                  stomegac::DcaZPion,
-                  stomegac::DcaXYPr,
-                  stomegac::DcaZPr,
-                  stomegac::DcaXYKa,
-                  stomegac::DcaZKa,
-                  stomegac::DcaXYPi,
-                  stomegac::DcaZPi,
-                  stomegac::Chi2TopologicalOmegaC,
-                  stomegac::Chi2TopologicalOmega,
-                  stomegac::DecayLengthOmegaC,
-                  stomegac::DecayLengthXYOmegaC,
-                  stomegac::DecayLengthOmega,
-                  stomegac::DecayLengthXYOmega);
+                  st_omegac::MassOmegac,
+                  st_omegac::MassOmega,
+                  st_omegac::NSigmaTpcPion,
+                  st_omegac::NSigmaTofPion,
+                  st_omegac::NSigmaTpcPr,
+                  st_omegac::NSigmaTofPr,
+                  st_omegac::NSigmaTpcKa,
+                  st_omegac::NSigmaTofKa,
+                  st_omegac::NSigmaTpcPi,
+                  st_omegac::NSigmaTofPi,
+                  st_omegac::PxOmega,
+                  st_omegac::PyOmega,
+                  st_omegac::PzOmega,
+                  st_omegac::PxPion,
+                  st_omegac::PyPion,
+                  st_omegac::PzPion,
+                  st_omegac::CpaOmegac,
+                  st_omegac::CpaOmega,
+                  st_omegac::DcaXYOmega,
+                  st_omegac::DcaZOmega,
+                  st_omegac::DcaXYPion,
+                  st_omegac::DcaZPion,
+                  st_omegac::DcaXYPr,
+                  st_omegac::DcaZPr,
+                  st_omegac::DcaXYKa,
+                  st_omegac::DcaZKa,
+                  st_omegac::DcaXYPi,
+                  st_omegac::DcaZPi,
+                  st_omegac::Chi2TopologicalOmegac,
+                  st_omegac::Chi2TopologicalOmega,
+                  st_omegac::DecayLengthOmegac,
+                  st_omegac::DecayLengthXYOmegac,
+                  st_omegac::DecayLengthOmega,
+                  st_omegac::DecayLengthXYOmega);
+
 DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
-                  stomegacgen::PxOmegaC,
-                  stomegacgen::PyOmegaC,
-                  stomegacgen::PzOmegaC,
-                  stomegacgen::PxOmega,
-                  stomegacgen::PyOmega,
-                  stomegacgen::PzOmega,
-                  stomegacgen::DecayLengthOmegaC,
-                  stomegacgen::DecayLengthXYOmegaC,
-                  stomegacgen::DecayLengthOmega,
-                  stomegacgen::DecayLengthXYOmega);
+                  st_omegac_gen::PxOmegac,
+                  st_omegac_gen::PyOmegac,
+                  st_omegac_gen::PzOmegac,
+                  st_omegac_gen::PxOmega,
+                  st_omegac_gen::PyOmega,
+                  st_omegac_gen::PzOmega,
+                  st_omegac_gen::DecayLengthOmegac,
+                  st_omegac_gen::DecayLengthXYOmegac,
+                  st_omegac_gen::DecayLengthOmega,
+                  st_omegac_gen::DecayLengthXYOmega);
 } // namespace o2::aod
 
-struct HfTaskOmegacSt {
+struct HfTreeCreatorOmegacSt {
   Configurable<double> bz{"bz", -5., "magnetic field"};
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -234,11 +236,14 @@ struct HfTaskOmegacSt {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskOmegacSt, processMc, "Process MC", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
   void processData(aod::Collision const& collision,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                   aod::V0s const& v0s, TracksExt const& tracks, aod::BCsWithTimestamps const&)
+                   aod::AssignedTrackedCascades const& trackedCascades,
+                   aod::Cascades const& cascades,
+                   aod::V0s const& v0s,
+                   TracksExt const& tracks,
+                   aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -279,9 +284,7 @@ struct HfTaskOmegacSt {
       p[1] = {v0TrackNeg.px(), v0TrackNeg.py(), v0TrackNeg.pz()};
       p[2] = {bachelor.px(), bachelor.py(), bachelor.pz()};
       double massOmega1 = RecoDecay::m(p, m);
-      p[0] = {v0TrackNeg.px(), v0TrackNeg.py(), v0TrackNeg.pz()};
-      p[1] = {v0TrackPos.px(), v0TrackPos.py(), v0TrackPos.pz()};
-      p[2] = {bachelor.px(), bachelor.py(), bachelor.pz()};
+      std::swap(p[0], p[1]);
       double massOmega2 = RecoDecay::m(p, m);
 
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
@@ -362,7 +365,7 @@ struct HfTaskOmegacSt {
                               momenta[1][0], // pion momentum
                               momenta[1][1],
                               momenta[1][2],
-                              0., // stomegac::CpaOmegaC,
+                              0., // st_omegac::CpaOmegaC,
                               0., // trackedCascade.cpa(),
                               impactParameterTrk.getY(),
                               impactParameterTrk.getZ(),
@@ -374,12 +377,12 @@ struct HfTaskOmegacSt {
                               impactParameterKa.getZ(),
                               impactParameterPi.getY(),
                               impactParameterPi.getZ(),
-                              0., // stomegac::Chi2TopologicalOmegaC,
-                              0., // stomegac::Chi2TopologicalOmega,
+                              0., // st_omegac::Chi2TopologicalOmegaC,
+                              0., // st_omegac::Chi2TopologicalOmega,
                               decayLength,
-                              0.,  // stomegac::DecayLengthXYOmegaC,
-                              0.,  // stomegac::DecayLengthOmega,
-                              0.); // stomegac::DecayLengthXYOmega
+                              0.,  // st_omegac::DecayLengthXYOmegaC,
+                              0.,  // st_omegac::DecayLengthOmega,
+                              0.); // st_omegac::DecayLengthXYOmega
                 }
               }
             }
@@ -388,11 +391,16 @@ struct HfTaskOmegacSt {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskOmegacSt, processData, "Process data", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processData, "Process data", true);
 
-  void processGen(aod::Collision const& collision, aod::McCollisions const& mcCollisions,
-                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                  aod::V0s const& v0s, TracksExtMc const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  void processMcGen(aod::Collision const& collision,
+                    aod::McCollisions const& mcCollisions,
+                    aod::AssignedTrackedCascades const& trackedCascades,
+                    aod::Cascades const& cascades,
+                    aod::V0s const& v0s,
+                    TracksExtMc const& tracks,
+                    aod::McParticles const& mcParticles,
+                    aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -505,11 +513,11 @@ struct HfTaskOmegacSt {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskOmegacSt, processGen, "Process using MC information", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcGen, "Process using MC information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskOmegacSt>(cfgc)};
+    adaptAnalysisTask<HfTreeCreatorOmegacSt>(cfgc)};
 }
