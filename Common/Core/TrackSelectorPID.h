@@ -499,14 +499,14 @@ class TrackSelectorPidBase
     return TrackSelectorPID::Accepted;
   }
 
-/// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
-/// \param track  track
-/// \param useTof  switch to use TOF
-/// \param useRich  switch to use RICH
-/// \return true if track is selected by TOF or RICH
-/// \note Ported from https://github.com/feisenhu/ALICE3-LoI-LMee/blob/main/efficiency/macros/anaEEstudy.cxx
-template <typename T>
-bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
+  /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
+  /// \param track  track
+  /// \param useTof  switch to use TOF
+  /// \param useRich  switch to use RICH
+  /// \return true if track is selected by TOF or RICH
+  /// \note Ported from https://github.com/feisenhu/ALICE3-LoI-LMee/blob/main/efficiency/macros/anaEEstudy.cxx
+  template <typename T>
+  bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
     bool isSelTof = false;
     bool isSelRich = false;
