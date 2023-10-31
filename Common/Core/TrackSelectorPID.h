@@ -492,8 +492,9 @@ class TrackSelectorPidBase
       } else {
         return TrackSelectorPID::Accepted;
       }
-    } else {
-      return TrackSelectorPID::Accepted;
+    }
+    
+     return TrackSelectorPID::Accepted;
     }
   }
 
