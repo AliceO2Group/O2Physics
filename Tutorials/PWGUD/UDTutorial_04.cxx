@@ -82,6 +82,10 @@ struct UDTutorial04 {
     }
   }
 
+  PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+  PresliceUnsorted<CCs> colPerMcCollision = aod::udcollision::udMcCollisionId;
+  PresliceUnsorted<TCs> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+
   // retrieve particle mass (GeV/c^2) from TDatabasePDG
   float particleMass(TDatabasePDG* pdg, int pid)
   {
@@ -288,10 +292,6 @@ struct UDTutorial04 {
     // has passed all selection crtieria
     return true;
   }
-
-  Preslice<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
-  PresliceUnsorted<CCs> colPerMcCollision = aod::udcollision::udMcCollisionId;
-  PresliceUnsorted<TCs> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
 
   // ...............................................................................................................
   void processMCTruth(aod::UDMcCollisions const& mccollisions, CCs const& collisions, aod::UDMcParticles const& McParts, TCs const& tracks)
