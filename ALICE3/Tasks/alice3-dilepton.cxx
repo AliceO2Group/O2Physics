@@ -114,6 +114,7 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+    registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
 
     registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
@@ -582,8 +583,9 @@ struct Alice3Dilepton {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
-        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
         registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
@@ -591,22 +593,13 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
         // implement pid
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         bool isElectronTOF = electronIDTOF(track);
         bool isElectronRICH = electronIDRICH(track);
-=======
-        bool isElectronTOF = electronIDTOF();
-        bool isElectronRICH = electronIDRICH();
->>>>>>> 1b0adb20 (ALICE3: Templated functions for pid)
-=======
-        bool isElectronTOF = electronIDTOF(track);
-        bool isElectronRICH = electronIDRICH(track);
->>>>>>> d43b5419 (ALICE3: fix bug2)
 
         if (isElectronTOF || isElectronRICH) {
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
           registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
           registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
           registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
@@ -624,6 +617,30 @@ struct Alice3Dilepton {
 
     } // end of collision loop
   }   // end of processRec
+
+  template <typename TTrack>
+  bool electronIDTOF(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+    bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+    isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
+    bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+    bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+    isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
+    isElectron = (isEleOuterTOF || isEleInnerTOF);
+    return isElectron;
+  }
+
+  template <typename TTrack>
+  bool electronIDRICH(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleRICH = std::abs(track.nSigmaElectronRich()) < nSigmaElectronRich;
+    bool isNotPionRICH = std::abs(track.nSigmaPionRich()) > nSigmaPionRich;
+    isElectron = isEleRICH && isNotPionRICH;
+    return isElectron;
+  }
 
   PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);
