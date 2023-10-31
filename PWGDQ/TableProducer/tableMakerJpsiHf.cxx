@@ -147,7 +147,7 @@ struct tableMakerJpsiHf {
 
         auto ptBinForBdt = findBin(pTBinsBDT, dmeson.pt());
 
-        if (ptBinForBdt >=0 && (scores[0] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[1] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[2] > bdtCutsForHistos->get(ptBinForBdt, 2u))) {
+        if (ptBinForBdt >= 0 && (scores[0] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[1] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[2] > bdtCutsForHistos->get(ptBinForBdt, 2u))) {
           if (dmeson.isSelD0() >= 1) {
             VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
