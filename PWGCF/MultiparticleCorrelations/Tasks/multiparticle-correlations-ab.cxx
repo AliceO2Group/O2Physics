@@ -131,36 +131,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // A) Process only reconstructed data:
   void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
   {
-    // ...
 
-    // *) TBI 20231020 Temporary here (use configurable 'cfWhatToProcess' to set this flag corerectly):
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
     if (!gProcessRec) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-    }
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
-      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
-              // from subsequent processing (which will also dump the output file, etc.). When that's possible,
-              // move this to a member function Steer*(...)
-    }
-
-    // *) Steer all analysis steps:
-    SteerRec(collision, tracks);
-    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
-
-  } // void processRec(...)
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed information", false);
-
-  // -------------------------------------------
-
-  // B) Process both reconstructed and simulated data:
-  void processRecSim(CollisionRec const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&)
-  {
-    // ...
-
-    // *) TBI 20231020 Temporary here (use configurable 'cfWhatToProcess' to set this flag corerectly):
-    if (!gProcessRecSim) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
@@ -172,10 +145,33 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) Steer all analysis steps:
-    SteerRecSim(collision, tracks);
-    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
+    Steer(&collision, &tracks);
+
+  } // void processRec(...)
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed information", false);
+
+  // -------------------------------------------
+
+  // B) Process both reconstructed and simulated data:
+  void processRecSim(CollisionRec const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&)
+  {
+
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
+    if (!gProcessRecSim) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return;
+    }
+
+    // *) Steer all analysis steps:
+    Steer(&collision, &tracks);
 
   } // void processRecSim(...)
+
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and simulated information", true);
 
   // -------------------------------------------
@@ -185,21 +181,21 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // ...
 
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
-      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit from subsequent processing (which will also dump the output file, etc.)
-    }
-
-    // *) TBI 20231020 Temporary here (use configurable 'cfWhatToProcess' to set this flag corerectly):
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
     if (!gProcessSim) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return;
+    }
+
     // *) Steer all analysis steps:
-    SteerSim(collision, tracks);
-    // TBI 20231021 If I want to do some postprocessing after Steer(...), re-define Steer from void to bool, so that event cuts have effect, etc,
+    Steer(&collision, &tracks); // TBI 20231030 not ready yet, I still need to template the first argument in Steer() for this to work, tbc...
 
   } // void processSim(...)
+
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated information", false);
 
 }; // struct MultiparticleCorrelationsAB
