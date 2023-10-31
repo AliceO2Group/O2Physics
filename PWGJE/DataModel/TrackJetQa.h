@@ -79,17 +79,24 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision h
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
-// DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 //  Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
-DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);  //! Pt (signed) of the track
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);  //! Pt (signed) of the track
 DECLARE_SOA_COLUMN(Eta, eta, float);            //! Eta of the track
 DECLARE_SOA_COLUMN(Phi, phi, float);            //! Phi of the track
 DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
+DECLARE_SOA_COLUMN(Alpha, alpha, float);  
+DECLARE_SOA_COLUMN(X, x, float);  
+DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(Z, z, float);  
+DECLARE_SOA_COLUMN(Pt, pt, float);  
+DECLARE_SOA_COLUMN(Snp, snp, float);
+DECLARE_SOA_COLUMN(Tgl, tgl, float);
 // DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                               //! Event time of the track computed with the T0AC
 // DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);                         //! Resolution of the event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
-// DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);                      //! Index of the last cluster in the TRD, -1 if no TRD information
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
 
 DECLARE_SOA_COLUMN(DCAxyStore, dcaxyStore, binningDCA::binned_t); //! Stored binned dcaxy
@@ -98,9 +105,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY,                          //! Unpacked d
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
-                           [](float signedPt) -> float { return std::abs(signedPt); });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
+//DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
+//                           [](float signedPt) -> float { return std::abs(signedPt); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signed1pt, float eta) -> float { return std::abs(signed1pt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
@@ -108,9 +115,9 @@ DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);           
 DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
-                           [](float signedPt, float eta, float mass) -> float {
-                             const auto pt = std::abs(signedPt);
-                             const auto p = std::abs(signedPt) * cosh(eta);
+                           [](float signed1Pt, float eta, float mass) -> float {
+                             const auto pt = std::abs(signed1Pt);
+                             const auto p = std::abs(signed1Pt) * cosh(eta);
                              const auto pz = std::sqrt(p * p - pt * pt);
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
@@ -127,23 +134,23 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   collision::PosY,
                   collision::PosZ,
                   spectra::Sel8,
+                  spectra::MultNTracksPVeta1,
+                  spectra::CentFT0M,
                   spectra::RunNumber);
 using SpColl = SpColls::iterator;
 
 DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   o2::soa::Index<>,
                   spectra::CollisionId,
-                  spectra::PtSigned, spectra::Eta, spectra::Phi,
+                  spectra::Signed1Pt, spectra::Eta, spectra::Phi, spectra::Pt,
                   spectra::Sigma1Pt,
-                  track::Length,
-                  track::TPCSignal,
-                  track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
-                  track::TPCNClsShared,
-                  track::TPCNClsFindable,
-                  track::TPCNClsFindableMinusFound,
-                  track::TPCNClsFindableMinusCrossedRows,
+                  spectra::Alpha,
+                  spectra::X,
+                  spectra::Y,
+                  spectra::Z,
+                  spectra::Snp,
+                  spectra::Tgl,
                   spectra::IsPVContributor,
-                  track::ITSClusterMap,
                   spectra::HasTRD,
                   spectra::DCAxyStore,
                   spectra::DCAzStore,
@@ -152,14 +159,22 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::IsGlobalTrack,
                   spectra::IsGlobalTrackWoDCA,
                   spectra::IsGlobalTrackWoPtEta,
-                  spectra::Pt<spectra::PtSigned>,
-                  track::Sign<spectra::PtSigned>,
-                  spectra::P<spectra::PtSigned, spectra::Eta>,
-                  spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
+                  //spectra::Pt<spectra::PtSigned>,
+                  //spectra::P<spectra::PtSigned, spectra::Eta>,
+                  //spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
                   spectra::IsQualityTrackITS<track::TOFChi2>,
                   spectra::IsQualityTrackTPC<track::TOFChi2>,
+                  //track::Sign<spectra::PtSigned>,
+                  track::Length,
+                  track::TPCSignal,
+                  track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
+                  track::TPCNClsShared,
+                  track::TPCNClsFindable,
+                  track::TPCNClsFindableMinusFound,
+                  track::TPCNClsFindableMinusCrossedRows,
+                  track::ITSClusterMap,
                   track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
                   track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
