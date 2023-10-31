@@ -93,7 +93,7 @@ struct spectraDerivedMaker {
     customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
     customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
     customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
-    //customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
+    // customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
     customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
@@ -104,8 +104,8 @@ struct spectraDerivedMaker {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
-    
-    histos.add("Centrality/FT0M", "FT0M" ,HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
+
+    histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
   }
 
@@ -131,7 +131,7 @@ struct spectraDerivedMaker {
     if (fillMultiplicity) {
       histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
       histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
-      }
+    }
   }
 
   template <typename TrackType>
@@ -194,8 +194,6 @@ struct spectraDerivedMaker {
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
                  trk.itsClusterMap());
-
-
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);

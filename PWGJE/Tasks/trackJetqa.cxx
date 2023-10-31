@@ -96,7 +96,7 @@ struct TrackJetQa {
     customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
     customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
     customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
-    //customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
+    // customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
     customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
@@ -145,10 +145,10 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    histos.add("Centrality/FT0M", "FT0M" ,HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
+    histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
-    histos.add("TrackEventPar/Sigma1PtFT0M", "Sigma1Pt vs pT vs FT0M", HistType::kTHnSparseD, {binsPercentile, {nBins, 0, 200}, {nBins, 0, 200}}); 
-    histos.add("TrackEventPar/Sigma1PtNTracksPVeta1", "Sigma1Pt vs pT vs NTracksPVeta1", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}}); 
+    histos.add("TrackEventPar/Sigma1PtFT0M", "Sigma1Pt vs pT vs FT0M", HistType::kTHnSparseD, {binsPercentile, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("TrackEventPar/Sigma1PtNTracksPVeta1", "Sigma1Pt vs pT vs NTracksPVeta1", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
     // ITS histograms
     histos.add("ITS/itsNCls", "number of found ITS clusters;#it{p}_{T} [GeV/c];# clusters ITS", {HistType::kTH2F, {{nBins, 0, 200}, {8, -0.5, 7.5}}});
     histos.add("ITS/itsChi2NCl", "chi2 per ITS cluster;#it{p}_{T} [GeV/c];chi2 / cluster ITS", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 40}}});
@@ -168,7 +168,7 @@ struct TrackJetQa {
 
   template <typename eventInfo>
   void fillEventQa(eventInfo const& collision)
-  {   // fill event property variables
+  { // fill event property variables
     histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
     if (!collision.sel8()) {
       return;
@@ -178,21 +178,22 @@ struct TrackJetQa {
       return;
     }
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
-    if (fillMultiplicity){
+    if (fillMultiplicity) {
       histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
       histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
     }
   }
 
   template <typename Tracks>
-  void fillTrackQa(Tracks const& track){// @Alice please add the kinematic track checks eta, pT
+  void fillTrackQa(Tracks const& track)
+  { // @Alice please add the kinematic track checks eta, pT
     if (enable && !track.isGlobalTrackWoPtEta()) {
       return;
     }
-    if (fabs(track.eta()) > ValCutEta){
+    if (fabs(track.eta()) > ValCutEta) {
       return;
     }
-    if (track.pt() < minPt || track.pt() > maxPt){
+    if (track.pt() < minPt || track.pt() > maxPt) {
       return;
     }
     histos.fill(HIST("Kine/pt"), track.pt());
@@ -299,13 +300,12 @@ struct TrackJetQa {
       groupedTracks.bindTable(tracks);
       for (auto& track : groupedTracks) {
         // track selection and filling of all qa histos
-        fillTrackQa(track); 
-        if (fillMultiplicity){
+        fillTrackQa(track);
+        if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0M"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPVeta1"), collision.multNTracksPVeta1(), track.pt(), track.sigma1Pt());
         }
       }
-
     }
   }
   PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
@@ -319,8 +319,8 @@ struct TrackJetQa {
       fillEventQa(collision);
       const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
       for (const auto& track : tracksInCollision) {
-        fillTrackQa(track); 
-        if (fillMultiplicity){
+        fillTrackQa(track);
+        if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0M"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPVeta1"), collision.multNTracksPVeta1(), track.pt(), track.sigma1Pt());
         }
@@ -329,7 +329,7 @@ struct TrackJetQa {
   } // end of the process function
   PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };
- 
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;

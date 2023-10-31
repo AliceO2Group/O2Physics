@@ -83,15 +83,15 @@ DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 //  Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
-DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);  //! Pt (signed) of the track
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float); //! Pt (signed) of the track
 DECLARE_SOA_COLUMN(Eta, eta, float);            //! Eta of the track
 DECLARE_SOA_COLUMN(Phi, phi, float);            //! Phi of the track
 DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
-DECLARE_SOA_COLUMN(Alpha, alpha, float);  
-DECLARE_SOA_COLUMN(X, x, float);  
+DECLARE_SOA_COLUMN(Alpha, alpha, float);
+DECLARE_SOA_COLUMN(X, x, float);
 DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(Z, z, float);  
-DECLARE_SOA_COLUMN(Pt, pt, float);  
+DECLARE_SOA_COLUMN(Z, z, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Snp, snp, float);
 DECLARE_SOA_COLUMN(Tgl, tgl, float);
 // DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                               //! Event time of the track computed with the T0AC
@@ -105,8 +105,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY,                          //! Unpacked d
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-//DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
-//                           [](float signedPt) -> float { return std::abs(signedPt); });
+// DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
+//                            [](float signedPt) -> float { return std::abs(signedPt); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signed1pt, float eta) -> float { return std::abs(signed1pt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
@@ -159,14 +159,14 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::IsGlobalTrack,
                   spectra::IsGlobalTrackWoDCA,
                   spectra::IsGlobalTrackWoPtEta,
-                  //spectra::Pt<spectra::PtSigned>,
-                  //spectra::P<spectra::PtSigned, spectra::Eta>,
-                  //spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
+                  // spectra::Pt<spectra::PtSigned>,
+                  // spectra::P<spectra::PtSigned, spectra::Eta>,
+                  // spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
                   spectra::IsQualityTrackITS<track::TOFChi2>,
                   spectra::IsQualityTrackTPC<track::TOFChi2>,
-                  //track::Sign<spectra::PtSigned>,
+                  // track::Sign<spectra::PtSigned>,
                   track::Length,
                   track::TPCSignal,
                   track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
