@@ -142,7 +142,6 @@ DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 
-
 } // namespace jetspectra
 
 DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
