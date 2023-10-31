@@ -11,7 +11,7 @@
 
 /// \file MchTrkEffTables.h
 /// \brief MCH tracking efficiency table definition.
-/// \author
+/// \author  Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
 
 #ifndef PWGDQ_DATAMODEL_MCHTRKEFFTABLES_H_

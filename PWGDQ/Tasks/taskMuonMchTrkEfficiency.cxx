@@ -128,7 +128,7 @@ struct taskMuonMchTrkEfficiency {
     for (int i = 0; i < 16; i++)
       hHitsEtaPtPhi->GetAxis(0)->SetBinLabel(i + 1, elabels[i]);
 
-  }; //! end of Initialize: configure, create specifics
+  } //! end of Initialize: configure, create specifics
 
   /// check whether a given chamber has hits
   bool ischamberhit(uint16_t map, int ich)
@@ -143,10 +143,10 @@ struct taskMuonMchTrkEfficiency {
     bool isSelected = true;
 
     if (pt < ptMuonMin) {
-      return false;
+      isSelected = false;
     }
     if ((eta < etaMuonMin) || (eta > etaMuonMax)) {
-      return false;
+      isSelected = false;
     }
     return isSelected;
   }
@@ -174,7 +174,7 @@ struct taskMuonMchTrkEfficiency {
   /// Filling histograms from reconstructed quantities
   void FillHistos(double eta, double pt, double phi, uint16_t map)
   {
-    registry.fill(HIST("hmchBitmap"), (double)map);
+    registry.fill(HIST("hmchBitmap"), map);
 
     bool iN[10];
     for (int i = 0; i < 10; i++) {

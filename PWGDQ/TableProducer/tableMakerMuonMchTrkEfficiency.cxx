@@ -229,7 +229,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
     LOGF(debug, "End of initialization");
 
-  }; //! end of Initialize: configure, create specifics
+  } //! end of Initialize: configure, create specifics
 
   /// check whether a given chamber has hits
   bool ischamberhit(uint16_t map, int ich)
@@ -260,7 +260,7 @@ struct tableMakerMuonMchTrkEfficiency {
     registry.fill(HIST("hEta"), mEta);
     registry.fill(HIST("hPt"), mPt);
     registry.fill(HIST("hPhi"), mPhi);
-    registry.fill(HIST("hMchBitMap"), (double)mchBitmap);
+    registry.fill(HIST("hMchBitMap"), mchBitmap);
     registry.fill(HIST("hEtaPtPhi"), mEta, mPt, mPhi);
 
     /// fill histograms only for selected candidates
@@ -269,7 +269,7 @@ struct tableMakerMuonMchTrkEfficiency {
       registry.fill(HIST("selected/hEta"), mEta);
       registry.fill(HIST("selected/hPt"), mPt);
       registry.fill(HIST("selected/hPhi"), mPhi);
-      registry.fill(HIST("selected/hMchBitMap"), (double)mchBitmap);
+      registry.fill(HIST("selected/hMchBitMap"), mchBitmap);
       registry.fill(HIST("selected/hEtaPtPhi"), mEta, mPt, mPhi);
       if (fillBitMapCorr)
         registry.fill(HIST("selected/hMchBitMapEtaPtPhi"), mchBitmap, mEta, mPt, mPhi);
@@ -380,10 +380,10 @@ struct tableMakerMuonMchTrkEfficiency {
     bool isSelected = true;
 
     if (pt < ptMuonMin) {
-      return false;
+      isSelected = false;
     }
     if ((eta < etaMuonMin) || (eta > etaMuonMax)) {
-      return false;
+      isSelected = false;
     }
     return isSelected;
   }
@@ -410,9 +410,9 @@ struct tableMakerMuonMchTrkEfficiency {
     /// loop on all muons
     LOGF(debug, " muon fwd tracks %i", tracksMuon.size());
     const int ncuts = fMuonCuts.size();
-    int nselmuons[ncuts];
+    std::vector<int> nselmuons(ncuts);
     for (int i = 0; i < ncuts; i++)
-      nselmuons[i] = 0;
+      nselmuons.push_back(0);
 
     rowCandidateBase.reserve(tracksMuon.size());
     for (auto& muon : tracksMuon) {
@@ -426,19 +426,19 @@ struct tableMakerMuonMchTrkEfficiency {
       uint16_t mchBitmap = muon.mchBitMap();
 
       /// select muons passing criteria
-      bool isMuonSelected[ncuts];
+      std::vector<bool> isMuonSelected(ncuts);
       bool isMuonSelectedAny = false;
       int j = 0;
 
       ///   check the cuts and filters
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, j++) {
-        isMuonSelected[j] = false;
+        isMuonSelected.push_back(false);
         LOGF(debug, " checking muon selected for cut %i", j);
         if ((*cut).IsSelected(VarManager::fgValues)) {
           LOGF(debug, " muon IS selected for cut %i", j);
           isMuonSelected[j] = true;
           isMuonSelectedAny = true;
-          nselmuons[j]++;
+          nselmuons[j] += 1;
         }
       }
 
@@ -472,9 +472,9 @@ struct tableMakerMuonMchTrkEfficiency {
     /// loop on all muons
     LOGF(debug, " muon fwd tracks %i", tracksMuon.size());
     const int ncuts = fMuonCuts.size();
-    int nselmuons[ncuts];
+    std::vector<int> nselmuons(ncuts);
     for (int i = 0; i < ncuts; i++)
-      nselmuons[i] = 0;
+      nselmuons.push_back(0);
 
     rowCandidateBase.reserve(tracksMuon.size());
     rowCandidateGen.reserve(tracksMuon.size());
@@ -534,17 +534,17 @@ struct tableMakerMuonMchTrkEfficiency {
       uint16_t mchBitmap = muon.mchBitMap();
 
       /// select muons passing criteria
-      bool isMuonSelected[ncuts];
+      std::vector<bool> isMuonSelected(ncuts);
       bool isMuonSelectedAny = false;
       int j = 0;
 
       ///   check the cuts and filters
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, j++) {
-        isMuonSelected[j] = false;
+        isMuonSelected.push_back(false);
         if ((*cut).IsSelected(VarManager::fgValues)) {
           isMuonSelected[j] = true;
           isMuonSelectedAny = true;
-          nselmuons[j]++;
+          nselmuons[j] += 1;
         }
       }
 
