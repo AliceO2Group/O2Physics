@@ -454,8 +454,8 @@ class TrackSelectorPidBase
       return TrackSelectorPID::Rejected;
     } else if (track.hasTPC() && track.hasTOF()) {
 
-      double nSigmaTpc = 100.;
-      double nSigmaTof = 100.;
+      double nSigmaTpc = 999.;
+      double nSigmaTof = 999.;
 
       // TPC  nsigma info with no pt or TOF constraints
       if constexpr (pdg == kElectron) {
