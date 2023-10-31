@@ -239,8 +239,7 @@ struct f0980analysis {
 
   void processMCLight(
     aod::ResoCollision& collision,
-    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
-    aod::McParticles const& mcParticles)
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true>(collision, resotracks);
   }

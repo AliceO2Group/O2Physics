@@ -508,7 +508,7 @@ struct k1analysis {
   PROCESS_SWITCH(k1analysis, processData, "Process Event for data without Partitioning", true);
 
   void processMC(aod::ResoCollision& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
