@@ -145,10 +145,15 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
-    histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
-    histos.add("TrackEventPar/Sigma1PtFT0M", "Sigma1Pt vs pT vs FT0M", HistType::kTHnSparseD, {binsPercentile, {nBins, 0, 200}, {nBins, 0, 200}});
-    histos.add("TrackEventPar/Sigma1PtNTracksPVeta1", "Sigma1Pt vs pT vs NTracksPVeta1", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
+    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
+    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracks"}});
+    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "Multiplicity FT0M"}});
+
+    histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {binsPercentile, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("TrackEventPar/Sigma1PtFT0Mmult", "Sigma1Pt vs pT vs FT0M multiplicity", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("TrackEventPar/Sigma1PtNTracksPV", "Sigma1Pt vs pT vs NTracksPV", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
+    histos.add("TrackEventPar/Sigma1PtNTrackslets", "Sigma1Pt vs pT vs NTrackslets", HistType::kTHnSparseD, {binsMultiplicity, {nBins, 0, 200}, {nBins, 0, 200}});
     // ITS histograms
     histos.add("ITS/itsNCls", "number of found ITS clusters;#it{p}_{T} [GeV/c];# clusters ITS", {HistType::kTH2F, {{nBins, 0, 200}, {8, -0.5, 7.5}}});
     histos.add("ITS/itsChi2NCl", "chi2 per ITS cluster;#it{p}_{T} [GeV/c];chi2 / cluster ITS", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 40}}});
@@ -180,7 +185,9 @@ struct TrackJetQa {
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
     if (fillMultiplicity) {
       histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-      histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
+      histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
+      histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+      histos.fill(HIST("Mult/NTracklets"), collision.multTracklets());
     }
   }
 
@@ -302,8 +309,10 @@ struct TrackJetQa {
         // track selection and filling of all qa histos
         fillTrackQa(track);
         if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0M"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPVeta1"), collision.multNTracksPVeta1(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt());    
         }
       }
     }
@@ -321,8 +330,10 @@ struct TrackJetQa {
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0M"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPVeta1"), collision.multNTracksPVeta1(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/Sigma1PtNTracklets"), collision.multTracklets(), track.pt(), track.sigma1Pt()); 
         }
       }
     }

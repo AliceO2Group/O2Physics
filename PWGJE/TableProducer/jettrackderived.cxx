@@ -105,8 +105,10 @@ struct spectraDerivedMaker {
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
-    histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
+    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
+    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
+    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracks"}});
+    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "Multiplicity FT0M"}});
   }
 
   template <typename CollisionType, typename TrackType>
@@ -130,7 +132,9 @@ struct spectraDerivedMaker {
 
     if (fillMultiplicity) {
       histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-      histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
+      histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
+      histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+      histos.fill(HIST("Mult/NTracklets"), collision.multTracklets());
     }
   }
 
@@ -162,7 +166,9 @@ struct spectraDerivedMaker {
               collision.posY(),
               collision.posZ(),
               collision.sel8(),
-              collision.multNTracksPVeta1(),
+              collision.multNTracksPV(),
+              collision.multTracklets(),
+              collision.multFT0M(),
               collision.centFT0M(),
               collision.bc().runNumber());
 

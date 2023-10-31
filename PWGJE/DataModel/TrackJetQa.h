@@ -76,10 +76,11 @@ struct binningDCA {
 
 // Collision info
 DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
-DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
+DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 //  Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
@@ -134,7 +135,9 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   collision::PosY,
                   collision::PosZ,
                   spectra::Sel8,
-                  spectra::MultNTracksPVeta1,
+                  spectra::MultNTracksPV,
+                  spectra::MultTracklets,
+                  spectra::MultFT0M,
                   spectra::CentFT0M,
                   spectra::RunNumber);
 using SpColl = SpColls::iterator;
