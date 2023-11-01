@@ -618,7 +618,6 @@ struct Alice3Dilepton {
     } // end of collision loop
   }   // end of processRec
 
-
   PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);
 };
