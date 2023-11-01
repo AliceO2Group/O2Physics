@@ -45,9 +45,3 @@ o2physics_add_dpl_workflow(data-creator-dplus-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-# Tree creators
-
-o2physics_add_dpl_workflow(tree-creator-omegac-st
-                    SOURCES treeCreatorOmegacSt.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
-                    COMPONENT_NAME Analysis)
