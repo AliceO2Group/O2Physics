@@ -996,7 +996,7 @@ struct AnalysisSameEventPairing {
 
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
       if constexpr ((TPairType == pairTypeMuMu) || (TPairType == pairTypeEE && ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0))) {
-        dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+        dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ(),t1.globalIndex(),t2.globalIndex());
       }
 
       constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);

@@ -124,6 +124,7 @@ DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);               //!
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                 //!
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //! Detector map: see enum DetectorMapEnum
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);        //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);                 //!
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS,             //! Flag to check if track has a ITS match
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Flag to check if track has a TPC match
@@ -185,7 +186,7 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
 
 // barrel collision information (joined with ReducedTracks) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
-                  reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+                  reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ , reducedtrack::TrackId);
 
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
@@ -433,6 +434,8 @@ DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
 namespace reducedpair
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);  //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to first prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
 DECLARE_SOA_COLUMN(Mass, mass, float);                 //!
 DECLARE_SOA_COLUMN(Pt, pt, float);                     //!
 DECLARE_SOA_COLUMN(Eta, eta, float);                   //!
@@ -492,7 +495,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
 
 // Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
-                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedpair::Prong0, reducedpair::Prong1);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,

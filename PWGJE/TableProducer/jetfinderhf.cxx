@@ -145,6 +145,7 @@ struct JetFinderHFTask {
       candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
       candDecay = static_cast<int>(aod::hf_cand_3prong::DecayType::LcToPKPi);
     }
+    //FIXME : Add for JPSi
     candMass = pdgDatabase->Mass(candPDG);
   }
 

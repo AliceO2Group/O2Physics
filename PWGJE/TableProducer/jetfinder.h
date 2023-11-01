@@ -194,7 +194,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
 template <typename T>
 bool checkDaughters(T const& particle, int globalIndex)
 {
-  for (auto daughter : particle.template daughters_as<o2::aod::McParticles>()) {
+  for (auto daughter : particle.template daughters_as<T>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
     }
