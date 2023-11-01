@@ -21,7 +21,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -144,7 +143,7 @@ struct JetSubstructureHFTask {
       FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
     for (auto& jetHFCandidate : jet.template hfcandidates_as<CandidateTable>()) { // should only be one at the moment
-      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdg->Mass(candPDG));
     }
     jetReclustering(jet);
   }
@@ -155,10 +154,10 @@ struct JetSubstructureHFTask {
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<aod::McParticles>()) {
-      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(jetConstituent.pdgCode()));
+      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     for (auto& jetHFCandidate : jet.template hfcandidates_as<aod::McParticles>()) { // should only be one at the moment
-      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(jetHFCandidate.pdgCode()));
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdg->Mass(jetHFCandidate.pdgCode()));
     }
     jetReclustering(jet);
   }

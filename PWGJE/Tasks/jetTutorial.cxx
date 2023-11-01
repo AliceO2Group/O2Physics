@@ -24,8 +24,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
