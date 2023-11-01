@@ -17,17 +17,17 @@
 #ifndef COMMON_CORE_RECODECAY_H_
 #define COMMON_CORE_RECODECAY_H_
 
-#include <tuple>
+// #include <tuple>
 #include <vector>
 #include <array>
-#include <cmath>
-#include <utility>
+// #include <cmath>
+// #include <utility>
 
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
+// #include <TDatabasePDG.h>
+// #include <TPDGCode.h>
 
 #include "CommonConstants/MathConstants.h"
-#include "Framework/Logger.h"
+// #include "Framework/Logger.h"
 
 /// Base class for calculating properties of reconstructed decays
 ///
