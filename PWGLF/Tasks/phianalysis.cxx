@@ -16,6 +16,8 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h> // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -121,7 +123,7 @@ struct phianalysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); // FIXME: Get from the common header
 
   template <typename TrackType>
   bool trackCut(const TrackType track)

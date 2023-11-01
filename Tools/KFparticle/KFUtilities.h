@@ -21,7 +21,7 @@
 #define HomogeneousField
 #endif
 
-#include <TDatabasePDG.h>
+#include <TDatabasePDG.h> // FIXME
 
 #include "KFParticle.h"
 #include "KFPTrack.h"
@@ -171,9 +171,9 @@ float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFPar
   py1 = kfpprong1.GetPy();
   pz1 = kfpprong1.GetPz();
   std::array<double, 2> m = {0., 0.};
-  m[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass(); // FIXME: Use service of header
-  m[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass(); // FIXME: Use service of header
-  double mTot = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass(); // FIXME: Use service of header
+  m[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass(); // FIXME: Get from the PDG service of the common header
+  m[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass(); // FIXME: Get from the PDG service of the common header
+  double mTot = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass(); // FIXME: Get from the PDG service of the common header
   int iProng = ip;
 
   float cosThetastar = RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m, mTot, iProng);
