@@ -1622,7 +1622,8 @@ struct cascadePreselector {
                bitdEdxOmegaPlus,
                bitUsedInTrackedCascade };
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     histos.add("hPreselectorStatistics", "hPreselectorStatistics", kTH1F, {{5, -0.5f, 4.5f}});
   }
 
