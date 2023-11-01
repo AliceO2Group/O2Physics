@@ -14,6 +14,7 @@
 /// \since 23/04/2023
 
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
