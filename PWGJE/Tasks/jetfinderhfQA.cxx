@@ -16,30 +16,27 @@
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
-#include "TDatabasePDG.h"
+#include "Framework/runDataProcessing.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGHF/Core/PDG.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/DataModel/Jet.h"
 
 #include "EventFiltering/filterTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 template <typename JetTableData, typename JetConstituentTableData, typename CandidateTableData, typename JetTableMCD, typename JetConstituentTableMCD, typename JetMatchingTableMCDMCP, typename JetTableMCDWeighted, typename CandidateTableMCD, typename JetTableMCP, typename JetConstituentTableMCP, typename JetMatchingTableMCPMCD, typename JetTableMCPWeighted, typename ParticleTableMCP>
 struct JetFinderHFQATask {
@@ -64,8 +61,21 @@ struct JetFinderHFQATask {
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
 
+  double candMass;
+
   void init(o2::framework::InitContext&)
   {
+
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>>) { // Note : need to be careful if configurable workflow options are added later
+      candMass = pdg::MassD0;
+    }
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>>) {
+      candMass = pdg::MassLambdaCPlus;
+    }
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>) {
+      candMass = pdg::MassBPlus;
+    }
+
     trackSelection = static_cast<std::string>(trackSelections);
     jetRadiiValues = (std::vector<double>)jetRadii;
 
@@ -237,7 +247,7 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt"), jet.r() / 100.0, jet.pt(), hfcandidate.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta"), jet.r() / 100.0, jet.pt(), hfcandidate.eta(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi"), jet.r() / 100.0, jet.pt(), hfcandidate.phi(), weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_candidate_y"), jet.r() / 100.0, jet.pt(), hfcandidate.y(o2::analysis::pdg::MassD0), weight);
+      registry.fill(HIST("h3_jet_r_jet_pt_candidate_y"), jet.r() / 100.0, jet.pt(), hfcandidate.y(candMass), weight);
 
       if (jet.r() == round(selectedJetsRadius * 100.0f)) {
         if constexpr (std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>> || std::is_same_v<std::decay_t<U>, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>) {
@@ -322,7 +332,7 @@ struct JetFinderHFQATask {
         mcdCandPt = hfcandidate_mcd.pt();
         mcdCandPhi = hfcandidate_mcd.phi();
         mcdCandEta = hfcandidate_mcd.eta();
-        mcdCandY = hfcandidate_mcd.y(o2::analysis::pdg::MassD0);
+        mcdCandY = hfcandidate_mcd.y(candMass);
       }
 
       for (auto& hfcandidate_mcp : mcpjet.template hfcandidates_as<std::decay_t<O>>()) {
@@ -474,12 +484,12 @@ struct JetFinderHFQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_MB"), jet.r() / 100.0, jet.pt(), hfcandidate.pt());
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_MB"), jet.r() / 100.0, jet.pt(), hfcandidate.eta());
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_MB"), jet.r() / 100.0, jet.pt(), hfcandidate.phi());
-        registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_MB"), jet.r() / 100.0, jet.pt(), hfcandidate.y(o2::analysis::pdg::MassD0));
+        registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_MB"), jet.r() / 100.0, jet.pt(), hfcandidate.y(candMass));
         if (collision.hasJetChHighPt() >= 1) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_Triggered"), jet.r() / 100.0, jet.pt(), hfcandidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_Triggered"), jet.r() / 100.0, jet.pt(), hfcandidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_Triggered"), jet.r() / 100.0, jet.pt(), hfcandidate.phi());
-          registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_Triggered"), jet.r() / 100.0, jet.pt(), hfcandidate.y(o2::analysis::pdg::MassD0));
+          registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_Triggered"), jet.r() / 100.0, jet.pt(), hfcandidate.y(candMass));
         }
       }
     }
