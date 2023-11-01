@@ -14,12 +14,12 @@
 // Author: Jochen Klein, Nima Zardoshti, Raymond Ehlers
 
 #include "PWGJE/TableProducer/jetfinder.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 template <typename JetTable, typename ConstituentTable, typename ConstituentSubTable>
 struct JetFinderTask {
@@ -66,7 +66,7 @@ struct JetFinderTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase;
   std::string trackSelection;
   std::string eventSelection;
   std::string particleSelection;
@@ -159,7 +159,7 @@ struct JetFinderTask {
   void processParticleLevelChargedJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
@@ -167,7 +167,7 @@ struct JetFinderTask {
   void processParticleLevelNeutralJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
@@ -175,7 +175,7 @@ struct JetFinderTask {
   void processParticleLevelFullJets(aod::McCollision const& collision, soa::Filtered<aod::McParticles> const& particles)
   {
     // TODO: MC event selection?
-    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdg->Instance());
+    analyseParticles<soa::Filtered<aod::McParticles>, soa::Filtered<aod::McParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 
