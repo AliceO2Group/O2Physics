@@ -18,10 +18,10 @@
 #define COMMON_CORE_RECODECAY_H_
 
 // #include <tuple>
-#include <vector>
-#include <array>
-// #include <cmath>
-// #include <utility>
+#include <vector>  // std::vector
+#include <array>   // std::array
+#include <cmath>   // std::abs, std::sqrt
+#include <utility> // std::move
 
 // #include <TDatabasePDG.h>
 // #include <TPDGCode.h>
