@@ -17,17 +17,13 @@
 #ifndef COMMON_CORE_RECODECAY_H_
 #define COMMON_CORE_RECODECAY_H_
 
-// #include <tuple>
-#include <vector>  // std::vector
-#include <array>   // std::array
-#include <cmath>   // std::abs, std::sqrt
-#include <utility> // std::move
-
-// #include <TDatabasePDG.h>
-// #include <TPDGCode.h>
+#include <algorithm> // std::find
+#include <array>     // std::array
+#include <cmath>     // std::abs, std::sqrt
+#include <utility>   // std::move
+#include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
-// #include "Framework/Logger.h"
 
 /// Base class for calculating properties of reconstructed decays
 ///
