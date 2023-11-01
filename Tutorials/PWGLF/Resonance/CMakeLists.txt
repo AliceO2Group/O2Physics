@@ -9,6 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Resonance)
-add_subdirectory(Strangeness)
+# Resonance analysis tutorial
+o2physics_add_dpl_workflow(resonances-step0
+                  SOURCES resonances_step0.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
 
+o2physics_add_dpl_workflow(resonances-step1
+                  SOURCES resonances_step1.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
