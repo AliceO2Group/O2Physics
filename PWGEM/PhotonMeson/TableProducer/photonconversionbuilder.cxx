@@ -116,10 +116,10 @@ struct PhotonConversionBuilder {
       {"V0/hEtaPhi", "#eta vs. #varphi of V0 at PV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
       {"V0/hCosPA", "cosine of pointing angle;cosine of pointing angle", {HistType::kTH1F, {{100, 0.9f, 1.f}}}},
       {"V0/hPCA", "distance between 2 legs at SV;PCA (cm)", {HistType::kTH1F, {{500, 0.0f, 5.f}}}},
+      {"V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}}},
       {"V0/hMee_SVPV", "mee at PV and SV;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{100, 0.0f, 0.1f}, {100, 0, 0.1f}}}},
       {"V0/hMeeSV_Rxy", "mee at SV vs. R_{xy};R_{xy} (cm);m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
-      {"V0/hKFChi2", "V0 KF chi2;p_{T,#gamma} (GeV/c);KF #chi^{2}/ndf", {HistType::kTH2F, {{100, 0.0f, 10.f}, {100, 0, 100}}}},
-      {"V0/hKPtDiff", "V0 KF pt leg sum vs. gamma pt;p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.f}, {1000, 0, 10}}}},
+      {"V0/hPtDiff", "V0 KF pt leg sum vs. gamma pt;p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.f}, {1000, 0, 10}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -10.f, +10.f}}}},
@@ -359,15 +359,15 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    float chi2kf = -1.f;
-    if (gammaKF_DecayVtx.GetNDF() > 0) {
-      chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
-    }
-
     KFParticle kfp_pos_DecayVtx = kfp_pos;  // Don't set Primary Vertex
     KFParticle kfp_ele_DecayVtx = kfp_ele;  // Don't set Primary Vertex
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
+    float ptee = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx() + kfp_ele_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy() + kfp_ele_DecayVtx.GetPy());
+
+    if (abs(ptee - v0pt) / v0pt > 0.3) {
+      return;
+    }
 
     KFParticle kfp_pos_PV = kfp_pos_DecayVtx;
     KFParticle kfp_ele_PV = kfp_ele_DecayVtx;
@@ -415,11 +415,16 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
       registry.fill(HIST("V0/hCosPA"), cospa_kf);
       registry.fill(HIST("V0/hPCA"), pca_kf);
-      registry.fill(HIST("V0/hKFChi2"), v0pt, chi2kf);
+      registry.fill(HIST("V0/hPtDiff"), v0pt, ptee);
 
-      float v0pt_sv = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
-      float eept_sv = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx() + kfp_ele_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy() + kfp_ele_DecayVtx.GetPy());
-      registry.fill(HIST("V0/hKPtDiff"), v0pt_sv, eept_sv);
+      float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
+      float sign_tmp = (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz() > 0 ? +1 : -1;
+
+      float dca_xy_v0_to_pv = std::sqrt(std::pow((collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPz() - (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPy(), 2) + std::pow((collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz(), 2)) / v0mom * sign_tmp;
+      float dca_z_v0_to_pv = ((collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPy() - (collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPx()) / v0mom;
+      registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
+
+      float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
 
       for (auto& leg : {kfp_pos_DecayVtx, kfp_ele_DecayVtx}) {
         float legpt = RecoDecay::sqrtSumOfSquares(leg.GetPx(), leg.GetPy());
@@ -448,7 +453,7 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                  v0_sv.M(),
+                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
       fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);
