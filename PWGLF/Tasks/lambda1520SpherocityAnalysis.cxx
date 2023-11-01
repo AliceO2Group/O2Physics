@@ -33,7 +33,7 @@ using namespace o2::framework::expressions;
 
 // PDG p -> 2212, K -> 321
 const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass(); // FIXME: Get from the common header
-const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
+const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();    // FIXME: Get from the common header
 
 struct lambdaAnalysis {
 

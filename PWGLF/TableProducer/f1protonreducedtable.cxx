@@ -20,7 +20,7 @@
 #include <TMath.h>
 #include <fairlogger/Logger.h>
 #include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 
 #include <iostream>
 #include <iterator>
@@ -453,9 +453,9 @@ struct f1protonreducedtable {
 
   std::vector<double> BBProton, BBAntiproton, BBPion, BBAntipion, BBKaon, BBAntikaon;
   ROOT::Math::PtEtaPhiMVector F1Vector, F1VectorDummy, KKs0Vector, ProtonVectorDummy, ProtonVectorDummy2;
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); // FIXME: Get from the common header
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass(); // FIXME: Get from the common header
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();    // FIXME: Get from the common header
+  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
   double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
 
   double massF1{0.};
