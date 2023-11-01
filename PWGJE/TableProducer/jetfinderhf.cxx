@@ -94,7 +94,7 @@ struct JetFinderHFTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase;
   std::string trackSelection;
   std::string eventSelection;
   std::string particleSelection;
@@ -104,6 +104,7 @@ struct JetFinderHFTask {
 
   int candPDG;
   int candDecay;
+  double candMass;
 
   void init(InitContext const&)
   {
@@ -144,6 +145,7 @@ struct JetFinderHFTask {
       candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
       candDecay = static_cast<int>(aod::hf_cand_3prong::DecayType::LcToPKPi);
     }
+    candMass = pdgDatabase->Mass(candPDG);
   }
 
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
@@ -166,7 +168,7 @@ struct JetFinderHFTask {
 
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      if (!analyseCandidate(inputParticles, candPDG, candPtMin, candPtMax, candYMin, candYMax, candidate)) {
+      if (!analyseCandidate(inputParticles, candMass, candPtMin, candPtMax, candYMin, candYMax, candidate)) {
         continue;
       }
       analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
@@ -184,7 +186,7 @@ struct JetFinderHFTask {
 
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      if (!analyseCandidateMC(inputParticles, candPDG, candDecay, candPtMin, candPtMax, candYMin, candYMax, candidate, rejectBackgroundMCCandidates)) {
+      if (!analyseCandidateMC(inputParticles, candMass, candDecay, candPtMin, candPtMax, candYMin, candYMax, candidate, rejectBackgroundMCCandidates)) {
         continue;
       }
       analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
@@ -202,7 +204,7 @@ struct JetFinderHFTask {
 
     for (auto const& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) & (1 << candDecay)) {
-        auto particleY = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, pdg->Mass(particle.pdgCode()));
+        auto particleY = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, pdgDatabase->Mass(particle.pdgCode()));
         if (particleY < candYMin || particleY > candYMax) {
           continue;
         }
@@ -213,8 +215,8 @@ struct JetFinderHFTask {
       }
     }
     for (auto& candidate : candidates) {
-      analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
-      FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdg->Mass(candidate.pdgCode()));
+      analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, std::optional{candidate});
+      FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdgDatabase->Mass(candidate.pdgCode()));
       findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
