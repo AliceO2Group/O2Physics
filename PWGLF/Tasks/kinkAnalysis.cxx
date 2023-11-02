@@ -392,11 +392,16 @@ struct kinkAnalysis {
       } else {
         for (const auto& ambTrack : ambiTracks) {
           if (ambTrack.trackId() == track.globalIndex()) {
+            if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+              globalBCvector.push_back(-1);
+              break;
+            }
             globalBCvector.push_back(ambTrack.bc().begin().globalBC());
             break;
           }
         }
       }
+
       if (std::abs(track.eta()) < 0.8) {
         if (track.hasITS() && !track.hasTPC() && !track.hasTOF() && track.itsNCls() < 6 && track.itsNClsInnerBarrel() == 3 && track.itsChi2NCl() < 4) {
           selected[index] = 1;
