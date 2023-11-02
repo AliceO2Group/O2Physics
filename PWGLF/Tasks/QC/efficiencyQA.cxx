@@ -273,8 +273,6 @@ struct efficiencyQA {
       }
 
       float massV0 = std::sqrt(v0E * v0E - v0Mom[0] * v0Mom[0] - v0Mom[1] * v0Mom[1] - v0Mom[2] * v0Mom[2]);
-
-      LOGF(info, "isPosTag = %d, isNegTag = %d, rnd = %.4f, flagTagProbe = %d, mass = %.4f", isPosTag, isNegTag, rnd, flagTagProbe, massV0);
       bool isMassV0 = false;
       if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massWidth)
         isMassV0 = true;
