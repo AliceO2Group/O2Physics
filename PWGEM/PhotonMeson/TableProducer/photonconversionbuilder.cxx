@@ -85,8 +85,8 @@ struct PhotonConversionBuilder {
   Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
 
   Configurable<float> min_pt_leg{"min_pt_leg", 0.05, "min pT for v0 legs at SV"};
-  Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at PV"};
-  Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at PV"};
+  Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at SV"};
+  Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at SV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
@@ -219,21 +219,7 @@ struct PhotonConversionBuilder {
     KFParticle::SetField(magneticField);
   }
 
-  //  static float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
-  //  {
-  //    float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-  //    float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-  //    float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-  //    return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
-  //  }
-  //
-  //  static float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
-  //  {
-  //    float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-  //    float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
-  //    return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qt of v0
-  //  }
-
+  std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
   template <typename TTrack>
   bool checkV0leg(TTrack const& track)
   {
@@ -252,6 +238,16 @@ struct PhotonConversionBuilder {
 
     if (track.hasITS()) {
       if (track.itsChi2NCl() > maxchi2its) {
+        return false;
+      }
+
+      if (abs(track.z() / track.x() - track.tgl()) > 0.5) {
+        return false;
+      }
+
+      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only = hits_ib <= its_ib_Requirement.first;
+      if (!its_ob_only) {
         return false;
       }
     }
@@ -365,10 +361,6 @@ struct PhotonConversionBuilder {
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     float ptee = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx() + kfp_ele_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy() + kfp_ele_DecayVtx.GetPy());
 
-    if (abs(ptee - v0pt) / v0pt > 0.3) {
-      return;
-    }
-
     KFParticle kfp_pos_PV = kfp_pos_DecayVtx;
     KFParticle kfp_ele_PV = kfp_ele_DecayVtx;
     kfp_pos_PV.SetProductionVertex(KFPV);
@@ -401,7 +393,7 @@ struct PhotonConversionBuilder {
 
     float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     float qt = v0_qt(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
-    if (!checkAP(alpha, qt, 0.95, 0.01)) { // store only photon conversions
+    if (!checkAP(alpha, qt, 0.95, 0.02)) { // store only photon conversions
       return;
     }
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
