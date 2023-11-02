@@ -46,7 +46,7 @@ struct resonances_tutorial {
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
   // DCAz to PV
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};  
+  Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
   // PID selection
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
@@ -74,7 +74,7 @@ struct resonances_tutorial {
   double massKa = o2::analysis::pdg::MassKPlus;
   double rapidity, mass, pT, paircharge;
   TLorentzVector daughter1, daughter2, mother;
-  
+
   // Track selection
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -106,7 +106,6 @@ struct resonances_tutorial {
     }
   }
 
-
   // PID selection TPC +TOF Veto
   template <typename T>
   bool selectionPID(const T& candidate)
@@ -125,11 +124,11 @@ struct resonances_tutorial {
   {
     daughter1.SetXYZM(candidate1.px(), candidate1.py(), candidate1.pz(), massKa);
     daughter2.SetXYZM(candidate2.px(), candidate2.py(), candidate2.pz(), massKa);
-    mother=daughter1+daughter2;
-    mass=mother.M();
-    pT=mother.Pt();
-    rapidity=mother.Rapidity();
-    paircharge=candidate1.sign()*candidate2.sign();
+    mother = daughter1 + daughter2;
+    mass = mother.M();
+    pT = mother.Pt();
+    rapidity = mother.Rapidity();
+    paircharge = candidate1.sign() * candidate2.sign();
     if (std::abs(rapidity) < 0.5 && paircharge < 0 && unlike) {
       histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
     } else if (std::abs(rapidity) < 0.5 && paircharge < 0 && mix) {
@@ -142,7 +141,7 @@ struct resonances_tutorial {
       }
     }
   }
-  
+
   // Process the data in same event
   void process(aod::ResoCollision& collision, aod::ResoTracks const& resotracks)
   {
@@ -159,8 +158,8 @@ struct resonances_tutorial {
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
-      if(track1.hasTOF()){
-	histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
+      if (track1.hasTOF()) {
+        histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       }
       auto track1ID = track1.index();
       for (auto track2 : resotracks) {
@@ -174,7 +173,7 @@ struct resonances_tutorial {
         bool unlike = true;
         bool mix = false;
         bool likesign = true;
-	FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, massKa, massKa);
+        FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, massKa, massKa);
       }
     }
   }
