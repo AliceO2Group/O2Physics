@@ -12,6 +12,7 @@
 #ifndef COMMON_DATAMODEL_CALOCLUSTERS_H_
 #define COMMON_DATAMODEL_CALOCLUSTERS_H_
 
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -79,6 +80,21 @@ DECLARE_SOA_TABLE(PHOSMatchedTracks, "AOD", "PHSMATCHTRACKS",                   
                   o2::soa::Index<>, phosmatchedtrack::CaloClusterId, phosmatchedtrack::TrackId, phosmatchedtrack::PhosSigma, phosmatchedtrack::CpvSigma); //!
 
 using PHOSMatchedTrack = PHOSMatchedTracks::iterator;
+
+namespace phosclulabel
+{
+DECLARE_SOA_COLUMN(Labels, labels, std::vector<int>);           //! array of labels
+DECLARE_SOA_COLUMN(Amplitudes, amplitides, std::vector<float>); //! array of energy depositions
+} // namespace phosclulabel
+
+DECLARE_SOA_TABLE(PHOSCluLabels, "AOD", "PHSCLULABELS",                                                  //!
+                  o2::soa::Index<>, phosclulabel::Labels, phosclulabel::Amplitudes, o2::soa::Marker<1>); //!
+DECLARE_SOA_TABLE(PHOSAmbCluLabels, "AOD", "PHSAMBCLULABELS",                                            //!
+                  o2::soa::Index<>, phosclulabel::Labels, phosclulabel::Amplitudes, o2::soa::Marker<2>); //!
+
+using PHOSCluLabel = PHOSCluLabels::iterator;
+using PHOSAmbCluLabel = PHOSAmbCluLabels::iterator;
+
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_CALOCLUSTERS_H_
