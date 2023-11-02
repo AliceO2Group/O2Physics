@@ -49,10 +49,10 @@ struct resonances_tutorial {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
-    
+
     return true;
   }
-  
+
   // Fill histograms (main function)
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
