@@ -779,8 +779,8 @@ void VarManager::FillpropagateMuon(const T& muon, const C& collision, float* val
     auto mchTrack = mMatching.FwdtoMCH(track);
     o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
     auto propmuon = mMatching.MCHtoFwd(mchTrack);
-    values[kPt] = propmuon.getPt();
 
+    values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
     values[kZ] = propmuon.getZ();
