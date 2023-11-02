@@ -13,6 +13,7 @@
 /// \brief Jet related utilities
 ///
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #ifndef PWGJE_CORE_JETUTILITIES_H_
 #define PWGJE_CORE_JETUTILITIES_H_
@@ -26,6 +27,7 @@
 #include <TKDTree.h>
 
 #include "Framework/Logger.h"
+#include "Common/Core/RecoDecay.h"
 
 namespace JetUtilities
 {
@@ -382,6 +384,15 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
     }
   }
   return std::make_tuple(matchIndexTrack, matchIndexCluster);
+}
+
+template <typename T, typename U>
+float deltaR(T const& A, U const& B)
+{
+  float dPhi = RecoDecay::constrainAngle(A.phi() - B.phi(), -M_PI);
+  float dEta = A.eta() - B.eta();
+
+  return TMath::Sqrt(dEta * dEta + dPhi * dPhi);
 }
 
 }; // namespace JetUtilities

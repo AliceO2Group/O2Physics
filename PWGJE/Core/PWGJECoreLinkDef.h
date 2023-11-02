@@ -19,5 +19,6 @@
 #pragma link C++ class JetFinder + ;
 #pragma link C++ namespace JetUtilities + ;
 #pragma link C++ namespace FastJetUtilities + ;
+#pragma link C++ namespace JetTaggingUtilities + ;
 
 #endif // PWGJE_CORE_PWGJECORELINKDEF_H_
