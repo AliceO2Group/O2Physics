@@ -12,9 +12,9 @@
 /// \file scalarProduct.cxx
 /// \brief Analysis task for Scalar Product method
 ///
-/// \author F. Chinu, Univeristà di Torino, Italy
+/// \author F. Chinu, Università di Torino, Italy
 /// \author S. Politanò, INFN & Politecnico Torino, Italy
-/// \author S. Strgolo, INFN Torino, Italy
+/// \author S. Trgolo, INFN Torino, Italy
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -22,7 +22,10 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/DataModel/Qvectors.h"
+
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,7 +55,7 @@ struct scalarProduct{
   Produces<o2::aod::HfScalarProduct> hfScalarProduct;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
-  Configurable<std::string> detector{"detector", "FT0A", "Detector name"};
+  Configurable<std::string> detector{"detector", "FT0A", "Detector name"}; // Needed only to exclude tracks in TPC case
   Configurable<float> centMin{"centMin", 30., "Minimum centrality"};
   Configurable<float> centMax{"centMax", 50., "Maximum centrality"};
   Configurable<int> selectionFlagD{"selectionFlagD", 7, "Selection Flag for D"};
@@ -64,7 +67,11 @@ struct scalarProduct{
   
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD;
-  Filter filterCentrality = aod::collisions::cent >= centMin && aod::collisions::cent < centMax;
+  Filter filterCentrality = aod::qvec::cent >= centMin && aod::qvec::cent < centMax;
+
+  // TODO: add possibility to consider different mass hypotheses
+  // Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD;
+  // Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
 
 
   HistogramRegistry registry{
@@ -75,66 +82,37 @@ struct scalarProduct{
      {"hSpCent", "SpVsCent;sp;centrality;entries", {HistType::kTH2F, {{100, -1.1, 1.1}, {100, 0., 100.}}}},
      {"hSpPtCent", "SpVsPtCent;sp;#it{p}_{T} (GeV/#it{c});centrality", {HistType::kTH3F, {{100, -1.1, 1.1}, {100, 0., 10.}, {100, 0., 100.}}}}}};
 
-  /// Get X and Y components of the Q vector
-  /// \param qVec is the Q vector
-  /// \param QvecX is the X component of the Q vector
-  /// \param QvecY is the Y component of the Q vector
-  template <typename T1>
-  void GetQvectors(const T1& qVec,
-                   float& QvecX,
-                   float& QvecY)
-  {
-    if (detector.value == "FT0A")
-    {
-      QvecX = qVec.qvecFT0ARe();
-      QvecY = qVec.qvecFT0AIm();
-    }
-    else if (detector.value == "FT0C")
-    {
-      QvecX = qVec.qvecFT0CRe();
-      QvecY = qVec.qvecFT0CIm();
-    }
-    else if (detector.value == "FV0A")
-    {
-      QvecX = qVec.qvecFV0ARe();
-      QvecY = qVec.qvecFV0AIm();
-    }
-    else if (detector.value == "BPos")
-    {
-      QvecX = qVec.qvecBPosRe();
-      QvecY = qVec.qvecBPosIm();
-    }
-    else if (detector.value == "BNeg")
-    {
-      QvecX = qVec.qvecBNegRe();
-      QvecY = qVec.qvecBNegIm();
-    }
-    else if (detector.value == "FT0CUC")
-    {
-      QvecX = qVec.qvecFT0CUncorRe();
-      QvecY = qVec.qvecFT0CUncorIm();
-    }
-    else if (detector.value == "FT0CRC")
-    {
-      QvecX = qVec.qvecFT0CRectrRe();
-      QvecY = qVec.qvecFT0CRectrIm();
-    }
-    else if (detector.value == "FT0CTW")
-    {
-      QvecX = qVec.qvecFT0CTwistRe();
-      QvecY = qVec.qvecFT0CTwistIm();
-    }
-    else
-    {
-      printf("Detector not found\n");
-    }
-  }
-
 
   /// Compute the Q vector for the Ds candidate's tracks
   /// \param cand is the candidate
-  /// TODO: missing track phi angle in hf_cand_3prong
-  //void GetQvecDtracks(const T1& cand) {}
+  /// \param tracksQx is the X component of the Q vector for the tracks
+  /// \param tracksQy is the Y component of the Q vector for the tracks
+  template <typename T1>
+  void GetQvecDtracks(const T1& cand,
+                      std::vector<float>& tracksQx,
+                      std::vector<float>& tracksQy,
+                      float& ampl) {
+    // TODO: add possibility to consider different weights for the tracks, at the only pT is considered;
+    float pXtrack0 = cand.pxProng0();
+    float pYtrack0 = cand.pyProng0();
+    float pTtrack0 = cand.ptProng0();
+    float phiTrack0 = TMath::ATan2(pYtrack0, pXtrack0);
+    float pXtrack1 = cand.pxProng1();
+    float pYtrack1 = cand.pyProng1();
+    float pTtrack1 = cand.ptProng1();
+    float phiTrack1 = TMath::ATan2(pYtrack1, pXtrack1);
+    float pXtrack2 = cand.pxProng2();
+    float pYtrack2 = cand.pyProng2();
+    float pTtrack2 = cand.ptProng2();
+    float phiTrack2 = TMath::ATan2(pYtrack2, pXtrack2);
+  
+    tracksQx.push_back(TMath::Cos(harmonic*phiTrack0)*pTtrack0/ampl);
+    tracksQy.push_back(TMath::Sin(harmonic*phiTrack0)*pTtrack0/ampl);
+    tracksQx.push_back(TMath::Cos(harmonic*phiTrack1)*pTtrack1/ampl);
+    tracksQy.push_back(TMath::Sin(harmonic*phiTrack1)*pTtrack1/ampl);
+    tracksQx.push_back(TMath::Cos(harmonic*phiTrack2)*pTtrack2/ampl);
+    tracksQy.push_back(TMath::Sin(harmonic*phiTrack2)*pTtrack2/ampl);
+  }
 
 
   /// Fill histograms
@@ -154,19 +132,6 @@ struct scalarProduct{
     registry.fill(HIST("hSpPtCent"), sp, pt, cent);
   }
 
-  /// Get Phi angle in the range [0,2*pi/harmonic]
-  /// \param phi is the phi angle
-  float GetPhiInRange(double phi)
-  {
-    double result = phi;
-    while(result < 0) {
-        result = result + 2. * TMath::Pi() / harmonic;
-    }
-    while(result > 2.*TMath::Pi() / harmonic){
-        result = result - 2. * TMath::Pi() / harmonic;
-    }
-    return result;
-  }
 
   /// Compute the invariant mass of the Ds candidate
   /// \param cand is the candidate
@@ -192,20 +157,25 @@ struct scalarProduct{
                    MyQvecs const& qVecs,
                    float& QvecX,
                    float& QvecY,
-                   float& centQvec)
+                   float& centQvec,
+                   double& amplQvec)
   {
-    for (auto const& qvec : qVecs)
-    {
+     for (auto const& qvec : qVecs) 
+     {
       if (qvec.globalIndex() == collIDCand)
       {
-        GetQvectors(qvec, QvecX, QvecY);
+        //GetQvectors(qvec, QvecX, QvecY);
+        QvecX = qvec.qvecFinalRe();
+        QvecY = qvec.qvecFinalIm();
         centQvec = qvec.cent();
+        amplQvec = qvec.ampl();
         return true;
       }
-    }
-    return false;
+     }
+     return false;
   }
   
+
   /// Compute the scalar product
   /// \param qVecs is the Q vectors
   /// \param candidates is the candidates
@@ -213,9 +183,8 @@ struct scalarProduct{
   void ComputeSPD(MyQvecs const& qVecs,
                   const T1& candidates)
   {
-    float QvecX = -999.;
-    float QvecY = -999.;
-    float centQvec = -999.;
+    float QvecX, QvecY, centQvec;
+    double amplQvec;
 
     hfScalarProduct.reserve(candidates.size());
     for (auto const& cand : candidates)
@@ -223,37 +192,35 @@ struct scalarProduct{
       Int_t collIDCand = cand.globalIndex();
       float ptCand = cand.pt();
       float phiCand = cand.phi();
-      float mCand = -999.;
-      if (doprocessDs)
-      {
-        mCand = invMassDsToKKPi(cand); // TODO: implement mass hypothesis for PiKK
-      }
-      else if (doprocessDplus)
-      {
-        mCand = invMassDplusToPiKPi(cand);
-      }
-      else
-      {
-        printf("D meson not found\n");
-      }
+      float mCand = 0.; // Adjust mass calculation
 
-      if (!MatchCollID(collIDCand, qVecs, QvecX, QvecY, centQvec)) continue;
+      if (!MatchCollID(collIDCand, qVecs, QvecX, QvecY, centQvec, amplQvec)) continue;
+
+      //TPC only
+      if (detector.value == "TPC")
+      {
+        float ampl = amplQvec - 3.;
+        std::vector<float> tracksQx, tracksQy;
+        GetQvecDtracks(cand, tracksQx, tracksQy, ampl);
+        for (unsigned int itrack = 0; itrack < 3; itrack++)
+        {
+          QvecX -= tracksQx[itrack];
+          QvecY -= tracksQy[itrack];
+        }
+      }
       
       float scalprod = TMath::Cos(harmonic*phiCand)*QvecX + TMath::Sin(harmonic*phiCand)*QvecY;
       FillHistograms(scalprod, ptCand, centQvec, mCand);
-      hfScalarProduct(QvecX,
-                      QvecY, 
-                      ptCand,
-                      centQvec,
-                      mCand,
-                      scalprod);
+      hfScalarProduct(QvecX, QvecY,  ptCand, centQvec, mCand, scalprod);
     }
   }
+
 
   void processDs(MyQvecs const& qVecs,
                 CandDsData const& candidatesDs)
   {
     ComputeSPD<CandDsData>(qVecs, candidatesDs);
+
   }
   PROCESS_SWITCH(scalarProduct, processDs, "Process Ds candidates", true);
 
