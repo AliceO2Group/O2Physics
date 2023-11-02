@@ -209,7 +209,7 @@ class UPCCutparHolder
   bool fProduceITSITS{false}; // Produce candidates using only ITS-TPC tracks as well
 
   // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
-  int fMaxNContrib{2}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib
+  int fMaxNContrib{999999}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib
   int fAmbigSwitch{0}; // Central barrel: 0 -- loop over all tracks, 1 -- loop only over tracks with vertices
 
   ClassDefNV(UPCCutparHolder, 1);
