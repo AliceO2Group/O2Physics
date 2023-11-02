@@ -141,7 +141,7 @@ struct strangeness_tutorial {
   void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                     soa::Filtered<soa::Join<aod::CascDataExt, aod::McCascLabels>> const& Cascades,
                     soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
-                    aod::V0Datas const&, // it's needed to access the full info of V0s related to cascades
+                    aod::V0Datas const&, // it's needed to access the full table of V0s (not the filtered one) to make sure all the V0s related to cascades are present
                     aod::V0sLinked const&,
                     DaughterTracks const&,
                     aod::McParticles const&)
