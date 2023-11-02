@@ -94,8 +94,8 @@ struct JetFinderHFTask {
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
-  std::string trackSelection;
-  std::string eventSelection;
+  int trackSelection = -1;
+  int eventSelection = -1;
   std::string particleSelection;
 
   JetFinder jetFinder;

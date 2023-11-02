@@ -12,7 +12,7 @@
 ///
 /// \brief Table definitions for hf jet tagging
 ///
-/// \author Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #ifndef PWGJE_DATAMODEL_JETTAGGING_H_
 #define PWGJE_DATAMODEL_JETTAGGING_H_

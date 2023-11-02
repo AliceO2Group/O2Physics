@@ -12,7 +12,7 @@
 /// \file FastJetUtilities.h
 /// \brief Jet related utilities that require fastjet
 ///
-/// \author Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #ifndef PWGJE_CORE_FASTJETUTILITIES_H_
 #define PWGJE_CORE_FASTJETUTILITIES_H_

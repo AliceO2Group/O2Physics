@@ -79,7 +79,7 @@ struct TriggerCorrelationsTask {
     if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
       registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
     }
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::kTVXinEMC)) {
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with emcal bit
     }
 
@@ -97,7 +97,7 @@ struct TriggerCorrelationsTask {
       }
     }
 
-    if ((emcalTriggered == -1 && JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::kTVXinEMC)) || (emcalTriggered == 0 && (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::kEMC7) || JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::kDMC7))) {
+    if ((emcalTriggered == -1 && collision.alias_bit(triggerAliases::kTVXinEMC)) || (emcalTriggered == 0 && (collision.alias_bit(triggerAliases::kEMC7) || collision.alias_bit(triggerAliases::kDMC7)))) {
       if (doFullJetTrigger) {
         for (auto& jetFull : jetsFull) {
           if (jetFull.r() == round(jetsFullR * 100.0f)) {

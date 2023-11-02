@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-//  \author
-//  Johanna Lömker
+/// \author Johanna Lömker <johanna.lomker@cern.ch>
 //  \since Dec 2022
 ////////////////=============================================////////////////
 //                              TODO's:
@@ -128,21 +127,21 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("selectedTrackPhi"), track.phi());
     mHistManager.fill(HIST("selectedTrackEta"), track.eta());
     // START OF FILLING TRACK CUTS HISTOS
-    mHistManager.fill(HIST("TPC/chi2PerCluster"), track.tpcChi2NCl());
-    mHistManager.fill(HIST("TPC/nClsCrossedRows"), track.tpcNClsCrossedRows());
-    mHistManager.fill(HIST("TPC/crossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-    mHistManager.fill(HIST("TPC/NClsFindable"), track.tpcNClsFindable());
-    mHistManager.fill(HIST("TPC/NClsFound"), track.tpcNClsFound());
-    mHistManager.fill(HIST("TPC/NClsShared"), track.tpcNClsShared());
-    mHistManager.fill(HIST("TPC/FractionSharedCls"), track.tpcFractionSharedCls());
+    // mHistManager.fill(HIST("TPC/chi2PerCluster"), track.tpcChi2NCl());
+    // mHistManager.fill(HIST("TPC/nClsCrossedRows"), track.tpcNClsCrossedRows());
+    // mHistManager.fill(HIST("TPC/crossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+    // mHistManager.fill(HIST("TPC/NClsFindable"), track.tpcNClsFindable());
+    // mHistManager.fill(HIST("TPC/NClsFound"), track.tpcNClsFound());
+    // mHistManager.fill(HIST("TPC/NClsShared"), track.tpcNClsShared());
+    // mHistManager.fill(HIST("TPC/FractionSharedCls"), track.tpcFractionSharedCls());
 
-    mHistManager.fill(HIST("ITS/chi2PerCluster"), track.itsChi2NCl());
-    mHistManager.fill(HIST("ITS/itsNCls"), track.itsNCls());
-    for (unsigned int i = 0; i < 7; i++) {
-      if (track.itsClusterMap() & (1 << i)) {
-        mHistManager.fill(HIST("ITS/itsHits"), i);
-      }
-    }
+    // mHistManager.fill(HIST("ITS/chi2PerCluster"), track.itsChi2NCl());
+    // mHistManager.fill(HIST("ITS/itsNCls"), track.itsNCls());
+    // for (unsigned int i = 0; i < 7; i++) {
+    //   if (track.itsClusterMap() & (1 << i)) {
+    //     mHistManager.fill(HIST("ITS/itsHits"), i);
+    //   }
+    // }
   } // end of fillTrackQA template
 
   void fillLeadingTrackQA(double leadingTrackPt, double leadingTrackPhi, double leadingTrackEta)

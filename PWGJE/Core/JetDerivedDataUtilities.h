@@ -30,7 +30,6 @@ enum JCollisionSel {
   sel7 = 1
 };
 
-
 template <typename T>
 bool selectCollision(T const& collision, int eventSelection = -1)
 {
@@ -217,10 +216,10 @@ enum JTrackSel {
 };
 
 template <typename T>
-bool applyTrackKinematics(T const& track, float pTMin=0.15, float pTMax=100., float EtaMin = -0.9, float EtaMax = 0.9, float PhiMin = -99., float PhiMax=99.)
+bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100., float EtaMin = -0.9, float EtaMax = 0.9, float PhiMin = -99., float PhiMax = 99.)
 {
-  if ( track.pt() < pTMin || track.pt() > pTMax || track.eta() < EtaMin || track.eta() > EtaMax || track.phi() < PhiMin || track.phi() > PhiMax){
-return false;
+  if (track.pt() < pTMin || track.pt() > pTMax || track.eta() < EtaMin || track.eta() > EtaMax || track.phi() < PhiMin || track.phi() > PhiMax) {
+    return false;
   }
   return true;
 }

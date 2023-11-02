@@ -108,7 +108,7 @@ struct JetSubstructureOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
 
-  void processOutputMCP(aod::JMcCollisions const& collision,
+  void processOutputMCP(aod::JMcCollision const& collision,
                         JetTableMCP const& mcpjets,
                         JetTableMCD const& mcdjets,
                         aod::JMcParticles const& particles)

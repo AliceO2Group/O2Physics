@@ -178,7 +178,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
-DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); //TODO : We can look at combining this with the two below
+DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); // TODO : We can look at combining this with the two below
 DECLARE_SOA_COLUMN(HepMCStatusCode, getHepMCStatusCode, int);
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t);
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);

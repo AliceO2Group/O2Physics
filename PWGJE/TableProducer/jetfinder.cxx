@@ -13,6 +13,7 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
+/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
 #include "PWGJE/TableProducer/jetfinder.h"
 #include "Framework/runDataProcessing.h"
@@ -66,8 +67,8 @@ struct JetFinderTask {
   Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
-  std::string trackSelection;
-  std::string eventSelection;
+  int trackSelection = -1;
+  int eventSelection = -1;
   std::string particleSelection;
 
   JetFinder jetFinder;

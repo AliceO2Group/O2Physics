@@ -44,12 +44,12 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
-using JetTracks = aod::JTracks;
+using JetTracks = o2::soa::Filtered<o2::aod::JTracks>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-using ParticlesD0 = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCand2ProngMcGen>>;
-using ParticlesLc = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCand3ProngMcGen>>;
-using ParticlesBplus = soa::Filtered<soa::Join<aod::JMcParticles, aod::HfCandBplusMcGen>>;
+using ParticlesD0 = o2::soa::Filtered<o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand2ProngMcGen>>;
+using ParticlesLc = o2::soa::Filtered<o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand3ProngMcGen>>;
+using ParticlesBplus = o2::soa::Filtered<o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>>;
 
 using CandidatesD0Data = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0>>;
 using CandidatesD0MCD = o2::soa::Filtered<o2::soa::Join<o2::aod::HfCand2Prong, o2::aod::HfSelD0, o2::aod::HfCand2ProngMcRec>>;

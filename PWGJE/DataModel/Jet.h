@@ -18,7 +18,7 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
-/// \author Raymond Ehlers
+/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
 #ifndef PWGJE_DATAMODEL_JET_H_
 #define PWGJE_DATAMODEL_JET_H_

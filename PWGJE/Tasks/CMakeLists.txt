@@ -48,7 +48,7 @@ if(FastJet_FOUND)
                         SOURCES jetfragmentation.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-finder-qa
+    o2physics_add_dpl_workflow(jet-finder-charged-qa
                         SOURCES jetfinderQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)

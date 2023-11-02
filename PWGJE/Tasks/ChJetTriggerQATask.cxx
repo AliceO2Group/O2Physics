@@ -11,7 +11,7 @@
 
 // jet Trigger QA Task
 //
-// Author: Filip Krizek
+/// \author Filip Krizek <Filip.Krizek@cern.ch>
 #include <cmath>
 #include <string>
 #include <vector>

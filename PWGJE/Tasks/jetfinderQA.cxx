@@ -328,7 +328,7 @@ struct JetFinderQATask {
     }
 
     for (auto& track : tracks) {
-      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection)  || !JetDerivedDataUtilities::applyTrackKinematics(trackPtMin,trackPtMax,trackEtaMin,trackEtaMax)){
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(track, trackPtMin, trackPtMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       registry.fill(HIST("h_track_pt_MB"), track.pt());
@@ -348,7 +348,7 @@ struct JetFinderQATask {
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)){
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -364,4 +364,4 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-qa"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }

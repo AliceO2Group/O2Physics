@@ -54,8 +54,6 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JMcParticles> jetMcParticlesTable;
   Produces<aod::JMcParticlePIs> jetParticlesParentIndexTable;
 
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-
   void init(InitContext const&)
   {
   }
@@ -63,7 +61,7 @@ struct JetDerivedDataProducerTask {
   template <typename T>
   void fillJetCollisionsTable(T const& collision)
   {
-    jetCollisionsTable(collision.posZ(), JetDerivedDataUtilities::setEventSelectionBit(collision), collision.alias());
+    jetCollisionsTable(collision.posZ(), JetDerivedDataUtilities::setEventSelectionBit(collision), collision.alias_raw());
     jetCollisionsParentIndexTable(collision.globalIndex());
   }
 
@@ -105,7 +103,7 @@ struct JetDerivedDataProducerTask {
     jetParticlesParentIndexTable(particle.globalIndex());
   }
 
-  void processChargedData(soa::Join<aod::Collisions, aod::EvSels, aod::BcSels>::iterator const& collision,
+  void processChargedData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                           soa::Join<aod::Tracks, aod::TrackSelection> const& tracks)
   {
     fillJetCollisionsTable(collision);
@@ -121,7 +119,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processChargedTriggered, "jet track table producer data", false);
 
-  void processChargedMCD(soa::Join<aod::Collisions, aod::EvSels, aod::BcSels, aod::McCollisionLabels>::iterator const& collision,
+  void processChargedMCD(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision,
                          soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                          aod::McParticles const& particles)
   {
@@ -156,5 +154,5 @@ struct JetDerivedDataProducerTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetDerivedDataProducerTask>(cfgc, TaskName{"jettracks-creator"})};
+    adaptAnalysisTask<JetDerivedDataProducerTask>(cfgc, TaskName{"jet-deriveddata-producer"})};
 }

@@ -11,7 +11,7 @@
 
 // jet trigger QA task
 //
-// Author: Gijs van Weelden
+/// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 
 #include "TH1F.h"

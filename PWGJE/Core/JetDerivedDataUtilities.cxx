@@ -11,5 +11,5 @@
 
 // jet derived data utilities
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 #include "PWGJE/Core/JetDerivedDataUtilities.h"

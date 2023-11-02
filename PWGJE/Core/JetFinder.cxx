@@ -11,7 +11,9 @@
 
 // jet finder task
 //
-// Author: Jochen Klein, Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
+
 #include "PWGJE/Core/JetFinder.h"
 #include "Framework/Logger.h"
 

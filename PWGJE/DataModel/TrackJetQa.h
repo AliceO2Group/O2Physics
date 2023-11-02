@@ -11,7 +11,7 @@
 
 ///
 /// \file   JetTrackQa.h
-/// \author Johanna Lömker
+/// \author Johanna Lömker <johanna.lomker@cern.ch>
 /// \since  2023-10-02
 /// \brief  Header for the trackJetQa task for the analysis of the tracks for jets.
 ///

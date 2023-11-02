@@ -11,7 +11,7 @@
 
 // jet finder full+neutral QA task
 //
-// Authors: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -28,6 +28,7 @@
 #include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "EventFiltering/filterTables.h"
 
@@ -60,14 +61,15 @@ struct JetFinderFullQATask {
   Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
-  std::string trackSelection;
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
+
+  int trackSelection = -1;
 
   void init(o2::framework::InitContext&)
   {
 
-    trackSelection = static_cast<std::string>(trackSelections);
+    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     for (std::size_t iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
@@ -164,7 +166,7 @@ struct JetFinderFullQATask {
   using JetTableMCPMatchedJoined = soa::Join<JetTableMCP, JetConstituentTableMCP, JetMatchingTableMCPMCD>;
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
-Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax && aod::emcalcluster::energy >= clusterEnergyMin && aod::emcalcluster::time > clusterTimeMin && aod::emcalcluster::time < clusterTimeMax && (clusterRejectExotics && aod::emcalcluster::isExotic != true));
 
@@ -182,7 +184,6 @@ Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMa
     }
     return found;
   }
-
 
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
@@ -336,7 +337,7 @@ Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMa
   }
   PROCESS_SWITCH(JetFinderFullQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
-  void processTracks(JCollision const& collision,
+  void processTracks(aod::JCollision const& collision,
                      soa::Filtered<JetTracks> const& tracks,
                      soa::Filtered<JetClusters> const& clusters)
   {
@@ -347,7 +348,7 @@ Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMa
     }
     registry.fill(HIST("h_collisions"), 1.5);
     for (auto const& track : tracks) {
-      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(trackPtMin,trackPtMax,trackEtaMin,trackEtaMax)) {
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(track, trackPtMin, trackPtMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       registry.fill(HIST("h_track_pt"), track.pt());

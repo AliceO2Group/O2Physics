@@ -66,7 +66,7 @@ struct JetFinderHFQATask {
   int eventSelection = -1;
   int trackSelection = -1;
 
-    double candMass;
+  double candMass;
 
   void init(o2::framework::InitContext&)
   {
@@ -82,7 +82,6 @@ struct JetFinderHFQATask {
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>) {
       candMass = pdg::MassBPlus;
     }
-
 
     jetRadiiValues = (std::vector<double>)jetRadii;
 
@@ -432,7 +431,7 @@ struct JetFinderHFQATask {
     if (collision.posZ() > vertexZCut)
       return;
     registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)){
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
@@ -486,7 +485,7 @@ struct JetFinderHFQATask {
     }
 
     for (auto& track : tracks) {
-      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(trackPtMin,trackPtMax,trackEtaMin,trackEtaMax)) {
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(track, trackPtMin, trackPtMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       registry.fill(HIST("h_track_pt_MB"), track.pt());
@@ -507,7 +506,7 @@ struct JetFinderHFQATask {
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)){
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);

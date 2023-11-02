@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetoutputwriter.cxx
+/// \file jetderiveddatawriter.cxx
 /// \brief Task to skim jet framework tables (JetCollisions, JetTracks, JetClusters, ...)
 /// while adjusting indices accordingly
 ///
@@ -28,9 +28,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetOutputWriter {
+struct JetDerivedDataWriter {
 
-  Configurable<float> jetPtMin{"jetPtMin", 1.f, "Minimum jet pt to accept event"};
+  Configurable<float> jetPtMin{"jetPtMin", 0.0, "Minimum jet pt to accept event"};
 
   Produces<o2::aod::StoredJCollisions> storedJetCollisions;
   Produces<o2::aod::StoredJTracks> storedJetTracks;
@@ -62,31 +62,31 @@ struct JetOutputWriter {
 // TODO: replace with PROCESS_SWITCH_FULL when available
 #define PROCESS_SWITCH_JKL(_Class_, _Method_, _Name_, _Help_, _Default_) \
   decltype(ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_}) do##_Name_ = ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_};
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::ChargedJets>, processChargedJets, "process charged jets", true);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
+  PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<o2::aod::ChargedJets>, processChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<o2::aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
+  PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<o2::aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
+  PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<o2::aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
 
   void processCollisions(o2::aod::JCollision const& collision, o2::aod::JTracks const& tracks)
   {
     if (collFlag[collision.globalIndex()]) {
-      storedJetCollisions(collision.posZ(), collision.eventSel());
+      storedJetCollisions(collision.posZ(), collision.eventSel(), collision.alias_raw());
 
-      for (const auto &track : tracks) {
+      for (const auto& track : tracks) {
         storedJetTracks(storedJetCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
       }
     }
   }
   // process switch for output writing must be last
   // to run after all jet selections
-  PROCESS_SWITCH(JetOutputWriter, processCollisions, "write collisions and tracks to output tables", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processCollisions, "write collisions and tracks to output tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<JetOutputWriter>(cfgc, TaskName{"jet-output-writer"}));
+  tasks.emplace_back(adaptAnalysisTask<JetDerivedDataWriter>(cfgc, TaskName{"jet-deriveddata-writer"}));
 
   return WorkflowSpec{tasks};
 }
