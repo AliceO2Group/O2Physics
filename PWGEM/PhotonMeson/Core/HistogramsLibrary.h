@@ -78,6 +78,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma_recalc"))->Fill(obj.recalculatedVtxR(), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy"))->Fill(obj.vx(), obj.vy());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy_recalc"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY());
+    reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsM"))->Fill(obj.mGamma(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsR"))->Fill(obj.recalculatedVtxR(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsX"))->Fill(obj.recalculatedVtxX(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsY"))->Fill(obj.recalculatedVtxY(), obj.chiSquareNDF());
@@ -102,6 +103,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hZX"))->Fill(obj.z(), obj.x());
     reinterpret_cast<TH2F*>(list->FindObject("hZY"))->Fill(obj.z(), obj.y());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyZ"))->Fill(obj.z(), obj.dcaXY());
+    reinterpret_cast<TH2F*>(list->FindObject("hXZ_tgl"))->Fill(obj.tgl(), obj.z() / obj.x() - obj.tgl());
   } else if constexpr (htype == EMHistType::kTrack) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());
