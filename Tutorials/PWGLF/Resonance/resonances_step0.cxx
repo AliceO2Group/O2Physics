@@ -11,94 +11,65 @@
 ///
 /// \brief this is a starting point for the Resonances tutorial
 /// \author
-/// \since 23/04/2023
+/// \since 02/11/2023
 
 #include <TLorentzVector.h>
 
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "ReconstructionDataFormats/PID.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // STEP 0
-// Starting point: loop over all tracks, produce combinations and fill invariant mass histogram
+// Starting point: loop over all reso tracks
 struct resonances_tutorial {
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable for number of bins
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
+  // Configurable for min pT cut
+  Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
 
-  // histogram defined with HistogramRegistry
-  HistogramRegistry registry{"registry",
-                             {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
-                              {"InputTracks", "InputTracks", {HistType::kTH1F, {{nBins, -5., 5.}}}},
-                              {"SignTrk1", "SignTrk1", {HistType::kTH1F, {{2, -2., 2.}}}},
-                              {"SignTrk2", "SignTrk2", {HistType::kTH1F, {{2, -2., 2.}}}},
-                              {"hTrk1Pt", "hTrk1Pt", {HistType::kTH1F, {{nBins, 0., 5.}}}},
-                              {"hTrk2Pt", "hTrk2Pt", {HistType::kTH1F, {{nBins, 0., 5.}}}},
-                              {"hMassPhi", "hMassPhi", {HistType::kTH1F, {{200, 0.9f, 1.1f}}}}}};
+  // Initialize the ananlysis task
+  void init(o2::framework::InitContext&)
+  {
+    // register histograms
+    histos.add("hVertexZ", "hVertexZ", HistType::kTH1F, {{nBins, -15., 15.}});
+    histos.add("InputTracks", "InputTracks", HistType::kTH1F, {{nBins, -5., 5.}});
+  }
 
-  float massKa = o2::track::PID::getMass(o2::track::PID::Kaon);
+  // Track selection
+  template <typename TrackType>
+  bool trackCut(const TrackType track)
+  {
+    // basic track cuts
+    if (std::abs(track.pt()) < cMinPtcut)
+      return false;
+    
+    return true;
+  }
+  
+  // Fill histograms (main function)
+  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  {
+    for (const auto& trk : dTracks1) {
+      if (!trackCut(trk))
+        continue;
+      histos.fill(HIST("InputTracks"), trk.pt() * trk.sign());
+    }
+  }
 
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfulling the event selection requirements
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
-
-  // Processed collisions will be already fulfulling the position of the vertex along the z axis
-  Filter vtxFilter = (nabs(o2::aod::collision::posZ) < 10.f);
-
-  // Processed tracks will be already fulfulling the quality cuts
-  Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
-  Filter trackFilterITS = (aod::track::itsChi2NCl < 36.f);
-  Filter trackFilterTPC = ((aod::track::tpcChi2NCl < 4.f));
-
-  TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               aod::ResoTracks const& resotracks)
+  // Process the data
+  void process(aod::ResoCollision& collision, aod::ResoTracks const& resotracks)
   {
     // Fill the event counter
-    registry.fill(HIST("hVertexZ"), collision.posZ());
-    for (const auto& trk : resotracks) {
-      registry.fill(HIST("InputTracks"), trk.pt() * trk.sign());
-    }
-
-    for (auto& [trk1, trk2] : combinations(o2::soa::CombinationsUpperIndexPolicy(resotracks, resotracks))) {
-      registry.fill(HIST("SignTrk1"), trk1.sign());
-      registry.fill(HIST("SignTrk2"), trk2.sign());
-      // Un-like sign pair only
-      if (trk1.sign() * trk2.sign() > 0) {
-        continue;
-      }
-
-      if (std::abs(trk1.tpcNSigmaKa()) > 2.0) {
-        continue;
-      }
-
-      if (std::abs(trk2.tpcNSigmaKa()) > 2.0) {
-        continue;
-      }
-
-      registry.fill(HIST("hTrk1Pt"), trk1.pt());
-      registry.fill(HIST("hTrk2Pt"), trk2.pt());
-
-      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-      lResonance = lDecayDaughter1 + lDecayDaughter2;
-
-      if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5) {
-        continue;
-      }
-
-      registry.fill(HIST("hMassPhi"), lResonance.M());
-    }
+    histos.fill(HIST("hVertexZ"), collision.posZ());
+    fillHistograms<false, false>(collision, resotracks, resotracks); // Fill histograms, no MC, no mixing
   }
 };
 
