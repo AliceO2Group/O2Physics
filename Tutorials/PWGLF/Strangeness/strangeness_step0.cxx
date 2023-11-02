@@ -67,8 +67,8 @@ struct strangeness_tutorial {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc)}; 
+    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
 }
