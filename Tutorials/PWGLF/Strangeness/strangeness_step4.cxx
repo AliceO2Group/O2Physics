@@ -85,12 +85,12 @@ struct strangeness_tutorial {
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
     // K0s reconstruction
-      // Mass
+    // Mass
     rKzeroShort.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {K0ShortMassAxis}});
     rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {K0ShortMassAxis}});
     rKzeroShort.add("hMassK0ShortSelectedTruePions", "hMassK0ShortSelectedTruePions", {HistType::kTH1F, {{200, 0.45f, 0.55f}}});
     rKzeroShort.add("hMassK0ShortTrueRec", "hMassK0ShortTrueRec", {HistType::kTH1F, {{200, 0.45f, 0.55f}}});
-      // Pt
+    // Pt
     rKzeroShort.add("hPtK0ShortSelected", "hPtK0ShortSelected", {HistType::kTH1F, {{ptAxis}}});
     rKzeroShort.add("hPtK0ShortTrueRec", "hPtK0ShortTrueRec", {HistType::kTH1F, {{ptAxis}}});
 
@@ -123,8 +123,8 @@ struct strangeness_tutorial {
 
   // Filters on V0s
   // Cannot filter on dynamic columns
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv && 
-                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv && 
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
   // Filters on Cascades
@@ -132,7 +132,7 @@ struct strangeness_tutorial {
                               aod::cascdata::dcaV0daughters < v0setting_dcav0dau &&
                               nabs(aod::cascdata::dcapostopv) > cascade_dcapostopv &&
                               nabs(aod::cascdata::dcanegtopv) > cascade_dcanegtopv &&
-                              nabs(aod::cascdata::dcabachtopv) >  cascadesetting_dcabachtopv &&
+                              nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
                               aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
 
   // Defining the type of the daughter tracks
@@ -216,9 +216,9 @@ struct strangeness_tutorial {
       // Cut on dynamic columns
       if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_cospa)
         continue;
-      if(TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
+      if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
         continue;
-      if(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_mindcav0topv)
+      if (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_mindcav0topv)
         continue;
       if (casc.cascradius() < cascadesetting_cascradius)
         continue;
@@ -251,7 +251,7 @@ struct strangeness_tutorial {
         const auto cascmcParticle = casc.mcParticle();
         if (TMath::Abs(cascmcParticle.pdgCode()) == 3312) {
           rXi.fill(HIST("hMassXiTrueRec"), casc.mXi());
-        }     
+        }
       }
     }
   }
@@ -272,11 +272,10 @@ struct strangeness_tutorial {
 
   PROCESS_SWITCH(strangeness_tutorial, processRecMC, "Process Run 3 mc, reconstructed", true);
   PROCESS_SWITCH(strangeness_tutorial, processGenMC, "Process Run 3 mc, generated", true);
-
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc)}; 
+    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
 }

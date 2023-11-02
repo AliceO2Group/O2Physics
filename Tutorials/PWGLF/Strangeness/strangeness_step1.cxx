@@ -56,7 +56,7 @@ struct strangeness_tutorial {
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
     // K0s reconstruction
-      // Mass
+    // Mass
     rKzeroShort.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {K0ShortMassAxis}});
     rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {K0ShortMassAxis}});
 
@@ -72,8 +72,8 @@ struct strangeness_tutorial {
 
   // Filters on V0s
   // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daughters only
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv && 
-                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv && 
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
@@ -98,8 +98,8 @@ struct strangeness_tutorial {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc)}; 
+    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
 }
