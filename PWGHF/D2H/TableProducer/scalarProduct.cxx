@@ -14,7 +14,7 @@
 ///
 /// \author F. Chinu, Università di Torino, Italy
 /// \author S. Politanò, INFN & Politecnico Torino, Italy
-/// \author S. Trgolo, INFN Torino, Italy
+/// \author S. Trogolo, INFN Torino, Italy
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
