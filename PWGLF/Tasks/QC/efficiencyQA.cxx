@@ -48,7 +48,7 @@ struct efficiencyQA {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> fitter;
   std::mt19937 gen32;
-  
+
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
 
   Configurable<bool> debugFlag{"debugFlag", false, "debug flag"};
@@ -111,25 +111,23 @@ struct efficiencyQA {
     fitter.setUseAbsDCA(true);
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
-  
+
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massLambdaAxis});
     hPiRec = histos.add<TH2>("piRec", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {recAxis, ptAxis});
     hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH3F, {recAxis, ptAxis, massLambdaAxis});
     hTagCuts = histos.add<TH2>("tagCuts", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {recAxisTag, ptAxis});
     std::string binLabels[]{"All", "ITS only", "TPC only", "ITS+TPC", "TPC+TOF"};
-    for (int iB{0}; iB < 5; ++iB)
-    {
+    for (int iB{0}; iB < 5; ++iB) {
       hPiRec->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
       hPiRecMass->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
     }
     std::string binLabelsTag[]{"hasITS && hasTPC", "tracking", "PID", "v0 mass", "dcaV0dau", "cosPA", "dcaXYZ", "V0radius"};
-    for (int iB{0}; iB < 8; ++iB)
-    {
+    for (int iB{0}; iB < 8; ++iB) {
       hTagCuts->GetXaxis()->SetBinLabel(iB + 1, binLabelsTag[iB].data());
     }
   }
-    
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -166,29 +164,24 @@ struct efficiencyQA {
     mRunNumber = bc.runNumber();
   }
 
-  template<class T, class Hist>
+  template <class T, class Hist>
   void fillHistV0Daugh(T const& track, std::shared_ptr<Hist> hist, float const& pt, float const& mass = 1)
   {
     auto trackPt = track.sign() * pt;
     hist->Fill(0., trackPt, mass);
     bool itsAccept = !(track.itsChi2NCl() > 36.);
     bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4.);
-    if (track.hasITS() && itsAccept && !track.hasTPC())
-    {
+    if (track.hasITS() && itsAccept && !track.hasTPC()) {
       hist->Fill(1., trackPt, mass);
     }
-    if (track.hasTPC() && tpcAccept)
-    {
-      if (!track.hasITS())
-      {
+    if (track.hasTPC() && tpcAccept) {
+      if (!track.hasITS()) {
         hist->Fill(2., trackPt, mass);
       }
-      if (track.hasITS() && itsAccept)
-      {
+      if (track.hasITS() && itsAccept) {
         hist->Fill(3., trackPt, mass);
       }
-      if (track.hasTOF() && !track.hasITS())
-      {
+      if (track.hasTOF() && !track.hasITS()) {
         hist->Fill(4., trackPt, mass);
       }
     }
@@ -309,19 +302,17 @@ struct efficiencyQA {
       histos.fill(HIST("tagCuts"), 6., tagTrack.sign() * tagTrack.pt());
 
       float v0radius = std::hypot(vtx[0], vtx[1]);
-      if (v0radius > v0radiusMax)
-      {
+      if (v0radius > v0radiusMax) {
         continue;
       }
-      
+
       histos.fill(HIST("tagCuts"), 7., tagTrack.sign() * tagTrack.pt());
 
       histos.fill(HIST("massV0"), massV0);
 
       float propPt = std::hypot(momProbe[0], momProbe[1]);
       fillHistV0Daugh(probeTrack, hPiRecMass, propPt, massV0);
-      if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massMax)
-      {
+      if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massMax) {
         fillHistV0Daugh(probeTrack, hPiRec, propPt);
       }
     }
