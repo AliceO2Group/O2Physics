@@ -125,7 +125,7 @@ struct taskMuonMchTrkEfficiency {
 
     registry.add("hHitsEtaPtPhi", "hHitsEtaPtPhi", defaultNhitsEtaPtPhi, false);
     auto hHitsEtaPtPhi = registry.get<THn>(HIST("hHitsEtaPtPhi"));
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 15; i++)
       hHitsEtaPtPhi->GetAxis(0)->SetBinLabel(i + 1, elabels[i]);
 
   } //! end of Initialize: configure, create specifics
