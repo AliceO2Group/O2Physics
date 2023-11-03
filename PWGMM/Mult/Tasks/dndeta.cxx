@@ -393,9 +393,9 @@ struct MultiplicityCounter {
   //                                                              ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
 
   //   require a mix of ITS+TPC and ITS-only tracks
-  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                                   ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                                  ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                  ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
                                                   ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
                                                          ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
