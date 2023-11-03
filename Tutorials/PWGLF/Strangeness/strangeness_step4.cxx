@@ -77,6 +77,7 @@ struct strangeness_tutorial {
   {
     // Axes
     AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec XiMassAxis = {200, 1.28f, 1.36f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -95,9 +96,9 @@ struct strangeness_tutorial {
     rKzeroShort.add("hPtK0ShortTrueRec", "hPtK0ShortTrueRec", {HistType::kTH1F, {{ptAxis}}});
 
     // Xi reconstruction
-    rXi.add("hMassXi", "hMassXi", {HistType::kTH1F, {{200, 1.28f, 1.36f}}});
-    rXi.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {{200, 1.28f, 1.36f}}});
-    rXi.add("hMassXiTrueRec", "hMassXiTrueRec", {HistType::kTH1F, {{200, 1.28f, 1.36f}}});
+    rXi.add("hMassXi", "hMassXi", {HistType::kTH1F, {XiMassAxis}});
+    rXi.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {XiMassAxis}});
+    rXi.add("hMassXiTrueRec", "hMassXiTrueRec", {HistType::kTH1F, {XiMassAxis}});
 
     // K0s topological/PID cuts
     rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
