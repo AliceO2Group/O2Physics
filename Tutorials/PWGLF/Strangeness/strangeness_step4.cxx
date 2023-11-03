@@ -110,6 +110,7 @@ struct strangeness_tutorial {
     rXi.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
 
     // Generated level histograms
+    rEventSelection.add("hVertexZRecAssoc", "hVertexZRecAssoc", {HistType::kTH1F, {vertexZAxis}});
     rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
     rGenParticles.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {{ptAxis}}});
     rGenParticles.add("hPtXiGen", "hPtXiGen", {HistType::kTH1F, {{ptAxis}}});
@@ -139,7 +140,7 @@ struct strangeness_tutorial {
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
   void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::CascDataExt, aod::McCascLabels>> const& Cascades,
+                    soa::Filtered<soa::Join<aod::CascDatas, aod::McCascLabels>> const& Cascades,
                     soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
                     aod::V0Datas const&, // it's needed to access the full table of V0s (not the filtered one) to make sure all the V0s related to cascades are present
                     aod::V0sLinked const&,
@@ -257,8 +258,11 @@ struct strangeness_tutorial {
   }
 
   void processGenMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision,
+                    const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
                     aod::McParticles const& mcParticles)
   {
+    if(collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
+      return;
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() == 310) {
