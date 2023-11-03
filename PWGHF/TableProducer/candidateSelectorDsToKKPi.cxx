@@ -280,10 +280,10 @@ struct HfCandidateSelectorDsToKKPi {
         }
         continue;
       }
-      if (pidDsToKKPi) {
+      if (TESTBIT(statusDsToKKPi, aod::SelectionStep::RecoTopol) && pidDsToKKPi) {
         SETBIT(statusDsToKKPi, aod::SelectionStep::RecoPID);
       }
-      if (pidDsToPiKK) {
+      if (TESTBIT(statusDsToPiKK, aod::SelectionStep::RecoTopol) && pidDsToPiKK) {
         SETBIT(statusDsToPiKK, aod::SelectionStep::RecoPID);
       }
       if (activateQA) {
