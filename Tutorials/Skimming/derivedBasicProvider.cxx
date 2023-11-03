@@ -27,7 +27,9 @@ struct DerivedBasicProvider {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
+  Configurable<int> minTPCNClsCrossedRows{"minTPCNClsCrossedRows", 80, "min TPC crossed rows"};
   Configurable<float> minPt{"minPt", 2.0, "min pT to save"};
+  Configurable<float> maxDCA{"maxDCA", 0.1, "max DCA"};
   Configurable<float> etaWindow{"etaWindow", 0.8, "eta window"};
 
   // This marks that this task produces a standard derived table
@@ -35,7 +37,7 @@ struct DerivedBasicProvider {
   Produces<aod::DrTracks> outputTracks;
 
   // Look at primary tracks only
-  Filter trackFilter = nabs(aod::track::dcaXY) < 0.2f && nabs(aod::track::eta) < 0.5f && aod::track::pt > minPt;
+  Filter trackFilter = nabs(aod::track::dcaXY) < maxDCA && nabs(aod::track::eta) < etaWindow && aod::track::pt > minPt;
 
   // This is an example of a convenient declaration of "using"
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
@@ -55,7 +57,7 @@ struct DerivedBasicProvider {
     histos.fill(HIST("eventCounter"), 0.5);
     outputCollisions(collision.posZ());
     for (const auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < 70)
+      if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
         continue; // remove badly tracked
       histos.get<TH1>(HIST("ptHistogram"))->Fill(track.pt());
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi()); // all that I need for posterior analysis!
