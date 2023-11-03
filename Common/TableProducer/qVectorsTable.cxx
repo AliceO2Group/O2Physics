@@ -201,7 +201,7 @@ struct qVectorsTable {
     float qVectBNeg[2] = {0.};
 
     TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
-    float sumAmplDet = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
+    float sumAmplDet = 0.;  // Sum of the amplitudes of all non-dead channels in any detector.
 
     /// First check if the collision has a found FT0. If yes, calculate the
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
@@ -308,11 +308,11 @@ struct qVectorsTable {
         nTrkBNeg++;
       }
     }
-    if( nTrkBPos>0 ){
+    if (nTrkBPos > 0) {
       qVectBPos[0] /= nTrkBPos;
       qVectBPos[1] /= nTrkBPos;
     }
-    if( nTrkBNeg>0 ){
+    if (nTrkBNeg > 0) {
       qVectBNeg[0] /= nTrkBNeg;
       qVectBNeg[1] /= nTrkBNeg;
     }
@@ -367,7 +367,7 @@ struct qVectorsTable {
       qVectBNeg_twist[i] = qVectBNeg[i];
       qVectBNeg_final[i] = qVectBNeg[i];
     }
-    if( cBin != -1 ){
+    if (cBin != -1) {
       helperEP.DoRecenter(qVector_rectr[0], qVector_rectr[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));
 
       helperEP.DoRecenter(qVector_twist[0], qVector_twist[1], cfgCorr->at(cBin * 6), cfgCorr->at(cBin * 6 + 1));

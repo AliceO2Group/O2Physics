@@ -113,14 +113,14 @@ struct qVectorsCorrection {
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecTwist"), vec.qvecTwistRe(), vec.qvecTwistIm());
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFinal"), vec.qvecFinalRe(), vec.qvecFinalIm());
 
-    if (vec.nTrkBPos() > cfgMinTPCTracks){
+    if (vec.nTrkBPos() > cfgMinTPCTracks) {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosUncor"), vec.qvecBPosUncorRe(), vec.qvecBPosUncorIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosRectr"), vec.qvecBPosRectrRe(), vec.qvecBPosRectrIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosTwist"), vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosFinal"), vec.qvecBPosFinalRe(), vec.qvecBPosFinalIm());
     }
 
-    if (vec.nTrkBNeg() > cfgMinTPCTracks){
+    if (vec.nTrkBNeg() > cfgMinTPCTracks) {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegUncor"), vec.qvecBNegUncorRe(), vec.qvecBNegUncorIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegRectr"), vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegTwist"), vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm());
