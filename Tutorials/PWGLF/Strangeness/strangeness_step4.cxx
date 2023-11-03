@@ -111,7 +111,6 @@ struct strangeness_tutorial {
     rXi.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
 
     // Generated level histograms
-    rEventSelection.add("hVertexZRecAssoc", "hVertexZRecAssoc", {HistType::kTH1F, {vertexZAxis}});
     rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
     rGenParticles.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {{ptAxis}}});
     rGenParticles.add("hPtXiGen", "hPtXiGen", {HistType::kTH1F, {{ptAxis}}});
