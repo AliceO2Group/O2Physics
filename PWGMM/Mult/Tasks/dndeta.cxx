@@ -410,7 +410,7 @@ struct MultiplicityCounter {
 
   using ExCols = soa::Join<aod::Collisions, aod::EvSels>;
 
-  Partition<ExTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FiTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
   template <typename C>
   void processCountingGeneral(
