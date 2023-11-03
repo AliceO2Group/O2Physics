@@ -261,7 +261,7 @@ struct strangeness_tutorial {
                     const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
                     aod::McParticles const& mcParticles)
   {
-    if(collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
+    if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
       return;
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
