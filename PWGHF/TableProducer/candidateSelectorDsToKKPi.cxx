@@ -309,10 +309,10 @@ struct HfCandidateSelectorDsToKKPi {
           hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
           continue;
         }
-        if (pidDsToKKPi) {
+        if (topolDsToKKPi && pidDsToKKPi) {
           SETBIT(statusDsToKKPi, aod::SelectionStep::RecoMl);
         }
-        if (pidDsToPiKK) {
+        if (topolDsToPiKK && pidDsToPiKK) {
           SETBIT(statusDsToPiKK, aod::SelectionStep::RecoMl);
         }
         if (activateQA) {
