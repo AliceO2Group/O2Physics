@@ -17,6 +17,7 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
+#include <TDatabasePDG.h> // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -31,8 +32,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // PDG p -> 2212, K -> 321
-const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
-const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass(); // FIXME: Get from the common header
+const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();    // FIXME: Get from the common header
 
 struct lambdaAnalysis {
 

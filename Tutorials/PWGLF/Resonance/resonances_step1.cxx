@@ -14,6 +14,7 @@
 /// \since 02/11/2023
 
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"

@@ -19,6 +19,8 @@
 #include <iostream>
 #include <tuple>
 
+#include <TPDGCode.h>
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataProcessorSpec.h"

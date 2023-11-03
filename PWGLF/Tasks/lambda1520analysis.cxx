@@ -14,6 +14,8 @@
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
@@ -202,8 +204,8 @@ struct lambda1520analysis {
     }
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKMinus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKMinus)->Mass(); // FIXME: Get from the common header
+  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass(); // FIXME: Get from the common header
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
