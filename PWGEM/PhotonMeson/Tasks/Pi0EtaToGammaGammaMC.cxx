@@ -40,6 +40,9 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
@@ -385,6 +388,9 @@ struct Pi0EtaToGammaGammaMC {
                   auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
                   auto pos2 = g2.template posTrack_as<MyMCTracks>();
                   auto ele2 = g2.template negTrack_as<MyMCTracks>();
+                  if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {
+                    continue;
+                  }
 
                   auto pos1mc = pos1.template emmcparticle_as<aod::EMMCParticles>();
                   auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
@@ -432,8 +438,6 @@ struct Pi0EtaToGammaGammaMC {
 
     } // end of collision loop
   }
-
-  using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>;
 
   void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
@@ -506,7 +510,7 @@ struct Pi0EtaToGammaGammaMC {
     }   // end of collision loop
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision) {}
+  void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processPCMPCM, "true pairing PCM-PCM", false);
   PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processPHOSPHOS, "true pairing PHOS-PHOS", false);

@@ -46,8 +46,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
+
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
 struct SinglePhotonMC {
@@ -335,7 +339,6 @@ struct SinglePhotonMC {
     }     // end of collision loop
   }
 
-  using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>;
   Partition<MyCollisions> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
 
   void processPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
@@ -343,12 +346,12 @@ struct SinglePhotonMC {
     FillTruePhoton<EMDetType::kPCM>(grouped_collisions, v0photons, perCollision, fPCMCuts, legs, nullptr, mcparticles, mccollisions);
   }
 
-  // void processPHOS(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& phosclusters, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
+  // void processPHOS(MyCollisions const& collisions, aod::PHOSClusters const& phosclusters, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   // {
   //   FillTruePhoton<EMDetType::kPHOS>(grouped_collisions, phosclusters, perCollision_phos, fPHOSCuts, nullptr, nullptr, mcparticles, mccollisions);
   // }
 
-  // void processEMC(aod::EMReducedEvents const& collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
+  // void processEMC(MyCollisions const& collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   // {
   //   FillTruePhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks, mcparticles, mccollisions);
   // }
@@ -400,7 +403,7 @@ struct SinglePhotonMC {
       }
     }
   }
-  void processDummy(aod::EMReducedEvents::iterator const& collision) {}
+  void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(SinglePhotonMC, processPCM, "single photon with PCM", false);
   // PROCESS_SWITCH(SinglePhotonMC, processPHOS, "single photon with PHOS", false);
