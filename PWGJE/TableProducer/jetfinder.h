@@ -24,18 +24,17 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -118,26 +117,26 @@ void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& c
 
 // function that takes any generic candidate, performs selections and adds the candidate to the fastjet list
 template <typename T>
-bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, int candPDG, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate)
+bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, int candMass, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate)
 {
-  if (candidate.y(RecoDecay::getMassPDG(candPDG)) < candYMin || candidate.y(RecoDecay::getMassPDG(candPDG)) > candYMax) {
+  if (candidate.y(candMass) < candYMin || candidate.y(candMass) > candYMax) {
     return false;
   }
   if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
     return false;
   }
-  FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+  FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), candMass);
   return true;
 }
 
 // function that checks the MC status of a candidate and then calls the function to analyseCandidates
 template <typename T>
-bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, int candPDG, int candDecay, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate, bool rejectBackgroundMCCandidates)
+bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, int candMass, int candDecay, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate, bool rejectBackgroundMCCandidates)
 {
   if (rejectBackgroundMCCandidates && !(std::abs(candidate.flagMcMatchRec()) == 1 << candDecay)) {
     return false;
   }
-  return analyseCandidate(inputParticles, candPDG, candPtMin, candPtMax, candYMin, candYMax, candidate);
+  return analyseCandidate(inputParticles, candMass, candPtMin, candPtMax, candYMin, candYMax, candidate);
 }
 
 // function that calls the jet finding and fills the relevant tables
@@ -207,7 +206,7 @@ bool checkDaughters(T const& particle, int globalIndex)
 }
 
 template <typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, std::optional<U> const& candidate = std::nullopt)
 {
   inputParticles.clear();
   for (auto& particle : particles) {
@@ -220,7 +219,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
       continue;
     }
-    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+    auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
     auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
     if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
       continue;
@@ -234,7 +233,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
         continue;
       }
     }
-    FastJetUtilities::fillTracks(particle, inputParticles, particle.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(particle.pdgCode()));
+    FastJetUtilities::fillTracks(particle, inputParticles, particle.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdgParticle->Mass());
   }
 }
 

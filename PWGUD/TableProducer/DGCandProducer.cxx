@@ -276,8 +276,7 @@ struct McDGCandProducer {
   }
 
   template <typename TMcParticle>
-  void updateUDMcParticle(TMcParticle const& McPart,
-                          int64_t& deltaIndex)
+  void updateUDMcParticle(TMcParticle const& McPart, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // save McPart
     // mother and daughter indices are set to -1
@@ -286,70 +285,77 @@ struct McDGCandProducer {
     int32_t newdids[2] = {-1, -1};
 
     // update UDMcParticles
-    outputMcParticles(outputMcCollisions.lastIndex(),
-                      McPart.pdgCode(),
-                      McPart.statusCode(),
-                      McPart.flags(),
-                      newmids,
-                      newdids,
-                      McPart.weight(),
-                      McPart.px(),
-                      McPart.py(),
-                      McPart.pz(),
-                      McPart.e());
+    if (mcPartIsSaved.find(McPart.globalIndex()) == mcPartIsSaved.end()) {
+      outputMcParticles(McCollisionId,
+                        McPart.pdgCode(),
+                        McPart.statusCode(),
+                        McPart.flags(),
+                        newmids,
+                        newdids,
+                        McPart.weight(),
+                        McPart.px(),
+                        McPart.py(),
+                        McPart.pz(),
+                        McPart.e());
+      mcPartIsSaved[McPart.globalIndex()] = outputMcParticles.lastIndex();
+    }
   }
 
   template <typename TMcParticles>
-  void updateUDMcParticles(TMcParticles const& McParts,
-                           int64_t& deltaIndex)
+  void updateUDMcParticles(TMcParticles const& McParts, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // save McParts
-    // calculate conversion from old indices to new indices
-    // old = mcpart.globalIndex()
-    // new = old + deltaIndex
-    // deltaIndex = [outputMcParticles.lastIndex() - McParts.iteratorAt(0).globalIndex() + 1]
-    deltaIndex = outputMcParticles.lastIndex() - McParts.iteratorAt(0).globalIndex() + 1;
-    LOGF(debug, "  deltaIndex (%d) = lastIndex (%d) - McPartsfirst (%d) + 1", deltaIndex, outputMcParticles.lastIndex(), McParts.iteratorAt(0).globalIndex());
-
     // new mother and daughter ids
     std::vector<int32_t> newmids;
     int32_t newdids[2] = {-1, -1};
+    int64_t newval = -1;
 
     // all particles of the McCollision are saved
     for (auto mcpart : McParts) {
-      // correct mother and daughter IDs
-      newmids.clear();
-      auto oldmids = mcpart.mothersIds();
-      for (uint ii = 0; ii < oldmids.size(); ii++) {
-        auto newval = oldmids[ii] < 0 ? oldmids[ii] : oldmids[ii] + deltaIndex;
-        LOGF(debug, " mid %i / %i", oldmids[ii], newval);
-        newmids.push_back(newval);
-      }
-      auto olddids = mcpart.daughtersIds();
-      for (uint ii = 0; ii < olddids.size(); ii++) {
-        auto newval = olddids[ii] < 0 ? olddids[ii] : olddids[ii] + deltaIndex;
-        LOGF(debug, " did %i / %i", olddids[ii], newval);
-        newdids[ii] = newval;
-      }
-      LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
+      if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
+        // correct mother and daughter IDs
+        newmids.clear();
+        auto oldmids = mcpart.mothersIds();
+        for (uint ii = 0; ii < oldmids.size(); ii++) {
+          if (mcPartIsSaved.find(oldmids[ii]) != mcPartIsSaved.end()) {
+            newval = mcPartIsSaved[oldmids[ii]];
+            LOGF(debug, " mid %i / %i", oldmids[ii], newval);
+          } else {
+            newval = -1;
+          }
+          newmids.push_back(newval);
+        }
+        auto olddids = mcpart.daughtersIds();
+        for (uint ii = 0; ii < olddids.size(); ii++) {
+          if (mcPartIsSaved.find(olddids[ii]) != mcPartIsSaved.end()) {
+            newval = mcPartIsSaved[olddids[ii]];
+            LOGF(debug, " did %i / %i", olddids[ii], newval);
+          } else {
+            newval = -1;
+          }
+          newdids[ii] = newval;
+        }
+        LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
 
-      // update UDMcParticles
-      outputMcParticles(outputMcCollisions.lastIndex(),
-                        mcpart.pdgCode(),
-                        mcpart.statusCode(),
-                        mcpart.flags(),
-                        newmids,
-                        newdids,
-                        mcpart.weight(),
-                        mcpart.px(),
-                        mcpart.py(),
-                        mcpart.pz(),
-                        mcpart.e());
+        // update UDMcParticles
+        outputMcParticles(McCollisionId,
+                          mcpart.pdgCode(),
+                          mcpart.statusCode(),
+                          mcpart.flags(),
+                          newmids,
+                          newdids,
+                          mcpart.weight(),
+                          mcpart.px(),
+                          mcpart.py(),
+                          mcpart.pz(),
+                          mcpart.e());
+        mcPartIsSaved[mcpart.globalIndex()] = outputMcParticles.lastIndex();
+      }
     }
   }
 
   template <typename TTrack>
-  void updateUDMcTrackLabel(TTrack const& udtrack, int64_t const& deltaIndex)
+  void updateUDMcTrackLabel(TTrack const& udtrack, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
     auto trackId = udtrack.trackId();
@@ -357,8 +363,11 @@ struct McDGCandProducer {
       auto track = udtrack.template track_as<TCs>();
       auto mcTrackId = track.mcParticleId();
       if (mcTrackId >= 0) {
-        auto udMcTrackId = mcTrackId + deltaIndex;
-        outputMcTrackLabels(udMcTrackId, track.mcMask());
+        if (mcPartIsSaved.find(mcTrackId) != mcPartIsSaved.end()) {
+          outputMcTrackLabels(mcPartIsSaved[mcTrackId], track.mcMask());
+        } else {
+          outputMcTrackLabels(-1, track.mcMask());
+        }
       } else {
         outputMcTrackLabels(-1, track.mcMask());
       }
@@ -368,7 +377,7 @@ struct McDGCandProducer {
   }
 
   template <typename TTrack>
-  void updateUDMcTrackLabels(TTrack const& udtracks, int64_t const& deltaIndex)
+  void updateUDMcTrackLabels(TTrack const& udtracks, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // loop over all tracks
     for (auto udtrack : udtracks) {
@@ -378,8 +387,11 @@ struct McDGCandProducer {
         auto track = udtrack.template track_as<TCs>();
         auto mcTrackId = track.mcParticleId();
         if (mcTrackId >= 0) {
-          auto udMcTrackId = mcTrackId + deltaIndex;
-          outputMcTrackLabels(udMcTrackId, track.mcMask());
+          if (mcPartIsSaved.find(mcTrackId) != mcPartIsSaved.end()) {
+            outputMcTrackLabels(mcPartIsSaved[mcTrackId], track.mcMask());
+          } else {
+            outputMcTrackLabels(-1, track.mcMask());
+          }
         } else {
           outputMcTrackLabels(-1, track.mcMask());
         }
@@ -409,41 +421,18 @@ struct McDGCandProducer {
     LOGF(info, "Number of DG candidates %d", dgcands.size());
     LOGF(info, "Number of UD tracks %d", udtracks.size());
 
-    /*
-      example code for a list with dgcnad and mccol
-
-        std::vector<std::vector<int>> qq;
-        qq.push_back(std::vector<int>{1,1});
-        qq.push_back(std::vector<int>{2,2});
-        qq.push_back(std::vector<int>{3,-1});
-        qq.push_back(std::vector<int>{5,-1});
-        qq.push_back(std::vector<int>{7,9});
-        qq.push_back(std::vector<int>{-1,3});
-        qq.push_back(std::vector<int>{-1,4});
-        qq.push_back(std::vector<int>{-1,5});
-
-        std::sort(qq.begin(), qq.end(),
-          [](const std::vector<int>& a, const std::vector<int>& b) {
-            if (a[1] != -1 && b[1] != -1) {
-              return a[1] < b[1];
-            } else {
-              return a[0] < b[0];
-            }
-        });
-
-        for (auto q : qq) {
-          LOGF(info, " q[0] %d q [1] %d", q[0], q[1]);
-        }
-    */
+    // use a hash table to keep track of the McCollisions which have been added to the UDMcCollision table
+    // {McCollisionId : udMcCollisionId}
+    // similar for the McParticles which have been added to the UDMcParticle table
+    // {McParticleId : udMcParticleId}
+    std::map<int64_t, int64_t> mcColIsSaved;
+    std::map<int64_t, int64_t> mcPartIsSaved;
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
     auto dgcand = dgcands.iteratorAt(0);
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
     auto lastdgcand = dgcands.iteratorAt(dgcands.size() - 1);
-
-    int64_t lastSaved = -1;
-    int64_t deltaIndex = 0;
 
     // advance dgcand and mccol until both are AtEnd
     int64_t mccolId = mccol.globalIndex();
@@ -463,66 +452,63 @@ struct McDGCandProducer {
           mcdgId = dgcandCol.mcCollision().globalIndex();
         }
       }
-      LOGF(info, "\nstart of loop mcdgId %d mccolId %d", mcdgId, mccolId);
-
-      // get dgcand tracks
-      auto dgTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
+      LOGF(info, "\nStart of loop mcdgId %d mccolId %d", mcdgId, mccolId);
 
       // two cases to consider
       // 1. the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
       // 2. the event to process is an event of interest. In this case only the Mc tables are updated
       if ((!dgcandAtEnd && !mccolAtEnd && (mcdgId <= mccolId)) || mccolAtEnd) {
         // this is case 1.
-        LOGF(info, "doing case 1 with mcdgId %d", mcdgId);
+        LOGF(info, "Doing case 1 with mcdgId %d", mcdgId);
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
         // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+        // get dgcand tracks
+        auto dgTracks = udtracks.sliceByCached(aod::udtrack::udCollisionId, dgcand.globalIndex(), cache);
 
         // If the dgcand has an associated McCollision then the McCollision and all associated
         // McParticles are saved
-        if (mcdgId != lastSaved) {
-          if (mcdgId >= 0) {
-            LOGF(info, "  saving McCollision %d", mcdgId);
+        if (mcdgId >= 0) {
+          if (mcColIsSaved.find(mcdgId) == mcColIsSaved.end()) {
+            LOGF(info, "  Saving McCollision %d", mcdgId);
             // update UDMcCollisions
             auto dgcandMcCol = dgcand.collision_as<CCs>().mcCollision();
             updateUDMcCollisions(dgcandMcCol);
+            mcColIsSaved[mcdgId] = outputMcCollisions.lastIndex();
+          }
 
-            // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
-            outputMcCollsLabels(outputMcCollisions.lastIndex());
+          // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+          outputMcCollsLabels(mcColIsSaved[mcdgId]);
 
-            // update lastSaved
-            lastSaved = mcdgId;
+          // update UDMcParticles
+          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
+          updateUDMcParticles(mcPartsSlice, mcColIsSaved[mcdgId], mcPartIsSaved);
 
-            // update UDMcParticles
-            auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
-            updateUDMcParticles(mcPartsSlice, deltaIndex);
+          // update UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+          updateUDMcTrackLabels(dgTracks, mcPartIsSaved);
 
-            // update UDMcTrackLabels (for each UDTrack -> UDMcParticles)
-            updateUDMcTrackLabels(dgTracks, deltaIndex);
+        } else {
+          // If the dgcand has no associated McCollision then only the McParticles which are associated
+          // with the tracks of the dgcand are saved
+          LOGF(info, "  Saving McCollision %d", -1);
 
-          } else {
-            // If the dgcand has no associated McCollision then only the McParticles which are associated
-            // with the tracks of the dgcand are saved
-            LOGF(info, "  saving McCollision %d", -1);
+          // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+          outputMcCollsLabels(-1);
 
-            // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
-            outputMcCollsLabels(-1);
-
-            // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
-            // loop over tracks of dgcand
-            for (auto dgtrack : dgTracks) {
-              if (dgtrack.has_track()) {
-                auto track = dgtrack.track_as<TCs>();
-                if (track.has_mcParticle()) {
-                  auto mcPart = track.mcParticle();
-                  updateUDMcParticle(mcPart, deltaIndex);
-                  updateUDMcTrackLabel(dgtrack, deltaIndex);
-                } else {
-                  outputMcTrackLabels(-1, track.mcMask());
-                }
+          // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
+          // loop over tracks of dgcand
+          for (auto dgtrack : dgTracks) {
+            if (dgtrack.has_track()) {
+              auto track = dgtrack.track_as<TCs>();
+              if (track.has_mcParticle()) {
+                auto mcPart = track.mcParticle();
+                updateUDMcParticle(mcPart, -1, mcPartIsSaved);
+                updateUDMcTrackLabel(dgtrack, mcPartIsSaved);
               } else {
-                outputMcTrackLabels(-1, -1);
+                outputMcTrackLabels(-1, track.mcMask());
               }
+            } else {
+              outputMcTrackLabels(-1, -1);
             }
           }
         }
@@ -534,21 +520,18 @@ struct McDGCandProducer {
         }
       } else {
         // this is case 2.
-        LOGF(info, "doing case 2");
+        LOGF(info, "Doing case 2");
 
         // update UDMcCollisions and UDMcParticles
-        if (mccolId != lastSaved) {
-          LOGF(info, "  saving McCollision %d", mccolId);
-
+        if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
+          LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
           updateUDMcCollisions(mccol);
+          mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
 
           // update UDMcParticles
-          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
-          updateUDMcParticles(mcPartsSlice, deltaIndex);
-
-          // update lastSaved
-          lastSaved = mccolId;
+          auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccolId);
+          updateUDMcParticles(mcPartsSlice, mcColIsSaved[mccolId], mcPartIsSaved);
         }
 
         // advance mccol
@@ -561,7 +544,7 @@ struct McDGCandProducer {
       }
 
       goon = !dgcandAtEnd || !mccolAtEnd;
-      LOGF(info, "end of loop mcdgId %d mccolId %d", mcdgId, mccolId);
+      LOGF(info, "End of loop mcdgId %d mccolId %d", mcdgId, mccolId);
     }
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);

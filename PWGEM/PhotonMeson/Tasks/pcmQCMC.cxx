@@ -169,9 +169,9 @@ struct PCMQCMC {
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
           int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-            photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
-          }
+          // if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+          //   photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
+          // }
 
           if (photonid < 0) {
             continue;
@@ -213,8 +213,13 @@ struct PCMQCMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffZ_recalc"))->Fill(elemc.vz(), v0.recalculatedVtxZ() - elemc.vz());
 
             nv0++;
-            // reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrTgl"))->Fill(ele.tgl(), pos.tgl());
-            // reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCorrZ"))->Fill(ele.z(), pos.z());
+            float ptee = RecoDecay::sqrtSumOfSquares(pos.px() + ele.px(), pos.py() + ele.py());
+            float etaee = RecoDecay::eta(std::array{pos.px() + ele.px(), pos.py() + ele.py(), pos.pz() + ele.pz()});
+            float phiee = RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) > 0.f ? RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) : RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) + TMath::TwoPi();
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPt"))->Fill(v0.pt(), ptee);
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffEta"))->Fill(v0.pt(), etaee - v0.eta());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPhi"))->Fill(v0.pt(), phiee - v0.phi());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hRelDiffPt"))->Fill(v0.pt(), (ptee - v0.pt()) / v0.pt());
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }

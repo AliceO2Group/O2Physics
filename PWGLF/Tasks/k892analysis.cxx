@@ -16,6 +16,8 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>, Sawan Sawan <sawan.sawan@cern.ch>
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -146,8 +148,8 @@ struct k892analysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();  // FIXME: Get from the common header
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -360,7 +362,7 @@ struct k892analysis {
   PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
 
   void processMCLight(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }

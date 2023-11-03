@@ -124,20 +124,6 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // if (pos.hasITS() && ele.hasITS()) {
-    //   if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
-    //     return false;
-    //   }
-    // }
-
-    // bool isTPConly_pos = isTPConlyTrack(pos);
-    // bool isTPConly_ele = isTPConlyTrack(ele);
-    // if (isTPConly_pos && isTPConly_ele) {
-    //   if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
-    //     return false;
-    //   }
-    // }
-
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
         return false;
@@ -159,19 +145,19 @@ class V0PhotonCut : public TNamed
       }
 
       bool isITSonly = isITSonlyTrack(track);
-      // auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      // auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      // bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
-      // if (isITSonly && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
-      //   return false;
-      // }
+      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
+      if (isITSonly && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
 
-      // bool isITSTPC = isITSTPCTrack(track);
-      // auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      // bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
-      // if (isITSTPC && !its_ob_only_itstpc) { // ITSonly tracks should not have any ITSib hits.
-      //   return false;
-      // }
+      bool isITSTPC = isITSTPCTrack(track);
+      auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
+      if (isITSTPC && !its_ob_only_itstpc) { // ITSonly tracks should not have any ITSib hits.
+        return false;
+      }
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {

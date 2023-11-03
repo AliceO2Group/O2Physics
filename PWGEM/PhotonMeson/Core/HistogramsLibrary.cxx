@@ -58,32 +58,37 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hTPCNcr2Nf", "TPC Ncr/Nfindable", 200, 0, 2));
     list->Add(new TH1F("hTPCNcls2Nf", "TPC Ncls/Nfindable", 200, 0, 2));
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
-    list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 360, 0, 36));
+    list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
     list->Add(new TH2F("hXY", "X vs. Y;X (cm);Y (cm)", 100, 0, 100, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z (cm);X (cm)", 200, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z (cm);Y (cm)", 200, -100, 100, 100, -50, 50));
     list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
+    list->Add(new TH2F("hXZ_tgl", "correlation of tgl vs. z/x;tgl;z/x", 300, -1.5, 1.5, 300, -1.5, 1.5));
   }
   if (TString(histClass) == "V0") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
     list->Add(new TH2F("hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", 200, -100, 100, 200, 0.0f, 100.0f));
     list->Add(new TH2F("hRadius_recalc", "V0Radius; radius in Z (cm);radius in XY (cm)", 200, -100, 100, 200, 0.0f, 100.0f));
-    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.9f, 1.0f));
-    list->Add(new TH1F("hPCA", "distance between 2 legs; PCA (cm)", 50, 0.0f, 5.0f));
+    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.99f, 1.0f));
+    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 200, 0.0f, 2.0f));
+    list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 200, 0.0f, 200.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", 100, 0.0f, 0.1f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 100, 0.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsX", "KF chi2 vs. recalc. conversion point in X;X (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsY", "KF chi2 vs. recalc. conversion point in Y;Y (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-    // list->Add(new TH2F("hCorrTgl", "correlation of track tgl between e^{+} and e^{-};e^{-} track tgl;e^{+} track tgl", 300, -1.5f, 1.5f, 300, -1.5f, 1.5f));
-    // list->Add(new TH2F("hCorrZ", "correlation of track iu z between e^{+} and e^{-};e^{-} track iu Z (cm);e^{+} track iu Z (cm)", 400, -100.f, 100.f, 400, -100.f, 100.f));
+    list->Add(new TH2F("hDiffPt", "p_{T,#gamma} vs. p_{T,ee};p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", 1000, 0.f, 10.f, 1000, 0.f, 10.f));
+    list->Add(new TH2F("hDiffEta", "#eta_{#gamma} vs. #eta_{ee};p_{T,#gamma} (GeV/c);#eta_{#gamma} - #eta_{ee}", 1000, 0.f, 10.f, 400, -1.f, +1.f));
+    list->Add(new TH2F("hDiffPhi", "#varphi_{#gamma} vs. #varphi_{ee};p_{T,#gamma} (GeV/c);#varphi_{#gamma} - #varphi_{ee} (rad.)", 1000, 0.f, 10.f, 400, -1.f, +1.f));
+    list->Add(new TH2F("hRelDiffPt", "p_{T,#gamma} vs. p_{T,ee};p_{T,#gamma} (GeV/c);(p_{T,ee} - p_{T,#gamma})/p_{T,#gamma}", 1000, 0.f, 10.f, 400, -1.f, 1.f));
 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency

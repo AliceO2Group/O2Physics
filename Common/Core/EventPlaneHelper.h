@@ -63,7 +63,7 @@ class EventPlaneHelper
 
   // Method to get the Q-vector and sum of amplitudes for any channel in FIT, given
   // the detector and amplitude.
-  void SumQvectors(int det, int chno, float ampl, TComplex& Qvec, double& sum);
+  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, double& sum);
 
   // Method to get the bin corresponding to a centrality percentile, according to the
   // centClasses[] array defined in Tasks/qVectorsQA.cxx.

@@ -17,17 +17,13 @@
 #ifndef COMMON_CORE_RECODECAY_H_
 #define COMMON_CORE_RECODECAY_H_
 
-#include <tuple>
-#include <vector>
-#include <array>
-#include <cmath>
-#include <utility>
-
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
+#include <algorithm> // std::find
+#include <array>     // std::array
+#include <cmath>     // std::abs, std::sqrt
+#include <utility>   // std::move
+#include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
-#include "Framework/Logger.h"
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -518,61 +514,6 @@ class RecoDecay
     return maxNormDeltaIP;
   }
 
-  /// Adds particle mass in the list.
-  /// \param pdg  PDG code
-  /// \param mass  particle mass
-  static void addMassPDG(int pdg, double mass)
-  {
-    mListMass.push_back(std::make_tuple(pdg, mass));
-  }
-
-  /// Returns particle mass based on PDG code.
-  /// \param pdg  PDG code
-  /// \return particle mass
-  static double getMassPDG(int pdg)
-  {
-    if (!mErrorShown) {
-      LOGF(error, "Function RecoDecay::getMassPDG is deprecated and will be removed soon.");
-      LOGF(error, "Please use the Mass function in the O2DatabasePDG service instead.");
-      LOGF(error, "See the example of usage in Tutorials/src/usingPDGService.cxx.");
-      mErrorShown = true;
-    }
-    // Try to get the particle mass from the list first.
-    for (const auto& particle : mListMass) {
-      if (std::get<0>(particle) == pdg) {
-        return std::get<1>(particle);
-      }
-    }
-    // Get the mass of the new particle and add it in the list.
-    double mass = 0.;
-    switch (pdg) {
-      // Particles that cannot be taken from ROOT ($ROOTSYS/etc/pdg_table.txt)
-      case 4422: {      // Ξcc (wrong mass in ROOT)
-        mass = 3.62155; // https://pdg.lbl.gov/ (2021)
-        break;
-      }
-      case 9920443: {   // χc1 aka X(3872)
-        mass = 3.87165; // https://pdg.lbl.gov/ (2021)
-        break;
-      }
-      case 4332: {     // Ω0c (wrong mass in ROOT)
-        mass = 2.6952; // https://pdg.lbl.gov/ (2022)
-        break;
-      }
-      // Take the rest from ROOT.
-      default: {
-        const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
-        if (!particle) { // Check that it's there.
-          LOGF(fatal, "Cannot find particle mass for PDG code %i", pdg);
-          return 999.;
-        }
-        mass = particle->Mass();
-      }
-    }
-    addMassPDG(pdg, mass);
-    return mass;
-  }
-
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
@@ -999,13 +940,6 @@ class RecoDecay
     }
     return OriginType::None;
   }
-
- private:
-  static std::vector<std::tuple<int, double>> mListMass; ///< list of particle masses in form (PDG code, mass)
-  static bool mErrorShown;
 };
-
-std::vector<std::tuple<int, double>> RecoDecay::mListMass;
-bool RecoDecay::mErrorShown = false;
 
 #endif // COMMON_CORE_RECODECAY_H_

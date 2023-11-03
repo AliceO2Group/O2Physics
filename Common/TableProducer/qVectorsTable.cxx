@@ -77,6 +77,7 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
+  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -218,7 +219,7 @@ struct qVectorsTable {
 
         // Update the Q-vector and sum of amplitudes using the helper function.
         // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
-        helperEP.SumQvectors(0, iChA, ampl, QvecDet, sumAmplDet);
+        helperEP.SumQvectors(0, iChA, ampl, cfgnMod, QvecDet, sumAmplDet);
       } // Go to the next channel iChA.
 
       // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
@@ -241,7 +242,7 @@ struct qVectorsTable {
         // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
         // to ensure a proper channel number in FT0 as a whole.
         float ampl = ft0.amplitudeC()[iChC];
-        helperEP.SumQvectors(0, iChC + 96, ampl, QvecDet, sumAmplDet);
+        helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecDet, sumAmplDet);
       }
 
       if (sumAmplDet > 1e-8) {
@@ -269,7 +270,7 @@ struct qVectorsTable {
 
       for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
         float ampl = fv0.amplitude()[iCh];
-        helperEP.SumQvectors(1, iCh, ampl, QvecDet, sumAmplDet);
+        helperEP.SumQvectors(1, iCh, ampl, cfgnMod, QvecDet, sumAmplDet);
       }
 
       if (sumAmplDet > 1e-8) {
@@ -300,12 +301,12 @@ struct qVectorsTable {
       if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
         continue;
       if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
-        qVectBPos[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod) / 20.;
+        qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod) / 20.;
         nTrkBPos++;
       } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(2. * trk.phi()) / 20.;
-        qVectBNeg[1] += trk.pt() * TMath::Sin(2. * trk.phi()) / 20.;
+        qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod) / 20.;
+        qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod) / 20.;
         nTrkBNeg++;
       }
     } // FIXME: ARBITRARY SCALE FACTOR OF 20

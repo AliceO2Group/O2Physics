@@ -20,14 +20,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
-#include "TDatabasePDG.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/Core/RecoDecay.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
@@ -50,6 +48,7 @@ struct JetSubstructureTask {
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
@@ -123,7 +122,7 @@ struct JetSubstructureTask {
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<aod::McParticles>()) {
-      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(jetConstituent.pdgCode()));
+      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     jetReclustering(jet);
   }

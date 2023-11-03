@@ -271,20 +271,9 @@ struct skimmerGammaConversion {
     KFParticle gammaKF_DecayVtx = gammaKF; // with respect to (0,0,0)
     gammaKF_DecayVtx.TransportToPoint(xyz);
 
-    // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
-    KFParticle gammaKF_PV = gammaKF_DecayVtx;
-    gammaKF_PV.SetProductionVertex(KFPV);
-
-    KFParticle gammaKF_DecayVtx2 = gammaKF_PV; // with respect to the PV
-    gammaKF_DecayVtx2.TransportToPoint(xyz);
-    // LOGF(info, "px = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPx(), gammaKF_PV.GetPx(), gammaKF_DecayVtx2.GetPx());
-    // LOGF(info, "py = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPy(), gammaKF_PV.GetPy(), gammaKF_DecayVtx2.GetPy());
-    // LOGF(info, "pz = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPz(), gammaKF_PV.GetPz(), gammaKF_DecayVtx2.GetPz());
-
-    // LOGF(info, "cpaFromKF(gammaKF_DecayVtx, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx, KFPV));
-    // LOGF(info, "cpaFromKF(gammaKF_DecayVtx2, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx2, KFPV));
-    // LOGF(info, "gammaKF_DecayVtx.GetMass() = %f" , gammaKF_DecayVtx.GetMass());
-    // LOGF(info, "gammaKF_DecayVtx2.GetMass() = %f", gammaKF_DecayVtx2.GetMass());
+    //// Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
+    // KFParticle gammaKF_PV = gammaKF_DecayVtx;
+    // gammaKF_PV.SetProductionVertex(KFPV);
 
     float chi2kf = -1.f;
     if (gammaKF_DecayVtx.GetNDF() > 0) {
@@ -324,10 +313,15 @@ struct skimmerGammaConversion {
     float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     float qt = v0_qt(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
 
+    float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
+    float sign_tmp = (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz() > 0 ? +1 : -1;
+    float dca_xy_v0_to_pv = std::sqrt(std::pow((collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPz() - (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPy(), 2) + std::pow((collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz(), 2)) / v0mom * sign_tmp;
+    float dca_z_v0_to_pv = ((collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPy() - (collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPx()) / v0mom;
+
     v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                v0_sv.M(),
+                v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                 cospa_kf, pca_kf, alpha, qt, chi2kf);
 
     fillTrackTable(pos, kfp_pos_DecayVtx);

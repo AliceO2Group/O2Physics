@@ -14,6 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
+#include <TDatabasePDG.h> // FIXME
+
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
@@ -843,8 +845,8 @@ struct femtoWorldProducerTask {
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1803,8 +1805,8 @@ struct femtoWorldProducerTask {
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);

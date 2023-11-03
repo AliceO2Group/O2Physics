@@ -39,6 +39,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -315,7 +316,7 @@ struct filterf1proton {
     const float dcaDaughv0 = candidate.dcaV0daughters();
     const float cpav0 = candidate.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
 
@@ -389,10 +390,10 @@ struct filterf1proton {
 
   std::vector<double> BBProton, BBAntiproton, BBPion, BBAntipion, BBKaon, BBAntikaon;
   ROOT::Math::PtEtaPhiMVector F1Vector, KKs0Vector;
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massKa = RecoDecay::getMassPDG(kKPlus);
+  double massPi = o2::analysis::pdg::MassPiPlus;
+  double massKa = o2::analysis::pdg::MassKPlus;
   double massPr = o2::constants::physics::MassProton;
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
+  double massK0s = o2::analysis::pdg::MassK0Short;
   double massF1{0.};
   double masskKs0{0.};
   double pT{0.};

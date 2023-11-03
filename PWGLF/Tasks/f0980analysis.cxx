@@ -12,6 +12,8 @@
 /// \author Junlee Kim (jikim1290@gmail.com)
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 #include "TVector2.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -117,7 +119,7 @@ struct f0980analysis {
     histos.print();
   }
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
 
   int RTIndex(double pairphi, double lhphi)
   {
@@ -239,8 +241,7 @@ struct f0980analysis {
 
   void processMCLight(
     aod::ResoCollision& collision,
-    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
-    aod::McParticles const& mcParticles)
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true>(collision, resotracks);
   }

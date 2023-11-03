@@ -22,6 +22,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -91,9 +92,9 @@ struct v0qaanalysis {
 
     for (auto& v0 : V0s) { // loop over V0s
 
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(3122);
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
-      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
+      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
+      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
+      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
 
       int posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
@@ -195,9 +196,9 @@ struct v0qaanalysis {
           }
         }
 
-        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(3122);
-        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
-        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
+        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
+        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
+        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
 
         if (v0.v0radius() > v0radius &&
             v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
