@@ -147,14 +147,14 @@ struct MultiplicityCounter {
     }
 
     if (doprocessCounting || doprocessCountingNoAmb) {
-      registry.add({"Events/Selection", ";status;events", {HistType::kTH1F, {{(int)EvSelBins::kRejected, 0.5, (float)EvSelBins::kRejected + 0.5}}}});
+      registry.add({"Events/Selection", ";status;events", {HistType::kTH1F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}}}});
       hstat = registry.get<TH1>(HIST("Events/Selection"));
       x = hstat->GetXaxis();
-      x->SetBinLabel((int)EvSelBins::kAll, "All");
-      x->SetBinLabel((int)EvSelBins::kSelected, "Selected");
-      x->SetBinLabel((int)EvSelBins::kSelectedgt0, "Selected INEL>0");
-      x->SetBinLabel((int)EvSelBins::kSelectedPVgt0, "Selected INEL>0 (PV)");
-      x->SetBinLabel((int)EvSelBins::kRejected, "Rejected");
+      x->SetBinLabel(static_cast<int>(EvSelBins::kAll), "All");
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelected), "Selected");
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedgt0), "Selected INEL>0");
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedPVgt0), "Selected INEL>0 (PV)");
+      x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), "Rejected");
 
       registry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       registry.add({"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -216,7 +216,7 @@ struct MultiplicityCounter {
 
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
 
-      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{(int)EvEffBins::kSelectedPVgt0, 0.5, (float)EvEffBins::kSelectedPVgt0 + 0.5}}}});
+      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
 
       if (fillResponse) {
@@ -230,12 +230,12 @@ struct MultiplicityCounter {
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
       x = heff->GetXaxis();
-      x->SetBinLabel((int)EvEffBins::kGen, "Generated");
-      x->SetBinLabel((int)EvEffBins::kGengt0, "Generated INEL>0");
-      x->SetBinLabel((int)EvEffBins::kRec, "Reconstructed");
-      x->SetBinLabel((int)EvEffBins::kSelected, "Selected");
-      x->SetBinLabel((int)EvEffBins::kSelectedgt0, "Selected INEL>0");
-      x->SetBinLabel((int)EvEffBins::kSelectedPVgt0, "Selected INEL>0 (PV)");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kGen), "Generated");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), "Generated INEL>0");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kRec), "Reconstructed");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelected), "Selected");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedgt0), "Selected INEL>0");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), "Selected INEL>0 (PV)");
     }
 
     if (doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi ||
@@ -252,7 +252,7 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
       //      registry.add({"Tracks/Centrality/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
       //      registry.add({"Tracks/Centrality/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      registry.add({"Events/Centrality/Efficiency", "; status; centrality; events", {HistType::kTH2F, {{(int)EvEffBins::kSelectedPVgt0, 0.5, (float)EvEffBins::kSelectedPVgt0 + 0.5}, CentAxis}}});
+      registry.add({"Events/Centrality/Efficiency", "; status; centrality; events", {HistType::kTH2F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}, CentAxis}}});
       registry.add({"Events/Centrality/NotFoundEventZvtx", " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
 
       if (fillResponse) {
@@ -266,12 +266,12 @@ struct MultiplicityCounter {
 
       auto heff = registry.get<TH2>(HIST("Events/Centrality/Efficiency"));
       x = heff->GetXaxis();
-      x->SetBinLabel((int)EvEffBins::kGen, "Generated");
-      x->SetBinLabel((int)EvEffBins::kGengt0, "Generated INEL>0");
-      x->SetBinLabel((int)EvEffBins::kRec, "Reconstructed");
-      x->SetBinLabel((int)EvEffBins::kSelected, "Selected");
-      x->SetBinLabel((int)EvEffBins::kSelectedgt0, "Selected INEL>0");
-      x->SetBinLabel((int)EvEffBins::kSelectedPVgt0, "Selected INEL>0 (PV)");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kGen), "Generated");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), "Generated INEL>0");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kRec), "Reconstructed");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelected), "Selected");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedgt0), "Selected INEL>0");
+      x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), "Selected INEL>0 (PV)");
     }
 
     if (doprocessTrackEfficiency || doprocessTrackEfficiencyNoAmb) {
@@ -428,21 +428,21 @@ struct MultiplicityCounter {
       }
       registry.fill(HIST("Events/Centrality/Selection"), 1., c);
     } else {
-      registry.fill(HIST("Events/Selection"), (float)EvSelBins::kAll);
+      registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kAll));
     }
 
     if (!useEvSel || collision.sel8()) {
       if constexpr (hasCentrality) {
         registry.fill(HIST("Events/Centrality/Selection"), 2., c);
       } else {
-        registry.fill(HIST("Events/Selection"), (float)EvSelBins::kSelected);
+        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
       }
       auto z = collision.posZ();
       usedTracksIds.clear();
 
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       if (groupPVContrib.size() > 0) {
-        registry.fill(HIST("Events/Selection"), (float)EvSelBins::kSelectedPVgt0);
+        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
       }
 
       auto Ntrks = 0;
@@ -539,10 +539,10 @@ struct MultiplicityCounter {
       } else {
         if (Ntrks > 0 || groupPVContrib.size() > 0) {
           if (groupPVContrib.size() > 0) {
-            registry.fill(HIST("Events/Selection"), (float)EvSelBins::kSelectedPVgt0);
+            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
           }
           if (Ntrks > 0) {
-            registry.fill(HIST("Events/Selection"), (float)EvSelBins::kSelectedgt0);
+            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedgt0));
           }
           if (atracks != nullptr) {
             for (auto& track : *atracks) {
@@ -577,7 +577,7 @@ struct MultiplicityCounter {
       if constexpr (hasCentrality) {
         registry.fill(HIST("Events/Centrality/Selection"), 3., c);
       } else {
-        registry.fill(HIST("Events/Selection"), (float)EvSelBins::kRejected);
+        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
       }
     }
   }
@@ -922,17 +922,17 @@ struct MultiplicityCounter {
     }
     if constexpr (hasCentrality) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c_gen);
-      registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kGen, c_gen);
+      registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGen), c_gen);
     } else {
       registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
-      registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kGen);
+      registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGen));
     }
 
     if (nCharged > 0) {
       if constexpr (hasCentrality) {
-        registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kGengt0, c_gen);
+        registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGengt0), c_gen);
       } else {
-        registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kGengt0);
+        registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGengt0));
       }
     }
     bool atLeastOne = false;
@@ -960,9 +960,9 @@ struct MultiplicityCounter {
           c_rec = collision.centFT0M();
         }
         c_recPerCol.emplace_back(c_rec);
-        registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kRec, c_gen);
+        registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
-        registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kRec);
+        registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || collision.sel8()) {
         Nrec = 0;
@@ -972,9 +972,9 @@ struct MultiplicityCounter {
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         if (groupPVcontrib.size() > 0) {
           if constexpr (hasCentrality) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kSelectedPVgt0, c_gen);
+            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kSelectedPVgt0);
+            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
           }
         }
 
@@ -1041,24 +1041,24 @@ struct MultiplicityCounter {
         }
 
         if constexpr (hasCentrality) {
-          registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kSelected, c_gen);
+          registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelected), c_gen);
         } else {
-          registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kSelected);
+          registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelected));
         }
 
         if (Nrec > 0) {
           if constexpr (hasCentrality) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kSelectedgt0, c_gen);
+            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kSelectedgt0);
+            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0));
           }
           atLeastOne_gt0 = true;
         }
         if (groupPVcontrib.size() > 0) {
           if constexpr (hasCentrality) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), (float)EvEffBins::kSelectedPVgt0, c_gen);
+            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), (float)EvEffBins::kSelectedPVgt0);
+            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
           }
           atLeastOne_PVgt0 = true;
         }
