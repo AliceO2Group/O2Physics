@@ -309,12 +309,12 @@ struct qVectorsTable {
       }
     }
     if( nTrkBPos>0 ){
-      qVectBPos[0] /= (float)nTrkBPos;
-      qVectBPos[1] /= (float)nTrkBPos;
+      qVectBPos[0] /= nTrkBPos;
+      qVectBPos[1] /= nTrkBPos;
     }
     if( nTrkBNeg>0 ){
-      qVectBNeg[0] /= (float)nTrkBNeg;
-      qVectBNeg[1] /= (float)nTrkBNeg;
+      qVectBNeg[0] /= nTrkBNeg;
+      qVectBNeg[1] /= nTrkBNeg;
     }
 
     /// TODO: Repeat here the procedure for any other Qvector columns.
