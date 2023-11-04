@@ -57,7 +57,7 @@ struct DerivedBasicProvider {
   {
     histos.fill(HIST("eventCounter"), 0.5);
     if (tracks.size() < 1 && skipUninterestingEvents)
-      continue;
+      return;
     bool interestingEvent = false;
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
@@ -65,7 +65,7 @@ struct DerivedBasicProvider {
       interestingEvent = true;
     }
     if (!interestingEvent && skipUninterestingEvents)
-      continue;
+      return;
     outputCollisions(collision.posZ());
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
