@@ -56,15 +56,15 @@ struct DerivedBasicProvider {
   void process(aod::Collision const& collision, myFilteredTracks const& tracks)
   {
     histos.fill(HIST("eventCounter"), 0.5);
-    if(tracks.size()<1 && skipUninterestingEvents) 
+    if (tracks.size() < 1 && skipUninterestingEvents)
       continue;
     bool interestingEvent = false;
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
-        continue; // remove badly tracked   
+        continue; // remove badly tracked
       interestingEvent = true;
     }
-    if(!interestingEvent && skipUninterestingEvents) 
+    if (!interestingEvent && skipUninterestingEvents)
       continue;
     outputCollisions(collision.posZ());
     for (const auto& track : tracks) {
