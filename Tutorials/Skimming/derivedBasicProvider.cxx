@@ -31,6 +31,7 @@ struct DerivedBasicProvider {
   Configurable<float> minPt{"minPt", 2.0, "min pT to save"};
   Configurable<float> maxDCA{"maxDCA", 0.1, "max DCA"};
   Configurable<float> etaWindow{"etaWindow", 0.8, "eta window"};
+  Configurable<bool> skipUninterestingEvents{"skipUninterestingEvents", true, "skip collisions without particle of interest"};
 
   // This marks that this task produces a standard derived table
   Produces<aod::DrCollisions> outputCollisions;
@@ -55,6 +56,16 @@ struct DerivedBasicProvider {
   void process(aod::Collision const& collision, myFilteredTracks const& tracks)
   {
     histos.fill(HIST("eventCounter"), 0.5);
+    if (tracks.size() < 1 && skipUninterestingEvents)
+      return;
+    bool interestingEvent = false;
+    for (const auto& track : tracks) {
+      if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
+        continue; // remove badly tracked
+      interestingEvent = true;
+    }
+    if (!interestingEvent && skipUninterestingEvents)
+      return;
     outputCollisions(collision.posZ());
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTPCNClsCrossedRows)
