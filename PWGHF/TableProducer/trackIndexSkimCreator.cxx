@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file trackIndexSkimCreator.cxx
-/// \brief Pre-selection of 2-prong and 3-prong secondary vertices of heavy-flavour decay candidates
+/// \brief Pre-selection of 2-prong, 3-prong, D*, and cascade secondary vertices of heavy-flavour decay candidates
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -1691,8 +1691,10 @@ struct HfTrackIndexSkimCreator {
 
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-
+      int lastFilledD0 = -1; // index to be filled in table for D* mesons
+      int counterTrackPos1{0};
       for (auto trackIndexPos1 = groupedTrackIndices.begin(); trackIndexPos1 != groupedTrackIndices.end(); ++trackIndexPos1) {
+        counterTrackPos1++;
         auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
 
         if (trackPos1.signed1Pt() < 0) {
@@ -1717,7 +1719,9 @@ struct HfTrackIndexSkimCreator {
 
         // first loop over negative tracks
         // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
+        int counterTrackNeg1{0};
         for (auto trackIndexNeg1 = groupedTrackIndices.begin(); trackIndexNeg1 != groupedTrackIndices.end(); ++trackIndexNeg1) {
+          counterTrackNeg1++;
           auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
           if (trackNeg1.signed1Pt() > 0) {
             continue;
@@ -1841,6 +1845,9 @@ struct HfTrackIndexSkimCreator {
               if (isSelected2ProngCand > 0) {
                 // fill table row
                 rowTrackIndexProng2(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), isSelected2ProngCand);
+                if (TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK)) {
+                  lastFilledD0 = rowTrackIndexProng2.lastIndex();
+                }
 
                 if constexpr (doPvRefit) {
                   // fill table row with coordinates of PV refit
@@ -1893,7 +1900,11 @@ struct HfTrackIndexSkimCreator {
                   }
                 }
               }
+            } else {
+              isSelected2ProngCand = 0; // reset to 0 not to use the D9 to build a D* meson
             }
+          } else {
+            isSelected2ProngCand = 0; // reset to 0 not to use the D9 to build a D* meson
           }
 
           // 3-prong vertex and D* reconstruction
@@ -1904,12 +1915,14 @@ struct HfTrackIndexSkimCreator {
 
             // second loop over positive tracks
             // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
-            for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+            int counterTrackPos2{0};
+            auto startTrackIndexPos2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexPos1 + 1;
+            for (auto trackIndexPos2 = startTrackIndexPos2; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+              counterTrackPos2++;
               auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
               if (trackPos2.signed1Pt() < 0) {
                 continue;
               }
-
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array<float, 3> pVecTrackPos2{trackPos2.px(), trackPos2.py(), trackPos2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
@@ -1919,7 +1932,7 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
-                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar)) {                                                                                  // compatible with a soft pion
+                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {                            // compatible with a soft pion
                   if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                     getPxPyPz(trackParVarPos2, pVecTrackPos2);
@@ -1929,7 +1942,7 @@ struct HfTrackIndexSkimCreator {
                   float deltaMass{-1.};
                   isSelectedDstar = isDstarSelected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), lastFilledD0);
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                     }
@@ -1941,6 +1954,9 @@ struct HfTrackIndexSkimCreator {
               }
 
               // preselection of 3-prong candidates
+              if (doDstar && counterTrackPos2 < counterTrackPos1 + 1) { // we avoid duplication for 3-prongs
+                continue;
+              }
               int isSelected3ProngCand = n3ProngBit;
               if (do3Prong && TESTBIT(isSelProngPos2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
                 if (thisCollId != trackPos2.collisionId() && !propagatedPos2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
@@ -2155,7 +2171,10 @@ struct HfTrackIndexSkimCreator {
 
             // second loop over negative tracks
             // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
-            for (auto trackIndexNeg2 = trackIndexNeg1 + 1; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+            int counterTrackNeg2{0};
+            auto startTrackIndexNeg2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexNeg1 + 1;
+            for (auto trackIndexNeg2 = startTrackIndexNeg2; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+              counterTrackNeg2++;
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               if (trackNeg2.signed1Pt() > 0) {
                 continue;
@@ -2170,7 +2189,7 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] >= 2)) { // the 2-prong decay is compatible with a D0bar
-                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) {                                                       // compatible with a soft pion
+                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar) && trackNeg2.globalIndex() != trackNeg1.globalIndex()) { // compatible with a soft pion
                   if (thisCollId != trackNeg2.collisionId()) {                                                                 // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                     getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
@@ -2180,7 +2199,7 @@ struct HfTrackIndexSkimCreator {
                   float deltaMass{-1.};
                   isSelectedDstar = isDstarSelected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), lastFilledD0);
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                     }
@@ -2192,6 +2211,9 @@ struct HfTrackIndexSkimCreator {
               }
 
               // preselection of 3-prong candidates
+              if (doDstar && counterTrackNeg2 < counterTrackNeg1 + 1) { // we avoid duplication for 3-prongs
+                continue;
+              }
               int isSelected3ProngCand = n3ProngBit;
               if (do3Prong && TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
                 if (thisCollId != trackNeg2.collisionId() && !propagatedNeg2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
