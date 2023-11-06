@@ -1186,13 +1186,12 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
         LOGF(warning, "No MC collision for this collision, skip..."); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
         return kFALSE;
       }
-   
+
       // TBI 20231106 here I cat cut directly on corresponding MC truth simulated, e.g. on collision.mcCollision().posZ(), if necessary
 
     } // if constexpr (rs == eRecAndSim) {
 
   } // if constexpr (rs == eRec || rs == eRecAndSim) {
-
 
   // b) Event cuts on info available only in simulated data:
   if constexpr (rs == eSim) {
@@ -1222,7 +1221,6 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-
   // a) Fill reconstructed ...:
   if constexpr (rs == eRec || rs == eRecAndSim) {
     ceh_a.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5);
@@ -1239,13 +1237,12 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
         return;
       }
       ceh_a.fEventHistograms[eNumberOfEvents][eSim][ba]->Fill(0.5);
-      ceh_a.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.mcCollision().posX()); 
+      ceh_a.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.mcCollision().posX());
       ceh_a.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.mcCollision().posY());
       ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
       // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
     } // if constexpr (rs == eRecAndSim) {
-  } // if constexpr (rs == eRec || rs == eRecAndSim) {  
-
+  }   // if constexpr (rs == eRec || rs == eRecAndSim) {
 
   // b) Fill only simulated:
   if constexpr (rs == eSim) {
@@ -2348,13 +2345,13 @@ void Steer(T1 const& collision, T2 const& tracks)
   // *) Main loop over particles:
   MainLoopOverParticles<rs>(tracks);
 
-  // *) Fill remaining event histograms after event AND particle cuts: 
+  // *) Fill remaining event histograms after event AND particle cuts:
   //    TBI 20231106 move this also to a dedicated method?
   if constexpr (rs == eRec || rs == eRecAndSim) {
     ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
     if constexpr (rs == eRecAndSim) {
       ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks); // TBI 20231106 re-think what to really fill here
-    }   
+    }
   }
   if constexpr (rs == eSim) {
     ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks);
@@ -2393,14 +2390,12 @@ void MainLoopOverParticles(T const& tracks)
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-
   // *) Local particle variables:
   Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
   Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pT weight
   Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
   Double_t wToPowerP = 1.;       // weight raised to power p
   fSelectedTracks = 0;           // reset number of selected tracks
-
 
   // *) Loop only over reconstructed:
   if constexpr (rs == eRec) {
@@ -2477,7 +2472,6 @@ void MainLoopOverParticles(T const& tracks)
     } // for (auto& track : tracks)
 
   } // if (rs == eRec)
-
 
   // *) Loop over reconstructed and corresponding MC truth simulated:
   if constexpr (rs == eRecAndSim) {
