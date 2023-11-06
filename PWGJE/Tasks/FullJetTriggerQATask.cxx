@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetTriggerQA {
-  using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
   using collisionWithTrigger = soa::Join<aod::JCollisions, aod::FullJetFilters>::iterator;
@@ -324,7 +324,7 @@ struct JetTriggerQA {
   } // init
 
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusDef);
 
   double check_dphi(double dphi) const
   {
@@ -568,7 +568,7 @@ struct JetTriggerQA {
       // This gives us access to all jet substructure information
       // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
       // for (const auto& trackList : tracksInJet) {
-      for (auto& track : jet.template tracks_as<aod::Tracks>()) {
+      for (auto& track : jet.template tracks_as<aod::JTracks>()) {
         auto trackPt = track.pt();
         auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());

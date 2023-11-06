@@ -19,13 +19,47 @@
 
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 namespace o2::aod
 {
 
+namespace jbc
+{
+DECLARE_SOA_INDEX_COLUMN(BC, bc);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+} // namespace jbc
+
+DECLARE_SOA_TABLE(JBCs, "AOD", "JBCs",
+                  o2::soa::Index<>,
+                  jbc::RunNumber,
+                  jbc::GlobalBC,
+                  jbc::Timestamp);
+
+using JBC = JBCs::iterator;
+
+DECLARE_SOA_TABLE(StoredJBCs, "DYN", "JBCs",
+                  o2::soa::Index<>,
+                  jbc::RunNumber,
+                  jbc::GlobalBC,
+                  jbc::Timestamp,
+                  o2::soa::Marker<1>);
+
+using StoredJBC = StoredJBCs::iterator;
+
+DECLARE_SOA_TABLE(JBCPIs, "AOD", "JBCPIs",
+                  jbc::BCId);
+
+DECLARE_SOA_TABLE(StoredJBCPIs, "DYN", "JBCPIs",
+                  jbc::BCId,
+                  o2::soa::Marker<1>);
+
 namespace jcollision
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
@@ -53,22 +87,29 @@ using StoredJCollision = StoredJCollisions::iterator;
 DECLARE_SOA_TABLE(JCollisionPIs, "AOD", "JCollisionPIs",
                   jcollision::CollisionId);
 
-DECLARE_SOA_TABLE(StoredJCollisionPIs, "AOD", "JCollisionPIs",
+DECLARE_SOA_TABLE(StoredJCollisionPIs, "DYN", "JCollisionPIs",
                   jcollision::CollisionId,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JChrgTrigSels",
                   jcollision::ChargedTriggerSel);
 
-DECLARE_SOA_TABLE(StoredJChTrigSels, "AOD", "JChargTrigSels",
+DECLARE_SOA_TABLE(StoredJChTrigSels, "DYN", "JChargTrigSels",
                   jcollision::ChargedTriggerSel,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JFullTrigSels, "AOD", "JFullTrigSels",
                   jcollision::FullTriggerSel);
 
-DECLARE_SOA_TABLE(StoredJFullTrigSels, "AOD", "JFullTrigSels",
+DECLARE_SOA_TABLE(StoredJFullTrigSels, "DYN", "JFullTrigSels",
                   jcollision::FullTriggerSel,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCollisionBcs",
+                  jcollision::JBCId);
+
+DECLARE_SOA_TABLE(StoredJCollisionBCs, "DYN", "JCollisionBcs",
+                  jcollision::JBCId,
                   o2::soa::Marker<1>);
 
 namespace jmccollision
@@ -84,7 +125,7 @@ DECLARE_SOA_TABLE(JMcCollisions, "AOD", "JMcCollisions",
 
 using JMcCollision = JMcCollisions::iterator;
 
-DECLARE_SOA_TABLE(StoredJMcCollisions, "AOD", "JMcCollisions",
+DECLARE_SOA_TABLE(StoredJMcCollisions, "DYN", "JMcCollisions",
                   o2::soa::Index<>,
                   jmccollision::PosZ,
                   jmccollision::Weight,
@@ -95,7 +136,7 @@ using StoredJMcCollision = StoredJMcCollisions::iterator;
 DECLARE_SOA_TABLE(JMcCollisionPIs, "AOD", "JMcCollisionPIs",
                   jmccollision::McCollisionId);
 
-DECLARE_SOA_TABLE(StoredJMcCollisionPIs, "AOD", "JMcCollisionPIs",
+DECLARE_SOA_TABLE(StoredJMcCollisionPIs, "DYN", "JMcCollisionPIs",
                   jmccollision::McCollisionId,
                   o2::soa::Marker<1>);
 
@@ -107,7 +148,7 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_TABLE(JMcCollisionLbs, "AOD", "JMcCollisionLbs",
                   jmccollisionlb::JMcCollisionId);
 
-DECLARE_SOA_TABLE(StoredJMcCollisionLbs, "AOD", "JMcCollisionLbs",
+DECLARE_SOA_TABLE(StoredJMcCollisionLbs, "DYN", "JMcCollisionLbs",
                   jmccollisionlb::JMcCollisionId,
                   o2::soa::Marker<1>);
 
@@ -164,7 +205,7 @@ using StoredJTrack = StoredJTracks::iterator;
 DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTrackPIs",
                   jtrack::TrackId);
 
-DECLARE_SOA_TABLE(StoredJTrackPIs, "AOD", "JTrackPIs",
+DECLARE_SOA_TABLE(StoredJTrackPIs, "DYN", "JTrackPIs",
                   jtrack::TrackId,
                   o2::soa::Marker<1>);
 
@@ -214,7 +255,7 @@ DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMcParticles",
 
 using JMcParticle = JMcParticles::iterator;
 
-DECLARE_SOA_TABLE(StoredJMcParticles, "AOD", "JMcParticles",
+DECLARE_SOA_TABLE(StoredJMcParticles, "DYN", "JMcParticles",
                   o2::soa::Index<>,
                   jmcparticle::JMcCollisionId,
                   jmcparticle::Pt,
@@ -239,7 +280,7 @@ using StoredJMcParticle = StoredJMcParticles::iterator;
 DECLARE_SOA_TABLE(JMcParticlePIs, "AOD", "JMcParticlePIs",
                   jmcparticle::McParticleId);
 
-DECLARE_SOA_TABLE(StoredJMcParticlePIs, "AOD", "JMcParticlePIs",
+DECLARE_SOA_TABLE(StoredJMcParticlePIs, "DYN", "JMcParticlePIs",
                   jmcparticle::McParticleId,
                   o2::soa::Marker<1>);
 
@@ -251,8 +292,59 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 DECLARE_SOA_TABLE(JMcTrackLbs, "AOD", "JMcTrackLbs", //! Table joined to the track table containing the MC index
                   jmctracklb::JMcParticleId);
 
-DECLARE_SOA_TABLE(StoredJMcTrackLbs, "AOD", "JMcTrackLbs", //! Table joined to the track table containing the MC index
+DECLARE_SOA_TABLE(StoredJMcTrackLbs, "DYN", "JMcTrackLbs", //! Table joined to the track table containing the MC index
                   jmctracklb::JMcParticleId,
+                  o2::soa::Marker<1>);
+
+namespace jcluster
+{
+DECLARE_SOA_INDEX_COLUMN(JCollision, collision);                       //! collisionID used as index for matched clusters
+DECLARE_SOA_ARRAY_INDEX_COLUMN(JTrack, matchedTracks);                 // ! array of indices to tracks matched to the cluster
+DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
+DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(RawEnergy, rawEnergy, float);                       //! raw cluster energy (GeV)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_COLUMN(LeadingCellEnergy, leadingCellEnergy, float);       //! energy of leading cell in the cluster
+DECLARE_SOA_COLUMN(SubleadingCellEnergy, subleadingCellEnergy, float); //! energy of leading cell in the cluster
+DECLARE_SOA_COLUMN(LeadingCellNumber, leadingCellNumber, int);         //! energy of leading cell in the cluster
+DECLARE_SOA_COLUMN(SubleadingCellNumber, subleadingCellNumber, int);   //! energy of leading cell in the cluster
+
+} // namespace jcluster
+
+DECLARE_SOA_TABLE(JClusters, "AOD", "JClusters", //!
+                  o2::soa::Index<>, jcluster::JCollisionId, jcluster::ID, jcluster::Energy,
+                  jcluster::CoreEnergy, jcluster::RawEnergy, jcluster::Eta, jcluster::Phi,
+                  jcluster::M02, jcluster::M20, jcluster::NCells, jcluster::Time,
+                  jcluster::IsExotic, jcluster::DistanceToBadChannel, jcluster::NLM, jcluster::Definition,
+                  jcluster::LeadingCellEnergy, jcluster::SubleadingCellEnergy, jcluster::LeadingCellNumber, jcluster::SubleadingCellNumber);
+
+using JCluster = JClusters::iterator;
+
+DECLARE_SOA_TABLE(StoredJClusters, "DYN", "JClusters",
+                  o2::soa::Index<>, jcluster::JCollisionId, jcluster::ID, jcluster::Energy,
+                  jcluster::CoreEnergy, jcluster::RawEnergy, jcluster::Eta, jcluster::Phi,
+                  jcluster::M02, jcluster::M20, jcluster::NCells, jcluster::Time,
+                  jcluster::IsExotic, jcluster::DistanceToBadChannel, jcluster::NLM, jcluster::Definition,
+                  jcluster::LeadingCellEnergy, jcluster::SubleadingCellEnergy, jcluster::LeadingCellNumber, jcluster::SubleadingCellNumber,
+                  o2::soa::Marker<1>);
+
+using StoredJCluster = StoredJClusters::iterator;
+
+DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JClusterTracks", //!
+                  jcluster::JTrackIds);
+
+DECLARE_SOA_TABLE(StoredJClusterTracks, "DYN", "JClusterTracks", //!
+                  jcluster::JTrackIds,
                   o2::soa::Marker<1>);
 
 } // namespace o2::aod

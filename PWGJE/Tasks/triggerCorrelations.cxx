@@ -62,13 +62,13 @@ struct TriggerCorrelationsTask {
   {
   }
 
-  o2::aod::EMCALClusterDefinition clusterDef = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusterDef);
+  aod::EMCALClusterDefinition clusterDef = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusterDef);
 
   void processTriggeredCorrelations(aod::JCollision const& collision,
                                     soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jetsCharged,
                                     soa::Join<aod::FullJets, aod::FullJetConstituents> const& jetsFull,
-                                    soa::Filtered<o2::aod::EMCALClusters> const& clusters,
+                                    soa::Filtered<aod::JClusters> const& clusters,
                                     aod::JTracks const& tracks)
   {
 

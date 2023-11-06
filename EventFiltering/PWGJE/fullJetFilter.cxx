@@ -47,9 +47,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct fullJetFilter {
-  using collisionInfo = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using collisionInfo = aod::JCollision;
+  using BCsWithBcSelsRun3 = aod::JBCs;
+  using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
   using filteredFullJets = o2::soa::Filtered<o2::aod::FullJets>;
   using filteredNeutralJets = o2::soa::Filtered<o2::aod::NeutralJets>;
 
@@ -264,7 +264,7 @@ struct fullJetFilter {
 
   // Declare filters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusDef);
   Filter jetRadiusSelection = o2::aod::jet::r == f_jetR;
 
   template <typename JetIterator>
@@ -692,14 +692,12 @@ struct fullJetFilter {
 
   void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
-    // Trigger selection (full jet case)
     runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processFullJetTrigger, "run full jet triggere code", true);
 
   void processNeutralJetTrigger(collisionInfo const& collision, filteredNeutralJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
-    // Trigger selection (neutral jet case)
     runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processNeutralJetTrigger, "run neutral jet triggere code", false);

@@ -45,7 +45,7 @@
 #include "PWGJE/DataModel/Jet.h"
 
 using JetTracks = o2::soa::Filtered<o2::aod::JTracks>;
-using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using JetClusters = o2::soa::Filtered<o2::aod::JClusters>;
 
 using ParticlesD0 = o2::soa::Filtered<o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand2ProngMcGen>>;
 using ParticlesLc = o2::soa::Filtered<o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand3ProngMcGen>>;

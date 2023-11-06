@@ -81,22 +81,24 @@ bool eventEMCAL(T const& collision)
 }
 
 enum JTrigSelCh {
-  charged = 0
+  none = 0,
+  charged =
 };
 
 enum JTrigSelFull {
-  fullHigh = 0,
-  fullLow = 1,
-  neutralHigh = 2,
-  neutralLow = 3,
-  gammaVeryHighEMCAL = 4,
-  gammaHighEMCAL = 5,
-  gammaLowEMCAL = 6,
-  gammaVeryLowEMCAL = 7,
-  gammaVeryHighDCAL = 8,
-  gammaHighDCAL = 9,
-  gammaLowDCAL = 10,
-  gammaVeryLowDCAL = 11
+  none = 0,
+  fullHigh = 1,
+  fullLow = 2,
+  neutralHigh = 3,
+  neutralLow = 4,
+  gammaVeryHighEMCAL = 5,
+  gammaHighEMCAL = 6,
+  gammaLowEMCAL = 7,
+  gammaVeryLowEMCAL = 8,
+  gammaVeryHighDCAL = 9,
+  gammaHighDCAL = 10,
+  gammaLowDCAL = 11,
+  gammaVeryLowDCAL = 12
 };
 
 template <typename T>
