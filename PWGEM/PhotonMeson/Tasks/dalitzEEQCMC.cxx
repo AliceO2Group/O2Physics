@@ -140,7 +140,6 @@ struct DalitzEEQCMC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
-    used_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -167,6 +166,7 @@ struct DalitzEEQCMC {
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+        used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0;
         for (auto& uls_pair : uls_pairs_per_coll) {
@@ -200,11 +200,12 @@ struct DalitzEEQCMC {
           }
         } // end of uls pair loop
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
+
+        used_trackIds.clear();
+        used_trackIds.shrink_to_fit();
       } // end of cut loop
     }   // end of collision loop
-    used_trackIds.clear();
-    used_trackIds.shrink_to_fit();
-  } // end of process
+  }     // end of process
   PROCESS_SWITCH(DalitzEEQCMC, processQCMC, "run Dalitz QC", true);
 
   void processDummy(MyCollisions const& collisions) {}

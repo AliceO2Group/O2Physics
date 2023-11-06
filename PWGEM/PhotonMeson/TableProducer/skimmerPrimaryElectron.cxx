@@ -12,6 +12,7 @@
 /// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
+#include <map>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -73,6 +74,13 @@ struct skimmerPrimaryElectron {
     "fRegistry",
     {
       {"hNpairs", "hNpairs;pair type;Number of Pairs", {HistType::kTH1F, {{3, -1.5f, +1.5f}}}},
+      {"Track/hTPCdEdx_Pin_before", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
+      {"Track/hTPCdEdx_Pin_after", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
+      {"Track/hTOFbeta_Pin_before", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
+      {"Track/hTOFbeta_Pin_after", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
+      {"Track/hTPCNsigmaEl", "TPC n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaEl", "ToF n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
+      {"Pair/hMeePtee", "ULS m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", {HistType::kTH2F, {{400, 0.f, 4.f}, {100, 0.f, 10.f}}}},
     },
   };
 
@@ -160,13 +168,25 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (abs(track.tpcNSigmaEl()) > maxTPCNsigmaEl) {
-      return false;
-    }
-    if (abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
-      return false;
-    }
     return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
+  {
+    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+  }
+
+  template <bool isMC, typename TTracks>
+  void fillTrackHistogram(TTracks const& tracks)
+  {
+    for (auto& track : tracks) {
+      if (!checkTrack<isMC>(track)) {
+        continue;
+      }
+      fRegistry.fill(HIST("Track/hTPCdEdx_Pin_before"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/hTOFbeta_Pin_before"), track.tpcInnerParam(), track.beta());
+    }
   }
 
   template <typename TTrack>
@@ -181,6 +201,10 @@ struct skimmerPrimaryElectron {
                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                       track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
+      fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
+      fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -193,22 +217,31 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
+        if (!isElectron(t1) || !isElectron(t2)) {
+          continue;
+        }
+
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        fRegistry.fill(HIST("Pair/hMeePtee"), v12.M(), v12.Pt());
+
         if (v12.M() > maxMee) { // don't store
           continue;
         }
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         fillTrackTable(t1);
         fillTrackTable(t2);
-
       }      // end of pairing loop
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
         if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
+        if (!isElectron(t1) || !isElectron(t2)) {
+          continue;
+        }
+
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -240,6 +273,8 @@ struct skimmerPrimaryElectron {
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      fillTrackHistogram<false>(posTracks_per_coll);
+      fillTrackHistogram<false>(negTracks_per_coll);
 
       fillPairInfo<false, EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {
@@ -247,10 +282,6 @@ struct skimmerPrimaryElectron {
         fillPairInfo<false, EM_EEPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
       }
     } // end of collision loop
-
-    // for (auto& trackId : stored_trackIds) {
-    //   LOGF(info, "trackId = %d", trackId);
-    // }
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
@@ -274,6 +305,8 @@ struct skimmerPrimaryElectron {
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      fillTrackHistogram<true>(posTracks_per_coll);
+      fillTrackHistogram<true>(negTracks_per_coll);
 
       fillPairInfo<true, EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {
