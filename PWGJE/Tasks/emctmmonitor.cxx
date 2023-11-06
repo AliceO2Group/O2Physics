@@ -230,11 +230,11 @@ struct TrackMatchingMonitor {
 
     for (const auto& alltrack : alltracks) {
       if (alltrack.isGlobalTrack()) { // NSigma of all global tracks without matching
-        mHistManager.fill(HIST("TrackTM_NSigma"), alltrack.tpcNSigmaEl());
+        mHistManager.fill(HIST("TrackTM_NSigma"), alltrack.tpcNSigmaEl(), alltrack.pt());
         if (alltrack.sign() == 1) { // NSigma of all global positive tracks without matching
-          mHistManager.fill(HIST("TrackTM_NSigma_p"), alltrack.tpcNSigmaEl());
+          mHistManager.fill(HIST("TrackTM_NSigma_p"), alltrack.tpcNSigmaEl(), alltrack.pt());
         } else if (alltrack.sign() == -1) { // NSigma of all global negative tracks without matching
-          mHistManager.fill(HIST("TrackTM_NSigma_e"), alltrack.tpcNSigmaEl());
+          mHistManager.fill(HIST("TrackTM_NSigma_e"), alltrack.tpcNSigmaEl(), alltrack.pt());
         }
       }
     }
