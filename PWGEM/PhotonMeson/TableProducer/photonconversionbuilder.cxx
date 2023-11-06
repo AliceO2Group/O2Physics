@@ -55,7 +55,11 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
+using MyCollisions = aod::Collisions;
+using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
+
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
+using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
@@ -220,9 +224,15 @@ struct PhotonConversionBuilder {
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
-  template <typename TTrack>
+  template <bool isMC, typename TTrack>
   bool checkV0leg(TTrack const& track)
   {
+    if constexpr (isMC) {
+      if (!track.has_mcParticle()) {
+        return false;
+      }
+    }
+
     if (!track.hasITS() && !track.hasTPC()) {
       return false;
     }
@@ -267,7 +277,7 @@ struct PhotonConversionBuilder {
            track.x(), track.y(), track.z(), track.tgl(), track.signed1Pt());
   }
 
-  template <class TCollision, class TTrack, typename TV0>
+  template <bool isMC, class TCollision, class TTrack, typename TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
     // Get tracks
@@ -283,7 +293,7 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (!checkV0leg(pos) || !checkV0leg(ele)) {
+    if (!checkV0leg<isMC>(pos) || !checkV0leg<isMC>(ele)) {
       return;
     }
     // LOGF(info, "v0.collisionId() = %d , v0.posTrackId() = %d , v0.negTrackId() = %d", v0.collisionId(), v0.posTrackId(), v0.negTrackId());
@@ -459,10 +469,17 @@ struct PhotonConversionBuilder {
   std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> cospa_map; //(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
   std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                     //(pos.globalIndex(), ele.globalIndex())
 
-  void process(aod::Collisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&)
+  template <bool isMC, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&)
   {
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if constexpr (isMC) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+      }
+
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
@@ -470,7 +487,7 @@ struct PhotonConversionBuilder {
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
       for (auto& v0 : v0s_per_coll) {
         // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
-        fillV0Table<aod::Collisions, MyTracksIU>(v0, false);
+        fillV0Table<isMC, TCollisions, TTracks>(v0, false);
       } // end of v0 loop
     }   // end of collision loop
 
@@ -519,7 +536,7 @@ struct PhotonConversionBuilder {
         // auto pos = tracks.rawIteratorAt(posId);
         // auto ele = tracks.rawIteratorAt(eleId);
         // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
-        fillV0Table<aod::Collisions, MyTracksIU>(v0, true);
+        fillV0Table<isMC, TCollisions, TTracks>(v0, true);
         stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
       }
     } // end of pca_map loop
@@ -528,7 +545,19 @@ struct PhotonConversionBuilder {
     cospa_map.clear();
     stored_v0Ids.clear();
     stored_v0Ids.shrink_to_fit();
-  } // end of process
+  } // end of build
+
+  void processRec(MyCollisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
+
+  void processMC(MyCollisionsMC const& collisions, aod::V0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<true>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

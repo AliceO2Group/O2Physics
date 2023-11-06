@@ -48,10 +48,15 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQCMC {
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
+
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of v0 photon cuts"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
 
@@ -130,8 +135,7 @@ struct PCMQCMC {
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-  void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
+  void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
@@ -231,7 +235,7 @@ struct PCMQCMC {
   }     // end of process
 
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -273,7 +277,7 @@ struct PCMQCMC {
     }
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision)
+  void processDummy(MyCollisions const& collisions)
   {
     // do nothing
   }

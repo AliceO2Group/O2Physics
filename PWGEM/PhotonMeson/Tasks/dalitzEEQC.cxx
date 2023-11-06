@@ -37,8 +37,14 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
+using MyCollision = MyCollisions::iterator;
+
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
+
+using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMReducedEventIds>;
+using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
@@ -116,12 +122,16 @@ struct DalitzEEQC {
 
   SliceCache cache;
   Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
-  void processQC(aod::EMReducedEvents const& collisions, MyDalitzEEs const& dileptons, aod::EMPrimaryTracks const& tracks)
+
+  std::vector<uint64_t> used_trackIds;
+
+  void processQC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
+    used_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -143,8 +153,6 @@ struct DalitzEEQC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
 
-      // auto dileptons_coll = dileptons.sliceBy(perCollision, collision.collisionId());
-
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
       auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
       auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
@@ -155,17 +163,20 @@ struct DalitzEEQC {
 
         int nuls = 0, nlspp = 0, nlsmm = 0;
         for (auto& uls_pair : uls_pairs_per_coll) {
-          auto pos = uls_pair.posTrack_as<aod::EMPrimaryTracks>();
-          auto ele = uls_pair.negTrack_as<aod::EMPrimaryTracks>();
-          if (cut.IsSelected<aod::EMPrimaryTracks>(uls_pair)) {
+          auto pos = uls_pair.template posTrack_as<MyTracks>();
+          auto ele = uls_pair.template negTrack_as<MyTracks>();
+          if (cut.IsSelected<MyTracks>(uls_pair)) {
             values[0] = uls_pair.mee();
             values[1] = uls_pair.pt();
             values[2] = uls_pair.dcaeeXY();
             values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
             nuls++;
-            for (auto& leg : {pos, ele}) {
-              o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", leg);
+            for (auto& track : {pos, ele}) {
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+                o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+                used_trackIds.emplace_back(track.globalIndex());
+              }
             }
           }
         } // end of uls pair loop
@@ -197,10 +208,12 @@ struct DalitzEEQC {
 
       } // end of cut loop
     }   // end of collision loop
-  }     // end of process
+    used_trackIds.clear();
+    used_trackIds.shrink_to_fit();
+  } // end of process
   PROCESS_SWITCH(DalitzEEQC, processQC, "run Dalitz QC", true);
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision) {}
+  void processDummy(MyCollisions const& collisions) {}
   PROCESS_SWITCH(DalitzEEQC, processDummy, "Dummy function", false);
 };
 

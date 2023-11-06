@@ -25,7 +25,6 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
 
-// todo: declare more columns in this file dynamic or expression, atm I save a lot of redundant information
 namespace o2::aod
 {
 
@@ -38,18 +37,66 @@ DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
 DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
 DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
-
+DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
+DECLARE_SOA_COLUMN(Q2xTPCPosEta, q2xtpcposeta, float);   //! Qx for 2nd harmonics in TPC positive eta region
+DECLARE_SOA_COLUMN(Q2yTPCPosEta, q2ytpcposeta, float);   //! Qy for 2nd harmonics in TPC positive eta region
+DECLARE_SOA_COLUMN(Q2xTPCNegEta, q2xtpcnegeta, float);   //! Qx for 2nd harmonics in TPC negative eta region
+DECLARE_SOA_COLUMN(Q2yTPCNegEta, q2ytpcnegeta, float);   //! Qy for 2nd harmonics in TPC negative eta region
+DECLARE_SOA_COLUMN(Q2xTPCFullEta, q2xtpcfulleta, float); //! Qx for 2nd harmonics in TPC full eta region
+DECLARE_SOA_COLUMN(Q2yTPCFullEta, q2ytpcfulleta, float); //! Qy for 2nd harmonics in TPC full eta region
+DECLARE_SOA_COLUMN(Q2xFT0A, q2xft0a, float);             //! Qx for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFT0A, q2yft0a, float);             //! Qy for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2xFT0C, q2xft0c, float);             //! Qx for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2yFT0C, q2yft0c, float);             //! Qy for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2xFV0A, q2xfv0a, float);             //! Qx for 2nd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFV0A, q2yfv0a, float);             //! Qy for 2nd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xTPCPosEta, q3xtpcposeta, float);   //! Qx for 3rd harmonics in TPC positive eta region
+DECLARE_SOA_COLUMN(Q3yTPCPosEta, q3ytpcposeta, float);   //! Qy for 3rd harmonics in TPC positive eta region
+DECLARE_SOA_COLUMN(Q3xTPCNegEta, q3xtpcnegeta, float);   //! Qx for 3rd harmonics in TPC negative eta region
+DECLARE_SOA_COLUMN(Q3yTPCNegEta, q3ytpcnegeta, float);   //! Qy for 3rd harmonics in TPC negative eta region
+DECLARE_SOA_COLUMN(Q3xTPCFullEta, q3xtpcfulleta, float); //! Qx for 3rd harmonics in TPC full eta region
+DECLARE_SOA_COLUMN(Q3yTPCFullEta, q3ytpcfulleta, float); //! Qy for 3rd harmonics in TPC full eta region
+DECLARE_SOA_COLUMN(Q3xFT0A, q3xft0a, float);             //! Qx for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFT0A, q3yft0a, float);             //! Qy for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xFT0C, q3xft0c, float);             //! Qx for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3yFT0C, q3yft0c, float);             //! Qy for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
 } // namespace emreducedevent
 DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
                   o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, bc::TriggerMask, evsel::Sel8,
                   emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout,
                   collision::PosX, collision::PosY, collision::PosZ,
-                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes,
-                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1,
-                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentNTPV,
-                  emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
+                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
 using EMReducedEvent = EMReducedEvents::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsBz, "AOD", "EMEVENTBZ", emreducedevent::Bz); // joinable to EMReducedEvents
+using EMReducedEventBz = EMReducedEventsBz::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsMult, "AOD", "EMEVENTMULT", //!   event multiplicity table, joinable to EMReducedEvents
+                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1);
+using EMReducedEventMult = EMReducedEventsMult::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsCent, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMReducedEvents
+                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentNTPV);
+using EMReducedEventCent = EMReducedEventsCent::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsQvec, "AOD", "EMEVENTQVECTOR", //!   event q vector table, joinable to EMReducedEvents
+                  emreducedevent::Q2xTPCPosEta, emreducedevent::Q2yTPCPosEta, emreducedevent::Q2xTPCNegEta, emreducedevent::Q2yTPCNegEta, emreducedevent::Q2xTPCFullEta, emreducedevent::Q2yTPCFullEta,
+                  emreducedevent::Q2xFT0A, emreducedevent::Q2yFT0A, emreducedevent::Q2xFT0C, emreducedevent::Q2yFT0C, emreducedevent::Q2xFV0A, emreducedevent::Q2yFV0A,
+                  emreducedevent::Q3xTPCPosEta, emreducedevent::Q3yTPCPosEta, emreducedevent::Q3xTPCNegEta, emreducedevent::Q3yTPCNegEta, emreducedevent::Q3xTPCFullEta, emreducedevent::Q3yTPCFullEta,
+                  emreducedevent::Q3xFT0A, emreducedevent::Q3yFT0A, emreducedevent::Q3xFT0C, emreducedevent::Q3yFT0C, emreducedevent::Q3xFV0A, emreducedevent::Q3yFV0A);
+using EMReducedEventQvec = EMReducedEventsQvec::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsNgPCM, "AOD", "EMEVENTNGPCM", emreducedevent::NgammaPCM); // joinable to EMReducedEvents
+using EMReducedEventNgPCM = EMReducedEventsNgPCM::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsNgPHOS, "AOD", "EMEVENTNGPHOS", emreducedevent::NgammaPHOS); // joinable to EMReducedEvents
+using EMReducedEventNgPHOS = EMReducedEventsNgPHOS::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsNgEMC, "AOD", "EMEVENTNGEMC", emreducedevent::NgammaEMC); // joinable to EMReducedEvents
+using EMReducedEventNgEMC = EMReducedEventsNgEMC::iterator;
 
 namespace emreducedmcevent
 {
@@ -240,9 +287,13 @@ using V0KFEMReducedEventId = V0KFEMReducedEventIds::iterator;
 
 namespace emprimarytrack
 {
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
-DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent); //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);        //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);                //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 } // namespace emprimarytrack
 DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPRIMARYTRACK", //!
                   o2::soa::Index<>, emprimarytrack::CollisionId,
@@ -261,10 +312,16 @@ DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPRIMARYTRACK", //!
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::ITSNCls<track::ITSClusterMap>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
-
+                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  emprimarytrack::Px<track::Pt, track::Phi>,
+                  emprimarytrack::Py<track::Pt, track::Phi>,
+                  emprimarytrack::Pz<track::Pt, track::Eta>);
 // iterators
 using EMPrimaryTrack = EMPrimaryTracks::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryTrackEMReducedEventIds, "AOD", "PRMTRKEMEVENTID", emprimarytrack::EMReducedEventId); // To be joined with EMPrimaryTracks table at analysis level.
+// iterators
+using EMPrimaryTrackEMReducedEventId = EMPrimaryTrackEMReducedEventIds::iterator;
 
 namespace dalitzee
 {
