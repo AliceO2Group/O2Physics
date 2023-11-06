@@ -19,6 +19,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using CollisionRec = aod::Collision;
+using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
 using CollisionSim = aod::McCollision;
 
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
@@ -123,7 +124,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
   // Since I am subscribing to different tables in each case, there are 3 separate implementations of process(...)
   // A) Process only reconstructed data;
-  // B) Process both reconstructed and simulated data;
+  // B) Process both reconstructed and corresponding MC truth simulated data;
   // C) Process only simulated data.
 
   // -------------------------------------------
@@ -145,16 +146,16 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) Steer all analysis steps:
-    Steer(&collision, &tracks);
+    Steer<eRec>(collision, tracks);
 
   } // void processRec(...)
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed information", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true);
 
   // -------------------------------------------
 
-  // B) Process both reconstructed and simulated data:
-  void processRecSim(CollisionRec const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&)
+  // B) Process both reconstructed and corresponding MC truth simulated data:
+  void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
 
     // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
@@ -168,11 +169,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) Steer all analysis steps:
-    Steer(&collision, &tracks);
+    Steer<eRecAndSim>(collision, tracks);
 
   } // void processRecSim(...)
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and simulated information", true);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
   // -------------------------------------------
 
@@ -192,11 +193,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) Steer all analysis steps:
-    Steer(&collision, &tracks); // TBI 20231030 not ready yet, I still need to template the first argument in Steer() for this to work, tbc...
+    Steer<eSim>(collision, tracks);
 
   } // void processSim(...)
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated information", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
 
 }; // struct MultiparticleCorrelationsAB
 
