@@ -1753,6 +1753,10 @@ struct HfTrackIndexSkimCreator {
             }
           }
 
+          // initialise PV refit coordinates and cov matrix for 2-prongs already here for D*
+          std::array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+          std::array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+
           // 2-prong vertex reconstruction
           if (sel2ProngStatusPos && sel2ProngStatusNeg) {
 
@@ -1771,8 +1775,6 @@ struct HfTrackIndexSkimCreator {
               df2.getTrack(1).getPxPyPzGlo(pvec1);
 
               /// PV refit excluding the candidate daughters, if contributors
-              std::array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-              std::array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
               if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
@@ -1946,12 +1948,17 @@ struct HfTrackIndexSkimCreator {
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                     }
+                    if constexpr (doPvRefit) {
+                      // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
+                      rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                      pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
+                    }
                   }
                   if (debug) {
                     rowDstarCutStatus(cutStatus);
                   }
                 }
-              }
+              } // end of D*
 
               // preselection of 3-prong candidates
               if (doDstar && counterTrackPos2 < counterTrackPos1 + 1) { // we avoid duplication for 3-prongs
@@ -1981,8 +1988,8 @@ struct HfTrackIndexSkimCreator {
                 isSelected3ProngCand = 0;
               }
 
-              // if we did not preselected any D* or 3-prong candidate, continue
-              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
+              // if we did not preselected any 3-prong candidate, continue
+              if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
@@ -2073,11 +2080,7 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
-                if (isSelectedDstar) {
-                  rowDstarPVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
-                                  pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
-                }
-              } // end of D*
+              }
 
               if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
                 continue;
@@ -2203,12 +2206,17 @@ struct HfTrackIndexSkimCreator {
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                     }
+                    if constexpr (doPvRefit) {
+                      // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
+                      rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                      pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
+                    }
                   }
                   if (debug) {
                     rowDstarCutStatus(cutStatus);
                   }
                 }
-              }
+              } // end of D*
 
               // preselection of 3-prong candidates
               if (doDstar && counterTrackNeg2 < counterTrackNeg1 + 1) { // we avoid duplication for 3-prongs
@@ -2239,7 +2247,7 @@ struct HfTrackIndexSkimCreator {
               }
 
               // if we did not preselected any D* or 3-prong candidate, continue
-              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
+              if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
@@ -2330,14 +2338,6 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
-                if (isSelectedDstar) {
-                  rowDstarPVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
-                                  pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
-                }
-              } // end of D*
-
-              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
-                continue;
               }
 
               // reconstruct the 3-prong secondary vertex
