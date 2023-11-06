@@ -2082,10 +2082,6 @@ struct HfTrackIndexSkimCreator {
                 }
               }
 
-              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
-                continue;
-              }
-
               // reconstruct the 3-prong secondary vertex
               if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
                 continue;
