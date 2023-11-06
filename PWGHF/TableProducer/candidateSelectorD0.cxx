@@ -22,6 +22,7 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -68,7 +69,7 @@ struct HfCandidateSelectorD0 {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponse<float> hfMlResponse;
+  o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
@@ -357,15 +358,7 @@ struct HfCandidateSelectorD0 {
 
       if (applyMl) {
         // ML selections
-
-        std::vector<float> inputFeatures{candidate.cpa(),
-                                         candidate.cpaXY(),
-                                         candidate.decayLength(),
-                                         candidate.decayLengthXY(),
-                                         candidate.impactParameter0(),
-                                         candidate.impactParameter1(),
-                                         candidate.impactParameterProduct()};
-
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlD0Candidate(outputMl);
 
