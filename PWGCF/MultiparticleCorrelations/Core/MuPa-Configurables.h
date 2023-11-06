@@ -90,6 +90,12 @@ Configurable<int> cNContributors_min{
 Configurable<int> cNContributors_max{"cNContributors_max", 1000000000,
                                      "maximum number of vertex contributors"};
 
+Configurable<int> cImpactParameter_min{
+  "cImpactParameter_min", -1,
+  "minimum value of impact parameter (can be used only for sim) (set to -1 to ignore)"};
+Configurable<int> cImpactParameter_max{"cImpactParameter_max", 1000000000,
+                                       "maximum value of impact parameter (can be used only for sim)"};
+
 // Particle cuts:
 Configurable<float> pt_min{"pt_min", 0.2, "minimum track pt value [GeV/c]"};
 Configurable<float> pt_max{"pt_max", 5.0, "maximum track pt value [GeV/c]"};
