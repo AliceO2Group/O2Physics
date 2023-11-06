@@ -27,8 +27,8 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_D0(FEATURE)                                          \
-  {                                                                      \
+#define FILL_MAP_D0(FEATURE)                                        \
+  {                                                                 \
 #FEATURE, static_cast < uint8_t>(InputFeaturesD0ToKPi::FEATURE) \
   }
 
@@ -36,26 +36,26 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_D0_FULL(OBJECT, FEATURE, GETTER)     \
+#define CHECK_AND_FILL_VEC_D0_FULL(OBJECT, FEATURE, GETTER)   \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());                   \
-    break;                                                         \
+    inputFeatures.emplace_back(OBJECT.GETTER());              \
+    break;                                                    \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_D0_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_D0(GETTER)                          \
+#define CHECK_AND_FILL_VEC_D0(GETTER)                        \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());               \
-    break;                                                        \
+    inputFeatures.emplace_back(candidate.GETTER());          \
+    break;                                                   \
   }
 
 // Variation of CHECK_AND_FILL_VEC_D0_FULL(OBJECT, FEATURE, GETTER)
 // where GETTER is a method of hfHelper
 #define CHECK_AND_FILL_VEC_D0_HFHELPER(OBJECT, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): { \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));          \
-    break;                                                        \
+  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {   \
+    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));        \
+    break;                                                      \
   }
 
 namespace o2::analysis
@@ -165,7 +165,7 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameter1, impactParameter1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, errorImpactParameter0, errorImpactParameter0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, errorImpactParameter1, errorImpactParameter1);
-                // TPC PID variables
+        // TPC PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
@@ -250,8 +250,7 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_D0(eta),
       FILL_MAP_D0(phi),
       FILL_MAP_D0(y),
-      FILL_MAP_D0(e)
-      };
+      FILL_MAP_D0(e)};
   }
 };
 
