@@ -441,9 +441,6 @@ struct MultiplicityCounter {
       usedTracksIds.clear();
 
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      if (groupPVContrib.size() > 0) {
-        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
-      }
 
       auto Ntrks = 0;
       if (atracks != nullptr) {
