@@ -606,7 +606,7 @@ struct TableMaker {
 
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fPropMuon) {
-          VarManager::FillpropagateMuon<TMuonFillMap>(muon, collision);
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
         }
         if (fDoDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
@@ -930,7 +930,7 @@ struct TableMaker {
 
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fPropMuon) {
-          VarManager::FillpropagateMuon<TMuonFillMap>(muon, collision);
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
         }
         if (fDoDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
