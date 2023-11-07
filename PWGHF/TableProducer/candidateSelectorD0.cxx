@@ -118,7 +118,6 @@ struct HfCandidateSelectorD0 {
       }
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
