@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <array>
+#include <vector>
 #include <random>
 
 #include "Framework/runDataProcessing.h"
@@ -78,7 +79,7 @@ struct efficiencyQA {
 
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, 0.497648f - 0.1f, 0.497648f + 0.1f}, "binning for the Lambda invariant-mass"};
   ConfigurableAxis zVtxAxis{"zVtxAxis", {200, -10.f, 10.f}, "binning for the z coordinate of the primary vertex"};
-  ConfigurableAxis recAxis{"recAxis", {5, 0.f, 5.f}, "binning for the probe reconstruction flag"};
+  ConfigurableAxis recAxis{"recAxis", {7, 0.f, 7.f}, "binning for the probe reconstruction flag"};
   ConfigurableAxis recAxisTag{"recAxisTag", {8, 0.f, 8.f}, "binning for the tag reconstruction flag"};
   ConfigurableAxis ptAxis{"ptAxis", {200, -10.f, 10.f}, "binning for the pt of V0 daughter tracks"};
 
@@ -87,44 +88,52 @@ struct efficiencyQA {
   int mRunNumber;
   float d_bz;
 
-  Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
+  Preslice<aod::V0s> perCollisionV0s = o2::aod::v0::collisionId;
+  Preslice<TracksFull> perCollisionTracks = o2::aod::track::collisionId;
 
   void init(InitContext const&)
   {
-    uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    gen32.seed(randomSeed);
-
-    mRunNumber = 0;
-    d_bz = 0;
-
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    int mat{static_cast<int>(cfgMaterialCorrection)};
-    fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
-
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massLambdaAxis});
     hPiRec = histos.add<TH2>("piRec", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {recAxis, ptAxis});
-    hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH3F, {recAxis, ptAxis, massLambdaAxis});
-    hTagCuts = histos.add<TH2>("tagCuts", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {recAxisTag, ptAxis});
-    std::string binLabels[]{"All", "ITS only", "TPC only", "ITS+TPC", "TPC+TOF"};
-    for (int iB{0}; iB < 5; ++iB) {
+    std::string binLabels[]{"Decays", "ITS", "ITS only", "TPC", "TPC only", "ITS+TPC", "TPC+TOF"};
+    for (int iB{0}; iB < 7; ++iB) {
       hPiRec->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
-      hPiRecMass->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
     }
-    std::string binLabelsTag[]{"hasITS && hasTPC", "tracking", "PID", "v0 mass", "dcaV0dau", "cosPA", "dcaXYZ", "V0radius"};
-    for (int iB{0}; iB < 8; ++iB) {
-      hTagCuts->GetXaxis()->SetBinLabel(iB + 1, binLabelsTag[iB].data());
+    if (doprocessMC) {
+      hPiRec->GetXaxis()->SetBinLabel(1, "Generated");
+    } else if (doprocessTagAndProbe) {
+      uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      gen32.seed(randomSeed);
+
+      mRunNumber = 0;
+      d_bz = 0;
+
+      fitter.setPropagateToPCA(true);
+      fitter.setMaxR(200.);
+      fitter.setMinParamChange(1e-3);
+      fitter.setMinRelChi2Change(0.9);
+      fitter.setMaxDZIni(1e9);
+      fitter.setMaxChi2(1e9);
+      fitter.setUseAbsDCA(true);
+      int mat{static_cast<int>(cfgMaterialCorrection)};
+      fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+
+      histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massLambdaAxis});
+      hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH3F, {recAxis, ptAxis, massLambdaAxis});
+      hTagCuts = histos.add<TH2>("tagCuts", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {recAxisTag, ptAxis});
+
+      std::string binLabelsTag[]{"hasITS && hasTPC", "tracking", "PID", "v0 mass", "dcaV0dau", "cosPA", "dcaXYZ", "V0radius"};
+      for (int iB{0}; iB < 8; ++iB) {
+        hTagCuts->GetXaxis()->SetBinLabel(iB + 1, binLabelsTag[iB].data());
+      }
+      for (int iB{0}; iB < 7; ++iB) {
+        hPiRecMass->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
+      }
     }
   }
 
@@ -165,30 +174,32 @@ struct efficiencyQA {
   }
 
   template <class T, class Hist>
-  void fillHistV0Daugh(T const& track, std::shared_ptr<Hist> hist, float const& pt, float const& mass = 1)
+  void fillHistTrack(T const& track, std::shared_ptr<Hist> hist, float const& pt, float const& mass = 1)
   {
-    auto trackPt = track.sign() * pt;
-    hist->Fill(0., trackPt, mass);
     bool itsAccept = !(track.itsChi2NCl() > 36.);
     bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4.);
+    if (track.hasITS()) {
+      hist->Fill(1., pt, mass);
+    }
     if (track.hasITS() && itsAccept && !track.hasTPC()) {
-      hist->Fill(1., trackPt, mass);
+      hist->Fill(2., pt, mass);
     }
     if (track.hasTPC() && tpcAccept) {
+      hist->Fill(3., pt, mass);
       if (!track.hasITS()) {
-        hist->Fill(2., trackPt, mass);
+        hist->Fill(4., pt, mass);
       }
       if (track.hasITS() && itsAccept) {
-        hist->Fill(3., trackPt, mass);
+        hist->Fill(5., pt, mass);
       }
       if (track.hasTOF() && !track.hasITS()) {
-        hist->Fill(4., trackPt, mass);
+        hist->Fill(6., pt, mass);
       }
     }
   }
 
   template <class T>
-  void fillCandidateData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
+  void fillTagAndProbe(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
   {
     for (auto& v0 : V0s) {
       auto posTrack = v0.posTrack_as<T>();
@@ -310,15 +321,17 @@ struct efficiencyQA {
 
       histos.fill(HIST("massV0"), massV0);
 
-      float propPt = std::hypot(momProbe[0], momProbe[1]);
-      fillHistV0Daugh(probeTrack, hPiRecMass, propPt, massV0);
+      auto trackPt = probeTrack.sign() * std::hypot(momProbe[0], momProbe[1]);
+      hPiRecMass->Fill(0., trackPt, massV0);
+      fillHistTrack(probeTrack, hPiRecMass, trackPt, massV0);
       if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massMax) {
-        fillHistV0Daugh(probeTrack, hPiRec, propPt);
+        hPiRec->Fill(0., trackPt);
+        fillHistTrack(probeTrack, hPiRec, trackPt);
       }
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void processTagAndProbe(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -333,13 +346,77 @@ struct efficiencyQA {
       histos.fill(HIST("zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0s, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
+      fillTagAndProbe<TracksFull>(collision, V0Table_thisCollision);
     }
   }
-  PROCESS_SWITCH(efficiencyQA, processData, "Data analysis", true);
+  PROCESS_SWITCH(efficiencyQA, processTagAndProbe, "Tag and probe analysis", true);
+
+  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+
+      if (!collision.sel8())
+        continue;
+
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      histos.fill(HIST("zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto TrackTable_thisCollision = tracks.sliceBy(perCollisionTracks, collIdx);
+
+      for (auto& track : TrackTable_thisCollision) {
+        auto mcLab = trackLabelsMC.rawIteratorAt(track.globalIndex());
+        if (mcLab.mcParticleId() < -1 || mcLab.mcParticleId() >= particlesMC.size()) {
+          continue;
+        }
+        if (mcLab.has_mcParticle()) {
+          auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
+          if (std::abs(track.eta()) > etaMax || std::abs(track.rapidity(o2::constants::physics::MassPionCharged)) > yMax) {
+            continue;
+          }
+          if (std::abs(mcTrack.y()) > yMax) {
+            continue;
+          }
+          if (std::abs(mcTrack.pdgCode()) != 211) {
+            continue;
+          }
+          if (!mcTrack.isPhysicalPrimary()) {
+            continue;
+          }
+          const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
+
+          auto trackParCov = getTrackParCov(track);
+          gpu::gpustd::array<float, 2> dcaInfo;
+          o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCov, d_bz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
+
+          auto trackPt = track.sign() * trackParCov.getPt();
+          fillHistTrack(track, hPiRec, trackPt);
+        }
+      }
+    }
+
+    for (auto& partMC : particlesMC) {
+      auto pdgCode = partMC.pdgCode();
+      if (std::abs(partMC.y()) > yMax) {
+        continue;
+      }
+      if (std::abs(pdgCode) != 211) {
+        continue;
+      }
+      if (!partMC.isPhysicalPrimary()) {
+        continue;
+      }
+      hPiRec->Fill(0., pdgCode / std::abs(pdgCode) * partMC.pt());
+    }
+  }
+  PROCESS_SWITCH(efficiencyQA, processMC, "MC analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
