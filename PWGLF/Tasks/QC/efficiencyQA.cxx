@@ -106,7 +106,7 @@ struct efficiencyQA {
     }
     if (doprocessMC) {
       hPiRec->GetXaxis()->SetBinLabel(1, "Generated");
-    } else if (doprocessTagAndProbe){
+    } else if (doprocessTagAndProbe) {
       uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       gen32.seed(randomSeed);
 
