@@ -19,6 +19,7 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <optional>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -36,6 +37,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Core/PDG.h"
 
+// #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -149,6 +151,12 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
+
+    // JetBkgSubUtils bkgSub(jetFinder.jetR, 1., 0.6, jetFinder.jetEtaMin, jetFinder.jetEtaMax, jetFinder.jetPhiMin, jetFinder.jetPhiMax, jetFinder.ghostAreaSpec);
+    // bkgSub.setMaxEtaEvent(jetFinder.etaMax);
+    // auto[rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, false);
+    // jets = jetFinder.selJets(bkgSub.doRhoAreaSub(jets, rho, rhoM));
+
     for (const auto& jet : jets) {
       bool isHFJet = false;
       if (doHFJetFinding) {
@@ -167,10 +175,10 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> candconst;
       std::vector<int> clusterconst;
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
-                jet.E(), jet.m(), jet.area(), std::round(R * 100));
+                jet.E(), jet.m(), jet.has_area() ? jet.area() : -1., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         // need to add seperate thing for constituent subtraction
-        if (DoConstSub) { // FIXME: needs to be addressed in Haadi's PR
+        if (DoConstSub) {
           constituentsSubTable(jetsTable.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi(),
                                constituent.E(), constituent.m(), constituent.user_index());
         }
