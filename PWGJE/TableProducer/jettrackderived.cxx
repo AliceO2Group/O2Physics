@@ -175,11 +175,11 @@ struct jetspectraDerivedMaker {
     tableTrack.reserve(tracks.size());
     for (const auto& trk : tracks) {
       if (!isTrackSelected(trk)) {
-        return;
+      return;
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.pt() * trk.sign(), trk.eta(), trk.phi(), trk.pt(),
+                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
                  trk.sigma1Pt(),
                  trk.alpha(),
                  trk.x(), trk.y(), trk.z(),
@@ -187,8 +187,6 @@ struct jetspectraDerivedMaker {
                  trk.tgl(),
                  trk.isPVContributor(),
                  trk.hasTRD(),
-                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaXY()),
-                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaZ()),
                  trk.isGlobalTrack(),
                  trk.isGlobalTrackWoDCA(),
                  trk.isGlobalTrackWoPtEta(),
@@ -205,7 +203,9 @@ struct jetspectraDerivedMaker {
                  trk.tpcNClsFound(),
                  trk.tpcNClsCrossedRows(),
                  trk.tpcCrossedRowsOverFindableCls(),
-                 trk.tpcFoundOverFindableCls());
+                 trk.tpcFoundOverFindableCls(),
+                 trk.dcaXY(),
+                 trk.dcaZ());
     }
   }
   PROCESS_SWITCH(jetspectraDerivedMaker, processData, "Process data for derived dataset production", true);
