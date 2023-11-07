@@ -90,6 +90,23 @@ struct HfCorrelatorLcHadronsSelection {
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> selectedLcCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> selectedLcCandidatesMc = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
 
+  // Returns false if the candidate does not pass cuts on decay type, y max, and pt min. Used for data and MC reco.
+  template <typename T>
+  bool kinematicCuts(const T& candidate)
+  {
+    // check decay channel flag for candidate
+    if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      return false;
+    }
+    if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
+      return false;
+    }
+    if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
+      return false;
+    }
+    return true;
+  }
+
   void processLcSelectionData(aod::Collision const& collision,
                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates)
   {
@@ -98,13 +115,7 @@ struct HfCorrelatorLcHadronsSelection {
       auto selectedLcCandidatesGrouped = selectedLcCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
       for (const auto& candidate : selectedLcCandidatesGrouped) {
-        if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          continue;
-        }
-        if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
-          continue;
-        }
-        if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
+        if (!kinematicCuts(candidate)) {
           continue;
         }
         isLcFound = 1;
@@ -122,14 +133,7 @@ struct HfCorrelatorLcHadronsSelection {
     if (selectedLcCandidatesMc.size() > 0) {
       auto selectedLcCandidatesGroupedMc = selectedLcCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate : selectedLcCandidatesGroupedMc) {
-        // check decay channel flag for candidate
-        if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          continue;
-        }
-        if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
-          continue;
-        }
-        if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
+        if (!kinematicCuts(candidate)) {
           continue;
         }
         isLcFound = 1;
@@ -207,7 +211,7 @@ struct HfCorrelatorLcHadrons {
      {"hSelectionStatusLcToPiKP", "Lc,Hadron candidates;selection status;entries", {HistType::kTH1F, {{8, -0.5, 7.5}}}},
      {"hEta", "Lc,Hadron candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hPhi", "Lc,Hadron candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hY", "Lc,Hadron candidates;candidate #it{#y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hY", "Lc,Hadron candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hPtCandMcRec", "Lc,Hadron candidates - Mc reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptLcAxisBins, ptLcAxisMin, ptLcAxisMax}}}},
      {"hPtProng0McRec", "Lc,Hadron candidates - Mc reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptLcAxisBins, ptLcAxisMin, ptLcAxisMax}}}},
      {"hPtProng1McRec", "Lc,Hadron candidates - Mc reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptLcAxisBins, ptLcAxisMin, ptLcAxisMax}}}},
