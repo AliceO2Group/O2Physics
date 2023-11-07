@@ -251,7 +251,7 @@ struct PhotonConversionBuilder {
         return false;
       }
 
-      if (abs(track.z() / track.x() - track.tgl()) > 0.5) {
+      if (abs(track.z() / track.x() - track.tgl()) > 0.4) {
         return false;
       }
 

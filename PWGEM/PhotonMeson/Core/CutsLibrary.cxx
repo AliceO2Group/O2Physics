@@ -48,7 +48,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
+    cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 180);
     return cut;
   }
@@ -117,7 +117,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(true);
@@ -137,7 +137,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(false);
@@ -157,7 +157,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(false);
     cut->SetOnWwireOB(true);
