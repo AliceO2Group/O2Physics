@@ -43,37 +43,6 @@ namespace o2::aod
 namespace jetspectra
 {
 
-template <typename binningType>
-typename binningType::binned_t packInTable(const float& valueToBin)
-{
-  if (valueToBin <= binningType::binned_min) {
-    return (binningType::underflowBin);
-  } else if (valueToBin >= binningType::binned_max) {
-    return (binningType::overflowBin);
-  } else if (valueToBin >= 0) {
-    return (static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) + 0.5f));
-  } else {
-    return (static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) - 0.5f));
-  }
-}
-// Function to unpack a binned value into a float
-template <typename binningType>
-float unPack(const typename binningType::binned_t& valueToUnpack)
-{
-  return binningType::bin_width * static_cast<float>(valueToUnpack);
-}
-
-struct binningDCA {
- public:
-  typedef int16_t binned_t;
-  static constexpr int nbins = (1 << 8 * sizeof(binned_t)) - 2;
-  static constexpr binned_t overflowBin = nbins >> 1;
-  static constexpr binned_t underflowBin = -(nbins >> 1);
-  static constexpr float binned_max = 6.0;
-  static constexpr float binned_min = -6.0;
-  static constexpr float bin_width = (binned_max - binned_min) / nbins;
-};
-
 // Collision info
 DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -97,10 +66,9 @@ DECLARE_SOA_COLUMN(Snp, snp, float);
 DECLARE_SOA_COLUMN(Tgl, tgl, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
-// DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // if a track passed the isGlobalTrackWoDCA requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // all tracks in the derived table have to pass this requirement !
 DECLARE_SOA_COLUMN(Flags, flags, uint32_t);                                               // Dummy
 DECLARE_SOA_COLUMN(Length, length, float);
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
@@ -118,8 +86,8 @@ DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, int);
-DECLARE_SOA_COLUMN(DCAxy, dcaXY, float); //! Stored binned dcaxy
-DECLARE_SOA_COLUMN(DCAz, dcaZ, float);   //! Stored binned dcaxy
+DECLARE_SOA_COLUMN(DCAxy, dcaXY, float);
+DECLARE_SOA_COLUMN(DCAz, dcaZ, float); 
 
 } // namespace jetspectra
 
