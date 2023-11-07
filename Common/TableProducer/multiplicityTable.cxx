@@ -91,7 +91,7 @@ struct MultiplicityTableTaskIndexed {
       enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
         mEnabledTables.push_back(i);
-        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra") && (tableNames[i] != "MultsExtraMC")) {
+        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra"))) {
           LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
         }
       }
