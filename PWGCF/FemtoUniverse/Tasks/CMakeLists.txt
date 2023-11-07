@@ -58,3 +58,10 @@ o2physics_add_executable(femtouniverse-cutculator
           SOURCES femtoUniverseCutCulator.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+
+o2physics_add_executable(femtouniverse-pair-track-track-m-c
+          SOURCES femtoUniversePairTaskTrackTrackMC.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+
