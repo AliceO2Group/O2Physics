@@ -62,6 +62,7 @@ struct HfCandidateSelectorD0 {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   Configurable<bool> enableDebugMl{"enableDebugMl", false, "Flag to enable histograms to monitor BDT application"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
@@ -71,6 +72,7 @@ struct HfCandidateSelectorD0 {
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   std::vector<float> outputMl = {};
+  std::vector<float> outputMlNotPreselected = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -114,6 +116,7 @@ struct HfCandidateSelectorD0 {
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
       outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
@@ -264,7 +267,7 @@ struct HfCandidateSelectorD0 {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -278,7 +281,7 @@ struct HfCandidateSelectorD0 {
       if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -295,7 +298,7 @@ struct HfCandidateSelectorD0 {
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -343,7 +346,7 @@ struct HfCandidateSelectorD0 {
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlNotPreselected);
         }
         continue;
       }
