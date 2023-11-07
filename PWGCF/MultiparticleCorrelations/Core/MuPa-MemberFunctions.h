@@ -128,6 +128,11 @@ void DefaultConfiguration()
 
   // ...
 
+  // Configurable<bool> cfCalculateCorrelations{ ... };
+  fCalculateCorrelations = cfCalculateCorrelations;
+
+  // ...
+
   // Configurable<bool> cfCalculateTest0{ ... };
   fCalculateTest0 = cfCalculateTest0;
 
@@ -153,9 +158,6 @@ void DefaultConfiguration()
 
   // task->SetCalculateQvector(kTRUE);
   fCalculateQvector = kTRUE;
-
-  // task->SetCalculateCorrelations(kTRUE);
-  fCalculateCorrelations = kTRUE;
 
   // task->SetCalculateNestedLoops(kFALSE);
   fCalculateNestedLoops = kFALSE;
@@ -1180,20 +1182,52 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 
 //============================================================
 
-template <typename T>
+template <eRecSim rs, typename T>
 Bool_t ParticleCuts(T const& track)
 {
   // Particles cuts.
 
-  // TBI 20231021 implement remaining cuts
+  // a) Particle cuts on info available in reconstructed (and corresponding MC truth simulated);
+  // b) Particle cuts on info available only in simulated data.
 
   if (fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
-    return kFALSE;
-  }
+  // a) Particle cuts on info available in reconstructed ...:
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
+      return kFALSE;
+    }
+
+    // TBI 20231107 other cuts on reconstructed track ...
+
+    // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+    if constexpr (rs == eRecAndSim) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for this track, skip...");
+        return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this particle
+      }
+      auto mcparticle = track.mcParticle();                           // corresponding MC truth simulated particle
+      if ((mcparticle.pt() < pt_min) || (mcparticle.pt() > pt_max)) { // TBI 20231107 re-thing if i really cut directly on MC truth, keep it in sync with what I did in AliPhysics
+        return kFALSE;
+      }
+
+      // TBI 20231107 other cuts on corresponding MC truth particle ...
+
+    } // if constexpr (rs == eRecAndSim) {
+  }   // if constexpr (rs == eRec || rs == eRecAndSim) {
+
+  // b) Particle cuts on info available only in simulated data:
+  if constexpr (rs == eSim) {
+    // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+    if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
+      return kFALSE;
+    }
+
+    // TBI 20231107 other cuts on simulated ...
+
+  } // if constexpr (rs == eSim) {
 
   return kTRUE;
 
@@ -1206,21 +1240,39 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
 {
   // Fill all particle histograms for reconstructed and simulated data.
 
+  // a) Fill reconstructed (and corresponding MC truth simulated);
+  // b) Fill only simulated.
+
   if (fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  if constexpr (rs == eRec) {
+  // a) Fill reconstructed ...:
+  if constexpr (rs == eRec || rs == eRecAndSim) {
     cph_a.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi());
     cph_a.fParticleHistograms[ePt][eRec][ba]->Fill(track.pt());
     cph_a.fParticleHistograms[eEta][eRec][ba]->Fill(track.eta());
-  }
 
+    // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+    if constexpr (rs == eRecAndSim) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for this track, skip...");
+        return;
+      }
+      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      cph_a.fParticleHistograms[ePhi][eSim][ba]->Fill(mcparticle.phi());
+      cph_a.fParticleHistograms[ePt][eSim][ba]->Fill(mcparticle.pt());
+      cph_a.fParticleHistograms[eEta][eSim][ba]->Fill(mcparticle.eta());
+    } // if constexpr (rs == eRecAndSim) {
+  }   // if constexpr (rs == eRec || rs == eRecAndSim) {
+
+  // b) Fill only simulated:
   if constexpr (rs == eSim) {
+    // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
     cph_a.fParticleHistograms[ePhi][eSim][ba]->Fill(track.phi());
     cph_a.fParticleHistograms[ePt][eSim][ba]->Fill(track.pt());
     cph_a.fParticleHistograms[eEta][eSim][ba]->Fill(track.eta());
-  }
+  } // if constexpr (rs == eSim) {
 
   /* TBI 20231019 use also these + check further
   // From aod::TracksExtra
@@ -1834,7 +1886,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
   }
 
   // a) Return value:
-  TObjArray* oa;
+  TObjArray* oa = NULL;
 
   // b) Determine from filePath if the file in on a local machine, or in home
   // dir AliEn, or in CCDB:
@@ -1916,16 +1968,32 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
-    oaFile->GetObject(
-      "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
-                     // perhaps I can do this also via Configurables? Keep in
-                     // sync with O2::TranslateASCIIintoObjArray
-    if (!oa) {
+
+    // Fetch TObjArray from external file:
+    TList* lok = oaFile->GetListOfKeys();
+    if (!lok) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
+    for (Int_t l = 0; l < lok->GetEntries(); l++) {
+      oaFile->GetObject(lok->At(l)->GetName(), oa);
+      if (oa && TString(oa->ClassName()).EqualTo("TObjArray")) {
+        break; // TBI 20231107 the working assumption is that in an external file there is only one TObjArray object,
+               // and here I fetch it, whatever its name is. The advantage is that I do not have to do
+               // any additional work for TObjArray's name. Since I do not anticipate ever having more than 1
+               // TObjArray in an external file, this shall be alright. With the current implementation,
+               // if there are multiple TObjArray objects in the same ROOT file, the first one will be fetched.
+      }
+    } // for(Int_t l=0;l<lok->GetEntries();l++)
+    if (!oa) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
 
   } // else {
+
+  if (fVerbose) {
+    LOGF(info, "\033[1;32m%s => Fetched TObjArray named \"%s\" from file %s\033[0m", __PRETTY_FUNCTION__, oa->GetName(), filePath);
+  }
 
   return oa;
 
@@ -2301,10 +2369,6 @@ void MainLoopOverParticles(T const& tracks)
 {
   // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
 
-  // a) Loop only over reconstructed;
-  // b) Loop over reconstructed and corresponding MC truth simulated;
-  // b) Loop only over simulated.
-
   // Remark:
   // To process only 'rec', set gProcessRec = true via configurable "cfWhatToProcess".
   // To process both 'rec' and 'sim', set gProcessRecSim = true via configurable "cfWhatToProcess".
@@ -2314,195 +2378,85 @@ void MainLoopOverParticles(T const& tracks)
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  // *) Local particle variables:
+  // *) Local kinematic variables and corresponding particle weights:
   Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
-  Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pT weight
+  Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pt weight
   Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
   Double_t wToPowerP = 1.;       // weight raised to power p
   fSelectedTracks = 0;           // reset number of selected tracks
 
-  // *) Loop only over reconstructed:
-  if constexpr (rs == eRec) {
-    for (auto& track : tracks) {
+  for (auto& track : tracks) {
 
-      // *) Fill particle histograms for reconstructed particle before particle cuts:
-      FillParticleHistograms<eRec>(track, eBefore);
+    // *) Fill particle histograms before particle cuts:
+    FillParticleHistograms<rs>(track, eBefore);
 
-      // *) Particle cuts:
-      if (!ParticleCuts(track)) {
+    // *) Particle cuts:
+    if (!ParticleCuts<rs>(track)) {
+      continue;
+    }
+
+    // *) Fill particle histograms after particle cuts:
+    FillParticleHistograms<rs>(track, eAfter);
+
+    // *) Fill Q-vectors:
+    //  Kinematics (Remark: for "eRecSim" processing, kinematics is taken from reconstructed):
+    dPhi = track.phi();
+    dPt = track.pt();
+    dEta = track.eta();
+
+    // Particle weights:
+    if (pw_a.fUseWeights[wPHI]) {
+      wPhi = Weight(dPhi, "phi"); // corresponding phi weight
+      if (!(wPhi > 0.)) {
+        LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
         continue;
       }
-
-      // *) Fill particle histograms for reconstructed data after particle cuts:
-      FillParticleHistograms<eRec>(track, eAfter);
-
-      // *) Fill Q-vectors:
-      //  Take kinematics from reconstructed particles:
-      dPhi = track.phi();
-      dPt = track.pt();
-      dEta = track.eta();
-
-      // Particle weights:
-      if (pw_a.fUseWeights[wPHI]) {
-        wPhi = Weight(dPhi, "phi"); // corresponding phi weight
-        if (!(wPhi > 0.)) {
-          LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
-          continue;
-        }
-      } // if(pw_a.fUseWeights[wPHI])
-      if (pw_a.fUseWeights[wPT]) {
-        wPt = Weight(dPt, "pt"); // corresponding pt weight
-        if (!(wPt > 0.)) {
-          LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
-          continue;
-        }
-      } // if(pw_a.fUseWeights[wPT])
-      if (pw_a.fUseWeights[wETA]) {
-        wEta = Weight(dEta, "eta"); // corresponding eta weight
-        if (!(wEta > 0.)) {
-          LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
-          continue;
-        }
-      } // if(pw_a.fUseWeights[wETA])
-
-      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-          if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) {
-            wToPowerP = pow(wPhi * wPt * wEta, wp);
-          }
-          qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
-        } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
-      }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
-
-      // *) Nested loops containers:
-      if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
-        if (nl_a.ftaNestedLoops[0]) {
-          nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-        if (nl_a.ftaNestedLoops[1]) {
-          nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
-
-      // *) Counter of selected tracks in the current event:
-      fSelectedTracks++;
-      if (fSelectedTracks >= cSelectedTracks_max) {
-        break;
-      }
-
-    } // for (auto& track : tracks)
-
-  } // if (rs == eRec)
-
-  // *) Loop over reconstructed and corresponding MC truth simulated:
-  if constexpr (rs == eRecAndSim) {
-
-    for (auto& track : tracks) {
-
-      // *) Fill particle histograms for reconstructed particle before particle cuts:
-      FillParticleHistograms<eRec>(track, eBefore);
-
-      // *) Fill particle histograms for corresponding simulated particle before particle cuts:
-      if (track.has_mcParticle()) {
-        auto mcParticle = track.mcParticle();
-        FillParticleHistograms<eSim>(mcParticle, eBefore); // great, this works straight like this, thanks O2 people!
-      } else {
-        LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
-      }
-
-      // *) Particle cuts:
-      if (!ParticleCuts(track)) {
+    } // if(pw_a.fUseWeights[wPHI])
+    if (pw_a.fUseWeights[wPT]) {
+      wPt = Weight(dPt, "pt"); // corresponding pt weight
+      if (!(wPt > 0.)) {
+        LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
         continue;
       }
-
-      // *) Fill particle histograms for reconstructed data after particle cuts:
-      FillParticleHistograms<eRec>(track, eAfter);
-
-      // *) Fill particle histograms for corresponding simulated particle after particle cuts:
-      // TBI 20231020 there is a duplication of code here, see above. I should get 'mcParticle' only once for this 'track' in this loop
-      if (track.has_mcParticle()) {
-        auto mcParticle = track.mcParticle();
-        FillParticleHistograms<eSim>(mcParticle, eAfter); // great, this works straight like this, thanks O2 people!
-      } else {
-        LOGF(debug, "in function \033[1;31m%s at line %d, track.has_mcParticle() is false. \033[0m", __PRETTY_FUNCTION__, __LINE__);
+    } // if(pw_a.fUseWeights[wPT])
+    if (pw_a.fUseWeights[wETA]) {
+      wEta = Weight(dEta, "eta"); // corresponding eta weight
+      if (!(wEta > 0.)) {
+        LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
+        LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
+        continue;
       }
+    } // if(pw_a.fUseWeights[wETA])
 
-      // *) Fill Q-vectors:
-      //  Take kinematics from reconstructed particles:
-      dPhi = track.phi();
-      dPt = track.pt();
-      dEta = track.eta();
-
-      // Particle weights:
-      if (pw_a.fUseWeights[wPHI]) {
-        wPhi = Weight(dPhi, "phi"); // corresponding phi weight
-        if (!(wPhi > 0.)) {
-          LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
-          continue;
+    for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+      for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
+        if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) {
+          wToPowerP = pow(wPhi * wPt * wEta, wp);
         }
-      } // if(pw_a.fUseWeights[wPHI])
-      if (pw_a.fUseWeights[wPT]) {
-        wPt = Weight(dPt, "pt"); // corresponding pt weight
-        if (!(wPt > 0.)) {
-          LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
-          continue;
-        }
-      } // if(pw_a.fUseWeights[wPT])
-      if (pw_a.fUseWeights[wETA]) {
-        wEta = Weight(dEta, "eta"); // corresponding eta weight
-        if (!(wEta > 0.)) {
-          LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __PRETTY_FUNCTION__);
-          LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
-          continue;
-        }
-      } // if(pw_a.fUseWeights[wETA])
+        qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
+      } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
+    }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
 
-      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) {                                // weight power
-          if (pw_a.fUseWeights[wPHI] || pw_a.fUseWeights[wPT] || pw_a.fUseWeights[wETA]) { // TBI 20231030 do not forget to generalize this, when diff. weights are used
-            wToPowerP = pow(wPhi * wPt * wEta, wp);
-          }
-          qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
-        } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
-      }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
+    // *) Nested loops containers:
+    if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
+      if (nl_a.ftaNestedLoops[0]) {
+        nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
+      } // remember that the 2nd argument here must start from 0
+      if (nl_a.ftaNestedLoops[1]) {
+        nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
+      } // remember that the 2nd argument here must start from 0
+    }   // if(fCalculateNestedLoops || fCalculateCustomNestedLoop)
 
-      // *) Nested loops containers:
-      if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
-        if (nl_a.ftaNestedLoops[0]) {
-          nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-        if (nl_a.ftaNestedLoops[1]) {
-          nl_a.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
+    // *) Counter of selected tracks in the current event:
+    fSelectedTracks++;
+    if (fSelectedTracks >= cSelectedTracks_max) {
+      break;
+    }
 
-      // *) Counter of selected tracks in the current event:
-      fSelectedTracks++;
-      if (fSelectedTracks >= cSelectedTracks_max) {
-        break;
-      }
+  } // for (auto& track : tracks)
 
-    } // for (auto& track : tracks)
-
-  } // if constexpr (rs == eRecSim) {
-
-  // *) Loop only over simulated data:
-  if constexpr (rs == eSim) {
-
-    // TBI 20231030 not implemented yet
-
-    LOGF(info, "\033[1;32m This option is not implemented yet! gProcessSim = true \033[0m");
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-
-    // ...
-
-  } // if constexpr (rs == eSim) {
-
-} // template <typename T> void MainLoopOverParticles(T const& tracks)
+} // template <eRecSim rs, typename T> void MainLoopOverParticles(T const& tracks) {
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_

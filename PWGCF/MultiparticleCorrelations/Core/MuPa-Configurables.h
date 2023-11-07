@@ -34,6 +34,10 @@ Configurable<string> cfWhatToProcess{
   "cfWhatToProcess", "Rec",
   "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated"};
 
+// Correlations:
+Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false,
+                                           "calculate or not correlations"};
+
 // Test0:
 Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
                                     "calculate or not Test0"};
