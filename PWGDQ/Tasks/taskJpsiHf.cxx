@@ -36,6 +36,10 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 
+using MyRedEvents = aod::RedJpDmColls;
+using MyRedPairCandidatesSelected = aod::RedJpDmDileptons;
+using MyRedD0CandidatesSelected = soa::Join<aod::RedJpDmDmesons, aod::RedJpDmD0Masss, aod::RedJpDmDmesBdts>;
+
 struct taskJPsiHf {
   //
   // This task combines dilepton candidates with a open charm hadron
@@ -66,8 +70,14 @@ struct taskJPsiHf {
   Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
   Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
+  Partition<MyRedPairCandidatesSelected> selectedRedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyRedD0CandidatesSelected> selectedRedD0Candidates = aod::jpsidmescorr::massD0 > 0 || aod::jpsidmescorr::massD0bar > 0;
+
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
   Preslice<MyPairCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
+
+  Preslice<MyRedD0CandidatesSelected> perCollisionRedDmeson = aod::jpsidmescorr::redJpDmCollId;
+  Preslice<MyRedPairCandidatesSelected> perCollisionRedDilepton = aod::jpsidmescorr::redJpDmCollId;
 
   // Define histograms
   AxisSpec axisPt{100, 0.f, 50.f};
@@ -108,7 +118,19 @@ struct taskJPsiHf {
   template <typename TDqTrack, typename THfTrack>
   void runDileptonDmeson(TDqTrack const& dileptons, THfTrack const& dmesons)
   {
-    if (configDebug) {
+    std::cout << "Dileptons = " << dileptons.size() << " ; D-mesons = " << dmesons.size() << std::endl;
+    for (auto& dmeson : dmesons) {
+      float mD0    = dmeson.massD0();
+      float mD0bar = dmeson.massD0bar();
+      if (mD0 > 0) {
+        registry.fill(HIST("Dmeson/hMassDmeson"), mD0);
+      }
+      if (mD0bar > 0) {
+        registry.fill(HIST("Dmeson/hMassDmeson"), mD0bar);
+      }
+    }
+    
+    /*if (configDebug) {
       for (auto& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
@@ -205,20 +227,30 @@ struct taskJPsiHf {
           registry.fill(HIST("JPsiDmeson/hPhiDmesonWithJPsi"), phiD0);
         }
       }
-    }
+    }*/
   }
 
   // process J/psi - D0
-  void processJspiD0(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
+  /*void processJspiD0(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
       runDileptonDmeson(groupedDileptonCandidates, groupedDmesonCandidates);
     }
+  }*/
+
+  void processRedJspiD0(MyRedEvents const& collisions, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
+  {
+    for (auto& collision : collisions) {
+      auto groupedRedDmesonCandidates = selectedRedD0Candidates->sliceByCached(aod::jpsidmescorr::redJpDmCollId, collision.index(), cache);
+      auto groupedRedDileptonCandidates = selectedRedDileptonCandidates->sliceByCached(aod::jpsidmescorr::redJpDmCollId, collision.index(), cache);
+      runDileptonDmeson(groupedRedDileptonCandidates, groupedRedDmesonCandidates);
+    }
   }
 
-  PROCESS_SWITCH(taskJPsiHf, processJspiD0, "Process J/psi - D0", true);
+  //PROCESS_SWITCH(taskJPsiHf, processJspiD0, "Process J/psi - D0", false);
+  PROCESS_SWITCH(taskJPsiHf, processRedJspiD0, "Process J/psi - D0", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
