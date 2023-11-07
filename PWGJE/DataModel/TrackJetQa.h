@@ -65,7 +65,7 @@ DECLARE_SOA_COLUMN(Z, z, float);
 DECLARE_SOA_COLUMN(Snp, snp, float);
 DECLARE_SOA_COLUMN(Tgl, tgl, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
-DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // all tracks in the derived table have to pass this requirement !
@@ -87,7 +87,7 @@ DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls,
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, int);
 DECLARE_SOA_COLUMN(DCAxy, dcaXY, float);
-DECLARE_SOA_COLUMN(DCAz, dcaZ, float); 
+DECLARE_SOA_COLUMN(DCAz, dcaZ, float);
 
 } // namespace jetspectra
 
