@@ -97,11 +97,11 @@ DECLARE_SOA_COLUMN(Snp, snp, float);
 DECLARE_SOA_COLUMN(Tgl, tgl, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool); //! Has or not the TRD match
-//DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
+// DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_COLUMN(Flags, flags, uint32_t);          // Dummy
+DECLARE_SOA_COLUMN(Flags, flags, uint32_t);                                               // Dummy
 DECLARE_SOA_COLUMN(Length, length, float);
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
@@ -119,7 +119,7 @@ DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls,
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, int);
 DECLARE_SOA_COLUMN(DCAxy, dcaXY, float); //! Stored binned dcaxy
-DECLARE_SOA_COLUMN(DCAz, dcaZ, float); //! Stored binned dcaxy
+DECLARE_SOA_COLUMN(DCAz, dcaZ, float);   //! Stored binned dcaxy
 
 } // namespace jetspectra
 
@@ -151,7 +151,7 @@ DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   jetspectra::IsGlobalTrack,
                   jetspectra::IsGlobalTrackWoDCA,
                   jetspectra::IsGlobalTrackWoPtEta,
-                  jetspectra::Flags,//jetspectra:: ?
+                  jetspectra::Flags, // jetspectra:: ?
                   jetspectra::Length,
                   jetspectra::TPCChi2NCl, jetspectra::ITSChi2NCl, track::TOFChi2,
                   jetspectra::TPCNClsShared,

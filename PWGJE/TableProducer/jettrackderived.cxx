@@ -175,7 +175,7 @@ struct jetspectraDerivedMaker {
     tableTrack.reserve(tracks.size());
     for (const auto& trk : tracks) {
       if (!isTrackSelected(trk)) {
-      return;
+        return;
       }
 
       tableTrack(tableColl.lastIndex(),
