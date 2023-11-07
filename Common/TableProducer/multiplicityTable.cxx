@@ -331,7 +331,7 @@ struct MultiplicityTableTaskIndexed {
               multZNA = -999.f;
               multZNC = -999.f;
             }
-            multZDC(bc.zdc().amplitudeZNA(), bc.zdc().amplitudeZNC());
+            multZDC(multZNA, multZNC);
             LOGF(debug, "multZNA=%6.0f multZNC=%6.0f", multZNA, multZNC);
             break;
           case 4: // Barrel
