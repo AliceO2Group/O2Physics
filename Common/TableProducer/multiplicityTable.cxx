@@ -91,10 +91,9 @@ struct MultiplicityTableTaskIndexed {
       enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
         mEnabledTables.push_back(i);
-        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")))
-          {
-            LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
-          }
+        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
+          LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+        }
       }
     }
 
@@ -247,12 +246,12 @@ struct MultiplicityTableTaskIndexed {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
           if (lCalibObjects) {
-            hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
-            hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
-            hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
-            hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
-            hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
-            hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
+            hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+            hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+            hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+            hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+            hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+            hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
             lCalibLoaded = true;
             // Capture error
             if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
