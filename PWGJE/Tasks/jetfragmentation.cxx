@@ -453,7 +453,7 @@ struct JetFragmentation {
   void processDummy(aod::JTracks const& track) {}
   PROCESS_SWITCH(JetFragmentation, processDummy, "Dummy process function turned on by default", true);
 
-  void processMcD(soa::Join<aod::JCollision aod::JMcCollisionLbs>::iterator const& collision,
+  void processMcD(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                   aod::JMcCollisions const& mcCollisions,
                   McDJets const& jets,
                   aod::JTracks const& tracks)

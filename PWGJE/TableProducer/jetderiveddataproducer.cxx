@@ -40,8 +40,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
-
 struct JetDerivedDataProducerTask {
   Produces<aod::JBCs> jBCsTable;
   Produces<aod::JBCPIs> jBCParentIndexTable;
@@ -59,10 +57,11 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JMcParticles> jMcParticlesTable;
   Produces<aod::JMcParticlePIs> jParticlesParentIndexTable;
   Produces<aod::JClusters> jClustersTable;
+  Produces<aod::JClusterPIs> jClustersParentIndexTable;
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
-  Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalmatchedtrack::trackId;
+  Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
 
   void init(InitContext const&)
   {
@@ -77,7 +76,6 @@ struct JetDerivedDataProducerTask {
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
-
     jCollisionsTable(collision.posZ(), JetDerivedDataUtilities::setEventSelectionBit(collision), collision.alias_raw());
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
@@ -110,9 +108,9 @@ struct JetDerivedDataProducerTask {
 
   void processNoChargedJetTriggers(aod::Collision const& collision)
   {
-    jChargedTriggerSelsTable(JTrigSelCh::none);
+    jChargedTriggerSelsTable(JetDerivedDataUtilities::JTrigSelCh::noChargedTigger);
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", tue);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", true);
 
   void processFullJetTriggers(soa::Join<aod::Collisions, aod::FullJetFilters>::iterator const& collision)
   {
@@ -122,7 +120,7 @@ struct JetDerivedDataProducerTask {
 
   void processNoFullJetTriggers(aod::Collision const& collision)
   {
-    jFullTriggerSelsTable(JTrigSelFull::none);
+    jFullTriggerSelsTable(JetDerivedDataUtilities::JTrigSelFull::noFullTrigger);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processNoFullJetTriggers, "produces derived full trigger table table when sample is not triggered", true);
 
@@ -139,7 +137,9 @@ struct JetDerivedDataProducerTask {
 
   void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
   {
-
+    if (track.collisionId() < 0) {
+      return;
+    }
     if (track.has_mcParticle()) {
       jMcTracksLabelTable(track.mcParticleId()); // maybe its already -1 if there is no label? good to check!
     } else {
@@ -172,42 +172,42 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);
 
-  void processClusters(aod::EMCALCluster const& cluster, aod::EMCALClusterCells const& cells, aod::Calos const& calos, aod::EMCALMatchedTracks const& matchedTracks, aod::Tracks const& tracks)
+  void processClusters(aod::Collision const& collision, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const& calos, aod::EMCALMatchedTracks const& matchedTracks, aod::Tracks const& tracks)
   {
 
-    if (cluster.collisionId() < 0) {
-      return;
-    }
+    for (auto cluster : clusters) {
 
-    auto clusterCells = cells.sliceBy(perClusterCells, cluster.globalIndex());
+      auto const clusterCells = cells.sliceBy(perClusterCells, cluster.globalIndex());
 
-    float leadingCellEnergy = -1.0;
-    float subleadingCellEnergy = -1.0;
-    float cellAmplitude = -1.0;
-    int leadingCellNumber = -1;
-    int subleadingCellNumber = -1;
-    int cellNumber = -1;
-    for (auto const& clutserCell : clusterCells) {
-      cellAmplitude = clutserCell.calo().amplitude();
-      cellNumber = clutserCell.calo().cellNumber();
-      if (cellAmplitude > subleadingCellEnergy) {
-        subleadingCellEnergy = cellAmplitude;
-        subleadingCellNumber = cellNumber;
+      float leadingCellEnergy = -1.0;
+      float subleadingCellEnergy = -1.0;
+      float cellAmplitude = -1.0;
+      int leadingCellNumber = -1;
+      int subleadingCellNumber = -1;
+      int cellNumber = -1;
+      for (auto const& clutserCell : clusterCells) {
+        cellAmplitude = clutserCell.calo().amplitude();
+        cellNumber = clutserCell.calo().cellNumber();
+        if (cellAmplitude > subleadingCellEnergy) {
+          subleadingCellEnergy = cellAmplitude;
+          subleadingCellNumber = cellNumber;
+        }
+        if (subleadingCellEnergy > leadingCellEnergy) {
+          std::swap(leadingCellEnergy, subleadingCellEnergy);
+          std::swap(leadingCellNumber, subleadingCellNumber);
+        }
       }
-      if (subleadingCellEnergy > leadingCellEnergy) {
-        std::swap(leadingCellEnergy, subleadingCellEnergy);
-        std::swap(leadingCellNumber, subleadingCellNumber);
+
+      jClustersTable(cluster.collisionId(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), cluster.definition(), leadingCellEnergy, subleadingCellEnergy, leadingCellNumber, subleadingCellNumber);
+      jClustersParentIndexTable(cluster.globalIndex());
+
+      auto const clusterTracks = matchedTracks.sliceBy(perClusterTracks, cluster.globalIndex());
+      std::vector<int> clusterTrackIDs;
+      for (const auto& clusterTrack : clusterTracks) {
+        clusterTrackIDs.push_back(clusterTrack.trackId());
       }
+      jClustersMatchedTracksTable(clusterTrackIDs);
     }
-
-    jClustersTable(cluster.collisionId(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), cluster.definition(), leadingCellEnergy, subleadingCellEnergy, leadingCellNumber, subleadingCellNumber);
-
-    auto clusterTracks = matchedTracks.sliceBy(perClusterTracks, cluster.globalIndex());
-    std::vector<int> clusterTrackIDs;
-    for (const auto& clusterTrack : clusterTracks) {
-      clusterTrackIDs.push_back(clusterTrack.trackId());
-    }
-    jClustersMatchedTracksTable(clusterTrackIDs);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
 };

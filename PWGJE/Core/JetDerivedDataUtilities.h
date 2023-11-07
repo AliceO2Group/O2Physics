@@ -81,12 +81,12 @@ bool eventEMCAL(T const& collision)
 }
 
 enum JTrigSelCh {
-  none = 0,
-  charged =
+  noChargedTigger = 0,
+  charged = 1
 };
 
 enum JTrigSelFull {
-  none = 0,
+  noFullTrigger = 0,
   fullHigh = 1,
   fullLow = 2,
   neutralHigh = 3,

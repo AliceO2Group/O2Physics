@@ -211,13 +211,13 @@ DECLARE_SOA_TABLE(StoredJTrackPIs, "DYN", "JTrackPIs",
 
 namespace jmcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(JMcCollision, collision);
+DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(Energy, energy, float);
+DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); // TODO : We can look at combining this with the two below
 DECLARE_SOA_COLUMN(HepMCStatusCode, getHepMCStatusCode, int);
@@ -241,7 +241,7 @@ DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMcParticles",
                   jmcparticle::Eta,
                   jmcparticle::Phi,
                   jmcparticle::Y,
-                  jmcparticle::Energy,
+                  jmcparticle::E,
                   jmcparticle::PdgCode,
                   jmcparticle::GenStatusCode,
                   jmcparticle::HepMCStatusCode,
@@ -262,7 +262,7 @@ DECLARE_SOA_TABLE(StoredJMcParticles, "DYN", "JMcParticles",
                   jmcparticle::Eta,
                   jmcparticle::Phi,
                   jmcparticle::Y,
-                  jmcparticle::Energy,
+                  jmcparticle::E,
                   jmcparticle::PdgCode,
                   jmcparticle::GenStatusCode,
                   jmcparticle::HepMCStatusCode,
@@ -299,6 +299,7 @@ DECLARE_SOA_TABLE(StoredJMcTrackLbs, "DYN", "JMcTrackLbs", //! Table joined to t
 namespace jcluster
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);                       //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(EMCALCluster, cluster);                       //! cluster ID of original cluster
 DECLARE_SOA_ARRAY_INDEX_COLUMN(JTrack, matchedTracks);                 // ! array of indices to tracks matched to the cluster
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
@@ -339,6 +340,13 @@ DECLARE_SOA_TABLE(StoredJClusters, "DYN", "JClusters",
                   o2::soa::Marker<1>);
 
 using StoredJCluster = StoredJClusters::iterator;
+
+DECLARE_SOA_TABLE(JClusterPIs, "AOD", "JClusterPIs",
+                  jcluster::EMCALClusterId);
+
+DECLARE_SOA_TABLE(StoredJClusterPIs, "DYN", "JClusterPIs",
+                  jcluster::EMCALClusterId,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JClusterTracks", //!
                   jcluster::JTrackIds);

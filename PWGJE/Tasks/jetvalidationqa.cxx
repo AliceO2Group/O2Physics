@@ -127,21 +127,21 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("selectedTrackPhi"), track.phi());
     mHistManager.fill(HIST("selectedTrackEta"), track.eta());
     // START OF FILLING TRACK CUTS HISTOS
-    // mHistManager.fill(HIST("TPC/chi2PerCluster"), track.tpcChi2NCl());
-    // mHistManager.fill(HIST("TPC/nClsCrossedRows"), track.tpcNClsCrossedRows());
-    // mHistManager.fill(HIST("TPC/crossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-    // mHistManager.fill(HIST("TPC/NClsFindable"), track.tpcNClsFindable());
-    // mHistManager.fill(HIST("TPC/NClsFound"), track.tpcNClsFound());
-    // mHistManager.fill(HIST("TPC/NClsShared"), track.tpcNClsShared());
-    // mHistManager.fill(HIST("TPC/FractionSharedCls"), track.tpcFractionSharedCls());
+    mHistManager.fill(HIST("TPC/chi2PerCluster"), track.tpcChi2NCl());
+    mHistManager.fill(HIST("TPC/nClsCrossedRows"), track.tpcNClsCrossedRows());
+    mHistManager.fill(HIST("TPC/crossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+    mHistManager.fill(HIST("TPC/NClsFindable"), track.tpcNClsFindable());
+    mHistManager.fill(HIST("TPC/NClsFound"), track.tpcNClsFound());
+    mHistManager.fill(HIST("TPC/NClsShared"), track.tpcNClsShared());
+    mHistManager.fill(HIST("TPC/FractionSharedCls"), track.tpcFractionSharedCls());
 
-    // mHistManager.fill(HIST("ITS/chi2PerCluster"), track.itsChi2NCl());
-    // mHistManager.fill(HIST("ITS/itsNCls"), track.itsNCls());
-    // for (unsigned int i = 0; i < 7; i++) {
-    //   if (track.itsClusterMap() & (1 << i)) {
-    //     mHistManager.fill(HIST("ITS/itsHits"), i);
-    //   }
-    // }
+    mHistManager.fill(HIST("ITS/chi2PerCluster"), track.itsChi2NCl());
+    mHistManager.fill(HIST("ITS/itsNCls"), track.itsNCls());
+    for (unsigned int i = 0; i < 7; i++) {
+      if (track.itsClusterMap() & (1 << i)) {
+        mHistManager.fill(HIST("ITS/itsHits"), i);
+      }
+    }
   } // end of fillTrackQA template
 
   void fillLeadingTrackQA(double leadingTrackPt, double leadingTrackPhi, double leadingTrackEta)
@@ -183,10 +183,10 @@ struct jetTrackCollisionQa {
 
   Filter etafilter = (aod::jtrack::eta < etaup) && (aod::jtrack::eta > etalow);
   Filter ptfilter = (aod::jtrack::pt < ptUp) && (aod::jtrack::pt > ptLow);
-  // using TracksJE = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  using TracksJE = soa::Filtered<aod::JTracks>;
+  using Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+  using TracksJE = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs>>;
 
-  void processESD(aod::JCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
+  void processESD(aod::JCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const& originalTracks)
   {
     mHistManager.fill(HIST("controlCollisionVtxZ"), collision.posZ());
     if (evSel == true) {
@@ -207,11 +207,12 @@ struct jetTrackCollisionQa {
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
       if (t.collisionId() == collision.globalIndex() && JetDerivedDataUtilities::selectTrack(t, trackSelection)) {
-        fillTrackQA(t);
-        if (t.pt() > leadingTrackPt) {
-          leadingTrackPt = t.pt();
-          leadingTrackPhi = t.phi();
-          leadingTrackEta = t.eta();
+        auto track = t.track_as<Tracks>();
+        fillTrackQA(track);
+        if (track.pt() > leadingTrackPt) {
+          leadingTrackPt = track.pt();
+          leadingTrackPhi = track.phi();
+          leadingTrackEta = track.eta();
         }
       }
     } // end of tracks loop
@@ -253,7 +254,7 @@ struct jetTrackCollisionQa {
   PROCESS_SWITCH(jetTrackCollisionQa, processESD, "validate jet-finder output on run2 ESD", true);
 
   // process for run3 AOD's
-  void processRun3AOD(aod::JCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
+  void processRun3AOD(aod::JCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const& originalTracks)
   {
     if (evSel == true) {
       if (!JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8) || fabs(collision.posZ()) > 10) {
@@ -271,11 +272,12 @@ struct jetTrackCollisionQa {
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
       if (t.collisionId() == collision.globalIndex() && JetDerivedDataUtilities::selectTrack(t, trackSelection)) {
-        fillTrackQA(t);
-        if (t.pt() > leadingTrackPt) {
-          leadingTrackPt = t.pt();
-          leadingTrackPhi = t.phi();
-          leadingTrackEta = t.eta();
+        auto track = t.track_as<Tracks>();
+        fillTrackQA(track);
+        if (track.pt() > leadingTrackPt) {
+          leadingTrackPt = track.pt();
+          leadingTrackPhi = track.phi();
+          leadingTrackEta = track.eta();
         }
       }
     } // end of tracks loop

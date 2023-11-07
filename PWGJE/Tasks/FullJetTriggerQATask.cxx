@@ -41,7 +41,7 @@ struct JetTriggerQA {
   using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
-  using collisionWithTrigger = soa::Join<aod::JCollisions, aod::FullJetFilters>::iterator;
+  using collisionWithTrigger = soa::Join<aod::JCollisions, aod::JFullTrigSels>::iterator;
 
   enum TriggerType_t {
     kMinBias,
@@ -683,7 +683,7 @@ struct JetTriggerQA {
     }
 
     // fill event counters and correlation matrix without constraint on the EMCAL trigger flag
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::kTVXinEMC)) {
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
       fillEventSelectionCounter(2);
       setTrigger(TriggerType_t::kEmcalMB);
     }

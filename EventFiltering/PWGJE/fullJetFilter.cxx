@@ -442,17 +442,17 @@ struct fullJetFilter {
 
   bool isEMCALMinBias(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kTVXinEMC);
+    return collision.alias_bit(triggerAliases::kTVXinEMC);
   }
 
   bool isEMCALLevel0(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7);
+    return collision.alias_bit(triggerAliases::kEMC7) || collision.alias_bit(triggerAliases::kDMC7);
   }
 
   bool isEMCALLevel1(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2);
+    return collision.alias_bit(triggerAliases::kEG1) || collision.alias_bit(triggerAliases::kEG2) || collision.alias_bit(triggerAliases::kDG1) || collision.alias_bit(triggerAliases::kDG2) || collision.alias_bit(triggerAliases::kEJ1) || collision.alias_bit(triggerAliases::kEJ2) || collision.alias_bit(triggerAliases::kDJ1) || collision.alias_bit(triggerAliases::kDJ2);
   }
 
   bool hasEMCALData(collisionInfo const& collision) const
@@ -692,12 +692,14 @@ struct fullJetFilter {
 
   void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
+    // Trigger selection (full jet case)
     runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processFullJetTrigger, "run full jet triggere code", true);
 
   void processNeutralJetTrigger(collisionInfo const& collision, filteredNeutralJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
+    // Trigger selection (neutral jet case)
     runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processNeutralJetTrigger, "run neutral jet triggere code", false);
