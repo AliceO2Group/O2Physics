@@ -36,8 +36,6 @@
 #include "Math/GenVector/Boost.h"
 
 #include "Framework/DataTypes.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "ReconstructionDataFormats/GlobalFwdTrack.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
@@ -576,7 +574,7 @@ class VarManager : public TObject
   };
 
   template <uint32_t fillMap, typename T, typename C>
-  static void FillpropagateMuon(const T& muon, const C& collision, float* values = nullptr);
+  static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -764,7 +762,7 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
 }
 
 template <uint32_t fillMap, typename T, typename C>
-void VarManager::FillpropagateMuon(const T& muon, const C& collision, float* values)
+void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
 {
   if constexpr ((fillMap & MuonCov) > 0) {
     o2::mch::TrackExtrap::setField();
