@@ -16,8 +16,6 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include <TLorentzVector.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -27,11 +25,13 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct phianalysis {
   SliceCache cache;
@@ -123,7 +123,7 @@ struct phianalysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); // FIXME: Get from the common header
+  double massKa = MassKaonCharged;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
