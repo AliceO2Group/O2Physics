@@ -119,7 +119,7 @@ struct f0980analysis {
     histos.print();
   }
 
-  double massPi = MassPionCharged
+  double massPi = MassPionCharged;
 
   int RTIndex(double pairphi, double lhphi)
   {
