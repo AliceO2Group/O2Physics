@@ -35,7 +35,7 @@ struct resonances_tutorial {
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
   // Configurable for min pT cut
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
-  
+
   // Track selection
   // primary track condition
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -138,19 +138,19 @@ struct resonances_tutorial {
         }
         daughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa); // set the daughter1 4-momentum
         daughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa); // set the daughter2 4-momentum
-        mother = daughter1 + daughter2; // calculate the mother 4-momentum
+        mother = daughter1 + daughter2;                                   // calculate the mother 4-momentum
         mass = mother.M();
         pT = mother.Pt();
         rapidity = mother.Rapidity();
         paircharge = track1.sign() * track2.sign();
-        
+
         if (std::abs(rapidity) > 0.5)
           continue; // rapidity cut
-        
+
         if (paircharge < 0) { // unlike sign
           histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
           histos.fill(HIST("h1PhiInvMassUnlikeSign"), mass);
-        } else { // like sign
+        } else {                                        // like sign
           if (track1.sign() > 0 && track2.sign() > 0) { // positive
             histos.fill(HIST("h3PhiInvMassLikeSignPP"), multiplicity, pT, mass);
             histos.fill(HIST("h1PhiInvMassLikeSignPP"), mass);
