@@ -310,7 +310,7 @@ struct lambdaAnalysis {
 
       // Invariant mass reconstruction.
       p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), MassProton);
-      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), MassKaon);
+      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), MassKaonCharged);
       p = p1 + p2;
 
       if (std::abs(p.Rapidity()) > 0.5)
