@@ -54,8 +54,8 @@ class JetBkgSubUtils
   // Default contructor
   JetBkgSubUtils() = default;
 
-  JetBkgSubUtils(float jetBkgR_out = 0.2, float constSubAlpha_out = 1., float constSubRMax_out = 0.6, float bkgEtaMin_out = -0.8, float bkgEtaMax_out = 0.8,
-                 float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec(), int nHardReject = 2);
+  JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out = -0.8, float bkgEtaMax_out = 0.8,
+                 float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, float constSubAlpha_out = 1., float constSubRMax_out = 0.6, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec(), int nHardReject = 2);
 
   // Default destructor
   ~JetBkgSubUtils() = default;
@@ -146,13 +146,13 @@ class JetBkgSubUtils
 
  protected:
   float jetBkgR = 0.2;
-  float constSubAlpha = 1.0;
-  float constSubRMax = 0.6;
   float bkgEtaMin = -0.9;
   float bkgEtaMax = 0.9;
-  float maxEtaEvent = 0.9;
   float bkgPhiMin = -99.0;
   float bkgPhiMax = 99.0;
+  float constSubAlpha = 1.0;
+  float constSubRMax = 0.6;
+  float maxEtaEvent = 0.9;
   bool doRhoMassSub = false; /// flag whether to do jet mass subtraction with the const sub
   bool removeHFCand = false; /// flag whether to remove the HF candidate from the list of particles
 
