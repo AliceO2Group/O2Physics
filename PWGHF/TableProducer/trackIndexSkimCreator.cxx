@@ -1903,7 +1903,7 @@ struct HfTrackIndexSkimCreator {
                 }
               }
             } else {
-              isSelected2ProngCand = 0; // reset to 0 not to use the D9 to build a D* meson
+              isSelected2ProngCand = 0; // reset to 0 not to use the D0 to build a D* meson
             }
           } else {
             isSelected2ProngCand = 0; // reset to 0 not to use the D9 to build a D* meson
