@@ -36,7 +36,8 @@ struct lambdaAnalysis {
 
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histograms"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histogram"};
+  Configurable<int> nBinsSp{"nBinsSp", 100, "N bins in spherocity histogram"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -48,6 +49,7 @@ struct lambdaAnalysis {
   Configurable<float> cfgPIDprecut{"cfgPIDprecut", 6, "Preselection PID TPC TOF cut"};
   Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", true, "Global Track Selection"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
+  Configurable<bool> cfgKinCuts{"cfgKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
 
   // TPC TOF Protons
   Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.0, "max pT for tpc protons"};
@@ -79,7 +81,7 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
-    const AxisSpec axisSp(1000, 0., 1., "S_{0}");
+    const AxisSpec axisSp(nBinsSp, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
@@ -315,6 +317,15 @@ struct lambdaAnalysis {
 
       if (std::abs(p.Rapidity()) > 0.5)
         continue;
+
+      // Apply kinematic cuts.
+      if (cfgKinCuts) {
+        TVector2 v1(trkPr.px(), trkPr.py());
+        TVector2 v2(trkKa.px(), trkKa.py());
+        float alpha = v1.DeltaPhi(v2);
+        if (std::abs(alpha) > 1.4 && std::abs(alpha) < 2.4)
+          continue;
+      }
 
       // Fill Invariant Mass Histograms.
       if constexpr (!mix && !mc) {
