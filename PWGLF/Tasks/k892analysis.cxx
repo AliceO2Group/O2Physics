@@ -315,7 +315,7 @@ struct k892analysis {
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -378,10 +378,10 @@ struct k892analysis {
       }
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321) { // At least one decay to Kaon
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kPiPlus || abs(part.daughterPDG2()) == kPiPlus) { // At least one decay to Pion
+      if (abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 211) { // At least one decay to Pion
         pass1 = true;
       }
       if (!pass1 || !pass2) // If we have both decay products
