@@ -14,15 +14,15 @@
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 #include <TLorentzVector.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct lambda1520analysis {
   // Define slice per Resocollision
@@ -204,8 +204,8 @@ struct lambda1520analysis {
     }
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKMinus)->Mass(); // FIXME: Get from the common header
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass(); // FIXME: Get from the common header
+  double massKa = MassKaonCharged;
+  double massPr = MassProton;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
