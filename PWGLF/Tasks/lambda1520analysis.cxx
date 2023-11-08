@@ -480,7 +480,7 @@ struct lambda1520analysis {
         if constexpr (IsMC) {
           // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << std::endl;
 
-          if (abs(trk1.pdgCode()) != kProton || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 2212 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -550,10 +550,10 @@ struct lambda1520analysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321) { // At least one decay to Kaon
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kProton || abs(part.daughterPDG2()) == kProton) { // At least one decay to Proton
+      if (abs(part.daughterPDG1()) == 2212 || abs(part.daughterPDG2()) == 2212) { // At least one decay to Proton
         pass1 = true;
       }
       if (!pass1 || !pass2) // If we have both decay products
