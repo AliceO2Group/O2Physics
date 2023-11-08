@@ -12,6 +12,8 @@
 // jet finder task
 //
 // Authors: Nima Zardoshti, Jochen Klein
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #ifndef PWGJE_CORE_JETFINDER_H_
 #define PWGJE_CORE_JETFINDER_H_

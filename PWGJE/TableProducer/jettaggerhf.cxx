@@ -11,7 +11,7 @@
 
 // Task to produce a table joinable to the jet tables for hf jet tagging
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -22,6 +22,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetTagging.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,7 +44,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDummy, "Dummy process", true);
 
-  void processData(aod::Collision const& collision, JetTableData const& jets, soa::Join<aod::Tracks, aod::TrackSelection> const& tracks)
+  void processData(aod::JCollision const& collision, JetTableData const& jets, aod::JTracks const& tracks)
   {
     for (auto& jet : jets) {
 
@@ -58,7 +59,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
 
-  void processMCD(aod::Collision const& collision, JetTableMCD const& mcdjets, soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels> const& tracks, aod::McParticles const& particles)
+  void processMCD(aod::JCollision const& collision, JetTableMCD const& mcdjets, soa::Join<aod::JTracks, aod::McTrackLabels> const& tracks, aod::JMcParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
 

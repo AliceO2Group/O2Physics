@@ -11,7 +11,7 @@
 
 // jet finder lc data charged task
 //
-// Authors: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "PWGJE/TableProducer/jetfinderhf.cxx"
 

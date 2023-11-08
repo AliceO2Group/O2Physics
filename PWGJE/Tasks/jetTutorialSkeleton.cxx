@@ -11,7 +11,7 @@
 
 // jet tutorial task for hands on tutorial session (27/04/2023)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "Framework/ASoA.h"
@@ -25,9 +25,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-
-#include "PWGJE/DataModel/EMCALClusters.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -69,125 +68,46 @@ struct JetTutorialSkeletonTask {
 
   void processDataCharged(soa::Filtered<aod::ChargedJets>::iterator const& jet)
   {
-    registry.fill(HIST("h_jet_pt"), jet.pt());
-    registry.fill(HIST("h_jet_eta"), jet.eta());
-    registry.fill(HIST("h_jet_phi"), jet.phi());
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataCharged, "jets data", true);
 
   void processMCDetectorLevelCharged(soa::Filtered<aod::ChargedMCDetectorLevelJets>::iterator const& jet)
   {
-    registry.fill(HIST("h_jet_pt"), jet.pt());
-    registry.fill(HIST("h_jet_eta"), jet.eta());
-    registry.fill(HIST("h_jet_phi"), jet.phi());
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelCharged, "jets on detector level MC", false);
 
   void processMCParticleLevel(soa::Filtered<aod::ChargedMCParticleLevelJets>::iterator const& jet)
   {
-    registry.fill(HIST("h_part_jet_pt"), jet.pt());
-    registry.fill(HIST("h_part_jet_eta"), jet.eta());
-    registry.fill(HIST("h_part_jet_phi"), jet.phi());
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevel, "jets on particle level MC", false);
 
   void processMCParticleLevelFull(soa::Filtered<aod::FullMCParticleLevelJets>::iterator const& jet)
   {
-    registry.fill(HIST("h_part_jet_pt"), jet.pt());
-    registry.fill(HIST("h_part_jet_eta"), jet.eta());
-    registry.fill(HIST("h_part_jet_phi"), jet.phi());
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelFull, "full jets on particle level MC", false);
 
-  void processMCCharged(aod::Collision const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
+  void processMCCharged(aod::JCollisions const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
   {
-    for (auto& MCDjet : MCDjets) {
-      registry.fill(HIST("h_jet_pt"), MCDjet.pt());
-      registry.fill(HIST("h_jet_eta"), MCDjet.eta());
-      registry.fill(HIST("h_jet_phi"), MCDjet.phi());
-    }
-    for (auto& MCPjet : MCPjets) {
-      registry.fill(HIST("h_part_jet_pt"), MCPjet.pt());
-      registry.fill(HIST("h_part_jet_eta"), MCPjet.eta());
-      registry.fill(HIST("h_part_jet_phi"), MCPjet.phi());
-    }
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCCharged, "jets on detector and particle level MC", false);
 
-  void processDataChargedSubstructure(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const& jet, aod::Tracks const& tracks)
+  void processDataChargedSubstructure(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const& jet, aod::JTracks const& tracks)
   {
-    registry.fill(HIST("h_jet_pt"), jet.pt());
-    registry.fill(HIST("h_jet_eta"), jet.eta());
-    registry.fill(HIST("h_jet_phi"), jet.phi());
-    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size());
-    double angularity = 0.0;
-    for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
-    }
-    registry.fill(HIST("h_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataChargedSubstructure, "jet substructure charged jets", false);
 
-  void processDataFullSubstructure(soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>>::iterator const& jet, aod::Tracks const& tracks, aod::EMCALClusters const& clusters)
+  void processDataFullSubstructure(soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>>::iterator const& jet, aod::JTracks const& tracks, aod::EMCALClusters const& clusters)
   {
-    registry.fill(HIST("h_full_jet_pt"), jet.pt());
-    registry.fill(HIST("h_full_jet_eta"), jet.eta());
-    registry.fill(HIST("h_full_jet_phi"), jet.phi());
-    registry.fill(HIST("h_full_jet_ntracks"), jet.tracks().size());
-    registry.fill(HIST("h_full_jet_nclusters"), jet.clusters().size());
-    double angularity = 0.0;
-    for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
-    }
-    for (auto& jetConstituent : jet.clusters_as<aod::EMCALClusters>()) {
-      angularity += jetConstituent.energy() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
-    }
-    registry.fill(HIST("h_full_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataFullSubstructure, "jet substructure full jets", false);
 
-  void processMCParticleSubstructure(soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>>::iterator const& jet, aod::McParticles const& particles)
+  void processMCParticleSubstructure(soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>>::iterator const& jet, aod::JMcParticles const& particles)
   {
-    registry.fill(HIST("h_part_jet_pt"), jet.pt());
-    registry.fill(HIST("h_part_jet_eta"), jet.eta());
-    registry.fill(HIST("h_part_jet_phi"), jet.phi());
-    registry.fill(HIST("h_part_jet_ntracks"), jet.tracks().size());
-    double angularity = 0.0;
-    for (auto& jetConstituent : jet.tracks_as<aod::McParticles>()) {
-      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
-    }
-    registry.fill(HIST("h_part_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleSubstructure, "jet substructure particle level full jets", false);
 
-  void processDataRecoil(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks)
+  void processDataRecoil(aod::JCollision const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::JTracks const& tracks)
   {
-    if (!collision.sel8()) {
-      return;
-    }
-    double leadingTrackpT = 0.0;
-    double leadingTrackphi = 0.0;
-    for (auto& track : tracks) {
-      if (track.pt() > 4.0 && track.pt() < 10.0) {
-        if (track.pt() > leadingTrackpT) {
-          leadingTrackpT = track.pt();
-          leadingTrackphi = track.phi();
-        }
-      }
-    }
-    if (leadingTrackpT == 0.0) {
-      return;
-    }
-    for (auto& jet : jets) {
-
-      if (jet.phi() - leadingTrackphi > 0.6) {
-
-        registry.fill(HIST("h_recoil_jet_pt"), jet.pt());
-        registry.fill(HIST("h_recoil_jet_eta"), jet.eta());
-        registry.fill(HIST("h_recoil_jet_phi"), jet.phi());
-        registry.fill(HIST("h_recoil_jet_dphi"), jet.phi() - leadingTrackphi);
-      }
-    }
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataRecoil, "hadron-recoil jets", false);
 
@@ -195,14 +115,6 @@ struct JetTutorialSkeletonTask {
   using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
   void processMCMatched(aod::Collision const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets)
   {
-    /* for (const auto& MCDjet : MCDjets) {
-      if (MCDjet.has_matchedJetGeo()) {
-        const auto& MCPjet = MCDjet.matchedJetGeo_as<MCPJetTable>();
-        registry.fill(HIST("h_matched_jets_pt"), MCPjet.pt(), MCDjet.pt());
-        registry.fill(HIST("h_matched_jets_pt"), MCPjet.phi(), MCDjet.phi());
-        registry.fill(HIST("h_matched_jets_pt"), MCPjet.eta(), MCDjet.eta());
-      }
-    }*/
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCMatched, "jets matched on detector and particle level MC", false);
 };

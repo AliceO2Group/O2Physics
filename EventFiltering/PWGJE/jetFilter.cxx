@@ -91,13 +91,13 @@ struct jetFilter {
   }
 
   // declare filters on tracks
-  // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
+  // Filter collisionFilter = nabs(aod::jcollision::posZ) < cfgVertexCut;
 
   Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
   using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
 
   void
-    process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, filteredJets const& jets)
+    process(aod::JCollision const& collision, filteredJets const& jets)
   {
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};

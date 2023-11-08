@@ -11,7 +11,7 @@
 
 // jet tutorial task for hands on tutorial session (27/04/2023)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "Framework/ASoA.h"
@@ -25,6 +25,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
@@ -101,7 +102,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCParticleLevelFull, "full jets on particle level MC", false);
 
-  void processMCCharged(aod::Collisions const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
+  void processMCCharged(aod::JCollisions const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
   {
     for (auto& MCDjet : MCDjets) {
       registry.fill(HIST("h_jet_pt"), MCDjet.pt());
@@ -116,7 +117,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCCharged, "jets on detector and particle level MC", false);
 
-  void processDataChargedSubstructure(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const& jet, aod::Tracks const& tracks)
+  void processDataChargedSubstructure(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const& jet, aod::JTracks const& tracks)
   {
     // add aditional selection on jet eta
     registry.fill(HIST("h_jet_pt"), jet.pt());
@@ -124,14 +125,14 @@ struct JetTutorialTask {
     registry.fill(HIST("h_jet_phi"), jet.phi());
     registry.fill(HIST("h_jet_ntracks"), jet.tracks().size());
     double angularity = 0.0;
-    for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
+    for (auto& jetConstituent : jet.tracks_as<aod::JTracks>()) {
       angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetConstituent.phi(), 2.0) + TMath::Power(jet.eta() - jetConstituent.eta(), 2.0));
     }
     registry.fill(HIST("h_jet_angularity"), angularity / (jet.pt() * round(jet.r() / 100.0f)));
   }
   PROCESS_SWITCH(JetTutorialTask, processDataChargedSubstructure, "jet substructure charged jets", false);
 
-  void processDataFullSubstructure(soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>>::iterator const& jet, aod::Tracks const& tracks, aod::EMCALClusters const& clusters)
+  void processDataFullSubstructure(soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>>::iterator const& jet, aod::JTracks const& tracks, aod::EMCALClusters const& clusters)
   {
     // add aditional selection on jet eta
     registry.fill(HIST("h_full_jet_pt"), jet.pt());
@@ -140,7 +141,7 @@ struct JetTutorialTask {
     registry.fill(HIST("h_full_jet_ntracks"), jet.tracks().size());
     registry.fill(HIST("h_full_jet_nclusters"), jet.clusters().size());
     double angularity = 0.0;
-    for (auto& jetTrack : jet.tracks_as<aod::Tracks>()) {
+    for (auto& jetTrack : jet.tracks_as<aod::JTracks>()) {
       angularity += jetTrack.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetTrack.phi(), 2.0) + TMath::Power(jet.eta() - jetTrack.eta(), 2.0));
     }
 
@@ -152,19 +153,19 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataFullSubstructure, "jet substructure full jets", false);
 
-  void processMCParticleSubstructure(soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>>::iterator const& jet, aod::McParticles const& particles)
+  void processMCParticleSubstructure(soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>>::iterator const& jet, aod::JMcParticles const& particles)
   {
     double angularity = 0.0;
-    for (auto& jetConstituents : jet.tracks_as<aod::McParticles>()) {
+    for (auto& jetConstituents : jet.tracks_as<aod::JMcParticles>()) {
       angularity += jetConstituents.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetConstituents.phi(), 2.0) + TMath::Power(jet.eta() - jetConstituents.eta(), 2.0));
     }
     registry.fill(HIST("h_part_jet_angularity"), angularity / (jet.pt() * round(jet.r() / 100.0f)));
   }
   PROCESS_SWITCH(JetTutorialTask, processMCParticleSubstructure, "jet substructure particle level full jets", false);
 
-  void processDataRecoil(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks)
+  void processDataRecoil(aod::JCollision const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::JTracks const& tracks)
   {
-    if (!collision.sel8()) {
+    if (!JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
       return;
     }
     double leadingTrackpT = 0.0;

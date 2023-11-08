@@ -22,5 +22,6 @@ o2physics_target_root_dictionary(PWGJECore
                       FastJetUtilities.h
                       JetTaggingUtilities.h
                       JetBkgSubUtils.h
+                      JetDerivedDataUtilities.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()
