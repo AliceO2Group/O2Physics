@@ -12,8 +12,6 @@
 /// \author Junlee Kim (jikim1290@gmail.com)
 
 #include <TLorentzVector.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
 #include "TVector2.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -24,11 +22,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
@@ -119,7 +119,7 @@ struct f0980analysis {
     histos.print();
   }
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
+  double massPi = MassPionCharged
 
   int RTIndex(double pairphi, double lhphi)
   {
