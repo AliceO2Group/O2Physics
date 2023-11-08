@@ -105,10 +105,15 @@ struct jetspectraDerivedMaker {
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
-    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
-    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracks"}});
-    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "Multiplicity FT0M"}});
+    const AxisSpec axisPercentile{binsPercentile, "Centrality FT0M"};
+    const AxisSpec axisMultiplicityPV{binsMultiplicity, "MultNTracksPV"};
+    const AxisSpec axisMultiplicityTracklets{binsMultiplicity, "MultTracklets"};
+    const AxisSpec axisMultiplicityFT0M{binsMultiplicity, "Multiplicity FT0M"};
+
+    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentile});
+    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
+    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {axisMultiplicityTracklets});
+    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
   }
 
   template <typename CollisionType, typename TrackType>

@@ -37,7 +37,7 @@ using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// Derived data model for cut variation
+// Derived data model for track optimization (and cut variation)
 namespace o2::aod
 {
 namespace jetspectra
@@ -53,41 +53,18 @@ DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
-DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float); //! Pt (signed) of the track
-DECLARE_SOA_COLUMN(Eta, eta, float);            //! Eta of the track
-DECLARE_SOA_COLUMN(Phi, phi, float);            //! Phi of the track
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
-DECLARE_SOA_COLUMN(Alpha, alpha, float);
-DECLARE_SOA_COLUMN(X, x, float);
-DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(Z, z, float);
-DECLARE_SOA_COLUMN(Snp, snp, float);
-DECLARE_SOA_COLUMN(Tgl, tgl, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // all tracks in the derived table have to pass this requirement !
-DECLARE_SOA_COLUMN(Flags, flags, uint32_t);                                               // Dummy
-DECLARE_SOA_COLUMN(Length, length, float);
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
-DECLARE_SOA_COLUMN(TOFChi2, tofChi2, float);
-DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, int);
-DECLARE_SOA_COLUMN(TPCNClsFindable, tpcNClsFindable, int);
-DECLARE_SOA_COLUMN(TPCNClsFindableMinusFound, tpcNClsFindableMinusFound, int);
-DECLARE_SOA_COLUMN(TPCNClsFindableMinusCrossedRows, tpcNClsFindableMinusCrossedRows, int);
-DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int);
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);
-DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, int);
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int);
+DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, float);
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int16_t);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
-DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, int);
-DECLARE_SOA_COLUMN(DCAxy, dcaXY, float);
-DECLARE_SOA_COLUMN(DCAz, dcaZ, float);
 
 } // namespace jetspectra
 
@@ -108,33 +85,33 @@ using JeColl = JeColls::iterator;
 DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   o2::soa::Index<>,
                   jetspectra::CollisionId,
-                  jetspectra::Signed1Pt, jetspectra::Eta, jetspectra::Phi, jetspectra::Pt,
-                  jetspectra::Sigma1Pt,
-                  jetspectra::Alpha,
-                  jetspectra::X, jetspectra::Y, jetspectra::Z,
-                  jetspectra::Snp,
-                  jetspectra::Tgl,
+                  track::Signed1Pt, track::Eta, track::Phi, track::Pt,
+                  track::Sigma1Pt,
+                  track::Alpha,
+                  track::X, track::Y, track::Z,
+                  track::Snp,
+                  track::Tgl,
                   jetspectra::IsPVContributor,
                   jetspectra::HasTRD,
                   jetspectra::IsGlobalTrack,
                   jetspectra::IsGlobalTrackWoDCA,
                   jetspectra::IsGlobalTrackWoPtEta,
-                  jetspectra::Flags, // jetspectra:: ?
-                  jetspectra::Length,
-                  jetspectra::TPCChi2NCl, jetspectra::ITSChi2NCl, track::TOFChi2,
-                  jetspectra::TPCNClsShared,
-                  jetspectra::TPCNClsFindable,
-                  jetspectra::TPCNClsFindableMinusFound,
-                  jetspectra::TPCNClsFindableMinusCrossedRows,
-                  jetspectra::ITSClusterMap,
+                  track::Flags,
+                  track::Length,
+                  track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
+                  track::TPCNClsShared,
+                  track::TPCNClsFindable,
+                  track::TPCNClsFindableMinusFound,
+                  track::TPCNClsFindableMinusCrossedRows,
+                  track::ITSClusterMap,  
                   jetspectra::ITSNCls,
                   jetspectra::TPCFractionSharedCls,
                   jetspectra::TPCNClsFound,
                   jetspectra::TPCNClsCrossedRows,
                   jetspectra::TPCCrossedRowsOverFindableCls,
                   jetspectra::TPCFoundOverFindableCls,
-                  jetspectra::DCAxy,
-                  jetspectra::DCAz);
+                  track::DcaXY,
+                  track::DcaZ);
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_TRACKJETQA_H_
