@@ -54,8 +54,17 @@ using namespace o2::framework::expressions;
 // It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
 struct GoodTrack {
-  GoodTrack(){ isJetConstituent = false; globalIndex = -1;}
-  GoodTrack(TLorentzVector w, Bool_t b,  Int_t index){ lv = w; isJetConstituent = b; globalIndex = index;}
+  GoodTrack()
+  {
+    isJetConstituent = false;
+    globalIndex = -1;
+  }
+  GoodTrack(TLorentzVector w, Bool_t b, Int_t index)
+  {
+    lv = w;
+    isJetConstituent = b;
+    globalIndex = index;
+  }
   TLorentzVector lv;
   Bool_t isJetConstituent;
   Int_t globalIndex;
@@ -255,7 +264,7 @@ struct ChJetTriggerQATask {
           // access jet constituents as tracks
           for (auto& jct : jet.tracks_as<TrackCandidates>()) {
             for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
-              if(acceptedTracks[itr].globalIndex == jct.globalIndex()){
+              if (acceptedTracks[itr].globalIndex == jct.globalIndex()) {
 
                 acceptedTracks[itr].isJetConstituent = true; // initialization
                 break;
@@ -268,7 +277,7 @@ struct ChJetTriggerQATask {
       for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
         if (!acceptedTracks[itr].isJetConstituent) {
           spectra.fill(HIST("tracksThatWereNotJetConstituentsPtEtaPhi"), acceptedTracks[itr].lv.Pt(), acceptedTracks[itr].lv.Eta(), TVector2::Phi_0_2pi(acceptedTracks[itr].lv.Phi()));
-        } 
+        }
       }
 
       if (leadingJetPt > -1.) {
