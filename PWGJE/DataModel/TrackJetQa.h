@@ -52,7 +52,7 @@ DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 // Track info
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Index to the collision
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);             //! Index to the collision
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
@@ -103,7 +103,7 @@ DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
-                  track::ITSClusterMap,  
+                  track::ITSClusterMap,
                   jetspectra::ITSNCls,
                   jetspectra::TPCFractionSharedCls,
                   jetspectra::TPCNClsFound,
