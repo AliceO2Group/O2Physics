@@ -17,7 +17,6 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
-#include <TDatabasePDG.h> // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -26,14 +25,12 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// PDG p -> 2212, K -> 321
-const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass(); // FIXME: Get from the common header
-const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();    // FIXME: Get from the common header
+using namespace o2::constants::physics;
 
 struct lambdaAnalysis {
 
@@ -312,8 +309,8 @@ struct lambdaAnalysis {
       }
 
       // Invariant mass reconstruction.
-      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), massProton);
-      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), massKaon);
+      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), MassProton);
+      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), MassKaon);
       p = p1 + p2;
 
       if (std::abs(p.Rapidity()) > 0.5)
