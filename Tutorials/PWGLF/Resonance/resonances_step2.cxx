@@ -50,7 +50,7 @@ struct resonances_tutorial {
 
   // PID selection
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
+  Configurable<float> nsigmacutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
 
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
@@ -109,9 +109,9 @@ struct resonances_tutorial {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    bool tpcPass = std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC;
+    bool tofPass = (candidate.hasTOF()) ? std::abs(candidate.tofNSigmaKa()) < nsigmacutTOF : true;
+    if (tpcPass && tofPass) {
       return true;
     }
     return false;
