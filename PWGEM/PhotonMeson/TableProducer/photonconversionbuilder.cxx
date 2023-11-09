@@ -88,8 +88,11 @@ struct PhotonConversionBuilder {
   Configurable<float> margin_r{"margin_r", 3.0, "margin for r cut in cm"};
   Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
 
+  Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
+  Configurable<float> max_qt_ap{"max_qt_ap", 0.02, "max qT for AP cut"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.05, "min pT for v0 legs at SV"};
   Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at SV"};
+  Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at SV"};
   Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at SV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
@@ -320,15 +323,6 @@ struct PhotonConversionBuilder {
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
 
-    float rxy = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-    if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
-      return;
-    }
-
-    if (rxy < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
-      return; // RZ line cut
-    }
-
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
     KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
     KFParticle kfp_pos(kfp_track_pos, -11);
@@ -353,15 +347,28 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    //// Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
-    // KFParticle gammaKF_PV = gammaKF_DecayVtx;
-    // gammaKF_PV.SetProductionVertex(KFPV);
+    float x_sv_kf = gammaKF_DecayVtx.GetX(); // after transporting photon to seconday vertex
+    float y_sv_kf = gammaKF_DecayVtx.GetY(); // after transporting photon to seconday vertex
+    float z_sv_kf = gammaKF_DecayVtx.GetZ(); // after transporting photon to seconday vertex
+
+    float rxy = RecoDecay::sqrtSumOfSquares(x_sv_kf, y_sv_kf);
+    if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
+      return;
+    }
+
+    if (rxy < abs(z_sv_kf) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+      return; // RZ line cut
+    }
 
     float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
     float v0eta = RecoDecay::eta(std::array{gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz()});
     float v0phi = RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) : RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) + TMath::TwoPi();
 
     if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
+      return;
+    }
+
+    if (isITSonlyTrack(ele) && isITSonlyTrack(pos) && v0pt > max_pt_v0_itsonly) {
       return;
     }
 
@@ -403,7 +410,7 @@ struct PhotonConversionBuilder {
 
     float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     float qt = v0_qt(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
-    if (!checkAP(alpha, qt, 0.95, 0.02)) { // store only photon conversions
+    if (!checkAP(alpha, qt, max_alpha_ap, max_qt_ap)) { // store only photon conversions
       return;
     }
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
@@ -411,8 +418,8 @@ struct PhotonConversionBuilder {
 
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
-      registry.fill(HIST("V0/hConversionPointXY"), xyz[0], xyz[1]);
-      registry.fill(HIST("V0/hConversionPointRZ"), xyz[2], rxy);
+      registry.fill(HIST("V0/hConversionPointXY"), x_sv_kf, y_sv_kf);
+      registry.fill(HIST("V0/hConversionPointRZ"), z_sv_kf, rxy);
       registry.fill(HIST("V0/hPt"), v0pt);
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
       registry.fill(HIST("V0/hCosPA"), cospa_kf);
