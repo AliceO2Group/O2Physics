@@ -40,10 +40,10 @@ struct taskFlowCharmHadrons{
   Configurable<std::string> detector{"detector", "FT0A", "Detector name"}; // Needed only to exclude tracks in TPC case
   Configurable<float> centMin{"centMin", 30., "Minimum centrality"};
   Configurable<float> centMax{"centMax", 50., "Maximum centrality"};
-  Configurable<int> selectionFlagD{"selectionFlagD", 7, "Selection Flag for D"};
-  Configurable<std::string> Dmeson{"Dmeson", "Ds", "D meson"};
-  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, "D meson invariant mass (GeV/#it{c}^{2})"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 10.}, "D meson #it{p}_{T} (GeV/#it{c})"};
+  Configurable<int> selectionFlag{"selectionFlag", 7, "Selection Flag for D"};
+  Configurable<std::string> charmHadron{"charmHadron", "Ds", "Charm Hadron"};
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, "invariant mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 10.}, "#it{p}_{T} (GeV/#it{c})"};
 
   AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
   AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -59,16 +59,16 @@ struct taskFlowCharmHadrons{
 
   HfHelper hfHelper;
   
-  Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
-  Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD;
+  Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
+  Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterCentrality = aod::qvec::cent >= centMin && aod::qvec::cent < centMax;
 
-  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD;
-  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
+  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
+  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
 
   HistogramRegistry registry{
     "registry",
-    {{"hSparseFlowD", "THn for D meson flow", {HistType::kTHnSparseF, {{thnAxisInvMass}, {thnAxisPt}, {thnAxisCent}, {thnAxisCosNPhi},{thnAxisSinNPhi}, {thnAxisScalarProd}, {thnAxisSinNDeltaPhi}, {thnAxisScalarProd}}}}}};
+    {{"hSparseFlowD", "THn for charm hadron flow", {HistType::kTHnSparseF, {{thnAxisInvMass}, {thnAxisPt}, {thnAxisCent}, {thnAxisCosNPhi},{thnAxisSinNPhi}, {thnAxisScalarProd}, {thnAxisSinNDeltaPhi}, {thnAxisScalarProd}}}}}};
 
 
   /// Compute the Q vector for the Ds candidate's tracks
@@ -127,14 +127,15 @@ struct taskFlowCharmHadrons{
   template <typename T1>
   std::vector<float> invMassDs(const T1& cand) {
     std::vector<float> mCand;
-    if (cand.isSelDsToKKPi() >= selectionFlagD) {
+    if (cand.isSelDsToKKPi() >= selectionFlag) {
       mCand.push_back(invMassDsToKKPi(cand));
     } 
-    else if (cand.isSelDsToPiKK() >= selectionFlagD) {
+    else if (cand.isSelDsToPiKK() >= selectionFlag) {
       mCand.push_back(invMassDsToPiKK(cand));
     } 
     return mCand;
   }
+
 
   /// Compute the scalar product
   /// \param qVecs is the Q vectors
