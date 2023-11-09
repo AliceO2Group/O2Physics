@@ -347,16 +347,12 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    float x_sv_kf = gammaKF_DecayVtx.GetX(); // after transporting photon to seconday vertex
-    float y_sv_kf = gammaKF_DecayVtx.GetY(); // after transporting photon to seconday vertex
-    float z_sv_kf = gammaKF_DecayVtx.GetZ(); // after transporting photon to seconday vertex
-
-    float rxy = RecoDecay::sqrtSumOfSquares(x_sv_kf, y_sv_kf);
+    float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
     if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
       return;
     }
 
-    if (rxy < abs(z_sv_kf) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+    if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
 
@@ -418,19 +414,22 @@ struct PhotonConversionBuilder {
 
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
-      registry.fill(HIST("V0/hConversionPointXY"), x_sv_kf, y_sv_kf);
-      registry.fill(HIST("V0/hConversionPointRZ"), z_sv_kf, rxy);
+      registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
+      registry.fill(HIST("V0/hConversionPointRZ"), gammaKF_DecayVtx.GetZ(), rxy);
       registry.fill(HIST("V0/hPt"), v0pt);
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
       registry.fill(HIST("V0/hCosPA"), cospa_kf);
       registry.fill(HIST("V0/hPCA"), pca_kf);
       registry.fill(HIST("V0/hPtDiff"), v0pt, ptee);
 
+      // calculate DCAxy,z to PV
       float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
-      float sign_tmp = (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz() > 0 ? +1 : -1;
-
-      float dca_xy_v0_to_pv = std::sqrt(std::pow((collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPz() - (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPy(), 2) + std::pow((collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz(), 2)) / v0mom * sign_tmp;
-      float dca_z_v0_to_pv = ((collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPy() - (collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPx()) / v0mom;
+      float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
+      float dca_x_v0_to_pv = (gammaKF_DecayVtx.GetX() - gammaKF_DecayVtx.GetPx() * cospa_kf * length / v0mom) - collision.posX();
+      float dca_y_v0_to_pv = (gammaKF_DecayVtx.GetY() - gammaKF_DecayVtx.GetPy() * cospa_kf * length / v0mom) - collision.posY();
+      float dca_z_v0_to_pv = (gammaKF_DecayVtx.GetZ() - gammaKF_DecayVtx.GetPz() * cospa_kf * length / v0mom) - collision.posZ();
+      float sign_tmp = dca_y_v0_to_pv > 0 ? +1 : -1;
+      float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
 
       float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
