@@ -104,10 +104,14 @@ struct taskFlowCharmHadrons{
 
 
   /// Fill THnSparse
-  /// \param sp is the scalar product
   /// \param pt is the transverse momentum of the candidate
+  /// \param mass is the invariant mass of the candidate
   /// \param cent is the centrality of the collision
-  /// \param m is the mass of the candidate
+  /// \param cosNPhi is the cosine of the n*phi angle
+  /// \param sinNPhi is the sine of the n*phi angle
+  /// \param cosDeltaPhi is the cosine of the n*(phi - evtPl) angle
+  /// \param sinDeltaPhi is the sine of the n*(phi - evtPl) angle
+  /// \param sp is the scalar product
   void fillThn(float pt,
                float mass,
                float cent,
@@ -122,24 +126,9 @@ struct taskFlowCharmHadrons{
   }
 
 
-  /// Compute the invariant mass of the Ds candidate
-  /// \param cand is the candidate
-  template <typename T1>
-  std::vector<float> invMassDs(const T1& cand) {
-    std::vector<float> mCand;
-    if (cand.isSelDsToKKPi() >= selectionFlag) {
-      mCand.push_back(invMassDsToKKPi(cand));
-    } 
-    else if (cand.isSelDsToPiKK() >= selectionFlag) {
-      mCand.push_back(invMassDsToPiKK(cand));
-    } 
-    return mCand;
-  }
-
-
   /// Compute the scalar product
-  /// \param qVecs is the Q vectors
-  /// \param candidates is the candidates
+  /// \param collision is the collision with the Q vector information and event plane
+  /// \param candidates are the selected candidates
   template <int decayChannel, typename T1>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                   const T1& candidates)
