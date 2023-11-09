@@ -66,6 +66,7 @@ struct skimmerPrimaryElectron {
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 40.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
@@ -174,7 +175,20 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
+    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+  }
+
+  template <typename TTrack>
+  bool isElectron_TPChadrej(TTrack const& track)
+  {
     return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFrecovery(TTrack const& track)
+  {
+    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
+    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
   }
 
   template <bool isMC, typename TTracks>
