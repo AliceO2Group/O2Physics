@@ -8,3 +8,24 @@ megalinter-reports/
 .mypy_cache/
 github_conf/
 .cache
+
+#VScode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+#Xcode
+## User settings
+xcuserdata/
+
+#QtCreator
+CMakeLists.txt.user
