@@ -26,6 +26,8 @@
 #include <KFPVertex.h>
 #include <KFVertex.h>
 
+#include <TPDGCode.h>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

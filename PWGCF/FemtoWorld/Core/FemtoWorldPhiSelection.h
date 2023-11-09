@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <TDatabasePDG.h> // FIXME
+
 #include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
@@ -528,7 +530,7 @@ std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const&
   cutContainerType output = 0;
   size_t counter = 0;
 
-  // auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+  // auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
   // auto lambdaMassHypothesis = v0.mPhi();
   // auto antiPhiMassHypothesis = v0.mAntiPhi();
   // auto diffPhi = abs(lambdaMassNominal - lambdaMassHypothesis);
@@ -557,8 +559,8 @@ std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const&
   TLorentzVector part2Vec;
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
-  float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-  float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+  float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+  float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
   part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);
   part2Vec.SetPtEtaPhiM(negTrack.pt(), negTrack.eta(), negTrack.phi(), mMassTwo);
 
@@ -619,8 +621,8 @@ void FemtoWorldPhiSelection::fillQA(C const& col, V const& v0, T const& posTrack
     TLorentzVector part2Vec;
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
     Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
-    float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-    float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+    float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+    float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
     part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);
     part2Vec.SetPtEtaPhiM(negTrack.pt(), negTrack.eta(), negTrack.phi(), mMassTwo);
 

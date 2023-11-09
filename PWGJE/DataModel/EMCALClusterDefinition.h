@@ -13,11 +13,12 @@
 // The cluster definition contains information about the used algorithm, seed threshold,
 // cell energy, gradient as well as timing cut
 //
-// Author: Florian Jonas
+/// \author Florian Jonas <florian.jonas@cern.ch>
 
-#ifndef O2_ANALYSIS_DATAMODEL_EMCALCLUSTERDEFINITION
-#define O2_ANALYSIS_DATAMODEL_EMCALCLUSTERDEFINITION
+#ifndef PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
+#define PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 
+#include <string>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -114,4 +115,4 @@ struct EMCALClusterDefinition {
   }
 }; // class EMCALClusterDefinition
 } // namespace o2::aod
-#endif
+#endif // PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_

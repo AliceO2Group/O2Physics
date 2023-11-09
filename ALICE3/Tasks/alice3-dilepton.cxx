@@ -483,8 +483,8 @@ struct Alice3Dilepton {
   bool electronIDRICH(TTrack const& track)
   {
     bool isElectron = false;
-    bool isEleRICH = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaElectronRich;
-    bool isNotPionRICH = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionRich;
+    bool isEleRICH = std::abs(track.nSigmaElectronRich()) < nSigmaElectronRich;
+    bool isNotPionRICH = std::abs(track.nSigmaPionRich()) > nSigmaPionRich;
     isElectron = isEleRICH && isNotPionRICH;
     return isElectron;
   }
