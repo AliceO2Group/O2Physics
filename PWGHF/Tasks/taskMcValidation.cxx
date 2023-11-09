@@ -154,7 +154,7 @@ struct HfTaskMcValidationGen {
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
-    if(checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+    if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       collWithHFSignal(false);
       return;
     }
@@ -421,14 +421,14 @@ struct HfTaskMcValidationRec {
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
-      if(collision.whyRejectColl() != 0) { // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
+      if (collision.whyRejectColl() != 0) { // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
         continue;
       }
       if (!collision.has_mcCollision()) {
         continue;
       }
       auto mcCollision = collision.mcCollision_as<McCollisionWithHFSignalInfo>();
-      if(checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+      if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
         continue;
       }
       if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
@@ -504,7 +504,7 @@ struct HfTaskMcValidationRec {
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
-        if(checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
         if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
@@ -564,7 +564,7 @@ struct HfTaskMcValidationRec {
 
       if (cand2Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
         auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
-        if(checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
       }
@@ -629,7 +629,7 @@ struct HfTaskMcValidationRec {
 
       if (cand3Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
         auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
-        if(checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
       }
