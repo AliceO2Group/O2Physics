@@ -765,6 +765,9 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
 template <uint32_t fillMap, typename T, typename C>
 void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
 {
+  if (!values) {
+    values = fgValues;
+  }
   if constexpr ((fillMap & MuonCov) > 0) {
     o2::mch::TrackExtrap::setField();
     double chi2 = muon.chi2();
