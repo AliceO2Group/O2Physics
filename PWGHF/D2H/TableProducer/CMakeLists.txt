@@ -45,8 +45,8 @@ o2physics_add_dpl_workflow(data-creator-dplus-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-# Scalar products
-o2physics_add_dpl_workflow(scalar-product
-                    SOURCES scalarProduct.cxx
+# Charm hadron flow
+o2physics_add_dpl_workflow(task-flow-charm-hadrons
+                    SOURCES taskFlowCharmHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

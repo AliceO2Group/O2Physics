@@ -9,21 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file scalarProduct.cxx
-/// \brief Analysis task for Scalar Product method
+/// \file taskFlowCharmHadrons.cxx
+/// \brief Analysis task for charm hadron flow
 ///
-/// \author F. Chinu, Università di Torino, Italy
-/// \author S. Politanò, INFN & Politecnico Torino, Italy
-/// \author S. Trogolo, INFN Torino, Italy
+/// \author S. Politanò, INFN Torino, Italy
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/EvtPlanes.h"
 
 #include "CCDB/BasicCCDBManager.h"
 
@@ -31,56 +31,44 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-  namespace full
-{
-DECLARE_SOA_COLUMN(Qx, qx, float);       //! X component of the Q vector
-DECLARE_SOA_COLUMN(Qy, qy, float);       //! Y component of the Q vector
-DECLARE_SOA_COLUMN(Pt, pt, float);       //! Transverse momentum of prong1 (GeV/c)
-DECLARE_SOA_COLUMN(M,   m, float);       //! Mass of the candidate (GeV/c^2)
-DECLARE_SOA_COLUMN(Cent, cent, float);   //! Centrality of the collision
-DECLARE_SOA_COLUMN(SP, sp, float);       //! Scalar product
-} // namespace full
-DECLARE_SOA_TABLE(HfScalarProduct, "AOD", "HFSCALARPRODUCT",
-                  full::Qx,
-                  full::Qy,
-                  full::Pt,
-                  full::Cent,
-                  full::M,
-                  full::SP);
-} // namespace o2::aod
+enum decayChannel {DplusToPiKPi = 0,
+                   DsToKKPi,
+                   DsToPiKK};
 
-struct scalarProduct{
-  Produces<o2::aod::HfScalarProduct> hfScalarProduct;
-
+struct taskFlowCharmHadrons{
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<std::string> detector{"detector", "FT0A", "Detector name"}; // Needed only to exclude tracks in TPC case
   Configurable<float> centMin{"centMin", 30., "Minimum centrality"};
   Configurable<float> centMax{"centMax", 50., "Maximum centrality"};
   Configurable<int> selectionFlagD{"selectionFlagD", 7, "Selection Flag for D"};
   Configurable<std::string> Dmeson{"Dmeson", "Ds", "D meson"};
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, "D meson invariant mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 10.}, "D meson #it{p}_{T} (GeV/#it{c})"};
+
+  AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+  AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+  AxisSpec thnAxisCent{100, 0., 100., "Centrality"};
+  AxisSpec thnAxisScalarProd{100, 0., 10., "Scalar Product"};
+  AxisSpec thnAxisCosNPhi{100, -1., 1., "cos(n#varphi)"};
+  AxisSpec thnAxisSinNPhi{100, -1., 1., "sin(n#varphi)"};
+  AxisSpec thnAxisSinNDeltaPhi{100, -1., 1., "sin(n#delta#varphi)"};
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using MyQvecs = soa::Filtered<soa::Join<aod::Qvectors, aod::Collisions>>;
+  using CollsWithQvecs = soa::Filtered<soa::Join<aod::Qvectors, aod::Collisions, aod::EvtPlanes>>;
+
+  HfHelper hfHelper;
   
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD;
   Filter filterCentrality = aod::qvec::cent >= centMin && aod::qvec::cent < centMax;
 
-  // TODO: add possibility to consider different mass hypotheses
-  // Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD;
-  // Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
-
+  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagD;
+  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagD;
 
   HistogramRegistry registry{
     "registry",
-    {{"hSP", "Sp;sp;entries", {HistType::kTH1F, {{100, -1.1, 1.1}}}},
-     {"hSpM", "SpVsM;sp;#it{M};entries", {HistType::kTH2F, {{100, -1.1, 1.1}, {100, 1.8, 2.2}}}},
-     {"hSpPt", "SpVsPt;sp;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, -1.1, 1.1}, {100, 0., 10.}}}},
-     {"hSpCent", "SpVsCent;sp;centrality;entries", {HistType::kTH2F, {{100, -1.1, 1.1}, {100, 0., 100.}}}},
-     {"hSpPtCent", "SpVsPtCent;sp;#it{p}_{T} (GeV/#it{c});centrality", {HistType::kTH3F, {{100, -1.1, 1.1}, {100, 0., 10.}, {100, 0., 100.}}}}}};
+    {{"hSparseFlowD", "THn for D meson flow", {HistType::kTHnSparseF, {{thnAxisInvMass}, {thnAxisPt}, {thnAxisCent}, {thnAxisCosNPhi},{thnAxisSinNPhi}, {thnAxisScalarProd}, {thnAxisSinNDeltaPhi}, {thnAxisScalarProd}}}}}};
 
 
   /// Compute the Q vector for the Ds candidate's tracks
@@ -115,21 +103,22 @@ struct scalarProduct{
   }
 
 
-  /// Fill histograms
+  /// Fill THnSparse
   /// \param sp is the scalar product
   /// \param pt is the transverse momentum of the candidate
   /// \param cent is the centrality of the collision
   /// \param m is the mass of the candidate
-  void FillHistograms(float sp,
-                      float pt,
-                      float cent,
-                      float mass)
+  void fillThn(float pt,
+               float mass,
+               float cent,
+               float cosNPhi,
+               float sinNPhi,
+               float cosDeltaPhi,
+               float sinDeltaPhi,
+               float sp
+               )
   {
-    registry.fill(HIST("hSP"), sp);
-    registry.fill(HIST("hSpM"), sp, mass);
-    registry.fill(HIST("hSpPt"), sp, pt);
-    registry.fill(HIST("hSpCent"), sp, cent);
-    registry.fill(HIST("hSpPtCent"), sp, pt, cent);
+    registry.fill(HIST("hSparseFlowD"), mass, pt, cent, cosNPhi, sinNPhi, cosDeltaPhi, sinDeltaPhi, sp);
   }
 
 
@@ -147,54 +136,39 @@ struct scalarProduct{
     return mCand;
   }
 
-  /// Mathcing between candidates and Q vectors using the global index
-  /// \param collIDCand is the global index of the candidate
-  /// \param qVecs is the Q vectors
-  /// \param QvecX is the X component of the Q vector
-  /// \param QvecY is the Y component of the Q vector
-  /// \param centQvec is the centrality of the Q vector
-  bool MatchCollID(int collIDCand,
-                   MyQvecs const& qVecs,
-                   float& QvecX,
-                   float& QvecY,
-                   float& centQvec,
-                   double& amplQvec)
-  {
-     for (auto const& qvec : qVecs) 
-     {
-      if (qvec.globalIndex() == collIDCand)
-      {
-        //GetQvectors(qvec, QvecX, QvecY);
-        QvecX = qvec.qvecFinalRe();
-        QvecY = qvec.qvecFinalIm();
-        centQvec = qvec.cent();
-        amplQvec = qvec.ampl();
-        return true;
-      }
-     }
-     return false;
-  }
-  
-
   /// Compute the scalar product
   /// \param qVecs is the Q vectors
   /// \param candidates is the candidates
-  template <typename T1>
-  void ComputeSPD(MyQvecs const& qVecs,
+  template <int decayChannel, typename T1>
+  void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                   const T1& candidates)
   {
-    float QvecX, QvecY, centQvec;
-    double amplQvec;
+    float QvecX = collision.qvecFinalRe();
+    float QvecY = collision.qvecFinalIm();
+    float amplQvec = collision.ampl();
+    float cent = 0.; //collision.cent();  TODO: avoid ambiguity with centrality
+    float evtPl = collision.evtPlFinal();
 
-    hfScalarProduct.reserve(candidates.size());
     for (auto const& cand : candidates)
     {
-      Int_t collIDCand = cand.globalIndex();
       float ptCand = cand.pt();
       float phiCand = cand.phi();
-      float mCand = 0.; // Adjust mass calculation
+      float massCand = 0.;
 
-      if (!MatchCollID(collIDCand, qVecs, QvecX, QvecY, centQvec, amplQvec)) continue;
+      switch (decayChannel)
+      {
+        case decayChannel::DsToKKPi:
+          massCand = hfHelper.invMassDsToKKPi(cand);
+          break;
+        case decayChannel::DsToPiKK:
+          massCand = hfHelper.invMassDsToPiKK(cand);
+          break;
+        case decayChannel::DplusToPiKPi:
+          massCand = hfHelper.invMassDplusToPiKPi(cand);
+          break;
+        default:
+          break;
+      }
 
       //TPC only
       if (detector.value == "TPC")
@@ -209,31 +183,39 @@ struct scalarProduct{
         }
       }
       
-      float scalprod = TMath::Cos(harmonic*phiCand)*QvecX + TMath::Sin(harmonic*phiCand)*QvecY;
-      FillHistograms(scalprod, ptCand, centQvec, mCand);
-      hfScalarProduct(QvecX, QvecY,  ptCand, centQvec, mCand, scalprod);
+      float cosNPhi = TMath::Cos(harmonic*phiCand);
+      float sinNPhi = TMath::Sin(harmonic*phiCand);
+      float scalprodCand = cosNPhi*QvecX + sinNPhi*QvecY;
+      float cosDeltaPhi = TMath::Cos(harmonic*(phiCand - evtPl));
+      float sinDeltaPhi = TMath::Sin(harmonic*(phiCand - evtPl));
+
+      fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, sinDeltaPhi, scalprodCand);
     }
   }
 
 
-  void processDs(MyQvecs const& qVecs,
-                CandDsData const& candidatesDs)
+  // Ds
+  void processDs(CollsWithQvecs::iterator const& collision,
+                 CandDsData const& candidatesDs)
   {
-    ComputeSPD<CandDsData>(qVecs, candidatesDs);
+    runFlowAnalysis<decayChannel::DsToKKPi, Partition<CandDsData>>(collision, selectedDsToKKPi);
+    runFlowAnalysis<decayChannel::DsToPiKK, Partition<CandDsData>>(collision, selectedDsToPiKK);
 
   }
-  PROCESS_SWITCH(scalarProduct, processDs, "Process Ds candidates", true);
+  PROCESS_SWITCH(taskFlowCharmHadrons, processDs, "Process Ds candidates", true);
 
-  void processDplus(MyQvecs const& qVecs,
-                    CandDplusData const& candidatesDplus)
+
+  // Dplus
+    void processDplus(CollsWithQvecs::iterator const& collision,
+                      CandDplusData const& candidatesDplus)
   {
-    ComputeSPD<CandDplusData>(qVecs, candidatesDplus);
+    runFlowAnalysis<decayChannel::DplusToPiKPi, CandDplusData>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(scalarProduct, processDplus, "Process Dplus candidates", false);
+  PROCESS_SWITCH(taskFlowCharmHadrons, processDplus, "Process Dplus candidates", false);
 
-}; // End struct ScalarProduct
+}; // End struct taskFlowCharmHadrons
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<scalarProduct>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<taskFlowCharmHadrons>(cfgc)};
 }
