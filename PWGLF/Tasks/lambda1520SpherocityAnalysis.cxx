@@ -17,7 +17,6 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
-#include <TDatabasePDG.h> // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -26,20 +25,19 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// PDG p -> 2212, K -> 321
-const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass(); // FIXME: Get from the common header
-const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();    // FIXME: Get from the common header
+using namespace o2::constants::physics;
 
 struct lambdaAnalysis {
 
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histograms"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histogram"};
+  Configurable<int> nBinsSp{"nBinsSp", 100, "N bins in spherocity histogram"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -51,6 +49,7 @@ struct lambdaAnalysis {
   Configurable<float> cfgPIDprecut{"cfgPIDprecut", 6, "Preselection PID TPC TOF cut"};
   Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", true, "Global Track Selection"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
+  Configurable<bool> cfgKinCuts{"cfgKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
 
   // TPC TOF Protons
   Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.0, "max pT for tpc protons"};
@@ -82,7 +81,7 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
-    const AxisSpec axisSp(1000, 0., 1., "S_{0}");
+    const AxisSpec axisSp(nBinsSp, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
@@ -312,12 +311,21 @@ struct lambdaAnalysis {
       }
 
       // Invariant mass reconstruction.
-      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), massProton);
-      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), massKaon);
+      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), MassProton);
+      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), MassKaonCharged);
       p = p1 + p2;
 
       if (std::abs(p.Rapidity()) > 0.5)
         continue;
+
+      // Apply kinematic cuts.
+      if (cfgKinCuts) {
+        TVector2 v1(trkPr.px(), trkPr.py());
+        TVector2 v2(trkKa.px(), trkKa.py());
+        float alpha = v1.DeltaPhi(v2);
+        if (std::abs(alpha) > 1.4 && std::abs(alpha) < 2.4)
+          continue;
+      }
 
       // Fill Invariant Mass Histograms.
       if constexpr (!mix && !mc) {
