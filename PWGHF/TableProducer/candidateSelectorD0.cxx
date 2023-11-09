@@ -71,14 +71,16 @@ struct HfCandidateSelectorD0 {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
-  std::vector<float> outputMl = {};
-  std::vector<float> outputMlNotPreselected = {};
+  std::vector<float> outputMlD0 = {};
+  std::vector<float> outputMlD0bar = {};
+  std::vector<float> outputMlNotPreselectedD0 = {};
+  std::vector<float> outputMlNotPreselectedD0bar = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
   // Define histograms
   AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
@@ -266,7 +268,7 @@ struct HfCandidateSelectorD0 {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselected);
+          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
         }
         continue;
       }
@@ -280,7 +282,7 @@ struct HfCandidateSelectorD0 {
       if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselected);
+          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
         }
         continue;
       }
@@ -297,7 +299,7 @@ struct HfCandidateSelectorD0 {
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselected);
+          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
         }
         continue;
       }
@@ -345,7 +347,7 @@ struct HfCandidateSelectorD0 {
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselected);
+          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
         }
         continue;
       }
@@ -360,21 +362,23 @@ struct HfCandidateSelectorD0 {
 
       if (applyMl) {
         // ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
-        hfMlD0Candidate(outputMl);
+        std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0);
+        std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0Bar);
+        bool isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
+        bool isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
+        hfMlD0Candidate(outputMlD0, outputMlD0bar);
 
-        if (!isSelectedMl) {
+        if (!isSelectedMlD0 && !isSelectedMlD0bar) {
           statusD0 = 0;
           statusD0bar = 0;
         }
         if (enableDebugMl) {
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
+          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0[0], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0bar[0], statusD0bar);
+          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0[1], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0bar[1], statusD0bar);
+          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0[2], statusD0);
+          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0bar[2], statusD0bar);
           if (statusD0 > 0) {
             registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
           }
