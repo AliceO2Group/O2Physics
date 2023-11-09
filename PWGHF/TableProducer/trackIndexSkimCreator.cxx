@@ -204,7 +204,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template<bool applyTrigSel, bool applyCentSel, typename Col>
+  template <bool applyTrigSel, bool applyCentSel, typename Col>
   void selectCollision(const Col& collision)
   {
     int statusCollision = 0;
