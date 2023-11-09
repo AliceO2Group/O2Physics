@@ -317,12 +317,12 @@ struct Pi0EtaToGammaGammaMC {
                 int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
                 int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
 
-                if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-                }
-                if (photonid2 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, 11, -11, 22, mcparticles);
-                }
+                // if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+                //   photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
+                // }
+                // if (photonid2 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+                //   photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, 11, -11, 22, mcparticles);
+                // }
 
                 // LOGF(info,"photonid1 = %d , photonid2 = %d", photonid1, photonid2);
                 if (photonid1 < 0 || photonid2 < 0) {

@@ -91,6 +91,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hDiffPhi", "#varphi_{#gamma} vs. #varphi_{ee};p_{T,#gamma} (GeV/c);#varphi_{#gamma} - #varphi_{ee} (rad.)", 1000, 0.f, 10.f, 400, -1.f, +1.f));
 
     if (TString(subGroup) == "mc") {
+      list->Add(new TH1F("hPt_Photon_Candidate", "pT of photon candidate;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for denominator of purity
+      list->Add(new TH2F("hEtaPhi_Photon_Candidate", "#eta vs. #varphi of photon candidate ;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for denominator of purity
+
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
       list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for MC feed down correction

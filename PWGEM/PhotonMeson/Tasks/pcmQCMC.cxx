@@ -172,17 +172,16 @@ struct PCMQCMC {
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
-          int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          // if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-          //   photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
-          // }
-
-          if (photonid < 0) {
-            continue;
-          }
-          auto mcphoton = mcparticles.iteratorAt(photonid);
-
           if (cut.IsSelected<MyMCV0Legs>(v0)) {
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Candidate"))->Fill(v0.pt());
+            reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_Candidate"))->Fill(v0.phi(), v0.eta());
+
+            int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
+            if (photonid < 0) {
+              continue;
+            }
+            auto mcphoton = mcparticles.iteratorAt(photonid);
+
             o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
             if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Primary"))->Fill(v0.pt());

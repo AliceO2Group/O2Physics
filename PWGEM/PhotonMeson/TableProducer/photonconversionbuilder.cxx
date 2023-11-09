@@ -322,6 +322,10 @@ struct PhotonConversionBuilder {
 
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
+    float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
+    if (rxy_tmp > std::min(pos.x(), ele.x()) + margin_r * 2.f) {
+      return;
+    }
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
     KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
