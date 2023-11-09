@@ -9,8 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -25,25 +23,13 @@
 #include <TPDGCode.h>
 
 #include "bestCollisionTable.h"
+#include "common.h"
 
 using namespace o2;
 using namespace o2::aod::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec DeltaZAxis = {61, -6.1, 6.1};
-AxisSpec DCAAxis = {601, -3.01, 3.01};
-AxisSpec EtaAxis = {22, -2.2, 2.2};
-// AxisSpec MultAxis = {301, -0.5, 300.5};
-AxisSpec PhiAxis = {629, 0, 2 * M_PI};
-AxisSpec PtAxis = {2401, -0.005, 24.005};
-AxisSpec PtAxisEff = {{0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-                       1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}};
-AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
-AxisSpec FT0CAxis = {1001, -0.5, 1000.5};
-AxisSpec FT0AAxis = {3001, -0.5, 3000.5};
-AxisSpec FDDAxis = {3001, -0.5, 3000.5};
+using namespace pwgmm::dndeta;
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -62,38 +48,6 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using ReTracks = soa::Join<aod::ReassignedTracksCore, aod::ReassignedTracksExtra>;
-
-enum struct EvSelBins : int {
-  kAll = 1,
-  kSelected = 2,
-  kSelectedgt0 = 3,
-  kSelectedPVgt0 = 4,
-  kRejected = 5
-};
-
-enum struct EvEffBins : int {
-  kGen = 1,
-  kGengt0 = 2,
-  kRec = 3,
-  kSelected = 4,
-  kSelectedgt0 = 5,
-  kSelectedPVgt0 = 6
-};
-
-namespace
-{
-template <typename T>
-static constexpr bool hasCent()
-{
-  if constexpr (!soa::is_soa_join_v<T>) {
-    return false;
-  } else if (T::template contains<aod::HepMCHeavyIons>()) {
-    return true;
-  } else {
-    return false;
-  }
-}
-} // namespace
 
 static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
 static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
