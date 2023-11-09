@@ -520,7 +520,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
   // If step6 is not available we fallback to taking the normalization along all delta phi (WARNING requires a
   // flat delta phi distribution)
   if (stepForMixed == -1 && step == kCFStepBiasStudy && mixed->mTriggerHist->getTHn(kCFStepReconstructed)->GetEntries() > 0 && !mSkipScaleMixedEvent) {
-    LOGF(info, "Using mixed-event normalization factors from step %d", kCFStepReconstructed);
+    LOGF(info, "Using mixed-event normalization factors from step %d", (int)kCFStepReconstructed);
     mixed->getHistsZVtxMult(kCFStepReconstructed, ptTriggerMin, ptTriggerMax, &trackMixedAllStep6, &eventMixedAllStep6);
   }
 
