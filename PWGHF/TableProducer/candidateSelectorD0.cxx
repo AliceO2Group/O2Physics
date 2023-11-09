@@ -73,8 +73,6 @@ struct HfCandidateSelectorD0 {
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   std::vector<float> outputMlD0 = {};
   std::vector<float> outputMlD0bar = {};
-  std::vector<float> outputMlNotPreselectedD0 = {};
-  std::vector<float> outputMlNotPreselectedD0bar = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -265,10 +263,13 @@ struct HfCandidateSelectorD0 {
       int statusCand = 0;
       int statusPID = 0;
 
+      outputMlD0.clear();
+      outputMlD0bar.clear();
+
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -282,7 +283,7 @@ struct HfCandidateSelectorD0 {
       if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -299,7 +300,7 @@ struct HfCandidateSelectorD0 {
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -347,7 +348,7 @@ struct HfCandidateSelectorD0 {
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMlNotPreselectedD0, outputMlNotPreselectedD0bar);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -368,8 +369,10 @@ struct HfCandidateSelectorD0 {
         bool isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
         hfMlD0Candidate(outputMlD0, outputMlD0bar);
 
-        if (!isSelectedMlD0 && !isSelectedMlD0bar) {
+        if (!isSelectedMlD0) {
           statusD0 = 0;
+        }
+        if (!isSelectedMlD0bar) {
           statusD0bar = 0;
         }
         if (enableDebugMl) {
