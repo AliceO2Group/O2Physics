@@ -73,8 +73,7 @@ struct HfTaskMcValidationGen {
   Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of generated primary vertex [cm]"};
   Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of generated primary vertex [cm]"};
   Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of generated primary vertex [cm]"};
-  Configurable<bool> checkEventGeneratorInfo{"checkEventGeneratorInfo", false, "Enable selection of events using the subGeneratorId information"};
-  Configurable<int> eventGeneratorType{"eventGeneratorType", 4, "Which kind of events to keep (0 = MB, 4 = charm injected, 5 = beauty injected)"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   AxisSpec axisNhadrons{10, -0.5, 9.5};
   AxisSpec axisNquarks{20, -0.5, 19.5};
@@ -154,7 +153,7 @@ struct HfTaskMcValidationGen {
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
-    if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+    if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       collWithHFSignal(false);
       return;
     }
@@ -307,8 +306,7 @@ struct HfTaskMcValidationRec {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
-  Configurable<bool> checkEventGeneratorInfo{"checkEventGeneratorInfo", false, "Enable selection of events using the subGeneratorId information"};
-  Configurable<int> eventGeneratorType{"eventGeneratorType", 4, "Which kind of events to keep (0 = MB, 4 = charm injected, 5 = beauty injected)"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
@@ -428,7 +426,7 @@ struct HfTaskMcValidationRec {
         continue;
       }
       auto mcCollision = collision.mcCollision_as<McCollisionWithHFSignalInfo>();
-      if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
         continue;
       }
       if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
@@ -504,7 +502,7 @@ struct HfTaskMcValidationRec {
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
-        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
         if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
@@ -564,7 +562,7 @@ struct HfTaskMcValidationRec {
 
       if (cand2Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
         auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
-        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
       }
@@ -629,7 +627,7 @@ struct HfTaskMcValidationRec {
 
       if (cand3Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
         auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
-        if (checkEventGeneratorInfo && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
       }
