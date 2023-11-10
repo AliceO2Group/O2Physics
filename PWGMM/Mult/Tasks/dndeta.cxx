@@ -23,13 +23,14 @@
 #include <TPDGCode.h>
 
 #include "bestCollisionTable.h"
-#include "common.h"
+#include "Axes.h"
+#include "Functions.h"
 
 using namespace o2;
 using namespace o2::aod::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace pwgmm::dndeta;
+using namespace pwgmm::mult;
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |

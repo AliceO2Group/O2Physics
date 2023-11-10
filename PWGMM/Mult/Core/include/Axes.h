@@ -9,14 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGMM_DNDETA_H
-#define PWGMM_DNDETA_H
+#ifndef PWGMM_AXES_H
+#define PWGMM_AXES_H
 #include <cmath>
 #include "Framework/HistogramSpec.h"
-#include "Framework/AnalysisDataModel.h"
 
-namespace pwgmm::dndeta {
-using namespace o2;
+namespace pwgmm::mult {
 using namespace o2::framework;
 //common axis definitions
 AxisSpec ZAxis = {301, -30.1, 30.1};          // Z vertex in cm
@@ -44,11 +42,11 @@ enum struct EvSelBins : int {
 };
 
 std::array<std::string_view, static_cast<size_t>(EvSelBins::kRejected)> EvSelBinLabels{
-  "All",
-  "Selected",
-  "Selected INEL>0",
-  "Selected INEL>0 (PV)",
-  "Rejected"};
+ "All",
+ "Selected",
+ "Selected INEL>0",
+ "Selected INEL>0 (PV)",
+ "Rejected"};
 
 enum struct EvEffBins : int {
   kGen = 1,
@@ -66,22 +64,5 @@ std::array<std::string_view, static_cast<size_t>(EvEffBins::kSelectedPVgt0)> EvE
   "Selected",
   "Selected INEL>0",
   "Selected INEL>0 (PV)"};
-
-// helper function to determine if collision/mccollison type contains centrality
-namespace
-{
-template <typename T>
-static constexpr bool hasCent()
-{
-  if constexpr (!soa::is_soa_join_v<T>) {
-    return false;
-  } else if constexpr (T::template contains<aod::HepMCHeavyIons>()) {
-    return true;
-  } else {
-    return false;
-  }
 }
-} // namespace
-}
-
-#endif // PWGMM_DNDETA_H
+#endif // PWGMM_AXES_H
