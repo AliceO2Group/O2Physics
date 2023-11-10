@@ -53,6 +53,7 @@ DECLARE_SOA_COLUMN(QvecBNegTwistRe, qvecBNegTwistRe, float);
 DECLARE_SOA_COLUMN(QvecBNegTwistIm, qvecBNegTwistIm, float);
 DECLARE_SOA_COLUMN(QvecBNegFinalRe, qvecBNegFinalRe, float);
 DECLARE_SOA_COLUMN(QvecBNegFinalIm, qvecBNegFinalIm, float);
+DECLARE_SOA_COLUMN(SumAmplDet, sumAmplDet, float);
 DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);
 DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);
 /// NOTE: Add here Qx,Qy for other systems.
@@ -66,7 +67,7 @@ DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS", //! Table with all Qvectors.
                   qvec::QvecBPosTwistRe, qvec::QvecBPosTwistIm, qvec::QvecBPosFinalRe, qvec::QvecBPosFinalIm,
                   qvec::QvecBNegUncorRe, qvec::QvecBNegUncorIm, qvec::QvecBNegRectrRe, qvec::QvecBNegRectrIm,
                   qvec::QvecBNegTwistRe, qvec::QvecBNegTwistIm, qvec::QvecBNegFinalRe, qvec::QvecBNegFinalIm,
-                  qvec::NTrkBPos, qvec::NTrkBNeg);
+                  qvec::SumAmplDet, qvec::NTrkBPos, qvec::NTrkBNeg);
 using Qvector = Qvectors::iterator;
 } // namespace o2::aod
 

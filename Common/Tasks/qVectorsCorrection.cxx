@@ -59,6 +59,8 @@ struct qVectorsCorrection {
   // as TDirectoryFile.
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
+  Configurable<int> cfgMinTPCTracks{"cfgMinTPCTracks", 20, "minimum TPC tracks participating in Q-vector reconstruction"};
+
   // Helper variables.
   EventPlaneHelper helperEP;
 
@@ -111,15 +113,19 @@ struct qVectorsCorrection {
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecTwist"), vec.qvecTwistRe(), vec.qvecTwistIm());
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFinal"), vec.qvecFinalRe(), vec.qvecFinalIm());
 
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosUncor"), vec.qvecBPosUncorRe(), vec.qvecBPosUncorIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosRectr"), vec.qvecBPosRectrRe(), vec.qvecBPosRectrIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosTwist"), vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosFinal"), vec.qvecBPosFinalRe(), vec.qvecBPosFinalIm());
+    if (vec.nTrkBPos() > cfgMinTPCTracks) {
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosUncor"), vec.qvecBPosUncorRe(), vec.qvecBPosUncorIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosRectr"), vec.qvecBPosRectrRe(), vec.qvecBPosRectrIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosTwist"), vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosFinal"), vec.qvecBPosFinalRe(), vec.qvecBPosFinalIm());
+    }
 
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegUncor"), vec.qvecBNegUncorRe(), vec.qvecBNegUncorIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegRectr"), vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegTwist"), vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm());
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegFinal"), vec.qvecBNegFinalRe(), vec.qvecBNegFinalIm());
+    if (vec.nTrkBNeg() > cfgMinTPCTracks) {
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegUncor"), vec.qvecBNegUncorRe(), vec.qvecBNegUncorIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegRectr"), vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegTwist"), vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm());
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegFinal"), vec.qvecBNegFinalRe(), vec.qvecBNegFinalIm());
+    }
   }
 
   void process(aod::Qvector const& qVec)
