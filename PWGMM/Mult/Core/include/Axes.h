@@ -11,7 +11,6 @@
 
 #ifndef PWGMM_AXES_H
 #define PWGMM_AXES_H
-#include <cmath>
 #include "Framework/HistogramSpec.h"
 
 namespace pwgmm::mult {

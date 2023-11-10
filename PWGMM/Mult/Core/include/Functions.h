@@ -11,7 +11,6 @@
 
 #ifndef PWGMM_FUNCTIONS_H
 #define PWGMM_FUNCTIONS_H
-#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 
 namespace pwgmm::mult {

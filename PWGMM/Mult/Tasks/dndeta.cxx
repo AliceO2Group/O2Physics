@@ -25,27 +25,13 @@
 #include "bestCollisionTable.h"
 #include "Axes.h"
 #include "Functions.h"
+#include "Selections.h"
 
 using namespace o2;
 using namespace o2::aod::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace pwgmm::mult;
-
-static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
-  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-  TrackSelectionFlags::kITSHits;
-
-static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
-  TrackSelectionFlags::kTPCNCls |
-  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-  TrackSelectionFlags::kTPCChi2NDF;
-
-static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-
-static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
-  TrackSelectionFlags::kDCAxy;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using ReTracks = soa::Join<aod::ReassignedTracksCore, aod::ReassignedTracksExtra>;
