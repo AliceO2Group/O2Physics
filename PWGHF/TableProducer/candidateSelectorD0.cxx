@@ -363,11 +363,17 @@ struct HfCandidateSelectorD0 {
 
       if (applyMl) {
         // ML selections
-        std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0);
-        std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0Bar);
-        bool isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
-        bool isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
-        hfMlD0Candidate(outputMlD0, outputMlD0bar);
+        bool isSelectedMlD0 = false;
+        bool isSelectedMlD0bar = false;
+
+        if (statusD0 > 0) {
+          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0);
+          isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
+        }
+        if (statusD0bar > 0) {
+          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0Bar);
+          isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
+        }
 
         if (!isSelectedMlD0) {
           statusD0 = 0;
@@ -375,17 +381,22 @@ struct HfCandidateSelectorD0 {
         if (!isSelectedMlD0bar) {
           statusD0bar = 0;
         }
+
+        if (isSelectedMlD0 || isSelectedMlD0bar) {
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
+        }
+
         if (enableDebugMl) {
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0[0], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0bar[0], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0[1], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0bar[1], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0[2], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0bar[2], statusD0bar);
-          if (statusD0 > 0) {
+          if (isSelectedMlD0) {
+            registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0[0], statusD0);
+            registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0[1], statusD0);
+            registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0[2], statusD0);
             registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
           }
-          if (statusD0bar > 0) {
+          if (isSelectedMlD0bar) {
+            registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0bar[0], statusD0bar);
+            registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0bar[1], statusD0bar);
+            registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0bar[2], statusD0bar);
             registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0barToKPi(candidate));
           }
         }
