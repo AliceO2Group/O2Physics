@@ -40,6 +40,7 @@ enum struct EvSelBins : int {
   kRejected = 5
 };
 
+// labels for event selection axis
 std::array<std::string_view, static_cast<size_t>(EvSelBins::kRejected)> EvSelBinLabels{
  "All",
  "Selected",
@@ -56,6 +57,7 @@ enum struct EvEffBins : int {
   kSelectedPVgt0 = 6
 };
 
+// labels for event efficiency axis
 std::array<std::string_view, static_cast<size_t>(EvEffBins::kSelectedPVgt0)> EvEffBinLabels{
   "Generated",
   "Generated INEL>0",
