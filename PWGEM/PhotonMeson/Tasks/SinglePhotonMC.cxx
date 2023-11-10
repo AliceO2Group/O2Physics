@@ -157,12 +157,12 @@ struct SinglePhotonMC {
       if (detname == "PCM") {
         add_photon_histograms(list_photon, detname, fPCMCuts);
       }
-      if (detname == "PHOS") {
-        add_photon_histograms(list_photon, detname, fPHOSCuts);
-      }
-      if (detname == "EMC") {
-        add_photon_histograms(list_photon, detname, fEMCCuts);
-      }
+      // if (detname == "PHOS") {
+      //   add_photon_histograms(list_photon, detname, fPHOSCuts);
+      // }
+      // if (detname == "EMC") {
+      //   add_photon_histograms(list_photon, detname, fEMCCuts);
+      // }
 
     } // end of detector name loop
   }
@@ -237,9 +237,9 @@ struct SinglePhotonMC {
   //    LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
   //  }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::collisionId;
-  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
-  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
+  // Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
+  // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <EMDetType photontype, typename TG1, typename TCut1>
   bool IsSelected(TG1 const& g1, TCut1 const& cut1)
@@ -249,8 +249,8 @@ struct SinglePhotonMC {
       is_selected = cut1.template IsSelected<MyMCV0Legs>(g1);
     } else if constexpr (photontype == EMDetType::kPHOS) {
       is_selected = cut1.template IsSelected<int>(g1); // dummy, because track matching is not ready.
-    } else if constexpr (photontype == EMDetType::kEMC) {
-      is_selected = cut1.template IsSelected<aod::SkimEMCMTs>(g1);
+      //} else if constexpr (photontype == EMDetType::kEMC) {
+      //  is_selected = cut1.template IsSelected<aod::SkimEMCMTs>(g1);
     } else {
       is_selected = true;
     }
@@ -290,7 +290,7 @@ struct SinglePhotonMC {
 
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_det, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
 
       for (auto& cut : cuts1) {
         THashList* list_photon_det_cut = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName()));

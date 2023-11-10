@@ -372,9 +372,9 @@ struct TaggingPi0MC {
           auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
 
           int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
-          if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-            photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-          }
+          // if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+          //   photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
+          // }
 
           if (photonid1 > 0) {
             auto mcphoton1 = mcparticles.iteratorAt(photonid1);
