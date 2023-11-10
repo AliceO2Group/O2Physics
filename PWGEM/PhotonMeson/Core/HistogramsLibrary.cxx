@@ -38,9 +38,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
     list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 100, -50, +50));
     list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
-    list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 1001, -0.5, 1000.5));
-    list->Add(new TH1F("hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", 1001, -0.5, 1000.5));
-    list->Add(new TH2F("hMultFT0", "hMultFT0;mult FT0A;multFT0C", 200, 0, 2000, 200, 0, 2000));
+    list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 5001, -0.5, 5000.5));
+    list->Add(new TH1F("hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", 5001, -0.5, 5000.5));
+    list->Add(new TH2F("hMultFT0", "hMultFT0;mult FT0A;multFT0C", 500, 0, 5000, 500, 0, 5000));
     list->Add(new TH1F("hCentFT0M", "hCentFT0M;centrality FT0M (%)", 110, 0, 110));
     list->Add(new TH2F("hCentFT0MvsMultNTracksPV", "hCentFT0MvsMultNTracksPV;centrality FT0M (%);N_{track} to PV", 110, 0, 110, 1001, -0.5, 1000.5));
   }
