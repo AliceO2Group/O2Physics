@@ -590,6 +590,14 @@ DECLARE_SOA_COLUMN(BdtBkg, bdtBkg, float);             //!
 DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);       //!
 DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float); //!
 DECLARE_SOA_COLUMN(NumColls, numColls, uint64_t);      //!
+DECLARE_SOA_COLUMN(PtD0, ptD0, float);                 //!
+DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);             //!
+DECLARE_SOA_COLUMN(RapD0, rapD0, float);               //!
+DECLARE_SOA_COLUMN(RapJpsi, rapJpsi, float);           //!
+DECLARE_SOA_COLUMN(PhiD0, phiD0, float);               //!
+DECLARE_SOA_COLUMN(PhiJpsi, phiJpsi, float);           //!
+DECLARE_SOA_COLUMN(DeltaY, deltaY, float);             //!
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //!
 } // namespace jpsidmescorr
 
 DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
@@ -632,7 +640,17 @@ DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
 DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
                   reducedpair::Mass,
                   jpsidmescorr::MassD0,
-                  jpsidmescorr::MassD0bar);
+                  jpsidmescorr::PtJpsi,
+                  jpsidmescorr::PtD0,
+                  jpsidmescorr::RapJpsi,
+                  jpsidmescorr::RapD0,
+                  jpsidmescorr::PhiJpsi,
+                  jpsidmescorr::PhiD0,
+                  jpsidmescorr::DeltaY,
+                  jpsidmescorr::DeltaPhi,
+                  jpsidmescorr::BdtBkg,
+                  jpsidmescorr::BdtPrompt,
+                  jpsidmescorr::BdtNonprompt);
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
