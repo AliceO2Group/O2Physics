@@ -298,7 +298,7 @@ struct femtoDreamPairTaskTrackV0 {
   void processMixedEvent(o2::aod::FDCollisions& cols,
                          FilteredFDParticles& parts)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
       const int multCol = collision1.multNtr();
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
@@ -319,7 +319,7 @@ struct femtoDreamPairTaskTrackV0 {
   void processMixedEventMC(o2::aod::FDCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
   //void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
       const int multCol = collision1.multNtr();
 
       auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);

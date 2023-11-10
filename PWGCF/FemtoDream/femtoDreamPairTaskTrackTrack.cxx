@@ -355,7 +355,7 @@ struct femtoDreamPairTaskTrackTrack {
   void processMixedEvent(o2::aod::FDCollisions& cols,
                          o2::aod::FDParticles& parts)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multNtr();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
@@ -385,7 +385,7 @@ struct femtoDreamPairTaskTrackTrack {
                            soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                            o2::aod::FDMCParticles&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multNtr();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
