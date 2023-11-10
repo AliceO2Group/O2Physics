@@ -55,7 +55,6 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 
-
 using std::cout;
 using std::endl;
 
@@ -173,7 +172,6 @@ struct TableMaker {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
-
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
@@ -200,12 +198,11 @@ struct TableMaker {
     ccdb->setURL(fConfigCcdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    if (fPropMuon){
+    if (fPropMuon) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
     }
-
 
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
