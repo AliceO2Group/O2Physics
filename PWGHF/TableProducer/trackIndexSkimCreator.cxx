@@ -245,7 +245,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     selectVertex(collision, statusCollision);
 
     // selected events
-    if (fillHistograms && statusCollision == 0) {
+    if (fillHistograms) {
       if (statusCollision == 0) {
         registry.fill(HIST("hEvents"), 2);
         registry.fill(HIST("hPrimVtxX"), collision.posX());
