@@ -629,6 +629,10 @@ DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
                   jpsidmescorr::BdtPrompt,
                   jpsidmescorr::BdtNonprompt);
 
+DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
+                  reducedpair::Mass,
+                  jpsidmescorr::MassD0,
+                  jpsidmescorr::MassD0bar);
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
