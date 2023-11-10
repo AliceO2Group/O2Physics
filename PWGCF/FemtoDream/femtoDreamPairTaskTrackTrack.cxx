@@ -69,14 +69,14 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
   Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 0, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
-  
+
   Configurable<float> ConfTrk1_minPt{"ConfTrk1_minPt", 0., "Minimum pT of Partricle 1 (Track)"};
   Configurable<float> ConfTrk1_maxPt{"ConfTrk1_maxPt", 999., "Maximum pT of Partricle 1 (Track)"};
   Configurable<float> ConfTrk1_minEta{"ConfTrk1_minEta", -10., "Minimum eta of Partricle 1 (Track)"};
   Configurable<float> ConfTrk1_maxEta{"ConfTrk1_maxEta", 10., "Maximum eta of Partricle 1 (Track)"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && 
+  Partition<aod::FDParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) &&
                                          (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
                                          (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
@@ -97,7 +97,7 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
   Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 0, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-  
+
   Configurable<float> ConfTrk2_minPt{"ConfTrk2_minPt", 0., "Minimum pT of Partricle 2 (Track)"};
   Configurable<float> ConfTrk2_maxPt{"ConfTrk2_maxPt", 999., "Maximum pT of Partricle 2 (Track)"};
   Configurable<float> ConfTrk2_minEta{"ConfTrk2_minEta", -10., "Minimum eta of Partricle 2 (Track)"};

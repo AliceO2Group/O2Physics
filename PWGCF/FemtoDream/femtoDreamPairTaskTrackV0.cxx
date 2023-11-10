@@ -72,7 +72,7 @@ struct femtoDreamPairTaskTrackV0 {
   Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ConfTrkmaxPt, true);
   Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > ConfTrkminEta, true);
   Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < ConfTrkmaxEta, true);
- 
+
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
@@ -97,7 +97,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<float> ConfV0maxMass{"ConfV0maxMass", 1.15, "Maximum invariant mass of Partricle 2 (particle) (V0)"};
   Configurable<float> ConfV0minMassAnti{"ConfV0minMassAnti", 0., "Minimum invariant mass of Partricle 2 (antiparticle) (V0)"};
   Configurable<float> ConfV0maxMassAnti{"ConfV0maxMassAnti", 999., "Maximum invariant mass of Partricle 2 (antiparticle) (V0)"};
-  
+
   Configurable<float> ConfV0minPt{"ConfV0minPt", 0., "Minimum pT of Partricle 2 (V0)"};
   Configurable<float> ConfV0maxPt{"ConfV0maxPt", 999., "Maximum pT of Partricle 2 (V0)"};
   Configurable<float> ConfV0minEta{"ConfV0minEta", -10., "Minimum eta of Partricle 2 (V0)"};
@@ -123,11 +123,11 @@ struct femtoDreamPairTaskTrackV0 {
 
   using FilteredFDMCParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDMCLabels>>;
   using FilteredFDMCPart = FilteredFDMCParts::iterator;
-  
+
   /// Partition for particle 1
   Partition<FilteredFDParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfTrkCutPartOne) == ConfTrkCutPartOne);
   Partition<FilteredFDMCParts> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfTrkCutPartOne) == ConfTrkCutPartOne);
-  
+
   /// Partition for particle 2
   Partition<FilteredFDParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfV0CutPartTwo) == ConfV0CutPartTwo);
   Partition<FilteredFDMCParts> partsTwoMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfV0CutPartTwo) == ConfV0CutPartTwo);
@@ -255,7 +255,7 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
 
   void processSameEventMC(o2::aod::FDCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  //void processSameEventMC(o2::aod::FDCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  // void processSameEventMC(o2::aod::FDCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     eventHisto.fillQA(col);
     auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -317,7 +317,7 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
 
   void processMixedEventMC(o2::aod::FDCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  //void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  // void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
       const int multCol = collision1.multNtr();
