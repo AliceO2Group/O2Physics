@@ -55,7 +55,6 @@ struct taskJPsiHf {
 
   void init(o2::framework::InitContext& context)
   {
-
   }
 
   // Template function to run pair - hadron combinations
