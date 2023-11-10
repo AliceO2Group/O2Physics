@@ -183,7 +183,7 @@ struct DalitzEEQC {
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
 
         for (auto& lspp_pair : lspp_pairs_per_coll) {
-          if (cut.IsSelected<aod::EMPrimaryTracks>(lspp_pair)) {
+          if (cut.IsSelected<MyTracks>(lspp_pair)) {
             values[0] = lspp_pair.mee();
             values[1] = lspp_pair.pt();
             values[2] = lspp_pair.dcaeeXY();
@@ -195,7 +195,7 @@ struct DalitzEEQC {
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
 
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
-          if (cut.IsSelected<aod::EMPrimaryTracks>(lsmm_pair)) {
+          if (cut.IsSelected<MyTracks>(lsmm_pair)) {
             values[0] = lsmm_pair.mee();
             values[1] = lsmm_pair.pt();
             values[2] = lsmm_pair.dcaeeXY();

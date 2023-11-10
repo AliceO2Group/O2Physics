@@ -407,6 +407,28 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaPiRange(-1e+10, +3);
     return cut;
   }
+  if (!nameStr.compare("mee_0_120_tpconly_wo_phiv_lowB")) {
+    // for pair
+    cut->SetMeeRange(0., 0.12);
+
+    // for track
+    cut->SetTrackPtRange(0.05f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(80);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(4, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
+    cut->SetTOFbetaRange(true, 0.0, 0.95);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-3, +3);
+    return cut;
+  }
   if (!nameStr.compare("mee_0_120_tpconly_lowB")) {
     // for pair
     cut->SetMeeRange(0., 0.12);
