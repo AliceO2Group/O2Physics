@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the TOF QA plots
-struct pidTOFTaskQAMC {
+struct pidTofQaMc {
   SliceCache cache;
 
   static constexpr int Np = 9;
@@ -749,4 +749,4 @@ struct pidTOFTaskQAMC {
   }   // process()
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTOFTaskQAMC>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTofQaMc>(cfgc)}; }

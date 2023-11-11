@@ -55,7 +55,11 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
+using MyCollisions = aod::Collisions;
+using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
+
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
+using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
@@ -84,8 +88,11 @@ struct PhotonConversionBuilder {
   Configurable<float> margin_r{"margin_r", 3.0, "margin for r cut in cm"};
   Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
 
+  Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
+  Configurable<float> max_qt_ap{"max_qt_ap", 0.02, "max qT for AP cut"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.05, "min pT for v0 legs at SV"};
   Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at SV"};
+  Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at SV"};
   Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at SV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
@@ -220,9 +227,15 @@ struct PhotonConversionBuilder {
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
-  template <typename TTrack>
+  template <bool isMC, typename TTrack>
   bool checkV0leg(TTrack const& track)
   {
+    if constexpr (isMC) {
+      if (!track.has_mcParticle()) {
+        return false;
+      }
+    }
+
     if (!track.hasITS() && !track.hasTPC()) {
       return false;
     }
@@ -241,7 +254,7 @@ struct PhotonConversionBuilder {
         return false;
       }
 
-      if (abs(track.z() / track.x() - track.tgl()) > 0.5) {
+      if (abs(track.z() / track.x() - track.tgl()) > 0.4) {
         return false;
       }
 
@@ -267,7 +280,7 @@ struct PhotonConversionBuilder {
            track.x(), track.y(), track.z(), track.tgl(), track.signed1Pt());
   }
 
-  template <class TCollision, class TTrack, typename TV0>
+  template <bool isMC, class TCollision, class TTrack, typename TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
     // Get tracks
@@ -283,7 +296,7 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (!checkV0leg(pos) || !checkV0leg(ele)) {
+    if (!checkV0leg<isMC>(pos) || !checkV0leg<isMC>(ele)) {
       return;
     }
     // LOGF(info, "v0.collisionId() = %d , v0.posTrackId() = %d , v0.negTrackId() = %d", v0.collisionId(), v0.posTrackId(), v0.negTrackId());
@@ -309,14 +322,9 @@ struct PhotonConversionBuilder {
 
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
-
-    float rxy = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-    if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
+    float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
+    if (rxy_tmp > std::min(pos.x(), ele.x()) + margin_r * 2.f) {
       return;
-    }
-
-    if (rxy < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
-      return; // RZ line cut
     }
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
@@ -343,15 +351,24 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    //// Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
-    // KFParticle gammaKF_PV = gammaKF_DecayVtx;
-    // gammaKF_PV.SetProductionVertex(KFPV);
+    float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
+    if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
+      return;
+    }
+
+    if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+      return; // RZ line cut
+    }
 
     float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
     float v0eta = RecoDecay::eta(std::array{gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz()});
     float v0phi = RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) : RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) + TMath::TwoPi();
 
     if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
+      return;
+    }
+
+    if (isITSonlyTrack(ele) && isITSonlyTrack(pos) && v0pt > max_pt_v0_itsonly) {
       return;
     }
 
@@ -393,7 +410,7 @@ struct PhotonConversionBuilder {
 
     float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     float qt = v0_qt(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
-    if (!checkAP(alpha, qt, 0.95, 0.02)) { // store only photon conversions
+    if (!checkAP(alpha, qt, max_alpha_ap, max_qt_ap)) { // store only photon conversions
       return;
     }
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
@@ -401,19 +418,22 @@ struct PhotonConversionBuilder {
 
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
-      registry.fill(HIST("V0/hConversionPointXY"), xyz[0], xyz[1]);
-      registry.fill(HIST("V0/hConversionPointRZ"), xyz[2], rxy);
+      registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
+      registry.fill(HIST("V0/hConversionPointRZ"), gammaKF_DecayVtx.GetZ(), rxy);
       registry.fill(HIST("V0/hPt"), v0pt);
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
       registry.fill(HIST("V0/hCosPA"), cospa_kf);
       registry.fill(HIST("V0/hPCA"), pca_kf);
       registry.fill(HIST("V0/hPtDiff"), v0pt, ptee);
 
+      // calculate DCAxy,z to PV
       float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
-      float sign_tmp = (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz() > 0 ? +1 : -1;
-
-      float dca_xy_v0_to_pv = std::sqrt(std::pow((collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPz() - (collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPy(), 2) + std::pow((collision.posZ() - gammaKF_DecayVtx.GetZ()) * gammaKF_DecayVtx.GetPx() - (collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPz(), 2)) / v0mom * sign_tmp;
-      float dca_z_v0_to_pv = ((collision.posX() - gammaKF_DecayVtx.GetX()) * gammaKF_DecayVtx.GetPy() - (collision.posY() - gammaKF_DecayVtx.GetY()) * gammaKF_DecayVtx.GetPx()) / v0mom;
+      float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
+      float dca_x_v0_to_pv = (gammaKF_DecayVtx.GetX() - gammaKF_DecayVtx.GetPx() * cospa_kf * length / v0mom) - collision.posX();
+      float dca_y_v0_to_pv = (gammaKF_DecayVtx.GetY() - gammaKF_DecayVtx.GetPy() * cospa_kf * length / v0mom) - collision.posY();
+      float dca_z_v0_to_pv = (gammaKF_DecayVtx.GetZ() - gammaKF_DecayVtx.GetPz() * cospa_kf * length / v0mom) - collision.posZ();
+      float sign_tmp = dca_y_v0_to_pv > 0 ? +1 : -1;
+      float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
 
       float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
@@ -459,10 +479,17 @@ struct PhotonConversionBuilder {
   std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> cospa_map; //(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
   std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                     //(pos.globalIndex(), ele.globalIndex())
 
-  void process(aod::Collisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&)
+  template <bool isMC, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&)
   {
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if constexpr (isMC) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+      }
+
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
@@ -470,7 +497,7 @@ struct PhotonConversionBuilder {
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
       for (auto& v0 : v0s_per_coll) {
         // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
-        fillV0Table<aod::Collisions, MyTracksIU>(v0, false);
+        fillV0Table<isMC, TCollisions, TTracks>(v0, false);
       } // end of v0 loop
     }   // end of collision loop
 
@@ -519,7 +546,7 @@ struct PhotonConversionBuilder {
         // auto pos = tracks.rawIteratorAt(posId);
         // auto ele = tracks.rawIteratorAt(eleId);
         // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
-        fillV0Table<aod::Collisions, MyTracksIU>(v0, true);
+        fillV0Table<isMC, TCollisions, TTracks>(v0, true);
         stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
       }
     } // end of pca_map loop
@@ -528,7 +555,19 @@ struct PhotonConversionBuilder {
     cospa_map.clear();
     stored_v0Ids.clear();
     stored_v0Ids.shrink_to_fit();
-  } // end of process
+  } // end of build
+
+  void processRec(MyCollisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
+
+  void processMC(MyCollisionsMC const& collisions, aod::V0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<true>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

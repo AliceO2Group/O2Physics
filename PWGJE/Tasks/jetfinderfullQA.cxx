@@ -11,7 +11,7 @@
 
 // jet finder full+neutral QA task
 //
-// Authors: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -28,6 +28,7 @@
 #include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "EventFiltering/filterTables.h"
 
@@ -60,14 +61,15 @@ struct JetFinderFullQATask {
   Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
-  std::string trackSelection;
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
+
+  int trackSelection = -1;
 
   void init(o2::framework::InitContext&)
   {
 
-    trackSelection = static_cast<std::string>(trackSelections);
+    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     for (std::size_t iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
@@ -106,12 +108,10 @@ struct JetFinderFullQATask {
       registry.add("h_jet_eta_part", "jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_jet_phi_part", "jet #varphi;#varphi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
       registry.add("h_jet_ntracks_part", "jet N tracks;N_{jet tracks}^{part};entries", {HistType::kTH1F, {{100, -0.5, 99.5}}});
-      registry.add("h_jet_nclusters_part", "jet N clusters;N_{jet clusters}^{part};entries", {HistType::kTH1F, {{100, -0.5, 99.5}}});
       registry.add("h3_jet_r_part_jet_pt_part_jet_eta_part", ";#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#eta_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_part_jet_pt_part_jet_phi_part", ";#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#varphi_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
       registry.add("h3_jet_r_part_jet_eta_part_jet_phi_part", ";#it{R}_{jet}^{part};#eta_{jet}^{part};#varphi_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {80, -1.0, 7.}}});
       registry.add("h3_jet_r_part_jet_pt_part_jet_ntracks_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});N_{jet tracks}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -0.5, 99.5}}});
-      registry.add("h3_jet_r_part_jet_pt_part_jet_nclusters_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});N_{jet clusters}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -0.5, 99.5}}});
       registry.add("h3_jet_r_part_jet_pt_part_track_pt_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,jet tracks}^{part} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
       registry.add("h3_jet_r_part_jet_pt_part_track_eta_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#eta_{jet tracks}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_part_jet_pt_part_track_phi_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#varphi_{jet tracks}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
@@ -142,7 +142,7 @@ struct JetFinderFullQATask {
       registry.add("h_cluster_pt", "cluster pT;#it{p}_{T,cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_cluster_eta", "cluster #eta;#eta_{cluster};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_cluster_phi", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-      registry.add("h_cluster_enegy", "cluster E;E_{cluster} (GeV);entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_cluster_energy", "cluster E;E_{cluster} (GeV);entries", {HistType::kTH1F, {{200, 0., 200.}}});
     }
 
     if (doprocessMCCollisionsWeighted) {
@@ -151,9 +151,9 @@ struct JetFinderFullQATask {
     }
   }
 
-  using JetTracks = soa::Join<aod::Tracks, aod::TrackSelection>;
-  using JetClusters = o2::aod::EMCALClusters;
-  using JetParticles = aod::McParticles;
+  using JetTracks = aod::JTracks;
+  using JetClusters = aod::JClusters;
+  using JetParticles = aod::JMcParticles;
   using JetTableDataJoined = soa::Join<JetTableData, JetConstituentTableData>;
   using JetTableMCDJoined = soa::Join<JetTableMCD, JetConstituentTableMCD>;
   using JetTableMCDWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCD, JetTableMCDWeighted>;
@@ -164,42 +164,9 @@ struct JetFinderFullQATask {
   using JetTableMCPMatchedJoined = soa::Join<JetTableMCP, JetConstituentTableMCP, JetMatchingTableMCPMCD>;
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
-  o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax && aod::emcalcluster::energy >= clusterEnergyMin && aod::emcalcluster::time > clusterTimeMin && aod::emcalcluster::time < clusterTimeMax && (clusterRejectExotics && aod::emcalcluster::isExotic != true));
-
-  template <typename T>
-  bool hasEMCAL(T const& collision)
-  {
-    // Check for EMCAL in readout requires any of the EMCAL trigger classes (including EMC in MB trigger) to fire
-    std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
-    bool found = false;
-    for (auto alias : selectAliases) {
-      if (collision.alias_bit(alias)) {
-        found = true;
-        break;
-      }
-    }
-    return found;
-  }
-
-  template <typename T>
-  bool selectTrack(T const& track)
-  {
-    if (trackSelection == "globalTracks") {
-      if (track.pt() >= trackPtMin && track.pt() < trackPtMax && track.eta() >= trackEtaMin && track.eta() <= trackEtaMax) {
-        return track.isGlobalTrackWoPtEta();
-      } else {
-        return false;
-      }
-    }
-    if (trackSelection == "QualityTracks") {
-      return track.isQualityTrack();
-    }
-    if (trackSelection == "hybridTracksJE") { // isQualityTrack
-      return track.trackCutFlagFb5();
-    }
-    return true;
-  }
+  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+  Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
 
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
@@ -243,14 +210,12 @@ struct JetFinderFullQATask {
       registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
       registry.fill(HIST("h_jet_phi_part"), jet.phi(), weight);
       registry.fill(HIST("h_jet_ntracks_part"), jet.tracks().size(), weight);
-      registry.fill(HIST("h_jet_nclusters_part"), jet.clusters().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_eta_part"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_phi_part"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_eta_part_jet_phi_part"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracks().size(), weight);
-    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_nclusters_part"), jet.r() / 100.0, jet.pt(), jet.clusters().size(), weight);
 
     for (auto& constituent : jet.template tracks_as<JetParticles>()) {
 
@@ -281,7 +246,7 @@ struct JetFinderFullQATask {
     }
   }
 
-  void processDummy(aod::Collisions const& collision)
+  void processDummy(aod::JCollisions const& collision)
   {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processDummy, "dummy task", true);
@@ -316,7 +281,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
 
-  void processJetsMCPMCDMatched(aod::Collisions::iterator const& collision,
+  void processJetsMCPMCDMatched(aod::JCollisions::iterator const& collision,
                                 JetTableMCDMatchedJoined const& mcdjets,
                                 JetTableMCPMatchedJoined const& mcpjets,
                                 JetTracks const& tracks,
@@ -331,7 +296,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPMCDMatched, "jet finder HF QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(aod::Collisions::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(aod::JCollisions::iterator const& collision,
                                         JetTableMCDMatchedWeightedJoined const& mcdjets,
                                         JetTableMCPMatchedWeightedJoined const& mcpjets,
                                         JetTracks const& tracks,
@@ -346,25 +311,25 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPMCDMatchedWeighted, "jet finder HF QA matched mcp and mcd on weighted events", false);
 
-  void processMCCollisionsWeighted(aod::McCollision const& collision)
+  void processMCCollisionsWeighted(aod::JMcCollision const& collision)
   {
 
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
   }
   PROCESS_SWITCH(JetFinderFullQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
-  void processTracks(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                     JetTracks const& tracks,
+  void processTracks(aod::JCollision const& collision,
+                     soa::Filtered<JetTracks> const& tracks,
                      soa::Filtered<JetClusters> const& clusters)
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
-    if (!hasEMCAL(collision)) {
+    if (!JetDerivedDataUtilities::eventEMCAL(collision)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
     for (auto const& track : tracks) {
-      if (!selectTrack(track)) {
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(track, trackPtMin, trackPtMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       registry.fill(HIST("h_track_pt"), track.pt());

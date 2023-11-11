@@ -337,7 +337,8 @@ struct lambdakzeroBuilder {
           if (device.name.compare("lambdakzero-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
           const std::string v0DataName = "V0Datas";
-          if (input.matcher.binding == v0DataName && device.name.compare("multistrange-builder") != 0) {
+          const std::string v0DataExtName = "V0DatasExtension";
+          if ((input.matcher.binding == v0DataName || input.matcher.binding == v0DataExtName) && device.name.compare("multistrange-builder") != 0) {
             LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections

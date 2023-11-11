@@ -12,6 +12,8 @@
 // jet finder task
 //
 // Authors: Nima Zardoshti, Jochen Klein
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #ifndef PWGJE_CORE_JETFINDER_H_
 #define PWGJE_CORE_JETFINDER_H_
@@ -27,9 +29,7 @@
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/AreaDefinition.hh"
 #include "fastjet/JetDefinition.hh"
-#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 #include "fastjet/tools/Subtractor.hh"
-#include "fastjet/contrib/ConstituentSubtractor.hh"
 
 enum class JetType {
   full = 0,
@@ -41,13 +41,6 @@ class JetFinder
 {
 
  public:
-  enum class BkgSubMode { none,
-                          rhoAreaSub,
-                          constSub };
-  BkgSubMode bkgSubMode;
-
-  void setBkgSubMode(BkgSubMode bSM) { bkgSubMode = bSM; }
-
   /// Performs jet finding
   /// \note the input particle and jet lists are passed by reference
   /// \param inputParticles vector of input particles/tracks
@@ -79,15 +72,6 @@ class JetFinder
   float gridScatter;
   float ktScatter;
 
-  float jetBkgR;
-  float bkgPhiMin;
-  float bkgPhiMax;
-  float bkgEtaMin;
-  float bkgEtaMax;
-
-  float constSubAlpha;
-  float constSubRMax;
-
   bool isReclustering;
   bool isTriggering;
 
@@ -101,17 +85,8 @@ class JetFinder
   fastjet::Selector selJets;
   fastjet::Selector selGhosts;
 
-  fastjet::JetAlgorithm algorithmBkg;
-  fastjet::RecombinationScheme recombSchemeBkg;
-  fastjet::Strategy strategyBkg;
-  fastjet::AreaType areaTypeBkg;
-  fastjet::JetDefinition jetDefBkg;
-  fastjet::AreaDefinition areaDefBkg;
-  fastjet::Selector selRho;
-
   /// Default constructor
-  explicit JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : bkgSubMode(BkgSubMode::none),
-                                                                                                                 phiMin(phi_Min),
+  explicit JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : phiMin(phi_Min),
                                                                                                                  phiMax(phi_Max),
                                                                                                                  etaMin(eta_Min),
                                                                                                                  etaMax(eta_Max),
@@ -130,23 +105,12 @@ class JetFinder
                                                                                                                  ghostktMean(1e-100), // is float precise enough?
                                                                                                                  gridScatter(1.0),
                                                                                                                  ktScatter(0.1),
-                                                                                                                 jetBkgR(0.2),
-                                                                                                                 bkgPhiMin(phi_Min),
-                                                                                                                 bkgPhiMax(phi_Max),
-                                                                                                                 bkgEtaMin(eta_Min),
-                                                                                                                 bkgEtaMax(eta_Max),
-                                                                                                                 constSubAlpha(1.0),
-                                                                                                                 constSubRMax(0.6),
                                                                                                                  isReclustering(false),
                                                                                                                  isTriggering(false),
                                                                                                                  algorithm(fastjet::antikt_algorithm),
                                                                                                                  recombScheme(fastjet::E_scheme),
                                                                                                                  strategy(fastjet::Best),
-                                                                                                                 areaType(fastjet::active_area),
-                                                                                                                 algorithmBkg(fastjet::JetAlgorithm(fastjet::kt_algorithm)),
-                                                                                                                 recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme)),
-                                                                                                                 strategyBkg(fastjet::Best),
-                                                                                                                 areaTypeBkg(fastjet::active_area)
+                                                                                                                 areaType(fastjet::active_area)
   {
 
     // default constructor
@@ -158,12 +122,6 @@ class JetFinder
   /// Sets the jet finding parameters
   void setParams();
 
-  /// Sets the background subtraction estimater pointer
-  void setBkgE();
-
-  /// Sets the background subtraction pointer
-  void setSub();
-
   /// Performs jet finding
   /// \note the input particle and jet lists are passed by reference
   /// \param inputParticles vector of input particles/tracks
@@ -172,12 +130,6 @@ class JetFinder
   fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reeference
 
  private:
-  // void setParams();
-  // void setBkgSub();
-  std::unique_ptr<fastjet::BackgroundEstimatorBase> bkgE;
-  std::unique_ptr<fastjet::Subtractor> sub;
-  std::unique_ptr<fastjet::contrib::ConstituentSubtractor> constituentSub;
-
   ClassDefNV(JetFinder, 1);
 };
 

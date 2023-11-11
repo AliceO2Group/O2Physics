@@ -12,7 +12,7 @@
 /// \file FastJetUtilities.h
 /// \brief Jet related utilities that require fastjet
 ///
-/// \author Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #ifndef PWGJE_CORE_FASTJETUTILITIES_H_
 #define PWGJE_CORE_FASTJETUTILITIES_H_
@@ -22,17 +22,21 @@
 #include <numeric>
 #include <tuple>
 #include <vector>
+#include <string>
 
-#include "PWGJE/Core/JetFinder.h"
+#include "fastjet/PseudoJet.hh"
+#include "fastjet/Selector.hh"
 
 enum class JetConstituentStatus {
   track = 0,
   cluster = 1,
-  candidateHF = 2,
+  candidateHF = 2
 };
 
 namespace FastJetUtilities
 {
+
+static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 // Class defined to store additional info which is passed to the FastJet object
 class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
@@ -66,24 +70,30 @@ class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
  * @param status status of constituent type
  */
 
-void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track))
+void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track));
+
+// Class defined to select the HF candidate particle
+// This method is applied on particles or jet constituents only !!!
+class SW_IsHFCand : public fastjet::SelectorWorker
 {
-  fastjet_user_info* user_info = new fastjet_user_info(status, index); // FIXME: can setting this as a pointer be avoided?
-  constituents.back().set_user_info(user_info);
-  if (index != -99999999) { // FIXME: needed for constituent subtraction as user_info is not propagated, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
-    int i = index;
-    if (status == static_cast<int>(JetConstituentStatus::track)) {
-      i = i + 1;
-    }
-    if (status == static_cast<int>(JetConstituentStatus::cluster)) {
-      i = -1 * (i + 1);
-    }
-    if (status == static_cast<int>(JetConstituentStatus::candidateHF)) {
-      i = 0;
-    }
-    constituents.back().set_user_index(i); // FIXME: needed for constituent subtraction, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
+ public:
+  // default ctor
+  SW_IsHFCand() {}
+
+  // the selector's description
+  std::string description() const
+  {
+    return "HF candidate selector";
   }
-}
+
+  bool pass(const fastjet::PseudoJet& p) const
+  {
+    return (p.user_info<fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF));
+  }
+};
+
+// Selector of HF candidates
+fastjet::Selector SelectorIsHFCand();
 
 /**
  * Add track as a pseudojet object to the fastjet vector
@@ -96,11 +106,11 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
  */
 
 template <typename T>
-void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), double mass = JetFinder::mPion)
+void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), double mass = mPion)
 {
   if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidateHF)) {
-    auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
-    auto energy = std::sqrt((p * p) + (mass * mass));
+    // auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
+    auto energy = std::sqrt((constituent.p() * constituent.p()) + (mass * mass));
     constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
   }
   setFastJetUserInfo(constituents, index, status);

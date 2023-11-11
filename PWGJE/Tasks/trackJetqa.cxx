@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \author
-// Alice Caluisi   -   alice.caluisi@cern.ch
+/// \author Alice Caluisi <alice.caluisi@cern.ch>
 // \since July 2023
 
 //

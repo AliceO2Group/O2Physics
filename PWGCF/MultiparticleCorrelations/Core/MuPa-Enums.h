@@ -48,6 +48,7 @@ enum eEventHistograms {
   eVertex_y,
   eVertex_z,
   eNContributors, // Number of tracks used for the vertex
+  eImpactParameter,
   eEventHistograms_N
 };
 
