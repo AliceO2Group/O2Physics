@@ -187,11 +187,11 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
                               float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
 
 DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt(aod::v0data::px * aod::v0data::px +
+                              nsqrt(aod::v0data::px* aod::v0data::px +
                                     aod::v0data::py * aod::v0data::py));
 DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt(aod::v0data::px * aod::v0data::px +
-                                    aod::v0data::py * aod::v0data::py + 
+                              nsqrt(aod::v0data::px* aod::v0data::px +
+                                    aod::v0data::py * aod::v0data::py +
                                     aod::v0data::pz * aod::v0data::pz));
 DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
                               o2::constants::math::PI + natan2(-1.0f * aod::v0data::py, -1.0f * aod::v0data::px));
@@ -259,10 +259,10 @@ DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //!
                        v0data::PositionCovMat, v0data::MomentumCovMat);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT", //!
+DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT",                                                  //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
-//using V0Datas = soa::Join<V0Indices,V0Topos>
+// using V0Datas = soa::Join<V0Indices,V0Topos>
 using V0Data = V0Datas::iterator;
 namespace v0data
 {
@@ -436,11 +436,11 @@ DECLARE_SOA_EXPRESSION_COLUMN(PyLambda, pylambda, //!
 DECLARE_SOA_EXPRESSION_COLUMN(PzLambda, pzlambda, //!
                               float, 1.f * aod::cascdata::pzpos + 1.f * aod::cascdata::pzneg);
 DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt(aod::cascdata::px * aod::cascdata::px +
+                              nsqrt(aod::cascdata::px* aod::cascdata::px +
                                     aod::cascdata::py * aod::cascdata::py));
 DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt(aod::cascdata::px * aod::cascdata::px +
-                                    aod::cascdata::py * aod::cascdata::py + 
+                              nsqrt(aod::cascdata::px* aod::cascdata::px +
+                                    aod::cascdata::py * aod::cascdata::py +
                                     aod::cascdata::pz * aod::cascdata::pz));
 DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
                               o2::constants::math::PI + natan2(-1.0f * aod::cascdata::py, -1.0f * aod::cascdata::px));
