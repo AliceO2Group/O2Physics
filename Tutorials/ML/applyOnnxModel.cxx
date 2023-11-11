@@ -9,13 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
-/// \file   pidTPCFull.cxx
-///
-/// \author Christian Sonnabend christian.sonnabend@cern.ch
-///
+/// \file   applyOnnxModel.cxx
 /// \brief  Showcase application of an ONNX model in O2Physics
 ///
+/// \author Christian Sonnabend <christian.sonnabend@cern.ch>, GSI
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

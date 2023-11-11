@@ -124,20 +124,6 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    if (pos.hasITS() && ele.hasITS()) {
-      if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
-        return false;
-      }
-    }
-
-    bool isTPConly_pos = isTPConlyTrack(pos);
-    bool isTPConly_ele = isTPConlyTrack(ele);
-    if (isTPConly_pos && isTPConly_ele) {
-      if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
-        return false;
-      }
-    }
-
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
         return false;
@@ -283,16 +269,16 @@ class V0PhotonCut : public TNamed
         return v0.eta() >= mMinV0Eta && v0.eta() <= mMaxV0Eta;
 
       case V0PhotonCuts::kMee:
-        return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);
+        return true;
 
       case V0PhotonCuts::kAP:
         return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
       case V0PhotonCuts::kPsiPair:
-        return v0.psipair() >= mMinPsiPair && v0.psipair() <= mMaxPsiPair;
+        return true;
 
       case V0PhotonCuts::kPhiV:
-        return v0.phiv() >= mMinPhivPair && v0.phiv() <= mMaxPhivPair;
+        return true;
 
       case V0PhotonCuts::kRxy:
         return v0.recalculatedVtxR() >= mMinRxy && v0.recalculatedVtxR() <= mMaxRxy;

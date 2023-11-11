@@ -25,20 +25,19 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// PDG p -> 2212, K -> 321
-const float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
-const float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+using namespace o2::constants::physics;
 
 struct lambdaAnalysis {
 
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histograms"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histogram"};
+  Configurable<int> nBinsSp{"nBinsSp", 100, "N bins in spherocity histogram"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -50,6 +49,7 @@ struct lambdaAnalysis {
   Configurable<float> cfgPIDprecut{"cfgPIDprecut", 6, "Preselection PID TPC TOF cut"};
   Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", true, "Global Track Selection"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
+  Configurable<bool> cfgKinCuts{"cfgKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
 
   // TPC TOF Protons
   Configurable<float> tpcProtonMaxPt{"tpcProtonMaxPt", 1.0, "max pT for tpc protons"};
@@ -81,7 +81,7 @@ struct lambdaAnalysis {
   {
 
     // Define Axis.
-    const AxisSpec axisSp(1000, 0., 1., "S_{0}");
+    const AxisSpec axisSp(nBinsSp, 0., 1., "S_{0}");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisPtQA(200, 0., 2., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
@@ -140,6 +140,8 @@ struct lambdaAnalysis {
 
     // MC
     if (doprocessMC) {
+      histos.add("Event/hSphRec", "Reconstructed S_{0}", kTH1F, {axisSp});
+      histos.add("Event/hSpCentRec", "Reconstructed S_{0} vs FT0M(%)", kTH2F, {axisCent, axisSp});
       histos.add("QAMCTrue/DcaZ_pr", "dca_{z}^{MC} Protons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaZ_ka", "dca_{z}^{MC} Kaons", kTH2F, {axisPtQA, axisDCAz});
       histos.add("QAMCTrue/DcaXY_pr", "dca_{xy}^{MC} Protons", kTH2F, {axisPtQA, axisDCAxy});
@@ -226,7 +228,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkPr.hasTOF()) {
           trk1HasTOF = true;
           for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
             if (trkPr.pt() < prTofPIDpt[i]) {
@@ -253,7 +255,7 @@ struct lambdaAnalysis {
         }
       } else {
         // TPC + TOF
-        if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
+        if (trkKa.hasTOF()) {
           trk2HasTOF = true;
           for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
             if (trkKa.pt() < kaTofPIDpt[i]) {
@@ -309,12 +311,21 @@ struct lambdaAnalysis {
       }
 
       // Invariant mass reconstruction.
-      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), massProton);
-      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), massKaon);
+      p1.SetXYZM(trkPr.px(), trkPr.py(), trkPr.pz(), MassProton);
+      p2.SetXYZM(trkKa.px(), trkKa.py(), trkKa.pz(), MassKaonCharged);
       p = p1 + p2;
 
       if (std::abs(p.Rapidity()) > 0.5)
         continue;
+
+      // Apply kinematic cuts.
+      if (cfgKinCuts) {
+        TVector2 v1(trkPr.px(), trkPr.py());
+        TVector2 v2(trkKa.px(), trkKa.py());
+        float alpha = v1.DeltaPhi(v2);
+        if (std::abs(alpha) > 1.4 && std::abs(alpha) < 2.4)
+          continue;
+      }
 
       // Fill Invariant Mass Histograms.
       if constexpr (!mix && !mc) {
@@ -372,7 +383,7 @@ struct lambdaAnalysis {
         } else {
           histos.fill(HIST("Analysis/hLambdaRecAnti"), p.Pt());
           histos.fill(HIST("Analysis/hInvMassLambdaRecAnti"), p.M());
-          histos.fill(HIST("Analysis/h4InvMassLambdaAnti"), p.M(), p.Pt(), sph, mult);
+          histos.fill(HIST("Analysis/h4InvMassLambdaRecAnti"), p.M(), p.Pt(), sph, mult);
         }
       }
 
@@ -401,8 +412,11 @@ struct lambdaAnalysis {
   PROCESS_SWITCH(lambdaAnalysis, processData, "Process for Same Event Data", true);
 
   void processMC(resoCols::iterator const& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks)
   {
+
+    histos.fill(HIST("Event/hSphRec"), collision.spherocity());
+    histos.fill(HIST("Event/hSpCentRec"), collision.multV0M(), collision.spherocity());
     fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.multV0M());
   }
   PROCESS_SWITCH(lambdaAnalysis, processMC, "Process Event for MC", false);

@@ -129,6 +129,11 @@ o2physics_add_dpl_workflow(filterf1proton
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(f1protonreducedtable
+                    SOURCES f1protonreducedtable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(v0qaanalysis
                     SOURCES v0qaanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

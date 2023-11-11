@@ -14,7 +14,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
+#include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -23,6 +23,7 @@
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
+using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -73,7 +74,7 @@ struct perfK0sResolution {
       return kFALSE;
     if (v0.v0radius() < v0setting_radius)
       return kFALSE;
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) > 2.684 * v0lifetime)
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime)
       return kFALSE;
 
     // Apply selections on V0 daughters

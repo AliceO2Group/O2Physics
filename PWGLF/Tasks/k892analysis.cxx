@@ -25,11 +25,13 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct k892analysis {
   SliceCache cache;
@@ -62,10 +64,14 @@ struct k892analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
+  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -142,8 +148,8 @@ struct k892analysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  double massKa = MassKaonCharged;
+  double massPi = MassPionCharged;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -164,23 +170,47 @@ struct k892analysis {
 
     return true;
   }
-  // PID selection tools from phianalysisrun3
+  // PID selection tools
   template <typename T>
-  bool selectionPIDPion(const T& candidate, bool hasTOF)
+  bool selectionPIDPion(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
   }
   template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
+  bool selectionPIDKaon(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
@@ -200,8 +230,8 @@ struct k892analysis {
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();
       auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
       auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
@@ -232,7 +262,11 @@ struct k892analysis {
       }
 
       //// Apply the selection
-      if (!selectionPIDPion(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+      if (cUseOnlyTOFTrackPi && !isTrk1hasTOF)
+        continue;
+      if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
+        continue;
+      if (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2))
         continue;
 
       if constexpr (!IsMix) {
@@ -281,7 +315,7 @@ struct k892analysis {
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -328,7 +362,7 @@ struct k892analysis {
   PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
 
   void processMCLight(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
@@ -344,10 +378,10 @@ struct k892analysis {
       }
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321) { // At least one decay to Kaon
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kPiPlus || abs(part.daughterPDG2()) == kPiPlus) { // At least one decay to Pion
+      if (abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 211) { // At least one decay to Pion
         pass1 = true;
       }
       if (!pass1 || !pass2) // If we have both decay products

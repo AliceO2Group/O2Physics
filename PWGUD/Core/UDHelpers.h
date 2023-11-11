@@ -597,6 +597,25 @@ bool isPythiaCDE(T MCparts)
 }
 
 // -----------------------------------------------------------------------------
+// In J/Psi -> mu+ + mu- events generated with STARlight the stack starts with
+// 443013, 13, -13 or 443013, -13, 13
+template <typename T>
+bool isSTARLightJPsimumu(T MCparts)
+{
+  if (MCparts.size() < 3) {
+    return false;
+  } else {
+    if (MCparts.iteratorAt(0).pdgCode() != 443013)
+      return false;
+    if (abs(MCparts.iteratorAt(1).pdgCode()) != 13)
+      return false;
+    if (MCparts.iteratorAt(2).pdgCode() != -MCparts.iteratorAt(1).pdgCode())
+      return false;
+  }
+  return true;
+}
+
+// -----------------------------------------------------------------------------
 // In pp events produced with GRANIITTI the stack starts with
 // 22212/22212/99/22212/2212/99/90
 template <typename T>
@@ -628,6 +647,30 @@ bool isGraniittiCDE(T MCparts)
   }
 
   return true;
+}
+
+// -----------------------------------------------------------------------------
+// function to select MC events of interest
+template <typename T>
+int isOfInterest(T MCparts)
+{
+
+  // PYTHIA CDE
+  if (isPythiaCDE(MCparts)) {
+    return 1;
+  }
+
+  // GRANIITTI CDE
+  if (isGraniittiCDE(MCparts)) {
+    return 2;
+  }
+
+  // STARLIGHT J/Psi -> mu+ + mu-
+  if (isSTARLightJPsimumu(MCparts)) {
+    return 3;
+  }
+
+  return 0;
 }
 
 // -----------------------------------------------------------------------------

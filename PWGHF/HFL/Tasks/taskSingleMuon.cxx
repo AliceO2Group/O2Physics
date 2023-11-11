@@ -133,16 +133,18 @@ struct HfTaskSingleMuon {
       const auto charge(muon.sign());
       const auto chi2(muon.chi2MatchMCHMFT());
 
-      auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
-      if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
-        continue;
-      }
-      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
-        continue;
+      if (muon.has_matchMFTTrack()) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
-      if (muon.matchMCHTrackId() > 0) {
+      if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -165,7 +167,7 @@ struct HfTaskSingleMuon {
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
       registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
-      if (muon.matchMCHTrackId() > 0) {
+      if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -190,16 +192,18 @@ struct HfTaskSingleMuon {
       const auto charge(muon.sign());
       const auto chi2(muon.chi2MatchMCHMFT());
 
-      auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
-      if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
-        continue;
-      }
-      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
-        continue;
+      if (muon.has_matchMFTTrack()) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
-      if (muon.matchMCHTrackId() > 0) {
+      if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
         registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -221,7 +225,7 @@ struct HfTaskSingleMuon {
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
       registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
-      if (muon.matchMCHTrackId() > 0) {
+      if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
         registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
       }

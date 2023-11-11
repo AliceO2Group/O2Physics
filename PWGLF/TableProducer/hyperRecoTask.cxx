@@ -87,6 +87,8 @@ struct hyperCandidate {
   uint16_t tpcSignalPi = 0u;
   uint8_t nTPCClustersHe3 = 0u;
   uint8_t nTPCClustersPi = 0u;
+  uint32_t clusterSizeITSHe3 = 0u;
+  uint32_t clusterSizeITSPi = 0u;
   bool isMatter = false;
   bool isSignal = false; // true MC signal
   bool isReco = false;   // true if the candidate is actually reconstructed
@@ -284,8 +286,10 @@ struct hyperRecoTask {
       hypCand.nSigmaHe3 = hypCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       hypCand.nTPCClustersHe3 = hypCand.isMatter ? posTrack.tpcNClsFound() : negTrack.tpcNClsFound();
       hypCand.tpcSignalHe3 = hypCand.isMatter ? posTrack.tpcSignal() : negTrack.tpcSignal();
+      hypCand.clusterSizeITSHe3 = hypCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
       hypCand.nTPCClustersPi = !hypCand.isMatter ? posTrack.tpcNClsFound() : negTrack.tpcNClsFound();
       hypCand.tpcSignalPi = !hypCand.isMatter ? posTrack.tpcSignal() : negTrack.tpcSignal();
+      hypCand.clusterSizeITSPi = !hypCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
       hypCand.momHe3TPC = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
       hypCand.momPiTPC = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
 
@@ -395,6 +399,7 @@ struct hyperRecoTask {
                 continue;
               if (std::abs(posMother.pdgCode()) != hyperPdg)
                 continue;
+
               auto posPrimVtx = array{posMother.vx(), posMother.vy(), posMother.vz()};
               auto secVtx = array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
               hypCand.gMom = array{posMother.px(), posMother.py(), posMother.pz()};
@@ -496,7 +501,8 @@ struct hyperRecoTask {
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi);
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -539,6 +545,7 @@ struct hyperRecoTask {
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }

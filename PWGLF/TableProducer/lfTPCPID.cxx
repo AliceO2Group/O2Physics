@@ -400,7 +400,7 @@ struct bbParams {
   void updateValues(aod::BCsWithTimestamps::iterator const& bunchCrossing, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
     if (!takePostFromCcdb && !takeFromCcdb) {
-      LOG(debug) << "bbParams `" << name << "` :: Requested to not update parameters, ccdb timestamp != 0";
+      LOG(debug) << "bbParams `" << name << "` :: Requested to not update parameters, ccdb timestamp " << ccdbObj->getTimestamp() << " != 0";
       return;
     }
     // Check that the last updated number is different
@@ -832,6 +832,7 @@ struct lfTpcPid {
   }
 
     if (doprocessStandalone) { // If in standalone mode we enable the configuration of tables of interest
+      LOG(info) << "Processing in standalone mode";
       doprocessFullPi.value = true;
       doprocessFullKa.value = true;
       doprocessFullPr.value = true;
