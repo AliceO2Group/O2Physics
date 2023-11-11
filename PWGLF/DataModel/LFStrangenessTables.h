@@ -52,11 +52,6 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
 
 // Derived expressions
-// Momenta
-// DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
-//                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
-// DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! V0 pT
-//                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return std::hypot(pxpos + pxneg, pypos + pyneg, pzpos + pzneg); });
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f * pxpos + pxneg, 2.0f * pypos + pyneg); });
