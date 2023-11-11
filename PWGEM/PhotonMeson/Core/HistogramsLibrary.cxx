@@ -81,7 +81,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", 100, 0.0f, 0.1f, 100, 0.f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 100, 0.0f, 100.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 200, 0.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsX", "KF chi2 vs. recalc. conversion point in X;X (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsY", "KF chi2 vs. recalc. conversion point in Y;Y (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
