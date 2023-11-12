@@ -277,8 +277,7 @@ struct lambdakzerofinder {
     }
     if (smallestDCA > maxV0DCAtoPV)
       return 0; // unassociated
-    
-    
+
     v0(collisionIndex, t1.globalIndex(), t2.globalIndex());
     v0data(t1.globalIndex(), t2.globalIndex(), collisionIndex, 0,
            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),

@@ -212,7 +212,7 @@ struct lambdakzeroBuilder {
      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
 
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
-  { 
+  {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
 
@@ -585,14 +585,13 @@ struct lambdakzeroBuilder {
       return false;
     }
 
-    v0candidate.dcav0topv = CalculateDCAStraightToPV( 
+    v0candidate.dcav0topv = CalculateDCAStraightToPV(
       v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
       v0candidate.posP[0] + v0candidate.negP[0],
       v0candidate.posP[1] + v0candidate.negP[1],
       v0candidate.posP[2] + v0candidate.negP[2],
-      primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()
-    );
-    
+      primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ());
+
     // Passes CosPA check
     statisticsRegistry.v0stats[kV0CosPA]++;
 
