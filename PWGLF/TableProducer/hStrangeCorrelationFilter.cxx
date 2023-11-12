@@ -282,7 +282,7 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
-      if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0Cospa) {
+      if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA() < v0Cospa) {
         continue;
       }
       // check dE/dx compatibility
@@ -303,12 +303,12 @@ struct hstrangecorrelationfilter {
         compatibleK0Short = true;
       }
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > lambdaCospa) {
+        if (v0.v0cosPA() > lambdaCospa) {
           compatibleLambda = true;
         }
       }
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > lambdaCospa) {
+        if (v0.v0cosPA() > lambdaCospa) {
           compatibleAntiLambda = true;
         }
       }

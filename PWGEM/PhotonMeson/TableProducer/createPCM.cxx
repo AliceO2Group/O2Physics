@@ -299,7 +299,8 @@ struct createPCM {
              svpos[0], svpos[1], svpos[2],
              pvec0[0], pvec0[1], pvec0[2],
              pvec1[0], pvec1[1], pvec1[2],
-             v0dca, pos.dcaXY(), ele.dcaXY());
+             v0dca, pos.dcaXY(), ele.dcaXY(),
+             v0CosinePA, v0dca);
 
     } else {
       // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);

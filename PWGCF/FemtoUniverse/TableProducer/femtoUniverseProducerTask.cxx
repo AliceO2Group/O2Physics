@@ -664,7 +664,7 @@ struct femtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0,
                   cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0),
                   0,
-                  v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                  v0.v0cosPA(),
                   indexChildID,
                   v0.mLambda(),
                   v0.mAntiLambda());
@@ -780,7 +780,7 @@ struct femtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kPhi,
                   -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0),
                   0,
-                  phiM, // v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                  phiM, // v0.v0cosPA(),
                   indexChildID,
                   phiM,  // phi.mLambda(), //for now it will have a mLambda getter, maybe we will change it in the future so it's more logical
                   -999); // v0.mAntiLambda()
