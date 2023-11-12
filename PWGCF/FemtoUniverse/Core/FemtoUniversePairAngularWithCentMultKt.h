@@ -91,7 +91,7 @@ class PairWithCentMultKt
     } else if (cent_mult_value <= CentMultBins[1]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_0_1/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_0_1/");
+        // auto histMultFolder = HIST("mult_0_1/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[2]) {
