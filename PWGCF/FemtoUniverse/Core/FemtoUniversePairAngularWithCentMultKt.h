@@ -97,49 +97,49 @@ class PairWithCentMultKt
     } else if (cent_mult_value <= CentMultBins[2]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_1_2/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_1_2/");
+        // auto histMultFolder = HIST("mult_1_2/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[3]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_2_3/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_2_3/");
+        // auto histMultFolder = HIST("mult_2_3/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[4]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_3_4/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_3_4/");
+        // auto histMultFolder = HIST("mult_3_4/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[5]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_4_5/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_4_5/");
+        // auto histMultFolder = HIST("mult_4_5/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[6]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_5_6/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_5_6/");
+        // auto histMultFolder = HIST("mult_5_6/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[7]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_6_7/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_6_7/");
+        // auto histMultFolder = HIST("mult_6_7/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[8]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_7_8/DeltaEtaDeltaPhi"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_7_8/");
+        // auto histMultFolder = HIST("mult_7_8/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     } else if (cent_mult_value <= CentMultBins[9]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_8_9/kstar"), d_phi_value, d_eta_value);
       if (UseKt) {
-        auto histMultFolder = HIST("mult_8_9/");
+        // auto histMultFolder = HIST("mult_8_9/");
         // fill_kT(kstar_value, kt_value, histMultFolder);
       }
     }
