@@ -62,13 +62,12 @@ float invMass2Body(std::array<float, 3>& momA, std::array<float, 3> const& momB,
 } // namespace
 
 struct ProbeTrack {
-  ProbeTrack(uint64_t const& idx, uint64_t const& idxTpc, float const& pt, float const& eta, float const& phi, uint8_t const& map) :
-    globalIndex{idx},
-    globalIndexTpc{idxTpc},
-    pt{pt},
-    eta{eta},
-    phi{phi},
-    detectorMap{map}
+  ProbeTrack(uint64_t const& idx, uint64_t const& idxTpc, float const& pt, float const& eta, float const& phi, uint8_t const& map) : globalIndex{idx},
+                                                                                                                                      globalIndexTpc{idxTpc},
+                                                                                                                                      pt{pt},
+                                                                                                                                      eta{eta},
+                                                                                                                                      phi{phi},
+                                                                                                                                      detectorMap{map}
   {
   }
   uint64_t globalIndex;
