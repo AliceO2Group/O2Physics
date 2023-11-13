@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGMM_SELECTIONS_H
-#define PWGMM_SELECTIONS_H
+#ifndef PWGMM_MULT_SELECTIONS_H
+#define PWGMM_MULT_SELECTIONS_H
 #include "Common/DataModel/TrackSelectionTables.h"
 
 namespace pwgmm::mult {
@@ -36,4 +36,4 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
 }
 
-#endif // PWGMM_SELECTIONS_H
+#endif // PWGMM_MULT_SELECTIONS_H

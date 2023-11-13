@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGMM_FUNCTIONS_H
-#define PWGMM_FUNCTIONS_H
+#ifndef PWGMM_MULT_FUNCTIONS_H
+#define PWGMM_MULT_FUNCTIONS_H
 #include "Common/DataModel/Centrality.h"
 
 namespace pwgmm::mult
@@ -39,4 +39,4 @@ static constexpr bool hasRecoCent()
 }
 } // namespace pwgmm::mult
 
-#endif // PWGMM_FUNCTIONS_H
+#endif // PWGMM_MULT_FUNCTIONS_H

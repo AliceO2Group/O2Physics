@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGMM_AXES_H
-#define PWGMM_AXES_H
+#ifndef PWGMM_MULT_AXES_H
+#define PWGMM_MULT_AXES_H
 #include "Framework/HistogramSpec.h"
 
 namespace pwgmm::mult {
@@ -70,4 +70,4 @@ std::array<std::string_view, static_cast<size_t>(EvEffBins::kSelectedPVgt0)> EvE
   "Selected INEL>0",
   "Selected INEL>0 (PV)"};
 }
-#endif // PWGMM_AXES_H
+#endif // PWGMM_MULT_AXES_H
