@@ -288,10 +288,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
