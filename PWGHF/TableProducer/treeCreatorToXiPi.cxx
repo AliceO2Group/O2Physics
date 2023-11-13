@@ -166,7 +166,6 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
 struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
-  Produces<o2::aod::HfToXiPiEvents> rowCandidateEvents;
 
   void init(InitContext const&)
   {
