@@ -92,6 +92,7 @@ struct kfStrangenessStudy {
   {
     /// QA histos
     histos.add("hChargeCounter", "hChargeCounter", kTH1F, {{3, -1.5f, 1.5f}});
+    histos.add("hChargeCounterCascDatas", "hChargeCounterCascDatas", kTH1F, {{3, -1.5f, 1.5f}});
     auto hEventSelectionFlow = histos.add<TH1>("hEventSelectionFlow", "Event selection flow", kTH1F, {{2, 0.5f, 2.5f}});
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(1), "Sel8");
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(2), "|Vtx_{z}|<10cm");
@@ -284,6 +285,7 @@ struct kfStrangenessStudy {
         histos.fill(HIST("hGenDecayVtxZ_lastDau"), vtxZgen_lastDau);
 
         histos.fill(HIST("hGenSource"), source);
+        histos.fill(HIST("hChargeCounterCascDatas"), charge);
       }
     }
   }
