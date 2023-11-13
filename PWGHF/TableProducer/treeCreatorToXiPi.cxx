@@ -29,7 +29,6 @@ namespace o2::aod
 namespace full
 {
 // from creator
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -107,6 +106,11 @@ DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaCharmDau, dcaCharmDau, float);
+DECLARE_SOA_COLUMN(DecLenCharm, decLenCharm, double);
+DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
+DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
+DECLARE_SOA_COLUMN(ErrorDecayLengthCharm, errorDecayLengthCharm, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharm, errorDecayLengthXYCharm, float);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -132,7 +136,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -157,6 +161,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmDau,
+                  full::DecLenCharm, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharm, full::ErrorDecayLengthXYCharm,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharm,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharm, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
@@ -179,7 +184,6 @@ struct HfTreeCreatorToXiPi {
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc)
   {
     rowCandidateFull(
-      candidate.collisionId(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
@@ -258,6 +262,11 @@ struct HfTreeCreatorToXiPi {
       candidate.dcaCascDau(),
       candidate.dcaV0Dau(),
       candidate.dcaCharmDau(),
+      candidate.decLenCharm(),
+      candidate.decLenCascade(),
+      candidate.decLenV0(),
+      candidate.errorDecayLengthCharm(),
+      candidate.errorDecayLengthXYCharm(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharm(),

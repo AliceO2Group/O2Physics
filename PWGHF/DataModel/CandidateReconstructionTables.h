@@ -1118,6 +1118,11 @@ DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaCharmDau, dcaCharmDau, float);
+DECLARE_SOA_COLUMN(DecLenCharm, decLenCharm, double);
+DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
+DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
+DECLARE_SOA_COLUMN(ErrorDecayLengthCharm, errorDecayLengthCharm, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharm, errorDecayLengthXYCharm, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1163,7 +1168,9 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::EtaCharm, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
                   hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
                   hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
-                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmDau, hf_track_index::HFflag);
+                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmDau, 
+                  hf_cand_toxipi::DecLenCharm, hf_cand_toxipi::DecLenCascade, hf_cand_toxipi::DecLenV0, hf_cand_toxipi::ErrorDecayLengthCharm, hf_cand_toxipi::ErrorDecayLengthXYCharm,
+                  hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!

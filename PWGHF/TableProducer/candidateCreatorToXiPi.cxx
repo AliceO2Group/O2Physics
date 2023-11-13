@@ -350,10 +350,16 @@ struct HfCandidateCreatorToXiPi {
           double decLenCharm = RecoDecay::distance(pvCoord, coordVtxCharm);
           double decLenCascade = RecoDecay::distance(coordVtxCharm, vertexCasc);
           double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
+
           double ctOmegac = RecoDecay::ct(pVecCharm, decLenCharm, massOmegacFromPDG);
           double ctXic = RecoDecay::ct(pVecCharm, decLenCharm, massXicFromPDG);
           double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
           double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
+
+          double phiCharm, thetaCharm;
+          getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, coordVtxCharm, phiCharm, thetaCharm);
+          auto errorDecayLengthCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, thetaCharm) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, thetaCharm));
+          auto errorDecayLengthXYCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, 0.) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, 0.));
 
           // computing eta
           double pseudorapCharm = RecoDecay::eta(pVecCharm);
@@ -400,7 +406,9 @@ struct HfCandidateCreatorToXiPi {
                        pseudorapCharm, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
                        dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                       dcaCascDau, dcaV0Dau, dcaCharmDau, hfFlag);
+                       dcaCascDau, dcaV0Dau, dcaCharmDau, 
+                       decLenCharm, decLenCascade, decLenV0, errorDecayLengthCharm, errorDecayLengthXYCharm,
+                       hfFlag);
 
         } // loop over pions
       }   // loop over cascades
