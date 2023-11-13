@@ -1047,18 +1047,6 @@ DECLARE_SOA_COLUMN(CovVtxCharm2, covVtxCharm2, float);
 DECLARE_SOA_COLUMN(CovVtxCharm3, covVtxCharm3, float);
 DECLARE_SOA_COLUMN(CovVtxCharm4, covVtxCharm4, float);
 DECLARE_SOA_COLUMN(CovVtxCharm5, covVtxCharm5, float);
-DECLARE_SOA_COLUMN(CovVtxV00, covVtxV00, float);
-DECLARE_SOA_COLUMN(CovVtxV01, covVtxV01, float);
-DECLARE_SOA_COLUMN(CovVtxV02, covVtxV02, float);
-DECLARE_SOA_COLUMN(CovVtxV03, covVtxV03, float);
-DECLARE_SOA_COLUMN(CovVtxV04, covVtxV04, float);
-DECLARE_SOA_COLUMN(CovVtxV05, covVtxV05, float);
-DECLARE_SOA_COLUMN(CovVtxCasc0, covVtxCasc0, float);
-DECLARE_SOA_COLUMN(CovVtxCasc1, covVtxCasc1, float);
-DECLARE_SOA_COLUMN(CovVtxCasc2, covVtxCasc2, float);
-DECLARE_SOA_COLUMN(CovVtxCasc3, covVtxCasc3, float);
-DECLARE_SOA_COLUMN(CovVtxCasc4, covVtxCasc4, float);
-DECLARE_SOA_COLUMN(CovVtxCasc5, covVtxCasc5, float);
 DECLARE_SOA_COLUMN(PxCharm, pxCharm, float);
 DECLARE_SOA_COLUMN(PyCharm, pyCharm, float);
 DECLARE_SOA_COLUMN(PzCharm, pzCharm, float);
@@ -1149,8 +1137,6 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
                   hf_cand_toxipi::Chi2PCACharm,
                   hf_cand_toxipi::CovVtxCharm0, hf_cand_toxipi::CovVtxCharm1, hf_cand_toxipi::CovVtxCharm2, hf_cand_toxipi::CovVtxCharm3, hf_cand_toxipi::CovVtxCharm4, hf_cand_toxipi::CovVtxCharm5,
-                  hf_cand_toxipi::CovVtxV00, hf_cand_toxipi::CovVtxV01, hf_cand_toxipi::CovVtxV02, hf_cand_toxipi::CovVtxV03, hf_cand_toxipi::CovVtxV04, hf_cand_toxipi::CovVtxV05,
-                  hf_cand_toxipi::CovVtxCasc0, hf_cand_toxipi::CovVtxCasc1, hf_cand_toxipi::CovVtxCasc2, hf_cand_toxipi::CovVtxCasc3, hf_cand_toxipi::CovVtxCasc4, hf_cand_toxipi::CovVtxCasc5,
                   hf_cand_toxipi::PxCharm, hf_cand_toxipi::PyCharm, hf_cand_toxipi::PzCharm,
                   hf_cand_toxipi::PxCasc, hf_cand_toxipi::PyCasc, hf_cand_toxipi::PzCasc,
                   hf_cand_toxipi::PxPiFromCharm, hf_cand_toxipi::PyPiFromCharm, hf_cand_toxipi::PzPiFromCharm,

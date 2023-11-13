@@ -180,7 +180,7 @@ struct HfCandidateCreatorToXiPi {
           }
         }
 
-        //--------------------------reconstruct V0 track---------------------------
+        //-------------------------- V0 info---------------------------
         // pseudorapidity
         double pseudorapV0PosDau = trackV0Dau0.eta();
         double pseudorapV0NegDau = trackV0Dau1.eta();
@@ -192,17 +192,6 @@ struct HfCandidateCreatorToXiPi {
         // info from LF table
         std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
         std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-        std::array<float, 21> covV0 = {0.};
-        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
-          covV0[MomInd[i]] = v0Element.momentumCovMat()[i];
-          covV0[i] = v0Element.positionCovMat()[i];
-        }
-        // create V0 track
-        auto trackV0 = o2::track::TrackParCov(vertexV0, pVecV0, covV0, 0, true);
-        trackV0.setAbsCharge(0);
-        trackV0.setPID(o2::track::PID::Lambda);
-
         std::array<float, 3> pVecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
         std::array<float, 3> pVecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
@@ -351,15 +340,16 @@ struct HfCandidateCreatorToXiPi {
           double decLenCascade = RecoDecay::distance(coordVtxCharm, vertexCasc);
           double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
 
-          double ctOmegac = RecoDecay::ct(pVecCharm, decLenCharm, massOmegacFromPDG);
-          double ctXic = RecoDecay::ct(pVecCharm, decLenCharm, massXicFromPDG);
-          double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
-          double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
-
           double phiCharm, thetaCharm;
           getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, coordVtxCharm, phiCharm, thetaCharm);
           auto errorDecayLengthCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, thetaCharm) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, thetaCharm));
           auto errorDecayLengthXYCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, 0.) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, 0.));
+
+
+          double ctOmegac = RecoDecay::ct(pVecCharm, decLenCharm, massOmegacFromPDG);
+          double ctXic = RecoDecay::ct(pVecCharm, decLenCharm, massXicFromPDG);
+          double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
+          double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
 
           // computing eta
           double pseudorapCharm = RecoDecay::eta(pVecCharm);
@@ -384,9 +374,7 @@ struct HfCandidateCreatorToXiPi {
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
                        vertexV0[0], vertexV0[1], vertexV0[2],
                        trackXiDauCharged.sign(),
-                       chi2PCACharm, covVtxCharm[0], covVtxCharm[1], covVtxCharm[2], covVtxCharm[3], covVtxCharm[4], covVtxCharm[5],
-                       covV0[0], covV0[1], covV0[2], covV0[3], covV0[4], covV0[5],
-                       covCasc[0], covCasc[1], covCasc[2], covCasc[3], covCasc[4], covCasc[5],
+                       chi2PCACharm, covVtxCharm[0], covVtxCharm[1], covVtxCharm[2], covVtxCharm[3], covVtxCharm[4], covVtxCharm[5],s
                        pVecCharm[0], pVecCharm[1], pVecCharm[2],
                        pVecCasc[0], pVecCasc[1], pVecCasc[2],
                        pVecPionFromCharm[0], pVecPionFromCharm[1], pVecPionFromCharm[2],

@@ -46,12 +46,6 @@ DECLARE_SOA_COLUMN(Chi2PCACharm, chi2PCACharm, float);
 DECLARE_SOA_COLUMN(CovVtxCharmXX, covVtxCharmXX, float);
 DECLARE_SOA_COLUMN(CovVtxCharmYY, covVtxCharmYY, float);
 DECLARE_SOA_COLUMN(CovVtxCharmZZ, covVtxCharmZZ, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeXX, covVtxCascadeXX, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeYY, covVtxCascadeYY, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeZZ, covVtxCascadeZZ, float);
-DECLARE_SOA_COLUMN(CovVtxV0XX, covVtxV0XX, float);
-DECLARE_SOA_COLUMN(CovVtxV0YY, covVtxV0YY, float);
-DECLARE_SOA_COLUMN(CovVtxV0ZZ, covVtxV0ZZ, float);
 DECLARE_SOA_COLUMN(PxCharm, pxCharm, float);
 DECLARE_SOA_COLUMN(PyCharm, pyCharm, float);
 DECLARE_SOA_COLUMN(PzCharm, pzCharm, float);
@@ -142,8 +136,6 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay, full::Chi2PCACharm,
                   full::CovVtxCharmXX, full::CovVtxCharmYY, full::CovVtxCharmZZ,
-                  full::CovVtxCascadeXX, full::CovVtxCascadeYY, full::CovVtxCascadeZZ,
-                  full::CovVtxV0XX, full::CovVtxV0YY, full::CovVtxV0ZZ,
                   full::PxCharm, full::PyCharm, full::PzCharm,
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPiFromCharm, full::PyPiFromCharm, full::PzPiFromCharm,
