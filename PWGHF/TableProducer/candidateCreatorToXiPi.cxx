@@ -115,25 +115,25 @@ struct HfCandidateCreatorToXiPi {
                aod::V0sLinked const&)
   {
 
-      // 2-prong vertex fitter to build the omegac/xic vertex
-      o2::vertexing::DCAFitterN<2> df;
-      df.setBz(magneticField);
-      df.setPropagateToPCA(propagateToPCA);
-      df.setMaxR(maxR);
-      df.setMaxDZIni(maxDZIni);
-      df.setMaxDXYIni(maxDXYIni);
-      df.setMinParamChange(minParamChange);
-      df.setMinRelChi2Change(minRelChi2Change);
-      df.setMaxChi2(maxChi2);
-      df.setUseAbsDCA(useAbsDCA);
-      df.setWeightedFinalPCA(useWeightedFinalPCA);
-      df.setRefitWithMatCorr(refitWithMatCorr);
+    // 2-prong vertex fitter to build the omegac/xic vertex
+    o2::vertexing::DCAFitterN<2> df;
+    df.setBz(magneticField);
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMaxDXYIni(maxDXYIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setMaxChi2(maxChi2);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setRefitWithMatCorr(refitWithMatCorr);
 
-      double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
-      double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
-      double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
-      double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
-      double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
+    double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
+    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
+    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
+    double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
+    double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
 
     for (const auto& collision : collisions) {
 
@@ -345,7 +345,6 @@ struct HfCandidateCreatorToXiPi {
           auto errorDecayLengthCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, thetaCharm) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, thetaCharm));
           auto errorDecayLengthXYCharm = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharm, 0.) + getRotatedCovMatrixXX(covVtxCharm, phiCharm, 0.));
 
-
           double ctOmegac = RecoDecay::ct(pVecCharm, decLenCharm, massOmegacFromPDG);
           double ctXic = RecoDecay::ct(pVecCharm, decLenCharm, massXicFromPDG);
           double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
@@ -374,8 +373,7 @@ struct HfCandidateCreatorToXiPi {
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
                        vertexV0[0], vertexV0[1], vertexV0[2],
                        trackXiDauCharged.sign(),
-                       chi2PCACharm, covVtxCharm[0], covVtxCharm[1], covVtxCharm[2], covVtxCharm[3], covVtxCharm[4], covVtxCharm[5],s
-                       pVecCharm[0], pVecCharm[1], pVecCharm[2],
+                       chi2PCACharm, covVtxCharm[0], covVtxCharm[1], covVtxCharm[2], covVtxCharm[3], covVtxCharm[4], covVtxCharm[5], s pVecCharm[0], pVecCharm[1], pVecCharm[2],
                        pVecCasc[0], pVecCasc[1], pVecCasc[2],
                        pVecPionFromCharm[0], pVecPionFromCharm[1], pVecPionFromCharm[2],
                        pVecV0[0], pVecV0[1], pVecV0[2],
@@ -394,7 +392,7 @@ struct HfCandidateCreatorToXiPi {
                        pseudorapCharm, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
                        dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                       dcaCascDau, dcaV0Dau, dcaCharmDau, 
+                       dcaCascDau, dcaV0Dau, dcaCharmDau,
                        decLenCharm, decLenCascade, decLenV0, errorDecayLengthCharm, errorDecayLengthXYCharm,
                        hfFlag);
 
@@ -447,9 +445,9 @@ struct HfCandidateCreatorToXiPiMc {
       // origin = 0;
       debug = 0;
       auto arrayDaughters = std::array{candidate.piFromCharm_as<aod::TracksWMc>(), // pi <- charm baryon
-                                       candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
-                                       candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
-                                       candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
+                                       candidate.bachelor_as<aod::TracksWMc>(),    // pi <- cascade
+                                       candidate.posTrack_as<aod::TracksWMc>(),    // p <- lambda
+                                       candidate.negTrack_as<aod::TracksWMc>()};   // pi <- lambda
       auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::TracksWMc>(),
                                            candidate.posTrack_as<aod::TracksWMc>(),
                                            candidate.negTrack_as<aod::TracksWMc>()};

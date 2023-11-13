@@ -1154,7 +1154,7 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::EtaCharm, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
                   hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
                   hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
-                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmDau, 
+                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmDau,
                   hf_cand_toxipi::DecLenCharm, hf_cand_toxipi::DecLenCascade, hf_cand_toxipi::DecLenV0, hf_cand_toxipi::ErrorDecayLengthCharm, hf_cand_toxipi::ErrorDecayLengthXYCharm,
                   hf_track_index::HFflag);
 
