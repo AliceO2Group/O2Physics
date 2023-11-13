@@ -115,8 +115,22 @@ struct HfCandidateCreatorToXiPi {
                aod::V0sLinked const&)
   {
       
-      // 2-prong vertex fitter to build the omegac/xic vertex
-      o2::vertexing::DCAFitterN<2> df;
+    double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
+    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
+    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
+    double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
+    double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
+
+    // 2-prong vertex fitter to build the omegac/xic vertex
+    o2::vertexing::DCAFitterN<2> df;
+
+    for (const auto& collision : collisions) {
+
+      // set the magnetic field from CCDB
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
+
       df.setBz(magneticField);
       df.setPropagateToPCA(propagateToPCA);
       df.setMaxR(maxR);
@@ -128,19 +142,6 @@ struct HfCandidateCreatorToXiPi {
       df.setUseAbsDCA(useAbsDCA);
       df.setWeightedFinalPCA(useWeightedFinalPCA);
       df.setRefitWithMatCorr(refitWithMatCorr);
-      
-      double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
-      double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
-      double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
-      double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
-      double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
-
-    for (const auto& collision : collisions) {
-
-      // set the magnetic field from CCDB
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-      auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
 
       // loop over cascades reconstructed by cascadebuilder.cxx
       auto thisCollId = collision.globalIndex();
@@ -206,6 +207,7 @@ struct HfCandidateCreatorToXiPi {
         std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
         std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
         std::array<float, 21> covCasc = {0.};
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
           covCasc[MomInd[i]] = casc.momentumCovMat()[i];
           covCasc[i] = casc.positionCovMat()[i];
