@@ -116,7 +116,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     } // end of mc
   }   // end of V0
 
-  if (TString(histClass) == "DalitzEE") {
+  if (TString(histClass).Contains("Dalitz")) {
     const int nm = 147;
     double mee[nm] = {0.f};
     for (int i = 0; i < 40; i++) {
@@ -183,7 +183,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hMvsPhiV_Photon", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f)); // ee from photon conversion
 
     } // end of mc
-  }   // end of DalitzEE
+  }   // end of Dalitz
   if (TString(histClass) == "Track") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
     list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));

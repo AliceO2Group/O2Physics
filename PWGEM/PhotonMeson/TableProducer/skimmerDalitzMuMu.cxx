@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
+/// \brief write relevant information for dalitz mumu analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
 #include "Math/Vector4D.h"
@@ -26,14 +26,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds>;
 using MyTrack = MyTracks::iterator;
 
-struct skimmerDalitzEE {
-  enum class EM_EEPairType : int {
+struct skimmerDalitzMuMu {
+  enum class EM_MuMuPairType : int {
     kULS = 0,
     kLSpp = +1,
     kLSnn = -1,
@@ -41,11 +41,11 @@ struct skimmerDalitzEE {
 
   SliceCache cache;
   Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emreducedeventId;
-  Produces<aod::DalitzEEs> dalitzees;
-  Produces<o2::aod::DalitzEEEMReducedEventIds> dalitz_ee_eventid;
+  Produces<aod::DalitzMuMus> dalitzmumus;
+  Produces<o2::aod::DalitzMuMuEMReducedEventIds> dalitz_mumu_eventid;
 
   // Configurables
-  Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
+  Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mmumu to store mumu pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
 
   HistogramRegistry fRegistry{
@@ -57,46 +57,46 @@ struct skimmerDalitzEE {
 
   void init(InitContext const&) {}
 
-  template <EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
+  template <EM_MuMuPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
   void fillPairTable(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
-    if constexpr (pairtype == EM_EEPairType::kULS) { // ULS
+    if constexpr (pairtype == EM_MuMuPairType::kULS) { // ULS
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        if (v12.M() > maxMee) { // don't store
+        if (v12.M() > maxMmumu) { // don't store
           continue;
         }
-        float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float phiv = 0.f;
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
-        float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
+        float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
-        float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
-        dalitz_ee_eventid(collision.globalIndex());
+        float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
+        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
+        dalitz_mumu_eventid(collision.globalIndex());
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         // LOGF(info, "ULS: collision.globalIndex() = %d, fNewLabels[t1.globalIndex()] = %d, fNewLabels[t2.globalIndex()] = %d", collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()]);
       }      // end of pairing loop
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        if (v12.M() > maxMee) { // don't store
+        if (v12.M() > maxMmumu) { // don't store
           continue;
         }
-        float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float phiv = 0.f;
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
-        float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
+        float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
-        float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
-        dalitz_ee_eventid(collision.globalIndex());
+        float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
+        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
+        dalitz_mumu_eventid(collision.globalIndex());
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         // LOGF(info, "LS: collision.globalIndex() = %d, fNewLabels[t1.globalIndex()] = %d, fNewLabels[t2.globalIndex()] = %d", collision.globalIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()]);
       } // end of pairing loop
@@ -112,10 +112,10 @@ struct skimmerDalitzEE {
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
 
-      fillPairTable<EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+      fillPairTable<EM_MuMuPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {
-        fillPairTable<EM_EEPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-        fillPairTable<EM_EEPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+        fillPairTable<EM_MuMuPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+        fillPairTable<EM_MuMuPairType::kLSnn>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
       }
     } // end of collision loop
   }
@@ -123,5 +123,5 @@ struct skimmerDalitzEE {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerDalitzEE>(cfgc, TaskName{"skimmer-dalitz-ee"})};
+  return WorkflowSpec{adaptAnalysisTask<skimmerDalitzMuMu>(cfgc, TaskName{"skimmer-dalitz-mumu"})};
 }
