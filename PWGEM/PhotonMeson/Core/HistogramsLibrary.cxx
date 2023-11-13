@@ -117,13 +117,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }   // end of V0
 
   if (TString(histClass) == "DalitzEE") {
-    const int nm = 150;
+    const int nm = 147;
     double mee[nm] = {0.f};
-    for (int i = 0; i < 110; i++) {
-      mee[i] = 0.01 * i;
+    for (int i = 0; i < 40; i++) {
+      mee[i] = 0.001 * (i - 0) + 0.0;
     }
-    for (int i = 110; i < nm; i++) {
-      mee[i] = 0.1 * (i - 110) + 1.1;
+    for (int i = 40; i < nm; i++) {
+      mee[i] = 0.01 * (i - 40) + 0.04;
     }
 
     const int npt = 61;
@@ -147,7 +147,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     const int ndim = 4; // m, pt, dca, phiv
     const int nbins[ndim] = {nm - 1, npt - 1, ndca - 1, 32};
     const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0};
-    const double xmax[ndim] = {5.0, 10.0, 20.0, 3.2};
+    const double xmax[ndim] = {1.1, 10.0, 20.0, 3.2};
 
     THnSparseF* hs_dilepton_uls = new THnSparseF("hs_dilepton_uls", "hs_dilepton_uls;m_{ee} (GeV/c);p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
     hs_dilepton_uls->SetBinEdges(0, mee);
