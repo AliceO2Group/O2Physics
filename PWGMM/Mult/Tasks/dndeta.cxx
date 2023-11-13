@@ -438,8 +438,7 @@ struct MultiplicityCounter {
     soa::SmallGroups<ReTracks> const& atracks)
   {
     float c = -1;
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
-    if constexpr (hasCentrality) {
+    if constexpr (hasRecoCent<C>()) {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c = collision.centFT0C();
       } else if (C::template contains<aod::CentFT0Ms>()) {
@@ -451,7 +450,7 @@ struct MultiplicityCounter {
     }
 
     if (!useEvSel || collision.sel8()) {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Events/Centrality/Selection"), 2., c);
       } else {
         registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
@@ -481,7 +480,7 @@ struct MultiplicityCounter {
         if (std::abs(otrack.eta()) < estimatorEta) {
           ++Ntrks;
         }
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtx"), otrack.eta(), z, c);
           registry.fill(HIST("Tracks/Centrality/PhiEta"), otrack.phi(), otrack.eta(), c);
           registry.fill(HIST("Tracks/Centrality/Control/PtEta"), otrack.pt(), otrack.eta(), c);
@@ -495,7 +494,7 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ());
         }
         if (!otrack.has_collision()) {
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksEtaZvtx"), otrack.eta(), z, c);
             registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta(), c);
             registry.fill(HIST("Tracks/Centrality/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
@@ -508,7 +507,7 @@ struct MultiplicityCounter {
           }
         } else if (otrack.collisionId() != track.bestCollisionId()) {
           usedTracksIdsDF.emplace_back(track.trackId());
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z, c);
             registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta(), c);
             registry.fill(HIST("Tracks/Centrality/Control/ReassignedVertexCorr"), otrack.collision_as<C>().posZ(), z, c);
@@ -534,7 +533,7 @@ struct MultiplicityCounter {
         if (std::abs(track.eta()) < estimatorEta) {
           ++Ntrks;
         }
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
           registry.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c);
           registry.fill(HIST("Tracks/Centrality/Control/PtEta"), track.pt(), track.eta(), c);
@@ -548,7 +547,7 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
         }
       }
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || groupPVContrib.size() > 0) {
@@ -584,7 +583,7 @@ struct MultiplicityCounter {
         registry.fill(HIST("Events/NtrkZvtx"), Ntrks, z);
       }
     } else {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Events/Centrality/Selection"), 3., c);
       } else {
         registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
@@ -774,8 +773,6 @@ struct MultiplicityCounter {
     FiLTracks const& tracks,
     soa::SmallGroups<ReTracks> const* atracks)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
-
     if (useEvSel && !collision.sel8()) {
       return;
     }
@@ -784,7 +781,7 @@ struct MultiplicityCounter {
     }
     float c_rec = -1;
     float c_gen = -1;
-    if constexpr (hasCentrality) {
+    if constexpr (hasRecoCent<C>()) {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
       } else if (C::template contains<aod::CentFT0Ms>()) {
@@ -792,7 +789,7 @@ struct MultiplicityCounter {
       }
     }
     auto mcCollision = collision.mcCollision();
-    if constexpr (hasCent<MC>()) {
+    if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
     }
 
@@ -907,11 +904,9 @@ struct MultiplicityCounter {
     o2::soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const* atracks)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
-
     float c_gen = -1;
     // add generated centrality estimation
-    if constexpr (hasCent<MC>()) {
+    if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
     }
 
@@ -930,7 +925,7 @@ struct MultiplicityCounter {
       }
       nCharged++;
     }
-    if constexpr (hasCentrality) {
+    if constexpr (hasRecoCent<C>()) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c_gen);
       registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGen), c_gen);
     } else {
@@ -939,7 +934,7 @@ struct MultiplicityCounter {
     }
 
     if (nCharged > 0) {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGengt0), c_gen);
       } else {
         registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGengt0));
@@ -963,7 +958,7 @@ struct MultiplicityCounter {
     for (auto& collision : collisions) {
       usedTracksIds.clear();
       float c_rec = -1;
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
           c_rec = collision.centFT0C();
         } else if (C::template contains<aod::CentFT0Ms>()) {
@@ -981,7 +976,7 @@ struct MultiplicityCounter {
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         if (groupPVcontrib.size() > 0) {
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
             registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
@@ -1050,14 +1045,14 @@ struct MultiplicityCounter {
           NFDDCPerCol.emplace_back(-1);
         }
 
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelected), c_gen);
         } else {
           registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelected));
         }
 
         if (Nrec > 0) {
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0), c_gen);
           } else {
             registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0));
@@ -1065,7 +1060,7 @@ struct MultiplicityCounter {
           atLeastOne_gt0 = true;
         }
         if (groupPVcontrib.size() > 0) {
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
             registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
@@ -1073,7 +1068,7 @@ struct MultiplicityCounter {
           atLeastOne_PVgt0 = true;
         }
 
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), Nrec, collision.posZ(), c_rec);
         } else {
           registry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
@@ -1083,7 +1078,7 @@ struct MultiplicityCounter {
 
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Events/Centrality/Response"), NrecPerCol[i], nCharged, mcCollision.posZ(), c_recPerCol[i]);
           registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_recPerCol[i]);
           if (responseStudy) {
@@ -1098,7 +1093,7 @@ struct MultiplicityCounter {
         }
       }
       if (moreThanOne > 1) {
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Events/Centrality/SplitMult"), nCharged, mcCollision.posZ(), c_gen);
         } else {
           registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
@@ -1107,7 +1102,7 @@ struct MultiplicityCounter {
     }
 
     if (collisions.size() == 0) {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), c_gen);
       } else {
         registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
@@ -1123,7 +1118,7 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ(), c_gen);
         registry.fill(HIST("Tracks/Centrality/Control/PtEtaGen"), particle.pt(), particle.eta(), c_gen);
       } else {
@@ -1131,14 +1126,14 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
       }
       if (nCharged > 0) {
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ(), c_gen);
         } else {
           registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
         }
       }
       if (atLeastOne) {
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(), mcCollision.posZ(), c_gen);
           if (atLeastOne_gt0) {
             registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ(), c_gen);

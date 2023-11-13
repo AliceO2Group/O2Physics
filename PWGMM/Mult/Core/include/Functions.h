@@ -11,23 +11,33 @@
 
 #ifndef PWGMM_FUNCTIONS_H
 #define PWGMM_FUNCTIONS_H
+#include "Common/DataModel/Centrality.h"
 #include "Framework/AnalysisDataModel.h"
 
-namespace pwgmm::mult {
+namespace pwgmm::mult
+{
 using namespace o2;
 
 // helper function to determine if collision/mccollison type contains centrality
 template <typename T>
-static constexpr bool hasCent()
+static constexpr bool hasSimCent()
 {
   if constexpr (!soa::is_soa_join_v<T>) {
     return false;
-  } else if constexpr (T::template contains<aod::HepMCHeavyIons>()) {
-    return true;
   } else {
-    return false;
+    return T::template contains<aod::HepMCHeavyIons>();
   }
 }
+
+template <typename T>
+static constexpr bool hasRecoCent()
+{
+  if constexpr (!soa::is_soa_join_v<T>) {
+    return false;
+  } else {
+    return T::template contains<aod::CentFT0Cs>() || T::template contains<aod::CentFT0Ms>();
+  }
 }
+} // namespace pwgmm::mult
 
 #endif // PWGMM_FUNCTIONS_H
