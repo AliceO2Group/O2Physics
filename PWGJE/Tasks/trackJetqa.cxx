@@ -107,13 +107,7 @@ struct TrackJetQa {
     histos.add("Kine/eta", "#eta;#it{p}_{T} [GeV/c];#eta", {HistType::kTH2F, {{nBins, 0, 200}, {180, -0.9, 0.9}}});
     histos.add("Kine/phi", "#phi;#it{p}_{T} [GeV/c];#phi [rad]", {HistType::kTH2F, {{nBins, 0, 200}, {180, 0., 2 * M_PI}}});
     histos.add("Kine/etaVSphi", "#eta VS phi;#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi0", "#eta VS phi in pT range {0, 1};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi1", "#eta VS phi in pT range {1, 2};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi2", "#eta VS phi in pT range {2, 5};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi3", "#eta VS phi in pT range {5, 10};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi4", "#eta VS phi in pT range {10, 20};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi5", "#eta VS phi in pT range {20, 50};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
-    histos.add("Kine/etaVSphi6", "#eta VS phi in pT range {50, 200};#eta;#phi [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
+    histos.add("Kine/EtaPhiPt", "Correlation of #eta, #phi and #it{p}_{T}; #it{p}_{T} [GeV/c]; #eta; #phi [rad]", {HistType::kTH3F, {{nBins, 0, 200}, {180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
 
     // track parameter histograms
     histos.add("TrackPar/x", "track #it{x} position at dca in local coordinate system;#it{p}_{T} [GeV/c];#it{x} [cm]", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.36, 0.36}}});
@@ -172,7 +166,8 @@ struct TrackJetQa {
 
   template <typename eventInfo>
   void fillEventQa(eventInfo const& collision)
-  { // fill event property variables
+  { 
+    // fill event property variables
     histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
     if (!collision.sel8()) {
       return;
@@ -192,7 +187,8 @@ struct TrackJetQa {
 
   template <typename Tracks>
   void fillTrackQa(Tracks const& track)
-  { // @Alice please add the kinematic track checks eta, pT
+  { 
+    // fill kinematic variables
     if (enable && !track.isGlobalTrackWoPtEta()) {
       return;
     }
@@ -203,29 +199,13 @@ struct TrackJetQa {
       return;
     }
     histos.fill(HIST("Kine/pt"), track.pt());
-    histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
-    histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
-    histos.fill(HIST("Kine/etaVSphi"), track.eta(), track.phi());
     if (track.hasTRD()) {
       histos.fill(HIST("Kine/pt_TRD"), track.pt());
     }
-    //// eta VS phi for different pT ranges @Alice: please fix this with the THnSparse !
-    double pt = track.pt();
-    if (pt >= 0.0 && pt < 1.0) {
-      histos.fill(HIST("Kine/etaVSphi0"), track.eta(), track.phi());
-    } else if (pt >= 1.0 && pt < 2.0) {
-      histos.fill(HIST("Kine/etaVSphi1"), track.eta(), track.phi());
-    } else if (pt >= 2.0 && pt <= 5.0) {
-      histos.fill(HIST("Kine/etaVSphi2"), track.eta(), track.phi());
-    } else if (pt >= 5.0 && pt < 10.0) {
-      histos.fill(HIST("Kine/etaVSphi3"), track.eta(), track.phi());
-    } else if (pt >= 10.0 && pt <= 20.0) {
-      histos.fill(HIST("Kine/etaVSphi4"), track.eta(), track.phi());
-    } else if (pt >= 20.0 && pt <= 50.0) {
-      histos.fill(HIST("Kine/etaVSphi5"), track.eta(), track.phi());
-    } else if (pt >= 50.0 && pt <= 200.0) {
-      histos.fill(HIST("Kine/etaVSphi6"), track.eta(), track.phi());
-    }
+    histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
+    histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
+    histos.fill(HIST("Kine/etaVSphi"), track.eta(), track.phi());
+    histos.fill(HIST("Kine/EtaPhiPt"), track.pt(), track.eta(), track.phi());
     // fill track parameter variables
     histos.fill(HIST("TrackPar/alpha"), track.pt(), track.alpha());
     histos.fill(HIST("TrackPar/x"), track.pt(), track.x());
@@ -304,8 +284,8 @@ struct TrackJetQa {
       fillEventQa(collision);
       Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
       groupedTracks.bindTable(tracks);
+      
       for (auto& track : groupedTracks) {
-        // track selection and filling of all qa histos
         fillTrackQa(track);
         if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
@@ -326,6 +306,7 @@ struct TrackJetQa {
     for (const auto& collision : collisions) {
       fillEventQa(collision);
       const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIndex(), cacheTrk);
+      
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
@@ -336,7 +317,7 @@ struct TrackJetQa {
         }
       }
     }
-  } // end of the process function
+  } 
   PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };
 
