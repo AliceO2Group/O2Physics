@@ -187,28 +187,30 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
                               float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
 
 DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt(aod::v0data::px* aod::v0data::px +
-                                    aod::v0data::py * aod::v0data::py));
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg)));
 DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt(aod::v0data::px* aod::v0data::px +
-                                    aod::v0data::py * aod::v0data::py +
-                                    aod::v0data::pz * aod::v0data::pz));
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                    (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)));
 DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
-                              o2::constants::math::PI + natan2(-1.0f * aod::v0data::py, -1.0f * aod::v0data::px));
+                              o2::constants::math::PI + natan2(-1.0f * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg), -1.0f * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg)));
 DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally defined to avoid FPEs
-                              ifnode((nsqrt(aod::v0data::px * aod::v0data::px +
-                                            aod::v0data::py * aod::v0data::py +
-                                            aod::v0data::pz * aod::v0data::pz) -
-                                      aod::v0data::pz) < static_cast<float>(1e-7),
-                                     ifnode(aod::v0data::pz < 0.f, -100.f, 100.f),
-                                     0.5f * nlog((nsqrt(aod::v0data::px * aod::v0data::px +
-                                                        aod::v0data::py * aod::v0data::py +
-                                                        aod::v0data::pz * aod::v0data::pz) +
-                                                  aod::v0data::pz) /
-                                                 (nsqrt(aod::v0data::px * aod::v0data::px +
-                                                        aod::v0data::py * aod::v0data::py +
-                                                        aod::v0data::pz * aod::v0data::pz) -
-                                                  aod::v0data::pz))));
+                              ifnode((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                            (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                            (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
+                                      (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) < static_cast<float>(1e-7),
+                                     ifnode((1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) < 0.f, -100.f, 100.f),
+                                     0.5f * nlog((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) +
+                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) /
+                                                 (nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
+                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)))));
 
 } // namespace v0data
 
