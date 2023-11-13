@@ -18,6 +18,8 @@
         "ccdb-url": "http://alice-ccdb.cern.ch",
         "isRun2MC": "false"
     },
+    "tracks-extra-converter": "",
+    "zdc-converter": "",
     "track-propagation": {
         "ccdb-url": "http://alice-ccdb.cern.ch",
         "lutPath": "GLO/Param/MatLUT",

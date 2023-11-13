@@ -465,12 +465,11 @@ struct cascadeBuilder {
         for (auto const& input : device.inputs) {
           if (device.name.compare("cascade-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
-          const std::string CascDataName = "CascData";
-          const std::string CascDataExtName = "CascDataExt";
+          const std::string CascDataName = "StoredCascDatas";
+          const std::string CascDataExtName = "CascDatasExtension";
           if (input.matcher.binding == CascDataName || input.matcher.binding == CascDataExtName) {
             LOGF(info, "Device named %s has subscribed to CascData table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
-
               // 5 V0 topological selections + 1 mass
               if (option.name.compare("cascadesetting_cospa") == 0) {
                 detected_casccospa = option.defaultValue.get<double>();
@@ -1584,6 +1583,9 @@ struct cascadeBuilder {
 struct cascadePreselector {
   Produces<aod::CascTags> casctags; // MC tags
 
+  // for bookkeeping
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   Configurable<bool> dIfMCgenerateXiMinus{"dIfMCgenerateXiMinus", true, "if MC, generate MC true XiMinus (yes/no)"};
   Configurable<bool> dIfMCgenerateXiPlus{"dIfMCgenerateXiPlus", true, "if MC, generate MC true XiPlus (yes/no)"};
   Configurable<bool> dIfMCgenerateOmegaMinus{"dIfMCgenerateOmegaMinus", true, "if MC, generate MC true OmegaMinus (yes/no)"};
@@ -1619,7 +1621,10 @@ struct cascadePreselector {
                bitdEdxOmegaPlus,
                bitUsedInTrackedCascade };
 
-  void init(InitContext const&) {}
+  void init(InitContext const&)
+  {
+    histos.add("hPreselectorStatistics", "hPreselectorStatistics", kTH1F, {{5, -0.5f, 4.5f}});
+  }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -1762,19 +1767,24 @@ struct cascadePreselector {
   {
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
+      histos.fill(HIST("hPreselectorStatistics"), 0.0f); // All cascades
       bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
+      histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass MC assoc (if requested)
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
         validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
+      histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC assoc (if requested)
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
         validCascade = validCascade && ((bitcheck(selectionMask[ii], bitdEdxXiMinus) && ddEdxPreSelectXiMinus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
+      histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx (if requested)
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
         validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
+      histos.fill(HIST("hPreselectorStatistics"), 4.0f); // All cascades
       casctags(validCascade,
                bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
                bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),

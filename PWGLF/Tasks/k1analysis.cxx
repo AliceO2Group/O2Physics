@@ -16,6 +16,8 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -172,9 +174,9 @@ struct k1analysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massK892 = TDatabasePDG::Instance()->GetParticle(313)->Mass();
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();  // FIXME: Get from the common header
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
+  double massK892 = TDatabasePDG::Instance()->GetParticle(313)->Mass();   // FIXME: Get from the common header
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -508,7 +510,7 @@ struct k1analysis {
   PROCESS_SWITCH(k1analysis, processData, "Process Event for data without Partitioning", true);
 
   void processMC(aod::ResoCollision& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }

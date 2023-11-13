@@ -251,7 +251,7 @@ struct lambdakzeroBuilder {
       const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{static_cast<int32_t>(dQANBinsMass), 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(5 * dQANBinsMass), 1.01f, 2.01f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
@@ -337,7 +337,8 @@ struct lambdakzeroBuilder {
           if (device.name.compare("lambdakzero-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
           const std::string v0DataName = "V0Datas";
-          if (input.matcher.binding == v0DataName && device.name.compare("multistrange-builder") != 0) {
+          const std::string v0DataExtName = "V0DatasExtension";
+          if ((input.matcher.binding == v0DataName || input.matcher.binding == v0DataExtName) && device.name.compare("multistrange-builder") != 0) {
             LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections

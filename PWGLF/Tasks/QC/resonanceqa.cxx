@@ -44,7 +44,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGHF/Core/PDG.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -124,8 +124,8 @@ struct resonanceqa {
       histos.add("h1LambdastarRec", "Lambdastar meson Rec", kTH1F, {{100, 0.0f, 10.0f}});
     }
   }
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massKa = RecoDecay::getMassPDG(kKPlus);
+  double massPi = o2::analysis::pdg::MassPiPlus;
+  double massKa = o2::analysis::pdg::MassKPlus;
   double massPr = 0.938272088f;
   double rapidity;
   double genMass, recMass, resolution;

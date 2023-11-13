@@ -425,7 +425,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
     return kRejected;
   }
 
-  if (pT < mPtMinSoftPionForDstar || pT > mPtMaxSoftPionForDstar) { // soft pion should be less stringent than usual tracks
+  if (pT < mPtMinSoftPionForDstar) { // soft pion min pT cut should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -435,6 +435,11 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
 
   if (std::fabs(dca[1]) > 2.f) {
     return kRejected;
+  }
+
+  if (pT > mPtMaxSoftPionForDstar) {
+    CLRBIT(retValue, kSoftPion);
+    CLRBIT(retValue, kSoftPionForBeauty);
   }
 
   // below only regular beauty tracks, not required for soft pions

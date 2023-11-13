@@ -11,7 +11,8 @@
 
 // EMCAL Correction Task
 //
-// Author: Raymond Ehlers & Florian Jonas
+/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
+/// \author Florian Jonas <florian.jonas@cern.ch>
 
 #include <algorithm>
 #include <iostream>

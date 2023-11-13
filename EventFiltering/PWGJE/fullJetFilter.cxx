@@ -47,9 +47,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct fullJetFilter {
-  using collisionInfo = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using collisionInfo = aod::JCollision;
+  using BCsWithBcSelsRun3 = aod::JBCs;
+  using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
   using filteredFullJets = o2::soa::Filtered<o2::aod::FullJets>;
   using filteredNeutralJets = o2::soa::Filtered<o2::aod::NeutralJets>;
 
@@ -264,7 +264,7 @@ struct fullJetFilter {
 
   // Declare filters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusDef);
   Filter jetRadiusSelection = o2::aod::jet::r == f_jetR;
 
   template <typename JetIterator>
@@ -442,17 +442,17 @@ struct fullJetFilter {
 
   bool isEMCALMinBias(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kTVXinEMC);
+    return collision.alias_bit(triggerAliases::kTVXinEMC);
   }
 
   bool isEMCALLevel0(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7);
+    return collision.alias_bit(triggerAliases::kEMC7) || collision.alias_bit(triggerAliases::kDMC7);
   }
 
   bool isEMCALLevel1(collisionInfo const& collision) const
   {
-    return collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2);
+    return collision.alias_bit(triggerAliases::kEG1) || collision.alias_bit(triggerAliases::kEG2) || collision.alias_bit(triggerAliases::kDG1) || collision.alias_bit(triggerAliases::kDG2) || collision.alias_bit(triggerAliases::kEJ1) || collision.alias_bit(triggerAliases::kEJ2) || collision.alias_bit(triggerAliases::kDJ1) || collision.alias_bit(triggerAliases::kDJ2);
   }
 
   bool hasEMCALData(collisionInfo const& collision) const
