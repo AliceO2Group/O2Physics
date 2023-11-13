@@ -41,6 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerTask {
+  Produces<aod::JDummys> jDummysTable;
   Produces<aod::JBCs> jBCsTable;
   Produces<aod::JBCPIs> jBCParentIndexTable;
   Produces<aod::JCollisions> jCollisionsTable;
@@ -141,7 +142,7 @@ struct JetDerivedDataProducerTask {
       return;
     }
     if (track.has_mcParticle()) {
-      jMcTracksLabelTable(track.mcParticleId()); // maybe its already -1 if there is no label? good to check!
+      jMcTracksLabelTable(track.mcParticleId());
     } else {
       jMcTracksLabelTable(-1);
     }
@@ -151,19 +152,20 @@ struct JetDerivedDataProducerTask {
   void processParticles(aod::McParticle const& particle)
   {
     std::vector<int> mothersId;
-    int daughtersId[2];
     if (particle.has_mothers()) {
-      for (auto const& mother : particle.template mothers_as<aod::McParticles>()) {
-        mothersId.push_back(mother.globalIndex());
+      auto mothersIdTemps = particle.mothersIds();
+      for (auto mothersIdTemp : mothersIdTemps) {
+        mothersId.push_back(mothersIdTemp);
       }
     }
+    int daughtersId[2] = {-1, -1};
     auto i = 0;
     if (particle.has_daughters()) {
-      for (auto const& daughter : particle.template daughters_as<aod::McParticles>()) {
+      for (auto daughterId : particle.daughtersIds()) {
         if (i > 1) {
           break;
         }
-        daughtersId[i] = daughter.globalIndex();
+        daughtersId[i] = daughterId;
         i++;
       }
     }
