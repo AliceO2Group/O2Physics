@@ -114,7 +114,7 @@ struct HfCandidateCreatorToXiPi {
                MyV0Table const&,
                aod::V0sLinked const&)
   {
-      
+
     double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
     double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
     double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
