@@ -214,14 +214,8 @@ struct PCMQCMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffX_recalc"))->Fill(elemc.vx(), v0.recalculatedVtxX() - elemc.vx());
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffY_recalc"))->Fill(elemc.vy(), v0.recalculatedVtxY() - elemc.vy());
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffZ_recalc"))->Fill(elemc.vz(), v0.recalculatedVtxZ() - elemc.vz());
-
             nv0++;
-            float ptee = RecoDecay::sqrtSumOfSquares(pos.px() + ele.px(), pos.py() + ele.py());
-            float etaee = RecoDecay::eta(std::array{pos.px() + ele.px(), pos.py() + ele.py(), pos.pz() + ele.pz()});
-            float phiee = RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) > 0.f ? RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) : RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) + TMath::TwoPi();
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffEta"))->Fill(v0.pt(), etaee - v0.eta());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPhi"))->Fill(v0.pt(), phiee - v0.phi());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hRelDiffPt"))->Fill(v0.pt(), (ptee - v0.pt()) / v0.pt());
+
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }

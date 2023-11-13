@@ -81,14 +81,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", 100, 0.0f, 0.1f, 100, 0.f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 100, 0.0f, 100.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 200, 0.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsX", "KF chi2 vs. recalc. conversion point in X;X (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsY", "KF chi2 vs. recalc. conversion point in Y;Y (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 200, -100.0f, 100.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-    list->Add(new TH2F("hRelDiffPt", "p_{T,#gamma} vs. p_{T,ee};p_{T,#gamma} (GeV/c);(p_{T,ee} - p_{T,#gamma})/p_{T,#gamma}", 1000, 0.f, 10.f, 400, -1.f, 1.f));
-    list->Add(new TH2F("hDiffEta", "#eta_{#gamma} vs. #eta_{ee};p_{T,#gamma} (GeV/c);#eta_{#gamma} - #eta_{ee}", 1000, 0.f, 10.f, 400, -1.f, +1.f));
-    list->Add(new TH2F("hDiffPhi", "#varphi_{#gamma} vs. #varphi_{ee};p_{T,#gamma} (GeV/c);#varphi_{#gamma} - #varphi_{ee} (rad.)", 1000, 0.f, 10.f, 400, -1.f, +1.f));
 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Candidate", "pT of photon candidate;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for denominator of purity
@@ -99,7 +96,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for MC feed down correction
       list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));  // for MC feed down correction
 
-      list->Add(new TH2F("hRZ_Photon_hs", "R vs. Z of photon from hadronic shower in materials;Z (cm);R_{xy} (cm)", 500, -250.0f, +250, 200, 0, 200));
+      list->Add(new TH2F("hRZ_Photon_hs", "R vs. Z of photon from hadronic shower in materials;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 100, 0, 100));
       list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 1000, 0.0f, 10));
       list->Add(new TH1F("hEta_Photon_hs", "rapidity of photon from hadronic shower in materials;y", 40, -2.0f, 2.0f));
       list->Add(new TH1F("hPhi_Photon_hs", "#varphi of photon from hadronic shower in materials;#varphi (rad.);", 180, 0, TMath::TwoPi()));
