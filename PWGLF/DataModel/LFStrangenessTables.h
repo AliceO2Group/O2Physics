@@ -187,12 +187,12 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
                               float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
 
 DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt( (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * 
-                              (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
                                     (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg)));
 DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * 
-                              (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
                                     (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
                                     (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)));
 DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
