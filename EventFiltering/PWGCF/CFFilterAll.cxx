@@ -587,7 +587,7 @@ struct CFFilter {
 
     // antiproton
     registry.add("TrackCuts/AntiProton/fPtAntiProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/AntiProton/fMomCorAntiProton", "Momentum correlations;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiProton/fMomCorAntiProton", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
     registry.add("TrackCuts/AntiProton/fEtaAntiProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiProton/fPhiAntiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton", "NSigmaTPC AntiProton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -607,7 +607,7 @@ struct CFFilter {
 
     // deuteron
     registry.add("TrackCuts/Deuteron/fPtDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/Deuteron/fMomCorDeuteron", "Momentum correlations;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Deuteron/fMomCorDeuteron", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
     registry.add("TrackCuts/Deuteron/fEtaDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Deuteron/fPhiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteron", "NSigmaTPC Deuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -627,7 +627,7 @@ struct CFFilter {
 
     // antideuteron
     registry.add("TrackCuts/AntiDeuteron/fPtAntiDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteron", "Momentum correlations;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteron", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
     registry.add("TrackCuts/AntiDeuteron/fEtaAntiDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiDeuteron/fPhiAntiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteron", "NSigmaTPC AntiDeuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -743,10 +743,7 @@ struct CFFilter {
     registry.add("pll/fProtonPtVsQ3", "Q3 vs pT (proton)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
     registry.add("pll/fAntiProtonPtVsQ3", "Q3 vs pT (antiproton)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
     registry.add("pll/fLambdaPtVsQ3", "Q3 vs pT (lambda)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    registry.add("pll/fAntiLambdaPtVsQ3", "Q3 vs pT (antilambda)", {HistType::kTH2F, {
-                                                                                       {150, 0, 1.5},
-                                                                                       {500, 0, 10},
-                                                                                     }});
+    registry.add("pll/fAntiLambdaPtVsQ3", "Q3 vs pT (antilambda)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
 
     // for lll
     registry.add("lll/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
