@@ -325,25 +325,17 @@ struct MultiplicityCounter {
     usedTracksIdsDFMCEff.clear();
   }
 
-  // require ITS+TPC tracks
-  //  expressions::Filter trackSelectionProperGlobalOnly = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-  //                                                       ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) &&
-  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-  //                                                       ncheckbit(aod::track::trackCutFlag, trackSelectionTPC) &&
-  //                                                       ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ  && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
-  //                                                              ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+  // require a mix of ITS+TPC and ITS-only tracks
+  expressions::Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                           ncheckbit(aod::track::trackCutFlag, trackSelectionITS);
+  expressions::Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                  ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true);
+  expressions::Filter fTrackSelectionDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
+                                                  ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
 
-  //   require a mix of ITS+TPC and ITS-only tracks
-  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                                  ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                                  ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-                                                  ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
-                                                         ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
-
-  expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
-                                     (ifnode(dcaZ.node() > 0.f, nabs(aod::track::bestDCAZ) <= dcaZ, nabs(aod::track::bestDCAZ) <= 2.0f)) &&
-                                     (nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f))));
+  expressions::Filter fAtrackAssigned = (aod::track::bestCollisionId >= 0);
+  expressions::Filter fAtrackDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::bestDCAZ) <= dcaZ, nabs(aod::track::bestDCAZ) <= 2.0f) &&
+                                   nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f)));
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
