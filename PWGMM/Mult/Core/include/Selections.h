@@ -16,22 +16,22 @@
 namespace pwgmm::mult {
 using namespace o2::aod::track;
 
-// quality criteria for tracks with ITS contribution
+// default quality criteria for tracks with ITS contribution
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
   TrackSelectionFlags::kITSHits;
 
-// quality criteria for tracks with TPC contribution
+// default quality criteria for tracks with TPC contribution
 static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
   TrackSelectionFlags::kTPCNCls |
   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   TrackSelectionFlags::kTPCChi2NDF;
 
-// standard DCA cuts
+// default standard DCA cuts
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
-// standard transversal-only DCA cuts
+// default standard transversal-only DCA cuts
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
 }
