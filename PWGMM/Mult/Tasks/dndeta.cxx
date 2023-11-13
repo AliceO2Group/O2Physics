@@ -767,11 +767,11 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
 
   template <typename C, typename MC>
-  void processTrackEfficiencyGeneral(
+  void processTrackEfficiencyGeneralAmbiguous(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
     MC const&, Particles const& particles,
     FiLTracks const& tracks,
-    soa::SmallGroups<ReTracks> const* atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     if (useEvSel && !collision.sel8()) {
       return;
@@ -796,42 +796,113 @@ struct MultiplicityCounter {
     auto particlesPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     usedTracksIds.clear();
-    if (atracks != nullptr) {
-      for (auto const& track : *atracks) {
-        auto otrack = track.template track_as<FiLTracks>();
-        usedTracksIds.emplace_back(track.trackId());
-        if (otrack.collisionId() != track.bestCollisionId()) {
-          usedTracksIdsDFMCEff.emplace_back(track.trackId());
-        }
-        if (otrack.has_mcParticle()) {
-          auto particle = otrack.mcParticle_as<Particles>();
-          registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
-          if (std::abs(otrack.eta()) < estimatorEta) {
-            registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
-            if (particle.pdgCode() == speciesIds[0]) {
-              registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
-            } else if (particle.pdgCode() == speciesIds[1]) {
-              registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
-            } else if (particle.pdgCode() == speciesIds[2]) {
-              registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
-            } else if (particle.pdgCode() == speciesIds[3]) {
-              registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
-            }
+    for (auto const& track : atracks) {
+      auto otrack = track.template track_as<FiLTracks>();
+      usedTracksIds.emplace_back(track.trackId());
+      if (otrack.collisionId() != track.bestCollisionId()) {
+        usedTracksIdsDFMCEff.emplace_back(track.trackId());
+      }
+      if (otrack.has_mcParticle()) {
+        auto particle = otrack.mcParticle_as<Particles>();
+        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        if (std::abs(otrack.eta()) < estimatorEta) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          if (particle.pdgCode() == speciesIds[0]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[1]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[2]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[3]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
           }
-        } else {
-          registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
         }
+      } else {
+        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
       }
     }
     for (auto const& track : tracks) {
-      if (atracks != nullptr) {
-        if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-          continue;
+      if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+        continue;
+      }
+      if (std::find(usedTracksIdsDFMCEff.begin(), usedTracksIdsDFMCEff.end(), track.globalIndex()) != usedTracksIdsDFMCEff.end()) {
+        continue;
+      }
+      if (track.has_mcParticle()) {
+        auto particle = track.template mcParticle_as<Particles>();
+        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        if (std::abs(track.eta()) < estimatorEta) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          if (particle.pdgCode() == speciesIds[0]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[1]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[2]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[3]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+          }
         }
-        if (std::find(usedTracksIdsDFMCEff.begin(), usedTracksIdsDFMCEff.end(), track.globalIndex()) != usedTracksIdsDFMCEff.end()) {
-          continue;
+      } else {
+        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
+      }
+    }
+
+    for (auto& particle : particlesPerCol) {
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      registry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
+      if (std::abs(particle.eta()) < estimatorEta) {
+        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        if (particle.pdgCode() == speciesIds[0]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[1]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[2]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[3]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
         }
       }
+    }
+  }
+
+  template <typename C, typename MC>
+  void processTrackEfficiencyGeneral(
+    typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
+    MC const&, Particles const& particles,
+    FiLTracks const& tracks)
+  {
+    if (useEvSel && !collision.sel8()) {
+      return;
+    }
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    float c_rec = -1;
+    float c_gen = -1;
+    if constexpr (hasRecoCent<C>()) {
+      if constexpr (C::template contains<aod::CentFT0Cs>()) {
+        c_rec = collision.centFT0C();
+      } else if (C::template contains<aod::CentFT0Ms>()) {
+        c_rec = collision.centFT0M();
+      }
+    }
+    auto mcCollision = collision.mcCollision();
+    if constexpr (hasSimCent<MC>()) {
+      c_gen = mcCollision.centrality();
+    }
+
+    auto particlesPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+    usedTracksIds.clear();
+    for (auto const& track : tracks) {
       if (track.has_mcParticle()) {
         auto particle = track.template mcParticle_as<Particles>();
         registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
@@ -883,7 +954,7 @@ struct MultiplicityCounter {
     FiLTracks const& filtracks,
     soa::SmallGroups<ReTracks> const& atracks)
   {
-    processTrackEfficiencyGeneral<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks, &atracks);
+    processTrackEfficiencyGeneralAmbiguous<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
@@ -893,7 +964,7 @@ struct MultiplicityCounter {
     aod::McCollisions const& mccollisions, Particles const& mcParticles,
     FiLTracks const& filtracks)
   {
-    processTrackEfficiencyGeneral<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks, nullptr);
+    processTrackEfficiencyGeneral<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyNoAmb, "Calculate tracking efficiency vs pt w/o ambiguous", false);
