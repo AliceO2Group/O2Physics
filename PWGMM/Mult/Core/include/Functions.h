@@ -12,7 +12,6 @@
 #ifndef PWGMM_FUNCTIONS_H
 #define PWGMM_FUNCTIONS_H
 #include "Common/DataModel/Centrality.h"
-#include "Framework/AnalysisDataModel.h"
 
 namespace pwgmm::mult
 {

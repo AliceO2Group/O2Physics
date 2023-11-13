@@ -30,6 +30,10 @@ AxisSpec PtAxis_wide = {1041, -0.05, 104.05}; // Smaller wider-binned Pt
 AxisSpec FT0CAxis = {1001, -0.5, 1000.5};     // FT0C amplitudes
 AxisSpec FT0AAxis = {3001, -0.5, 3000.5};     // FT0A amplitudes
 AxisSpec FDDAxis = {3001, -0.5, 3000.5};      // FDD amplitudes
+AxisSpec RapidityAxis = {102, -10.2, 10.2};   // Rapidity
+AxisSpec ScaleAxis = {121, -0.5, 120.5};      // Event scale
+AxisSpec MPIAxis = {51, -0.5, 50.5};          // N_{MPI}
+AxisSpec ProcAxis = {21, 89.5, 110.5};        // Process flag
 
 // event selection/efficiency binning
 enum struct EvSelBins : int {
