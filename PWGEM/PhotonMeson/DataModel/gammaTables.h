@@ -245,7 +245,8 @@ DECLARE_SOA_COLUMN(Vz, vz, float);                                      //! seco
 DECLARE_SOA_COLUMN(Px, px, float);                                      //! px for photon kf
 DECLARE_SOA_COLUMN(Py, py, float);                                      //! py for photon kf
 DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! pz for photon kf
-DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! invariant mass of dielectron
+DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! invariant mass of dielectron at SV
+DECLARE_SOA_COLUMN(MGammaPV, mGammaPV, float);                          //! invariant mass of dielectron at PV
 DECLARE_SOA_COLUMN(DCAxyV0ToPV, dcaXYv0topv, float);                    //! DCAxy of V0 to PV
 DECLARE_SOA_COLUMN(DCAzV0ToPV, dcaZv0topv, float);                      //! DCAz of V0 to PV
 DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
@@ -265,7 +266,7 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                  v0photonkf::MGamma,
+                  v0photonkf::MGamma, v0photonkf::MGammaPV,
                   v0photonkf::DCAxyV0ToPV, v0photonkf::DCAzV0ToPV,
                   v0photonkf::CosPA, v0photonkf::PCA,
                   v0photonkf::Alpha, v0photonkf::QtArm,
