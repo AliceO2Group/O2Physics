@@ -126,6 +126,7 @@ struct PhotonConversionBuilder {
       {"V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}}},
       {"V0/hMee_SVPV", "mee at PV and SV;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{100, 0.0f, 0.1f}, {100, 0, 0.1f}}}},
       {"V0/hMeeSV_Rxy", "mee at SV vs. R_{xy};R_{xy} (cm);m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
+      {"V0/hMeePV_Rxy", "mee at PV vs. R_{xy};R_{xy} (cm);m_{ee} at PV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
       {"V0/hPtDiff", "V0 KF pt leg sum vs. gamma pt;p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.f}, {1000, 0, 10}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
@@ -461,11 +462,12 @@ struct PhotonConversionBuilder {
       ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
       registry.fill(HIST("V0/hMee_SVPV"), v0_pv.M(), v0_sv.M());
       registry.fill(HIST("V0/hMeeSV_Rxy"), rxy, v0_sv.M());
+      registry.fill(HIST("V0/hMeePV_Rxy"), rxy, v0_pv.M());
 
       v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                  v0_sv.M(), v0_pv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
       fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);
