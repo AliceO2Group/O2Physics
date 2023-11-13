@@ -382,9 +382,7 @@ struct HfCandidateSelectorD0 {
           statusD0bar = 0;
         }
 
-        if (isSelectedMlD0 || isSelectedMlD0bar) {
-          hfMlD0Candidate(outputMlD0, outputMlD0bar);
-        }
+        hfMlD0Candidate(outputMlD0, outputMlD0bar);
 
         if (enableDebugMl) {
           if (isSelectedMlD0) {
