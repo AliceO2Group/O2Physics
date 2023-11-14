@@ -444,9 +444,9 @@ struct HfCandidateCreatorToXiPiMc {
       // origin = 0;
       debug = 0;
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
-                                       candidate.bachelor_as<aod::TracksWMc>(),    // pi <- cascade
-                                       candidate.posTrack_as<aod::TracksWMc>(),    // p <- lambda
-                                       candidate.negTrack_as<aod::TracksWMc>()};   // pi <- lambda
+                                       candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
+                                       candidate.posTrack_as<aod::TracksWMc>(),          // p <- lambda
+                                       candidate.negTrack_as<aod::TracksWMc>()};         // pi <- lambda
       auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::TracksWMc>(),
                                            candidate.posTrack_as<aod::TracksWMc>(),
                                            candidate.negTrack_as<aod::TracksWMc>()};
