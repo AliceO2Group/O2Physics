@@ -155,7 +155,7 @@ struct nucleiSpectra {
     kPositive = BIT(8),
     kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(10),
-    kIsSecondaryFromWeakDecay = BIT(11)  /// the last 4 bits are reserved for the PID in tracking
+    kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
