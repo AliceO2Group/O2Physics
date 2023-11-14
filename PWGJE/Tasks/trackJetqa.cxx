@@ -166,7 +166,7 @@ struct TrackJetQa {
 
   template <typename eventInfo>
   void fillEventQa(eventInfo const& collision)
-  { 
+  {
     // fill event property variables
     histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
     if (!collision.sel8()) {
@@ -187,7 +187,7 @@ struct TrackJetQa {
 
   template <typename Tracks>
   void fillTrackQa(Tracks const& track)
-  { 
+  {
     // fill kinematic variables
     if (enable && !track.isGlobalTrackWoPtEta()) {
       return;
@@ -284,7 +284,7 @@ struct TrackJetQa {
       fillEventQa(collision);
       Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
       groupedTracks.bindTable(tracks);
-      
+
       for (auto& track : groupedTracks) {
         fillTrackQa(track);
         if (fillMultiplicity) {
@@ -306,7 +306,7 @@ struct TrackJetQa {
     for (const auto& collision : collisions) {
       fillEventQa(collision);
       const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIndex(), cacheTrk);
-      
+
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
@@ -317,7 +317,7 @@ struct TrackJetQa {
         }
       }
     }
-  } 
+  }
   PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };
 
