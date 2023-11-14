@@ -70,9 +70,11 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand2Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
@@ -177,14 +179,14 @@ DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
-                  full::CollisionId,
+                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
                   full::OriginMcGen,
-                  full::CandidateId);
+                  full::McParticleId);
 
 } // namespace o2::aod
 
