@@ -401,7 +401,9 @@ void CorrelationContainer::getHistsZVtxMult(CorrelationContainer::CFStep step, F
   resetBinLimits(sparse, 6);
   resetBinLimits(mTriggerHist->getTHn(step), 3);
 
-  setBinLimits(sparse);
+  if (mPtMax > mPtMin) {
+    sparse->GetAxis(1)->SetRangeUser(mPtMin, mPtMax);
+  }
 
   Int_t firstBin = sparse->GetAxis(2)->FindBin(ptTriggerMin);
   Int_t lastBin = sparse->GetAxis(2)->FindBin(ptTriggerMax);
