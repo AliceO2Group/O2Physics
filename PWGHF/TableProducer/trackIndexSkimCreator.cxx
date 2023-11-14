@@ -1037,8 +1037,8 @@ struct HfTrackIndexSkimCreator {
 
   static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
   static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
-  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars};                                               // how many different selections are made on 2-prongs
-  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_Ds::nCutVars, hf_cuts_presel_3prong::nCutVars};                                               // how many different selections are made on 3-prongs
+  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars};                              // how many different selections are made on 2-prongs
+  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_Ds::nCutVars, hf_cuts_presel_3prong::nCutVars}; // how many different selections are made on 3-prongs
   static constexpr int kNCutsDstar = 3;                                           // how many different selections are made on Dstars
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
@@ -1271,15 +1271,13 @@ struct HfTrackIndexSkimCreator {
     auto pTBin = findBin(&pTBins3Prong[iDecay3P], pT);
     int deltaMassPhiIndex = cut3Prong[iDecay3P].colmap.find("deltaMassKK")->second;
 
-    if (TESTBIT(whichHypo[iDecay3P], 0))
-    {
+    if (TESTBIT(whichHypo[iDecay3P], 0)) {
       double MassPhiKKPi = RecoDecay::m(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[iDecay3P][0][0], arrMass3Prong[iDecay3P][0][1]});
       if (std::abs(MassPhiKKPi - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
         CLRBIT(whichHypo[iDecay3P], 0);
       }
     }
-    if (TESTBIT(whichHypo[iDecay3P], 1))
-    {
+    if (TESTBIT(whichHypo[iDecay3P], 1)) {
       double MassPhiPiKK = RecoDecay::m(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[iDecay3P][0][1], arrMass3Prong[iDecay3P][0][2]});
       if (std::abs(MassPhiPiKK - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
         CLRBIT(whichHypo[iDecay3P], 1);
@@ -2030,7 +2028,7 @@ struct HfTrackIndexSkimCreator {
               // first we build D*+ candidates if enabled
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
-              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 0)) { // the 2-prong decay is compatible with a D0
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 0)) {                       // the 2-prong decay is compatible with a D0
                 if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {                            // compatible with a soft pion
                   if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
