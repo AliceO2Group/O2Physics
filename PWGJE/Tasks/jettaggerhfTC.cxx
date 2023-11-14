@@ -245,7 +245,7 @@ struct JetTaggerHFTC {
   void fillHistogramIPsMCD(T const& collision, U const& mcdjets)
   {
     for (auto& mcdjet : mcdjets) {
-      const int jetflavor = mcdjet.origin(); 
+      const int jetflavor = mcdjet.origin();
       if (jetflavor == JetTaggingSpecies::none) {
         LOGF(debug, "NOT DEFINE JET FLAVOR");
       }
@@ -523,7 +523,7 @@ struct JetTaggerHFTC {
   void fillHistogramJPMCD(T const& collision, U const& mcdjets, V const& mcParticles)
   {
     for (const auto& mcdjet : mcdjets) {
-      const int jetflavor = mcdjet.origin(); 
+      const int jetflavor = mcdjet.origin();
       auto JP = -1.;
       JP = CalculateJP(collision, mcdjet, mcParticles, jetflavor);
       if (JP < 0)
