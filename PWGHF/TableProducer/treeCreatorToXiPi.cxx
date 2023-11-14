@@ -42,7 +42,7 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(Chi2PCACharm, chi2PCACharm, float);
+DECLARE_SOA_COLUMN(Chi2PCACharmBaryon, chi2PCACharmBaryon, float);
 DECLARE_SOA_COLUMN(CovVtxCharmXX, covVtxCharmXX, float);
 DECLARE_SOA_COLUMN(CovVtxCharmYY, covVtxCharmYY, float);
 DECLARE_SOA_COLUMN(CovVtxCharmZZ, covVtxCharmZZ, float);
