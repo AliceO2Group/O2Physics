@@ -2984,7 +2984,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
-
   /// Single-cascade cuts for 2-prongs or 3-prongs
   /// From cascadeanalysis.cxx w/o PID and Centrality study
   ///  Function to process cascades and generate corresponding invariant-mass distributions
