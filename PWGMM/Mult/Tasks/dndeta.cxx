@@ -26,18 +26,19 @@
 #include "Axes.h"
 #include "Functions.h"
 #include "Selections.h"
+#include "Histograms.h"
+
+#include <ranges>
 
 using namespace o2;
 using namespace o2::aod::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace pwgmm::mult;
+using namespace pwgmm::mult::histograms;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using ReTracks = soa::Join<aod::ReassignedTracksCore, aod::ReassignedTracksExtra>;
-
-static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
-static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
 
 struct MultiplicityCounter {
   SliceCache cache;

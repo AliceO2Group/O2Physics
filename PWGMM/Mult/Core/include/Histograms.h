@@ -11,18 +11,21 @@
 
 #ifndef PWGMM_MULT_HISTOGRAMS_H
 #define PWGMM_MULT_HISTOGRAMS_H
+#include "TPDGCode.h"
 #include <string_view>
 
 namespace pwgmm::mult {
-static constexpr std::array<std::array<std::string_view, 2>, 2> categories{
-  {
-   {"Tracks", "Events"},                       //
-   {"Tracks/Centrality", "Events/Centrality"}  //
-  }                                            //
-};
+// particle species to consider for tracking efficiency
+static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
+static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
+static constexpr std::string_view EventsCategory = "Events";
+static constexpr std::string_view TracksCategory = "Tracks";
+static constexpr std::string_view CentralityPrefix = "Centrality";
 
 namespace histograms {
 // events and collisions
+static constexpr std::string_view BCSelection = "BCSelection";                        // BC selection categories
+static constexpr std::string_view EventSelection = "Selection";                       // Collision selection categories
 static constexpr std::string_view NtrkZvtx = "NtrkZvtx";                              // N tracks vs vtx Z for selected collisions
 static constexpr std::string_view NtrkZvtxGen = "NtrkZvtxGen";                        // -- for selected simulated collisions
 static constexpr std::string_view NtrkZvtxGen_t = "NtrkZvtxGen_t";                    // N particles vs vtx Z for generated events
