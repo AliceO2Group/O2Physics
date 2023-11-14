@@ -43,6 +43,7 @@ DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);     //!
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, int);
 DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbD0bar, mlProbD0bar, std::vector<float>); //!
 } // namespace hf_sel_candidate_d0
 
 DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
@@ -54,7 +55,8 @@ DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsRecoPid);
 
 DECLARE_SOA_TABLE(HfMlD0, "AOD", "HFMLD0", //!
-                  hf_sel_candidate_d0::MlProbD0);
+                  hf_sel_candidate_d0::MlProbD0,
+                  hf_sel_candidate_d0::MlProbD0bar);
 
 namespace hf_sel_candidate_d0_parametrized_pid
 {
