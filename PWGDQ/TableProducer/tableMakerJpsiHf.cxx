@@ -217,7 +217,7 @@ struct tableMakerJpsiHf {
             }
             if (dmeson.mlProbD0bar().size() == 3) {
               for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
-                scores[iScore+3] = dmeson.mlProbD0bar()[iScore];
+                scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
               }
             }
             redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
