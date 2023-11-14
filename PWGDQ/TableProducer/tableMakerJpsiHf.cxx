@@ -208,9 +208,19 @@ struct tableMakerJpsiHf {
             isJPsiFilled = true;
           }
           redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+          std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
           if constexpr (withBdt) {
-            auto scores = dmeson.mlProbD0();
-            redDmesBdts(scores[0], scores[1], scores[2]);
+            if (dmeson.mlProbD0().size() == 3) {
+              for (auto iScore{0u}; iScore<dmeson.mlProbD0().size(); ++iScore) {
+                scores[iScore] = dmeson.mlProbD0()[iScore];
+              }
+            }
+            if (dmeson.mlProbD0bar().size() == 3) {
+              for (auto iScore{0u}; iScore<dmeson.mlProbD0().size(); ++iScore) {
+                scores[iScore+3] = dmeson.mlProbD0bar()[iScore];
+              }
+            }
+            redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
           }
 
           auto ptBinForBdt = findBin(pTBinsBDT, dmeson.pt());
@@ -224,7 +234,7 @@ struct tableMakerJpsiHf {
           }
           if (dmeson.isSelD0bar() >= 1) {
             massD0bar = hfHelper.invMassD0barToKPi(dmeson);
-            if (ptBinForBdt >= 0 && (scores[0] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[1] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[2] > bdtCutsForHistos->get(ptBinForBdt, 2u))) {
+            if (ptBinForBdt >= 0 && (scores[3] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[4] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[5] > bdtCutsForHistos->get(ptBinForBdt, 2u))) {
               VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
               fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
               VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
