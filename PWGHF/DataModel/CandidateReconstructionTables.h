@@ -851,7 +851,7 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
 // mapping of decay types
-enum DecayType { XiczeroToXiPi = 0,
+enum DecayType { XiczeroOmegaczeroToXiPi = 0,
                  OmegaczeroToOmegaPi,
                  N2ProngDecays }; // always keep N2ProngDecays at the end
 
