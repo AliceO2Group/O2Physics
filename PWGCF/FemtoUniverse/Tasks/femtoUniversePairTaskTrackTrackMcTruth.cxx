@@ -15,6 +15,7 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #include <vector>
+#include <random>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -169,6 +170,11 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (std::rand() > RAND_MAX / 2) {
+        auto& tmp = p1;
+        p1 = p2;
+        p2 = tmp;
+      }
 
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -208,7 +214,11 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   {
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-
+      if (std::rand() > RAND_MAX / 2) {
+        auto& tmp = p1;
+        p1 = p2;
+        p2 = tmp;
+      }
       mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
     }
   }
