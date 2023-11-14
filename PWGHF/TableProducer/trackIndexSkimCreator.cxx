@@ -1037,8 +1037,8 @@ struct HfTrackIndexSkimCreator {
 
   static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
   static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
-  static constexpr int kNCuts2Prong = 4;                                          // how many different selections are made on 2-prongs
-  static constexpr int kNCuts3Prong[kN3ProngDecays] = {4,4,5,4};                  // how many different selections are made on 3-prongs
+  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars};                                               // how many different selections are made on 2-prongs
+  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_Ds::nCutVars, hf_cuts_presel_3prong::nCutVars};                                               // how many different selections are made on 3-prongs
   static constexpr int kNCutsDstar = 3;                                           // how many different selections are made on Dstars
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
@@ -1230,10 +1230,10 @@ struct HfTrackIndexSkimCreator {
         massHypos[0] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][0]);
         massHypos[1] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][1]);
         if (massHypos[0] < min2 || massHypos[0] >= max2) {
-          whichHypo[iDecay2P] -= 1;
+          CLRBIT(whichHypo[iDecay2P], 0);
         }
         if (massHypos[1] < min2 || massHypos[1] >= max2) {
-          whichHypo[iDecay2P] -= 2;
+          CLRBIT(whichHypo[iDecay2P], 1);
         }
         if (whichHypo[iDecay2P] == 0) {
           CLRBIT(isSelected, iDecay2P);
@@ -1256,13 +1256,51 @@ struct HfTrackIndexSkimCreator {
     }
   }
 
+  /// Method to perform selections on difference from nominal mass for phi decay
+  /// \param pVecTrack0 is the momentum array of the first daughter track
+  /// \param pVecTrack1 is the momentum array of the second daughter track
+  /// \param pVecTrack2 is the momentum array of the third daughter track
+  /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
+  /// \param whichHypo information of the mass hypoteses that were selected
+  /// \param isSelected is a bitmap with selection outcome
+  /// \param iDecay3P is the index of the 3-prong decay
+  template <typename T1, typename T2, typename T3>
+  void isPhiDecayPreselected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, int& isSelected, int const& iDecay3P)
+  {
+    auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + ptTolerance; // add tolerance because of no reco decay vertex
+    auto pTBin = findBin(&pTBins3Prong[iDecay3P], pT);
+    int deltaMassPhiIndex = cut3Prong[iDecay3P].colmap.find("deltaMassKK")->second;
+
+    if (TESTBIT(whichHypo[iDecay3P], 0))
+    {
+      double MassPhiKKPi = RecoDecay::m(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[iDecay3P][0][0], arrMass3Prong[iDecay3P][0][1]});
+      if (std::abs(MassPhiKKPi - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
+        CLRBIT(whichHypo[iDecay3P], 0);
+      }
+    }
+    if (TESTBIT(whichHypo[iDecay3P], 1))
+    {
+      double MassPhiPiKK = RecoDecay::m(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[iDecay3P][0][1], arrMass3Prong[iDecay3P][0][2]});
+      if (std::abs(MassPhiPiKK - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
+        CLRBIT(whichHypo[iDecay3P], 1);
+      }
+    }
+
+    if (whichHypo[iDecay3P] == 0) {
+      CLRBIT(isSelected, iDecay3P);
+      if (debug) {
+        cutStatus[iDecay3P][4] = false;
+      }
+    }
+  }
+
   /// Method to perform selections for 3-prong candidates before vertex reconstruction
   /// \param pVecTrack0 is the momentum array of the first daughter track
   /// \param pVecTrack1 is the momentum array of the second daughter track
   /// \param pVecTrack2 is the momentum array of the third daughter track
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param whichHypo information of the mass hypoteses that were selected
-  /// \param isSelected ia s bitmap with selection outcome
+  /// \param isSelected is a bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
   void is3ProngPreselected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
@@ -1320,29 +1358,7 @@ struct HfTrackIndexSkimCreator {
       }
 
       if ((debug || TESTBIT(isSelected, iDecay3P)) && iDecay3P == hf_cand_3prong::DecayType::DsToKKPi) {
-        int deltaMassPhiIndex = cut3Prong[iDecay3P].colmap.find("deltaMassKK")->second;
-
-        if (TESTBIT(whichHypo[iDecay3P], 0))
-        {
-          double MassPhiKKPi = RecoDecay::m(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[iDecay3P][0][0], arrMass3Prong[iDecay3P][0][1]});
-          if (std::abs(MassPhiKKPi - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
-            CLRBIT(whichHypo[iDecay3P], 0);
-          }
-        }
-        if (TESTBIT(whichHypo[iDecay3P], 1))
-        {
-          double MassPhiPiKK = RecoDecay::m(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[iDecay3P][0][1], arrMass3Prong[iDecay3P][0][2]});
-          if (std::abs(MassPhiPiKK - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
-            CLRBIT(whichHypo[iDecay3P], 1);
-          }
-        }
-        
-        if (whichHypo[iDecay3P] == 0) {
-          CLRBIT(isSelected, iDecay3P);
-          if (debug) {
-            cutStatus[iDecay3P][4] = false;
-          }
-        }
+        isPhiDecayPreselected(pVecTrack0, pVecTrack1, pVecTrack2, cutStatus, whichHypo, isSelected, iDecay3P);
       }
     }
   }
@@ -1715,11 +1731,15 @@ struct HfTrackIndexSkimCreator {
       int n2ProngBit = BIT(kN2ProngDecays) - 1; // bit value for 2-prong candidates where each candidate is one bit and they are all set to 1
       int n3ProngBit = BIT(kN3ProngDecays) - 1; // bit value for 3-prong candidates where each candidate is one bit and they are all set to 1
 
-      bool cutStatus2Prong[kN2ProngDecays][kNCuts2Prong];
+      std::array<std::vector<bool>, kN2ProngDecays> cutStatus2Prong;
       std::array<std::vector<bool>, kN3ProngDecays> cutStatus3Prong;
-      int nCutStatus2ProngBit = BIT(kNCuts2Prong) - 1; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
+      bool nCutStatus2ProngBit[kN2ProngDecays]; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
       bool nCutStatus3ProngBit[kN3ProngDecays]; // bit value for selection status for each 3-prong candidate where each selection is one bit and they are all set to 1
 
+      for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
+        nCutStatus2ProngBit[iDecay2P] = BIT(kNCuts2Prong[iDecay2P]) - 1;
+        cutStatus2Prong[iDecay2P] = std::vector<bool>(kNCuts2Prong[iDecay2P], true);
+      }
       for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
         nCutStatus3ProngBit[iDecay3P] = BIT(kNCuts3Prong[iDecay3P]) - 1;
         cutStatus3Prong[iDecay3P] = std::vector<bool>(kNCuts3Prong[iDecay3P], true);
@@ -1824,7 +1844,7 @@ struct HfTrackIndexSkimCreator {
 
           if (debug) {
             for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
-              for (int iCut = 0; iCut < kNCuts2Prong; iCut++) {
+              for (int iCut = 0; iCut < kNCuts2Prong[iDecay2P]; iCut++) {
                 cutStatus2Prong[iDecay2P][iCut] = true;
               }
             }
@@ -1937,8 +1957,8 @@ struct HfTrackIndexSkimCreator {
                 if (debug) {
                   int Prong2CutStatus[kN2ProngDecays];
                   for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
-                    Prong2CutStatus[iDecay2P] = nCutStatus2ProngBit;
-                    for (int iCut = 0; iCut < kNCuts2Prong; iCut++) {
+                    Prong2CutStatus[iDecay2P] = nCutStatus2ProngBit[iDecay2P];
+                    for (int iCut = 0; iCut < kNCuts2Prong[iDecay2P]; iCut++) {
                       if (!cutStatus2Prong[iDecay2P][iCut]) {
                         CLRBIT(Prong2CutStatus[iDecay2P], iCut);
                       }
@@ -1955,7 +1975,7 @@ struct HfTrackIndexSkimCreator {
                   std::array<std::array<float, 3>, 2> arrMom = {pvec0, pvec1};
                   for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
                     if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
-                      if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
+                      if (TESTBIT(whichHypo2Prong[iDecay2P], 0)) {
                         auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
                         switch (iDecay2P) {
                           case hf_cand_2prong::DecayType::D0ToPiK:
@@ -1969,7 +1989,7 @@ struct HfTrackIndexSkimCreator {
                             break;
                         }
                       }
-                      if (whichHypo2Prong[iDecay2P] >= 2) {
+                      if (TESTBIT(whichHypo2Prong[iDecay2P], 1)) {
                         auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][1]);
                         if (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK) {
                           registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
@@ -2010,7 +2030,7 @@ struct HfTrackIndexSkimCreator {
               // first we build D*+ candidates if enabled
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
-              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 0)) { // the 2-prong decay is compatible with a D0
                 if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {                            // compatible with a soft pion
                   if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
@@ -2264,7 +2284,7 @@ struct HfTrackIndexSkimCreator {
               // first we build D*+ candidates if enabled
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
-              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] >= 2)) { // the 2-prong decay is compatible with a D0bar
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 1)) { // the 2-prong decay is compatible with a D0bar
                 if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar) && trackNeg2.globalIndex() != trackNeg1.globalIndex()) { // compatible with a soft pion
                   if (thisCollId != trackNeg2.collisionId()) {                                                                 // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
