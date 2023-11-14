@@ -612,9 +612,9 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for PID
     cut->SetPIDScheme(DalitzEECut::PIDSchemes::kMuon_lowB);
     cut->SetTPCNsigmaElRange(-2, +2); // exclusion
-    cut->SetTPCNsigmaMuRange(-2, +2);
+    cut->SetTPCNsigmaMuRange(-3, +3);
     cut->SetTPCNsigmaPiRange(-3, +1e+10);
-    cut->SetTOFNsigmaMuRange(-2, +2);
+    cut->SetTOFNsigmaMuRange(-3, +3);
     cut->SetTOFNsigmaPiRange(-3, +1e+10);
     return cut;
   }
@@ -636,9 +636,9 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for PID
     cut->SetPIDScheme(DalitzEECut::PIDSchemes::kMuon_lowB);
     cut->SetTPCNsigmaElRange(-2, +2); // exclusion
-    cut->SetTPCNsigmaMuRange(-2, +2);
+    cut->SetTPCNsigmaMuRange(-3, +3);
     cut->SetTPCNsigmaPiRange(-3, +1e+10);
-    cut->SetTOFNsigmaMuRange(-2, +2);
+    cut->SetTOFNsigmaMuRange(-3, +3);
     cut->SetTOFNsigmaPiRange(-3, +1e+10);
     return cut;
   }
