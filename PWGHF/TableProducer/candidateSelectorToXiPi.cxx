@@ -48,7 +48,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
   Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
 
-  Configurable<double> dcaCharmDauMax{"dcaCharmDauMax", 2.0, "Max DCA charm baryon daughters"};
+  Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
 
   // limit charm baryon invariant mass spectrum
   Configurable<double> invMassCharmMin{"invMassCharmMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
