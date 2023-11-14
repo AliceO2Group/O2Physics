@@ -1094,7 +1094,7 @@ DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
 DECLARE_SOA_COLUMN(EtaPiFromCharm, etaPiFromCharm, double);
-DECLARE_SOA_COLUMN(EtaCharm, etaCharm, double);
+DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
