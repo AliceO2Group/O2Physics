@@ -20,7 +20,8 @@ static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
 static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
 static constexpr std::string_view EventsCategory = "Events";
 static constexpr std::string_view TracksCategory = "Tracks";
-static constexpr std::string_view CentralityPrefix = "Centrality";
+static constexpr std::string_view BinnedPrefix = "Centrality";
+static constexpr std::string_view InclusivePrefix = "Inclusive";
 
 namespace histograms {
 // events and collisions

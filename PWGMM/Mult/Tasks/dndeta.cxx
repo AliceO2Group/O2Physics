@@ -56,11 +56,20 @@ struct MultiplicityCounter {
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
 
-  HistogramRegistry registry{
-    "registry",
+  HistogramRegistry commonRegistry{
+    "Common",
     {
       {"Events/BCSelection", ";status;count", {HistType::kTH1F, {{3, 0.5, 3.5}}}} //
-    }                                                                             //
+    } //
+  };
+
+  HistogramRegistry inclusiveRegistry{
+    InclusivePrefix.data(),
+    {}
+  };
+  HistogramRegistry binnedRegistry{
+    BinnedPrefix.data(),
+    {}
   };
 
   std::vector<int> usedTracksIds;
@@ -73,24 +82,24 @@ struct MultiplicityCounter {
     AxisSpec MultAxis = {multBinning};
     AxisSpec CentAxis = {centBinning, "centrality"};
 
-    auto hstat = registry.get<TH1>(HIST("Events/BCSelection"));
+    auto hstat = inclusiveRegistry.get<TH1>(HIST("Events/BCSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "Good BCs");
     x->SetBinLabel(2, "BCs with collisions");
     x->SetBinLabel(3, "BCs with pile-up/splitting");
 
     if (doprocessEventStat) {
-      registry.add({"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}});
-      registry.add({"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}});
+      inclusiveRegistry.add({"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}});
+      inclusiveRegistry.add({"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}});
     }
     if (doprocessEventStatCentralityFT0C || doprocessEventStatCentralityFT0M) {
-      registry.add({"Events/Centrality/Control/Chi2", " ; #chi^2; centrality", {HistType::kTH2F, {{101, -0.1, 10.1}, CentAxis}}});
-      registry.add({"Events/Centrality/Control/TimeResolution", " ; t (ms); centrality", {HistType::kTH2F, {{1001, -0.1, 100.1}, CentAxis}}});
+      binnedRegistry.add({"Events/Control/Chi2", " ; #chi^2; centrality", {HistType::kTH2F, {{101, -0.1, 10.1}, CentAxis}}});
+      binnedRegistry.add({"Events/Control/TimeResolution", " ; t (ms); centrality", {HistType::kTH2F, {{1001, -0.1, 100.1}, CentAxis}}});
     }
 
     if (doprocessCounting || doprocessCountingNoAmb) {
-      registry.add({"Events/Selection", ";status;events", {HistType::kTH1F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}}}});
-      hstat = registry.get<TH1>(HIST("Events/Selection"));
+      inclusiveRegistry.add({"Events/Selection", ";status;events", {HistType::kTH1F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}}}});
+      hstat = inclusiveRegistry.get<TH1>(HIST("Events/Selection"));
       x = hstat->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvSelBins::kAll), "All");
       x->SetBinLabel(static_cast<int>(EvSelBins::kSelected), "Selected");
@@ -98,79 +107,79 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedPVgt0), "Selected INEL>0 (PV)");
       x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), "Rejected");
 
-      registry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtx_PVgt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
-      registry.add({"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-      registry.add({"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+      inclusiveRegistry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtx_PVgt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
       if (doprocessCounting) {
-        registry.add({"Tracks/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-        registry.add({"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-        registry.add({"Tracks/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-        registry.add({"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-        registry.add({"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-        registry.add({"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-        registry.add({"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-        registry.add({"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-        registry.add({"Tracks/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+        inclusiveRegistry.add({"Tracks/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}});
       }
     }
 
     if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M || doprocessCountingCentralityFT0CNoAmb || doprocessCountingCentralityFT0MNoAmb) {
-      registry.add({"Events/Centrality/Selection", ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
-      hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
+      binnedRegistry.add({"Events/Selection", ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
+      hstat = binnedRegistry.get<TH2>(HIST("Events/Selection"));
       x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
       x->SetBinLabel(3, "Rejected");
 
-      registry.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/PtEta", " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+      binnedRegistry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/PhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
       if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M) {
-        registry.add({"Tracks/Centrality/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ExtraTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ReassignedTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-        registry.add({"Tracks/Centrality/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm); centrality", {HistType::kTHnSparseF, {ZAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+        binnedRegistry.add({"Tracks/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm); centrality", {HistType::kTHnSparseF, {ZAxis, ZAxis, CentAxis}}});
       }
     }
 
     if (doprocessGen || doprocessGenNoAmb) {
-      registry.add({"Events/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
-      registry.add({"Events/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtxGen", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtxGen_PVgt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
-      registry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Events/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      inclusiveRegistry.add({"Events/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtxGen", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtxGen_PVgt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
 
-      registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
 
-      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}}}});
-      registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
+      inclusiveRegistry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}}}});
+      inclusiveRegistry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
 
       if (fillResponse) {
-        registry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis}}});
-        registry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
-        registry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
+        inclusiveRegistry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis}}});
+        inclusiveRegistry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
+        inclusiveRegistry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
         if (responseStudy) {
-          registry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}; N_{PV cont}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDDAxis, FDDAxis, ZAxis}}});
+          inclusiveRegistry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}; N_{PV cont}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm)", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDDAxis, FDDAxis, ZAxis}}});
         }
       }
 
-      auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
+      auto heff = inclusiveRegistry.get<TH1>(HIST("Events/Efficiency"));
       x = heff->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvEffBins::kGen), "Generated");
       x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), "Generated INEL>0");
@@ -182,31 +191,31 @@ struct MultiplicityCounter {
 
     if (doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi ||
         doprocessGenFT0CNoAmb || doprocessGenFT0MNoAmb || doprocessGenFT0ChiNoAmb || doprocessGenFT0MhiNoAmb) {
-      registry.add({"Events/Centrality/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
-      registry.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxGen_PVgt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Events/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Events/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtxGen", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtxGen_PVgt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
 
-      registry.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/PhiEtaGenDuplicates", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/Control/PhiEtaDuplicates", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      registry.add({"Events/Centrality/Efficiency", "; status; centrality; events", {HistType::kTH2F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}, CentAxis}}});
-      registry.add({"Events/Centrality/NotFoundEventZvtx", " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/PhiEtaGenDuplicates", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Tracks/Control/PhiEtaDuplicates", "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      binnedRegistry.add({"Events/Efficiency", "; status; centrality; events", {HistType::kTH2F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}, CentAxis}}});
+      binnedRegistry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
 
       if (fillResponse) {
-        registry.add({"Events/Centrality/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
-        registry.add({"Events/Centrality/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
-        registry.add({"Events/Centrality/SplitMult", " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         if (responseStudy) {
-          registry.add({"Events/Centrality/Control/MultiResponse", " ; N_{gen}; N_{rec}, N_{PV cont}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDDAxis, FDDAxis, ZAxis, CentAxis}}});
+          binnedRegistry.add({"Events/Control/MultiResponse", " ; N_{gen}; N_{rec}, N_{PV cont}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDDAxis, FDDAxis, ZAxis, CentAxis}}});
         }
       }
 
-      auto heff = registry.get<TH2>(HIST("Events/Centrality/Efficiency"));
+      auto heff = binnedRegistry.get<TH2>(HIST("Events/Efficiency"));
       x = heff->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvEffBins::kGen), "Generated");
       x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), "Generated INEL>0");
@@ -217,30 +226,30 @@ struct MultiplicityCounter {
     }
 
     if (doprocessTrackEfficiency || doprocessTrackEfficiencyNoAmb) {
-      registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtGenNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtGenNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       for (auto i = 0u; i < speciesIds.size(); ++i) {
-        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGen").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiency").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        inclusiveRegistry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGen").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        inclusiveRegistry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiency").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       }
     }
     if (doprocessTrackEfficiencyIndexed) {
-      registry.add({"Tracks/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Tracks/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtGenINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-      registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
-      registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
+      inclusiveRegistry.add({"Tracks/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      inclusiveRegistry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtGenINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      inclusiveRegistry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
+      inclusiveRegistry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
       for (auto i = 0u; i < speciesIds.size(); ++i) {
-        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGenI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
-        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiencyI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        inclusiveRegistry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGenI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        inclusiveRegistry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiencyI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       }
     }
   }
@@ -254,7 +263,7 @@ struct MultiplicityCounter {
     for (auto& bc : bcs) {
       if (!useEvSel || (bc.selection_bit(aod::evsel::kIsBBT0A) &&
                         bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
-        registry.fill(HIST("Events/BCSelection"), 1.);
+        commonRegistry.fill(HIST("Events/BCSelection"), 1.);
         cols.clear();
         for (auto& collision : collisions) {
           if (collision.has_foundBC()) {
@@ -267,9 +276,9 @@ struct MultiplicityCounter {
         }
         LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
         if (!cols.empty()) {
-          registry.fill(HIST("Events/BCSelection"), 2.);
+          commonRegistry.fill(HIST("Events/BCSelection"), 2.);
           if (cols.size() > 1) {
-            registry.fill(HIST("Events/BCSelection"), 3.);
+            commonRegistry.fill(HIST("Events/BCSelection"), 3.);
           }
         }
         for (auto& col : cols) {
@@ -280,11 +289,11 @@ struct MultiplicityCounter {
             } else if constexpr (C::template contains<aod::CentFT0Ms>()) {
               c = col.centFT0M();
             }
-            registry.fill(HIST("Events/Centrality/Control/Chi2"), col.chi2(), c);
-            registry.fill(HIST("Events/Centrality/Control/TimeResolution"), col.collisionTimeRes(), c);
+            binnedRegistry.fill(HIST("Events/Control/Chi2"), col.chi2(), c);
+            binnedRegistry.fill(HIST("Events/Control/TimeResolution"), col.collisionTimeRes(), c);
           } else {
-            registry.fill(HIST("Events/Control/Chi2"), col.chi2());
-            registry.fill(HIST("Events/Control/TimeResolution"), col.collisionTimeRes());
+            inclusiveRegistry.fill(HIST("Events/Control/Chi2"), col.chi2());
+            inclusiveRegistry.fill(HIST("Events/Control/TimeResolution"), col.collisionTimeRes());
           }
         }
       }
@@ -360,16 +369,16 @@ struct MultiplicityCounter {
       } else if (C::template contains<aod::CentFT0Ms>()) {
         c = collision.centFT0M();
       }
-      registry.fill(HIST("Events/Centrality/Selection"), 1., c);
+      binnedRegistry.fill(HIST("Events/Selection"), 1., c);
     } else {
-      registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kAll));
+      inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kAll));
     }
 
     if (!useEvSel || collision.sel8()) {
       if constexpr (hasCentrality) {
-        registry.fill(HIST("Events/Centrality/Selection"), 2., c);
+        binnedRegistry.fill(HIST("Events/Selection"), 2., c);
       } else {
-        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
+        inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
       }
       auto z = collision.posZ();
       usedTracksIds.clear();
@@ -382,45 +391,45 @@ struct MultiplicityCounter {
           ++Ntrks;
         }
         if constexpr (hasCentrality) {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
-          registry.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/PtEta"), track.pt(), track.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), track.pt(), track.dcaXY(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
+          binnedRegistry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, c);
+          binnedRegistry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
         } else {
-          registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
-          registry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
-          registry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
-          registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
-          registry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
+          inclusiveRegistry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
+          inclusiveRegistry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
         }
       }
       if constexpr (hasCentrality) {
-        registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrks, z, c);
+        binnedRegistry.fill(HIST("Events/NtrkZvtx"), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || groupPVContrib.size() > 0) {
           if (groupPVContrib.size() > 0) {
-            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
+            inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
           }
           if (Ntrks > 0) {
-            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedgt0));
+            inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedgt0));
           }
           for (auto& track : tracks) {
             if (Ntrks > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
             }
             if (groupPVContrib.size() > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.eta(), z);
             }
           }
         }
-        registry.fill(HIST("Events/NtrkZvtx"), Ntrks, z);
+        inclusiveRegistry.fill(HIST("Events/NtrkZvtx"), Ntrks, z);
       }
     } else {
       if constexpr (hasCentrality) {
-        registry.fill(HIST("Events/Centrality/Selection"), 3., c);
+        binnedRegistry.fill(HIST("Events/Selection"), 3., c);
       } else {
-        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
+        inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
       }
     }
   }
@@ -438,16 +447,16 @@ struct MultiplicityCounter {
       } else if (C::template contains<aod::CentFT0Ms>()) {
         c = collision.centFT0M();
       }
-      registry.fill(HIST("Events/Centrality/Selection"), 1., c);
+      binnedRegistry.fill(HIST("Events/Selection"), 1., c);
     } else {
-      registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kAll));
+      inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kAll));
     }
 
     if (!useEvSel || collision.sel8()) {
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Events/Centrality/Selection"), 2., c);
+        binnedRegistry.fill(HIST("Events/Selection"), 2., c);
       } else {
-        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
+        inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelected));
       }
       auto z = collision.posZ();
       usedTracksIds.clear();
@@ -475,44 +484,44 @@ struct MultiplicityCounter {
           ++Ntrks;
         }
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtx"), otrack.eta(), z, c);
-          registry.fill(HIST("Tracks/Centrality/PhiEta"), otrack.phi(), otrack.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/PtEta"), otrack.pt(), otrack.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+          binnedRegistry.fill(HIST("Tracks/EtaZvtx"), otrack.eta(), z, c);
+          binnedRegistry.fill(HIST("Tracks/PhiEta"), otrack.phi(), otrack.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/PtEta"), otrack.pt(), otrack.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ(), c);
         } else {
-          registry.fill(HIST("Tracks/EtaZvtx"), otrack.eta(), z);
-          registry.fill(HIST("Tracks/PhiEta"), otrack.phi(), otrack.eta());
-          registry.fill(HIST("Tracks/Control/PtEta"), otrack.pt(), otrack.eta());
-          registry.fill(HIST("Tracks/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY());
-          registry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ());
+          inclusiveRegistry.fill(HIST("Tracks/EtaZvtx"), otrack.eta(), z);
+          inclusiveRegistry.fill(HIST("Tracks/PhiEta"), otrack.phi(), otrack.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEta"), otrack.pt(), otrack.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ());
         }
         if (!otrack.has_collision()) {
           if constexpr (hasRecoCent<C>()) {
-            registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksEtaZvtx"), otrack.eta(), z, c);
-            registry.fill(HIST("Tracks/Centrality/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta(), c);
-            registry.fill(HIST("Tracks/Centrality/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
-            registry.fill(HIST("Tracks/Centrality/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z, c);
+            binnedRegistry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
           } else {
-            registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z);
-            registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta());
-            registry.fill(HIST("Tracks/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY());
-            registry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z);
+            inclusiveRegistry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ());
           }
         } else if (otrack.collisionId() != track.bestCollisionId()) {
           usedTracksIdsDF.emplace_back(track.trackId());
           if constexpr (hasRecoCent<C>()) {
-            registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z, c);
-            registry.fill(HIST("Tracks/Centrality/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta(), c);
-            registry.fill(HIST("Tracks/Centrality/Control/ReassignedVertexCorr"), otrack.collision_as<C>().posZ(), z, c);
-            registry.fill(HIST("Tracks/Centrality/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
-            registry.fill(HIST("Tracks/Centrality/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z, c);
+            binnedRegistry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<C>().posZ(), z, c);
+            binnedRegistry.fill(HIST("Tracks/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+            binnedRegistry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ(), c);
           } else {
-            registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z);
-            registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta());
-            registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<C>().posZ(), z);
-            registry.fill(HIST("Tracks/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY());
-            registry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z);
+            inclusiveRegistry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<C>().posZ(), z);
+            inclusiveRegistry.fill(HIST("Tracks/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY());
+            inclusiveRegistry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ());
           }
         }
       }
@@ -528,35 +537,35 @@ struct MultiplicityCounter {
           ++Ntrks;
         }
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
-          registry.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/PtEta"), track.pt(), track.eta(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), track.pt(), track.dcaXY(), c);
-          registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
+          binnedRegistry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, c);
+          binnedRegistry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY(), c);
+          binnedRegistry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ(), c);
         } else {
-          registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
-          registry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
-          registry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
-          registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
-          registry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
+          inclusiveRegistry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
+          inclusiveRegistry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
+          inclusiveRegistry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
         }
       }
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrks, z, c);
+        binnedRegistry.fill(HIST("Events/NtrkZvtx"), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || groupPVContrib.size() > 0) {
           if (groupPVContrib.size() > 0) {
-            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
+            inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedPVgt0));
           }
           if (Ntrks > 0) {
-            registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedgt0));
+            inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kSelectedgt0));
           }
           for (auto& track : atracks) {
             if (Ntrks > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.track_as<FiTracks>().eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_gt0"), track.track_as<FiTracks>().eta(), z);
             }
             if (groupPVContrib.size() > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.track_as<FiTracks>().eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.track_as<FiTracks>().eta(), z);
             }
           }
           for (auto& track : tracks) {
@@ -567,20 +576,20 @@ struct MultiplicityCounter {
               continue;
             }
             if (Ntrks > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
             }
             if (groupPVContrib.size() > 0) {
-              registry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.eta(), z);
+              inclusiveRegistry.fill(HIST("Tracks/EtaZvtx_PVgt0"), track.eta(), z);
             }
           }
         }
-        registry.fill(HIST("Events/NtrkZvtx"), Ntrks, z);
+        inclusiveRegistry.fill(HIST("Events/NtrkZvtx"), Ntrks, z);
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Events/Centrality/Selection"), 3., c);
+        binnedRegistry.fill(HIST("Events/Selection"), 3., c);
       } else {
-        registry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
+        inclusiveRegistry.fill(HIST("Events/Selection"), static_cast<float>(EvSelBins::kRejected));
       }
     }
   }
@@ -674,18 +683,18 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/Control/PtGenINoEtaCut"), particle.pt());
+      inclusiveRegistry.fill(HIST("Tracks/Control/PtGenINoEtaCut"), particle.pt());
 
       if (std::abs(particle.eta()) < estimatorEta) {
-        registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
         if (particle.pdgCode() == speciesIds[0]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGenI"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGenI"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[1]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGenI"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGenI"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[2]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGenI"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGenI"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[3]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGenI"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGenI"), particle.pt());
         }
       }
       if (particle.has_tracks()) {
@@ -696,28 +705,28 @@ struct MultiplicityCounter {
         for (auto const& track : relatedTracks) {
           ++counter;
           if (!countedNoEtaCut) {
-            registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
             countedNoEtaCut = true;
           }
           if (std::abs(track.eta()) < estimatorEta) {
             if (!counted) {
-              registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
+              inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
               if (particle.pdgCode() == speciesIds[0]) {
-                registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiencyI"), particle.pt());
+                inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiencyI"), particle.pt());
               } else if (particle.pdgCode() == speciesIds[1]) {
-                registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiencyI"), particle.pt());
+                inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiencyI"), particle.pt());
               } else if (particle.pdgCode() == speciesIds[2]) {
-                registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiencyI"), particle.pt());
+                inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiencyI"), particle.pt());
               } else if (particle.pdgCode() == speciesIds[3]) {
-                registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiencyI"), particle.pt());
+                inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiencyI"), particle.pt());
               }
               counted = true;
             }
           }
           if (counter > 1) {
-            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondariesNoEtaCut"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyISecondariesNoEtaCut"), particle.pt());
             if (std::abs(track.eta()) < estimatorEta) {
-              registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+              inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
             }
           }
         }
@@ -725,25 +734,25 @@ struct MultiplicityCounter {
           for (auto const& track : relatedTracks) {
             for (auto layer = 0; layer < 7; ++layer) {
               if (track.itsClusterMap() & (uint8_t(1) << layer)) {
-                registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
+                inclusiveRegistry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
               }
             }
             auto hasbit = false;
             for (auto bit = 0; bit < 16; ++bit) {
               if (track.mcMask() & (uint8_t(1) << bit)) {
-                registry.fill(HIST("Tracks/Control/Mask"), bit);
+                inclusiveRegistry.fill(HIST("Tracks/Control/Mask"), bit);
                 hasbit = true;
               }
             }
             if (!hasbit) {
-              registry.fill(HIST("Tracks/Control/Mask"), 16);
+              inclusiveRegistry.fill(HIST("Tracks/Control/Mask"), 16);
             }
           }
         }
         if (relatedTracks.size() > 1) {
-          registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
           for (auto const& track : relatedTracks) {
-            registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
+            inclusiveRegistry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
           }
         }
       }
@@ -798,21 +807,21 @@ struct MultiplicityCounter {
       }
       if (otrack.has_mcParticle()) {
         auto particle = otrack.mcParticle_as<Particles>();
-        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
         if (std::abs(otrack.eta()) < estimatorEta) {
-          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
           if (particle.pdgCode() == speciesIds[0]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[1]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[2]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[3]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
           }
         }
       } else {
-        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
       }
     }
     for (auto const& track : tracks) {
@@ -824,21 +833,21 @@ struct MultiplicityCounter {
       }
       if (track.has_mcParticle()) {
         auto particle = track.template mcParticle_as<Particles>();
-        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
         if (std::abs(track.eta()) < estimatorEta) {
-          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
           if (particle.pdgCode() == speciesIds[0]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[1]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[2]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[3]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
           }
         }
       } else {
-        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
       }
     }
 
@@ -851,17 +860,17 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
+      inclusiveRegistry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
       if (std::abs(particle.eta()) < estimatorEta) {
-        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
         if (particle.pdgCode() == speciesIds[0]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[1]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[2]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[3]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
         }
       }
     }
@@ -899,21 +908,21 @@ struct MultiplicityCounter {
     for (auto const& track : tracks) {
       if (track.has_mcParticle()) {
         auto particle = track.template mcParticle_as<Particles>();
-        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
         if (std::abs(track.eta()) < estimatorEta) {
-          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
           if (particle.pdgCode() == speciesIds[0]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[1]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[2]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
           } else if (particle.pdgCode() == speciesIds[3]) {
-            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+            inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
           }
         }
       } else {
-        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
       }
     }
 
@@ -926,17 +935,17 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
+      inclusiveRegistry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
       if (std::abs(particle.eta()) < estimatorEta) {
-        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
         if (particle.pdgCode() == speciesIds[0]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[1]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[2]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
         } else if (particle.pdgCode() == speciesIds[3]) {
-          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
+          inclusiveRegistry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
         }
       }
     }
@@ -991,18 +1000,18 @@ struct MultiplicityCounter {
       nCharged++;
     }
     if constexpr (hasRecoCent<C>()) {
-      registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c_gen);
-      registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGen), c_gen);
+      binnedRegistry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c_gen);
+      binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGen), c_gen);
     } else {
-      registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
-      registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGen));
+      inclusiveRegistry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
+      inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGen));
     }
 
     if (nCharged > 0) {
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kGengt0), c_gen);
+        binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGengt0), c_gen);
       } else {
-        registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGengt0));
+        inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kGengt0));
       }
     }
     bool atLeastOne = false;
@@ -1030,9 +1039,9 @@ struct MultiplicityCounter {
           c_rec = collision.centFT0M();
         }
         c_recPerCol.emplace_back(c_rec);
-        registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kRec), c_gen);
+        binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
-        registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kRec));
+        inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || collision.sel8()) {
         Nrec = 0;
@@ -1042,9 +1051,9 @@ struct MultiplicityCounter {
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         if (groupPVcontrib.size() > 0) {
           if constexpr (hasRecoCent<C>()) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
+            binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
+            inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
           }
         }
 
@@ -1111,32 +1120,32 @@ struct MultiplicityCounter {
         }
 
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelected), c_gen);
+          binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelected), c_gen);
         } else {
-          registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelected));
+          inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelected));
         }
 
         if (Nrec > 0) {
           if constexpr (hasRecoCent<C>()) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0), c_gen);
+            binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0));
+            inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedgt0));
           }
           atLeastOne_gt0 = true;
         }
         if (groupPVcontrib.size() > 0) {
           if constexpr (hasRecoCent<C>()) {
-            registry.fill(HIST("Events/Centrality/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
+            binnedRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0), c_gen);
           } else {
-            registry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
+            inclusiveRegistry.fill(HIST("Events/Efficiency"), static_cast<float>(EvEffBins::kSelectedPVgt0));
           }
           atLeastOne_PVgt0 = true;
         }
 
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), Nrec, collision.posZ(), c_rec);
+          binnedRegistry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ(), c_rec);
         } else {
-          registry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
+          inclusiveRegistry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
         }
       }
     }
@@ -1144,33 +1153,33 @@ struct MultiplicityCounter {
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Events/Centrality/Response"), NrecPerCol[i], nCharged, mcCollision.posZ(), c_recPerCol[i]);
-          registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          binnedRegistry.fill(HIST("Events/Response"), NrecPerCol[i], nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          binnedRegistry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ(), c_recPerCol[i]);
           if (responseStudy) {
-            registry.fill(HIST("Events/Centrality/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], NFDDAPerCol[i], NFDDCPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
+            binnedRegistry.fill(HIST("Events/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], NFDDAPerCol[i], NFDDCPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
           }
         } else {
-          registry.fill(HIST("Events/Response"), NrecPerCol[i], nCharged, mcCollision.posZ());
-          registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
+          inclusiveRegistry.fill(HIST("Events/Response"), NrecPerCol[i], nCharged, mcCollision.posZ());
+          inclusiveRegistry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
           if (responseStudy) {
-            registry.fill(HIST("Events/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], NFDDAPerCol[i], NFDDCPerCol[i], mcCollision.posZ());
+            inclusiveRegistry.fill(HIST("Events/Control/MultiResponse"), nCharged, NrecPerCol[i], NPVPerCol[i], NFT0APerCol[i], NFT0CPerCol[i], NFDDAPerCol[i], NFDDCPerCol[i], mcCollision.posZ());
           }
         }
       }
       if (moreThanOne > 1) {
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Events/Centrality/SplitMult"), nCharged, mcCollision.posZ(), c_gen);
+          binnedRegistry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ(), c_gen);
         } else {
-          registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
+          inclusiveRegistry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
         }
       }
     }
 
     if (collisions.size() == 0) {
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), c_gen);
+        binnedRegistry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ(), c_gen);
       } else {
-        registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
+        inclusiveRegistry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
       }
     }
 
@@ -1184,38 +1193,38 @@ struct MultiplicityCounter {
         continue;
       }
       if constexpr (hasRecoCent<C>()) {
-        registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ(), c_gen);
-        registry.fill(HIST("Tracks/Centrality/Control/PtEtaGen"), particle.pt(), particle.eta(), c_gen);
+        binnedRegistry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ(), c_gen);
+        binnedRegistry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta(), c_gen);
       } else {
-        registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
+        inclusiveRegistry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+        inclusiveRegistry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
       }
       if (nCharged > 0) {
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ(), c_gen);
+          binnedRegistry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ(), c_gen);
         } else {
-          registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
+          inclusiveRegistry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
         }
       }
       if (atLeastOne) {
         if constexpr (hasRecoCent<C>()) {
-          registry.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(), mcCollision.posZ(), c_gen);
+          binnedRegistry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ(), c_gen);
           if (atLeastOne_gt0) {
-            registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ(), c_gen);
+            binnedRegistry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ(), c_gen);
           }
           if (atLeastOne_PVgt0) {
-            registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_PVgt0"), particle.eta(), mcCollision.posZ(), c_gen);
+            binnedRegistry.fill(HIST("Tracks/EtaZvtxGen_PVgt0"), particle.eta(), mcCollision.posZ(), c_gen);
           }
-          registry.fill(HIST("Tracks/Centrality/PhiEtaGen"), particle.phi(), particle.eta(), c_gen);
+          binnedRegistry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta(), c_gen);
         } else {
-          registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
+          inclusiveRegistry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
           if (atLeastOne_gt0) {
-            registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+            inclusiveRegistry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
           }
           if (atLeastOne_PVgt0) {
-            registry.fill(HIST("Tracks/EtaZvtxGen_PVgt0"), particle.eta(), mcCollision.posZ());
+            inclusiveRegistry.fill(HIST("Tracks/EtaZvtxGen_PVgt0"), particle.eta(), mcCollision.posZ());
           }
-          registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
+          inclusiveRegistry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
         }
       }
     }
