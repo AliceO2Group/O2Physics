@@ -47,8 +47,6 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JCollisions> jCollisionsTable;
   Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
   Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
-  Produces<aod::JChTrigSels> jChargedTriggerSelsTable;
-  Produces<aod::JFullTrigSels> jFullTriggerSelsTable;
   Produces<aod::JMcCollisionLbs> jMcCollisionsLabelTable;
   Produces<aod::JMcCollisions> jMcCollisionsTable;
   Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
@@ -100,30 +98,6 @@ struct JetDerivedDataProducerTask {
     jMcCollisionsParentIndexTable(McCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
-
-  void processChargedJetTriggers(soa::Join<aod::Collisions, aod::JetFilters>::iterator const& collision)
-  {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::setChargedTriggerSelectionBit(collision));
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processChargedJetTriggers, "produces derived charged trigger table", false);
-
-  void processNoChargedJetTriggers(aod::Collision const& collision)
-  {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::JTrigSelCh::noChargedTigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", true);
-
-  void processFullJetTriggers(soa::Join<aod::Collisions, aod::FullJetFilters>::iterator const& collision)
-  {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::setFullTriggerSelectionBit(collision));
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processFullJetTriggers, "produces derived full trigger table", false);
-
-  void processNoFullJetTriggers(aod::Collision const& collision)
-  {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::JTrigSelFull::noFullTrigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoFullJetTriggers, "produces derived full trigger table table when sample is not triggered", true);
 
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
