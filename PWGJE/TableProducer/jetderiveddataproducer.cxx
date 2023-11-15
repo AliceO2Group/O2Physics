@@ -101,7 +101,7 @@ struct JetDerivedDataProducerTask {
 
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
-    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), JetDerivedDataUtilities::setTrackSelectionBit(track));
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), track.sign(), JetDerivedDataUtilities::setTrackSelectionBit(track));
     jTracksParentIndexTable(track.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
