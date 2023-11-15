@@ -85,7 +85,7 @@ struct qaEventTrack {
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
 	ConfigurableAxis binsTrackMultiplicityPbPb{"binsTrackMultiplicityPbPb", {1500, 0, 30000}, ""};
 	ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
-	ConfigurableAxis binsVertexNumContribPbPb{"binsVertexNumContribPbPb", {1500, 0, 15000}, ""};
+	ConfigurableAxis binsVertexNumContribPbPb{"binsVertexNumContribPbPb", {1500, 0, 7500}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
