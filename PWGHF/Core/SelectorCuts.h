@@ -186,7 +186,7 @@ static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
 
-namespace hf_cuts_presel_Ds
+namespace hf_cuts_presel_ds
 {
 static constexpr int nBinsPt = 2;
 static constexpr int nCutVars = 5;
@@ -207,7 +207,7 @@ static const std::vector<std::string> labelsPt{};
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "deltaMassKK"};
-} // namespace hf_cuts_presel_Ds
+} // namespace hf_cuts_presel_ds
 
 namespace hf_cuts_presel_dstar
 {
