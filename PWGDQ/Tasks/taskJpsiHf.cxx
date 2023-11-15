@@ -85,14 +85,14 @@ struct taskJPsiHf {
           rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0());
           deltaRap = rapDilepton - rapDmeson;
           if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax)) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkg(), dmeson.bdtPrompt(), dmeson.bdtNonprompt());
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkgMassHypo0(), dmeson.bdtPromptMassHypo0(), dmeson.bdtNonpromptMassHypo0());
           }
         }
         if (dmeson.massD0bar() > 0) {
           rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0bar());
           deltaRap = rapDilepton - rapDmeson;
           if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax)) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkg(), dmeson.bdtPrompt(), dmeson.bdtNonprompt());
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkgMassHypo1(), dmeson.bdtPromptMassHypo1(), dmeson.bdtNonpromptMassHypo1());
           }
         }
       }
