@@ -118,6 +118,7 @@ TrackSelection getGlobalTrackSelectionRun3HF()
 TrackSelection getJEGlobalTrackSelectionRun2()
 {
   TrackSelection selectedTracks = getGlobalTrackSelection();
+  selectedTracks.SetPtRange(0.15f, 1e15f);
   selectedTracks.SetRequireGoldenChi2(false);
   selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; });
   selectedTracks.SetEtaRange(-0.9f, 0.9f);

@@ -37,6 +37,7 @@ struct FwdTrackToCollisionAssociation {
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
+  Configurable<int> bcWindowForOneSigma{"bcWindowForOneSigma", 115, "BC window to be multiplied by the number of sigmas to define maximum window to be considered"};
 
   CollisionAssociation<false> collisionAssociator;
 

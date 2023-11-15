@@ -11,7 +11,7 @@
 
 // QA correlation task for jet trigger
 //
-// Authors: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include <string>
 
@@ -28,9 +28,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -63,31 +62,31 @@ struct TriggerCorrelationsTask {
   {
   }
 
-  o2::aod::EMCALClusterDefinition clusterDef = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusterDef);
+  aod::EMCALClusterDefinition clusterDef = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusterDef);
 
-  void processTriggeredCorrelations(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void processTriggeredCorrelations(aod::JCollision const& collision,
                                     soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jetsCharged,
                                     soa::Join<aod::FullJets, aod::FullJetConstituents> const& jetsFull,
-                                    soa::Filtered<o2::aod::EMCALClusters> const& clusters,
-                                    soa::Join<aod::Tracks, aod::TrackSelection> const& tracks)
+                                    soa::Filtered<aod::JClusters> const& clusters,
+                                    aod::JTracks const& tracks)
   {
 
     registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
     if (collision.posZ() < vertexZCut) {
       registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
     }
-    if (collision.sel8()) {
+    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
       registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
     }
-    if (collision.alias_bit(kTVXinEMC)) {
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with emcal bit
     }
 
     float jetsChargedLeadingPt = -1.0;
     float jetsFullLeadingPt = -1.0;
     float gammaLeadingPt = -1.0;
-    if (collision.sel8()) {
+    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
       if (doChargedJetTrigger) {
         for (auto& jetCharged : jetsCharged) {
           if (jetCharged.r() == round(jetsChargedR * 100.0f)) {
@@ -98,7 +97,7 @@ struct TriggerCorrelationsTask {
       }
     }
 
-    if ((emcalTriggered == -1 && collision.alias_bit(kTVXinEMC)) || (emcalTriggered == 0 && (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7)))) {
+    if ((emcalTriggered == -1 && collision.alias_bit(triggerAliases::kTVXinEMC)) || (emcalTriggered == 0 && (collision.alias_bit(triggerAliases::kEMC7) || collision.alias_bit(triggerAliases::kDMC7)))) {
       if (doFullJetTrigger) {
         for (auto& jetFull : jetsFull) {
           if (jetFull.r() == round(jetsFullR * 100.0f)) {

@@ -11,7 +11,7 @@
 
 // heavy-flavour jet substructure task (subscribing to jet finder hf task)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "fastjet/PseudoJet.hh"
@@ -21,7 +21,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -130,35 +129,35 @@ struct JetSubstructureHFTask {
     jetSubstructurehfTable(zg, rg, nsd);
   }
 
-  void processDummy(aod::Tracks const& tracks)
+  void processDummy(aod::JTracks const& track)
   {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);
 
   void processChargedJetsHF(typename JetTable::iterator const& jet,
                             CandidateTable const& candidates,
-                            aod::Tracks const& tracks)
+                            aod::JTracks const& tracks)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<aod::Tracks>()) {
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
       FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
     for (auto& jetHFCandidate : jet.template hfcandidates_as<CandidateTable>()) { // should only be one at the moment
-      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdg->Mass(candPDG));
     }
     jetReclustering(jet);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsHF, "HF jet substructure", false);
 
   void processChargedJetsHFMCP(typename JetTableMCP::iterator const& jet,
-                               aod::McParticles const& particles)
+                               aod::JMcParticles const& particles)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<aod::McParticles>()) {
-      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(jetConstituent.pdgCode()));
+    for (auto& jetConstituent : jet.template tracks_as<aod::JMcParticles>()) {
+      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
-    for (auto& jetHFCandidate : jet.template hfcandidates_as<aod::McParticles>()) { // should only be one at the moment
-      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(jetHFCandidate.pdgCode()));
+    for (auto& jetHFCandidate : jet.template hfcandidates_as<aod::JMcParticles>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), pdg->Mass(jetHFCandidate.pdgCode()));
     }
     jetReclustering(jet);
   }

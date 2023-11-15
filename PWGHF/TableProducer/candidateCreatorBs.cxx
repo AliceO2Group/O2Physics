@@ -24,17 +24,15 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bs; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
 /// Reconstruction of Bs candidates
@@ -64,14 +62,15 @@ struct HfCandidateCreatorBs {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
 
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massDs = RecoDecay::getMassPDG(pdg::Code::kDSBar);
-  double massBs = RecoDecay::getMassPDG(pdg::Code::kBS);
+  int runNumber{0};
+  double massPi{0.};
+  double massDs{0.};
+  double massBs{0.};
   double massDsPi{0.};
   double bz{0.};
 
@@ -93,6 +92,9 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
+    massPi = o2::analysis::pdg::MassPiPlus;
+    massDs = o2::analysis::pdg::MassDSBar;
+    massBs = o2::analysis::pdg::MassBS;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -291,7 +293,7 @@ struct HfCandidateCreatorBs {
           int hfFlag = BIT(hf_cand_bs::DecayType::BsToDsPi);
 
           // fill output histograms for Bs candidates
-          hMassDsToKKPi->Fill(invMassDsToKKPi(candDs), candDs.pt());
+          hMassDsToKKPi->Fill(hfHelper.invMassDsToKKPi(candDs), candDs.pt());
           hCovSVXX->Fill(covMatrixPCA[0]);
           hCovPVXX->Fill(covMatrixPV[0]);
           hMassBsToDsPi->Fill(massDsPi);

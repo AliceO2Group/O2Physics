@@ -17,6 +17,7 @@
 // the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
 // to have been executed in the workflow (before).
 //
+// author: yuanzhe.wang@cern.ch
 //
 
 #include <cmath>
@@ -44,8 +45,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCKa, aod::pidTPCPr>;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTPCFullPr>;
 
 struct hypertriton3bodyQa {
   // Basic checks
@@ -149,7 +149,7 @@ struct hypertriton3bodyAnalysis {
   }
 
   // Selection criteria
-  Configurable<double> vtxcospa{"vtxcospa", 0.8, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> vtxcospa{"vtxcospa", 0.9, "Vtx CosPA"};          // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"}; // loose cut
   Configurable<float> dcapiontopv{"dcapiontopv", .00, "DCA Pion To PV"};
   Configurable<float> etacut{"etacut", 1, "etacut"};
@@ -199,7 +199,7 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("hSelectedCandidatesCounter"), 5.5);
 
       // 3sigma region for Dalitz plot
-      double mcsigma = 0.0018; // from local MC
+      double mcsigma = 0.0015; // from local MC
       double lowerlimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
       double upperlimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
 

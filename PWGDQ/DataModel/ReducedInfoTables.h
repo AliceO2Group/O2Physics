@@ -123,6 +123,7 @@ DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int);     //!
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);               //!
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                 //!
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //! Detector map: see enum DetectorMapEnum
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);        //!
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS,             //! Flag to check if track has a ITS match
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Flag to check if track has a TPC match
@@ -182,10 +183,15 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
                   pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
                   track::TRDSignal);
 
+// barrel collision information (joined with ReducedTracks) allowing to connect different tables (cross PWGs)
+DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
+                  reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
 using ReducedTrackBarrelCov = ReducedTracksBarrelCov::iterator;
 using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
+using ReducedTrackBarrelInfo = ReducedTracksBarrelInfo::iterator;
 
 namespace reducedtrackMC
 {
@@ -561,6 +567,90 @@ DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 
 // bit information for particle species.
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
+
+DECLARE_SOA_TABLE(RedJpDmColls, "AOD", "REDJPDMCOLL", //!
+                  o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::NumContrib);
+
+namespace jpsidmescorr
+{
+DECLARE_SOA_INDEX_COLUMN(RedJpDmColl, redJpDmColl);    //!
+DECLARE_SOA_COLUMN(MassD0, massD0, float);             //!
+DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);       //!
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(DecVtxX, decVtxX, float);           //!
+DECLARE_SOA_COLUMN(DecVtxY, decVtxY, float);           //!
+DECLARE_SOA_COLUMN(DecVtxZ, decVtxZ, float);           //!
+DECLARE_SOA_COLUMN(BdtBkg, bdtBkg, float);             //!
+DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);       //!
+DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float); //!
+DECLARE_SOA_COLUMN(NumColls, numColls, uint64_t);      //!
+DECLARE_SOA_COLUMN(PtD0, ptD0, float);                 //!
+DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);             //!
+DECLARE_SOA_COLUMN(RapD0, rapD0, float);               //!
+DECLARE_SOA_COLUMN(RapJpsi, rapJpsi, float);           //!
+DECLARE_SOA_COLUMN(PhiD0, phiD0, float);               //!
+DECLARE_SOA_COLUMN(PhiJpsi, phiJpsi, float);           //!
+DECLARE_SOA_COLUMN(DeltaY, deltaY, float);             //!
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //!
+} // namespace jpsidmescorr
+
+DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
+                  o2::soa::Index<>,
+                  jpsidmescorr::RedJpDmCollId,
+                  jpsidmescorr::Px,
+                  jpsidmescorr::Py,
+                  jpsidmescorr::Pz,
+                  reducedpair::Mass,
+                  reducedpair::Sign,
+                  reducedpair::McDecision,
+                  reducedpair::Tauz,
+                  reducedpair::Lz,
+                  reducedpair::Lxy);
+
+DECLARE_SOA_TABLE(RedJpDmColCounts, "AOD", "REDJPDMCOLCOUNT", //!
+                  jpsidmescorr::NumColls);
+
+DECLARE_SOA_TABLE(RedJpDmDmesons, "AOD", "REDJPDMDMESON", //!
+                  o2::soa::Index<>,
+                  jpsidmescorr::RedJpDmCollId,
+                  jpsidmescorr::Px,
+                  jpsidmescorr::Py,
+                  jpsidmescorr::Pz,
+                  jpsidmescorr::DecVtxX,
+                  jpsidmescorr::DecVtxY,
+                  jpsidmescorr::DecVtxZ,
+                  reducedpair::Sign,
+                  reducedpair::McDecision);
+
+DECLARE_SOA_TABLE(RedJpDmD0Masss, "AOD", "REDJPDMD0MASS", //!
+                  jpsidmescorr::MassD0,
+                  jpsidmescorr::MassD0bar);
+
+DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
+                  jpsidmescorr::BdtBkg,
+                  jpsidmescorr::BdtPrompt,
+                  jpsidmescorr::BdtNonprompt);
+
+DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
+                  reducedpair::Mass,
+                  jpsidmescorr::MassD0,
+                  jpsidmescorr::PtJpsi,
+                  jpsidmescorr::PtD0,
+                  jpsidmescorr::RapJpsi,
+                  jpsidmescorr::RapD0,
+                  jpsidmescorr::PhiJpsi,
+                  jpsidmescorr::PhiD0,
+                  jpsidmescorr::DeltaY,
+                  jpsidmescorr::DeltaPhi,
+                  jpsidmescorr::BdtBkg,
+                  jpsidmescorr::BdtPrompt,
+                  jpsidmescorr::BdtNonprompt);
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_

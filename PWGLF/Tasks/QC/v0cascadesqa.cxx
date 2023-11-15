@@ -21,7 +21,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGHF/Core/PDG.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -389,8 +389,8 @@ struct v0cascadesQA {
       float decayLength = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(v0.px(), v0.py(), v0.pz());
       histos_V0.fill(HIST("DecayLength"), decayLength);
 
-      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
-      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
+      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
+      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
 
       if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA &&
           v0.v0radius() > V0_radius &&
@@ -427,7 +427,7 @@ struct v0cascadesQA {
           if (doextraanalysis)
             histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mLambda());
           histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - RecoDecay::getMassPDG(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - RecoDecay::getMassPDG(3122)) > 0.08 && TMath::Abs(v0.mLambda() - RecoDecay::getMassPDG(3122)) < 0.002) {
+          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - o2::analysis::pdg::MassK0Short) > 0.012 && TMath::Abs(v0.mAntiLambda() - o2::analysis::pdg::MassLambda0) > 0.08 && TMath::Abs(v0.mLambda() - o2::analysis::pdg::MassLambda0) < 0.002) {
             histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
             histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
           }
@@ -487,8 +487,8 @@ struct v0cascadesQA {
         lPDG = v0mcparticle.pdgCode();
       }
 
-      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0);
-      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
+      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
+      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
 
       if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA &&
           v0.v0radius() > V0_radius &&
@@ -588,12 +588,12 @@ struct v0cascadesQA {
       histos_Casc.fill(HIST("CascDecayLengthOmega"), cascDecayLength, casc.sign());
 
       float cascTotalMomentum = RecoDecay::sqrtSumOfSquares(casc.px(), casc.py(), casc.pz());
-      float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * RecoDecay::getMassPDG(3322); // see O2Physics/Common/Core/MC.h for codes and names accepted
-      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * RecoDecay::getMassPDG(3334);
+      float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::analysis::pdg::MassXi0; // see O2Physics/Common/Core/MC.h for codes and names accepted
+      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::analysis::pdg::MassOmegaMinus;
 
       float v0TotalMomentum = RecoDecay::sqrtSumOfSquares(casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg());
       float v0DecayLength = std::sqrt(std::pow(casc.xlambda() - casc.x(), 2) + std::pow(casc.ylambda() - casc.y(), 2) + std::pow(casc.zlambda() - casc.z(), 2));
-      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * RecoDecay::getMassPDG(kLambda0);
+      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * o2::analysis::pdg::MassLambda0;
 
       histos_Casc.fill(HIST("CascCtauXi"), CtauXi, casc.sign());
       histos_Casc.fill(HIST("CascCtauOmega"), CtauOmega, casc.sign());

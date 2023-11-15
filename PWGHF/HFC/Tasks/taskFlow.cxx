@@ -36,16 +36,15 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace constants::math;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskFlow {
   //  configurables for processing options
@@ -64,6 +63,7 @@ struct HfTaskFlow {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
 
+  HfHelper hfHelper;
   SliceCache cache;
 
   using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
@@ -301,10 +301,10 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
-    if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+    if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
     }
-    if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+    if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
       return false;
     }
     return true;
@@ -320,10 +320,10 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
       }
 
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -334,8 +334,8 @@ struct HfTaskFlow {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
+      registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEtaCand"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
@@ -371,7 +371,7 @@ struct HfTaskFlow {
           continue;
         }
         fillingHFcontainer = true;
-        invmass = invMassD0ToPiK(track1);
+        invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
       //  fill single-track distributions

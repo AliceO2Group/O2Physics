@@ -43,3 +43,18 @@ o2physics_add_dpl_workflow(tpc-dedx-postcalibration
                     SOURCES tpc_dEdx_postcalibration.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tpc-dedx-qa
+                    SOURCES tpc_dedx_qa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(vertexqa
+                    SOURCES vertexQA.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(efficiencyqa
+                    SOURCES efficiencyQA.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

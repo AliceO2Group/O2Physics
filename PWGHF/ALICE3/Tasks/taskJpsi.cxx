@@ -19,14 +19,14 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_jpsi_to_e_e;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -46,6 +46,8 @@ struct HfTaskJpsi {
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
@@ -76,7 +78,7 @@ struct HfTaskJpsi {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi>> const& candidates)
   {
-    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? aod::hf_cand_2prong::DecayType::JpsiToMuMu : aod::hf_cand_2prong::DecayType::JpsiToEE;
 
     for (const auto& candidate : candidates) {
 
@@ -106,14 +108,14 @@ struct HfTaskJpsi {
           }
         }
       }
-      if (yCandMax >= 0. && std::abs(yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
         continue;
       }
 
       if (modeJpsiToMuMu) {
-        registry.fill(HIST("hMass"), invMassJpsiToMuMu(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
       } else {
-        registry.fill(HIST("hMass"), invMassJpsiToEE(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -143,6 +145,8 @@ struct HfTaskJpsiMc {
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
@@ -196,7 +200,7 @@ struct HfTaskJpsiMc {
                aod::TracksWMc const& tracks)
   {
     // MC rec.
-    int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
+    int decayMode = modeJpsiToMuMu ? aod::hf_cand_2prong::DecayType::JpsiToMuMu : aod::hf_cand_2prong::DecayType::JpsiToEE;
 
     for (const auto& candidate : candidates) {
 
@@ -227,7 +231,7 @@ struct HfTaskJpsiMc {
         }
       }
 
-      if (yCandMax >= 0. && std::abs(yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
@@ -239,9 +243,9 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassSig"), invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassSig"), invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthXYSig"), candidate.decayLengthXY(), candidate.pt());
@@ -249,18 +253,18 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Sig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Sig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), yJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())), particleMother.pt());
+        registry.fill(HIST("hCtSig"), hfHelper.ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYSig"), hfHelper.yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::analysis::pdg::MassJPsi), particleMother.pt());
 
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassBg"), invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassBg"), invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthxyBg"), candidate.decayLengthXY(), candidate.pt());
@@ -268,19 +272,19 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Bg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Bg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hCtBg"), hfHelper.ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYBg"), hfHelper.yJpsi(candidate), candidate.pt());
       }
     }
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassJPsi)) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
-        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())), particle.pt());
+        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassJPsi), particle.pt());
         // registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
         // registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
       }
