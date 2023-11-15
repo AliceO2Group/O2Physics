@@ -285,8 +285,7 @@ struct createPCM {
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
     float dcaV0toPV = calculateDCAStraightToPV(svpos[0], svpos[1], svpos[2], pvxyz[0], pvxyz[1], pvxyz[2], pVtx[0], pVtx[1], pVtx[2]);
 
-      if (v0dca > maxdcav0dau)
-    {
+    if (v0dca > maxdcav0dau) {
       return;
     }
     if (v0CosinePA < minv0cospa) {
