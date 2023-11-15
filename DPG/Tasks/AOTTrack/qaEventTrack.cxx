@@ -81,7 +81,7 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {5000, 0, 5000}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {5000, 0, 5000}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -167,7 +167,7 @@ struct qaEventTrack {
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
-    histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+    histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -177,8 +177,8 @@ struct qaEventTrack {
     histos.add("Events/covYZ", ";Cov_{yz} [cm^{2}]", kTH1D, {axisVertexCov});
     histos.add("Events/covZZ", ";Cov_{zz} [cm^{2}]", kTH1D, {axisVertexCov});
 
-    histos.add("Events/nFilteredTracks", "", kTH1D, {axisTrackMultiplicity});
-    histos.add("Events/nTracks", "", kTH1D, {axisTrackMultiplicity});
+    histos.add("Events/nFilteredTracks", ";n filtered tracks", kTH1D, {axisTrackMultiplicity});
+    histos.add("Events/nTracks", ";track multiplicity", kTH1D, {axisTrackMultiplicity});
 
     if (doprocessMC || doprocessRun2ConvertedMC) {
       histos.add<TH2>("Events/resoX", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {axisVertexPosReso, axisVertexNumContrib});
