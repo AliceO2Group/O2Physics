@@ -53,7 +53,8 @@ struct qaEventTrack {
   SliceCache cache;
 
   // general steering settings
-  Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+	Configurable<bool> isPbPb{"isPbPb", true, "Global switch for easy axis ranges setting"};
   Configurable<bool> doDebug{"doDebug", false, "Bool to enable debug outputs"};
 
   // options to select specific events
@@ -81,7 +82,10 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {5000, 0, 5000}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
+	ConfigurableAxis binsTrackMultiplicityPbPb{"binsTrackMultiplicityPbPb", {1500, 0, 30000}, ""};
+	ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
+	ConfigurableAxis binsVertexNumContribPbPb{"binsVertexNumContribPbPb", {1500, 0, 15000}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -133,13 +137,13 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-    const AxisSpec axisVertexNumContrib{5000, 0, 5000, "Number Of contributors to the PV"};
+		const AxisSpec axisVertexNumContrib{(isPbPb ? binsVertexNumContribPbPb : binsVertexNumContrib), "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
     const AxisSpec axisVertexCov{100, -0.005, 0.005};
     const AxisSpec axisVertexPosReso{100, -0.5, 0.5};
-    const AxisSpec axisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
+    const AxisSpec axisTrackMultiplicity{(isPbPb ? binsTrackMultiplicityPbPb : binsTrackMultiplicity), "Track Multiplicity"};
     const AxisSpec axisParX{300, 0, 600, "#it{x} [cm]"};
     const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
     const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
