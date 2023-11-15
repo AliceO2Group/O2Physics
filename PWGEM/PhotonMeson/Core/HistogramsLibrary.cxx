@@ -76,6 +76,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 200, 0.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
+    list->Add(new TH2F("hMassGammaPV", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
@@ -115,14 +116,14 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     } // end of mc
   }   // end of V0
 
-  if (TString(histClass) == "DalitzEE") {
-    const int nm = 150;
+  if (TString(histClass).Contains("Dalitz")) {
+    const int nm = 147;
     double mee[nm] = {0.f};
-    for (int i = 0; i < 110; i++) {
-      mee[i] = 0.01 * i;
+    for (int i = 0; i < 40; i++) {
+      mee[i] = 0.001 * (i - 0) + 0.0;
     }
-    for (int i = 110; i < nm; i++) {
-      mee[i] = 0.1 * (i - 110) + 1.1;
+    for (int i = 40; i < nm; i++) {
+      mee[i] = 0.01 * (i - 40) + 0.04;
     }
 
     const int npt = 61;
@@ -146,7 +147,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     const int ndim = 4; // m, pt, dca, phiv
     const int nbins[ndim] = {nm - 1, npt - 1, ndca - 1, 32};
     const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0};
-    const double xmax[ndim] = {5.0, 10.0, 20.0, 3.2};
+    const double xmax[ndim] = {1.1, 10.0, 20.0, 3.2};
 
     THnSparseF* hs_dilepton_uls = new THnSparseF("hs_dilepton_uls", "hs_dilepton_uls;m_{ee} (GeV/c);p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
     hs_dilepton_uls->SetBinEdges(0, mee);
@@ -176,8 +177,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
       list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
-    }                                                                                                                                 // end of mc
-  }                                                                                                                                   // end of DalitzEE
+
+      // create phiv template
+      list->Add(new TH2F("hMvsPhiV_Pi0", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
+      list->Add(new TH2F("hMvsPhiV_Photon", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f)); // ee from photon conversion
+
+    } // end of mc
+  }   // end of Dalitz
   if (TString(histClass) == "Track") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
     list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));

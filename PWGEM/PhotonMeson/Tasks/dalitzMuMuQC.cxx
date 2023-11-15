@@ -40,19 +40,19 @@ using std::array;
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
-using MyDalitzEE = MyDalitzEEs::iterator;
+using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
+using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds>;
 using MyTrack = MyTracks::iterator;
 
-struct DalitzEEQC {
-  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
-  std::vector<DalitzEECut> fDalitzEECuts;
+struct DalitzMuMuQC {
+  Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "nocut", "Comma separated list of dalitz mumu cuts"};
+  std::vector<DalitzEECut> fDalitzMuMuCuts;
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputTrack{"Track"};
-  OutputObj<THashList> fOutputDalitzEE{"DalitzEE"};
+  OutputObj<THashList> fOutputDalitzMuMu{"DalitzMuMu"};
   THashList* fMainList = new THashList();
 
   void addhistograms()
@@ -68,42 +68,42 @@ struct DalitzEEQC {
     o2::aod::emphotonhistograms::AddHistClass(fMainList, "Track");
     THashList* list_track = reinterpret_cast<THashList*>(fMainList->FindObject("Track"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE");
-    THashList* list_dalitzee = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE"));
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzMuMu");
+    THashList* list_dalitzmumu = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
 
-    for (const auto& cut : fDalitzEECuts) {
+    for (const auto& cut : fDalitzMuMuCuts) {
       const char* cutname = cut.GetName();
       o2::aod::emphotonhistograms::AddHistClass(list_track, cutname);
-      o2::aod::emphotonhistograms::AddHistClass(list_dalitzee, cutname);
+      o2::aod::emphotonhistograms::AddHistClass(list_dalitzmumu, cutname);
     }
 
     // for single tracks
-    for (auto& cut : fDalitzEECuts) {
+    for (auto& cut : fDalitzMuMuCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
       o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
     }
 
-    // for DalitzEEs
-    for (auto& cut : fDalitzEECuts) {
+    // for DalitzMuMus
+    for (auto& cut : fDalitzMuMuCuts) {
       std::string_view cutname = cut.GetName();
-      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE");
+      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzMuMu")->FindObject(cutname.data()));
+      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzMuMu");
     }
   }
 
   void DefineCuts()
   {
-    TString cutNamesStr = fConfigDalitzEECuts.value;
+    TString cutNamesStr = fConfigDalitzMuMuCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fDalitzEECuts.push_back(*dalitzeecuts::GetCut(cutname));
+        fDalitzMuMuCuts.push_back(*dalitzeecuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of Dalitz cuts = %d", fDalitzEECuts.size());
+    LOGF(info, "Number of Dalitz cuts = %d", fDalitzMuMuCuts.size());
   }
 
   void init(InitContext& context)
@@ -113,22 +113,22 @@ struct DalitzEEQC {
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputTrack.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Track")));
-    fOutputDalitzEE.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")));
+    fOutputDalitzMuMu.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("DalitzMuMu")));
   }
 
-  Partition<MyDalitzEEs> uls_pairs = o2::aod::dalitzee::sign == 0;
-  Partition<MyDalitzEEs> lspp_pairs = o2::aod::dalitzee::sign == +1;
-  Partition<MyDalitzEEs> lsmm_pairs = o2::aod::dalitzee::sign == -1;
+  Partition<MyDalitzMuMus> uls_pairs = o2::aod::dalitzmumu::sign == 0;
+  Partition<MyDalitzMuMus> lspp_pairs = o2::aod::dalitzmumu::sign == +1;
+  Partition<MyDalitzMuMus> lsmm_pairs = o2::aod::dalitzmumu::sign == -1;
 
   SliceCache cache;
-  Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
+  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
+  void processQC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyTracks const& tracks)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
-    THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
+    THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
 
@@ -152,12 +152,12 @@ struct DalitzEEQC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
 
-      for (const auto& cut : fDalitzEECuts) {
-        THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
+      for (const auto& cut : fDalitzMuMuCuts) {
+        THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
         used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
@@ -170,7 +170,7 @@ struct DalitzEEQC {
             values[1] = uls_pair.pt();
             values[2] = uls_pair.dcaXY();
             values[3] = uls_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
+            reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls"))->Fill(values);
             nuls++;
             for (auto& track : {pos, ele}) {
               if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
@@ -180,7 +180,7 @@ struct DalitzEEQC {
             }
           }
         } // end of uls pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
+        reinterpret_cast<TH1F*>(list_dalitzmumu_cut->FindObject("hNpair_uls"))->Fill(nuls);
 
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           if (cut.IsSelected<MyTracks>(lspp_pair)) {
@@ -188,11 +188,11 @@ struct DalitzEEQC {
             values[1] = lspp_pair.pt();
             values[2] = lspp_pair.dcaXY();
             values[3] = lspp_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp"))->Fill(values);
+            reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lspp"))->Fill(values);
             nlspp++;
           }
         } // end of lspp pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
+        reinterpret_cast<TH1F*>(list_dalitzmumu_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
 
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
           if (cut.IsSelected<MyTracks>(lsmm_pair)) {
@@ -200,25 +200,25 @@ struct DalitzEEQC {
             values[1] = lsmm_pair.pt();
             values[2] = lsmm_pair.dcaXY();
             values[3] = lsmm_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm"))->Fill(values);
+            reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lsmm"))->Fill(values);
             nlsmm++;
           }
         } // end of lsmm pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
+        reinterpret_cast<TH1F*>(list_dalitzmumu_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
 
         used_trackIds.clear();
         used_trackIds.shrink_to_fit();
       } // end of cut loop
     }   // end of collision loop
   }     // end of process
-  PROCESS_SWITCH(DalitzEEQC, processQC, "run Dalitz QC", true);
+  PROCESS_SWITCH(DalitzMuMuQC, processQC, "run Dalitz QC", true);
 
   void processDummy(MyCollisions const& collisions) {}
-  PROCESS_SWITCH(DalitzEEQC, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DalitzMuMuQC, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DalitzEEQC>(cfgc, TaskName{"dalitz-ee-qc"})};
+    adaptAnalysisTask<DalitzMuMuQC>(cfgc, TaskName{"dalitz-mumu-qc"})};
 }

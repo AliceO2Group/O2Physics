@@ -46,8 +46,8 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
-  Configurable<double> mPKPiCandLcMax{"mPKPiCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(pKpi)"};
-  Configurable<double> mPiKPCandLcMax{"mPiKPCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(piKp)"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::cuts[0], hf_cuts_sigmac_to_p_k_pi::nBinsPt, hf_cuts_sigmac_to_p_k_pi::nCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   /// Selections on candidate soft π-,+
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -168,6 +168,16 @@ struct HfCandidateCreatorSigmac0plusplus {
       /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
       auto statusSpreadMinvPKPiFromPDG = 0;
       auto statusSpreadMinvPiKPFromPDG = 0;
+
+      // define mass window for Lc
+      float mPKPiCandLcMax = -1;
+      float mPiKPCandLcMax = -1;
+      int pTBin = findBin(binsPt, candLc.pt());
+      if (pTBin != -1) {
+        mPKPiCandLcMax = cutsMassLcMax->get(pTBin, "max pKpi mass Lc");
+        mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
+      }
+
       if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }

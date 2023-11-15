@@ -36,7 +36,7 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::T
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
 
-struct skimmerPrimaryElectron {
+struct skimmerPrimaryMuon {
   enum class EM_EEPairType : int {
     kULS = 0,
     kLSpp = +1,
@@ -45,100 +45,52 @@ struct skimmerPrimaryElectron {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
-  Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
-  Produces<o2::aod::EMReducedEventsBz> events_bz;
+  Produces<aod::EMPrimaryMuons> emprimarymuons;
 
   // Configurables
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-
-  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
+  Configurable<float> maxpt{"maxpt", 1.0, "max pt for track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> min_tpcdEdx{"min_tpcdEdx", 40.0, "min TPC dE/dx"};
-  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
-  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
-  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
-  Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
+  Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
+  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 500.0, "max TPC dE/dx"};
+  Configurable<float> maxPin_TPC{"maxPin_TPC", 0.3, "max pin for TPC pid only"};
+  Configurable<float> maxTPCNsigmaMu_lowPin{"maxTPCNsigmaMu_lowPin", +1.0, "max. TPC n sigma for muon inclusion at low pin"};    // typically, pin < 0.5 GeV/c
+  Configurable<float> minTPCNsigmaMu_lowPin{"minTPCNsigmaMu_lowPin", -4.0, "min. TPC n sigma for muon inclusion at low pin"};    // typically, pin < 0.5 GeV/c
+  Configurable<float> maxTPCNsigmaMu_highPin{"maxTPCNsigmaMu_highPin", +4.0, "max. TPC n sigma for muon inclusion at high pin"}; // typically, pin > 0.5 GeV/c
+  Configurable<float> maxTOFNsigmaMu_highPin{"maxTOFNsigmaMu_highPin", +1.0, "max. TOF n sigma for muon inclusion at high pin"}; // for TOF, pin > 0.12 GeV/c, lowB
+  Configurable<float> minTOFNsigmaMu_highPin{"minTOFNsigmaMu_highPin", -4.0, "min. TOF n sigma for muon inclusion at high pin"}; // for TOF, pin > 0.12 GeV/c, lowB
+  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 1.0, "max. TPC n sigma for electron exclusion"};
+  Configurable<float> maxTPCNsigmaPi_lowPin{"maxTPCNsigmaPi_lowPin", -1.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTOFNsigmaPi{"maxTOFNsigmaPi", -2.0, "max. TPC n sigma for electron exclusion"};
+  Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
     {
       {"hNpairs", "hNpairs;pair type;Number of Pairs", {HistType::kTH1F, {{3, -1.5f, +1.5f}}}},
-      {"Track/hTPCdEdx_Pin_before", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
-      {"Track/hTPCdEdx_Pin_after", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
-      {"Track/hTOFbeta_Pin_before", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
-      {"Track/hTOFbeta_Pin_after", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
-      {"Track/hTPCNsigmaEl", "TPC n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
-      {"Track/hTOFNsigmaEl", "TOF n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
-      {"Pair/hMeePtee", "ULS m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", {HistType::kTH2F, {{400, 0.f, 4.f}, {100, 0.f, 10.f}}}},
+      {"Track/hTPCdEdx_Pin_before", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 1.f}, {200, 0.f, 200.f}}}},
+      {"Track/hTPCdEdx_Pin_after", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 1.f}, {200, 0.f, 200.f}}}},
+      {"Track/hTOFbeta_Pin_before", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {240, 0.6f, 1.2f}}}},
+      {"Track/hTOFbeta_Pin_after", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {240, 0.6f, 1.2f}}}},
+      {"Track/hTPCNsigmaMu", "TPC n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaMu", "TOF n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaPi", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaPi", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Pair/hMmumuPtmumu", "ULS m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", {HistType::kTH2F, {{100, 0.2f, 1.2f}, {120, 0.f, 1.2f}}}},
     },
   };
 
   std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
-  int mRunNumber;
-  float d_bz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  void init(InitContext const&)
-  {
-    mRunNumber = 0;
-    d_bz = 0;
-
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-  }
-
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
-  {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
-      o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
-      }
-      o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = bc.runNumber();
-      return;
-    }
-
-    auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = bc.runNumber();
-  }
+  void init(InitContext const&) {}
 
   template <bool isMC, typename TTrack>
   bool checkTrack(TTrack const& track)
@@ -173,22 +125,40 @@ struct skimmerPrimaryElectron {
   }
 
   template <typename TTrack>
-  bool isElectron(TTrack const& track)
+  bool isMuon(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+    if (isInElectronBand(track)) { // reject electron first.
+      return false;
+    }
+
+    if (track.hasTOF()) {
+      return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_highPin && minTOFNsigmaMu_highPin < track.tofNSigmaMu() && track.tofNSigmaMu() < maxTOFNsigmaMu_highPin && track.tofNSigmaPi() < maxTOFNsigmaPi;
+    } else if (track.tpcInnerParam() < maxPin_TPC) {
+      return minTPCNsigmaMu_lowPin < track.tpcNSigmaMu() && track.tpcNSigmaMu() < maxTPCNsigmaMu_lowPin && track.tpcNSigmaPi() < maxTPCNsigmaPi_lowPin;
+    } else { // muon at high momentum cannot be identified without TOF.
+      return false;
+    }
+
+    // return (isMuon_TPChadrej(track) || isMuon_TOFrecovery(track)) && !isInElectronBand(track);
   }
 
-  template <typename TTrack>
-  bool isElectron_TPChadrej(TTrack const& track)
-  {
-    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
-  }
+  // template <typename TTrack>
+  // bool isMuon_TPChadrej(TTrack const& track)
+  //{
+  //   return minTPCNsigmaMu_lowPin < track.tpcNSigmaMu() && track.tpcNSigmaMu() < maxTPCNsigmaMu_lowPin && track.tpcNSigmaPi() < maxTPCNsigmaPi_lowPin && track.tpcInnerParam() < maxPin_TPC;
+  // }
+
+  // template <typename TTrack>
+  // bool isMuon_TOFrecovery(TTrack const& track)
+  //{
+  //   // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
+  //   return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_highPin && minTOFNsigmaMu_highPin < track.tofNSigmaMu() && track.tofNSigmaMu() < maxTOFNsigmaMu_highPin && track.tofNSigmaPi() < maxTOFNsigmaPi;
+  // }
 
   template <typename TTrack>
-  bool isElectron_TOFrecovery(TTrack const& track)
+  bool isInElectronBand(TTrack const& track)
   {
-    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
-    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
+    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl;
   }
 
   template <bool isMC, typename TTracks>
@@ -208,17 +178,19 @@ struct skimmerPrimaryElectron {
   {
     // bool is_stored = std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) != stored_trackIds.end();
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
-      emprimaryelectrons(track.collisionId(), track.globalIndex(), track.sign(),
-                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
-                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                         track.tpcChi2NCl(), track.tpcInnerParam(),
-                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
+      emprimarymuons(track.collisionId(), track.globalIndex(), track.sign(),
+                     track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
+                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                     track.tpcChi2NCl(), track.tpcInnerParam(),
+                     track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                     track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                     track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
-      fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -231,16 +203,16 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
-        if (!isElectron(t1) || !isElectron(t2)) {
+        if (!isMuon(t1) || !isMuon(t2)) {
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        fRegistry.fill(HIST("Pair/hMeePtee"), v12.M(), v12.Pt());
+        fRegistry.fill(HIST("Pair/hMmumuPtmumu"), v12.M(), v12.Pt());
 
-        if (v12.M() > maxMee) { // don't store
+        if (v12.M() > maxMmumu) { // don't store
           continue;
         }
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
@@ -252,14 +224,14 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<isMC>(t1) || !checkTrack<isMC>(t2)) {
           continue;
         }
-        if (!isElectron(t1) || !isElectron(t2)) {
+        if (!isMuon(t1) || !isMuon(t2)) {
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        if (v12.M() > maxMee) { // don't store
+        if (v12.M() > maxMmumu) { // don't store
           continue;
         }
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
@@ -272,7 +244,7 @@ struct skimmerPrimaryElectron {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = o2::aod::track::x < 10.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& min_tpcdEdx < o2::aod::track::tpcSignal&& o2::aod::track::tpcSignal < max_tpcdEdx;
+  Filter trackFilter = o2::aod::track::x < 10.f && minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx;
 
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -281,9 +253,6 @@ struct skimmerPrimaryElectron {
   {
     stored_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      events_bz(d_bz);
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -300,7 +269,7 @@ struct skimmerPrimaryElectron {
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
   }
-  PROCESS_SWITCH(skimmerPrimaryElectron, processRec, "process reconstructed info only", true);
+  PROCESS_SWITCH(skimmerPrimaryMuon, processRec, "process reconstructed info only", true);
 
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
@@ -313,9 +282,6 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      events_bz(d_bz);
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -332,10 +298,10 @@ struct skimmerPrimaryElectron {
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
   }
-  PROCESS_SWITCH(skimmerPrimaryElectron, processMC, "process reconstructed and MC info ", false);
+  PROCESS_SWITCH(skimmerPrimaryMuon, processMC, "process reconstructed and MC info ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerPrimaryElectron>(cfgc, TaskName{"skimmer-primary-electron"})};
+  return WorkflowSpec{adaptAnalysisTask<skimmerPrimaryMuon>(cfgc, TaskName{"skimmer-primary-muon"})};
 }
