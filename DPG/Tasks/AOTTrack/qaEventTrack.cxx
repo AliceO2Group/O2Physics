@@ -83,7 +83,7 @@ struct qaEventTrack {
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
-	ConfigurableAxis binsTrackMultiplicityPbPb{"binsTrackMultiplicityPbPb", {1500, 0, 30000}, ""};
+	ConfigurableAxis binsTrackMultiplicityPbPb{"binsTrackMultiplicityPbPb", {2500, 0, 50000}, ""};
 	ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
 	ConfigurableAxis binsVertexNumContribPbPb{"binsVertexNumContribPbPb", {1500, 0, 7500}, ""};
 
