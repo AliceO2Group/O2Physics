@@ -881,7 +881,7 @@ struct HfTaskSigmac {
     if (enableTHn) {
       /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
       for (const auto& candidateLc : candidatesLc) {
-        if (!(std::abs(candidateLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+        if (!TESTBIT(std::abs(candidateLc.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
         }
         double massLc(-1.);
