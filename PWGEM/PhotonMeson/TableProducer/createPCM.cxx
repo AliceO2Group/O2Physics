@@ -100,7 +100,7 @@ struct createPCM {
   // Material correction in the DCA fitter
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
@@ -283,7 +283,7 @@ struct createPCM {
     float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     float v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
-    float dcaV0toPV = CalculateDCAStraightToPV(svpos[0], svpos[1], svpos[2], pvxyz[0], pvxyz[1], pvxyz[2], pVtx[0], pVtx[1], pVtx[2])
+    float dcaV0toPV = calculateDCAStraightToPV(svpos[0], svpos[1], svpos[2], pvxyz[0], pvxyz[1], pvxyz[2], pVtx[0], pVtx[1], pVtx[2]);
 
       if (v0dca > maxdcav0dau)
     {
