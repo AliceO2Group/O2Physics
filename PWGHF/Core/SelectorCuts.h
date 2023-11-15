@@ -199,8 +199,8 @@ constexpr double binsPt[nBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{1.75, 2.05, 0.7, 0.02, 1},  /* 1 < pt < 5 */
-                                            {1.75, 2.05, 0.5, 0.02, 1}}; /* 5 < pt < 1000 */
+constexpr double cuts[nBinsPt][nCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.02},  /* 1 < pt < 5 */
+                                            {1.70, 2.15, 0.5, 0.02, 0.02}}; /* 5 < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPt{};

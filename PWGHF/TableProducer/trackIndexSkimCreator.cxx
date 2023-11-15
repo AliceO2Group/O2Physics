@@ -1263,31 +1263,30 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected is a bitmap with selection outcome
-  /// \param iDecay3P is the index of the 3-prong decay
   template <typename T1, typename T2, typename T3>
-  void isPhiDecayPreselected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, int& isSelected, int const& iDecay3P)
+  void isPhiDecayPreselected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
     auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + ptTolerance; // add tolerance because of no reco decay vertex
-    auto pTBin = findBin(&pTBins3Prong[iDecay3P], pT);
-    int deltaMassPhiIndex = cut3Prong[iDecay3P].colmap.find("deltaMassKK")->second;
+    auto pTBin = findBin(&pTBins3Prong[hf_cand_3prong::DecayType::DsToKKPi], pT);
+    int deltaMassPhiIndex = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].colmap.find("deltaMassKK")->second;
 
     if (TESTBIT(whichHypo[iDecay3P], 0)) {
-      double MassPhiKKPi = RecoDecay::m(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[iDecay3P][0][0], arrMass3Prong[iDecay3P][0][1]});
-      if (std::abs(MassPhiKKPi - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
+      double massPhiKKPi = RecoDecay::m(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][0], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1]});
+      if (std::abs(massPhiKKPi - massPhi) > cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(pTBin, deltaMassPhiIndex)) {
         CLRBIT(whichHypo[iDecay3P], 0);
       }
     }
     if (TESTBIT(whichHypo[iDecay3P], 1)) {
-      double MassPhiPiKK = RecoDecay::m(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[iDecay3P][0][1], arrMass3Prong[iDecay3P][0][2]});
-      if (std::abs(MassPhiPiKK - massPhi) > cut3Prong[iDecay3P].get(pTBin, deltaMassPhiIndex)) {
+      double massPhiPiKK = RecoDecay::m(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][2]});
+      if (std::abs(massPhiPiKK - massPhi) > cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(pTBin, deltaMassPhiIndex)) {
         CLRBIT(whichHypo[iDecay3P], 1);
       }
     }
 
-    if (whichHypo[iDecay3P] == 0) {
-      CLRBIT(isSelected, iDecay3P);
+    if (whichHypo[hf_cand_3prong::DecayType::DsToKKPi] == 0) {
+      CLRBIT(isSelected, hf_cand_3prong::DecayType::DsToKKPi);
       if (debug) {
-        cutStatus[iDecay3P][4] = false;
+        cutStatus[hf_cand_3prong::DecayType::DsToKKPi][4] = false;
       }
     }
   }
