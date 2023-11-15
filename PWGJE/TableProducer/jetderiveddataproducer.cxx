@@ -101,10 +101,6 @@ struct JetDerivedDataProducerTask {
 
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
-
-    if (track.collisionId() < 0) {
-      return;
-    }
     jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), JetDerivedDataUtilities::setTrackSelectionBit(track));
     jTracksParentIndexTable(track.globalIndex());
   }
@@ -112,9 +108,6 @@ struct JetDerivedDataProducerTask {
 
   void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
   {
-    if (track.collisionId() < 0) {
-      return;
-    }
     if (track.has_mcParticle()) {
       jMcTracksLabelTable(track.mcParticleId());
     } else {
