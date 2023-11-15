@@ -1356,7 +1356,7 @@ struct HfTrackIndexSkimCreator {
       }
 
       if ((debug || TESTBIT(isSelected, iDecay3P)) && iDecay3P == hf_cand_3prong::DecayType::DsToKKPi) {
-        isPhiDecayPreselected(pVecTrack0, pVecTrack1, pVecTrack2, cutStatus, whichHypo, isSelected, iDecay3P);
+        isPhiDecayPreselected(pVecTrack0, pVecTrack1, pVecTrack2, cutStatus, whichHypo, isSelected);
       }
     }
   }
