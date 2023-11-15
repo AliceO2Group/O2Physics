@@ -104,7 +104,7 @@ struct strangenessFilter {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<double> bz{"bz", -5., "magnetic field"};
+  // Configurable<double> bz{"bz", -5., "magnetic field"};
   Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
@@ -119,6 +119,8 @@ struct strangenessFilter {
   Configurable<float> maxNSigmaV0PiTrackedCascade{"maxNSigmaV0PiTrackedCascade", 3., "Max Nsigma for pion from V0 fromtracked Xi"};
   Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
   Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
+
+  float bz = 0.;
 
   void init(o2::framework::InitContext&)
   {
@@ -993,8 +995,10 @@ struct strangenessFilter {
 
       if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
+        bz = grpo->getNominalL3Field();
       } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
+        bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       } else {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
