@@ -81,7 +81,7 @@ class FemtoUniversePairCleaner
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
       if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex()) {
-      return false;
+        return false;
       }
       return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
