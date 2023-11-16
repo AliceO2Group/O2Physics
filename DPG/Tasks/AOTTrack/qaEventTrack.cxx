@@ -55,7 +55,7 @@ struct qaEventTrack {
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
-	Configurable<bool> overwriteAxisRangeForPbPb{"overwriteAxisRangeForPbPb", false, "Global switch to easily set the most relaxed default axis ranges of multiplicity and PVcontribs for PbPb"};
+  Configurable<bool> overwriteAxisRangeForPbPb{"overwriteAxisRangeForPbPb", false, "Global switch to easily set the most relaxed default axis ranges of multiplicity and PVcontribs for PbPb"};
   Configurable<bool> doDebug{"doDebug", false, "Bool to enable debug outputs"};
 
   // options to select specific events
@@ -133,11 +133,11 @@ struct qaEventTrack {
       return;
     }
 
-		//
-		// Next section setups overwrite of configurableAxis if overwriteAxisRangeForPbPb is used.
-		//
-		// Define the robust default axis binning for PbPb here (assumption: axis always starts at 0).
-		int nBinsNumContrib = 1500; double maxBinsNumContrib = 7500.;
+    //
+    // Next section setups overwrite of configurableAxis if overwriteAxisRangeForPbPb is used.
+    //
+    // Define the robust default axis binning for PbPb here (assumption: axis always starts at 0).
+    int nBinsNumContrib = 1500; double maxBinsNumContrib = 7500.;
 	  int nBinsTrackMultiplicity = 2500; double maxBinsTrackMultiplicity = 50000.;
 		// Create and fill vectors of default bin edges for AxisSpec
 	  std::vector<double> vecBinsVertexNumContribDefaultPbPb;
@@ -170,7 +170,7 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-		const AxisSpec axisVertexNumContrib{(overwriteAxisRangeForPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
+    const AxisSpec axisVertexNumContrib{(overwriteAxisRangeForPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
