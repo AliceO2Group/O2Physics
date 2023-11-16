@@ -195,6 +195,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to t
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V0 prong
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                       //! Index to cascade prong
 DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //!
+DECLARE_SOA_COLUMN(CascadePIDHyp, cascadePIDHyp, int)
 
 DECLARE_SOA_COLUMN(FlagD0ToKPi, flagD0ToKPi, uint8_t);       //!
 DECLARE_SOA_COLUMN(FlagJpsiToEE, flagJpsiToEE, uint8_t);     //!
@@ -260,7 +261,8 @@ DECLARE_SOA_TABLE(HfCascLf2Prongs, "AOD", "HFCASCLF2PRONG", //! Table for HF 2 p
                   o2::soa::Index<>,
                   hf_track_index::CollisionId
                   hf_track_index::CascadeId,
-                  hf_track_index::Prong0Id);
+                  hf_track_index::Prong0Id,
+                  hf_track_index::CascadePIDHyp);
 using HfCascLf2Prong = HfCascLf2Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 prong candidates with a Cascade
@@ -268,7 +270,8 @@ DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 p
                   hf_track_index::CollisionId
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
-                  hf_track_index::Prong1Id);
+                  hf_track_index::Prong1Id,
+                  hf_track_index::CascadePIDHyp);
 using HfCascLf3Prong = HfCascLf3Prongs::iterator;
 
 namespace hf_track_index
