@@ -195,6 +195,7 @@ class VarManager : public TObject
 
     // Basic track/muon/pair wise variables
     kPt,
+    kSignedPt,
     kInvPt,
     kEta,
     kPhi,
@@ -951,6 +952,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the basic table (contains just kine information and filter bits)
   if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
     values[kPt] = track.pt();
+    values[kSignedPt] = track.pt() * track.sign();
     if (fgUsedVars[kP]) {
       values[kP] = track.p();
     }
