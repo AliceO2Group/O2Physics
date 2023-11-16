@@ -1572,11 +1572,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(EtaD0, etaD0,
 DECLARE_SOA_DYNAMIC_COLUMN(PhiD0, phiD0,
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(YD0, yD0,
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::y(std::array{px, py, pz}, m); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::y(std::array{px, py, pz}, analysis::pdg::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(ED0, eD0,
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::e(px, py, pz, m); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::e(px, py, pz, analysis::pdg::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(E2D0, e2D0,
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::e2(px, py, pz, m); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::e2(px, py, pz, analysis::pdg::MassD0); });
 // secondary vertex
 DECLARE_SOA_COLUMN(Chi2PCAD0, chi2PCAD0, float);
 DECLARE_SOA_COLUMN(XSecondaryVertexD0, xSecondaryVertexD0, float);
@@ -1599,7 +1599,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CPAD0, cpaD0,
 DECLARE_SOA_DYNAMIC_COLUMN(CPAXYD0, cpaXYD0,
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px, py}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CtD0, ctD0,
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(std::array{px, py, pz}, RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}), m); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::ct(std::array{px, py, pz}, RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}), analysis::pdg::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXYD0, impactParameterXYD0,
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 

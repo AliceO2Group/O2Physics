@@ -16,16 +16,16 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+// ROOT
 #include <TPDGCode.h>
-
+// O2
 #include "DCAFitter/DCAFitterN.h"
-
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-
+// O2Physics
 #include "Common/Core/trackUtilities.h"
-
+// PWGHF
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
@@ -297,9 +297,9 @@ struct HfCandidateCreatorDstar {
 
       if (fillHistograms) {
         registry.fill(HIST("QA/hPtD0"), ptD0);
-        registry.fill(HIST("QA/hPtPi"), RecoDecay::pt(std::array{trackPi.px(), trackPi.py()}));
-        registry.fill(HIST("QA/hPtD0Prong0"), RecoDecay::pt(std::array{pVecD0Prong0.at(0), pVecD0Prong0.at(1)}));
-        registry.fill(HIST("QA/hPtD0Prong1"), RecoDecay::pt(std::array{pVecD0Prong1.at(0), pVecD0Prong1.at(1)}));
+        registry.fill(HIST("QA/hPtPi"), RecoDecay::pt(trackPi.px(), trackPi.py()));
+        registry.fill(HIST("QA/hPtD0Prong0"), RecoDecay::pt(pVecD0Prong0.at(0), pVecD0Prong0.at(1)));
+        registry.fill(HIST("QA/hPtD0Prong1"), RecoDecay::pt(pVecD0Prong1.at(0), pVecD0Prong1.at(1)));
         registry.fill(HIST("QA/hPtDstar"), ptDstar);
       }
     }
