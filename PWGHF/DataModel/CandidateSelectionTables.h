@@ -108,7 +108,7 @@ DECLARE_SOA_TABLE(HfSelD0Alice3Forward, "AOD", "HFSELD0A3F", //!
 
 namespace hf_sel_candidate_dplus
 {
-DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbDplusToPiKPi, mlProbDplusToPiKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_dplus
 
@@ -120,8 +120,8 @@ DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS", //!
 
 namespace hf_sel_candidate_ds
 {
-DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
+DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int);                  //!
 DECLARE_SOA_COLUMN(MlProbDsToKKPi, mlProbDsToKKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_ds
 
@@ -130,6 +130,23 @@ DECLARE_SOA_TABLE(HfSelDsToKKPi, "AOD", "HFSELDS", //!
 
 DECLARE_SOA_TABLE(HfMlDsToKKPi, "AOD", "HFMLDS", //!
                   hf_sel_candidate_ds::MlProbDsToKKPi);
+
+namespace hf_sel_candidate_dstar
+{
+DECLARE_SOA_COLUMN(IsSelDstarToD0Pi, isSelDstarToD0Pi, bool); //! checking if all four of following check pass
+DECLARE_SOA_COLUMN(IsRecoD0Flag, isRecoD0Flag, bool);         //! checking DecayType::D0ToPiK of D0prong
+DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, bool);           //! checking conjugate independent Topological selection on Dstar
+DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, bool);             //! checking conjugate dependent Topological selecton on Dstar
+DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, bool);               //! checking PID selection on daughters of D0Prong
+
+} // namespace hf_sel_candidate_dstar
+
+DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTART", //! Table stores information about selection flag on Dstar candidate
+                  hf_sel_candidate_dstar::IsSelDstarToD0Pi,
+                  hf_sel_candidate_dstar::IsRecoD0Flag,
+                  hf_sel_candidate_dstar::IsRecoTopol,
+                  hf_sel_candidate_dstar::IsRecoCand,
+                  hf_sel_candidate_dstar::IsRecoPid);
 
 namespace hf_sel_candidate_lc
 {
@@ -221,7 +238,7 @@ DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
 
 namespace hf_sel_candidate_bs
 {
-DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int); //!
+DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbBsToDsPi, mlProbBsToDsPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_bs
 
