@@ -20,14 +20,14 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 
 /// Struct to extend TracksPid tables
 struct HfCandidateSelectorDplusToPiKPiExpressions {
@@ -56,7 +56,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 3., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Dplus candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], hf_cuts_dplus_to_pi_k_pi::nBinsPt, hf_cuts_dplus_to_pi_k_pi::nCutVars, hf_cuts_dplus_to_pi_k_pi::labelsPt, hf_cuts_dplus_to_pi_k_pi::labelsCutVar}, "Dplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -65,6 +65,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
@@ -72,13 +73,13 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponse<float> hfMlResponse;
+  o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponse;
+  std::vector<float> outputMlNotPreselected = {};
   std::vector<float> outputMl = {};
-
   o2::ccdb::CcdbApi ccdbApi;
-
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
+  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
@@ -113,12 +114,13 @@ struct HfCandidateSelectorDplusToPiKPi {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames,
+                                       ccdbApi, modelPathsCCDB.value, timestampCCDB);
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -145,7 +147,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(invMassDplusToPiKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDPlus)) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::analysis::pdg::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {
@@ -201,10 +203,10 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       auto ptCand = candidate.pt();
 
-      if (!TESTBIT(candidate.hfflag(), DecayType::DplusToPiKPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -224,7 +226,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -241,7 +243,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
-          hfMlDplusToPiKPiCandidate(outputMl);
+          hfMlDplusToPiKPiCandidate(outputMlNotPreselected);
         }
         continue;
       }
@@ -252,24 +254,7 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       if (applyMl) {
         // ML selections
-        std::vector<float> inputFeatures{candidate.ptProng0(),
-                                         candidate.impactParameter0(),
-                                         candidate.ptProng1(),
-                                         candidate.impactParameter1(),
-                                         candidate.ptProng2(),
-                                         candidate.impactParameter2(),
-                                         candidate.decayLength(),
-                                         candidate.decayLengthXYNormalised(),
-                                         candidate.cpa(),
-                                         candidate.cpaXY(),
-                                         candidate.maxNormalisedDeltaIP(),
-                                         trackPos1.tpcTofNSigmaPi(),
-                                         trackPos1.tpcTofNSigmaKa(),
-                                         trackNeg.tpcTofNSigmaPi(),
-                                         trackNeg.tpcTofNSigmaKa(),
-                                         trackPos2.tpcTofNSigmaPi(),
-                                         trackPos2.tpcTofNSigmaKa()};
-
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
 

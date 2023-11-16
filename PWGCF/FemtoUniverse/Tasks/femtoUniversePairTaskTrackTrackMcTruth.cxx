@@ -15,6 +15,7 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #include <vector>
+#include <random>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -115,6 +116,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  /// @brief Counter for particle swapping
+  int fNeventsProcessed = 0;
+
   void init(InitContext&)
   {
 
@@ -154,6 +158,8 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   template <bool isMC, typename PartitionType, typename PartType>
   void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
+    bool swpart = fNeventsProcessed % 2;
+    fNeventsProcessed++;
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
@@ -169,12 +175,16 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
-
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      if (swpart)
+        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      else
+        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+
+      swpart = !swpart;
     }
   }
 
@@ -206,10 +216,16 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
+    bool swpart = fNeventsProcessed % 2;
+    fNeventsProcessed++;
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (swpart)
+        mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      else
+        mixedEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
 
-      mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+      swpart = !swpart;
     }
   }
 

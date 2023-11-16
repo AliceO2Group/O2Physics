@@ -11,7 +11,7 @@
 
 // Monitoring task for EMCAL event selection
 //
-// Author: Markus Fasel
+/// \author Markus Fasel <markus.fasel@cern.ch>, Oak Ridge National Laoratory
 
 #include <unordered_map>
 

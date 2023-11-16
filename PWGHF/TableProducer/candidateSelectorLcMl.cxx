@@ -30,10 +30,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
-using namespace hf_cuts_bdt_multiclass;
 using namespace o2::ml;
 
 /// Struct for applying Lc selection cuts
@@ -148,7 +146,7 @@ struct HfCandidateSelectorLcMl {
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
@@ -254,10 +252,10 @@ struct HfCandidateSelectorLcMl {
       std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
-      const float massPi = RecoDecay::getMassPDG(kPiPlus);
-      const float massK = RecoDecay::getMassPDG(kKPlus);
-      const float massProton = RecoDecay::getMassPDG(kProton);
-      const float massLc = RecoDecay::getMassPDG(o2::analysis::pdg::kLambdaCPlus);
+      const float massPi = o2::analysis::pdg::MassPiPlus;
+      const float massK = o2::analysis::pdg::MassKPlus;
+      const float massProton = o2::analysis::pdg::MassProton;
+      const float massLc = o2::analysis::pdg::MassLambdaCPlus;
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
         if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {

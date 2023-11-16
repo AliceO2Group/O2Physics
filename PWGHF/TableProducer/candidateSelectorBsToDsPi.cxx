@@ -21,6 +21,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -29,10 +30,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_bs; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 
 struct HfCandidateSelectorBsToDsPi {
   Produces<aod::HfSelBsToDsPi> hfSelBsToDsPiCandidate; // table defined in CandidateSelectionTables.h
@@ -53,7 +51,7 @@ struct HfCandidateSelectorBsToDsPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bs_to_ds_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bs_to_ds_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Bs candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bs_to_ds_pi::cuts[0], hf_cuts_bs_to_ds_pi::nBinsPt, hf_cuts_bs_to_ds_pi::nCutVars, hf_cuts_bs_to_ds_pi::labelsPt, hf_cuts_bs_to_ds_pi::labelsCutVar}, "Bs candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -78,6 +76,7 @@ struct HfCandidateSelectorBsToDsPi {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
+  HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 
@@ -167,7 +166,7 @@ struct HfCandidateSelectorBsToDsPi {
       }
 
       // topological cuts
-      if (!hf_sel_candidate_bs::selectionTopol(hfCandBs, cuts, binsPt)) {
+      if (!hfHelper.selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
         if (applyMl) {
           hfMlBsToDsPiCandidate(outputMl);
@@ -191,7 +190,7 @@ struct HfCandidateSelectorBsToDsPi {
       if (usePid) {
         auto trackPi = hfCandBs.prong1_as<TracksPidWithSel>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!hf_sel_candidate_bs::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyMl) {
             hfMlBsToDsPiCandidate(outputMl);

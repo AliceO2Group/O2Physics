@@ -127,6 +127,7 @@ struct TableMaker {
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
@@ -160,7 +161,8 @@ struct TableMaker {
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
   Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
   Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
-
+  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
+  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
@@ -207,6 +209,7 @@ struct TableMaker {
                                context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithMults") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") ||
@@ -263,6 +266,12 @@ struct TableMaker {
     }
 
     VarManager::SetRunlist((TString)fConfigRunPeriods);
+    if (fConfigDummyRunlist) {
+      VarManager::SetDummyRunlist(fConfigInitRunNumber);
+    } else {
+      VarManager::SetRunlist((TString)fConfigRunPeriods);
+    }
+
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -395,6 +404,7 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
+      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -491,6 +501,7 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
@@ -755,6 +766,7 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
+      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -839,6 +851,7 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),

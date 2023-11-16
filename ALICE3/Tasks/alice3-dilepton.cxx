@@ -24,6 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 
 using namespace o2;
@@ -55,11 +56,14 @@ struct Alice3Dilepton {
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
   Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF", 3., "Pion exclusion in outer TOF"};
   Configurable<float> nSigmaPionCutInnerTOF{"nSigmaPionCutInnerTOF", 3., "Pion exclusion in inner TOF"};
+  Configurable<float> nSigmaElectronRich{"nSigmaElectronRich", 3., "Electron inclusion RICH"};
+  Configurable<float> nSigmaPionRich{"nSigmaPionRich", 3., "Pion exclusion RICH"};
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -110,6 +114,7 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+    registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
 
     registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
@@ -225,7 +230,7 @@ struct Alice3Dilepton {
       if (((400 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 499) || (4000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 4999)) && ((400 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 499) || (4000 < std::abs(mother2_pdg) && std::abs(mother2_pdg) < 4999))) { // mother is charm
 
         if (((500 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 599) || (5000 < std::abs(grand_mother1_pdg) && std::abs(grand_mother1_pdg) < 5999)) && ((500 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 599) || (5000 < std::abs(grand_mother2_pdg) && std::abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
-          return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
+          return kBCe_BCe;                                                                                                                                                                                                                                                                                                          // b->c->e and b->c->e, decay type = 1
         } else {
           return kCe_Ce; // prompt cc->ee, decay type = 0
         }
@@ -459,6 +464,30 @@ struct Alice3Dilepton {
       } // end of like-sign pair loop
     }
   }
+  // Functions for pid
+  template <typename TTrack>
+  bool electronIDTOF(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+    bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+    isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
+    bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+    bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+    isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
+    isElectron = (isEleOuterTOF || isEleInnerTOF);
+    return isElectron;
+  }
+
+  template <typename TTrack>
+  bool electronIDRICH(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleRICH = std::abs(track.nSigmaElectronRich()) < nSigmaElectronRich;
+    bool isNotPionRICH = std::abs(track.nSigmaPionRich()) > nSigmaPionRich;
+    isElectron = isEleRICH && isNotPionRICH;
+    return isElectron;
+  }
 
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Partition<aod::McParticles> pos_mcParticles = o2::aod::mcparticle::pdgCode == -pdg; //-11 or -13
@@ -504,12 +533,13 @@ struct Alice3Dilepton {
     } // end of mc collision loop
   }   // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::TracksAlice3>;
-  Filter trackFilter = etaMin < o2::aod::track::eta &&
-                       o2::aod::track::eta < etaMax &&
-                       ptMin < o2::aod::track::pt &&
-                       o2::aod::track::pt < ptMax &&
-                       o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeRichs, aod::TracksAlice3>;
+  // Filter trackFilter = etaMin < o2::aod::track::eta &&
+  //                      o2::aod::track::eta < etaMax &&
+  //                      ptMin < o2::aod::track::pt &&
+  //                      o2::aod::track::pt < ptMax &&
+  //                      o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -528,14 +558,6 @@ struct Alice3Dilepton {
 
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracks_coll) {
-        // if (!IsInAcceptance(neg) || !IsInAcceptance(pos)) {
-        //   continue;
-        // }// filtered already
-
-        // if (fabs(track.nSigmaElectronOuterTOF())<3 ) {
-        //   continue;
-        // }
-
         if (!track.has_mcParticle()) {
           continue;
         }
@@ -546,23 +568,38 @@ struct Alice3Dilepton {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
-        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+        if (useGen) {
+          if (!IsInAcceptance(mcParticle)) {
+            continue;
+          }
+        } else {
+          if (!IsInAcceptance(track)) {
+            continue;
+          }
+        }
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
         registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
         // implement pid
-        bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
-        bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
-        isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
-        bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
-        bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
-        isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
-        if (isEleOuterTOF || isEleInnerTOF) {
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+
+        bool isElectronTOF = electronIDTOF(track);
+        bool isElectronRICH = electronIDRICH(track);
+
+        if (isElectronTOF || isElectronRICH) {
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
           registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
           registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
           registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
@@ -570,7 +607,7 @@ struct Alice3Dilepton {
           registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
         }
       } // end of track loop
-
+      // How is PID selection applied to tracks?
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
 

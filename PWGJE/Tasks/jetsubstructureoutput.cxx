@@ -11,7 +11,7 @@
 
 // jet substructure tree filling task (subscribing to jet finder hf and jet substructure tasks)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "Framework/ASoA.h"
@@ -36,10 +36,14 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CollisionTable, typename JetTable, typename OutputTable, typename SubstructureOutputTable>
+template <typename JetTableData, typename OutputTableData, typename SubstructureOutputTableData, typename JetTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename JetTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP>
 struct JetSubstructureOutputTask {
-  Produces<OutputTable> jetOutputTable;
-  Produces<SubstructureOutputTable> jetSubstructureOutputTable;
+  Produces<OutputTableData> jetOutputTableData;
+  Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
+  Produces<OutputTableMCD> jetOutputTableMCD;
+  Produces<SubstructureOutputTableMCD> jetSubstructureOutputTableMCD;
+  Produces<OutputTableMCP> jetOutputTableMCP;
+  Produces<SubstructureOutputTableMCP> jetSubstructureOutputTableMCP;
 
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
@@ -53,42 +57,88 @@ struct JetSubstructureOutputTask {
 
   Filter jetSelection = aod::jet::pt >= jetPtMin;
 
-  template <typename T, typename U>
-  void fillTables(T const& collision, U const& jets)
+  template <typename T, typename U, typename V, typename M>
+  void fillTables(T const& collision, U const& jet, V& jetOutputTable, M& jetSubstructureOutputTable, std::vector<int> geoMatching, std::vector<int> ptMatching, std::vector<int> candMatching)
   {
+    jetOutputTable(collision.globalIndex(), jet.globalIndex(), -1, geoMatching, ptMatching, candMatching, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracks().size());
+    jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+  }
+
+  void processDummy(aod::JCollision const& collision) {}
+  PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
+
+  void processOutputData(aod::JCollision const& collision,
+                         JetTableData const& jets,
+                         aod::JTracks const& tracks)
+  {
+    std::vector<int> geoMatching{-1};
+    std::vector<int> ptMatching{-1};
+    std::vector<int> candMatching{-1};
     for (const auto& jet : jets) {
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-          jetOutputTable(collision.globalIndex(), jet.globalIndex(), -1, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracks().size());
-          jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+          fillTables(collision, jet, jetOutputTableData, jetSubstructureOutputTableData, geoMatching, ptMatching, candMatching);
         }
       }
     }
   }
+  PROCESS_SWITCH(JetSubstructureOutputTask, processOutputData, "jet substructure output Data", false);
 
-  void processDummy(typename CollisionTable::iterator const& collision) {}
-  PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
-
-  void processOutput(typename CollisionTable::iterator const& collision,
-                     JetTable const& jets)
+  void processOutputMCD(aod::JCollision const& collision,
+                        JetTableMCD const& mcdjets,
+                        JetTableMCP const& mcpjets,
+                        aod::JTracks const& tracks)
   {
-    fillTables(collision, jets);
+    std::vector<int> candMatching{-1};
+    for (const auto& mcdjet : mcdjets) {
+      for (const auto& jetRadiiValue : jetRadiiValues) {
+        if (mcdjet.r() == round(jetRadiiValue * 100.0f)) {
+          std::vector<int> geoMatching;
+          std::vector<int> ptMatching;
+          for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCP>()) {
+            geoMatching.push_back(mcpjet.globalIndex());
+          }
+          for (auto& mcpjet : mcdjet.template matchedJetPt_as<JetTableMCP>()) {
+            ptMatching.push_back(mcpjet.globalIndex());
+          }
+          fillTables(collision, mcdjet, jetOutputTableMCD, jetSubstructureOutputTableMCD, geoMatching, ptMatching, candMatching);
+        }
+      }
+    }
   }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processOutput, "jet substructure output", false);
+  PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
+
+  void processOutputMCP(aod::JMcCollision const& collision,
+                        JetTableMCP const& mcpjets,
+                        JetTableMCD const& mcdjets,
+                        aod::JMcParticles const& particles)
+  {
+    std::vector<int> candMatching{-1};
+    for (const auto& mcpjet : mcpjets) {
+      for (const auto& jetRadiiValue : jetRadiiValues) {
+        if (mcpjet.r() == round(jetRadiiValue * 100.0f)) {
+          std::vector<int> geoMatching;
+          std::vector<int> ptMatching;
+          for (auto& mcdjet : mcpjet.template matchedJetGeo_as<JetTableMCD>()) {
+            geoMatching.push_back(mcdjet.globalIndex());
+          }
+          for (auto& mcdjet : mcpjet.template matchedJetPt_as<JetTableMCD>()) {
+            ptMatching.push_back(mcdjet.globalIndex());
+          }
+          fillTables(collision, mcpjet, jetOutputTableMCP, jetSubstructureOutputTableMCP, geoMatching, ptMatching, candMatching);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCP, "jet substructure output MCP", false);
 };
-using JetSubstructureOutputData = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
-using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
-using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::McCollisions, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutput = JetSubstructureOutputTask<soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputData>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-output-data"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCDetectorLevel>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-output-mcd"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCParticleLevel>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-output-mcp"}));
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutput>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-output"}));
 
   return WorkflowSpec{tasks};
 }

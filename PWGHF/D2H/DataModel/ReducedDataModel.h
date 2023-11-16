@@ -30,10 +30,6 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 namespace o2
 {
 namespace aod
@@ -151,18 +147,12 @@ using HfRedTracks = HfRedTracksExt;
 
 namespace hf_charm_cand_reduced
 {
-DECLARE_SOA_COLUMN(InvMass, invMass, float);           //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);       //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float); //! Invariant mass of 2prong candidate in GeV/c2
-
-template <typename T>
-auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
-{
-  return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
-                      std::array{RecoDecay::getMassPDG(kPiPlus),
-                                 RecoDecay::getMassPDG(kKPlus),
-                                 RecoDecay::getMassPDG(kPiPlus)});
-}
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                   //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);               //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float);         //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);             //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);       //! ML score for prompt class
+DECLARE_SOA_COLUMN(MlScoreNonprompt, mlScoreNonprompt, float); //! ML score for non-prompt class
 } // namespace hf_charm_cand_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -183,6 +173,11 @@ DECLARE_SOA_TABLE(HfRed2ProngsCov, "AOD", "HFRED2PRONGSCOV", //! Table with 2pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(HfRed2ProngsMl, "AOD", "HFRED2PRONGML", //! Table with 2prong candidate ML scores
+                  hf_charm_cand_reduced::MlScoreBkg,
+                  hf_charm_cand_reduced::MlScorePrompt,
+                  hf_charm_cand_reduced::MlScoreNonprompt);
+
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
 // to call DECLARE_SOA_INDEX_COLUMN_FULL later on
 DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong candidate information for reduced workflow
@@ -200,6 +195,12 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
                   o2::soa::Index<>,
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<2>);
+
+DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
+                  hf_charm_cand_reduced::MlScoreBkg,
+                  hf_charm_cand_reduced::MlScorePrompt,
+                  hf_charm_cand_reduced::MlScoreNonprompt,
+                  o2::soa::Marker<1>);
 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced

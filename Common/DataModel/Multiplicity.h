@@ -107,15 +107,27 @@ DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
                   multZeq::MultZeqNTracksPV);
 using MultZeq = MultZeqs::iterator;
 
-namespace multDebug
+namespace multBC
 {
-DECLARE_SOA_COLUMN(MultDebugFT0A, multDebugFT0A, float); //!
-DECLARE_SOA_COLUMN(MultDebugFT0C, multDebugFT0C, float); //!
+DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);    //!
+DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);    //!
+DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);       //!
+DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool); //!
+DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
 } // namespace multDebug
-DECLARE_SOA_TABLE(MultsDebug, "AOD", "MULTDEBUG", //!
-                  multDebug::MultDebugFT0A,
-                  multDebug::MultDebugFT0C);
-using MultDebug = MultsDebug::iterator;
+DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
+                  multBC::MultBCFT0A,
+                  multBC::MultBCFT0C,
+                  multBC::MultBCFV0A,
+                  multBC::MultBCTVX,
+                  multBC::MultBCFV0OrA,
+                  multBC::MultBCV0triggerBits,
+                  multBC::MultBCTriggerMask,
+                  multBC::MultBCColliding);
+using MultBC = MultsBC::iterator;
 
 } // namespace o2::aod
 

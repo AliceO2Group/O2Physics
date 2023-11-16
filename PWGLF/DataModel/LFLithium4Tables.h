@@ -46,6 +46,8 @@ DECLARE_SOA_COLUMN(He3NSigmaTPC, he3NSigmaTPC, float);
 DECLARE_SOA_COLUMN(PrNSigmaTPC, prNSigmaTOF, float);
 DECLARE_SOA_COLUMN(He3MassTOF, he3MassTOF, float);
 DECLARE_SOA_COLUMN(PrMassTOF, prMassTOF, float);
+DECLARE_SOA_COLUMN(SharedClustersHe3, sharedClustersHe3, uint8_t);
+DECLARE_SOA_COLUMN(SharedClustersPr, sharedClustersPr, uint8_t);
 
 DECLARE_SOA_COLUMN(IsBkgLS, isBkgLS, bool);
 DECLARE_SOA_COLUMN(IsBkgEM, isBkgEM, bool);
@@ -74,6 +76,8 @@ DECLARE_SOA_TABLE(Lithium4Table, "AOD", "LITHIUM4TABLE",
                   Lithium4TablesNS::PrNSigmaTPC,
                   Lithium4TablesNS::He3MassTOF,
                   Lithium4TablesNS::PrMassTOF,
+                  Lithium4TablesNS::SharedClustersHe3,
+                  Lithium4TablesNS::SharedClustersPr,
                   Lithium4TablesNS::IsBkgLS,
                   Lithium4TablesNS::IsBkgEM)
 DECLARE_SOA_TABLE(Lithium4TableMC, "AOD", "LITHIUM4TABLEMC",
@@ -95,6 +99,8 @@ DECLARE_SOA_TABLE(Lithium4TableMC, "AOD", "LITHIUM4TABLEMC",
                   Lithium4TablesNS::PrNSigmaTPC,
                   Lithium4TablesNS::He3MassTOF,
                   Lithium4TablesNS::PrMassTOF,
+                  Lithium4TablesNS::SharedClustersHe3,
+                  Lithium4TablesNS::SharedClustersPr,
                   Lithium4TablesNS::IsBkgLS,
                   Lithium4TablesNS::IsBkgEM,
                   Lithium4TablesNS::SignedPtMC,

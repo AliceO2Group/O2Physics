@@ -21,14 +21,14 @@
 
 #include "ALICE3/DataModel/RICH.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 
 namespace o2::aod
 {
@@ -66,7 +66,9 @@ struct HfCandidateSelectorLcAlice3 {
   // topological cuts
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+
+  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::RICHTracksIndex, aod::McTrackLabels>;
 
@@ -131,11 +133,11 @@ struct HfCandidateSelectorLcAlice3 {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(invMassLcToPKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::analysis::pdg::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(invMassLcToPiKP(candidate) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::analysis::pdg::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -162,7 +164,7 @@ struct HfCandidateSelectorLcAlice3 {
       int statusLcToPiKPTofPid = 0;
       int statusLcToPiKPTofPlusRichPid = 0;
 
-      if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidateALICE3(statusLcToPKPiNoPid, statusLcToPKPiPerfectPid, statusLcToPKPiTofPid, statusLcToPKPiTofPlusRichPid, statusLcToPiKPNoPid, statusLcToPiKPPerfectPid, statusLcToPiKPTofPid, statusLcToPiKPTofPlusRichPid);
         continue;
       }

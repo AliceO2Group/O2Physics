@@ -298,7 +298,7 @@ inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
       return "NOCM";
       break;
     default:
-      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", est);
+      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", (int)est);
       return "WRONG";
       break;
   }
@@ -461,7 +461,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
       return collision.multFT0M();
       break;
     default:
-      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", est);
+      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", (int)est);
       return collision.multFT0M();
       break;
   }

@@ -33,7 +33,7 @@ using namespace o2::framework::expressions;
 struct DGCandAnalyzer {
 
   // configurables
-  Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
+  Configurable<bool> verbose{"Verbose", {}, "Additional printouts"};
   Configurable<int> candCaseSel{"CandCase", {}, "0: all Cands, 1: only ColCands,2: only BCCands"};
   Configurable<std::string> goodRunsFile{"goodRunsFile", {}, "json with list of good runs"};
 
@@ -144,6 +144,7 @@ struct DGCandAnalyzer {
       registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
+      registry.add("stat/nPVtracks", "Number of PV tracks of analyzed collisions", {HistType::kTH1D, {{51, -0.5, 50.5}}});
 
       registry.add("tracks/nSigmaTPCPEl", "nSigma TPC for electrons", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
       registry.add("tracks/nSigmaTPCPPi", "nSigma TPC for pions", {HistType::kTH2F, {axispt, {100, -20.0, 20.0}}});
@@ -223,6 +224,7 @@ struct DGCandAnalyzer {
   {
     // count collisions
     registry.fill(HIST("stat/candCaseAll"), 0., 1.);
+    registry.fill(HIST("stat/nPVtracks"), dgcand.numContrib(), 1.);
 
     // accept only selected run numbers
     int run = dgcand.runNumber();
@@ -239,6 +241,7 @@ struct DGCandAnalyzer {
       lastRun = run;
       LOGF(info, "done!");
     }
+    registry.fill(HIST("stat/candCaseAll"), 1, 1.);
 
     // is BB bunch?
     auto bcnum = dgcand.globalBC();
@@ -257,11 +260,13 @@ struct DGCandAnalyzer {
       candCase = 2;
     } else if (dgcand.posX() == -2. && dgcand.posY() == 2. && dgcand.posZ() == -2.) {
       candCase = 3;
+    } else if (dgcand.posX() == -3. && dgcand.posY() == 3. && dgcand.posZ() == -3.) {
+      candCase = 3;
     }
     if (candCaseSel > 0 && candCase != candCaseSel) {
       return;
     }
-    registry.fill(HIST("stat/candCaseAll"), candCase, 1.);
+    registry.fill(HIST("stat/candCaseAll"), 2, 1.);
 
     // fill FIT amplitude histograms
     registry.fill(HIST("FIT/FT0AAmplitude"), dgcand.totalFT0AmplitudeA(), 1.);
