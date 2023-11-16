@@ -2918,17 +2918,17 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // selections have been set to run2 lambda dedicated cuts
   // selections for cascade have been set to the loosest value between xi and omega
   // a tolerance has been added to be more conservative
-  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius"}; //0.5 in run2
-  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius"}; //0.5 cm for xi and 0.6 for omega
-  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"}; // 0.04 in run2
-  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"}; //0.06 in run2
-  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"}; //0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"}; //0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"}; //conservative, a cut ar 1.0 should also be fine
-  Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"}; //conservative, a cut ar 1.0 should also be fine
-  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"}; //0.06 in run2
-  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"}; //0.06 in run2
-  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"}; // 0.008 in run2
+  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius"};          // 0.5 in run2
+  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius"}; // 0.5 cm for xi and 0.6 for omega
+  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};           // 0.04 in run2
+  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                 // 0.06 in run2
+  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                       // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                 // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};               // conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};         // conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"};              // 0.06 in run2
+  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"};              // 0.06 in run2
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};        // 0.008 in run2
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -2947,9 +2947,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
   static constexpr int kN2ProngDecays = hf_cand_casc_lf_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
   static constexpr int kN3ProngDecays = hf_cand_casc_lf_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
   std::array<std::array<double, 2>, kN2ProngDecays> arrMass2Prong;
-  std::array<std:::array<double, 3>, kN3ProngDecays> arrMass3Prong;
+  std::array<std:: : array<double, 3>, kN3ProngDecays> arrMass3Prong;
 
-  //PDG masses
+  // PDG masses
   double massP{0.};
   double massPi{0.};
   double massXi{0.};
@@ -2975,7 +2975,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     massXiczero = o2::analysis::pdg::MassXiCZero;
     massXicplus = o2::analysis::pdg::MassXiCPlus;
 
-    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};                                                     
+    arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};
     arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi] = std::array{massOmega, massPi};
     arrMass3Prong[hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi] = std::array{massXi, massPi, massPi};
 
@@ -3032,14 +3032,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
   }
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); //select tracks passing bachelor selection
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); // select tracks passing bachelor selection
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>; 
+  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
+  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
   Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
@@ -3047,23 +3047,23 @@ struct HfTrackIndexSkimCreatorLfCascades {
   template <typename TCascade>
   bool isPreselectedCascade(const TCascade& casc)
   {
-    registry.fill(HIST("hCandidateCounter"), 2.5); 
+    registry.fill(HIST("hCandidateCounter"), 2.5);
 
-    if (casc.v0cosPA() > v0CosPA && 
-        casc.casccosPA() > cascCosPA && 
-        casc.dcacascdaughters() < dcaCascDau && 
-        casc.dcaV0daughters() < dcaV0Dau && 
-        casc.dcanegtopv() > dcaNegToPv && 
-        casc.dcapostopv() > dcaPosToPv && 
-        casc.dcabachtopv() > dcaBachToPv && 
+    if (casc.v0cosPA() > v0CosPA &&
+        casc.casccosPA() > cascCosPA &&
+        casc.dcacascdaughters() < dcaCascDau &&
+        casc.dcaV0daughters() < dcaV0Dau &&
+        casc.dcanegtopv() > dcaNegToPv &&
+        casc.dcapostopv() > dcaPosToPv &&
+        casc.dcabachtopv() > dcaBachToPv &&
         casc.dcav0topv() > dcaV0ToPv &&
-        casc.v0radius() > v0Radius && 
-        casc.cascradius() > cascRadius && 
+        casc.v0radius() > v0Radius &&
+        casc.cascradius() > cascRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
 
-        registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
+      registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
 
-        if (fillHistograms) {
+      if (fillHistograms) {
         // The basic eleven!
         registry.fill(HIST("hV0Radius"), casc.v0radius());
         registry.fill(HIST("hCascRadius"), casc.cascradius());
@@ -3083,7 +3083,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           registry.fill(HIST("hMassXiPlus"), casc.mXi());
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
         }
-        }
+      }
       return true;
     }
     return false;
@@ -3171,7 +3171,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           }
         }
 
-        if(trackV0PosDau.globalIndex() == trackV0NegDau.globalIndex()){
+        if (trackV0PosDau.globalIndex() == trackV0NegDau.globalIndex()) {
           continue;
         }
 
@@ -3208,7 +3208,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
         auto trackCascOmega = trackCascXi;
 
-        trackCascXi.setPID(o2::track::PID::XiMinus); 
+        trackCascXi.setPID(o2::track::PID::XiMinus);
         trackCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
@@ -3238,67 +3238,67 @@ struct HfTrackIndexSkimCreatorLfCascades {
           int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi, trackParVarPion1);
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
-          df2.propagateTracksToVertex();
+            df2.propagateTracksToVertex();
 
-          std::array<float, 3> pVecXi = {0.};
-          std::array<float, 3> pVecPion1XiHyp = {0.};
-          df2.getTrack(0).getPxPyPzGlo(pVecXi);
-          df2.getTrack(1).getPxPyPzGlo(pVecPion1iHyp);
+            std::array<float, 3> pVecXi = {0.};
+            std::array<float, 3> pVecPion1XiHyp = {0.};
+            df2.getTrack(0).getPxPyPzGlo(pVecXi);
+            df2.getTrack(1).getPxPyPzGlo(pVecPion1iHyp);
 
-          auto secondaryVertex2XiHyp = df2.getPCACandidate();
+            auto secondaryVertex2XiHyp = df2.getPCACandidate();
 
-          cascType = 0;
-          SETBIT(cascType, kXi);
+            cascType = 0;
+            SETBIT(cascType, kXi);
 
-          // fill table row
-          rowTrackIndexCasc2Prong(thisCollId,
-                                  casc.globalIndex(),
-                                  trackPion1.globalIndex(),
-                                  cascType);
+            // fill table row
+            rowTrackIndexCasc2Prong(thisCollId,
+                                    casc.globalIndex(),
+                                    trackPion1.globalIndex(),
+                                    cascType);
 
-          // fill histograms
-          if (fillHistograms) {
-            registry.fill(HIST("hVtx2ProngXXiHyp"), secondaryVertex2XiHyp[0]);
-            registry.fill(HIST("hVtx2ProngYXiHyp"), secondaryVertex2XiHyp[1]);
-            registry.fill(HIST("hVtx2ProngZXiHyp"), secondaryVertex2XiHyp[2]);
-            std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
-            auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroOmegaczeroToXiPi]);
-            registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
+            // fill histograms
+            if (fillHistograms) {
+              registry.fill(HIST("hVtx2ProngXXiHyp"), secondaryVertex2XiHyp[0]);
+              registry.fill(HIST("hVtx2ProngYXiHyp"), secondaryVertex2XiHyp[1]);
+              registry.fill(HIST("hVtx2ProngZXiHyp"), secondaryVertex2XiHyp[2]);
+              std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
+              auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::XiczeroOmegaczeroToXiPi]);
+              registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
+            }
           }
-          } 
 
           // find charm baryon decay using omega PID hypothesis
           int nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
           if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
-          df2.propagateTracksToVertex();
-  
-          std::array<float, 3> pVecOmega = {0.};
-          std::array<float, 3> pVecPion1OmegaHyp = {0.};
-          df2.getTrack(0).getPxPyPzGlo(pVecOmega);
-          df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
+            df2.propagateTracksToVertex();
 
-          auto secondaryVertex2OmegaHyp = df2.getPCACandidate();
+            std::array<float, 3> pVecOmega = {0.};
+            std::array<float, 3> pVecPion1OmegaHyp = {0.};
+            df2.getTrack(0).getPxPyPzGlo(pVecOmega);
+            df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
 
-          cascType = 0;
-          SETBIT(cascType, kOmega);
+            auto secondaryVertex2OmegaHyp = df2.getPCACandidate();
 
-          // fill table row
-          rowTrackIndexCasc2Prong(thisCollId,
-                                  casc.globalIndex(),
-                                  trackPion1.globalIndex(),
-                                  cascType);
+            cascType = 0;
+            SETBIT(cascType, kOmega);
 
-          // fill histograms
-          if (fillHistograms) {
-            registry.fill(HIST("hVtx2ProngXOmegaHyp"), secondaryVertex2OmegaHyp[0]);
-            registry.fill(HIST("hVtx2ProngYOmegaHyp"), secondaryVertex2OmegaHyp[1]);
-            registry.fill(HIST("hVtx2ProngZOmegaHyp"), secondaryVertex2OmegaHyp[2]);
-            std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
-            auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi]);
-            registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
+            // fill table row
+            rowTrackIndexCasc2Prong(thisCollId,
+                                    casc.globalIndex(),
+                                    trackPion1.globalIndex(),
+                                    cascType);
+
+            // fill histograms
+            if (fillHistograms) {
+              registry.fill(HIST("hVtx2ProngXOmegaHyp"), secondaryVertex2OmegaHyp[0]);
+              registry.fill(HIST("hVtx2ProngYOmegaHyp"), secondaryVertex2OmegaHyp[1]);
+              registry.fill(HIST("hVtx2ProngZOmegaHyp"), secondaryVertex2OmegaHyp[2]);
+              std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
+              auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf_2prong::DecayType::OmegaczeroToOmegaPi]);
+              registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
+            }
           }
-        }
 
           // first loop over tracks
           if (do3Prong) {
@@ -3326,50 +3326,49 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
               // reconstruct Xic with DCAFitter
               int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi, trackParVarPion1, trackParVarPion2);
-              if ( nVtxFrom3ProngFitterXiHyp > 0) {
+              if (nVtxFrom3ProngFitterXiHyp > 0) {
 
-              df3.propagateTracksToVertex();
+                df3.propagateTracksToVertex();
 
-              std::array<float, 3> pVec1 = {0.};
-              std::array<float, 3> pVec2 = {0.};
-              std::array<float, 3> pVec3 = {0.};
-              df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
-              df3.getTrack(1).getPxPyPzGlo(pVec2);
-              df3.getTrack(2).getPxPyPzGlo(pVec3);
+                std::array<float, 3> pVec1 = {0.};
+                std::array<float, 3> pVec2 = {0.};
+                std::array<float, 3> pVec3 = {0.};
+                df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
+                df3.getTrack(1).getPxPyPzGlo(pVec2);
+                df3.getTrack(2).getPxPyPzGlo(pVec3);
 
-              // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
-              auto secondaryVertex3 = df3.getPCACandidate();
+                // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
+                auto secondaryVertex3 = df3.getPCACandidate();
 
-              cascType = 0;
-              SETBIT(cascType, kXi);
+                cascType = 0;
+                SETBIT(cascType, kXi);
 
-              // fill table row
-              rowTrackIndexCasc3Prong(thisCollId,
-                                      casc.globalIndex(),
-                                      trackPion1.globalIndex(),
-                                      trackPion2.globalIndex(),
-                                      cascType);
+                // fill table row
+                rowTrackIndexCasc3Prong(thisCollId,
+                                        casc.globalIndex(),
+                                        trackPion1.globalIndex(),
+                                        trackPion2.globalIndex(),
+                                        cascType);
 
-              // fill histograms
-              if (fillHistograms) {
-                registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
-                registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
-                registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
-                std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
-                for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
-                  auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P]);
-                  switch (iDecay3P) {
-                    case hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi:
-                      registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
-                      break;
+                // fill histograms
+                if (fillHistograms) {
+                  registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
+                  registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
+                  registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+                  std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                  for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
+                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P]);
+                    switch (iDecay3P) {
+                      case hf_cand_casc_lf_3prong::DecayType::XicplusToXiPiPi:
+                        registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
+                        break;
+                    }
                   }
                 }
               }
-            }
 
-
-            }// end 3prong loop
-          } // end 3prong condition
+            } // end 3prong loop
+          }   // end 3prong condition
 
         } // loop over pion
       }   // loop over cascade
