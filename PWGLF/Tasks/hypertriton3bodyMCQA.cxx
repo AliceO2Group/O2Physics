@@ -55,24 +55,18 @@ bool is3bodyDecayedH3L(TMCParticle const& particle){
   bool haveProton = false, havePion = false, haveDeuteron = false;
   bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
   for (auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
-    if (mcparticleDaughter.pdgCode() == 2212) {
+    if (mcparticleDaughter.pdgCode() == 2212)
       haveProton = true;
-    }
-    if (mcparticleDaughter.pdgCode() == -2212) {
+    if (mcparticleDaughter.pdgCode() == -2212)
       haveAntiProton = true;
-    }
-    if (mcparticleDaughter.pdgCode() == 211) {
+    if (mcparticleDaughter.pdgCode() == 211)
       havePion = true;
-    }
-    if (mcparticleDaughter.pdgCode() == -211) {
+    if (mcparticleDaughter.pdgCode() == -211)
       haveAntiPion = true;
-    }
-    if (mcparticleDaughter.pdgCode() == 1000010020) {
+    if (mcparticleDaughter.pdgCode() == 1000010020)
       haveDeuteron = true;
-    }
-    if (mcparticleDaughter.pdgCode() == -1000010020) {
+    if (mcparticleDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
-    }
   }
   if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
     return true;
@@ -421,7 +415,12 @@ struct hypertriton3bodyLabelCheck {
 
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MyTracks const& tracks, aod::McParticles const& particlesMC)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision){
+    // dummy function
+  }
+  PROCESS_SWITCH(hypertriton3bodyLabelCheck, process, "Donot check MC label tables", true);
+
+  void processCheckLabel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MyTracks const& tracks, aod::McParticles const& particlesMC)
   {
     if (eventSelection && !collision.sel8()) {
       return;
@@ -443,6 +442,7 @@ struct hypertriton3bodyLabelCheck {
       }
     }
   }
+  PROCESS_SWITCH(hypertriton3bodyLabelCheck, processCheckLabel, "Check MC label tables", false);
 };
 
 // check the properties of daughters candidates and true daughters
