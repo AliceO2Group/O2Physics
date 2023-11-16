@@ -104,7 +104,9 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
-  Configurable<bool> useCentralityFT0M{"useCentralityFT0M", true, "use FT0M centrality estimator"};
+  Configurable<bool> useCentralityFT0C{"useCentralityFT0C", true, "use FT0C centrality estimator"};
+  Configurable<bool> useCentralityFT0A{"useCentralityFT0A", false, "use FT0A centrality estimator"};
+  Configurable<bool> useCentralityFT0M{"useCentralityFT0M", false, "use FT0M centrality estimator"};
   Configurable<bool> useCentralityFV0A{"useCentralityFV0A", false, "use FV0A centrality estimator"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
@@ -122,8 +124,9 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
 
-    if (useCentralityFT0M && useCentralityFV0A) {
-      LOGP(fatal, "More than 1 centrality estimator switched-on. Choose only one! (useCentralityFT0M, useCentralityFV0A)");
+    std::array<int, 4> enableCentralities = {useCentralityFT0A, useCentralityFT0C, useCentralityFT0M, useCentralityFV0A};
+    if (std::accumulate(enableCentralities.begin(), enableCentralities.end(), 0) > 1) {
+      LOGP(fatal, "More than 1 centrality estimator switched-on. Choose only one! (useCentralityFT0A, useCentralityFT0C, useCentralityFT0M, or useCentralityFV0A)");
     }
 
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
@@ -230,7 +233,11 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
     float centrality = -1.;
     if constexpr (applyCentSel) {
-      if (useCentralityFT0M) {
+      if (useCentralityFT0A) {
+        centrality = collision.centFT0A();
+      } else if (useCentralityFT0C) {
+        centrality = collision.centFT0C();
+      } else if (useCentralityFT0M) {
         centrality = collision.centFT0M();
       } else if (useCentralityFV0A) {
         centrality = collision.centFV0A();
@@ -270,7 +277,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   }
 
   /// Event selection with trigger and centrality selection
-  void processTrigAndCentSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms>::iterator const& collision)
+  void processTrigAndCentSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision)
   {
     selectCollision<true, true>(collision);
   }
