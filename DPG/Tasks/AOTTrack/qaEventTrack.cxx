@@ -17,6 +17,7 @@
 /// \author Mario Krüger <mario.kruger@cern.ch>
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN, Padova, Italy
+/// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences, Vienna, Austria
 /// \brief  Task to produce QA objects for the track and the event properties in the AOD.
 ///
 
@@ -54,7 +55,7 @@ struct qaEventTrack {
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
-	Configurable<bool> isPbPb{"isPbPb", true, "Global switch for easy axis ranges setting"};
+	Configurable<bool> isDefaultPbPb{"isDefaultPbPb", false, "Global switch to easily switch the most relaxed default axis ranges for PbPb"};
   Configurable<bool> doDebug{"doDebug", false, "Bool to enable debug outputs"};
 
   // options to select specific events
@@ -82,10 +83,8 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
-	ConfigurableAxis binsTrackMultiplicityPbPb{"binsTrackMultiplicityPbPb", {2500, 0, 50000}, ""};
 	ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
-	ConfigurableAxis binsVertexNumContribPbPb{"binsVertexNumContribPbPb", {1500, 0, 7500}, ""};
+  ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
 
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = (trackSelection.node() == 0) ||
@@ -133,17 +132,51 @@ struct qaEventTrack {
       LOGF(info, "Mixing process functions for Run 2 and Run 3 data, returning...");
       return;
     }
+
+		//
+		// Next section setups overwrite of configurableAxis if isDefaultPbPb is used.
+		//
+		// Define the robust default axis binning for PbPb here (assumption: axis always starts at 0).
+		int nBinsNumContrib = 1500; double maxBinsNumContrib = 7500.;
+	  int nBinsTrackMultiplicity = 2500; double maxBinsTrackMultiplicity = 50000.;
+		// Create and fill vectors of default bin edges for AxisSpec
+	  std::vector<double> vecBinsVertexNumContribDefaultPbPb;
+	  std::vector<double> vecBinsTrackMultiplicityDefaultPbPb;
+		for(int ibin(0); ibin < nBinsNumContrib+1; ibin++){
+			vecBinsVertexNumContribDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsNumContrib/nBinsNumContrib));
+		}
+	  for(int ibin(0); ibin < nBinsTrackMultiplicity+1; ibin++){
+			vecBinsTrackMultiplicityDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsTrackMultiplicity/nBinsTrackMultiplicity));
+		}
+		// Convert ConfigurableAxis into vector, so it can be used in if condition with above later on.
+		// Need to use AxisSpec struct as mid-step.
+		// Since ConfigurableAxis has fixed binning, .binEdges copies only first and last bin edge (for variable binning,
+		// it copies all edges), hence the vectors has to be filled the following way.
+	  std::vector<double> vecBinsVertexNumContrib;
+	  std::vector<double> vecBinsTrackMultiplicity;
+	  const AxisSpec tempAxisVertexNumContrib{binsVertexNumContrib, "Number Of contributors to the PV"};
+	  const AxisSpec tempAxisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
+	  std::vector<double> tempBinsVertexNumContrib = tempAxisVertexNumContrib.binEdges;
+	  std::vector<double> tempBinsTrackMultiplicity = tempAxisTrackMultiplicity.binEdges;
+	  for (int ibin = 0; ibin < tempAxisVertexNumContrib.nBins.value() + 1; ibin++){
+		  vecBinsVertexNumContrib.push_back(tempBinsVertexNumContrib[0] + static_cast<double>(ibin) * ((tempBinsVertexNumContrib[tempBinsVertexNumContrib.size() - 1] - tempBinsVertexNumContrib[0]) / tempAxisVertexNumContrib.nBins.value()));
+		}
+	  for (int ibin = 0; ibin < tempAxisTrackMultiplicity.nBins.value() + 1; ibin++){
+		  vecBinsTrackMultiplicity.push_back(tempBinsTrackMultiplicity[0] + static_cast<double>(ibin) * ((tempBinsTrackMultiplicity[tempBinsTrackMultiplicity.size() - 1] - tempBinsTrackMultiplicity[0]) / tempAxisTrackMultiplicity.nBins.value()));
+	  }
+		// End of this section.
+
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-		const AxisSpec axisVertexNumContrib{(isPbPb ? binsVertexNumContribPbPb : binsVertexNumContrib), "Number Of contributors to the PV"};
+		const AxisSpec axisVertexNumContrib{(isDefaultPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
     const AxisSpec axisVertexCov{100, -0.005, 0.005};
     const AxisSpec axisVertexPosReso{100, -0.5, 0.5};
-    const AxisSpec axisTrackMultiplicity{(isPbPb ? binsTrackMultiplicityPbPb : binsTrackMultiplicity), "Track Multiplicity"};
+    const AxisSpec axisTrackMultiplicity{(isDefaultPbPb ? vecBinsTrackMultiplicityDefaultPbPb : vecBinsTrackMultiplicity), "Track Multiplicity"};
     const AxisSpec axisParX{300, 0, 600, "#it{x} [cm]"};
     const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
     const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
