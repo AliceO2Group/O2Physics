@@ -11,7 +11,7 @@
 ///
 /// \brief this is a starting point for the Resonances tutorial
 /// \author
-/// \since 02/11/2023
+/// \since 08/11/2023
 
 #include <TLorentzVector.h>
 
@@ -39,7 +39,7 @@ struct resonances_tutorial {
   {
     // register histograms
     histos.add("hVertexZ", "hVertexZ", HistType::kTH1F, {{nBins, -15., 15.}});
-    histos.add("InputTracks", "InputTracks", HistType::kTH1F, {{nBins, -5., 5.}});
+    histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
   }
 
   // Track selection
@@ -57,10 +57,10 @@ struct resonances_tutorial {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    for (const auto& trk : dTracks1) {
-      if (!trackCut(trk))
-        continue;
-      histos.fill(HIST("InputTracks"), trk.pt() * trk.sign());
+    for (auto track1 : dTracks1) { // loop over all dTracks1
+      if (!trackCut(track1))
+        continue; // track selection and PID selection
+      histos.fill(HIST("hEta"), track1.eta());
     }
   }
 

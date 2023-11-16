@@ -11,7 +11,7 @@
 
 // Table definitions for EMCAL analysis clusters
 //
-// Author: Raymond Ehlers
+/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERS_H_

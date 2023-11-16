@@ -11,7 +11,7 @@
 
 // heavy-flavour jet substructure tree filling task (subscribing to jet finder hf and jet substructure hf tasks)
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
 #include "Framework/AnalysisTask.h"
@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CollisionTable, typename McCollisionTable, typename TrackTable, typename ParticleTable, typename CandidateTableData, typename CandidateTableMCD, typename JetTableData, typename OutputTableData, typename SubstructureOutputTableData, typename JetTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename JetTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP>
+template <typename ParticleTable, typename CandidateTableData, typename CandidateTableMCD, typename JetTableData, typename OutputTableData, typename SubstructureOutputTableData, typename JetTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename JetTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP>
 struct JetSubstructureHFOutputTask {
   Produces<OutputTableData> jetOutputTableData;
   Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
@@ -67,12 +67,12 @@ struct JetSubstructureHFOutputTask {
     jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
   }
 
-  void processDummy(typename CollisionTable::iterator const& collision) {}
+  void processDummy(aod::JCollision const& collision) {}
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processOutputData(typename CollisionTable::iterator const& collision,
+  void processOutputData(aod::JCollision const& collision,
                          JetTableData const& jets,
-                         TrackTable const& tracks,
+                         aod::JTracks const& tracks,
                          CandidateTableData const& candidates)
   {
     std::vector<int> geoMatching{-1};
@@ -90,10 +90,10 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputData, "hf jet substructure output Data", false);
 
-  void processOutputMCD(typename CollisionTable::iterator const& collision,
+  void processOutputMCD(aod::JCollision const& collision,
                         JetTableMCD const& mcdjets,
                         JetTableMCP const& mcpjets,
-                        TrackTable const& tracks,
+                        aod::JTracks const& tracks,
                         CandidateTableMCD const& candidates)
   {
     for (const auto& mcdjet : mcdjets) {
@@ -120,7 +120,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputMCD, "hf jet substructure output MCD", false);
 
-  void processOutputMCP(typename McCollisionTable::iterator const& collision,
+  void processOutputMCP(aod::JMcCollision const& collision,
                         JetTableMCP const& mcpjets,
                         JetTableMCD const& mcdjets,
                         ParticleTable const& particles)
@@ -149,9 +149,9 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputMCP, "hf jet substructure output MCP", false);
 };
-using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<aod::Collisions, aod::McCollisions, aod::Tracks, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>, soa::Filtered<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0ChargedJetSubstructures>>, aod::D0ChargedJetOutput, aod::D0ChargedJetSubstructureOutput, soa::Filtered<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetSubstructures, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>>, aod::D0ChargedMCDetectorLevelJetOutput, aod::D0ChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetSubstructures, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>>, aod::D0ChargedMCParticleLevelJetOutput, aod::D0ChargedMCParticleLevelJetSubstructureOutput>;
-// using JetSubstructureOutputLc = JetSubstructureHFOutputTask<aod::Collisions, aod::McCollisions, aod::Tracks, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>, soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>, soa::Filtered<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcChargedJetSubstructures>>, aod::LcChargedJetOutput, aod::LcChargedJetSubstructureOutput,soa::Filtered<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcChargedMCDetectorLevelJetSubstructures,aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>>, aod::LcChargedMCDetectorLevelJetOutput, aod::LcChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcChargedMCParticleLevelJetSubstructures,aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>>, aod::LcChargedMCParticleLevelJetOutput, aod::LcChargedMCParticleLevelJetSubstructureOutput>;
-// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<aod::Collisions, aod::McCollisions, aod::Tracks, soa::Join<aod::McParticles, aod::HfCandBplusMcGen>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>, soa::Filtered<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusChargedJetSubstructures>>, aod::BplusChargedJetOutput, aod::BplusChargedJetSubstructureOutput,soa::Filtered<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusChargedMCDetectorLevelJetSubstructures,aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>>, aod::BplusChargedMCDetectorLevelJetOutput, aod::BplusChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelJetSubstructures,aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>>, aod::BplusChargedMCParticleLevelJetOutput, aod::BplusChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<soa::Join<aod::JMcParticles, aod::HfCand2ProngMcGen>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>, soa::Filtered<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0ChargedJetSubstructures>>, aod::D0ChargedJetOutput, aod::D0ChargedJetSubstructureOutput, soa::Filtered<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetSubstructures, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>>, aod::D0ChargedMCDetectorLevelJetOutput, aod::D0ChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetSubstructures, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>>, aod::D0ChargedMCParticleLevelJetOutput, aod::D0ChargedMCParticleLevelJetSubstructureOutput>;
+// using JetSubstructureOutputLc = JetSubstructureHFOutputTask<soa::Join<aod::JMcParticles, aod::HfCand3ProngMcGen>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>, soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>, soa::Filtered<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcChargedJetSubstructures>>, aod::LcChargedJetOutput, aod::LcChargedJetSubstructureOutput,soa::Filtered<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcChargedMCDetectorLevelJetSubstructures,aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>>, aod::LcChargedMCDetectorLevelJetOutput, aod::LcChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcChargedMCParticleLevelJetSubstructures,aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>>, aod::LcChargedMCParticleLevelJetOutput, aod::LcChargedMCParticleLevelJetSubstructureOutput>;
+// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<soa::Join<aod::JMcParticles, aod::HfCandBplusMcGen>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>, soa::Filtered<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusChargedJetSubstructures>>, aod::BplusChargedJetOutput, aod::BplusChargedJetSubstructureOutput,soa::Filtered<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusChargedMCDetectorLevelJetSubstructures,aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>>, aod::BplusChargedMCDetectorLevelJetOutput, aod::BplusChargedMCDetectorLevelJetSubstructureOutput, soa::Filtered<soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelJetSubstructures,aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>>, aod::BplusChargedMCParticleLevelJetOutput, aod::BplusChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

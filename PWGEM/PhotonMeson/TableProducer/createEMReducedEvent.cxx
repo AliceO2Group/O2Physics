@@ -124,7 +124,8 @@ struct CreateEMEvent {
 };
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
-  Produces<o2::aod::EMPrimaryTrackEMReducedEventIds> prmtrkeventid;
+  Produces<o2::aod::EMPrimaryElectronEMReducedEventIds> prmeleventid;
+  Produces<o2::aod::EMPrimaryMuonEMReducedEventIds> prmmueventid;
   Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
   Produces<o2::aod::EMCEMReducedEventIds> emceventid;
 
@@ -133,18 +134,22 @@ struct AssociatePhotonToEMEvent {
   Produces<o2::aod::EMReducedEventsNgEMC> event_ng_emc;
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  Preslice<aod::EMPrimaryTracks> perCollision_ele = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
+  Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  bool doPCM = false, doDalitz = false, doPHOS = false, doEMC = false;
+  bool doPCM = false, doDalitzEE = false, doDalitzMuMu = false, doPHOS = false, doEMC = false;
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processPCM")) {
       doPCM = true;
     }
-    if (context.mOptions.get<bool>("processDalitz")) {
-      doDalitz = true;
+    if (context.mOptions.get<bool>("processDalitzEE")) {
+      doDalitzEE = true;
+    }
+    if (context.mOptions.get<bool>("processDalitzMuMu")) {
+      doDalitzMuMu = true;
     }
     if (context.mOptions.get<bool>("processPHOS")) {
       doPHOS = true;
@@ -196,9 +201,14 @@ struct AssociatePhotonToEMEvent {
     fillEventId_Ng(collisions, photons, v0kfeventid, event_ng_pcm, perCollision_pcm);
   }
 
-  void processDalitz(aod::EMReducedEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  void processDalitzEE(aod::EMReducedEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
-    fillEventId(collisions, tracks, prmtrkeventid, perCollision_ele);
+    fillEventId(collisions, tracks, prmeleventid, perCollision_el);
+  }
+
+  void processDalitzMuMu(aod::EMReducedEvents const& collisions, aod::EMPrimaryMuons const& tracks)
+  {
+    fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
   void processPHOS(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& photons)
@@ -225,7 +235,8 @@ struct AssociatePhotonToEMEvent {
   }
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitz, "process dalitz-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzEE, "process dalitzee-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzMuMu, "process dalitzmumu-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processZeroPadding, "process zero padding.", true);

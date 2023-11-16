@@ -45,7 +45,7 @@ struct skimmerPrimaryElectron {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
-  Produces<aod::EMPrimaryTracks> emprimarytracks;
+  Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
   Produces<o2::aod::EMReducedEventsBz> events_bz;
 
   // Configurables
@@ -66,6 +66,7 @@ struct skimmerPrimaryElectron {
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 40.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
@@ -79,7 +80,7 @@ struct skimmerPrimaryElectron {
       {"Track/hTOFbeta_Pin_before", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
       {"Track/hTOFbeta_Pin_after", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {240, 0.f, 1.2f}}}},
       {"Track/hTPCNsigmaEl", "TPC n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
-      {"Track/hTOFNsigmaEl", "ToF n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaEl", "TOF n sigma el vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
       {"Pair/hMeePtee", "ULS m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", {HistType::kTH2F, {{400, 0.f, 4.f}, {100, 0.f, 10.f}}}},
     },
   };
@@ -174,7 +175,20 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
+    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+  }
+
+  template <typename TTrack>
+  bool isElectron_TPChadrej(TTrack const& track)
+  {
     return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFrecovery(TTrack const& track)
+  {
+    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
+    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
   }
 
   template <bool isMC, typename TTracks>
@@ -194,13 +208,13 @@ struct skimmerPrimaryElectron {
   {
     // bool is_stored = std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) != stored_trackIds.end();
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
-      emprimarytracks(track.collisionId(), track.globalIndex(), track.sign(),
-                      track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
-                      track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                      track.tpcChi2NCl(), track.tpcInnerParam(),
-                      track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                      track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                      track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
+      emprimaryelectrons(track.collisionId(), track.globalIndex(), track.sign(),
+                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
+                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                         track.tpcChi2NCl(), track.tpcInnerParam(),
+                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                         track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());

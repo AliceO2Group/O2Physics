@@ -29,7 +29,7 @@ using namespace o2::constants::physics;
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct skimmerDalitzEE {
@@ -40,11 +40,12 @@ struct skimmerDalitzEE {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimarytrack::emreducedeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emreducedeventId;
   Produces<aod::DalitzEEs> dalitzees;
   Produces<o2::aod::DalitzEEEMReducedEventIds> dalitz_ee_eventid;
 
   // Configurables
+  Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
 
   HistogramRegistry fRegistry{
@@ -64,6 +65,9 @@ struct skimmerDalitzEE {
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        if (v12.M() > maxMee) { // don't store
+          continue;
+        }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
@@ -81,6 +85,9 @@ struct skimmerDalitzEE {
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        if (v12.M() > maxMee) { // don't store
+          continue;
+        }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
@@ -96,14 +103,14 @@ struct skimmerDalitzEE {
     }
   }
 
-  Partition<MyTracks> posTracks = o2::aod::emprimarytrack::sign > 0;
-  Partition<MyTracks> negTracks = o2::aod::emprimarytrack::sign < 0;
+  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > 0;
+  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < 0;
 
   void process(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarytrack::emreducedeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarytrack::emreducedeventId, collision.globalIndex(), cache);
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
 
       fillPairTable<EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {

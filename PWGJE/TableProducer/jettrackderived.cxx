@@ -11,7 +11,7 @@
 
 ///
 /// \file   for derived process JetTrackQa.h and .cxx
-/// \author Johanna Lömker
+/// \author Johanna Lömker <johanna.lomker@cern.ch>
 /// \since  2023-10-02
 /// \brief  Header for the trackJetQa task for the analysis of the tracks for jets..
 ///
@@ -105,10 +105,15 @@ struct jetspectraDerivedMaker {
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
-    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
-    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracks"}});
-    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "Multiplicity FT0M"}});
+    const AxisSpec axisPercentile{binsPercentile, "Centrality FT0M"};
+    const AxisSpec axisMultiplicityPV{binsMultiplicity, "MultNTracksPV"};
+    const AxisSpec axisMultiplicityTracklets{binsMultiplicity, "MultTracklets"};
+    const AxisSpec axisMultiplicityFT0M{binsMultiplicity, "Multiplicity FT0M"};
+
+    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentile});
+    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
+    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {axisMultiplicityTracklets});
+    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
   }
 
   template <typename CollisionType, typename TrackType>
@@ -179,7 +184,7 @@ struct jetspectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.pt() * trk.sign(), trk.eta(), trk.phi(), trk.pt(),
+                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
                  trk.sigma1Pt(),
                  trk.alpha(),
                  trk.x(), trk.y(), trk.z(),
@@ -187,8 +192,6 @@ struct jetspectraDerivedMaker {
                  trk.tgl(),
                  trk.isPVContributor(),
                  trk.hasTRD(),
-                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaXY()),
-                 o2::aod::jetspectra::packInTable<o2::aod::jetspectra::binningDCA>(trk.dcaZ()),
                  trk.isGlobalTrack(),
                  trk.isGlobalTrackWoDCA(),
                  trk.isGlobalTrackWoPtEta(),
@@ -205,7 +208,9 @@ struct jetspectraDerivedMaker {
                  trk.tpcNClsFound(),
                  trk.tpcNClsCrossedRows(),
                  trk.tpcCrossedRowsOverFindableCls(),
-                 trk.tpcFoundOverFindableCls());
+                 trk.tpcFoundOverFindableCls(),
+                 trk.dcaXY(),
+                 trk.dcaZ());
     }
   }
   PROCESS_SWITCH(jetspectraDerivedMaker, processData, "Process data for derived dataset production", true);

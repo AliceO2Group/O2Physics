@@ -83,7 +83,7 @@ double EventPlaneHelper::GetPhiFT0(int chno)
   return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
 }
 
-void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, double& sum)
+void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum)
 {
   /* Calculate the complex Q-vector for the provided detector and channel number,
     before adding it to the total Q-vector given as argument. */
