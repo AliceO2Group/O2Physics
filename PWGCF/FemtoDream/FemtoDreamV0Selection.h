@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <TDatabasePDG.h> // FIXME
+
 #include "FemtoDreamObjectSelection.h"
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
@@ -555,7 +557,7 @@ std::array<cutContainerType, 5>
   cutContainerType output = 0;
   size_t counter = 0;
 
-  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
+  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass(); // FIXME: Get from the common header
   auto lambdaMassHypothesis = v0.mLambda();
   auto antiLambdaMassHypothesis = v0.mAntiLambda();
   auto diffLambda = abs(lambdaMassNominal - lambdaMassHypothesis);

@@ -22,11 +22,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
@@ -117,7 +119,7 @@ struct f0980analysis {
     histos.print();
   }
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  double massPi = MassPionCharged;
 
   int RTIndex(double pairphi, double lhphi)
   {
@@ -211,7 +213,7 @@ struct f0980analysis {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
                     collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
+          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
             continue;
           if (trk1.motherId() != trk2.motherId())
             continue;
@@ -239,8 +241,7 @@ struct f0980analysis {
 
   void processMCLight(
     aod::ResoCollision& collision,
-    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
-    aod::McParticles const& mcParticles)
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true>(collision, resotracks);
   }
@@ -258,8 +259,8 @@ struct f0980analysis {
         continue;
       }
       bool pass = false;
-      if ((abs(part.daughterPDG1()) == kPiPlus &&
-           abs(part.daughterPDG2()) == kPiPlus)) {
+      if ((abs(part.daughterPDG1()) == 211 &&
+           abs(part.daughterPDG2()) == 211)) {
         pass = true;
       }
       if (!pass) // If we have both decay products

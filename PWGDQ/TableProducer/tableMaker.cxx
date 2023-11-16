@@ -127,6 +127,7 @@ struct TableMaker {
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
@@ -403,6 +404,7 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
+      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -499,6 +501,7 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
@@ -763,6 +766,7 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
+      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -847,6 +851,7 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),

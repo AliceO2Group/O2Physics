@@ -233,7 +233,7 @@ struct PseudorapidityDensityMFT {
   using CollwEv = soa::Join<aod::Collisions, aod::EvSels>;
 
   expressions::Filter trackSelectionCentral = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
-                                              ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC,
+                                              ifnode((aod::track::v001::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC,
                                                      (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC,
                                                      true) &&
                                               ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA) &&

@@ -104,7 +104,7 @@ struct strangenessFilter {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<double> bz{"bz", -5., "magnetic field"};
+  // Configurable<double> bz{"bz", -5., "magnetic field"};
   Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
@@ -119,6 +119,8 @@ struct strangenessFilter {
   Configurable<float> maxNSigmaV0PiTrackedCascade{"maxNSigmaV0PiTrackedCascade", 3., "Max Nsigma for pion from V0 fromtracked Xi"};
   Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
   Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
+
+  float bz = 0.;
 
   void init(o2::framework::InitContext&)
   {
@@ -297,6 +299,10 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hDcaVsR", "DCA;DCA (cm);R (cm)", HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}});
       QAHistosStrangenessTracking.add("hPtCascCand", "cascades;p_{T} (GeV/#it{c})", HistType::kTH1D, {{200, 0., 10.}});
       QAHistosStrangenessTracking.add("hPtCascTracked", "tracked cascades;p_{T} (GeV/#it{c})", HistType::kTH1D, {{200, 0., 10.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkXi", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkOmega", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkXiSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkOmegaSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
     }
   }
 
@@ -993,8 +999,10 @@ struct strangenessFilter {
 
       if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
+        bz = grpo->getNominalL3Field();
       } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
+        bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       } else {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
@@ -1012,10 +1020,6 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsTopChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.topologyChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiVsTopChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.topologyChi2());
 
       auto trackParCovTrk = getTrackParCov(trackCasc);
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &impactParameterTrk);
@@ -1033,6 +1037,10 @@ struct strangenessFilter {
       const auto v0 = cascade.v0_as<o2::aod::V0sLinked>();
       const auto negTrack = v0.negTrack_as<DaughterTracks>();
       const auto posTrack = v0.posTrack_as<DaughterTracks>();
+
+      if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
+        continue;
+      }
 
       std::array<double, 2> masses{o2::analysis::pdg::MassProton, o2::analysis::pdg::MassPiMinus};
       std::array<std::array<float, 3>, 2> momenta;
@@ -1062,14 +1070,19 @@ struct strangenessFilter {
       momenta[1] = {bachelor.px(), bachelor.py(), bachelor.pz()};
       masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassK0};
       const auto massOmega = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.omegaMass();
-      if (posTrack.hasTPC() && negTrack.hasTPC()) {
-        QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
-      }
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
+
       masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassPi0};
       const auto massXi = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.xiMass();
-      if (posTrack.hasTPC() && negTrack.hasTPC()) {
-        QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
-      }
+      QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
+
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), massOmega, trackedCascade.matchingChi2());
+      QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), massXi, trackedCascade.matchingChi2());
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsTopChi2TrkCasc"), massOmega, trackedCascade.topologyChi2());
+      QAHistosStrangenessTracking.fill(HIST("hMassXiVsTopChi2TrkCasc"), massXi, trackedCascade.topologyChi2());
+
+      QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkXi"), trackCasc.pt(), massXi);
+      QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkOmega"), trackCasc.pt(), massOmega);
 
       if ((trackCasc.pt() > minPtTrackedCascade) &&
           (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
@@ -1080,12 +1093,14 @@ struct strangenessFilter {
         if ((std::abs(massXi - o2::analysis::pdg::MassXiMinus) < massWindowTrackedXi) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
+          QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkXiSelected"), trackCasc.pt(), massXi);
         }
         // Omega
         if ((std::abs(massOmega - o2::analysis::pdg::MassOmegaMinus) < massWindowTrackedOmega) &&
             (std::abs(massXi - o2::analysis::pdg::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
+          QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkOmegaSelected"), trackCasc.pt(), massOmega);
         }
       }
     }

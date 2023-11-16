@@ -39,6 +39,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
 
@@ -100,7 +101,8 @@ class VarManager : public TObject
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
     TrackTPCPID = BIT(22),
-    TrackMFT = BIT(23)
+    TrackMFT = BIT(23),
+    ReducedTrackCollInfo = BIT(24) // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
   };
 
   enum PairCandidateType {
@@ -127,6 +129,7 @@ class VarManager : public TObject
     kTimestamp,
     kBC,
     kIsPhysicsSelection,
+    kIsSel8, // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -754,6 +757,9 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & Collision) > 0) {
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
+    if (fgUsedVars[kIsSel8]) {
+      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
@@ -830,6 +836,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
+
+    if (fgUsedVars[kIsSel8]) {
+      values[kIsSel8] = (event.tag() & (uint64_t(1) << o2::aod::evsel::kIsTriggerTVX)) > 0;
+    }
   }
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {

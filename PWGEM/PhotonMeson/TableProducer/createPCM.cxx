@@ -91,16 +91,14 @@ struct createPCM {
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
   Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
   Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
-  Configurable<float> max_diff_tgl{"max_diff_tgl", 999.0, "max difference in track iu tgl between ele and pos"};
-  Configurable<float> max_diff_z_itstpc{"max_diff_z_itstpc", 999.0, "max difference in track iu z between ele and pos for ITS-TPC tracks"};
-  Configurable<float> max_diff_z_itsonly{"max_diff_z_itsonly", 999.0, "max difference in track iu z between ele and pos for ITSonly tracks"};
-  Configurable<float> max_diff_z_tpconly{"max_diff_z_tpconly", 999.0, "max difference in track iu z between ele and pos for TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<2> fitter;
+  // Material correction in the DCA fitter
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   void init(InitContext& context)
   {
@@ -132,8 +130,6 @@ struct createPCM {
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
-    // Material correction in the DCA fitter
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     }
@@ -191,20 +187,6 @@ struct createPCM {
     }
   }
 
-  static float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
-  {
-    float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-    float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-    float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-    return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
-  }
-  static float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
-  {
-    float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
-    float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
-    return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot);
-  }
-
   template <typename TTrack>
   bool reconstructV0(TTrack const& ele, TTrack const& pos)
   {
@@ -212,29 +194,9 @@ struct createPCM {
     bool isITSonly_ele = ele.hasITS() && !ele.hasTPC();
     bool isTPConly_pos = !pos.hasITS() && pos.hasTPC();
     bool isTPConly_ele = !ele.hasITS() && ele.hasTPC();
-    bool isITSTPC_pos = pos.hasITS() && pos.hasTPC();
-    bool isITSTPC_ele = ele.hasITS() && ele.hasTPC();
 
     if ((isITSonly_pos && isTPConly_ele) || (isITSonly_ele && isTPConly_pos)) {
       return false;
-    }
-
-    if (abs(ele.tgl() - pos.tgl()) > max_diff_tgl) {
-      return false;
-    }
-
-    if (isITSTPC_pos && isITSTPC_ele) {
-      if (abs(ele.z() - pos.z()) > max_diff_z_itstpc) {
-        return false;
-      }
-    } else if (isTPConly_pos && isTPConly_ele) {
-      if (abs(ele.z() - pos.z()) > max_diff_z_tpconly) {
-        return false;
-      }
-    } else if (isITSonly_pos && isITSonly_ele) {
-      if (abs(ele.z() - pos.z()) > max_diff_z_itsonly) {
-        return false;
-      }
     }
 
     // fitter is memeber variable.
@@ -257,7 +219,7 @@ struct createPCM {
       return false;
     }
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     if (v0dca > maxdcav0dau) {
       return false;
     }
@@ -270,7 +232,7 @@ struct createPCM {
     }
 
     float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
+    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float recalculatedVtxR = std::sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
@@ -313,7 +275,7 @@ struct createPCM {
 
     std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
-    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     float v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
 
@@ -346,6 +308,7 @@ struct createPCM {
     } // store indices
   }
 
+  std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
   template <typename TTrack>
   bool isSelected(TTrack const& track)
   {
@@ -376,6 +339,17 @@ struct createPCM {
       if (track.itsChi2NCl() > maxchi2its) {
         return false;
       }
+
+      if (abs(track.z() / track.x() - track.tgl()) > 0.5) {
+        return false;
+      }
+
+      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      bool its_ob_only = hits_ib <= its_ib_Requirement.first;
+      if (!its_ob_only) {
+        return false;
+      }
+
       bool isITSonly = isITSonlyTrack(track);
       if (isITSonly) {
         if (track.pt() > maxpt_itsonly) {

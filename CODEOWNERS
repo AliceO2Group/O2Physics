@@ -14,24 +14,23 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
-/Common/Tools/ML @alibuild @fcatalan92 @fmazzasc
 /ALICE3 @alibuild @njacazio @vkucera @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
 /EventFiltering @alibuild @mpuccio @strogolo
-/EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
+/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @vkucera @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
 /EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @strogolo
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
 /EventFiltering/PWGJE @alibuild @fkrizek @mpuccio @strogolo
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
-/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
+/PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
-/PWGHF @alibuild @vkucera @fcolamar @adubla @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid @gtaillepied
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid
 /PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
@@ -40,10 +39,11 @@
 /PWGUD @alibuild @pbuehler
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt
-/Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochu
-/Tutorials/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
+/Tools/ML @alibuild @fcatalan92 @fmazzasc
+/Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/Tutorials/PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
-/Tutorials/PWGHF @alibuild @vkucera @fcolamar @adubla
+/Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk

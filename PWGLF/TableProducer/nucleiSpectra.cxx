@@ -155,7 +155,7 @@ struct nucleiSpectra {
     kPositive = BIT(8),
     kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(10),
-    kIsSecondaryFromWeakDecay = BIT(11)
+    kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
@@ -368,7 +368,7 @@ struct nucleiSpectra {
       spectra.fill(HIST("hTpcSignalDataSelected"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       spectra.fill(HIST("hTofSignalData"), track.tpcInnerParam(), beta);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      uint16_t flag{kIsReconstructed};
+      uint16_t flag = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
       if (track.hasTOF()) {
         flag |= kHasTOF;
       }

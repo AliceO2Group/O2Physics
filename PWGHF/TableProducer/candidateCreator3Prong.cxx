@@ -15,6 +15,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include <TPDGCode.h>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

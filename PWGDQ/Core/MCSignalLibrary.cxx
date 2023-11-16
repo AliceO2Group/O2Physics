@@ -200,7 +200,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All prompt charm hadrons (not from beauty)", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("Pi0decayTOe")) {
+  if (!nameStr.compare("Pi0decayToe")) {
     MCProng prong(2, {111, 11}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSignalInTime(true); // set direction to check for daughters (true, in time) or for mothers (false, back in time)
     signal = new MCSignal(name, "Pi0 decays into an electron", {prong}, {-1});
@@ -515,6 +515,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   //_________________________________________________________________________________________________________________________
   // LMEE pair signals for LF, same mother
+  if (!nameStr.compare("eeFromAnything")) {
+    MCProng prong(2, {11, MCProng::kPDGCodeNotAssigned}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
   if (!nameStr.compare("eeFromPi0")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -603,16 +609,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("eePrimaryFromLMeeLFQ")) {
-    MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                                                           // set source to be ALICE primary particles
-    signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays", {prong, prong}, {1, 1}); // signal at pair level
+  if (!nameStr.compare("eeFromLMeeNoHFLFQ")) {
+    MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays not from open-HF decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("eePrimaryFromLMeeLF")) {
-    MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                                               // set source to be ALICE primary particles
-    signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
+  if (!nameStr.compare("eeFromLMeeNoHFLF")) {
+    MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from light flavor meson decays not from open-HF decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
 
@@ -637,7 +643,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eeFromPromptCandPromptC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true}); // check if mother pdg code is in history
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "ee pairs with any charm but no beauty in decay chain", {prong, prong}, {-1, -1});   // signal at pair level
+    signal = new MCSignal(name, "ee pairs with any charm but no beauty in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
 
@@ -645,27 +651,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eeFromBtoCandBtoC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1});        // signal at pair level
+    signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
 
   // Any b->e and Any b->c->e
   if (!nameStr.compare("eeFromBandBtoC")) {
-    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});                           // check if mother pdg code is in history
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // check if mother pdg code is in history
     prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
     prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1});                         // signal at pair level
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1}); // signal at pair level
     return signal;
   }
 
   // Any b->e and Any b->c->e
   if (!nameStr.compare("eeFromBandBtoCBis")) {
-    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});                           // check if mother pdg code is in history
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // check if mother pdg code is in history
     prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
     prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongBtoC, prongB}, {-1, -1});                         // signal at pair level
+    signal = new MCSignal(name, "ee pairs from b->c->e and b->e", {prongBtoC, prongB}, {-1, -1}); // signal at pair level
     return signal;
   }
 

@@ -15,6 +15,8 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
+#include <TPDGCode.h>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

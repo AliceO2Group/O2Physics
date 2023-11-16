@@ -286,7 +286,7 @@ void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
 
 void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cutstr)
 {
-  LOGF(info, "Cut string: %s", cutstr);
+  LOGF(info, "Cut string: %s", cutstr.Data());
   /* let's catch the first level */
   regex cutregex("^eventsel\\{?(\\w+\\{[\\w\\d.,:{}=\\-\\+\\*\\/]+})*}$", regex_constants::ECMAScript | regex_constants::icase);
   std::string in(cutstr.Data());

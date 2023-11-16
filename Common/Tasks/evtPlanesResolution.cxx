@@ -62,6 +62,7 @@ struct evtPlanesResolution {
   EventPlaneHelper helperEP;
 
   Configurable<int> cfgMinTPCTracks{"cfgMinTPCTracks", 20, "minimum TPC tracks participating in Q-vector reconstruction"};
+  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
 
   void init(InitContext const&)
   {
@@ -93,13 +94,13 @@ struct evtPlanesResolution {
   template <int cBin, typename T>
   void fillHistosEvtPl(const T& vec)
   {
-    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks)
-      return;
-
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlUncor"), vec.evtPlUncor());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlRectr"), vec.evtPlRectr());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTwist"), vec.evtPlTwist());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlFinal"), vec.evtPlFinal());
+
+    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks)
+      return;
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosUncor"), vec.evtPlBPosUncor());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosRectr"), vec.evtPlBPosRectr());
@@ -112,8 +113,8 @@ struct evtPlanesResolution {
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), vec.evtPlBNegFinal());
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlResolution"),
-                  std::sqrt(std::cos(2 * (vec.evtPlFinal() - vec.evtPlBPosFinal())) * std::cos(2 * (vec.evtPlFinal() - vec.evtPlBNegFinal())) /
-                            std::cos(2 * (vec.evtPlBPosFinal() - vec.evtPlBNegFinal()))));
+                  std::sqrt(std::cos((vec.evtPlFinal() - vec.evtPlBPosFinal()) * cfgnMod) * std::cos((vec.evtPlFinal() - vec.evtPlBNegFinal()) * cfgnMod) /
+                            std::cos((vec.evtPlBPosFinal() - vec.evtPlBNegFinal()) * cfgnMod)));
   }
 
   void process(aod::EvtPlane const& evPl)
