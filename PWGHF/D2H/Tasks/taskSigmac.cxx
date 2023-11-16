@@ -427,9 +427,9 @@ struct HfTaskSigmac {
   /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
   void processMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
-                 aod::McParticles const& mcParticles,
                  soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
+                 aod::McParticles const& mcParticles, // this establishes the type of particle obtained with the .mcParticle() getter
                  soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidatesLc,
                  aod::TracksWMc const&)
   {
@@ -881,17 +881,24 @@ struct HfTaskSigmac {
     if (enableTHn) {
       /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
       for (const auto& candidateLc : candidatesLc) {
+        if (!TESTBIT(std::abs(candidateLc.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+          continue;
+        }
         double massLc(-1.);
         double ptLc(candidateLc.pt());
         double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int origin = candidateLc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
-        if (candidateLc.isSelLcToPKPi() >= 1 && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        int pdgAbs = -1;
+        if (candidateLc.prong0_as<aod::TracksWMc>().has_mcParticle()) {
+          pdgAbs = std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode());
+        }
+        if (candidateLc.isSelLcToPKPi() >= 1 && pdgAbs == kProton) {
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
           registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
         }
-        if (candidateLc.isSelLcToPiKP() >= 1 && std::abs(candidateLc.prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if (candidateLc.isSelLcToPiKP() >= 1 && pdgAbs == kPiPlus) {
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
           registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
         }
