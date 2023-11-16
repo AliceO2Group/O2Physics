@@ -34,6 +34,10 @@ Configurable<string> cfWhatToProcess{
   "cfWhatToProcess", "Rec",
   "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated"};
 
+// Correlations:
+Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false,
+                                           "calculate or not correlations"};
+
 // Test0:
 Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
                                     "calculate or not Test0"};
@@ -89,6 +93,12 @@ Configurable<int> cNContributors_min{
   "minimum number of vertex contributors (set to -1 to ignore)"};
 Configurable<int> cNContributors_max{"cNContributors_max", 1000000000,
                                      "maximum number of vertex contributors"};
+
+Configurable<int> cImpactParameter_min{
+  "cImpactParameter_min", -1,
+  "minimum value of impact parameter (can be used only for sim) (set to -1 to ignore)"};
+Configurable<int> cImpactParameter_max{"cImpactParameter_max", 1000000000,
+                                       "maximum value of impact parameter (can be used only for sim)"};
 
 // Particle cuts:
 Configurable<float> pt_min{"pt_min", 0.2, "minimum track pt value [GeV/c]"};

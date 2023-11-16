@@ -599,6 +599,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("z-boson")) {
         hm->AddHistogram(histClass, "MassZboson", "", false, 240, 20.0, 140.0, VarManager::kMass);
       }
+      if (subGroupStr.Contains("dimuon-vtxncontrib")) {
+        hm->AddHistogram(histClass, "MassMult", "", false, 750, 0.0, 15.0, VarManager::kMass, 301, -0.5, 300.5, VarManager::kVtxNcontrib);
+      }
     } else if (subGroupStr.Contains("electronmuon")) {
       hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 30.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Pt", "", false, 120, 0.0, 30.0, VarManager::kPt);
@@ -695,17 +698,28 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   }
 
   if (groupStr.Contains("dilepton-charmhadron")) {
-    if (subGroupStr.EqualTo("jpsi")) {
+    if (subGroupStr.EqualTo("jpsitomumu")) {
       hm->AddHistogram(histClass, "hMassVsPtJPsi", "", false, 100, 0.f, 50.f, VarManager::kPt, 300, 2.f, 5.f, VarManager::kMass);
       hm->AddHistogram(histClass, "hRapVsPtJPsi", "", false, 100, 0.f, 50.f, VarManager::kPt, 50, -4.5f, -2.0f, VarManager::kRap);
+      hm->AddHistogram(histClass, "hPhiJPsi", "", false, 180, -constants::math::PI, constants::math::PI, VarManager::kPhi);
+    } else if (subGroupStr.EqualTo("jpsitoee")) {
+      hm->AddHistogram(histClass, "hMassVsPtJPsi", "", false, 100, 0.f, 50.f, VarManager::kPt, 300, 2.f, 5.f, VarManager::kMass);
+      hm->AddHistogram(histClass, "hRapVsPtJPsi", "", false, 100, 0.f, 50.f, VarManager::kPt, 60, -1.5f, 1.5f, VarManager::kRap);
       hm->AddHistogram(histClass, "hPhiJPsi", "", false, 180, -constants::math::PI, constants::math::PI, VarManager::kPhi);
     } else if (subGroupStr.EqualTo("dmeson")) {
       hm->AddHistogram(histClass, "hMassVsPtDmeson", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 200, 1.7f, 2.1f, VarManager::kMassCharmHadron);
       hm->AddHistogram(histClass, "hRapVsPtDmeson", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 60, -1.5f, 1.5f, VarManager::kRapCharmHadron);
       hm->AddHistogram(histClass, "hPhiDmeson", "", false, 180, 0., 2 * constants::math::PI, VarManager::kPhiCharmHadron);
-    } else if (subGroupStr.EqualTo("jpsidmeson")) {
+    } else if (subGroupStr.EqualTo("jpsitomumudmeson")) {
       hm->AddHistogram(histClass, "hMassVsPtJPsiWithDmeson", "", false, 100, 0.f, 50.f, VarManager::kPt, 300, 2.f, 5.f, VarManager::kMass);
       hm->AddHistogram(histClass, "hRapVsPtJPsiWithDmeson", "", false, 100, 0.f, 50.f, VarManager::kPt, 50, -4.5f, -2.0f, VarManager::kRap);
+      hm->AddHistogram(histClass, "hPhiJPsiWithDmeson", "", false, 180, -constants::math::PI, constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "hMassVsPtDmesonWithJPsi", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 200, 1.7f, 2.1f, VarManager::kMassCharmHadron);
+      hm->AddHistogram(histClass, "hRapVsPtDmesonWithJPsi", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 60, -1.5f, 1.5f, VarManager::kRapCharmHadron);
+      hm->AddHistogram(histClass, "hPhiDmesonWithJPsi", "", false, 180, 0., 2 * constants::math::PI, VarManager::kPhiCharmHadron);
+    } else if (subGroupStr.EqualTo("jpsitoeedmeson")) {
+      hm->AddHistogram(histClass, "hMassVsPtJPsiWithDmeson", "", false, 100, 0.f, 50.f, VarManager::kPt, 300, 2.f, 5.f, VarManager::kMass);
+      hm->AddHistogram(histClass, "hRapVsPtJPsiWithDmeson", "", false, 100, 0.f, 50.f, VarManager::kPt, 60, -1.5f, 1.5f, VarManager::kRap);
       hm->AddHistogram(histClass, "hPhiJPsiWithDmeson", "", false, 180, -constants::math::PI, constants::math::PI, VarManager::kPhi);
       hm->AddHistogram(histClass, "hMassVsPtDmesonWithJPsi", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 200, 1.7f, 2.1f, VarManager::kMassCharmHadron);
       hm->AddHistogram(histClass, "hRapVsPtDmesonWithJPsi", "", false, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 60, -1.5f, 1.5f, VarManager::kRapCharmHadron);

@@ -329,7 +329,7 @@ struct GammaConversions {
                                           bool const& sameMother,
                                           float McTrackmomentum[])
   {
-    fillV0Histograms(
+    fillV0Histograms<V0LegsWithMC>(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
       theV0CosinePA);
@@ -534,7 +534,7 @@ struct GammaConversions {
       theMcPhoton,
       McTrackmomentum);
 
-    fillV0Histograms(
+    fillV0Histograms<V0LegsWithMC>(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
       theV0CosinePA);
@@ -562,7 +562,7 @@ struct GammaConversions {
       theMcPhoton,
       McTrackmomentum);
 
-    fillV0Histograms(
+    fillV0Histograms<V0LegsWithMC>(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
       theV0CosinePA);
@@ -608,9 +608,9 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photon::collisionId;
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::collisionId;
   void processRec(aod::EMReducedEvents::iterator const& theCollision,
-                  V0DatasAdditional const& theV0s, aod::V0Photons const&,
+                  V0DatasAdditional const& theV0s,
                   aod::V0Legs const& theAllTracks)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -632,10 +632,10 @@ struct GammaConversions {
   }
   PROCESS_SWITCH(GammaConversions, processRec, "process reconstructed info", true);
 
-  Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonId;
+  Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonkfId;
 
   void processMc(aod::EMReducedEvents::iterator const& theCollision,
-                 V0DatasAdditional const& theV0s, aod::V0Photons const&,
+                 V0DatasAdditional const& theV0s,
                  V0LegsWithMC const& theAllTracks,
                  aod::V0DaughterMcParticles const& TheAllTracksMC,
                  aod::McGammasTrue const& theV0sTrue)
@@ -727,7 +727,7 @@ struct GammaConversions {
     fillTH2(theContainer, "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
   }
 
-  template <typename TV0>
+  template <class TTrackTo, typename TV0>
   void fillV0Histograms(mapStringHistPtr& theContainer, TV0 const& theV0, float const& theV0CosinePA)
   {
     fillTH1(theContainer, "hEta", theV0.eta());
@@ -738,13 +738,15 @@ struct GammaConversions {
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
-    fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
+    // fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt()); //psipair is 0, because opening angle is 0. thus, psipair is not stored anymore.
+    fillTH2(theContainer, "hPsiPt", 0.f, theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
     fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
 
-    auto v0 = theV0.template v0photon_as<aod::V0Photons>();
-    fillTH2(theContainer, "hpeDivpGamma", v0.p(), v0.ppos() / v0.p());
-    fillTH2(theContainer, "hpeDivpGamma", v0.p(), v0.pneg() / v0.p());
+    auto pos = theV0.template posTrack_as<TTrackTo>();
+    auto ele = theV0.template negTrack_as<TTrackTo>();
+    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), pos.p() / theV0.p());
+    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), ele.p() / theV0.p());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a separate fill function is needed
@@ -826,7 +828,8 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
+    // if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
+    if (fV0PsiPairMax > 0. && TMath::Abs(0.f) > fV0PsiPairMax) {
       fillV0SelectionHisto(ePhotonCuts::kPsiPair);
       return kFALSE;
     }
@@ -856,7 +859,7 @@ struct GammaConversions {
       fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       pos);
 
-    fillV0Histograms(
+    fillV0Histograms<aod::V0Legs>(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
       theV0CosinePA);

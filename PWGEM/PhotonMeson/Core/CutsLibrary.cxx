@@ -48,7 +48,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
+    cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 180);
     return cut;
   }
@@ -81,7 +81,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
+    cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 180);
     cut->SetAPRange(0.95, 0.02);
     return cut;
@@ -104,60 +104,6 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetRxyRange(1, 180);
     return cut;
   }
-  if (!nameStr.compare("qc_TPCTRD")) {
-    // for track
-    cut->SetTrackPtRange(0.01f, 1e10f);
-    cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireTPCTRD(true);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
-  if (!nameStr.compare("qc_TPCTOF")) {
-    // for track
-    cut->SetTrackPtRange(0.01f, 1e10f);
-    cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireTPCTOF(true);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
-  if (!nameStr.compare("qc_TPCTRDTOF")) {
-    // for track
-    cut->SetTrackPtRange(0.01f, 1e10f);
-    cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireTPCTRDTOF(true);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
   if (!nameStr.compare("wwire")) { // conversion only on tungstate wire
     // for track
     cut->SetTrackPtRange(0.01f, 1e10f);
@@ -171,7 +117,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(true);
@@ -191,7 +137,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(false);
@@ -211,7 +157,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.995);
+    cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(false);
     cut->SetOnWwireOB(true);
@@ -298,7 +244,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
@@ -328,7 +274,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrej);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrej_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTPCNsigmaMuRange(-2, +2);
@@ -358,7 +304,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTOFreq);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTOFreq_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
@@ -461,6 +407,28 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaPiRange(-1e+10, +3);
     return cut;
   }
+  if (!nameStr.compare("mee_0_120_tpconly_wo_phiv_lowB")) {
+    // for pair
+    cut->SetMeeRange(0., 0.12);
+
+    // for track
+    cut->SetTrackPtRange(0.05f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(80);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(4, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
+    cut->SetTOFbetaRange(true, 0.0, 0.95);
+    cut->SetTPCNsigmaElRange(-2, +3);
+    cut->SetTPCNsigmaPiRange(-3, +3);
+    return cut;
+  }
   if (!nameStr.compare("mee_0_120_tpconly_lowB")) {
     // for pair
     cut->SetMeeRange(0., 0.12);
@@ -480,7 +448,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTPCNsigmaPiRange(-3, +3);
@@ -505,7 +473,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTPCNsigmaPiRange(-3, +3);
@@ -530,7 +498,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTPCNsigmaPiRange(-3, +3);
@@ -555,7 +523,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
@@ -585,7 +553,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
@@ -615,7 +583,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq_lowB);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-2, +3);
     cut->SetTOFNsigmaElRange(-3, +3);
@@ -624,6 +592,54 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaKaRange(-3, +3);
     cut->SetTPCNsigmaPrRange(-3, +3);
     cut->SetMuonExclusionTPC(true);
+    return cut;
+  }
+  if (!nameStr.compare("mmumu_0_1100_lowB")) {
+    // for pair
+    cut->SetMeeRange(0., 1.1);
+
+    // for track
+    cut->SetTrackPtRange(0.05f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(80);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(4, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kMuon_lowB);
+    cut->SetTPCNsigmaElRange(-2, +2); // exclusion
+    cut->SetTPCNsigmaMuRange(-3, +3);
+    cut->SetTPCNsigmaPiRange(-3, +1e+10);
+    cut->SetTOFNsigmaMuRange(-3, +3);
+    cut->SetTOFNsigmaPiRange(-3, +1e+10);
+    return cut;
+  }
+  if (!nameStr.compare("mmumu_0_500_lowB")) {
+    // for pair
+    cut->SetMeeRange(0., 0.5);
+
+    // for track
+    cut->SetTrackPtRange(0.05f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(80);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(4, 7);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
+
+    // for PID
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kMuon_lowB);
+    cut->SetTPCNsigmaElRange(-2, +2); // exclusion
+    cut->SetTPCNsigmaMuRange(-3, +3);
+    cut->SetTPCNsigmaPiRange(-3, +1e+10);
+    cut->SetTOFNsigmaMuRange(-3, +3);
+    cut->SetTOFNsigmaPiRange(-3, +1e+10);
     return cut;
   }
 

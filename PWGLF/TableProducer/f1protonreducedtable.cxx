@@ -19,6 +19,9 @@
 #include <Math/Vector4D.h>
 #include <TMath.h>
 #include <fairlogger/Logger.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
+
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -47,7 +50,7 @@ using namespace o2::framework::expressions;
 struct f1protonreducedtable {
 
   // Produce derived tables
-  Produces<aod::ReducedF1ProtonEvents> reducedf1protonevents;
+  Produces<aod::RedF1PEvents> redf1pevents;
   Produces<aod::F1Tracks> f1track;
   Produces<aod::ProtonTracks> protontrack;
 
@@ -323,7 +326,7 @@ struct f1protonreducedtable {
     const float dcaDaughv0 = candidate.dcaV0daughters();
     const float cpav0 = candidate.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
 
@@ -450,10 +453,10 @@ struct f1protonreducedtable {
 
   std::vector<double> BBProton, BBAntiproton, BBPion, BBAntipion, BBKaon, BBAntikaon;
   ROOT::Math::PtEtaPhiMVector F1Vector, F1VectorDummy, KKs0Vector, ProtonVectorDummy, ProtonVectorDummy2;
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
-  double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();    // FIXME: Get from the common header
+  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
+  double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
 
   double massF1{0.};
   double masskKs0{0.};
@@ -739,8 +742,8 @@ struct f1protonreducedtable {
         qaRegistry.fill(HIST("hEventstat"), 2.5);
         auto eventspherocity = ComputeSpherocity(tracks, trackSphMin, trackSphDef);
         /////////// Fill collision table///////////////
-        reducedf1protonevents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), eventspherocity);
-        auto indexEvent = reducedf1protonevents.lastIndex();
+        redf1pevents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), eventspherocity);
+        auto indexEvent = redf1pevents.lastIndex();
         //// Fill track table for F1//////////////////
         for (auto if1 = f1resonance.begin(); if1 != f1resonance.end(); ++if1) {
           auto i5 = std::distance(f1resonance.begin(), if1);

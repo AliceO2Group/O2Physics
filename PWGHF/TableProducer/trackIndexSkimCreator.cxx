@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file trackIndexSkimCreator.cxx
-/// \brief Pre-selection of 2-prong and 3-prong secondary vertices of heavy-flavour decay candidates
+/// \brief Pre-selection of 2-prong, 3-prong, D*, and cascade secondary vertices of heavy-flavour decay candidates
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -37,6 +37,7 @@
 #include "ReconstructionDataFormats/Vertex.h" // for PV refit
 
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -71,6 +72,7 @@ enum EventRejection {
   PositionZ,
   NContrib,
   Chi2,
+  Centrality,
   NEventRejection
 };
 
@@ -92,16 +94,20 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Produces<aod::HfSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-  Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of primary vertex [cm]"};
-  Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of primary vertex [cm]"};
-  Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of primary vertex [cm]"};
-  Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of primary vertex [cm]"};
-  Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of primary vertex [cm]"};
-  Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
+  Configurable<float> xVertexMin{"xVertexMin", -100., "min. x of primary vertex [cm]"};
+  Configurable<float> xVertexMax{"xVertexMax", 100., "max. x of primary vertex [cm]"};
+  Configurable<float> yVertexMin{"yVertexMin", -100., "min. y of primary vertex [cm]"};
+  Configurable<float> yVertexMax{"yVertexMax", 100., "max. y of primary vertex [cm]"};
+  Configurable<float> zVertexMin{"zVertexMin", -100., "min. z of primary vertex [cm]"};
+  Configurable<float> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
-  Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
+  Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
+  Configurable<bool> useCentralityFT0M{"useCentralityFT0M", true, "use FT0M centrality estimator"};
+  Configurable<bool> useCentralityFV0A{"useCentralityFV0A", false, "use FV0A centrality estimator"};
+  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
+  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
 
   ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
 
@@ -111,6 +117,15 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   void init(InitContext const&)
   {
+    std::array<int, 3> doProcess = {doprocessTrigAndCentSel, doprocessTrigSel, doprocessNoTrigSel};
+    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
+    }
+
+    if (useCentralityFT0M && useCentralityFV0A) {
+      LOGP(fatal, "More than 1 centrality estimator switched-on. Choose only one! (useCentralityFT0M, useCentralityFV0A)");
+    }
+
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
     if (fillHistograms) {
@@ -124,6 +139,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
       labels[2 + EventRejection::NContrib] = "rej. # of contributors";
       labels[2 + EventRejection::Chi2] = "rej. #it{#chi}^{2}";
+      labels[2 + EventRejection::Centrality] = "rej. centrality";
       AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
       registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
       for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
@@ -134,6 +150,12 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
       registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
       registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -20., 20.}}});
+
+      if (doprocessTrigAndCentSel) {
+        AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};
+        registry.add("hCentralitySelected", "Centrality percentile of selected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
+        registry.add("hCentralityRejected", "Centrality percentile of rejected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
+      }
     }
   }
 
@@ -184,8 +206,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
   }
 
-  /// Event selection with trigger selection
-  void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  /// Collision selection
+  /// \param collision  collision table with
+  template <bool applyTrigSel, bool applyCentSel, typename Col>
+  void selectCollision(const Col& collision)
   {
     int statusCollision = 0;
 
@@ -195,54 +219,74 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     // trigger selection
-    if ((!useSel8Trigger && !collision.alias_bit(triggerClass)) || (useSel8Trigger && !collision.sel8())) {
-      SETBIT(statusCollision, EventRejection::Trigger);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
+    if constexpr (applyTrigSel) {
+      if ((!useSel8Trigger && !collision.alias_bit(triggerClass)) || (useSel8Trigger && !collision.sel8())) {
+        SETBIT(statusCollision, EventRejection::Trigger);
+        if (fillHistograms) {
+          registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
+        }
+      }
+    }
+
+    float centrality = -1.;
+    if constexpr (applyCentSel) {
+      if (useCentralityFT0M) {
+        centrality = collision.centFT0M();
+      } else if (useCentralityFV0A) {
+        centrality = collision.centFV0A();
+      } else {
+        LOGP(fatal, "Centrality estimator not set!");
+      }
+      if (centrality < centralityMin || centrality > centralityMax) {
+        SETBIT(statusCollision, EventRejection::Centrality);
+        if (fillHistograms) {
+          registry.fill(HIST("hEvents"), 3 + EventRejection::Centrality);
+        }
       }
     }
 
     // vertex selection
     selectVertex(collision, statusCollision);
 
-    // TODO: add more event selection criteria
-
     // selected events
-    if (fillHistograms && statusCollision == 0) {
-      registry.fill(HIST("hEvents"), 2);
-      registry.fill(HIST("hPrimVtxX"), collision.posX());
-      registry.fill(HIST("hPrimVtxY"), collision.posY());
-      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
+    if (fillHistograms) {
+      if (statusCollision == 0) {
+        registry.fill(HIST("hEvents"), 2);
+        registry.fill(HIST("hPrimVtxX"), collision.posX());
+        registry.fill(HIST("hPrimVtxY"), collision.posY());
+        registry.fill(HIST("hPrimVtxZ"), collision.posZ());
+        if constexpr (applyCentSel) {
+          registry.fill(HIST("hCentralitySelected"), centrality);
+        }
+      } else {
+        if constexpr (applyCentSel) {
+          registry.fill(HIST("hCentralityRejected"), centrality);
+        }
+      }
     }
 
     // fill table row
     rowSelectedCollision(statusCollision);
+  }
+
+  /// Event selection with trigger and centrality selection
+  void processTrigAndCentSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms>::iterator const& collision)
+  {
+    selectCollision<true, true>(collision);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentSel, "Use trigger and centrality selection", false);
+
+  /// Event selection with trigger selection
+  void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  {
+    selectCollision<true, false>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
   {
-    int statusCollision = 0;
-
-    // processed events
-    if (fillHistograms) {
-      registry.fill(HIST("hEvents"), 1);
-    }
-
-    // vertex selection
-    selectVertex(collision, statusCollision);
-
-    // selected events
-    if (fillHistograms && statusCollision == 0) {
-      registry.fill(HIST("hEvents"), 2);
-      registry.fill(HIST("hPrimVtxX"), collision.posX());
-      registry.fill(HIST("hPrimVtxY"), collision.posY());
-      registry.fill(HIST("hPrimVtxZ"), collision.posZ());
-    }
-
-    // fill table row
-    rowSelectedCollision(statusCollision);
+    selectCollision<false, false>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
@@ -1691,8 +1735,10 @@ struct HfTrackIndexSkimCreator {
 
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-
+      int lastFilledD0 = -1; // index to be filled in table for D* mesons
+      int counterTrackPos1{0};
       for (auto trackIndexPos1 = groupedTrackIndices.begin(); trackIndexPos1 != groupedTrackIndices.end(); ++trackIndexPos1) {
+        counterTrackPos1++;
         auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
 
         if (trackPos1.signed1Pt() < 0) {
@@ -1717,7 +1763,9 @@ struct HfTrackIndexSkimCreator {
 
         // first loop over negative tracks
         // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
+        int counterTrackNeg1{0};
         for (auto trackIndexNeg1 = groupedTrackIndices.begin(); trackIndexNeg1 != groupedTrackIndices.end(); ++trackIndexNeg1) {
+          counterTrackNeg1++;
           auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
           if (trackNeg1.signed1Pt() > 0) {
             continue;
@@ -1749,6 +1797,10 @@ struct HfTrackIndexSkimCreator {
             }
           }
 
+          // initialise PV refit coordinates and cov matrix for 2-prongs already here for D*
+          std::array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
+          std::array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
+
           // 2-prong vertex reconstruction
           if (sel2ProngStatusPos && sel2ProngStatusNeg) {
 
@@ -1767,8 +1819,6 @@ struct HfTrackIndexSkimCreator {
               df2.getTrack(1).getPxPyPzGlo(pvec1);
 
               /// PV refit excluding the candidate daughters, if contributors
-              std::array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
-              std::array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
               if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
@@ -1841,6 +1891,9 @@ struct HfTrackIndexSkimCreator {
               if (isSelected2ProngCand > 0) {
                 // fill table row
                 rowTrackIndexProng2(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), isSelected2ProngCand);
+                if (TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK)) {
+                  lastFilledD0 = rowTrackIndexProng2.lastIndex();
+                }
 
                 if constexpr (doPvRefit) {
                   // fill table row with coordinates of PV refit
@@ -1893,7 +1946,11 @@ struct HfTrackIndexSkimCreator {
                   }
                 }
               }
+            } else {
+              isSelected2ProngCand = 0; // reset to 0 not to use the D0 to build a D* meson
             }
+          } else {
+            isSelected2ProngCand = 0; // reset to 0 not to use the D0 to build a D* meson
           }
 
           // 3-prong vertex and D* reconstruction
@@ -1904,12 +1961,14 @@ struct HfTrackIndexSkimCreator {
 
             // second loop over positive tracks
             // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
-            for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+            int counterTrackPos2{0};
+            auto startTrackIndexPos2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexPos1 + 1;
+            for (auto trackIndexPos2 = startTrackIndexPos2; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+              counterTrackPos2++;
               auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
               if (trackPos2.signed1Pt() < 0) {
                 continue;
               }
-
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array<float, 3> pVecTrackPos2{trackPos2.px(), trackPos2.py(), trackPos2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
@@ -1919,7 +1978,7 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
-                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar)) {                                                                                  // compatible with a soft pion
+                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {                            // compatible with a soft pion
                   if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                     getPxPyPz(trackParVarPos2, pVecTrackPos2);
@@ -1929,18 +1988,26 @@ struct HfTrackIndexSkimCreator {
                   float deltaMass{-1.};
                   isSelectedDstar = isDstarSelected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), lastFilledD0);
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
+                    }
+                    if constexpr (doPvRefit) {
+                      // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
+                      rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                      pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
                     }
                   }
                   if (debug) {
                     rowDstarCutStatus(cutStatus);
                   }
                 }
-              }
+              } // end of D*
 
               // preselection of 3-prong candidates
+              if (doDstar && counterTrackPos2 < counterTrackPos1 + 1) { // we avoid duplication for 3-prongs
+                continue;
+              }
               int isSelected3ProngCand = n3ProngBit;
               if (do3Prong && TESTBIT(isSelProngPos2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
                 if (thisCollId != trackPos2.collisionId() && !propagatedPos2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
@@ -1965,8 +2032,8 @@ struct HfTrackIndexSkimCreator {
                 isSelected3ProngCand = 0;
               }
 
-              // if we did not preselected any D* or 3-prong candidate, continue
-              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
+              // if we did not preselected any 3-prong candidate, continue
+              if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
@@ -2057,14 +2124,6 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
-                if (isSelectedDstar) {
-                  rowDstarPVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
-                                  pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
-                }
-              } // end of D*
-
-              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
-                continue;
               }
 
               // reconstruct the 3-prong secondary vertex
@@ -2155,7 +2214,10 @@ struct HfTrackIndexSkimCreator {
 
             // second loop over negative tracks
             // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
-            for (auto trackIndexNeg2 = trackIndexNeg1 + 1; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+            int counterTrackNeg2{0};
+            auto startTrackIndexNeg2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexNeg1 + 1;
+            for (auto trackIndexNeg2 = startTrackIndexNeg2; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+              counterTrackNeg2++;
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               if (trackNeg2.signed1Pt() > 0) {
                 continue;
@@ -2170,7 +2232,7 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] >= 2)) { // the 2-prong decay is compatible with a D0bar
-                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) {                                                       // compatible with a soft pion
+                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar) && trackNeg2.globalIndex() != trackNeg1.globalIndex()) { // compatible with a soft pion
                   if (thisCollId != trackNeg2.collisionId()) {                                                                 // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                     getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
@@ -2180,18 +2242,26 @@ struct HfTrackIndexSkimCreator {
                   float deltaMass{-1.};
                   isSelectedDstar = isDstarSelected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), lastFilledD0);
                     if (fillHistograms) {
                       registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
+                    }
+                    if constexpr (doPvRefit) {
+                      // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
+                      rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                      pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
                     }
                   }
                   if (debug) {
                     rowDstarCutStatus(cutStatus);
                   }
                 }
-              }
+              } // end of D*
 
               // preselection of 3-prong candidates
+              if (doDstar && counterTrackNeg2 < counterTrackNeg1 + 1) { // we avoid duplication for 3-prongs
+                continue;
+              }
               int isSelected3ProngCand = n3ProngBit;
               if (do3Prong && TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
                 if (thisCollId != trackNeg2.collisionId() && !propagatedNeg2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
@@ -2217,7 +2287,7 @@ struct HfTrackIndexSkimCreator {
               }
 
               // if we did not preselected any D* or 3-prong candidate, continue
-              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
+              if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
@@ -2308,14 +2378,6 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
-                if (isSelectedDstar) {
-                  rowDstarPVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
-                                  pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
-                }
-              } // end of D*
-
-              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
-                continue;
               }
 
               // reconstruct the 3-prong secondary vertex

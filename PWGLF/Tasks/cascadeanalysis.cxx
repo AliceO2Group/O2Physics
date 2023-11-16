@@ -295,31 +295,31 @@ struct cascadeAnalysis {
       if (casc.sign() < 0) {                         // FIXME: could be done better...
         if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi) {
           if (!doCentralityStudy) {
-            registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.mXi());
+            registry.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
           } else {
-            registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.template pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.pt(), casc.mXi());
           }
         }
         if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om) {
           if (!doCentralityStudy) {
-            registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.mOmega());
+            registry.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
           } else {
-            registry.fill(HIST("h3dMassOmegaMinus"), lPercentile, casc.template pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaMinus"), lPercentile, casc.pt(), casc.mOmega());
           }
         }
       } else {
         if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi) {
           if (!doCentralityStudy) {
-            registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.mXi());
+            registry.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
           } else {
-            registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.template pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.pt(), casc.mXi());
           }
         }
         if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om) {
           if (!doCentralityStudy) {
-            registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.mOmega());
+            registry.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
           } else {
-            registry.fill(HIST("h3dMassOmegaPlus"), lPercentile, casc.template pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaPlus"), lPercentile, casc.pt(), casc.mOmega());
           }
         }
       }

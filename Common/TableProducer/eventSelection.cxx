@@ -22,6 +22,8 @@
 #include "DataFormatsFT0/Digit.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+
 #include "TH1D.h"
 
 using namespace o2;
@@ -39,6 +41,7 @@ struct BcSelectionTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
+  Configurable<int> confITSROFrameBorderMargin{"ITSROFrameBorderMargin", 30, "Number of bcs at the end of ITS RO Frame border"};
 
   void init(InitContext&)
   {
@@ -191,6 +194,10 @@ struct BcSelectionTask {
   {
     bcsel.reserve(bcs.size());
 
+    // extract ITS time frame parameters
+    int64_t ts = bcs.iteratorAt(0).timestamp();
+    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
+
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
@@ -275,6 +282,12 @@ struct BcSelectionTask {
       selection |= !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
       selection |= (bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0) ? BIT(kIsTriggerTVX) : 0;
 
+      // check if bc is far (at least confITSROFrameBorderMargin) from the end of ITS RO Frame border
+      // 2bc margin is also introduced at ehe beginning of ITS RO Frame to account for the uncertainty of the roFrameBiasInBC
+      uint16_t bcInITSROF = (globalBC + 3564 - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
+      LOGP(debug, "bcInITSROF={}", bcInITSROF);
+      selection |= bcInITSROF > 1 && bcInITSROF < alppar->roFrameLengthInBC - confITSROFrameBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
+
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
@@ -294,6 +307,12 @@ struct BcSelectionTask {
       float csTCE = isPP ? -1. : 10.36e6;
       float csZEM = isPP ? -1. : 415.2e6;
       float csZNC = isPP ? -1. : 214.5e6;
+      if (run > 543437 && run < 543514) {
+        csTCE = 8.3;
+      }
+      if (run >= 543514) {
+        csTCE = 3.97;
+      }
 
       // Fill TVX (T0 vertex) counters
       if (TESTBIT(selection, kIsTriggerTVX)) {
@@ -302,7 +321,7 @@ struct BcSelectionTask {
       }
       // Fill counters and lumi histograms for Pb-Pb lumi monitoring
       // TODO: introduce pileup correction
-      if (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen) : 0) {
+      if (bc.has_ft0() ? (TESTBIT(selection, kIsTriggerTVX) && TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) : 0) {
         histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, 1. / csTCE);
       }

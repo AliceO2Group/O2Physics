@@ -28,23 +28,23 @@
 
 namespace o2::aod
 {
-namespace reducedf1protonevent
+namespace redf1pevent
 {
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
-} // namespace reducedf1protonevent
-DECLARE_SOA_TABLE(ReducedF1ProtonEvents, "AOD", "REDUCEDF1PEVENT",
+} // namespace redf1pevent
+DECLARE_SOA_TABLE(RedF1PEvents, "AOD", "REDF1PEVENT",
                   o2::soa::Index<>,
                   bc::GlobalBC,
                   bc::RunNumber,
                   timestamp::Timestamp,
                   collision::PosZ,
                   collision::NumContrib,
-                  reducedf1protonevent::Spherocity);
-using ReducedF1ProtonEvent = ReducedF1ProtonEvents::iterator;
+                  redf1pevent::Spherocity);
+using RedF1PEvent = RedF1PEvents::iterator;
 
 namespace f1protondaughter
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedF1ProtonEvent, reducedF1ProtonEvent);
+DECLARE_SOA_INDEX_COLUMN(RedF1PEvent, redF1PEvent);
 DECLARE_SOA_COLUMN(F1SignalStat, f1SignalStat, int);                       //! F1 Px
 DECLARE_SOA_COLUMN(F1Px, f1Px, float);                                     //! F1 Px
 DECLARE_SOA_COLUMN(F1Py, f1Py, float);                                     //! F1 Py
@@ -66,7 +66,7 @@ DECLARE_SOA_COLUMN(F1ProtonIndex, f1ProtonIndex, int64_t);                 //! F
 } // namespace f1protondaughter
 DECLARE_SOA_TABLE(F1Tracks, "AOD", "F1TRACK",
                   o2::soa::Index<>,
-                  f1protondaughter::ReducedF1ProtonEventId,
+                  f1protondaughter::RedF1PEventId,
                   f1protondaughter::F1SignalStat,
                   f1protondaughter::F1Px,
                   f1protondaughter::F1Py,
@@ -81,7 +81,7 @@ using F1Track = F1Tracks::iterator;
 
 DECLARE_SOA_TABLE(ProtonTracks, "AOD", "PROTONTRACK",
                   o2::soa::Index<>,
-                  f1protondaughter::ReducedF1ProtonEventId,
+                  f1protondaughter::RedF1PEventId,
                   f1protondaughter::ProtonCharge,
                   f1protondaughter::ProtonPx,
                   f1protondaughter::ProtonPy,

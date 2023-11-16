@@ -43,8 +43,14 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
+using MyCollision = MyCollisions::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
+
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct MaterialBudget {
 
@@ -389,12 +395,12 @@ struct MaterialBudget {
     }           // end of different collision combinations
   }
 
-  Partition<aod::EMReducedEvents> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
+  Partition<MyCollisions> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && CentMin < o2::aod::cent::centFT0M&& o2::aod::cent::centFT0M < CentMax;
   Filter collisionFilter_subsys = o2::aod::emreducedevent::ngpcm >= 1;
-  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>; // this goes to mixed event.
+  using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
-  void processMB(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processMB(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     fillsinglephoton(grouped_collisions, v0photons, perCollision_pcm, fProbePCMCuts, legs);
     SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagPCMCuts, fProbePCMCuts, fPairCuts, legs);
@@ -403,7 +409,7 @@ struct MaterialBudget {
     }
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision)
+  void processDummy(MyCollisions::iterator const& collision)
   {
     // do nothing
   }
