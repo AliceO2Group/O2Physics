@@ -77,7 +77,7 @@ enum EventRejection {
 };
 
 // event rejection types
-enum CentralityEstimators {
+enum CentralityEstimator {
   None = 0,
   FT0A,
   FT0C,
