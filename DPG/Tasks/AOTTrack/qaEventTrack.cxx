@@ -55,7 +55,7 @@ struct qaEventTrack {
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
-	Configurable<bool> isDefaultPbPb{"isDefaultPbPb", false, "Global switch to easily switch the most relaxed default axis ranges for PbPb"};
+	Configurable<bool> overwriteAxisRangeForPbPb{"overwriteAxisRangeForPbPb", false, "Global switch to easily set the most relaxed default axis ranges of multiplicity and PVcontribs for PbPb"};
   Configurable<bool> doDebug{"doDebug", false, "Bool to enable debug outputs"};
 
   // options to select specific events
@@ -134,7 +134,7 @@ struct qaEventTrack {
     }
 
 		//
-		// Next section setups overwrite of configurableAxis if isDefaultPbPb is used.
+		// Next section setups overwrite of configurableAxis if overwriteAxisRangeForPbPb is used.
 		//
 		// Define the robust default axis binning for PbPb here (assumption: axis always starts at 0).
 		int nBinsNumContrib = 1500; double maxBinsNumContrib = 7500.;
@@ -170,13 +170,13 @@ struct qaEventTrack {
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
-		const AxisSpec axisVertexNumContrib{(isDefaultPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
+		const AxisSpec axisVertexNumContrib{(overwriteAxisRangeForPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
     const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
     const AxisSpec axisVertexPosY{binsVertexPosXY, "Y [cm]"};
     const AxisSpec axisVertexPosZ{binsVertexPosZ, "Z [cm]"};
     const AxisSpec axisVertexCov{100, -0.005, 0.005};
     const AxisSpec axisVertexPosReso{100, -0.5, 0.5};
-    const AxisSpec axisTrackMultiplicity{(isDefaultPbPb ? vecBinsTrackMultiplicityDefaultPbPb : vecBinsTrackMultiplicity), "Track Multiplicity"};
+    const AxisSpec axisTrackMultiplicity{(overwriteAxisRangeForPbPb ? vecBinsTrackMultiplicityDefaultPbPb : vecBinsTrackMultiplicity), "Track Multiplicity"};
     const AxisSpec axisParX{300, 0, 600, "#it{x} [cm]"};
     const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
     const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
