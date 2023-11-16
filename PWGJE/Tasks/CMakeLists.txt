@@ -96,4 +96,8 @@ if(FastJet_FOUND)
                         SOURCES nSubjettiness.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(phi-in-jets
+                        SOURCES PhiInJetsJE.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
 endif()
