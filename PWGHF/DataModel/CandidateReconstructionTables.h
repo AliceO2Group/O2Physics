@@ -258,12 +258,14 @@ using Hf3Prong = Hf3Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascLf2Prongs, "AOD", "HFCASCLF2PRONG", //! Table for HF 2 prong candidates with a Cascade
                   o2::soa::Index<>,
+                  hf_track_index::CollisionId
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id);
 using HfCascLf2Prong = HfCascLf2Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 prong candidates with a Cascade
                   o2::soa::Index<>,
+                  hf_track_index::CollisionId
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);

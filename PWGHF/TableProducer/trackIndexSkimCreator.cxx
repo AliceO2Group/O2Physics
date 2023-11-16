@@ -2864,18 +2864,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
 
   // Selection criteria
-  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.9, "V0 radius"};
-  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.9, "Cascade radius"};
-  Configurable<float> dcaBachToPv{"dcaBachToPv", .05, "DCA Bach To PV"};
-  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .05, "DCA V0 To PV"};
-  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};
-  Configurable<float> dcaCascDau{"dcaCascDau", 1.0, "DCA Casc Daughters"};
-  Configurable<float> dcaNegToPv{"dcaNegToPv", .05, "DCA Neg To PV"};
-  Configurable<float> dcaPosToPv{"dcaPosToPv", .05, "DCA Pos To PV"};
-  Configurable<float> v0MassWindow{"v0MassWindow", 0.008, "V0 mass window"};
-  Configurable<float> cascMassWindow{"cascMassWindow", 0.008, "Cascade mass window"};
+  // selections have been set to run2 lambda dedicated cuts
+  // selections for cascade have been set to the loosest value between xi and omega
+  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius"}; //0.5 in run2
+  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius"}; //0.5 cm for xi and 0.6 for omega
+  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"}; // 0.04 in run2
+  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"}; //0.06 in run2
+  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"}; //0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"}; //0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"}; //conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"}; //conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"}; //0.06 in run2
+  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"}; //0.06 in run2
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"}; // 0.008 in run2
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -2929,34 +2930,34 @@ struct HfTrackIndexSkimCreatorLfCascades {
     runNumber = 0;
 
     if (fillHistograms) {
-      AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
+      AxisSpec ptAxis = {400, 0.0f, 20.0f, "it{p}_{T} (GeV/c)"};
       AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
       AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}});
 
       // Cascade mass spectra
-      registry.add("hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}});
-      registry.add("hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2}²)"}}});
-      registry.add("hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}});
-      registry.add("hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}});
+      registry.add("hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{400, 1.122f, 1.522f, "Inv. Mass (GeV/c^{2})"}}});
+      registry.add("hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{400, 1.122f, 1.522f, "Inv. Mass (GeV/c^{2}²)"}}});
+      registry.add("hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{400, 1.472f, 1.872f, "Inv. Mass (GeV/c^{2})"}}});
+      registry.add("hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{400, 1.472f, 1.872f, "Inv. Mass (GeV/c^{2})"}}});
       registry.add("h2dMassXiMinus", "h2dMassXiMinus", {HistType::kTH2F, {ptAxis, massAxisXi}});
       registry.add("h2dMassXiPlus", "h2dMassXiPlus", {HistType::kTH2F, {ptAxis, massAxisXi}});
       registry.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
       registry.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
 
       // Cascade topology
-      registry.add("hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}});
-      registry.add("hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}});
-      registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}});
-      registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}});
+      registry.add("hV0Radius", "hV0Radius", {HistType::kTH1F, {{500, 0.0, 100.0, "cm"}}});
+      registry.add("hCascRadius", "hCascRadius", {HistType::kTH1F, {{500, 0.0, 100.0, "cm"}}});
+      registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
+      registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
       registry.add("hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}});
       registry.add("hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}});
       registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}});
       registry.add("hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}});
-      registry.add("hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}});
-      registry.add("hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}});
-      registry.add("hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "Inv. Mass (GeV/c^{2})"}}});
+      registry.add("hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{500, 0.0f, 5.0f, "cm^{2}"}}});
+      registry.add("hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{500, 0.0f, 5.0f, "cm^{2}"}}});
+      registry.add("hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{400, 0.916f, 1.316f, "Inv. Mass (GeV/c^{2})"}}});
 
       registry.add("hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
       registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
@@ -3216,7 +3217,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto secondaryVertex3 = df3.getPCACandidate();
 
               // fill table row
-              rowTrackIndexCasc3Prong(casc.globalIndex(),
+              rowTrackIndexCasc3Prong(thisCollId,
+                                      casc.globalIndex(),
                                       trackPion1.globalIndex(),
                                       trackPion2.globalIndex());
 
@@ -3256,7 +3258,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
           auto secondaryVertex2 = df2.getPCACandidate();
 
           // fill table row
-          rowTrackIndexCasc2Prong(casc.globalIndex(),
+          rowTrackIndexCasc2Prong(thisCollId,
+                                  casc.globalIndex(),
                                   trackPion1.globalIndex());
 
           // fill histograms
