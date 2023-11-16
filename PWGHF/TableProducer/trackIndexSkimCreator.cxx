@@ -2900,6 +2900,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   double massPi{0.};
   double massXi{0.};
   double massOmega{0.};
+  double massLambda{0.};
   double massXiczero{0.};
   double massXicplus{0.};
 
@@ -2916,6 +2917,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     massPi = o2::analysis::pdg::MassPiPlus;
     massXi = o2::analysis::pdg::MassXiMinus;
     massOmega = o2::analysis::pdg::MassOmegaMinus;
+    massLambda = = o2::analysis::pdg::MassLambda0;
     massXiczero = o2::analysis::pdg::MassXiCZero;
     massXicplus = o2::analysis::pdg::MassXiCPlus;
 
@@ -2994,19 +2996,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
   {
     registry.fill(HIST("hCandidateCounter"), 2.5); 
 
-    if (casc.v0cosPA(pvx, pvy, pvz) > v0CosPA &&
-        casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
-        casc.dcacascdaughters() > dcaCascDau &&
-        casc.dcaV0daughters() > dcaV0Dau &&
-        casc.dcanegtopv() > dcaNegToPv &&
-        casc.dcapostopv() > dcaPosToPv &&
-        casc.dcabachtopv() > dcaBachToPv &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
-        casc.v0radius() > v0Radius &&
-        casc.cascradius() > cascRadius &&
-        std::abs(casc.mLambda() - 1.115683) < v0MassWindow) {
+    if (casc.v0cosPA() > v0CosPA && 
+        casc.casccosPA() > cascCosPA && 
+        casc.dcacascdaughters() < dcaCascDau && 
+        casc.dcaV0daughters() < dcaV0Dau && 
+        casc.dcanegtopv() > dcaNegToPv && 
+        casc.dcapostopv() > dcaPosToPv && 
+        casc.dcabachtopv() > dcaBachToPv && 
+        casc.dcav0topv() > dcaV0ToPv &&
+        casc.v0radius() > v0Radius && 
+        casc.cascradius() > cascRadius && 
+        std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
       registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
-      if (casc.sign() < 0) {                         // FIXME: could be done better...
+      if (casc.sign() < 0) {
         registry.fill(HIST("hMassXiMinus"), casc.mXi());
         registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
@@ -3018,12 +3020,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
         // The basic eleven!
         registry.fill(HIST("hV0Radius"), casc.v0radius());
         registry.fill(HIST("hCascRadius"), casc.cascradius());
-        registry.fill(HIST("hV0CosPA"), casc.v0cosPA(pvx, pvy, pvz));
-        registry.fill(HIST("hCascCosPA"), casc.casccosPA(pvx, pvy, pvz));
+        registry.fill(HIST("hV0CosPA"), casc.v0cosPA());
+        registry.fill(HIST("hCascCosPA"), casc.casccosPA());
         registry.fill(HIST("hDCAPosToPV"), casc.dcapostopv());
         registry.fill(HIST("hDCANegToPV"), casc.dcanegtopv());
         registry.fill(HIST("hDCABachToPV"), casc.dcabachtopv());
-        registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv(pvx, pvy, pvz));
+        registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv());
         registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters());
         registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters());
         registry.fill(HIST("hLambdaMass"), casc.mLambda());
