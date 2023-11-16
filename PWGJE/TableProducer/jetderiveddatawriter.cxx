@@ -161,7 +161,7 @@ struct JetDerivedDataWriter {
       storedJFullTriggerSelsTable(collision.fullTriggerSel());
 
       for (const auto& track : tracks) {
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -287,7 +287,7 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {

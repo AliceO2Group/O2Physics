@@ -46,6 +46,7 @@ DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                // Number of
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                // Number of TPC clusters of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);             // TPC signal of the He daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);             // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                          // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
 DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                      // TPC momentum of the He daughter
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                      // TPC momentum of the Pi daughter
 DECLARE_SOA_COLUMN(ITSclusterSizesHe, itsClusterSizesHe, uint32_t); // ITS cluster size of the He daughter
@@ -89,7 +90,8 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   hyperrec::TPCsignalHe,
                   hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe,
-                  hyperrec::ITSclusterSizesPi);
+                  hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags);
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
@@ -118,6 +120,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe,
                   hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
                   hyperrec::GenEta,
