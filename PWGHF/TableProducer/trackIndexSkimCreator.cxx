@@ -1700,7 +1700,7 @@ struct HfTrackIndexSkimCreator {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
-      // charm baryon vertex fitter
+      // 2-prong vertex fitter
       o2::vertexing::DCAFitterN<2> df2;
       df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
       df2.setPropagateToPCA(propagateToPCA);
