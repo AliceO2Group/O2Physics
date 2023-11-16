@@ -2985,12 +2985,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); //select tracks passing bachelor selection
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksCovDcaPVRefit = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
   using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>; 
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Preslice<TracksCovDcaPVRefit> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
+  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
   Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
@@ -3099,7 +3098,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
         //----------------accessing particles in the decay chain-------------
         // cascade daughter - charged particle
-        auto trackXiDauCharged = casc.bachelor_as<TracksCovDcaPVRefit>(); // pion <- xi track
+        auto trackXiDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // pion <- xi track
         // cascade daughter - V0
         if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check if V0 data are stored
           continue;
@@ -3108,16 +3107,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
         auto v0 = casc.v0_as<aod::V0sLinked>();
         auto v0Element = v0.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
         // V0 positive daughter
-        auto trackV0PosDau = v0Element.posTrack_as<TracksCovDcaPVRefit>(); // p <- V0 track (positive track) 0
+        auto trackV0PosDau = v0Element.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
         // V0 negative daughter
-        auto trackV0NegDau = v0Element.negTrack_as<TracksCovDcaPVRefit>(); // pion <- V0 track (negative track) 1
+        auto trackV0NegDau = v0Element.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
 
         // check that particles come from the same collision
         if (rejDiffCollTrack) {
-          if (trackV0Dau0.collisionId() != trackV0Dau1.collisionId()) {
+          if (trackV0PosDau.collisionId() != trackV0NegDau.collisionId()) {
             continue;
           }
-          if (trackXiDauCharged.collisionId() != trackV0Dau0.collisionId()) {
+          if (trackXiDauCharged.collisionId() != trackV0PosDau.collisionId()) {
             continue;
           }
         }
@@ -3166,7 +3165,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
         auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
 
-          auto trackPion1 = trackIdPion1.track_as<TracksCovDcaPVRefit>();
+          auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
           if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
             continue;
@@ -3256,7 +3255,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             // second loop over positive tracks
             for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
 
-              auto trackPion2 = trackIdPion2.track_as<aod::TracksCovDcaPVRefit>();
+              auto trackPion2 = trackIdPion2.track_as<aod::aod::TracksWCovDca>();
 
               if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion2.collisionId())) {
                 continue;
