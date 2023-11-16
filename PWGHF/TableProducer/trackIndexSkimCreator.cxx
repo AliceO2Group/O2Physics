@@ -310,14 +310,14 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   /// Event selection with trigger selection
   void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
-    selectCollision<true>(collision);
+    selectCollision<true, CentralityEstimators::None>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
   {
-    selectCollision<false>(collision);
+    selectCollision<false, CentralityEstimators::None>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
