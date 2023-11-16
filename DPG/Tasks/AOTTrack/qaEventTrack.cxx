@@ -83,7 +83,7 @@ struct qaEventTrack {
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
-	ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
+  ConfigurableAxis binsVertexNumContrib{"binsVertexNumContrib", {200, 0, 200}, ""};
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplicity", {1000, 0, 1000}, ""};
 
   // TODO: ask if one can have different filters for both process functions
@@ -137,34 +137,36 @@ struct qaEventTrack {
     // Next section setups overwrite of configurableAxis if overwriteAxisRangeForPbPb is used.
     //
     // Define the robust default axis binning for PbPb here (assumption: axis always starts at 0).
-    int nBinsNumContrib = 1500; double maxBinsNumContrib = 7500.;
-	  int nBinsTrackMultiplicity = 2500; double maxBinsTrackMultiplicity = 50000.;
-		// Create and fill vectors of default bin edges for AxisSpec
-	  std::vector<double> vecBinsVertexNumContribDefaultPbPb;
-	  std::vector<double> vecBinsTrackMultiplicityDefaultPbPb;
-		for(int ibin(0); ibin < nBinsNumContrib+1; ibin++){
-			vecBinsVertexNumContribDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsNumContrib/nBinsNumContrib));
-		}
-	  for(int ibin(0); ibin < nBinsTrackMultiplicity+1; ibin++){
-			vecBinsTrackMultiplicityDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsTrackMultiplicity/nBinsTrackMultiplicity));
-		}
-		// Convert ConfigurableAxis into vector, so it can be used in if condition with above later on.
-		// Need to use AxisSpec struct as mid-step.
-		// Since ConfigurableAxis has fixed binning, .binEdges copies only first and last bin edge (for variable binning,
-		// it copies all edges), hence the vectors has to be filled the following way.
-	  std::vector<double> vecBinsVertexNumContrib;
-	  std::vector<double> vecBinsTrackMultiplicity;
-	  const AxisSpec tempAxisVertexNumContrib{binsVertexNumContrib, "Number Of contributors to the PV"};
-	  const AxisSpec tempAxisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
-	  std::vector<double> tempBinsVertexNumContrib = tempAxisVertexNumContrib.binEdges;
-	  std::vector<double> tempBinsTrackMultiplicity = tempAxisTrackMultiplicity.binEdges;
-	  for (int ibin = 0; ibin < tempAxisVertexNumContrib.nBins.value() + 1; ibin++){
-		  vecBinsVertexNumContrib.push_back(tempBinsVertexNumContrib[0] + static_cast<double>(ibin) * ((tempBinsVertexNumContrib[tempBinsVertexNumContrib.size() - 1] - tempBinsVertexNumContrib[0]) / tempAxisVertexNumContrib.nBins.value()));
-		}
-	  for (int ibin = 0; ibin < tempAxisTrackMultiplicity.nBins.value() + 1; ibin++){
-		  vecBinsTrackMultiplicity.push_back(tempBinsTrackMultiplicity[0] + static_cast<double>(ibin) * ((tempBinsTrackMultiplicity[tempBinsTrackMultiplicity.size() - 1] - tempBinsTrackMultiplicity[0]) / tempAxisTrackMultiplicity.nBins.value()));
-	  }
-		// End of this section.
+    int nBinsNumContrib = 1500;
+    double maxBinsNumContrib = 7500.;
+    int nBinsTrackMultiplicity = 2500;
+    double maxBinsTrackMultiplicity = 50000.;
+    // Create and fill vectors of default bin edges for AxisSpec
+    std::vector<double> vecBinsVertexNumContribDefaultPbPb;
+    std::vector<double> vecBinsTrackMultiplicityDefaultPbPb;
+    for (int ibin(0); ibin < nBinsNumContrib + 1; ibin++) {
+      vecBinsVertexNumContribDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsNumContrib / nBinsNumContrib));
+    }
+    for (int ibin(0); ibin < nBinsTrackMultiplicity + 1; ibin++) {
+      vecBinsTrackMultiplicityDefaultPbPb.push_back(static_cast<double>(ibin) * (maxBinsTrackMultiplicity / nBinsTrackMultiplicity));
+    }
+    // Convert ConfigurableAxis into vector, so it can be used in if condition with above later on.
+    // Need to use AxisSpec struct as mid-step.
+    // Since ConfigurableAxis has fixed binning, .binEdges copies only first and last bin edge (for variable binning,
+    // it copies all edges), hence the vectors has to be filled the following way.
+    std::vector<double> vecBinsVertexNumContrib;
+    std::vector<double> vecBinsTrackMultiplicity;
+    const AxisSpec tempAxisVertexNumContrib{binsVertexNumContrib, "Number Of contributors to the PV"};
+    const AxisSpec tempAxisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
+    std::vector<double> tempBinsVertexNumContrib = tempAxisVertexNumContrib.binEdges;
+    std::vector<double> tempBinsTrackMultiplicity = tempAxisTrackMultiplicity.binEdges;
+    for (int ibin = 0; ibin < tempAxisVertexNumContrib.nBins.value() + 1; ibin++) {
+      vecBinsVertexNumContrib.push_back(tempBinsVertexNumContrib[0] + static_cast<double>(ibin) * ((tempBinsVertexNumContrib[tempBinsVertexNumContrib.size() - 1] - tempBinsVertexNumContrib[0]) / tempAxisVertexNumContrib.nBins.value()));
+    }
+    for (int ibin = 0; ibin < tempAxisTrackMultiplicity.nBins.value() + 1; ibin++) {
+      vecBinsTrackMultiplicity.push_back(tempBinsTrackMultiplicity[0] + static_cast<double>(ibin) * ((tempBinsTrackMultiplicity[tempBinsTrackMultiplicity.size() - 1] - tempBinsTrackMultiplicity[0]) / tempAxisTrackMultiplicity.nBins.value()));
+    }
+    // End of this section.
 
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
     const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
