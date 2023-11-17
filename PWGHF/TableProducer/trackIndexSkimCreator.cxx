@@ -76,6 +76,16 @@ enum EventRejection {
   NEventRejection
 };
 
+// event rejection types
+enum CentralityEstimator {
+  None = 0,
+  FT0A,
+  FT0C,
+  FT0M,
+  FV0A,
+  NCentralityEstimators
+};
+
 // #define MY_DEBUG
 
 #ifdef MY_DEBUG
@@ -104,8 +114,6 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
-  Configurable<bool> useCentralityFT0M{"useCentralityFT0M", true, "use FT0M centrality estimator"};
-  Configurable<bool> useCentralityFV0A{"useCentralityFV0A", false, "use FV0A centrality estimator"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
 
@@ -117,13 +125,9 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   void init(InitContext const&)
   {
-    std::array<int, 3> doProcess = {doprocessTrigAndCentSel, doprocessTrigSel, doprocessNoTrigSel};
+    std::array<int, 6> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
-    }
-
-    if (useCentralityFT0M && useCentralityFV0A) {
-      LOGP(fatal, "More than 1 centrality estimator switched-on. Choose only one! (useCentralityFT0M, useCentralityFV0A)");
     }
 
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
@@ -151,7 +155,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
       registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -20., 20.}}});
 
-      if (doprocessTrigAndCentSel) {
+      if (doprocessTrigAndCentFT0ASel || doprocessTrigAndCentFT0CSel || doprocessTrigAndCentFT0MSel || doprocessTrigAndCentFV0ASel) {
         AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};
         registry.add("hCentralitySelected", "Centrality percentile of selected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
         registry.add("hCentralityRejected", "Centrality percentile of rejected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
@@ -208,7 +212,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, bool applyCentSel, typename Col>
+  template <bool applyTrigSel, int centEstimator, typename Col>
   void selectCollision(const Col& collision)
   {
     int statusCollision = 0;
@@ -229,10 +233,14 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     float centrality = -1.;
-    if constexpr (applyCentSel) {
-      if (useCentralityFT0M) {
+    if constexpr (centEstimator != CentralityEstimator::None) {
+      if constexpr (centEstimator == CentralityEstimator::FT0A) {
+        centrality = collision.centFT0A();
+      } else if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        centrality = collision.centFT0C();
+      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
         centrality = collision.centFT0M();
-      } else if (useCentralityFV0A) {
+      } else if constexpr (centEstimator == CentralityEstimator::FV0A) {
         centrality = collision.centFV0A();
       } else {
         LOGP(fatal, "Centrality estimator not set!");
@@ -255,12 +263,14 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
         registry.fill(HIST("hPrimVtxX"), collision.posX());
         registry.fill(HIST("hPrimVtxY"), collision.posY());
         registry.fill(HIST("hPrimVtxZ"), collision.posZ());
-        if constexpr (applyCentSel) {
+        if constexpr (centEstimator != CentralityEstimator::None) {
           registry.fill(HIST("hCentralitySelected"), centrality);
         }
       } else {
-        if constexpr (applyCentSel) {
-          registry.fill(HIST("hCentralityRejected"), centrality);
+        if constexpr (centEstimator != CentralityEstimator::None) {
+          if (TESTBIT(statusCollision, EventRejection::Centrality)) {
+            registry.fill(HIST("hCentralityRejected"), centrality);
+          }
         }
       }
     }
@@ -269,24 +279,45 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     rowSelectedCollision(statusCollision);
   }
 
-  /// Event selection with trigger and centrality selection
-  void processTrigAndCentSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms>::iterator const& collision)
+  /// Event selection with trigger and FT0A centrality selection
+  void processTrigAndCentFT0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As>::iterator const& collision)
   {
-    selectCollision<true, true>(collision);
+    selectCollision<true, CentralityEstimator::FT0A>(collision);
   }
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentSel, "Use trigger and centrality selection", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0ASel, "Use trigger and centrality selection with FT0A", false);
+
+  /// Event selection with trigger and FT0C centrality selection
+  void processTrigAndCentFT0CSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision)
+  {
+    selectCollision<true, CentralityEstimator::FT0C>(collision);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0CSel, "Use trigger and centrality selection with FT0C", false);
+
+  /// Event selection with trigger and FT0M centrality selection
+  void processTrigAndCentFT0MSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision)
+  {
+    selectCollision<true, CentralityEstimator::FT0M>(collision);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0MSel, "Use trigger and centrality selection with FT0M", false);
+
+  /// Event selection with trigger and FV0A centrality selection
+  void processTrigAndCentFV0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision)
+  {
+    selectCollision<true, CentralityEstimator::FV0A>(collision);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFV0ASel, "Use trigger and centrality selection with FV0A", false);
 
   /// Event selection with trigger selection
   void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
-    selectCollision<true, false>(collision);
+    selectCollision<true, CentralityEstimator::None>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
   void processNoTrigSel(aod::Collision const& collision)
   {
-    selectCollision<false, false>(collision);
+    selectCollision<false, CentralityEstimator::None>(collision);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 };
