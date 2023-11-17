@@ -103,6 +103,7 @@ DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTR", //! Table for Fwd
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
+constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
 // constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
@@ -342,7 +343,10 @@ struct TableMaker {
     if (collision.sel7()) {
       tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
     }
-    // TODO: Add the event level decisions from the filtering task into the tag
+    // Put the 32 first bits of the event filter in the last 32 bits of the tag
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
+      tag |= (collision.eventFilter() << 32);
+    }
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     // TODO: These variables cannot be filled in the VarManager for the moment as long as BCsWithTimestamps are used.
@@ -1176,7 +1180,7 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(kNaliases));
     if (collision.eventFilter()) {
-      fullSkimming<gkEventFillMapWithMult, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+      fullSkimming<gkEventFillMapWithMultsAndEventFilter, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
     }
   }
 
