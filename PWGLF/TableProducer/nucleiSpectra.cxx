@@ -462,7 +462,7 @@ struct nucleiSpectra {
       nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
-          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
+          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
           break;
         }
       }
