@@ -1272,7 +1272,7 @@ struct AnalysisDileptonHadron {
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runDileptonHadron(TEvent const& event, TTracks const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
-// set up KF or DCAfitter
+    // set up KF or DCAfitter
     if (fCurrentRun != event.runNumber()) { // start: runNumber
       if (fUseRemoteField.value) {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
@@ -1327,8 +1327,6 @@ struct AnalysisDileptonHadron {
       trackGlobalIndexes.clear();
 
       // get full track info of tracks based on the index
-      std::cout << indexLepton1 - indexOffset << std::endl;
-      std::cout << indexLepton2 - indexOffset << std::endl;
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
 
