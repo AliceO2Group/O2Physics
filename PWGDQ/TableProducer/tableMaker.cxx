@@ -1289,7 +1289,7 @@ struct TableMaker {
 
   // Produce muon tables only, with event filtering --------------------------------------------------------------------------------------------
   void processMuonOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                 soa::Filtered<MyMuons> const& tracksMuon)
+                                      soa::Filtered<MyMuons> const& tracksMuon)
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias_bit(i) > 0) {
