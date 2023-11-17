@@ -315,7 +315,7 @@ class VarManager : public TObject
     kMuonChi2MatchMCHMFT,
     kMuonMatchScoreMCHMFT,
     kMuonCXX,
-    kMuonCYX,
+    kMuonCXY,
     kMuonCYY,
     kMuonCPhiX,
     kMuonCPhiY,
@@ -792,7 +792,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
 
     SMatrix55 cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
-    values[kMuonCYX] = cov(1, 0);
+    values[kMuonCXY] = cov(1, 0);
     values[kMuonCYY] = cov(1, 1);
     values[kMuonCPhiX] = cov(2, 0);
     values[kMuonCPhiY] = cov(2, 1);
@@ -1339,7 +1339,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kZ] = track.z();
     values[kTgl] = track.tgl();
     values[kMuonCXX] = track.cXX();
-    values[kMuonCYX] = track.cXY();
+    values[kMuonCXY] = track.cXY();
     values[kMuonCYY] = track.cYY();
     values[kMuonCPhiX] = track.cPhiX();
     values[kMuonCPhiY] = track.cPhiY();
