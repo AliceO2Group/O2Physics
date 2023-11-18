@@ -60,14 +60,13 @@ struct skimmerPrimaryMuon {
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 1e+10, "max TPC dE/dx"};
+  Configurable<float> maxPin{"maxPin", 1.0, "max pin for PID"};
   Configurable<float> maxPin_TPC{"maxPin_TPC", 0.2, "max pin for TPC pid only"};
   Configurable<float> maxTPCNsigmaMu_lowPin{"maxTPCNsigmaMu_lowPin", +4.0, "max. TPC n sigma for muon inclusion at low pin"};
-  Configurable<float> minTPCNsigmaMu_lowPin{"minTPCNsigmaMu_lowPin", -4.0, "min. TPC n sigma for muon inclusion at low pin"};
   Configurable<float> maxTPCNsigmaMu_highPin{"maxTPCNsigmaMu_highPin", +4.0, "max. TPC n sigma for muon inclusion at high pin"};
   Configurable<float> maxTOFNsigmaMu_highPin{"maxTOFNsigmaMu_highPin", +4.0, "max. TOF n sigma for muon inclusion at high pin"};
-  Configurable<float> minTOFNsigmaMu_highPin{"minTOFNsigmaMu_highPin", -4.0, "min. TOF n sigma for muon inclusion at high pin"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 1.0, "max. TPC n sigma for electron exclusion"};
-  Configurable<float> maxTPCNsigmaPi_lowPin{"maxTPCNsigmaPi_lowPin", -1.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaPi_lowPin{"maxTPCNsigmaPi_lowPin", -2.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> maxTOFNsigmaPi{"maxTOFNsigmaPi", -2.0, "max. TPC n sigma for electron exclusion"};
   Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
@@ -140,28 +139,13 @@ struct skimmerPrimaryMuon {
     }
 
     if (track.hasTOF()) {
-      return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_highPin && minTOFNsigmaMu_highPin < track.tofNSigmaMu() && track.tofNSigmaMu() < maxTOFNsigmaMu_highPin && track.tofNSigmaPi() < maxTOFNsigmaPi;
+      return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_highPin && abs(track.tofNSigmaMu()) < maxTOFNsigmaMu_highPin && track.tofNSigmaPi() < maxTOFNsigmaPi;
     } else if (track.tpcInnerParam() < maxPin_TPC) {
-      return minTPCNsigmaMu_lowPin < track.tpcNSigmaMu() && track.tpcNSigmaMu() < maxTPCNsigmaMu_lowPin && track.tpcNSigmaPi() < maxTPCNsigmaPi_lowPin;
+      return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_lowPin && track.tpcNSigmaPi() < maxTPCNsigmaPi_lowPin;
     } else { // muon at high momentum cannot be identified without TOF.
       return false;
     }
-
-    // return (isMuon_TPChadrej(track) || isMuon_TOFrecovery(track)) && !isInElectronBand(track);
   }
-
-  // template <typename TTrack>
-  // bool isMuon_TPChadrej(TTrack const& track)
-  //{
-  //   return minTPCNsigmaMu_lowPin < track.tpcNSigmaMu() && track.tpcNSigmaMu() < maxTPCNsigmaMu_lowPin && track.tpcNSigmaPi() < maxTPCNsigmaPi_lowPin && track.tpcInnerParam() < maxPin_TPC;
-  // }
-
-  // template <typename TTrack>
-  // bool isMuon_TOFrecovery(TTrack const& track)
-  //{
-  //   // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
-  //   return abs(track.tpcNSigmaMu()) < maxTPCNsigmaMu_highPin && minTOFNsigmaMu_highPin < track.tofNSigmaMu() && track.tofNSigmaMu() < maxTOFNsigmaMu_highPin && track.tofNSigmaPi() < maxTOFNsigmaPi;
-  // }
 
   template <typename TTrack>
   bool isInElectronBand(TTrack const& track)
@@ -260,7 +244,8 @@ struct skimmerPrimaryMuon {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = o2::aod::track::x < 10.f && minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx;
+  Filter trackFilter = o2::aod::track::x < 10.f && minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx && o2::aod::track::tpcInnerParam < maxPin;
+  ;
 
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
