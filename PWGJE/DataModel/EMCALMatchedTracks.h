@@ -32,6 +32,7 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);      //! Run number
 // track 1 values
 DECLARE_SOA_COLUMN(Track1X, track1X, float);                 //! x position of first matched track
 DECLARE_SOA_COLUMN(Track1P, track1P, float);                 //! momentum of first matched track
+DECLARE_SOA_COLUMN(Track1QPt, track1QPt, float);             //! q over pT of first matched track
 DECLARE_SOA_COLUMN(Track1Y, track1Y, float);                 //! y position of first matched track
 DECLARE_SOA_COLUMN(Track1Z, track1Z, float);                 //! z position of first matched track
 DECLARE_SOA_COLUMN(Track1Snp, track1Snp, float);             //! sin(phi) of first matched track
@@ -56,6 +57,7 @@ DECLARE_SOA_COLUMN(Track1NSigmaPi, track1NSigmaPi, float);   //! NSigma pion (TP
 // track 2 values
 DECLARE_SOA_COLUMN(Track2X, track2X, float);                 //! x position of second matched track
 DECLARE_SOA_COLUMN(Track2P, track2P, float);                 //! momentum of second matched track
+DECLARE_SOA_COLUMN(Track2QPt, track2QPt, float);             //! q over pT of second matched track
 DECLARE_SOA_COLUMN(Track2Y, track2Y, float);                 //! y position of second matched track
 DECLARE_SOA_COLUMN(Track2Z, track2Z, float);                 //! z position of second matched track
 DECLARE_SOA_COLUMN(Track2Snp, track2Snp, float);             //! sin(phi) of second matched track
@@ -89,12 +91,12 @@ DECLARE_SOA_COLUMN(ClusterTime, clusterTime, float);       //! cluster time (ns)
 // table of clusters that could be matched to a collision
 DECLARE_SOA_TABLE(EmcalMTs, "AOD", "EMCALMTS",                                                                                                                                                          //!
                   o2::soa::Index<>, emcaltrackmatch::Orbit, emcaltrackmatch::Timestamp, emcaltrackmatch::RunNumber,                                                                                     // event info
-                  emcaltrackmatch::Track1X, emcaltrackmatch::Track1P,                                                                                                                                   // track 1 X and P
+                  emcaltrackmatch::Track1X, emcaltrackmatch::Track1P, emcaltrackmatch::Track1QPt,                                                                                                       // track 1 X and P
                   emcaltrackmatch::Track1Y, emcaltrackmatch::Track1Z, emcaltrackmatch::Track1Snp, emcaltrackmatch::Track1Tgl, emcaltrackmatch::Track1Pt,                                                // track 1 5 vector
                   emcaltrackmatch::Track1SigmaY, emcaltrackmatch::Track1SigmaZ, emcaltrackmatch::Track1SigmaSnp, emcaltrackmatch::Track1SigmaTgl, emcaltrackmatch::Track1SigmaPt,                       // track 1 5 vector convariance
                   emcaltrackmatch::Track1Eta, emcaltrackmatch::Track1Phi, emcaltrackmatch::Track1EtaEMCAL, emcaltrackmatch::Track1PhiEMCAL, emcaltrackmatch::Track1DEta, emcaltrackmatch::Track1DPhi,   // track 1 eta phi info
                   emcaltrackmatch::Track1ITSNCls, emcaltrackmatch::Track1TOFExpMom, emcaltrackmatch::Track1NSigmaE, emcaltrackmatch::Track1NSigmaPi,                                                    // track 1 ITS, TOF and TPC PID info
-                  emcaltrackmatch::Track2X, emcaltrackmatch::Track2P,                                                                                                                                   // track 2 X and P
+                  emcaltrackmatch::Track2X, emcaltrackmatch::Track2P, emcaltrackmatch::Track2QPt,                                                                                                       // track 2 X and P
                   emcaltrackmatch::Track2Y, emcaltrackmatch::Track2Z, emcaltrackmatch::Track2Snp, emcaltrackmatch::Track2Tgl, emcaltrackmatch::Track2Pt,                                                // track 2 5 vector
                   emcaltrackmatch::Track2SigmaY, emcaltrackmatch::Track2SigmaZ, emcaltrackmatch::Track2SigmaSnp, emcaltrackmatch::Track2SigmaTgl, emcaltrackmatch::Track2SigmaPt,                       // track 2 5 vector convariance
                   emcaltrackmatch::Track2Eta, emcaltrackmatch::Track2Phi, emcaltrackmatch::Track2EtaEMCAL, emcaltrackmatch::Track2PhiEMCAL, emcaltrackmatch::Track2DEta, emcaltrackmatch::Track2DPhi,   // track 2 eta phi info
