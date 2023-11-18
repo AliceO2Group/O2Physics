@@ -40,6 +40,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
                            [](int multPveta1) -> bool { return multPveta1 > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
+// MC
+DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, float);                   //!
+DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, float);                   //!
+DECLARE_SOA_COLUMN(MultMCNTracksPVeta1, multMCNTracksPVeta1, float); //!
 
 // complementary / MultsExtra table
 DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, float); //!
@@ -73,14 +77,17 @@ DECLARE_SOA_TABLE(FDDMults, "AOD", "FDDMULT", //! Multiplicity with the FDD dete
                   mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>);
 DECLARE_SOA_TABLE(ZDCMults, "AOD", "ZDCMULT", //! Multiplicity with the ZDC detector
                   mult::MultZNA, mult::MultZNC);
-DECLARE_SOA_TABLE(BarrelMults, "AOD", "BARRELMULT", //! Multiplicity in the barrel
-                  mult::MultTracklets,
-                  mult::MultTPC,
+DECLARE_SOA_TABLE(TrackletMults, "AOD", "TRKLTMULT", //! Multiplicity with tracklets (only Run2)
+                  mult::MultTracklets);
+DECLARE_SOA_TABLE(TPCMults, "AOD", "TPCMULT", //! Multiplicity with TPC
+                  mult::MultTPC);
+DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contributors
                   mult::MultNTracksPV,
                   mult::MultNTracksPVeta1,
                   mult::MultNTracksPVetaHalf,
                   mult::IsInelGt0<mult::MultNTracksPVeta1>,
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
+using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using Mult = Mults::iterator;
 
@@ -90,6 +97,9 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, mult::BCNumber);
 using MultExtra = MultsExtra::iterator;
+DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC information
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNTracksPVeta1);
+using MultExtraMC = MultsExtraMC::iterator;
 
 namespace multZeq
 {
@@ -109,15 +119,15 @@ using MultZeq = MultZeqs::iterator;
 
 namespace multBC
 {
-DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);    //!
-DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);    //!
-DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);    //!
-DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);       //!
-DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool); //!
+DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);                     //!
+DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                        //!
+DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                  //!
 DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
 DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
-} // namespace multDebug
+} // namespace multBC
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
