@@ -135,7 +135,6 @@ struct multiplicityPbPb {
     }
     histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
-  PROCESS_SWITCH(multiplicityPbPb, process, "process real and MC data", true);
 
   void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
