@@ -59,13 +59,13 @@ struct skimmerPrimaryMuon {
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
-  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 500.0, "max TPC dE/dx"};
-  Configurable<float> maxPin_TPC{"maxPin_TPC", 0.3, "max pin for TPC pid only"};
-  Configurable<float> maxTPCNsigmaMu_lowPin{"maxTPCNsigmaMu_lowPin", +1.0, "max. TPC n sigma for muon inclusion at low pin"};    // typically, pin < 0.5 GeV/c
-  Configurable<float> minTPCNsigmaMu_lowPin{"minTPCNsigmaMu_lowPin", -4.0, "min. TPC n sigma for muon inclusion at low pin"};    // typically, pin < 0.5 GeV/c
-  Configurable<float> maxTPCNsigmaMu_highPin{"maxTPCNsigmaMu_highPin", +4.0, "max. TPC n sigma for muon inclusion at high pin"}; // typically, pin > 0.5 GeV/c
-  Configurable<float> maxTOFNsigmaMu_highPin{"maxTOFNsigmaMu_highPin", +1.0, "max. TOF n sigma for muon inclusion at high pin"}; // for TOF, pin > 0.12 GeV/c, lowB
-  Configurable<float> minTOFNsigmaMu_highPin{"minTOFNsigmaMu_highPin", -4.0, "min. TOF n sigma for muon inclusion at high pin"}; // for TOF, pin > 0.12 GeV/c, lowB
+  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 1e+10, "max TPC dE/dx"};
+  Configurable<float> maxPin_TPC{"maxPin_TPC", 0.2, "max pin for TPC pid only"};
+  Configurable<float> maxTPCNsigmaMu_lowPin{"maxTPCNsigmaMu_lowPin", +4.0, "max. TPC n sigma for muon inclusion at low pin"};
+  Configurable<float> minTPCNsigmaMu_lowPin{"minTPCNsigmaMu_lowPin", -4.0, "min. TPC n sigma for muon inclusion at low pin"};
+  Configurable<float> maxTPCNsigmaMu_highPin{"maxTPCNsigmaMu_highPin", +4.0, "max. TPC n sigma for muon inclusion at high pin"};
+  Configurable<float> maxTOFNsigmaMu_highPin{"maxTOFNsigmaMu_highPin", +4.0, "max. TOF n sigma for muon inclusion at high pin"};
+  Configurable<float> minTOFNsigmaMu_highPin{"minTOFNsigmaMu_highPin", -4.0, "min. TOF n sigma for muon inclusion at high pin"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 1.0, "max. TPC n sigma for electron exclusion"};
   Configurable<float> maxTPCNsigmaPi_lowPin{"maxTPCNsigmaPi_lowPin", -1.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> maxTOFNsigmaPi{"maxTOFNsigmaPi", -2.0, "max. TPC n sigma for electron exclusion"};
@@ -80,10 +80,18 @@ struct skimmerPrimaryMuon {
       {"Track/hTPCdEdx_Pin_after", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 1.f}, {200, 0.f, 200.f}}}},
       {"Track/hTOFbeta_Pin_before", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {240, 0.6f, 1.2f}}}},
       {"Track/hTOFbeta_Pin_after", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {240, 0.6f, 1.2f}}}},
-      {"Track/hTPCNsigmaMu", "TPC n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
-      {"Track/hTOFNsigmaMu", "TOF n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
-      {"Track/hTPCNsigmaPi", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
-      {"Track/hTOFNsigmaPi", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaEl_before", "TPC n sigma e vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaEl_before", "TOF n sigma e vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaMu_before", "TPC n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaMu_before", "TOF n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaPi_before", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaPi_before", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaEl_after", "TPC n sigma e vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaEl_after", "TOF n sigma e vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaMu_after", "TPC n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaMu_after", "TOF n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTPCNsigmaPi_after", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hTOFNsigmaPi_after", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
       {"Pair/hMmumuPtmumu", "ULS m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", {HistType::kTH2F, {{100, 0.2f, 1.2f}, {120, 0.f, 1.2f}}}},
     },
   };
@@ -170,6 +178,12 @@ struct skimmerPrimaryMuon {
       }
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_before"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_before"), track.tpcInnerParam(), track.beta());
+      fRegistry.fill(HIST("Track/hTPCNsigmaMu_before"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/hTOFNsigmaMu_before"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/hTPCNsigmaPi_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/hTOFNsigmaPi_before"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/hTPCNsigmaEl_before"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hTOFNsigmaEl_before"), track.tpcInnerParam(), track.tofNSigmaEl());
     }
   }
 
@@ -187,10 +201,12 @@ struct skimmerPrimaryMuon {
                      track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
-      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
-      fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
-      fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/hTPCNsigmaMu_after"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/hTOFNsigmaMu_after"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/hTPCNsigmaPi_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/hTOFNsigmaPi_after"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/hTPCNsigmaEl_after"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hTOFNsigmaEl_after"), track.tpcInnerParam(), track.tofNSigmaEl());
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
