@@ -21,7 +21,6 @@
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -38,7 +37,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNmumu, aod::EMReducedMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
@@ -82,7 +81,7 @@ struct DalitzMuMuQCMC {
     for (auto& cut : fDalitzMuMuCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "Track", "Mu");
     }
 
     // for DalitzMuMus
@@ -172,6 +171,9 @@ struct DalitzMuMuQCMC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
+          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+            continue;
+          }
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
@@ -182,19 +184,17 @@ struct DalitzMuMuQCMC {
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
             if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
-              if (cut.IsSelected<MyMCTracks>(uls_pair)) {
-                values[0] = uls_pair.mass();
-                values[1] = uls_pair.pt();
-                values[2] = uls_pair.dcaXY();
-                values[3] = uls_pair.phiv();
-                reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls"))->Fill(values);
+              values[0] = uls_pair.mass();
+              values[1] = uls_pair.pt();
+              values[2] = uls_pair.dcaXY();
+              values[3] = uls_pair.phiv();
+              reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
-                nuls++;
-                for (auto& track : {pos, ele}) {
-                  if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-                    o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
-                    used_trackIds.emplace_back(track.globalIndex());
-                  }
+              nuls++;
+              for (auto& track : {pos, ele}) {
+                if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+                  o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+                  used_trackIds.emplace_back(track.globalIndex());
                 }
               }
             } // end of LF

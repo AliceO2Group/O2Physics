@@ -35,6 +35,12 @@ DECLARE_SOA_COLUMN(Tag, tag, uint64_t);         //!  Bit-field for storing event
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
+DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
+DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
+DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
+DECLARE_SOA_COLUMN(NmumuULS, nmumuuls, int);
+DECLARE_SOA_COLUMN(NmumuLSpp, nmumulspp, int);
+DECLARE_SOA_COLUMN(NmumuLSmm, nmumulsmm, int);
 DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
 DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
 DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
@@ -97,6 +103,12 @@ using EMReducedEventNgPHOS = EMReducedEventsNgPHOS::iterator;
 
 DECLARE_SOA_TABLE(EMReducedEventsNgEMC, "AOD", "EMEVENTNGEMC", emreducedevent::NgammaEMC); // joinable to EMReducedEvents
 using EMReducedEventNgEMC = EMReducedEventsNgEMC::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsNee, "AOD", "EMEVENTNEE", emreducedevent::NeeULS, emreducedevent::NeeLSpp, emreducedevent::NeeLSmm); // joinable to EMReducedEvents
+using EMReducedEventNee = EMReducedEventsNee::iterator;
+
+DECLARE_SOA_TABLE(EMReducedEventsNmumu, "AOD", "EMEVENTNMUMU", emreducedevent::NmumuULS, emreducedevent::NmumuLSpp, emreducedevent::NmumuLSmm); // joinable to EMReducedEvents
+using EMReducedEventNmumu = EMReducedEventsNmumu::iterator;
 
 namespace emreducedmcevent
 {
