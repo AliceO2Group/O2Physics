@@ -88,10 +88,8 @@ struct ChJetTriggerQATask {
   Configurable<float> cfgTrackPhiMaxCut{"cfgTrackPhiMaxCut", 999, "track max phi cut"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<int> bTriggerDecision{
-    "bTriggerDecision", 0,
-    "Charged Jet Trigger Decision Selection"}; // 0=MB Event, 1=Event selected
-                                               // by EPN
+  Configurable<bool> bLowPtTrigger{"bLowPtTrigger", false, "charged jet low pT trigger selection"};
+  Configurable<bool> bHighPtTrigger{"bHighPtTrigger", false, "charged jet high pT trigger selection"};
 
   float fiducialVolume; // 0.9 - jetR
 
@@ -198,7 +196,11 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    if (JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::charged) >= static_cast<int>(bTriggerDecision)) {
+    if ((bLowPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedHigh)) || ((!bLowPtTrigger) && (!bHighPtTrigger))) {
+      // bLowPtTrigger=1  and bHighPtTrigger=0 --> fill histos with low trigger only
+      // bLowPtTrigger=0  and bHighPtTrigger=1 --> fill histos with high trigger only
+      // bLowPtTrigger=1  and bHighPtTrigger=1 --> fill histos with mixture of low and high trigger
+      // bLowPtTrigger=0  and bHighPtTrigger=0 --> fill histos with minimum bias ie. ignore trigger decision
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;

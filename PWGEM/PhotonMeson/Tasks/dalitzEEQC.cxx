@@ -43,7 +43,7 @@ using MyCollision = MyCollisions::iterator;
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
@@ -166,9 +166,9 @@ struct DalitzEEQC {
           auto pos = uls_pair.template posTrack_as<MyTracks>();
           auto ele = uls_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(uls_pair)) {
-            values[0] = uls_pair.mee();
+            values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
-            values[2] = uls_pair.dcaeeXY();
+            values[2] = uls_pair.dcaXY();
             values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
             nuls++;
@@ -184,9 +184,9 @@ struct DalitzEEQC {
 
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           if (cut.IsSelected<MyTracks>(lspp_pair)) {
-            values[0] = lspp_pair.mee();
+            values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
-            values[2] = lspp_pair.dcaeeXY();
+            values[2] = lspp_pair.dcaXY();
             values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp"))->Fill(values);
             nlspp++;
@@ -196,9 +196,9 @@ struct DalitzEEQC {
 
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
           if (cut.IsSelected<MyTracks>(lsmm_pair)) {
-            values[0] = lsmm_pair.mee();
+            values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
-            values[2] = lsmm_pair.dcaeeXY();
+            values[2] = lsmm_pair.dcaXY();
             values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm"))->Fill(values);
             nlsmm++;

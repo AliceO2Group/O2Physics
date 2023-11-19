@@ -29,7 +29,7 @@ using namespace o2::constants::physics;
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct skimmerDalitzEE {
@@ -40,7 +40,7 @@ struct skimmerDalitzEE {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimarytrack::emreducedeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emreducedeventId;
   Produces<aod::DalitzEEs> dalitzees;
   Produces<o2::aod::DalitzEEEMReducedEventIds> dalitz_ee_eventid;
 
@@ -103,14 +103,14 @@ struct skimmerDalitzEE {
     }
   }
 
-  Partition<MyTracks> posTracks = o2::aod::emprimarytrack::sign > 0;
-  Partition<MyTracks> negTracks = o2::aod::emprimarytrack::sign < 0;
+  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > 0;
+  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < 0;
 
   void process(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarytrack::emreducedeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarytrack::emreducedeventId, collision.globalIndex(), cache);
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
 
       fillPairTable<EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {

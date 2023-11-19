@@ -452,7 +452,7 @@ struct f1protonreducedtable {
   }
 
   std::vector<double> BBProton, BBAntiproton, BBPion, BBAntipion, BBKaon, BBAntikaon;
-  ROOT::Math::PtEtaPhiMVector F1Vector, F1VectorDummy, KKs0Vector, ProtonVectorDummy, ProtonVectorDummy2;
+  ROOT::Math::PtEtaPhiMVector F1Vector, F1VectorDummy, F1d1dummy, F1d2dummy, F1d3dummy, KKs0Vector, ProtonVectorDummy, ProtonVectorDummy2;
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
   double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();    // FIXME: Get from the common header
   double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
@@ -522,7 +522,7 @@ struct f1protonreducedtable {
     std::vector<float> f1signal = {};
 
     // Prepare vectors for different species
-    std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts, f1resonance, protonsfinal;
+    std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts, f1resonance, f1resonanced1, f1resonanced2, f1resonanced3, protonsfinal;
     float kstar = 999.f;
 
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
@@ -694,6 +694,9 @@ struct f1protonreducedtable {
               }
               ROOT::Math::PtEtaPhiMVector temp(F1Vector.Pt(), F1Vector.Eta(), F1Vector.Phi(), F1Vector.M());
               f1resonance.push_back(temp);
+              f1resonanced1.push_back(pions.at(i1));
+              f1resonanced2.push_back(kaons.at(i2));
+              f1resonanced3.push_back(kshorts.at(i3));
               f1signal.push_back(pairsign);
               f1kaonkshortmass.push_back(KKs0Vector.M());
               F1PionIndex.push_back(PionIndex.at(i1));
@@ -736,7 +739,7 @@ struct f1protonreducedtable {
       }
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
-    if (numberF1 > 0 && (f1resonance.size() == f1signal.size()) && (f1resonance.size() == f1kaonkshortmass.size())) {
+    if (numberF1 > 0 && (f1resonance.size() == f1signal.size()) && (f1resonance.size() == f1kaonkshortmass.size()) && (f1resonance.size() == f1resonanced1.size()) && (f1resonance.size() == f1resonanced2.size()) && (f1resonance.size() == f1resonanced3.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       if (keepEventF1Proton) {
         qaRegistry.fill(HIST("hEventstat"), 2.5);
@@ -748,7 +751,10 @@ struct f1protonreducedtable {
         for (auto if1 = f1resonance.begin(); if1 != f1resonance.end(); ++if1) {
           auto i5 = std::distance(f1resonance.begin(), if1);
           F1VectorDummy = f1resonance.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
+          F1d1dummy = f1resonanced1.at(i5);
+          F1d2dummy = f1resonanced2.at(i5);
+          F1d3dummy = f1resonanced3.at(i5);
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz());
         }
         //// Fill track table for proton//////////////////
         for (auto iproton = protonsfinal.begin(); iproton != protonsfinal.end(); ++iproton) {

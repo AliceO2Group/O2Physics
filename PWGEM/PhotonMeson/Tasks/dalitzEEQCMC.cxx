@@ -44,8 +44,8 @@ using MyCollision = MyCollisions::iterator;
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMReducedEventIds>;
-using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryTrackMCLabels>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryElectronMCLabels>;
 
 struct DalitzEEQCMC {
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
@@ -89,7 +89,7 @@ struct DalitzEEQCMC {
     for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "mc");
     }
   }
 
@@ -176,26 +176,37 @@ struct DalitzEEQCMC {
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
           int mother_id = FindLF(posmc, elemc, mcparticles);
-          if (mother_id < 0) {
+          int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
+          if (mother_id < 0 && photonid < 0) {
             continue;
           }
-          auto mcmother = mcparticles.iteratorAt(mother_id);
+          if (mother_id > 0) {
+            auto mcmother = mcparticles.iteratorAt(mother_id);
+            if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+              if (cut.IsSelected<MyMCTracks>(uls_pair)) {
+                values[0] = uls_pair.mass();
+                values[1] = uls_pair.pt();
+                values[2] = uls_pair.dcaXY();
+                values[3] = uls_pair.phiv();
+                reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
 
-          if (!IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
-            continue;
-          }
-          if (cut.IsSelected<MyMCTracks>(uls_pair)) {
-            values[0] = uls_pair.mee();
-            values[1] = uls_pair.pt();
-            values[2] = uls_pair.dcaeeXY();
-            values[3] = uls_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls"))->Fill(values);
-            nuls++;
-            for (auto& track : {pos, ele}) {
-              if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-                o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
-                used_trackIds.emplace_back(track.globalIndex());
+                if (mcmother.pdgCode() == 111) {
+                  reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Pi0"))->Fill(uls_pair.phiv(), uls_pair.mass());
+                }
+
+                nuls++;
+                for (auto& track : {pos, ele}) {
+                  if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+                    o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+                    used_trackIds.emplace_back(track.globalIndex());
+                  }
+                }
               }
+            } // end of LF
+          } else if (photonid > 0) {
+            auto mcphoton = mcparticles.iteratorAt(photonid);
+            if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles) && IsEleFromPC(elemc, mcparticles) && IsEleFromPC(posmc, mcparticles)) {
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Photon"))->Fill(uls_pair.phiv(), uls_pair.mass());
             }
           }
         } // end of uls pair loop

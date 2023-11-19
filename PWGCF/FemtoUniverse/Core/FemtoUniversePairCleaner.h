@@ -72,17 +72,18 @@ class FemtoUniversePairCleaner
       }
       return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
-      /// Track-V0 combination
+      /// Track-V0 combination part1 is hadron and part2 is v0
       if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0) {
         LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide second argument kV0 candidate.";
         return false;
       }
+      // Getting v0 (part2) children
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
-      if (part1.globalIndex() != posChild.globalIndex() && part2.globalIndex() != negChild.globalIndex()) {
-        return true;
+      if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex()) {
+        return false;
       }
-      return false;
+      return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       /// Track-Phi combination part1 is Phi and part 2 is hadron
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {
