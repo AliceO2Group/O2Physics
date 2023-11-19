@@ -193,6 +193,11 @@ void DalitzEECut::SetTOFNsigmaPrRange(float min, float max)
   mMaxTOFNsigmaPr = max;
   LOG(info) << "DalitzEE selection, set TOF n sigma Pr range: " << mMinTOFNsigmaPr << " - " << mMaxTOFNsigmaPr;
 }
+void DalitzEECut::SetMaxPinMuonTPConly(float max)
+{
+  mMaxPinMuonTPConly = max;
+  LOG(info) << "DalitzEE Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
+}
 
 void DalitzEECut::print() const
 {
