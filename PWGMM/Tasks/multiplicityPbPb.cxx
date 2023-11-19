@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
@@ -63,9 +64,11 @@ struct multiplicityPbPb {
     const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};
 
     histos.add("etaHistogram", "; ", kTH1F, {axisEta});
+    histos.add("MCGENetaHistogram", "; ", kTH1F, {axisEta});
     histos.add("ptHistogram", "; ", kTH1F, {axisPt});
     //
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
+    histos.add("MCGENeventCounter", "eventCounter", kTH1F, {axisCounter});
 
     histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
@@ -115,6 +118,18 @@ struct multiplicityPbPb {
 
     histos.fill(HIST("Anton/NtrkZvtxEvents"), trackCounter, collision.posZ());
   }
+
+  void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    histos.fill(HIST("MCGENeventCounter"), 0.5);
+
+    for (auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary()) {
+        histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
+      }
+    }
+  }
+  PROCESS_SWITCH(multiplicityPbPb, processMCGEN, "process for GEN MC data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
