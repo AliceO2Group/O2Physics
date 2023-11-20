@@ -156,7 +156,7 @@ struct TrackJetQa {
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
     histos.add("Mult/FT0M", "MultFT0A", HistType::kTH1D, {axisMultiplicityFT0A});
-    histos.add("Mult/FT0M", "MultFT0C", HistType::kTH1D, {axisMultiplicityFT0C}); // need to correct from up here 
+    histos.add("Mult/FT0M", "MultFT0C", HistType::kTH1D, {axisMultiplicityFT0C}); // need to correct from up here
     histos.add("Mult/MultCorrelations", "MultCorrelations", HistType::kTHnSparseD, {axisPercentileFT0A, axisPercentileFT0C, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
 
     histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {axisPercentileFT0M, axisPt, axisSigma1OverPt});
