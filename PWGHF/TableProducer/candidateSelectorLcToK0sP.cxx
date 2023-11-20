@@ -15,7 +15,7 @@
 ///
 /// \author Chiara Zampolli <Chiara.Zampolli@cern.ch>, CERN
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
-///	    Elisa Meninno, <elisa.meninno@cern.ch>, Vienna
+///         Elisa Meninno, <elisa.meninno@cern.ch>, Vienna
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
