@@ -2960,8 +2960,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius in xy plane"}; // 0.5 cm for xi and 0.6 for omega
   Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};                       // 0.04 in run2
   Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                             // 0.06 in run2
-  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};                           // conservative, a cut ar 1.0 should also be fine
   Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};                     // conservative, a cut ar 1.0 should also be fine
   Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"};                          // 0.06 in run2
@@ -3071,18 +3071,18 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   /// Single-cascade cuts
   template <typename TCascade>
-  bool isPreselectedCascade(const TCascade& casc)
+  bool isPreselectedCascade(const TCascade& casc, const float& pvx, const float& pvy, const float& pvz)
   {
     registry.fill(HIST("hCandidateCounter"), 2.5);
 
-    if (casc.v0cosPA() > v0CosPA &&
-        casc.casccosPA() > cascCosPA &&
+    if (casc.v0cosPA(pvx, pvy, pvz) > v0CosPA &&
+        casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
         casc.dcacascdaughters() < dcaCascDau &&
         casc.dcaV0daughters() < dcaV0Dau &&
         casc.dcanegtopv() > dcaNegToPv &&
         casc.dcapostopv() > dcaPosToPv &&
         casc.dcabachtopv() > dcaBachToPv &&
-        casc.dcav0topv() > dcaV0ToPv &&
+        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
         casc.v0radius() > v0TransvRadius &&
         casc.cascradius() > cascTransvRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
@@ -3093,12 +3093,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
         // The basic eleven!
         registry.fill(HIST("hV0Radius"), casc.v0radius());
         registry.fill(HIST("hCascRadius"), casc.cascradius());
-        registry.fill(HIST("hV0CosPA"), casc.v0cosPA());
-        registry.fill(HIST("hCascCosPA"), casc.casccosPA());
+        registry.fill(HIST("hV0CosPA"), casc.v0cosPA(pvx, pvy, pvz));
+        registry.fill(HIST("hCascCosPA"), casc.casccosPA(pvx, pvy, pvz));
         registry.fill(HIST("hDCAPosToPV"), casc.dcapostopv());
         registry.fill(HIST("hDCANegToPV"), casc.dcanegtopv());
         registry.fill(HIST("hDCABachToPV"), casc.dcabachtopv());
-        registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv());
+        registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv(pvx, pvy, pvz));
         registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters());
         registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters());
         registry.fill(HIST("hLambdaMass"), casc.mLambda());
@@ -3202,7 +3202,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           continue;
         }
 
-        if (!(isPreselectedCascade(casc))) {
+        if (!(isPreselectedCascade(casc, collision.posX(), collision.posY(), collision.posZ()))) {
           continue;
         }
 
@@ -3215,19 +3215,21 @@ struct HfTrackIndexSkimCreatorLfCascades {
           covCasc[i] = casc.positionCovMat()[i];
         }
         // create cascade track
-        o2::track::TrackParCov trackCascXi;
+        o2::track::TrackParCov trackCascXi2Prong;
         if (trackXiDauCharged.sign() > 0) {
-          trackCascXi = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
+          trackCascXi2Prong = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
         } else if (trackXiDauCharged.sign() < 0) {
-          trackCascXi = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
+          trackCascXi2Prong = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
         } else {
           continue;
         }
-        trackCascXi.setAbsCharge(1);
+        trackCascXi2Prong.setAbsCharge(1);
 
-        auto trackCascOmega = trackCascXi;
+        auto trackCascOmega = trackCascXi2Prong;
+        auto trackCascXi3Prong = trackCascXi2Prong;
 
-        trackCascXi.setPID(o2::track::PID::XiMinus);
+        trackCascXi2Prong.setPID(o2::track::PID::XiMinus);
+        trackCascXi3Prong.setPID(o2::track::PID::XiMinus);
         trackCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
@@ -3256,7 +3258,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           auto trackParVarPion1 = getTrackParCov(trackPion1);
 
           // find charm baryon decay using xi PID hypothesis
-          int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi, trackParVarPion1);
+          int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
             df2.propagateTracksToVertex();
@@ -3339,7 +3341,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto trackParVarPion2 = getTrackParCov(trackPion2);
 
               // reconstruct Xic with DCAFitter
-              int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi, trackParVarPion1, trackParVarPion2);
+              int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
                 df3.propagateTracksToVertex();
@@ -3359,7 +3361,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 }
 
                 // fill histograms
-                if (fillHistograms && (hfFlag != 0)) {
+                if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi))) {
                   registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                 }
               }
