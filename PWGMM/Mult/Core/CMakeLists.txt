@@ -8,11 +8,3 @@
 # In applying this license CERN does not waive the privileges and immunities
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/DataModel" "${CMAKE_CURRENT_SOURCE_DIR}/Core/include")
-
-add_subdirectory(Core)
-add_subdirectory(DataModel)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
-
