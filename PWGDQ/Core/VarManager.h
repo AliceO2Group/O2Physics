@@ -374,6 +374,12 @@ class VarManager : public TObject
     kVertexingLzErr,
     kVertexingTauxy,
     kVertexingTauxyErr,
+    kVertexingLzProjected,
+    kVertexingLxyProjected,
+    kVertexingLxyzProjected,
+    kVertexingTauzProjected,
+    kVertexingTauxyProjected,
+    kVertexingTauxyProjectedNs,
     kVertexingTauz,
     kVertexingTauzErr,
     kVertexingProcCode,
@@ -578,6 +584,18 @@ class VarManager : public TObject
   static void SetupFwdDCAFitterNoCorr()
   {
     fgFitterTwoProngFwd.setTGeoMat(false);
+  }
+  // Setup the 3 prong KFParticle
+  static void SetupThreeProngKFParticle(float magField)
+  {
+    KFParticle::SetField(magField);
+    fgUsedKF = true;
+  }
+
+  // Setup the 3 prong DCAFitterN
+  static void SetupThreeProngDCAFitter()
+  {
+    fgUsedKF = false;
   }
 
   static auto getEventPlane(int harm, float qnxa, float qnya)
@@ -1855,6 +1873,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
                                    (collision.posY() - secondaryVertex[1]) * v12.Py() +
                                    (collision.posZ() - secondaryVertex[2]) * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
+      // Decay length defined as in Run 2
+      values[kVertexingLzProjected] = ((secondaryVertex[2] - collision.posZ()) * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
+      values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py());
+      values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
+      values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
+      values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
+      values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.P());
+      values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
+      values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / (v12.P());
     }
   } else {
     KFParticle trk0KF;
