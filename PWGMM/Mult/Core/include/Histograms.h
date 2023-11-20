@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGMM_MULT_HISTOGRAMS_H
-#define PWGMM_MULT_HISTOGRAMS_H
+#ifndef PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
+#define PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
 #include "TPDGCode.h"
 #include <string_view>
 
@@ -96,4 +96,4 @@ static constexpr std::string_view ITSlayers = "Tracks/Control/ITSLayers"; // ITS
 } // namespace histograms
 } // namespace pwgmm::mult
 
-#endif // PWGMM_MULT_HISTOGRAMS_H
+#endif // PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
