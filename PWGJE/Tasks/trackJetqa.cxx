@@ -292,7 +292,7 @@ struct TrackJetQa {
   {
     for (auto& collision : collisions) {
       fillEventQa(collision);
-      if (fillMultiplicity){
+      if (fillMultiplicity) {
         histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0M(), collision.multFT0M(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
       }
       Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
