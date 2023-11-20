@@ -13,7 +13,6 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
-
 #include <fairlogger/Logger.h>
 #include <Framework/AnalysisDataModel.h>
 
