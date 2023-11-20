@@ -303,7 +303,7 @@ struct TrackJetQa {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
           histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("Mult/TrackEventPar"), track.sigma1Pt(), track.pt(), collision.centFT0M(), collision.multFT0M(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0M(), collision.multFT0M(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
         }
       }
     }
