@@ -2958,15 +2958,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // a tolerance has been added to be more conservative
   Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius in xy plane"};          // 0.5 in run2
   Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius in xy plane"}; // 0.5 cm for xi and 0.6 for omega
-  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};           // 0.04 in run2
-  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                 // 0.06 in run2
-  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                       // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                 // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};               // conservative, a cut ar 1.0 should also be fine
-  Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};         // conservative, a cut ar 1.0 should also be fine
-  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"};              // 0.06 in run2
-  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"};              // 0.06 in run2
-  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};        // 0.008 in run2
+  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};                       // 0.04 in run2
+  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                             // 0.06 in run2
+  Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};                           // conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};                     // conservative, a cut ar 1.0 should also be fine
+  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"};                          // 0.06 in run2
+  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"};                          // 0.06 in run2
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};                    // 0.008 in run2
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
 
   // magnetic field setting from CCDB
@@ -3074,7 +3074,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); // select tracks passing bachelor selection
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>; 
+  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
@@ -3294,14 +3294,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             auto secondaryVertex2XiHyp = df2.getPCACandidate();
 
-            if(std::abs(casc.mXi() - massXi) < cascadeMassWindow){
+            if (std::abs(casc.mXi() - massXi) < cascadeMassWindow) {
               SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
             }
 
             std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
             auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
 
-            if(mass2ProngXiHyp < massXiPiMin || mass2ProngXiHyp > massXiPiMax){
+            if (mass2ProngXiHyp < massXiPiMin || mass2ProngXiHyp > massXiPiMax) {
               statusMassXiPiChannel = false;
             }
 
@@ -3329,14 +3329,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             auto secondaryVertex2OmegaHyp = df2.getPCACandidate();
 
-            if(std::abs(casc.mOmega() - massOmega) < cascadeMassWindow){
+            if (std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) {
               SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
             }
 
             std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
             auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
 
-            if(mass2ProngOmegaHyp < massOmegaPiMin || mass2ProngOmegaHyp > massOmegaPiMax){
+            if (mass2ProngOmegaHyp < massOmegaPiMin || mass2ProngOmegaHyp > massOmegaPiMax) {
               statusMassOmegaPiChannel = false;
             }
 
@@ -3349,9 +3349,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
             }
           }
 
-
           // fill table row only if a vertex was found
-          if((nVtxFrom2ProngFitterXiHyp!=0 && statusMassXiPiChannel) || (nVtxFrom2ProngFitterOmegaHyp!=0 && statusMassOmegaPiChannel)){
+          if ((nVtxFrom2ProngFitterXiHyp != 0 && statusMassXiPiChannel) || (nVtxFrom2ProngFitterOmegaHyp != 0 && statusMassOmegaPiChannel)) {
             rowTrackIndexCasc2Prong(thisCollId,
                                     casc.globalIndex(),
                                     trackPion1.globalIndex(),
@@ -3403,15 +3402,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
                 auto secondaryVertex3 = df3.getPCACandidate();
 
-
-                if(std::abs(casc.mXi() - massXi) < cascadeMassWindow){
+                if (std::abs(casc.mXi() - massXi) < cascadeMassWindow) {
                   SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
                 }
 
                 std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                 auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
 
-                if(mass3Prong < massXiPiPiMin || mass3Prong > massXiPiPiMax){
+                if (mass3Prong < massXiPiPiMin || mass3Prong > massXiPiPiMax) {
                   statusMassXiPiPiChannel = false;
                 }
 
@@ -3424,14 +3422,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 }
               }
 
-                // fill table row only if a vertex was found
-                if(nVtxFrom3ProngFitterXiHyp!=0 && statusMassXiPiPiChannel){
-                  rowTrackIndexCasc3Prong(thisCollId,
-                                          casc.globalIndex(),
-                                          trackPion1.globalIndex(),
-                                          trackPion2.globalIndex(),
-                                          hfFlag);
-                }
+              // fill table row only if a vertex was found
+              if (nVtxFrom3ProngFitterXiHyp != 0 && statusMassXiPiPiChannel) {
+                rowTrackIndexCasc3Prong(thisCollId,
+                                        casc.globalIndex(),
+                                        trackPion1.globalIndex(),
+                                        trackPion2.globalIndex(),
+                                        hfFlag);
+              }
 
             } // end 3prong loop
           }   // end 3prong condition
