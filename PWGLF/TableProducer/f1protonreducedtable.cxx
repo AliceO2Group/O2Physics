@@ -754,7 +754,7 @@ struct f1protonreducedtable {
           F1d1dummy = f1resonanced1.at(i5);
           F1d2dummy = f1resonanced2.at(i5);
           F1d3dummy = f1resonanced3.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz());
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
         }
         //// Fill track table for proton//////////////////
         for (auto iproton = protonsfinal.begin(); iproton != protonsfinal.end(); ++iproton) {
