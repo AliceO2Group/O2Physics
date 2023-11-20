@@ -459,7 +459,7 @@ struct femtoUniverseProducerTaskV0Only {
                       aod::femtouniverseparticle::ParticleType::kV0,
                       cutContainerV0.at(
                         femtoUniverseV0Selection::V0ContainerPosition::kV0),
-                      0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                      0, v0.v0cosPA(),
                       indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
             outputDebugParts(
