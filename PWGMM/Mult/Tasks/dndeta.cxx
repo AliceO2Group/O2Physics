@@ -59,17 +59,15 @@ struct MultiplicityCounter {
     "Common",
     {
       {BCSelection.data(), ";status;count", {HistType::kTH1F, {{3, 0.5, 3.5}}}} //
-    } //
+    }                                                                           //
   };
 
   HistogramRegistry inclusiveRegistry{
     InclusivePrefix.data(),
-    {}
-  };
+    {}};
   HistogramRegistry binnedRegistry{
     BinnedPrefix.data(),
-    {}
-  };
+    {}};
 
   std::vector<int> usedTracksIds;
   std::vector<int> usedTracksIdsDF;

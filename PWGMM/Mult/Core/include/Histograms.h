@@ -14,7 +14,8 @@
 #include "TPDGCode.h"
 #include <string_view>
 
-namespace pwgmm::mult {
+namespace pwgmm::mult
+{
 // particle species to consider for tracking efficiency
 static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
 static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
@@ -28,50 +29,49 @@ static constexpr std::string_view PtEffIdxSuff = "/PtEfficiencyI";
 static constexpr std::string_view BinnedPrefix = "Centrality";
 static constexpr std::string_view InclusivePrefix = "Inclusive";
 
-
-
-namespace histograms {
+namespace histograms
+{
 // events and collisions
-static constexpr std::string_view BCSelection = "Events/BCSelection";                                           // BC selection categories
-static constexpr std::string_view EventSelection = "Events/Selection";                                          // Collision selection categories
-static constexpr std::string_view NtrkZvtx = "Events/NtrkZvtx";                                                 // N tracks vs vtx Z for selected collisions
-static constexpr std::string_view NtrkZvtxGen = "Events/NtrkZvtxGen";                                           // -- for selected simulated collisions
-static constexpr std::string_view NtrkZvtxGen_t = "Events/NtrkZvtxGen_t";                                       // N particles vs vtx Z for generated events
-static constexpr std::string_view Efficiency = "Events/Efficiency";                                             // simulated event selection efficiency
-static constexpr std::string_view EfficiencyMult = "Events/EfficiencyMult";                                     // simulated event selection efficiency vs generated multiplicity
-static constexpr std::string_view NotFoundZvtx = "Events/NotFoundEventZvtx";                                    // vtx Z distribution of events without reconstructed collisions
-static constexpr std::string_view Response = "Events/Response";                                                 // simulated multiplicity response (N tracks vs N particles)
-static constexpr std::string_view MultiResponse = "Events/MultiResponse";                                       // -- multi-estimator
-static constexpr std::string_view SplitMult = "Events/SplitMult";                                               // split reconstructed events vs generated multiplicity
-static constexpr std::string_view EventChi2 = "Events/Control/Chi2";                                            // collisions chi2 distribution
-static constexpr std::string_view EventTimeRes = "Events/Control/TimeResolution";                               // collisions time resolution distribution
+static constexpr std::string_view BCSelection = "Events/BCSelection";             // BC selection categories
+static constexpr std::string_view EventSelection = "Events/Selection";            // Collision selection categories
+static constexpr std::string_view NtrkZvtx = "Events/NtrkZvtx";                   // N tracks vs vtx Z for selected collisions
+static constexpr std::string_view NtrkZvtxGen = "Events/NtrkZvtxGen";             // -- for selected simulated collisions
+static constexpr std::string_view NtrkZvtxGen_t = "Events/NtrkZvtxGen_t";         // N particles vs vtx Z for generated events
+static constexpr std::string_view Efficiency = "Events/Efficiency";               // simulated event selection efficiency
+static constexpr std::string_view EfficiencyMult = "Events/EfficiencyMult";       // simulated event selection efficiency vs generated multiplicity
+static constexpr std::string_view NotFoundZvtx = "Events/NotFoundEventZvtx";      // vtx Z distribution of events without reconstructed collisions
+static constexpr std::string_view Response = "Events/Response";                   // simulated multiplicity response (N tracks vs N particles)
+static constexpr std::string_view MultiResponse = "Events/MultiResponse";         // -- multi-estimator
+static constexpr std::string_view SplitMult = "Events/SplitMult";                 // split reconstructed events vs generated multiplicity
+static constexpr std::string_view EventChi2 = "Events/Control/Chi2";              // collisions chi2 distribution
+static constexpr std::string_view EventTimeRes = "Events/Control/TimeResolution"; // collisions time resolution distribution
 
 // particles and tracks
-static constexpr std::string_view EtaZvtx = "Tracks/EtaZvtx";                                                   // eta vs vtx Z distribution of tracks
-static constexpr std::string_view EtaZvtx_gt0 = "Tracks/EtaZvtx_gt0";                                           // -- for INEL>0 collisions
-static constexpr std::string_view EtaZvtx_PVgt0 = "Tracks/EtaZvtx_PVgt0";                                       // -- for INEL>0 (PV)
-static constexpr std::string_view EtaZvtxGen = "Tracks/EtaZvtxGen";                                             // eta vs vtx Z distribution of simulated tracks
-static constexpr std::string_view EtaZvtxGen_gt0 = "Tracks/EtaZvtxGen_gt0";                                     // -- for INEL>0 collisions
-static constexpr std::string_view EtaZvtxGen_PVgt0 = "Tracks/EtaZvtxGen_PVgt0";                                 // -- for INEL>0 (PV)
-static constexpr std::string_view EtaZvtxGen_t = "Tracks/EtaZvtxGen_t";                                         // -- of particles
-static constexpr std::string_view EtaZvtxGen_gt0t = "Tracks/EtaZvtxGen_gt0t";                                   // -- of particles for INEL>0 events
-static constexpr std::string_view ReassignedEtaZvtx = "Tracks/Control/ReassignedEtaZvtx";                       // -- of reassigned ambiguous tracks
-static constexpr std::string_view ExtraEtaZvtx = "Tracks/Control/ExtraEtaZvtx";                                 // -- of adopted orphan tracks
-static constexpr std::string_view PhiEta = "Tracks/PhiEta";                                                     // eta vs phi distribution of tracks
-static constexpr std::string_view PhiEtaDuplicates = "Tracks/Control/PhiEtaDuplicates";                         // -- of tracks belonging to the same particle
-static constexpr std::string_view PhiEtaGen = "Tracks/PhiEtaGen";                                               // -- of simulated tracks
-static constexpr std::string_view PhiEtaGenDuplicates = "Tracks/Control/PhiEtaGenDuplicates";                   // -- of multi-reconstructed particles
-static constexpr std::string_view ReassignedPhiEta = "Tracks/Control/ReassignedPhiEta";                         // -- of reassigned ambiguous tracks
-static constexpr std::string_view ExtraPhiEta = "Tracks/Control/ExtraPhiEta";                                   // -- of adopted orphaned tracks
-static constexpr std::string_view PtEta = "Tracks/Control/PtEta";                                               // Pt vs eta distribution of tracks
-static constexpr std::string_view PtEtaGen = "Tracks/Control/PtEtaGen";                                         // Pt vs eta distribution of simulated tracks
-static constexpr std::string_view DCAXYPt = "Tracks/Control/DCAXYPt";                                           // transversal DCA vs Pt distribution of tracks
-static constexpr std::string_view ReassignedDCAXYPt = "Tracks/Control/ReassignedDCAXYPt";                       // -- of reassigned ambiguous tracks
-static constexpr std::string_view ExtraDCAXYPt = "Tracks/Control/ExtraDCAXYPt";                                 // -- of adopted orphan tracks
-static constexpr std::string_view DCAZPt = "Tracks/Control/DCAZPt";                                             // longitudal DCA vs Pt distribution of tracks
-static constexpr std::string_view ReassignedDCAZPt = "Tracks/Control/ReassignedDCAZPt";                         // -- of reassigned ambiguous tracks
-static constexpr std::string_view ExtraDCAZPt = "Tracks/Control/ExtraDCAZPt";                                   // -- of adopted orphan tracks
-static constexpr std::string_view ReassignedZvtxCorr = "Tracks/Control/ReassignedZvtxCorr";                     // original vs reassigned vtx Z correlation for reassigned ambiguous tracks
+static constexpr std::string_view EtaZvtx = "Tracks/EtaZvtx";                                 // eta vs vtx Z distribution of tracks
+static constexpr std::string_view EtaZvtx_gt0 = "Tracks/EtaZvtx_gt0";                         // -- for INEL>0 collisions
+static constexpr std::string_view EtaZvtx_PVgt0 = "Tracks/EtaZvtx_PVgt0";                     // -- for INEL>0 (PV)
+static constexpr std::string_view EtaZvtxGen = "Tracks/EtaZvtxGen";                           // eta vs vtx Z distribution of simulated tracks
+static constexpr std::string_view EtaZvtxGen_gt0 = "Tracks/EtaZvtxGen_gt0";                   // -- for INEL>0 collisions
+static constexpr std::string_view EtaZvtxGen_PVgt0 = "Tracks/EtaZvtxGen_PVgt0";               // -- for INEL>0 (PV)
+static constexpr std::string_view EtaZvtxGen_t = "Tracks/EtaZvtxGen_t";                       // -- of particles
+static constexpr std::string_view EtaZvtxGen_gt0t = "Tracks/EtaZvtxGen_gt0t";                 // -- of particles for INEL>0 events
+static constexpr std::string_view ReassignedEtaZvtx = "Tracks/Control/ReassignedEtaZvtx";     // -- of reassigned ambiguous tracks
+static constexpr std::string_view ExtraEtaZvtx = "Tracks/Control/ExtraEtaZvtx";               // -- of adopted orphan tracks
+static constexpr std::string_view PhiEta = "Tracks/PhiEta";                                   // eta vs phi distribution of tracks
+static constexpr std::string_view PhiEtaDuplicates = "Tracks/Control/PhiEtaDuplicates";       // -- of tracks belonging to the same particle
+static constexpr std::string_view PhiEtaGen = "Tracks/PhiEtaGen";                             // -- of simulated tracks
+static constexpr std::string_view PhiEtaGenDuplicates = "Tracks/Control/PhiEtaGenDuplicates"; // -- of multi-reconstructed particles
+static constexpr std::string_view ReassignedPhiEta = "Tracks/Control/ReassignedPhiEta";       // -- of reassigned ambiguous tracks
+static constexpr std::string_view ExtraPhiEta = "Tracks/Control/ExtraPhiEta";                 // -- of adopted orphaned tracks
+static constexpr std::string_view PtEta = "Tracks/Control/PtEta";                             // Pt vs eta distribution of tracks
+static constexpr std::string_view PtEtaGen = "Tracks/Control/PtEtaGen";                       // Pt vs eta distribution of simulated tracks
+static constexpr std::string_view DCAXYPt = "Tracks/Control/DCAXYPt";                         // transversal DCA vs Pt distribution of tracks
+static constexpr std::string_view ReassignedDCAXYPt = "Tracks/Control/ReassignedDCAXYPt";     // -- of reassigned ambiguous tracks
+static constexpr std::string_view ExtraDCAXYPt = "Tracks/Control/ExtraDCAXYPt";               // -- of adopted orphan tracks
+static constexpr std::string_view DCAZPt = "Tracks/Control/DCAZPt";                           // longitudal DCA vs Pt distribution of tracks
+static constexpr std::string_view ReassignedDCAZPt = "Tracks/Control/ReassignedDCAZPt";       // -- of reassigned ambiguous tracks
+static constexpr std::string_view ExtraDCAZPt = "Tracks/Control/ExtraDCAZPt";                 // -- of adopted orphan tracks
+static constexpr std::string_view ReassignedZvtxCorr = "Tracks/Control/ReassignedZvtxCorr";   // original vs reassigned vtx Z correlation for reassigned ambiguous tracks
 
 // efficiencies
 static constexpr std::string_view PtGen = "Tracks/Control/PtGen";                                               // pt distribution of particles
@@ -91,9 +91,9 @@ static constexpr std::string_view PtEfficiencySecondariesIdx = "Tracks/Control/P
 static constexpr std::string_view PtEfficiencySecondariesIdxNoEtaCut = "Tracks/Control/PtSecondariesINoEtaCut"; // -- for the indexed efficiency
 
 // misc.
-static constexpr std::string_view Mask = "Tracks/Control/Mask";                                                 // reco status bitmask
-static constexpr std::string_view ITSlayers = "Tracks/Control/ITSLayers";                                       // ITS layers hit distribution
-}
-}
+static constexpr std::string_view Mask = "Tracks/Control/Mask";           // reco status bitmask
+static constexpr std::string_view ITSlayers = "Tracks/Control/ITSLayers"; // ITS layers hit distribution
+} // namespace histograms
+} // namespace pwgmm::mult
 
 #endif // PWGMM_MULT_HISTOGRAMS_H

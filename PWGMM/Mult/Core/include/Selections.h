@@ -13,7 +13,8 @@
 #define PWGMM_MULT_SELECTIONS_H
 #include "Common/DataModel/TrackSelectionTables.h"
 
-namespace pwgmm::mult {
+namespace pwgmm::mult
+{
 using namespace o2::aod::track;
 
 // default quality criteria for tracks with ITS contribution
@@ -34,6 +35,6 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 // default standard transversal-only DCA cuts
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
-}
+} // namespace pwgmm::mult
 
 #endif // PWGMM_MULT_SELECTIONS_H
