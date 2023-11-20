@@ -255,7 +255,6 @@ struct MultiplicityCounter {
   template <typename C>
   void processEventStatGeneral(FullBCs const& bcs, C const& collisions)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
       if (!useEvSel || (bc.selection_bit(aod::evsel::kIsBBT0A) &&
@@ -279,7 +278,7 @@ struct MultiplicityCounter {
           }
         }
         for (auto& col : cols) {
-          if constexpr (hasCentrality) {
+          if constexpr (hasRecoCent<C>()) {
             float c = -1;
             if constexpr (C::template contains<aod::CentFT0Cs>()) {
               c = col.centFT0C();
@@ -359,8 +358,7 @@ struct MultiplicityCounter {
     FiTracks const& tracks)
   {
     float c = -1;
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
-    if constexpr (hasCentrality) {
+    if constexpr (hasRecoCent<C>()) {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c = collision.centFT0C();
       } else if (C::template contains<aod::CentFT0Ms>()) {
@@ -372,7 +370,7 @@ struct MultiplicityCounter {
     }
 
     if (!useEvSel || collision.sel8()) {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 2., c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelected));
@@ -387,7 +385,7 @@ struct MultiplicityCounter {
         if (std::abs(track.eta()) < estimatorEta) {
           ++Ntrks;
         }
-        if constexpr (hasCentrality) {
+        if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(EtaZvtx), track.eta(), z, c);
           binnedRegistry.fill(HIST(PhiEta), track.phi(), track.eta(), c);
           binnedRegistry.fill(HIST(PtEta), track.pt(), track.eta(), c);
@@ -401,7 +399,7 @@ struct MultiplicityCounter {
           inclusiveRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ());
         }
       }
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || groupPVContrib.size() > 0) {
@@ -423,7 +421,7 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
       }
     } else {
-      if constexpr (hasCentrality) {
+      if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 3., c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected));
