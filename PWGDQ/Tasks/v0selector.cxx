@@ -218,14 +218,14 @@ struct v0selector {
       //   continue;
       // }
 
-      auto const& collision = V0.collision_as<aod::Collisions>();
+      // auto const& collision = V0.collision_as<aod::Collisions>();
 
       //      if (V0.collisionId() != collision.globalIndex()) {
       //        continue;
       //      }
 
       float V0dca = V0.dcaV0daughters();
-      float V0CosinePA = V0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float V0CosinePA = V0.v0cosPA();
       float V0radius = V0.v0radius();
 
       if (V0dca > dcav0dau) {

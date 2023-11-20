@@ -331,7 +331,7 @@ struct tpc_dedx_qa {
   template <typename T1, typename C>
   bool passedV0Selection(const T1& v0, const C& collision)
   {
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
