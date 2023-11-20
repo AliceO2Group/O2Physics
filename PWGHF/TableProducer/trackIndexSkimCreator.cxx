@@ -3050,19 +3050,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
       registry.add("hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{500, 0.0f, 5.0f, "cm^{2}"}}});
       registry.add("hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{400, 0.916f, 1.316f, "Inv. Mass (GeV/c^{2})"}}});
 
-      // charm baryon decay vertex
-      registry.add("hVtx2ProngXXiHyp", "2-prong candidates - #Xi hypothesis;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx2ProngYXiHyp", "2-prong candidates - #Xi hypothesis;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx2ProngZXiHyp", "2-prong candidates - #Xi hypothesis;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}});
-
-      registry.add("hVtx2ProngXOmegaHyp", "2-prong candidates - #Omega hypothesis;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx2ProngYOmegaHyp", "2-prong candidates - #Omega hypothesis;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx2ProngZOmegaHyp", "2-prong candidates - #Omega hypothesis;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}});
-
-      registry.add("hVtx3ProngX", "3-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx3ProngY", "3-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
-      registry.add("hVtx3ProngZ", "3-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}});
-
       // mass spectra
       registry.add("hMassXicZeroOmegacZeroToXiPi", "2-prong candidates;inv. mass (#Xi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2., 3.}}});
       registry.add("hMassOmegacZeroToOmegaPi", "2-prong candidates;inv. mass (#Omega #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2., 3.}}});
@@ -3164,9 +3151,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     uint8_t hfFlag = 0;
-    bool statusMassXiPiChannel = true;
-    bool statusMassOmegaPiChannel = true;
-    bool statusMassXiPiPiChannel = true;
 
     for (const auto& collision : collisions) {
 
@@ -3222,14 +3206,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           continue;
         }
 
-        //-------------------------- V0 info---------------------------
-        // pion & p <- V0 tracks
-        auto trackParCovV0PosDau0 = getTrackParCov(trackV0PosDau);
-        auto trackParCovV0NegDau1 = getTrackParCov(trackV0NegDau);
-
-        //-------------------------- cascade info----------------------
-        auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged); // pion <- casc track to be processed with DCAfitter
-
         std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
         std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
         std::array<float, 21> covCasc = {0.};
@@ -3283,8 +3259,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi, trackParVarPion1);
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
-            statusMassXiPiChannel = true;
-
             df2.propagateTracksToVertex();
 
             std::array<float, 3> pVecXi = {0.};
@@ -3292,24 +3266,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
             df2.getTrack(0).getPxPyPzGlo(pVecXi);
             df2.getTrack(1).getPxPyPzGlo(pVecPion1XiHyp);
 
-            auto secondaryVertex2XiHyp = df2.getPCACandidate();
-
-            if (std::abs(casc.mXi() - massXi) < cascadeMassWindow) {
-              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
-            }
-
             std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
             auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
 
-            if (mass2ProngXiHyp < massXiPiMin || mass2ProngXiHyp > massXiPiMax) {
-              statusMassXiPiChannel = false;
+            if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass2ProngXiHyp >= massXiPiMin) && (mass2ProngXiHyp <= massXiPiMax)) {
+              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
             }
 
             // fill histograms
-            if (fillHistograms && statusMassXiPiChannel) {
-              registry.fill(HIST("hVtx2ProngXXiHyp"), secondaryVertex2XiHyp[0]);
-              registry.fill(HIST("hVtx2ProngYXiHyp"), secondaryVertex2XiHyp[1]);
-              registry.fill(HIST("hVtx2ProngZXiHyp"), secondaryVertex2XiHyp[2]);
+            if (fillHistograms && (hfFlag != 0)) {
               registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
             }
           }
@@ -3318,8 +3283,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           int nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
           if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
-            statusMassOmegaPiChannel = true;
-
             df2.propagateTracksToVertex();
 
             std::array<float, 3> pVecOmega = {0.};
@@ -3327,30 +3290,21 @@ struct HfTrackIndexSkimCreatorLfCascades {
             df2.getTrack(0).getPxPyPzGlo(pVecOmega);
             df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
 
-            auto secondaryVertex2OmegaHyp = df2.getPCACandidate();
-
-            if (std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) {
-              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
-            }
-
             std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
             auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
 
-            if (mass2ProngOmegaHyp < massOmegaPiMin || mass2ProngOmegaHyp > massOmegaPiMax) {
-              statusMassOmegaPiChannel = false;
+            if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaPiMin) && (mass2ProngOmegaHyp <= massOmegaPiMax)) {
+              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
             }
 
             // fill histograms
-            if (fillHistograms && statusMassOmegaPiChannel) {
-              registry.fill(HIST("hVtx2ProngXOmegaHyp"), secondaryVertex2OmegaHyp[0]);
-              registry.fill(HIST("hVtx2ProngYOmegaHyp"), secondaryVertex2OmegaHyp[1]);
-              registry.fill(HIST("hVtx2ProngZOmegaHyp"), secondaryVertex2OmegaHyp[2]);
+            if (fillHistograms && (hfFlag >= 2)) {
               registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
             }
           }
 
           // fill table row only if a vertex was found
-          if ((nVtxFrom2ProngFitterXiHyp != 0 && statusMassXiPiChannel) || (nVtxFrom2ProngFitterOmegaHyp != 0 && statusMassOmegaPiChannel)) {
+          if (hfFlag != 0) {
             rowTrackIndexCasc2Prong(thisCollId,
                                     casc.globalIndex(),
                                     trackPion1.globalIndex(),
@@ -3388,8 +3342,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
               int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi, trackParVarPion1, trackParVarPion2);
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
-                statusMassXiPiPiChannel = true;
-
                 df3.propagateTracksToVertex();
 
                 std::array<float, 3> pVec1 = {0.};
@@ -3399,31 +3351,21 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 df3.getTrack(1).getPxPyPzGlo(pVec2);
                 df3.getTrack(2).getPxPyPzGlo(pVec3);
 
-                // std::array<float, 3> secondaryVertex3 = {0., 0., 0.};
-                auto secondaryVertex3 = df3.getPCACandidate();
-
-                if (std::abs(casc.mXi() - massXi) < cascadeMassWindow) {
-                  SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
-                }
-
                 std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                 auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
 
-                if (mass3Prong < massXiPiPiMin || mass3Prong > massXiPiPiMax) {
-                  statusMassXiPiPiChannel = false;
+                if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass3Prong >= massXiPiPiMin) && (mass3Prong <= massXiPiPiMax)) {
+                  SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
                 }
 
                 // fill histograms
-                if (fillHistograms && statusMassXiPiPiChannel) {
-                  registry.fill(HIST("hVtx3ProngX"), secondaryVertex3[0]);
-                  registry.fill(HIST("hVtx3ProngY"), secondaryVertex3[1]);
-                  registry.fill(HIST("hVtx3ProngZ"), secondaryVertex3[2]);
+                if (fillHistograms && (hfFlag != 0)) {
                   registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                 }
               }
 
               // fill table row only if a vertex was found
-              if (nVtxFrom3ProngFitterXiHyp != 0 && statusMassXiPiPiChannel) {
+              if (hfFlag != 0) {
                 rowTrackIndexCasc3Prong(thisCollId,
                                         casc.globalIndex(),
                                         trackPion1.globalIndex(),
