@@ -2949,8 +2949,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // selections have been set to run2 lambda dedicated cuts
   // selections for cascade have been set to the loosest value between xi and omega
   // a tolerance has been added to be more conservative
-  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius"};          // 0.5 in run2
-  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius"}; // 0.5 cm for xi and 0.6 for omega
+  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius in xy plane"};          // 0.5 in run2
+  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius in xy plane"}; // 0.5 cm for xi and 0.6 for omega
   Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};           // 0.04 in run2
   Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                 // 0.06 in run2
   Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                       // 0.97 in run2 - double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -2978,7 +2978,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   static constexpr int kN2ProngDecays = hf_cand_casc_lf_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
   static constexpr int kN3ProngDecays = hf_cand_casc_lf_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
   std::array<std::array<double, 2>, kN2ProngDecays> arrMass2Prong;
-  std::array<std:: : array<double, 3>, kN3ProngDecays> arrMass3Prong;
+  std::array<std::array<double, 3>, kN3ProngDecays> arrMass3Prong;
 
   // PDG masses
   double massP{0.};
@@ -3002,7 +3002,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     massPi = o2::analysis::pdg::MassPiPlus;
     massXi = o2::analysis::pdg::MassXiMinus;
     massOmega = o2::analysis::pdg::MassOmegaMinus;
-    massLambda = = o2::analysis::pdg::MassLambda0;
+    massLambda = o2::analysis::pdg::MassLambda0;
     massXiczero = o2::analysis::pdg::MassXiCZero;
     massXicplus = o2::analysis::pdg::MassXiCPlus;
 
@@ -3066,7 +3066,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); // select tracks passing bachelor selection
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>; 
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
@@ -3088,8 +3088,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
         casc.dcapostopv() > dcaPosToPv &&
         casc.dcabachtopv() > dcaBachToPv &&
         casc.dcav0topv() > dcaV0ToPv &&
-        casc.v0radius() > v0Radius &&
-        casc.cascradius() > cascRadius &&
+        casc.v0radius() > v0TransvRadius &&
+        casc.cascradius() > cascTransvRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
 
       registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
@@ -3127,8 +3127,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processNoLfCascades, "Do not skim LF cascades", true);
 
   void processLfCascades(SelectedCollisions const& collisions,
-                         aod::CascDataFull const& cascades,
-                         FilteredTrackAssocSel const& trackIndices,
+                         CascFull const& cascades,
+                         SelectedHfTrackAssoc const& trackIndices,
                          aod::TracksWCovDca const& tracks,
                          aod::BCsWithTimestamps const&,
                          aod::V0sLinked const&,
@@ -3274,7 +3274,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             std::array<float, 3> pVecXi = {0.};
             std::array<float, 3> pVecPion1XiHyp = {0.};
             df2.getTrack(0).getPxPyPzGlo(pVecXi);
-            df2.getTrack(1).getPxPyPzGlo(pVecPion1iHyp);
+            df2.getTrack(1).getPxPyPzGlo(pVecPion1XiHyp);
 
             auto secondaryVertex2XiHyp = df2.getPCACandidate();
 
@@ -3336,7 +3336,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             // second loop over positive tracks
             for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
 
-              auto trackPion2 = trackIdPion2.track_as<aod::aod::TracksWCovDca>();
+              auto trackPion2 = trackIdPion2.track_as<aod::TracksWCovDca>();
 
               if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion2.collisionId())) {
                 continue;
