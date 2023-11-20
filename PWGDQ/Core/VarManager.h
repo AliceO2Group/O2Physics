@@ -1954,7 +1954,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       if (fgUsedVars[kKFChi2OverNDFGeo])
         values[kKFChi2OverNDFGeo] = KFGeoTwoProng.GetChi2() / KFGeoTwoProng.GetNDF();
       if (fgUsedVars[kKFCosPA])
-        values[kKFCosPA] = calculateCosPA(KFGeoTwoProng, KFPV);
+        values[kKFCosPA] = calculateCosPA(KFGeoTwoProngBarrel, KFPV);
+      
+      // run 2 definitions
+      values[kVertexingLxyProjected] = (dxPair2PV * KFGeoTwoProngBarrel.GetPx()) + (dyPair2PV * KFGeoTwoProngBarrel.GetPy());
+      values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoTwoProngBarrel.GetPx() * KFGeoTwoProngBarrel.GetPx()) + (KFGeoTwoProngBarrel.GetPy() * KFGeoTwoProngBarrel.GetPy()));
+      values[kVertexingLxyzProjected] = (dxPair2PV * KFGeoTwoProngBarrel.GetPx()) + (dyPair2PV * KFGeoTwoProngBarrel.GetPy()) + (dzPair2PV * KFGeoTwoProngBarrel.GetPz());
+      values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoTwoProngBarrel.GetPx() * KFGeoTwoProngBarrel.GetPx()) + (KFGeoTwoProngBarrel.GetPy() * KFGeoTwoProngBarrel.GetPy()) + (KFGeoTwoProngBarrel.GetPz() * KFGeoTwoProngBarrel.GetPz()));
 
       // in principle, they should be in FillTrack
       if (fgUsedVars[kKFTrack0DCAxyz] || fgUsedVars[kKFTrack1DCAxyz]) {
