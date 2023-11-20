@@ -165,7 +165,7 @@ struct hstrangecorrelationfilter {
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
   }
 
-  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -203,7 +203,7 @@ struct hstrangecorrelationfilter {
         track.globalIndex());
     }
   }
-  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
+  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {

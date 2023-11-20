@@ -59,7 +59,7 @@ struct rsnanalysisTHnSparse {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter vtxFilter = (nabs(o2::aod::collision::posZ) < vertexfilter);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>>;
   using EventCandidate = EventCandidates::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullKa>;
 

@@ -75,7 +75,7 @@ struct v0qaanalysis {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::TrackletMults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
   {
     // Event selection
