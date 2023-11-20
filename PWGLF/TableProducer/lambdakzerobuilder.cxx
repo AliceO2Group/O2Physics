@@ -675,7 +675,7 @@ struct lambdakzeroBuilder {
 
       // QA extra: DCA to PV
       float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
-      
+
       registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
       registry.fill(HIST("h2dTopoVarRAP"), lPt, TMath::ACos(v0candidate.cosPA) * v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
@@ -686,8 +686,8 @@ struct lambdakzeroBuilder {
 
       // -------------------------------------------------------------------------------------
       // PCM finding tests
-      // 
-      // a) delta1 = D - R1 - R2 
+      //
+      // a) delta1 = D - R1 - R2
       //             D: distance between two track helix centers in xy
       //             R1, R2: track radii
 
@@ -697,25 +697,25 @@ struct lambdakzeroBuilder {
       negTrackPar.getCircleParams(d_bz, trcCircle2, sna, csa);
 
       // distance between circle centers (one circle is at origin -> easy)
-      float centerDistance = std::hypot(trcCircle1.xC-trcCircle2.xC, trcCircle1.yC-trcCircle2.yC);
+      float centerDistance = std::hypot(trcCircle1.xC - trcCircle2.xC, trcCircle1.yC - trcCircle2.yC);
 
       // b) delta2 = abs(R2/(R1+R2)*rvec1 + R1/(R1+R2)*rvec2)
-      float r1_r = trcCircle1.rC/(trcCircle1.rC + trcCircle2.rC);
-      float r2_r = trcCircle2.rC/(trcCircle1.rC + trcCircle2.rC);
-      float delta2 = std::hypot(r2_r*trcCircle1.xC+r1_r*trcCircle2.xC,r2_r*trcCircle1.yC+r1_r*trcCircle2.yC );
+      float r1_r = trcCircle1.rC / (trcCircle1.rC + trcCircle2.rC);
+      float r2_r = trcCircle2.rC / (trcCircle1.rC + trcCircle2.rC);
+      float delta2 = std::hypot(r2_r * trcCircle1.xC + r1_r * trcCircle2.xC, r2_r * trcCircle1.yC + r1_r * trcCircle2.yC);
 
       // c) delta3 = sqrt(D^2-R^2); D: distance origin-center, R: radius
-      float delta3_track1 = TMath::Sqrt(TMath::Power(trcCircle1.xC,2)+TMath::Power(trcCircle1.yC,2)-TMath::Power(trcCircle1.rC,2));
-      float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC,2)+TMath::Power(trcCircle2.yC,2)-TMath::Power(trcCircle2.rC,2));
+      float delta3_track1 = TMath::Sqrt(TMath::Power(trcCircle1.xC, 2) + TMath::Power(trcCircle1.yC, 2) - TMath::Power(trcCircle1.rC, 2));
+      float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC, 2) + TMath::Power(trcCircle2.yC, 2) - TMath::Power(trcCircle2.rC, 2));
 
       // let's just use tagged, cause we can
-      if(!posTrack.hasITS() && !negTrack.hasITS()){
-        if(V0.isTrueGamma()){
+      if (!posTrack.hasITS() && !negTrack.hasITS()) {
+        if (V0.isTrueGamma()) {
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
-        }else{
+        } else {
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
