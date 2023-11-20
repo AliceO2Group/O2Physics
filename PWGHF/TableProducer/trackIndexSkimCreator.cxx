@@ -2844,8 +2844,8 @@ struct HfTrackIndexSkimCreatorCascades {
           }
 
           // V0 cosPointingAngle selection
-          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cpaV0Min) {
-            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) << " (cut " << cpaV0Min << ")");
+          if (v0.v0cosPA() < cpaV0Min) {
+            MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "K0S with daughters " << indexV0DaughPos << " and " << indexV0DaughNeg << ": rejected due to cosPA --> " << v0.v0cosPA() << " (cut " << cpaV0Min << ")");
             continue;
           }
 

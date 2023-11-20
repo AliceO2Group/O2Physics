@@ -86,20 +86,16 @@ struct NonPromptCascadeTask {
       {"h_bachdcaxyAM_Omega", "Bachelor DCA xy;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
       {"h_bachdcazM_Omega", "Bachelor DCA z;DCA_{z} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
       {"h_bachdcazAM_Omega", "Bachelor DCA z;DCA_{z} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
-      {"h_dcavspt_Omega", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{100, -0.1, 0.1}, {200, 0., 10.}}}},
-      {"h_bachdcavspt_Omega", "Bachelor DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_bachdcavsr_Omega", "Bachelor DCA vs R (cm);DCA (cm);R (cm)", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 30.}}}},
-      {"h_ntrackdcavspt_Omega", "N track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_ptrackdcavspt_Omega", "P track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_dcavsr_Omega", "DCA vs R;DCA (cm);R (cm)", {HistType::kTH2D, {{200, -.5, .5}, {200, 0., 10.}}}},
-      {"h_massvspt_Omega", "Mass vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{150, 1.660, 1.690}, {200, 0., 10.}}}},
-      {"h_buildermassvspt_Omega", "Mass (from builder) vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{150, 1.660, 1.690}, {200, 0., 10.}}}},
-      {"h_massvsmass_Omega", "Mass vs mass;Mass (GeV/#it{c}^{2});Mass (GeV/#it{c}^{2})", {HistType::kTH2D, {{150, 1.660, 1.690}, {150, 1.660, 1.690}}}},
-      {"h_bachelorsign_Omega", "Bachelor sign;Sign;Counts", {HistType::kTH1D, {{10, -5., 5.}}}},
-      {"h_ptmassdcaxyM_Omega", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{xy} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.660, 1.690}, {200, -.5, .5}}}},
-      {"h_ptmassdcaxyAM_Omega", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{xy} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.660, 1.690}, {200, -.5, .5}}}},
-      {"h_ptmassdcazM_Omega", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{x} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.660, 1.690}, {200, -.5, .5}}}},
-      {"h_ptmassdcazAM_Omega", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{x} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.660, 1.690}, {200, -.5, .5}}}},
+      {"h_dcavspt_Omega", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{100, -0.1, 0.1}, {50, 0., 10.}}}},
+      {"h_bachdcavspt_Omega", "Bachelor DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_bachdcavsr_Omega", "Bachelor DCA vs R (cm);DCA (cm);R (cm)", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 30.}}}},
+      {"h_ntrackdcavspt_Omega", "N track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_ptrackdcavspt_Omega", "P track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_dcavsr_Omega", "DCA vs R;DCA (cm);R (cm)", {HistType::kTH2D, {{200, -.5, .5}, {200, 0., 5.}}}},
+      {"h_massvspt_Omega", "Mass vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{125, 1.650, 1.700}, {50, 0., 10.}}}},
+      {"h_buildermassvspt_Omega", "Mass (from builder) vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{125, 1.650, 1.700}, {50, 0., 10.}}}},
+      {"h_massvsmass_Omega", "Mass vs mass;Mass (GeV/#it{c}^{2});Mass (GeV/#it{c}^{2})", {HistType::kTH2D, {{125, 1.650, 1.700}, {125, 1.650, 1.700}}}},
+      {"h_bachelorsign_Omega", "Bachelor sign;Sign;Counts", {HistType::kTH1D, {{6, -3., 3.}}}},
 
       {"h_dca_Xi", "DCA;DCA (cm)", {HistType::kTH1D, {{200, 0., .5}}}},
       {"h_dcaxy_Xi", "DCA xy;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
@@ -108,21 +104,16 @@ struct NonPromptCascadeTask {
       {"h_bachdcaxyAM_Xi", "Bachelor DCA xy;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
       {"h_bachdcazM_Xi", "Bachelor DCA z;DCA_{z} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
       {"h_bachdcazAM_Xi", "Bachelor DCA z;DCA_{z} (cm)", {HistType::kTH1D, {{200, -1., 1.}}}},
-      {"h_dcavspt_Xi", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{100, -0.1, 0.1}, {200, 0., 10.}}}},
-      {"h_bachdcavspt_Xi", "Bachelor DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_bachdcavsr_Xi", "Bachelor DCA vs R (cm);DCA (cm);R (cm)", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 30.}}}},
-      {"h_ntrackdcavspt_Xi", "N track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_ptrackdcavspt_Xi", "P track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {200, 0., 10.}}}},
-      {"h_dcavsr_Xi", "DCA vs R;DCA (cm);R (cm)", {HistType::kTH2D, {{200, -.5, .5}, {200, 0., 10.}}}},
-      {"h_massvspt_Xi", "Mass vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{150, 1.306, 1.336}, {200, 0., 10.}}}},
-      {"h_buildermassvspt_Xi", "Mass (from builder) vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{150, 1.306, 1.336}, {200, 0., 10.}}}},
-      {"h_massvsmass_Xi", "Mass vs mass;Mass (GeV/#it{c}^{2});Mass (GeV/#it{c}^{2})", {HistType::kTH2D, {{150, 1.306, 1.336}, {150, 1.306, 1.336}}}},
-      {"h_bachelorsign_Xi", "Bachelor sign;Sign;Counts", {HistType::kTH1D, {{10, -5., 5.}}}},
-      {"h_ptmassdcaxyM_Xi", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{xy} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.306, 1.336}, {200, -.5, .5}}}},
-      {"h_ptmassdcaxyAM_Xi", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{xy} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.306, 1.336}, {200, -.5, .5}}}},
-      {"h_ptmassdcazM_Xi", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{x} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.306, 1.336}, {200, -.5, .5}}}},
-      {"h_ptmassdcazAM_Xi", ";p_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});DCA_{x} (cm)", {HistType::kTH3D, {{200, 0., 10.}, {150, 1.306, 1.336}, {200, -.5, .5}}}},
-
+      {"h_dcavspt_Xi", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{100, -0.1, 0.1}, {50, 0., 10.}}}},
+      {"h_bachdcavspt_Xi", "Bachelor DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_bachdcavsr_Xi", "Bachelor DCA vs R (cm);DCA (cm);R (cm)", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 30.}}}},
+      {"h_ntrackdcavspt_Xi", "N track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_ptrackdcavspt_Xi", "P track DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, -1., 1.}, {50, 0., 10.}}}},
+      {"h_dcavsr_Xi", "DCA vs R;DCA (cm);R (cm)", {HistType::kTH2D, {{200, -.5, .5}, {200, 0., 5.}}}},
+      {"h_massvspt_Xi", "Mass vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{125, 1.296, 1.346}, {50, 0., 10.}}}},
+      {"h_buildermassvspt_Xi", "Mass (from builder) vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{125, 1.296, 1.346}, {50, 0., 10.}}}},
+      {"h_massvsmass_Xi", "Mass vs mass;Mass (GeV/#it{c}^{2});Mass (GeV/#it{c}^{2})", {HistType::kTH2D, {{125, 1.296, 1.346}, {125, 1.296, 1.346}}}},
+      {"h_bachelorsign_Xi", "Bachelor sign;Sign;Counts", {HistType::kTH1D, {{6, -3., 3.}}}},
     }};
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -162,20 +153,8 @@ struct NonPromptCascadeTask {
 
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    registry.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-    registry.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
 
-    for (int iN{0}; iN < nParticles; ++iN) {
-      h2TPCsignal[iN] = registry.add<TH2>(Form("fTPCsignal_%s", particlesNames[iN].data()), "Specific energy loss", HistType::kTH2F, {{1200, -6, 6., "#it{p}/Z (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-      h2TPCnSigma[iN] = registry.add<TH2>(Form("fTPCnSigma_%s", particlesNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., Form("n#sigma_%s (a. u.)", particlesNames[iN].data())}});
-    }
-    auto scalers{std::get<std::shared_ptr<TH1>>(registry.add("fProcessedCascades", ";;Number of filtered cascades", HistType::kTH1D, {{nParticles + 1, -0.5, nParticles + 0.5}}))};
-    scalers->GetXaxis()->SetBinLabel(1, "Processed cascades");
-    for (uint32_t iS{0}; iS < particlesNames.size(); ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS + 2, particlesNames[iS].data());
-    }
-
-    auto cutsOmega{std::get<std::shared_ptr<TH2>>(registry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {200, 1.550, 1.750}}))};
+    auto cutsOmega{std::get<std::shared_ptr<TH2>>(registry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.650, 1.700}}))};
     cutsOmega->GetXaxis()->SetBinLabel(1, "Tot #Omega");
     cutsOmega->GetXaxis()->SetBinLabel(2, "hasTof");
     cutsOmega->GetXaxis()->SetBinLabel(3, "nClusTPC");
@@ -183,7 +162,7 @@ struct NonPromptCascadeTask {
     cutsOmega->GetXaxis()->SetBinLabel(5, "nSigmaTPCprotontrack");
     cutsOmega->GetXaxis()->SetBinLabel(6, "nSigmaTPCpiontrack");
 
-    auto cutsXi{std::get<std::shared_ptr<TH2>>(registry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {200, 1.250, 1.450}}))};
+    auto cutsXi{std::get<std::shared_ptr<TH2>>(registry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
     cutsXi->GetXaxis()->SetBinLabel(1, "Tot #Xi");
     cutsXi->GetXaxis()->SetBinLabel(2, "hasTof");
     cutsXi->GetXaxis()->SetBinLabel(3, "nClusTPC");
@@ -191,36 +170,10 @@ struct NonPromptCascadeTask {
     cutsXi->GetXaxis()->SetBinLabel(5, "nSigmaTPCprotontrack");
     cutsXi->GetXaxis()->SetBinLabel(6, "nSigmaTPCpiontrack");
 
-    auto nClusPerTrack{std::get<std::shared_ptr<TH2>>(registry.add("h_nClusPerTrack", ";;# Clusters", HistType::kTH2D, {{3, -0.5, 2.5}, {210, 0., 210.}}))};
-    nClusPerTrack->GetXaxis()->SetBinLabel(1, "Bachelor");
-    nClusPerTrack->GetXaxis()->SetBinLabel(2, "Proton track");
-    nClusPerTrack->GetXaxis()->SetBinLabel(3, "Pion track");
-
-    invMassBCOmega = registry.add<TH1>("h_invariantmass_beforeCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{150, 1.660, 1.6905, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassACOmega = registry.add<TH1>("h_invariantmass_afterCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{150, 1.660, 1.690, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassBCXi = registry.add<TH1>("h_invariantmass_beforeCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{150, 1.306, 1.336, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassACXi = registry.add<TH1>("h_invariantmass_afterCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{150, 1.306, 1.336, "Invariant Mass (GeV/#it{c}^{2})"}});
-  }
-
-  template <typename B, typename PR, typename PI>
-  void fillQAPID(float nSigmaTPC[4], B const bachelor, PR const protonTrack, PI const pionTrack)
-  {
-    registry.fill(HIST("h_nClusPerTrack"), 0, bachelor.tpcNClsFound());
-    registry.fill(HIST("h_nClusPerTrack"), 1, protonTrack.tpcNClsFound());
-    registry.fill(HIST("h_nClusPerTrack"), 2, pionTrack.tpcNClsFound());
-
-    registry.fill(HIST("fTPCsignal"), bachelor.sign() * bachelor.tpcInnerParam(), bachelor.tpcSignal());
-    registry.fill(HIST("fTPCsignal"), protonTrack.sign() * protonTrack.tpcInnerParam(), protonTrack.tpcSignal());
-    registry.fill(HIST("fTPCsignal"), pionTrack.sign() * pionTrack.tpcInnerParam(), pionTrack.tpcSignal());
-
-    h2TPCnSigma[0]->Fill(bachelor.sign() * bachelor.tpcInnerParam(), nSigmaTPC[0]);
-    h2TPCnSigma[1]->Fill(bachelor.sign() * bachelor.tpcInnerParam(), nSigmaTPC[1]);
-    h2TPCnSigma[2]->Fill(protonTrack.sign() * protonTrack.tpcInnerParam(), nSigmaTPC[2]);
-    h2TPCnSigma[3]->Fill(pionTrack.sign() * pionTrack.tpcInnerParam(), nSigmaTPC[3]);
-
-    h2TPCsignal[1]->Fill(bachelor.sign() * bachelor.tpcInnerParam(), bachelor.tpcSignal());
-    h2TPCsignal[2]->Fill(protonTrack.sign() * protonTrack.tpcInnerParam(), protonTrack.tpcSignal());
-    h2TPCsignal[3]->Fill(pionTrack.sign() * pionTrack.tpcInnerParam(), pionTrack.tpcSignal());
+    invMassBCOmega = registry.add<TH1>("h_invariantmass_beforeCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.650, 1.700, "Invariant Mass (GeV/#it{c}^{2})"}});
+    invMassACOmega = registry.add<TH1>("h_invariantmass_afterCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.650, 1.700, "Invariant Mass (GeV/#it{c}^{2})"}});
+    invMassBCXi = registry.add<TH1>("h_invariantmass_beforeCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.296, 1.346, "Invariant Mass (GeV/#it{c}^{2})"}});
+    invMassACXi = registry.add<TH1>("h_invariantmass_afterCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.296, 1.346, "Invariant Mass (GeV/#it{c}^{2})"}});
   }
 
   template <typename TC, typename T, typename B, typename PR, typename PI>
@@ -246,13 +199,6 @@ struct NonPromptCascadeTask {
           registry.fill(HIST("h_dcavspt_Omega"), impactParameterTrk.getY(), track.pt());
           registry.fill(HIST("h_dcavsr_Omega"), impactParameterTrk.getY(), std::hypot(track.x(), track.y()));
           registry.fill(HIST("h_massvspt_Omega"), massOmega, track.pt());
-          if (bachelor.sign() < 0) {
-            registry.fill(HIST("h_ptmassdcazM_Omega"), track.pt(), massOmega, impactParameterTrk.getZ());
-            registry.fill(HIST("h_ptmassdcaxyM_Omega"), track.pt(), massOmega, impactParameterTrk.getY());
-          } else if (bachelor.sign() > 0) {
-            registry.fill(HIST("h_ptmassdcazAM_Omega"), track.pt(), massOmega, impactParameterTrk.getZ());
-            registry.fill(HIST("h_ptmassdcaxyAM_Omega"), track.pt(), massOmega, impactParameterTrk.getY());
-          }
         }
       }
 
@@ -266,13 +212,6 @@ struct NonPromptCascadeTask {
         registry.fill(HIST("h_dcavspt_Xi"), impactParameterTrk.getY(), track.pt());
         registry.fill(HIST("h_dcavsr_Xi"), impactParameterTrk.getY(), std::hypot(track.x(), track.y()));
         registry.fill(HIST("h_massvspt_Xi"), massXi, track.pt());
-        if (bachelor.sign() < 0) {
-          registry.fill(HIST("h_ptmassdcazM_Xi"), track.pt(), massXi, impactParameterTrk.getZ());
-          registry.fill(HIST("h_ptmassdcaxyM_Xi"), track.pt(), massXi, impactParameterTrk.getY());
-        } else if (bachelor.sign() > 0) {
-          registry.fill(HIST("h_ptmassdcazAM_Xi"), track.pt(), massXi, impactParameterTrk.getZ());
-          registry.fill(HIST("h_ptmassdcaxyAM_Xi"), track.pt(), massXi, impactParameterTrk.getY());
-        }
       }
     }
   }
@@ -335,13 +274,11 @@ struct NonPromptCascadeTask {
                                 soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata,
                                 aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
-    bool keepEvent[nParticles]{false};
     bool isOmega{false};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    registry.fill(HIST("fCollZpos"), collision.posZ());
     const auto primaryVertex = getPrimaryVertex(collision);
 
     for (const auto& trackedCascadeData : trackedcascdata) {
@@ -350,7 +287,6 @@ struct NonPromptCascadeTask {
     }
 
     for (const auto& trackedCascade : trackedCascades) {
-      registry.fill(HIST("fProcessedCascades"), 0);
 
       isOmega = false;
 
@@ -392,17 +328,14 @@ struct NonPromptCascadeTask {
 
       // QA PID
       float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
-      fillQAPID(nSigmaTPC, bachelor, protonTrack, pionTrack);
 
       if (isOmega) {
-        h2TPCsignal[0]->Fill(bachelor.sign() * bachelor.tpcInnerParam(), bachelor.tpcSignal());
         if (bachelor.hasTPC()) {
           LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
           if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
             continue;
           }
         }
-        keepEvent[0] = true;
         registry.fill(HIST("h_PIDcutsOmega"), 3, trackedCascade.omegaMass());
       }
 
@@ -412,14 +345,12 @@ struct NonPromptCascadeTask {
           continue;
         }
       }
-      keepEvent[1] = true;
       registry.fill(HIST("h_PIDcutsXi"), 3, trackedCascade.xiMass());
 
       LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
       if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
         continue;
       }
-      keepEvent[2] = true;
 
       registry.fill(HIST("h_PIDcutsOmega"), 4, trackedCascade.omegaMass());
       registry.fill(HIST("h_PIDcutsXi"), 4, trackedCascade.xiMass());
@@ -428,19 +359,12 @@ struct NonPromptCascadeTask {
       if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
         continue;
       }
-      keepEvent[3] = true;
 
       registry.fill(HIST("h_PIDcutsXi"), 5, trackedCascade.xiMass());
       registry.fill(HIST("h_PIDcutsOmega"), 5, trackedCascade.omegaMass());
 
       invMassACXi->Fill(trackedCascade.xiMass());
       invMassACOmega->Fill(trackedCascade.omegaMass());
-
-      for (int iDecision{0}; iDecision < 4; ++iDecision) {
-        if (keepEvent[iDecision]) {
-          registry.fill(HIST("fProcessedCascades"), iDecision + 1);
-        }
-      }
 
       fillCascadeDCA(trackedCascade, track, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
 
@@ -484,18 +408,14 @@ struct NonPromptCascadeTask {
                                   aod::BCsWithTimestamps const&)
   {
 
-    bool keepEvent[nParticles]{false};
-
     bool isOmega{false};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    registry.fill(HIST("fCollZpos"), collision.posZ());
     const auto primaryVertex = getPrimaryVertex(collision);
 
     for (const auto& trackedCascade : trackedCascades) {
-      registry.fill(HIST("fProcessedCascades"), 0);
 
       isOmega = false;
 
@@ -545,17 +465,14 @@ struct NonPromptCascadeTask {
 
       // QA PID
       float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
-      fillQAPID(nSigmaTPC, bachelor, protonTrack, pionTrack);
 
       if (isOmega) {
-        h2TPCsignal[0]->Fill(bachelor.sign() * bachelor.tpcInnerParam(), bachelor.tpcSignal());
         if (bachelor.hasTPC()) {
           LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
           if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
             continue;
           }
         }
-        keepEvent[0] = true;
         registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
       }
 
@@ -565,14 +482,12 @@ struct NonPromptCascadeTask {
           continue;
         }
       }
-      keepEvent[1] = true;
       registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
 
       LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
       if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
         continue;
       }
-      keepEvent[2] = true;
 
       registry.fill(HIST("h_PIDcutsXi"), 4, massXi);
       registry.fill(HIST("h_PIDcutsOmega"), 4, massOmega);
@@ -581,19 +496,12 @@ struct NonPromptCascadeTask {
       if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
         continue;
       }
-      keepEvent[3] = true;
 
       registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
       registry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
 
       invMassACXi->Fill(massXi);
       invMassACOmega->Fill(massOmega);
-
-      for (int iDecision{0}; iDecision < 4; ++iDecision) {
-        if (keepEvent[iDecision]) {
-          registry.fill(HIST("fProcessedCascades"), iDecision + 1);
-        }
-      }
 
       fillCascadeDCA(trackedCascade, track, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
