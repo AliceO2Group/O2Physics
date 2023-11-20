@@ -122,7 +122,7 @@ struct qVectorsCorrection {
   void fillHistosQvec(const T& vec)
   {
     histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histCent"), vec.cent());
-    
+
     if (vec.sumAmplFT0C() > 1e-8) {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFT0CUncor"), vec.qvecFT0CUncorRe(), vec.qvecFT0CUncorIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFT0CRectr"), vec.qvecFT0CRectrRe(), vec.qvecFT0CRectrIm());
