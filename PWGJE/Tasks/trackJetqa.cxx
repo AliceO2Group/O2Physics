@@ -140,7 +140,9 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     // Common axes
-    const AxisSpec axisPercentile{binsPercentile, "Centrality FT0M"};
+    const AxisSpec axisPercentileFT0M{binsPercentile, "Centrality FT0M"};
+    const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
+    const AxisSpec axisPercentileFT0C{binsPercentile, "Centrality FT0C"};
     const AxisSpec axisMultiplicityPV{binsMultiplicity, "MultNTracksPV"};
     const AxisSpec axisMultiplicityFT0M{binsMultiplicity, "Multiplicity FT0M"};
     const AxisSpec axisMultiplicityFT0A{binsMultiplicity, "Multiplicity FT0A"};
@@ -148,15 +150,19 @@ struct TrackJetQa {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisSigma1OverPt{binsSigma1OverPt, "#sigma(1/#it{p}_{T}) (GeV/#it{c})^{-1}"};
 
-    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentile});
+    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentileFT0M});
+    histos.add("Centrality/FT0A", "CentFT0A", HistType::kTH1D, {axisPercentileFT0A});
+    histos.add("Centrality/FT0C", "CentFT0C", HistType::kTH1D, {axisPercentileFT0M});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
-    histos.add("Mult/MultCorrelations", "MultCorrelations", HistType::kTHnSparseD, {axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
+    histos.add("Mult/FT0M", "MultFT0A", HistType::kTH1D, {axisMultiplicityFT0A});
+    histos.add("Mult/FT0M", "MultFT0C", HistType::kTH1D, {axisMultiplicityFT0C}); // need to correct from up here 
+    histos.add("Mult/MultCorrelations", "MultCorrelations", HistType::kTHnSparseD, {axisPercentileFT0A, axisPercentileFT0C, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
 
-    histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {axisPercentile, axisPt, axisSigma1OverPt});
-    histos.add("TrackEventPar/Sigma1PtFT0Mmult", "Sigma1Pt vs pT vs FT0M multiplicity", HistType::kTHnSparseD, {axisMultiplicityFT0M, axisPt, axisSigma1OverPt});
+    histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {axisPercentileFT0M, axisPt, axisSigma1OverPt});
+    histos.add("TrackEventPar/Sigma1PtFT0Mmult", "Sigma1Pt vs pT vs FT0A,C multiplicity", HistType::kTHnSparseD, {axisMultiplicityFT0M, axisPt, axisSigma1OverPt});
     histos.add("TrackEventPar/Sigma1PtNTracksPV", "Sigma1Pt vs pT vs NTracksPV", HistType::kTHnSparseD, {axisMultiplicityPV, axisPt, axisSigma1OverPt});
-    histos.add("TrackEventPar/MultCorrelations", "Sigma1Pt vs pT vs MultCorrelations", HistType::kTHnSparseD, {axisSigma1OverPt, axisPt, axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
+    histos.add("TrackEventPar/MultCorrelations", "Sigma1Pt vs pT vs MultCorrelations", HistType::kTHnSparseD, {axisSigma1OverPt, axisPt, axisPercentileFT0A, axisPercentileFT0C, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
 
     // ITS histograms
     histos.add("ITS/itsNCls", "number of found ITS clusters", {HistType::kTH2F, {axisPt, {8, -0.5, 7.5, "# clusters ITS"}}});
@@ -189,9 +195,11 @@ struct TrackJetQa {
     }
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
     if (fillMultiplicity) {
-      histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+      histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
+      histos.fill(HIST("Centrality/FT0C"), collision.centFT0C());
       histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
-      histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+      histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
+      histos.fill(HIST("Mult/FT0C"), collision.multFT0C());
     }
   }
 
@@ -287,13 +295,15 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
   }
 
-  void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms> const& collisions,
+  void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs> const& collisions,
                    soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {
     for (auto& collision : collisions) {
       fillEventQa(collision);
       if (fillMultiplicity) {
-        histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0M(), collision.multFT0M(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+        histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+        histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+        histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
       }
       Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
       groupedTracks.bindTable(tracks);
@@ -301,9 +311,7 @@ struct TrackJetQa {
         fillTrackQa(track);
         if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0M(), collision.multFT0M(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
         }
       }
     }
@@ -322,9 +330,7 @@ struct TrackJetQa {
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mmult"), collision.multFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/Sigma1PtNTracksPV"), collision.multNTracksPV(), track.pt(), track.sigma1Pt());
+          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
         }
       }
     }
