@@ -216,7 +216,7 @@ struct hypertriton3bodyFinder {
       {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
       {"hTrueVtx3BodyCounter", "hTrueVtx3BodyCounter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
       {"hVirtLambaCounter", "hVirtualLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
-      {"hCFFilteredVirtLambaCounter", "hCFFilteredVirtLambaCounter", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
+      {"hCFFilteredVirtLambaCounter", "hCFFilteredVirtLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
     },
   };
 
@@ -247,7 +247,7 @@ struct hypertriton3bodyFinder {
     std::array<int32_t, kNV0Steps> truev0stats;
     std::array<int32_t, kNVtxSteps> vtxstats;
     std::array<int32_t, kNVtxSteps> truevtxstats;
-    std::array<int32_t, 9> virtLambdastats;
+    std::array<int32_t, 12> virtLambdastats;
   } statisticsRegistry;
 
   void resetHistos()
@@ -260,7 +260,7 @@ struct hypertriton3bodyFinder {
       statisticsRegistry.vtxstats[ii] = 0;
       statisticsRegistry.truevtxstats[ii] = 0;
     }
-    for (Int_t ii = 0; ii < 9; ii++) {
+    for (Int_t ii = 0; ii < 12; ii++) {
       statisticsRegistry.virtLambdastats[ii] = 0;
     }
   }
@@ -279,6 +279,7 @@ struct hypertriton3bodyFinder {
       registry.fill(HIST("hVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii]);
       registry.fill(HIST("hVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 3]);
       registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii + 6]);
+      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii+3, statisticsRegistry.virtLambdastats[ii + 9]);
     }
   }
 
@@ -945,7 +946,8 @@ struct hypertriton3bodyFinder {
       auto ptracks = Ptracks.sliceBy(perCollisionGoodPosTracks, collision.globalIndex());
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
 
-      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 6);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, v0s, 6);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 9);
       DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
