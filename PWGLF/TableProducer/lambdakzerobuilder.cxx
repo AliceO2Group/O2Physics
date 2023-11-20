@@ -709,16 +709,18 @@ struct lambdakzeroBuilder {
       float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC,2)+TMath::Power(trcCircle2.yC,2)-TMath::Power(trcCircle2.rC,2));
 
       // let's just use tagged, cause we can
-      if(V0.isTrueGamma()){
-        registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
-        registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
-        registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
-        registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
-      }else{
-        registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
-        registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
-        registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
-        registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg"), lPt, delta3_track2);
+      if(!posTrack.hasITS() && !negTrack.hasITS()){
+        if(V0.isTrueGamma()){
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
+        }else{
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg"), lPt, delta3_track2);
+        }
       }
       // -------------------------------------------------------------------------------------
     } // end QA
