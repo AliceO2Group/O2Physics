@@ -212,7 +212,7 @@ struct qVectorsTable {
 
     TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
     TComplex QvecFT0M(0);
-    float sumAmplFT0A = 0.;  // Sum of the amplitudes of all non-dead channels in any detector.
+    float sumAmplFT0A = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
     float sumAmplFT0C = 0.;
     float sumAmplFT0M = 0.;
     float sumAmplFV0A = 0.;
@@ -326,12 +326,12 @@ struct qVectorsTable {
       if (trk.eta() > 0) {
         qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
         qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
-        TrkBPosLabel.push_back( trk.globalIndex() );
+        TrkBPosLabel.push_back(trk.globalIndex());
         nTrkBPos++;
       } else if (trk.eta() < 0) {
         qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
         qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
-        TrkBNegLabel.push_back( trk.globalIndex() );
+        TrkBNegLabel.push_back(trk.globalIndex());
         nTrkBNeg++;
       }
     }
@@ -359,7 +359,6 @@ struct qVectorsTable {
     // A correction constant set to zero means this correction is not applied.
     // LOKI: Each detector must have their own vector of correction constants.
     int cBin = helperEP.GetCentBin(cent);
-
 
     float qVectFT0ACorr[3][2];
     float qVectFT0CCorr[3][2];
