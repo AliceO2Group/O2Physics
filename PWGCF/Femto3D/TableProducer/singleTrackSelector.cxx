@@ -13,10 +13,12 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
+
 #include <vector>
+#include <fairlogger/Logger.h>
 
 #include <Framework/AnalysisDataModel.h>
-#include <fairlogger/Logger.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -29,10 +31,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
-
-//#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
