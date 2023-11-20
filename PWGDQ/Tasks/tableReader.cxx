@@ -1272,6 +1272,7 @@ struct AnalysisDileptonHadron {
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runDileptonHadron(TEvent const& event, TTracks const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
+
     // set up KF or DCAfitter
     if (fCurrentRun != event.runNumber()) { // start: runNumber
       if (fUseRemoteField.value) {
@@ -1295,6 +1296,7 @@ struct AnalysisDileptonHadron {
       }
       fCurrentRun = event.runNumber();
     } // end: runNumber
+
 
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
