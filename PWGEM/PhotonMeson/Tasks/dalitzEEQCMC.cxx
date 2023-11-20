@@ -53,6 +53,7 @@ struct DalitzEEQCMC {
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputTrack{"Track"};
   OutputObj<THashList> fOutputDalitzEE{"DalitzEE"};
+  OutputObj<THashList> fOutputGen{"Generated"};
   THashList* fMainList = new THashList();
 
   void addhistograms()
@@ -70,6 +71,10 @@ struct DalitzEEQCMC {
 
     o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE");
     THashList* list_dalitzee = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE"));
+
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Generated");
+    THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
+    o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "dielectron");
 
     for (const auto& cut : fDalitzEECuts) {
       const char* cutname = cut.GetName();
@@ -114,6 +119,7 @@ struct DalitzEEQCMC {
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputTrack.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Track")));
     fOutputDalitzEE.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")));
+    fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
   template <typename TTrack, typename TMCTracks>
@@ -219,6 +225,66 @@ struct DalitzEEQCMC {
     }   // end of collision loop
   }     // end of process
   PROCESS_SWITCH(DalitzEEQCMC, processQCMC, "run Dalitz QC", true);
+
+  Configurable<float> min_mcPt{"min_mcPt", 0.05, "min. MC pT"};
+  Configurable<float> max_mcPt{"max_mcPt", 1e+10, "max. MC pT"};
+  Configurable<float> max_mcEta{"max_mcEta", 0.9, "max. MC eta"};
+  Partition<aod::EMMCParticles> posTracks = o2::aod::mcparticle::pdgCode == -11; // e+
+  Partition<aod::EMMCParticles> negTracks = o2::aod::mcparticle::pdgCode == +11; // e-
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  {
+    // loop over mc stack and fill histograms for pure MC truth signals
+    // all MC tracks which belong to the MC event corresponding to the current reconstructed event
+    for (auto& collision : collisions) {
+      auto mccollision = collision.emreducedmcevent();
+      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
+      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
+      if (!collision.sel8()) {
+        continue;
+      }
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
+
+      if (collision.numContrib() < 0.5) {
+        continue;
+      }
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
+
+      if (abs(collision.posZ()) > 10.0) {
+        continue;
+      }
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
+      auto posTracks_per_coll = posTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
+        // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
+
+        if (t1.pt() < min_mcPt || max_mcPt < t1.pt() || abs(t1.eta()) > max_mcEta) {
+          continue;
+        }
+        if (t2.pt() < min_mcPt || max_mcPt < t2.pt() || abs(t2.eta()) > max_mcEta) {
+          continue;
+        }
+
+        int mother_id = FindLF(t1, t2, mcparticles);
+        if (mother_id < 0) {
+          continue;
+        }
+        auto mcmother = mcparticles.iteratorAt(mother_id);
+        if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+          ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt"))->Fill(v12.M(), v12.Pt());
+        } // end of LF
+      }   // end of true ULS pair loop
+    }     // end of collision loop
+  }
+  PROCESS_SWITCH(DalitzEEQCMC, processGen, "run genrated info", true);
 
   void processDummy(MyCollisions const& collisions) {}
   PROCESS_SWITCH(DalitzEEQCMC, processDummy, "Dummy function", false);

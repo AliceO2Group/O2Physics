@@ -202,11 +202,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNpair_lspp", "Number of LS++ pairs per collision", 101, -0.5f, 100.5f));
     list->Add(new TH1F("hNpair_lsmm", "Number of LS-- pairs per collision", 101, -0.5f, 100.5f));
 
-    if (TString(histClass) == "Generated") {
-      TH2F* hMvsPt = new TH2F("hMvsPt", "m_{ll} vs. p_{T,ll};m_{ll} (GeV/c^{2});p_{T,ll}", 110, 0, 1.1f, 100, 0, 10.f);
-      hMvsPt->Sumw2();
-      list->Add(hMvsPt);
-    }
   } // end of Dalitz
   if (TString(histClass) == "Track") {
     float maxP = 10.f;
@@ -387,14 +382,12 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 200, 0, 200));
     }
 
-    // Generated, particles
     if (TString(subGroup) == "Photon") {
       list->Add(new TH1F("hPt_Photon", "photon pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
       list->Add(new TH1F("hY_Photon", "photon y;rapidity y", 40, -2.0f, 2.0f));
       list->Add(new TH1F("hPhi_Photon", "photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
     }
 
-    // Generated, particles
     if (TString(subGroup) == "Pi0Eta") {
       static constexpr std::string_view parnames[2] = {"Pi0", "Eta"};
       for (int i = 0; i < 2; i++) {
@@ -402,6 +395,15 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(new TH1F(Form("hY_%s", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));
         list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, TMath::TwoPi()));
       }
+    }
+    if (TString(subGroup) == "dielectron") {
+      TH2F* hMvsPt = new TH2F("hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", 110, 0, 1.1f, 100, 0, 10.f);
+      hMvsPt->Sumw2();
+      list->Add(hMvsPt);
+    } else if (TString(subGroup) == "dimuon") {
+      TH2F* hMvsPt = new TH2F("hMvsPt", "m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", 90, 0.2, 1.1f, 20, 0, 2.f);
+      hMvsPt->Sumw2();
+      list->Add(hMvsPt);
     }
   }
 
