@@ -129,10 +129,10 @@ struct qVectorsCorrection {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFT0CTwist"), vec.qvecFT0CTwistRe(), vec.qvecFT0CTwistIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFT0CFinal"), vec.qvecFT0CRe(), vec.qvecFT0CIm());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CUncor"), helperEP.GetEventPlane(vec.qvecFT0CUncorRe(), vec.qvecFT0CUncorIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CRectr"), helperEP.GetEventPlane(vec.qvecFT0CRectrRe(), vec.qvecFT0CRectrIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CTwist"), helperEP.GetEventPlane(vec.qvecFT0CTwistRe(), vec.qvecFT0CTwistIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CFinal"), helperEP.GetEventPlane(vec.qvecFT0CRe(), vec.qvecFT0CIm()) );
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CUncor"), helperEP.GetEventPlane(vec.qvecFT0CUncorRe(), vec.qvecFT0CUncorIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CRectr"), helperEP.GetEventPlane(vec.qvecFT0CRectrRe(), vec.qvecFT0CRectrIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CTwist"), helperEP.GetEventPlane(vec.qvecFT0CTwistRe(), vec.qvecFT0CTwistIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFT0CFinal"), helperEP.GetEventPlane(vec.qvecFT0CRe(), vec.qvecFT0CIm()));
     }
 
     if (vec.nTrkBPos() > cfgMinTPCTracks) {
@@ -141,10 +141,10 @@ struct qVectorsCorrection {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosTwist"), vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBPosFinal"), vec.qvecBPosRe(), vec.qvecBPosIm());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosUncor"), helperEP.GetEventPlane(vec.qvecBPosUncorRe(), vec.qvecBPosUncorIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosRectr"), helperEP.GetEventPlane(vec.qvecBPosRectrRe(), vec.qvecBPosRectrIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosTwist"), helperEP.GetEventPlane(vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosFinal"), helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()) );
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosUncor"), helperEP.GetEventPlane(vec.qvecBPosUncorRe(), vec.qvecBPosUncorIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosRectr"), helperEP.GetEventPlane(vec.qvecBPosRectrRe(), vec.qvecBPosRectrIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosTwist"), helperEP.GetEventPlane(vec.qvecBPosTwistRe(), vec.qvecBPosTwistIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBPosFinal"), helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()));
     }
 
     if (vec.nTrkBNeg() > cfgMinTPCTracks) {
@@ -153,17 +153,17 @@ struct qVectorsCorrection {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegTwist"), vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm());
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecBNegFinal"), vec.qvecBNegRe(), vec.qvecBNegIm());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegUncor"), helperEP.GetEventPlane(vec.qvecBNegUncorRe(), vec.qvecBNegUncorIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegRectr"), helperEP.GetEventPlane(vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegTwist"), helperEP.GetEventPlane(vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm()) );
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), helperEP.GetEventPlane(vec.qvecBNegRe(), vec.qvecBNegIm()) );
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegUncor"), helperEP.GetEventPlane(vec.qvecBNegUncorRe(), vec.qvecBNegUncorIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegRectr"), helperEP.GetEventPlane(vec.qvecBNegRectrRe(), vec.qvecBNegRectrIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegTwist"), helperEP.GetEventPlane(vec.qvecBNegTwistRe(), vec.qvecBNegTwistIm()));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), helperEP.GetEventPlane(vec.qvecBNegRe(), vec.qvecBNegIm()));
     }
 
     if (vec.nTrkBPos() > cfgMinTPCTracks && vec.nTrkBNeg() > cfgMinTPCTracks && vec.sumAmplFT0C() > 1e-8) {
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlResolution"), helperEP.GetResolution(
-        helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()),
-        helperEP.GetEventPlane(vec.qvecBNegRe(), vec.qvecBNegIm()),
-        helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()), 2));
+                                                                                 helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()),
+                                                                                 helperEP.GetEventPlane(vec.qvecBNegRe(), vec.qvecBNegIm()),
+                                                                                 helperEP.GetEventPlane(vec.qvecBPosRe(), vec.qvecBPosIm()), 2));
     }
   }
 
