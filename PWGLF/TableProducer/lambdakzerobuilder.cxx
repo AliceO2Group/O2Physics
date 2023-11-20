@@ -709,7 +709,7 @@ struct lambdakzeroBuilder {
       float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC, 2) + TMath::Power(trcCircle2.yC, 2) - TMath::Power(trcCircle2.rC, 2));
 
       // let's just use tagged, cause we can
-      if (!posTrack.hasITS() && !negTrack.hasITS()) {
+      if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
         if (V0.isTrueGamma()) {
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
