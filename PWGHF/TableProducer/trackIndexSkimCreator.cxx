@@ -3298,7 +3298,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             }
 
             // fill histograms
-            if (fillHistograms && (hfFlag >= 2)) {
+            if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) {
               registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
             }
           }
