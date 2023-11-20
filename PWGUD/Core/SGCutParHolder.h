@@ -127,4 +127,3 @@ class SGCutParHolder
 };
 
 #endif // PWGUD_CORE_SGCUTPARHOLDER_H_
-
