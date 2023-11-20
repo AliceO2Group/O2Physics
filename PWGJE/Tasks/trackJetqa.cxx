@@ -151,12 +151,12 @@ struct TrackJetQa {
     histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentile});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
-    histos.add("Mult/MultCorrelations", "MultCorrelations", HistType::kTH1D, {axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
+    histos.add("Mult/MultCorrelations", "MultCorrelations", HistType::kTHnSparseD, {axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
 
     histos.add("TrackEventPar/Sigma1PtFT0Mcent", "Sigma1Pt vs pT vs FT0M centrality", HistType::kTHnSparseD, {axisPercentile, axisPt, axisSigma1OverPt});
     histos.add("TrackEventPar/Sigma1PtFT0Mmult", "Sigma1Pt vs pT vs FT0M multiplicity", HistType::kTHnSparseD, {axisMultiplicityFT0M, axisPt, axisSigma1OverPt});
     histos.add("TrackEventPar/Sigma1PtNTracksPV", "Sigma1Pt vs pT vs NTracksPV", HistType::kTHnSparseD, {axisMultiplicityPV, axisPt, axisSigma1OverPt});
-    histos.add("TrackEventPar/MultCorrelations", "Sigma1Pt vs pT vs MultCorrelations", HistType::kTH1D, {axisSigma1OverPt, axisPt, axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
+    histos.add("TrackEventPar/MultCorrelations", "Sigma1Pt vs pT vs MultCorrelations", HistType::kTHnSparseD, {axisSigma1OverPt, axisPt, axisPercentile, axisMultiplicityFT0M, axisMultiplicityFT0A, axisMultiplicityFT0C, axisMultiplicityPV});
 
     // ITS histograms
     histos.add("ITS/itsNCls", "number of found ITS clusters", {HistType::kTH2F, {axisPt, {8, -0.5, 7.5, "# clusters ITS"}}});
