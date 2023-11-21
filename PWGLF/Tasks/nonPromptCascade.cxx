@@ -30,6 +30,9 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 
+#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
+
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -58,6 +61,9 @@ std::shared_ptr<TH1> invMassACXi;
 } // namespace
 
 struct NonPromptCascadeTask {
+
+  Produces<o2::aod::NonPromptCascadeTable> nonPromptCascadeTable;
+  Produces<o2::aod::NonPromptCascadeTableMC> nonPromptCascadeTableMC;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr>;
