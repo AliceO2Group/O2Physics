@@ -243,25 +243,6 @@ struct hypertriton3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSV);
 
-      //double finalXTrack0 = fitter3body.getTrack(0).getX();
-      //double finalXTrack1 = fitter3body.getTrack(1).getX();
-      //double finalXTrack2 = fitter3body.getTrack(2).getX();
-
-      // Rotate to desired alpha
-      //Track0.rotateParam(fitter3body.getTrack(0).getAlpha());
-      //Track1.rotateParam(fitter3body.getTrack(1).getAlpha());
-      //Track2.rotateParam(fitter3body.getTrack(2).getAlpha());
-
-      //o2::base::Propagator::Instance()->propagateToX(Track0, finalXTrack0, d_bz, maxSnp, maxStep, matCorr);
-      //o2::base::Propagator::Instance()->propagateToX(Track1, finalXTrack1, d_bz, maxSnp, maxStep, matCorr);
-      //o2::base::Propagator::Instance()->propagateToX(Track2, finalXTrack2, d_bz, maxSnp, maxStep, matCorr);
-
-      //n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
-      //if (n3bodyVtx == 0) { // discard this pair
-      //  continue;
-      //}
-      //registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSVAfterCorr);
-
       std::array<float, 3> pos = {0.};
       const auto& vtxXYZ = fitter3body.getPCACandidate();
       for (int i = 0; i < 3; i++) {
