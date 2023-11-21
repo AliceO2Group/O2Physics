@@ -43,23 +43,17 @@ using namespace o2::framework::expressions;
 static const std::vector<std::string> highPtObjectsNames{"JetChHighPt"};
 
 struct jetFilter {
-  enum { kJetChHighPt = 0,
+  enum { kJetChLowPt = 0,
+         kJetChHighPt = 1,
          kHighPtObjects };
-
-  // event selection cuts
-  Configurable<float> selectionJetChHighPt{
-    "selectionJetChHighPt", 33.,
-    "Minimum charged jet pT trigger threshold"}; // we want to keep all events
-                                                 // having a charged jet with
-                                                 // pT above this
 
   Produces<aod::JetFilters> tags;
 
   Configurable<float> cfgJetR{"cfgJetR", 0.6,
                               "jet resolution parameter"}; // jet cone radius
-  Configurable<float> cfgJetPtMin{
-    "cfgJetPtMin", 0.1,
-    "minimum jet pT constituent cut"}; // minimum jet constituent pT
+
+  Configurable<float> jetPtLowThreshold{"jetPtLowThreshold", 30.0, "threshold for low pT jet trigger"};
+  Configurable<float> jetPtHighThreshold{"jetPtHighThreshold", 50.0, "threshold for high pT jet trigger"};
 
   HistogramRegistry spectra{
     "spectra",
@@ -73,12 +67,20 @@ struct jetFilter {
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F,
                 {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
-    spectra.add("ptphiJetChSelected",
-                "pT of selected high pT charged jets vs phi", HistType::kTH2F,
+
+    spectra.add("ptphiJetChSelected_lowptjettrigger", "pT of selected low pT charged jet trigger vs phi", HistType::kTH2F,
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
                  {60, 0, TMath::TwoPi()}});
-    spectra.add("ptetaJetChSelected",
-                "pT of selected high pT charged jets vs eta", HistType::kTH2F,
+
+    spectra.add("ptphiJetChSelected_highptjettrigger", "pT of selected high pT charged jet trigger vs phi", HistType::kTH2F,
+                {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
+                 {60, 0, TMath::TwoPi()}});
+
+    spectra.add("ptetaJetChSelected_lowptjettrigger", "pT of selected low pT charged jet trigger vs eta", HistType::kTH2F,
+                {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
+                 {40, -1.0, 1.0}});
+
+    spectra.add("ptetaJetChSelected_highptjettrigger", "pT of selected high pT charged jet trigger vs eta", HistType::kTH2F,
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
                  {40, -1.0, 1.0}});
 
@@ -91,29 +93,30 @@ struct jetFilter {
   }
 
   // declare filters on tracks
-  // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
+  // Filter collisionFilter = nabs(aod::jcollision::posZ) < cfgVertexCut;
 
   Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
   using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
 
-  void
-    process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, filteredJets const& jets)
+  void process(aod::JCollision const& collision, filteredJets const& jets)
   {
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
-    //
     spectra.fill(HIST("fCollZpos"), collision.posZ());
 
-    // Check whether there is a high pT charged jet
-    for (const auto& jet : jets) {
-      if (jet.pt() >= selectionJetChHighPt) {
-        spectra.fill(HIST("ptphiJetChSelected"), jet.pt(),
-                     jet.phi()); // charged jet pT vs phi
-        spectra.fill(HIST("ptetaJetChSelected"), jet.pt(),
-                     jet.eta()); // charged jet pT vs eta
-        keepEvent[kJetChHighPt] = true;
-        break;
+    for (const auto& jet : jets) { // jets are ordered by pT
+
+      if (jet.pt() >= jetPtLowThreshold) {
+        spectra.fill(HIST("ptphiJetChSelected_lowptjettrigger"), jet.pt(), jet.phi()); // charged jet pT vs phi
+        spectra.fill(HIST("ptetaJetChSelected_lowptjettrigger"), jet.pt(), jet.eta()); // charged jet pT vs eta
+        keepEvent[kJetChLowPt] = true;
       }
+      if (jet.pt() >= jetPtHighThreshold) {
+        spectra.fill(HIST("ptphiJetChSelected_highptjettrigger"), jet.pt(), jet.phi()); // charged jet pT vs phi
+        spectra.fill(HIST("ptetaJetChSelected_highptjettrigger"), jet.pt(), jet.eta()); // charged jet pT vs eta
+        keepEvent[kJetChHighPt] = true;
+      }
+      break; // only looks at the highest pT jet in the event
     }
 
     for (int iDecision{0}; iDecision < kHighPtObjects; ++iDecision) {
@@ -121,7 +124,7 @@ struct jetFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
-    tags(keepEvent[kJetChHighPt]);
+    tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt]);
   }
 };
 

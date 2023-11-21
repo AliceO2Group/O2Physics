@@ -11,7 +11,7 @@
 
 // Task to produce a table joinable to the jet tables for MC Detector level event weights
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,14 +31,14 @@ template <typename MCDetectorLevelJetTable, typename MCDetectorLevelWeightsTable
 struct JetEventWeightMCDTask {
   Produces<MCDetectorLevelWeightsTable> mcDetectorLevelWeightsTable;
 
-  void processDummy(aod::Collisions const& collisions)
+  void processDummy(aod::JCollisions const& collisions)
   {
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processDummy, "Dummy process", true);
 
-  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions)
+  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::JCollisions, aod::JMcCollisionLbs> const& collisions, aod::JMcCollisions const& mcCollisions)
   {
-    auto collision = jet.template collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+    auto collision = jet.template collision_as<soa::Join<aod::JCollisions, aod::JMcCollisionLbs>>();
     mcDetectorLevelWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWeight, "Fill event weight tables for detector level MC jets", false);

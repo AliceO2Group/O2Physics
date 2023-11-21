@@ -153,6 +153,8 @@ struct lambdakzeroBuilder {
 
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
+  ConfigurableAxis axisDeltaDistanceRadii{"axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
 
   int mRunNumber;
   float d_bz;
@@ -188,6 +190,7 @@ struct lambdakzeroBuilder {
     float posDCAxy;
     float negDCAxy;
     float cosPA;
+    float dcav0topv;
     float V0radius;
     float lambdaMass;
     float antilambdaMass;
@@ -209,6 +212,11 @@ struct lambdakzeroBuilder {
      {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
      {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
      {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
+
+  float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  {
+    return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+  }
 
   void resetHistos()
   {
@@ -251,7 +259,7 @@ struct lambdakzeroBuilder {
       const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{static_cast<int32_t>(dQANBinsMass), 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(5 * dQANBinsMass), 1.01f, 2.01f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
@@ -284,6 +292,16 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
+
+      // QA for PCM
+      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisPtQA, axisPositionGuess});
     }
 
     mRunNumber = 0;
@@ -337,7 +355,8 @@ struct lambdakzeroBuilder {
           if (device.name.compare("lambdakzero-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
           const std::string v0DataName = "V0Datas";
-          if (input.matcher.binding == v0DataName && device.name.compare("multistrange-builder") != 0) {
+          const std::string v0DataExtName = "V0DatasExtension";
+          if ((input.matcher.binding == v0DataName || input.matcher.binding == v0DataExtName) && device.name.compare("multistrange-builder") != 0) {
             LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections
@@ -578,6 +597,13 @@ struct lambdakzeroBuilder {
       return false;
     }
 
+    v0candidate.dcav0topv = CalculateDCAStraightToPV(
+      v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
+      v0candidate.posP[0] + v0candidate.negP[0],
+      v0candidate.posP[1] + v0candidate.negP[1],
+      v0candidate.posP[2] + v0candidate.negP[2],
+      primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ());
+
     // Passes CosPA check
     statisticsRegistry.v0stats[kV0CosPA]++;
 
@@ -658,6 +684,45 @@ struct lambdakzeroBuilder {
       registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
       registry.fill(HIST("h2dTopoVarDCAV0ToPV"), lPt, dcaV0toPV);
 
+      // -------------------------------------------------------------------------------------
+      // PCM finding tests
+      //
+      // a) delta1 = D - R1 - R2
+      //             D: distance between two track helix centers in xy
+      //             R1, R2: track radii
+
+      o2::math_utils::CircleXYf_t trcCircle1, trcCircle2;
+      float sna, csa;
+      posTrackPar.getCircleParams(d_bz, trcCircle1, sna, csa);
+      negTrackPar.getCircleParams(d_bz, trcCircle2, sna, csa);
+
+      // distance between circle centers (one circle is at origin -> easy)
+      float centerDistance = std::hypot(trcCircle1.xC - trcCircle2.xC, trcCircle1.yC - trcCircle2.yC);
+
+      // b) delta2 = abs(R2/(R1+R2)*rvec1 + R1/(R1+R2)*rvec2)
+      float r1_r = trcCircle1.rC / (trcCircle1.rC + trcCircle2.rC);
+      float r2_r = trcCircle2.rC / (trcCircle1.rC + trcCircle2.rC);
+      float delta2 = std::hypot(r2_r * trcCircle1.xC + r1_r * trcCircle2.xC, r2_r * trcCircle1.yC + r1_r * trcCircle2.yC);
+
+      // c) delta3 = sqrt(D^2-R^2); D: distance origin-center, R: radius
+      float delta3_track1 = TMath::Sqrt(TMath::Power(trcCircle1.xC, 2) + TMath::Power(trcCircle1.yC, 2) - TMath::Power(trcCircle1.rC, 2));
+      float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC, 2) + TMath::Power(trcCircle2.yC, 2) - TMath::Power(trcCircle2.rC, 2));
+
+      // let's just use tagged, cause we can
+      if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
+        if (V0.isTrueGamma()) {
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
+        } else {
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg"), lPt, delta3_track2);
+        }
+      }
+      // -------------------------------------------------------------------------------------
     } // end QA
     return true;
   }
@@ -692,7 +757,9 @@ struct lambdakzeroBuilder {
              v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
              v0candidate.dcaV0dau,
              v0candidate.posDCAxy,
-             v0candidate.negDCAxy);
+             v0candidate.negDCAxy,
+             v0candidate.cosPA,
+             v0candidate.dcav0topv);
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {

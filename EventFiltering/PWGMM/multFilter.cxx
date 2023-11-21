@@ -31,7 +31,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHfFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
+static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
 float meanMultT0A = 0.f;
 float meanMultT0C = 0.f;
 float meanMultV0A = 0.f;
@@ -51,7 +51,6 @@ struct multFilter {
   // event selection cuts
   Configurable<float> selHTrkMult{"selHTrkMult", 38., "global trk multiplicity threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
-  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.955, "1-flatenicity FV0  threshold"};
   Configurable<float> sel1Mft0{"sel1Mft0", 220.0, "FT0 mult threshold"};
   Configurable<float> sel1Fft0{"sel1Fft0", 0.855, "1-flatenicity FT0 threshold"};
   Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 280.0, "FT0C+FV0 mult threshold"};
@@ -79,15 +78,15 @@ struct multFilter {
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  static constexpr std::string_view nhEst_before[8] = {
-    "eGlobaltrack", "eFV0", "e1flatencityFV0", "eFT0", "e1flatencityFT0", "eFT0CFV0", "e1flatencityFT0CFV0", "ePtl"};
-  static constexpr std::string_view nhEst_after[8] = {
-    "eGlobaltrack_selected", "eFV0_selected", "e1flatencityFV0_selected", "eFT0_selected", "e1flatencityFT0_selected", "eFT0CFV0_selected", "e1flatencityFT0CFV0_selected", "ePtl_selected"};
-  static constexpr std::string_view npEst[8] = {
-    "epGlobaltrack", "epFV0", "ep1flatencityFV0", "epFT0", "ep1flatencityFT0", "epFT0CFV0", "ep1flatencityFT0CFV0", "epPtl"};
+  static constexpr std::string_view nhEst_before[7] = {
+    "eGlobaltrack", "eFV0", "eFT0", "e1flatencityFT0", "eFT0CFV0", "e1flatencityFT0CFV0", "ePtl"};
+  static constexpr std::string_view nhEst_after[7] = {
+    "eGlobaltrack_selected", "eFV0_selected", "eFT0_selected", "e1flatencityFT0_selected", "eFT0CFV0_selected", "e1flatencityFT0CFV0_selected", "ePtl_selected"};
+  static constexpr std::string_view npEst[7] = {
+    "epGlobaltrack", "epFV0", "epFT0", "ep1flatencityFT0", "epFT0CFV0", "ep1flatencityFT0CFV0", "epPtl"};
 
-  static constexpr std::string_view tEst[8] = {
-    "GlobalTrk", "FV0", "1-flatencity_FV0", "FT0", "1-flatencityFT0", "FT0C_FV0", "1-flatencity_FT0C_FV0", "pT^{trig} (GeV/#it{c})"};
+  static constexpr std::string_view tEst[7] = {
+    "GlobalTrk", "FV0", "FT0", "1-flatencityFT0", "FT0C_FV0", "1-flatencity_FT0C_FV0", "pT^{trig} (GeV/#it{c})"};
 
   int RunNumber = 0;
   o2::ccdb::CcdbApi ccdbApi;
@@ -118,9 +117,9 @@ struct multFilter {
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(1.f);
 
-    int nBinsEst[8] = {100, 1000, 102, 700, 102, 700, 102, 150};
-    float lowEdgeEst[8] = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, -0.01, .0};
-    float upEdgeEst[8] = {99.5, 99999.5, 1.01, 699.5, 1.01, 699.5, 1.01, 150.0};
+    int nBinsEst[7] = {100, 1000, 700, 102, 700, 102, 150};
+    float lowEdgeEst[7] = {-0.5, -0.5, -0.5, -0.01, -0.5, -0.01, .0};
+    float upEdgeEst[7] = {99.5, 99999.5, 699.5, 1.01, 699.5, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -155,11 +154,11 @@ struct multFilter {
     multiplicity.add("hDCAxyGlobal", "DCA_{xy}", HistType::kTH1F, {{120, -4.0, 4.0, " "}});
 
     // estimators
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    for (int i_e = 0; i_e < 7; ++i_e) {
       multiplicity.add(
         npEst[i_e].data(), "", HistType::kTProfile, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    for (int i_e = 0; i_e < 7; ++i_e) {
       multiplicity.add(
         nhEst_before[i_e].data(), "", HistType::kTH1F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
       multiplicity.add(
@@ -347,16 +346,16 @@ struct multFilter {
     multiplicity.fill(HIST("hMultFV05Ring"), sumAmpFV05Ring);
 
     if (selt0vtx && !isOkvtxtrig && !isOkFV0OrA) {
-      tags(false, false, false, false, false, false, false, false);
+      tags(false, false, false, false, false, false, false);
       return;
     }
 
     if (selt0time && !isOkTimeFT0) { // this cut is expected to reduce the beam-gas bckgnd
-      tags(false, false, false, false, false, false, false, false);
+      tags(false, false, false, false, false, false, false);
       return;
     }
     if (sel8 && !collision.sel8()) {
-      tags(false, false, false, false, false, false, false, false);
+      tags(false, false, false, false, false, false, false);
       return;
     }
 
@@ -440,19 +439,18 @@ struct multFilter {
     float combined_estimator5 = 0;
     float combined_estimator6 = 0;
     float estimator[8];
-    float cut[8];
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    float cut[7];
+    for (int i_e = 0; i_e < 7; ++i_e) {
       estimator[i_e] = 0;
       cut[i_e] = 0;
     }
     cut[0] = selHTrkMult;
     cut[1] = selHMFv0;
-    cut[2] = sel1Ffv0;
-    cut[3] = sel1Mft0;
-    cut[4] = sel1Fft0;
-    cut[5] = sel1Mft0cFv0;
-    cut[6] = sel1Fft0cFv0;
-    cut[7] = selPtTrig;
+    cut[2] = sel1Mft0;
+    cut[3] = sel1Fft0;
+    cut[4] = sel1Mft0cFv0;
+    cut[5] = sel1Fft0cFv0;
+    cut[6] = selPtTrig;
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
     float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
@@ -482,29 +480,28 @@ struct multFilter {
 
     estimator[0] = multTrack;
     estimator[1] = sumAmpFV0;
-    estimator[2] = 1.0 - flatenicity_fv0;
-    estimator[3] = combined_estimator5;
+    estimator[2] = combined_estimator5;
     float flatenicity_ft0 = (flatenicity_t0a + flatenicity_t0c) / 2.0;
-    estimator[4] = 1.0 - flatenicity_ft0;
-    estimator[5] = combined_estimator6;
-    estimator[6] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
-    estimator[7] = flPt;
+    estimator[3] = 1.0 - flatenicity_ft0;
+    estimator[4] = combined_estimator6;
+    estimator[5] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
+    estimator[6] = flPt;
 
-    static_for<0, 7>([&](auto i) {
+    static_for<0, 6>([&](auto i) {
       constexpr int index = i.value;
       multiplicity.fill(HIST(npEst[index]), estimator[index], estimator[0]);
       multiplicity.fill(HIST(nhEst_before[index]), estimator[index]);
     });
 
-    static_for<0, 7>([&](auto i) {
+    static_for<0, 6>([&](auto i) {
       constexpr int index = i.value;
       if (estimator[index] > cut[index]) {
-        if (index == 3) {
+        if (index == 2) {
           if (estimator[index] < maxFT0m) {
             multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
             keepEvent[index] = true;
           }
-        } else if (index == 5) {
+        } else if (index == 4) {
           if (estimator[index] < maxFV0FT0Cm) {
             multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
             keepEvent[index] = true;
@@ -516,9 +513,9 @@ struct multFilter {
       }
     });
 
-    tags(keepEvent[kHighTrackMult], keepEvent[kHighFv0Mult], keepEvent[kHighFv0Flat], keepEvent[kHighFt0Mult], keepEvent[kHighFt0Flat], keepEvent[kHighFt0cFv0Mult], keepEvent[kHighFt0cFv0Flat], keepEvent[kLeadingPtTrack]);
+    tags(keepEvent[kHighTrackMult], keepEvent[kHighFv0Mult], keepEvent[kHighFt0Mult], keepEvent[kHighFt0Flat], keepEvent[kHighFt0cFv0Mult], keepEvent[kHighFt0cFv0Flat], keepEvent[kLeadingPtTrack]);
 
-    if (!keepEvent[kHighTrackMult] && !keepEvent[kHighFv0Mult] && !keepEvent[kHighFv0Flat] && !keepEvent[kHighFt0Mult] && !keepEvent[kHighFt0Flat] && !keepEvent[kHighFt0cFv0Mult] && !keepEvent[kHighFt0cFv0Flat] && !keepEvent[kLeadingPtTrack]) {
+    if (!keepEvent[kHighTrackMult] && !keepEvent[kHighFv0Mult] && !keepEvent[kHighFt0Mult] && !keepEvent[kHighFt0Flat] && !keepEvent[kHighFt0cFv0Mult] && !keepEvent[kHighFt0cFv0Flat] && !keepEvent[kLeadingPtTrack]) {
       multiplicity.fill(HIST("fProcessedEvents"), 1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {

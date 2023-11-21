@@ -8,11 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
-
-#include <cmath>
 
 using std::cout;
 using std::endl;
@@ -24,6 +22,7 @@ TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
+float VarManager::fgMagField = 0.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
@@ -34,6 +33,7 @@ o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
+o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 
@@ -161,7 +161,32 @@ void VarManager::SetRunlist(TString period)
     SetRunNumbers(LHC22t);
   }
 }
+//__________________________________________________________________
+void VarManager::SetDummyRunlist(int InitRunnumber)
+{
+  //
+  // runlist for the different periods
+  fgRunList.clear();
+  fgRunList.push_back(InitRunnumber);
+  fgRunList.push_back(InitRunnumber + 100);
+}
 
+//__________________________________________________________________
+int VarManager::GetDummyFirst()
+{
+  //
+  // Get the fist index of the vector of run numbers
+  //
+  return fgRunList[0];
+}
+//__________________________________________________________________
+int VarManager::GetDummyLast()
+{
+  //
+  // Get the last index of the vector of run numbers
+  //
+  return fgRunList[fgRunList.size() - 1];
+}
 //_________________________________________________________________
 float VarManager::GetRunIndex(double Runnumber)
 {
@@ -173,7 +198,6 @@ float VarManager::GetRunIndex(double Runnumber)
   float index = std::distance(fgRunList.begin(), runIndex);
   return index;
 }
-
 //__________________________________________________________________
 void VarManager::SetCollisionSystem(TString system, float energy)
 {
@@ -606,6 +630,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPsiPair] = "rad.";
   fgVariableNames[kDeltaPhiPair] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiPair] = "rad.";
+  fgVariableNames[kOpeningAngle] = "Opening angle";
+  fgVariableUnits[kOpeningAngle] = "rad.";
   fgVariableNames[kQuadDCAabsXY] = "DCA_{xy}^{quad}";
   fgVariableUnits[kQuadDCAabsXY] = "cm";
   fgVariableNames[kQuadDCAsigXY] = "DCA_{xy}^{quad}";
@@ -626,4 +652,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAresZ] = "cm";
   fgVariableNames[kBitMapIndex] = " ";
   fgVariableUnits[kBitMapIndex] = "";
+  fgVariableNames[kMassCharmHadron] = "mass (charm hadron)";
+  fgVariableUnits[kMassCharmHadron] = "GeV/c2";
+  fgVariableNames[kPtCharmHadron] = "p_{T} (charm hadron)";
+  fgVariableUnits[kPtCharmHadron] = "GeV/c";
+  fgVariableNames[kRapCharmHadron] = "y (charm hadron)";
+  fgVariableUnits[kRapCharmHadron] = " ";
+  fgVariableNames[kPhiCharmHadron] = "#varphi (charm hadron)";
+  fgVariableUnits[kPhiCharmHadron] = "rad.";
+  fgVariableNames[kIsDoubleGap] = "is double gap event";
+  fgVariableUnits[kIsDoubleGap] = "";
+  fgVariableNames[kIsSingleGapA] = "is single gap event side A";
+  fgVariableUnits[kIsSingleGapA] = "";
+  fgVariableNames[kIsSingleGapC] = "is single gap event side C";
+  fgVariableUnits[kIsSingleGapC] = "";
 }

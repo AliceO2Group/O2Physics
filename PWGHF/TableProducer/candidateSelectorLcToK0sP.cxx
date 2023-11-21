@@ -21,15 +21,15 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_casc;
-using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
 // possible input features for ML
 enum MLInputFeatures {
@@ -124,7 +124,7 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<double> probBayesMinHighP{"probBayesMinHighP", 0.8, "min. Bayes probability for bachelor at high p [%]"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], hf_cuts_lc_to_k0s_p::nBinsPt, hf_cuts_lc_to_k0s_p::nCutVars, hf_cuts_lc_to_k0s_p::labelsPt, hf_cuts_lc_to_k0s_p::labelsCutVar}, "Lc candidate selection per pT bin"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -139,6 +139,7 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
+  HfHelper hfHelper;
   TrackSelectorPr selectorProtonLowP;
   TrackSelectorPr selectorProtonHighP;
 
@@ -421,10 +422,10 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.mGamma());
     }
     if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0K0s(candidate));
+      inputFeatures.push_back(hfHelper.ctV0K0s(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0Lambda(candidate));
+      inputFeatures.push_back(hfHelper.ctV0Lambda(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::dcaV0Daughters]) {
       inputFeatures.push_back(candidate.dcaV0daughters());
@@ -466,7 +467,7 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(bach.tofNSigmaPr());
     }
     if (selectedInputFeatures[MLInputFeatures::m]) {
-      inputFeatures.push_back(o2::aod::hf_cand_casc::invMassLcToK0sP(candidate));
+      inputFeatures.push_back(hfHelper.invMassLcToK0sP(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::pt]) {
       inputFeatures.push_back(candidate.pt());
@@ -481,7 +482,7 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.cpaXY());
     }
     if (selectedInputFeatures[MLInputFeatures::ct]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::ctLc(candidate));
+      inputFeatures.push_back(hfHelper.ctLc(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::eta]) {
       inputFeatures.push_back(candidate.eta());
@@ -490,10 +491,10 @@ struct HfCandidateSelectorLcToK0sP {
       inputFeatures.push_back(candidate.phi());
     }
     if (selectedInputFeatures[MLInputFeatures::y]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::yLc(candidate));
+      inputFeatures.push_back(hfHelper.yLc(candidate));
     }
     if (selectedInputFeatures[MLInputFeatures::e]) {
-      inputFeatures.push_back(o2::aod::hf_cand_3prong::eLc(candidate));
+      inputFeatures.push_back(hfHelper.eLc(candidate));
     }
 
     return inputFeatures;
@@ -515,15 +516,15 @@ struct HfCandidateSelectorLcToK0sP {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfCandCascade.mK0Short() - RecoDecay::getMassPDG(kK0Short)) > cuts->get(ptBin, "mK0s")) {
+    if (std::abs(hfCandCascade.mK0Short() - o2::analysis::pdg::MassK0Short) > cuts->get(ptBin, "mK0s")) {
       return false; // mass of the K0s
     }
 
-    if ((std::abs(hfCandCascade.mLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts->get(ptBin, "mLambda"))) {
+    if ((std::abs(hfCandCascade.mLambda() - o2::analysis::pdg::MassLambda0) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - o2::analysis::pdg::MassLambda0) < cuts->get(ptBin, "mLambda"))) {
       return false; // mass of the Lambda
     }
 
-    if (std::abs(hfCandCascade.mGamma() - RecoDecay::getMassPDG(kGamma)) < cuts->get(ptBin, "mGamma")) {
+    if (std::abs(hfCandCascade.mGamma() - o2::analysis::pdg::MassGamma) < cuts->get(ptBin, "mGamma")) {
       return false; // mass of the Gamma
     }
 

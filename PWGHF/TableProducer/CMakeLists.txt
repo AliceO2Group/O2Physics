@@ -25,7 +25,7 @@ o2physics_add_dpl_workflow(refit-pv-dummy
 
 o2physics_add_dpl_workflow(candidate-creator-2prong
                     SOURCES candidateCreator2Prong.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-3prong
@@ -190,6 +190,11 @@ o2physics_add_dpl_workflow(tree-creator-lc-to-k0s-p
 o2physics_add_dpl_workflow(tree-creator-lc-to-p-k-pi
                     SOURCES treeCreatorLcToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-omegac-st
+                    SOURCES treeCreatorOmegacSt.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-to-xi-pi

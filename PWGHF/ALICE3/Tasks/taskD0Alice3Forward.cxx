@@ -19,19 +19,19 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 /// Fills MC histograms.
 struct HfTaskD0Alice3Forward {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHfFlag >= 1);
+
+  HfHelper hfHelper;
 
   HistogramRegistry registry{
     "registry",
@@ -45,21 +45,21 @@ struct HfTaskD0Alice3Forward {
                aod::TracksWMc const& tracks)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (std::abs(yD0(candidate)) > 4.0) {
+      if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
         continue;
       }
 
-      auto massD0 = invMassD0ToPiK(candidate);
-      // auto massD0bar = invMassD0barToKPi(candidate);
+      auto massD0 = hfHelper.invMassD0ToPiK(candidate);
+      // auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(yD0(candidate));
+      auto rapidityCandidate = std::abs(hfHelper.yD0(candidate));
 
       if (candidate.isSelD0FRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -68,12 +68,12 @@ struct HfTaskD0Alice3Forward {
     }
 
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassD0)) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassD0);
         registry.fill(HIST("hMassGen"), ptGen, std::abs(yGen));
       }
     }

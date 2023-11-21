@@ -17,10 +17,12 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct lambda1520analysis {
   // Define slice per Resocollision
@@ -202,8 +204,8 @@ struct lambda1520analysis {
     }
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKMinus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
+  double massKa = MassKaonCharged;
+  double massPr = MassProton;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -298,8 +300,8 @@ struct lambda1520analysis {
       // Trk1: Proton, Trk2: Kaon
       bool isTrk1Selected{true}, isTrk2Selected{true}; //, isTrk1hasTOF{false}, isTrk2hasTOF{false};
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();
 
       auto trk1ptPr = trk1.pt();
       auto trk1NSigmaPrTPC = trk1.tpcNSigmaPr();
@@ -478,7 +480,7 @@ struct lambda1520analysis {
         if constexpr (IsMC) {
           // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << std::endl;
 
-          if (abs(trk1.pdgCode()) != kProton || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 2212 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -532,7 +534,7 @@ struct lambda1520analysis {
   PROCESS_SWITCH(lambda1520analysis, processData, "Process Event for data without partition", false);
 
   void processMC(aod::ResoCollision& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
@@ -548,10 +550,10 @@ struct lambda1520analysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321) { // At least one decay to Kaon
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kProton || abs(part.daughterPDG2()) == kProton) { // At least one decay to Proton
+      if (abs(part.daughterPDG1()) == 2212 || abs(part.daughterPDG2()) == 2212) { // At least one decay to Proton
         pass1 = true;
       }
       if (!pass1 || !pass2) // If we have both decay products
@@ -567,10 +569,10 @@ struct lambda1520analysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

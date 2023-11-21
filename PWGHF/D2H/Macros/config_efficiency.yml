@@ -1,0 +1,37 @@
+input:
+  filename: /home/abigot/HFStudies/ML/training_samples/merged_signal_results.root
+  treename: hf-task-dplus/
+  histoname:
+    reconstructed:
+      All: null # hPtRecSig
+      Prompt: hPtRecSigPrompt
+      Nonprompt: hPtRecSigNonPrompt
+    generated:
+      All: null #hPtVsYGen
+      Prompt: hPtVsYGenPrompt
+      Nonprompt: hPtVsYGenNonPrompt
+
+pt_bins_limits: null # options available: list of bin limits, null to deactivate
+
+rapidity:
+  axis: Y # rapidity axis in input histograms, options available: X, Y
+  cut: 0.5 # selection |y| < cut on the generated histogram, null if not cut
+
+output:
+  dir: efficiency/
+  save:
+    TEfficiency: True # save TEfficiency instances in output .root file
+    TH1: True # save TH1 histograms in output .root file
+    TCanvas: # save TCanvas instances in extra files (on top of the standard output .root file)
+      individual: True # for individual canvas (All, Prompt, Nonprompt separately)
+      overlap: True # for overlap canvas (see overlap entry below)
+      extension: pdf, png # root not needed, all canvas are stored in .root file anyway
+  plots:
+    label: AccEffPreselDplusToPiKPi # label in output files (file names, .root entries)
+    y_axis:
+      name: "(Acc #times #varepsilon)"
+      min: 1.e-2
+      max: 1.
+      log_scale: True
+    overlap: Prompt, Nonprompt # options available: All, Prompt, Nonprompt, null (if not overlap wanted)
+    watermark: "#color[619]{THIS WORK}" # watermark on top left of the plot's frame

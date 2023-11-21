@@ -41,11 +41,10 @@
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod::hffilters;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hffilters;
-using namespace hf_cuts_single_track;
-using namespace hf_cuts_bdt_multiclass;
 
 struct HfFilter { // Main struct for HF triggers
 
@@ -61,8 +60,8 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 5, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
-  // min pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> minPtCuts{"minPtCuts", {cutsMinPt[0], 1, 4, labelsEmpty, labelsColumnsMinPt}, "minimum pT for bachelor tracks (except for V0 and cascades)"};
+  // min and max pts for tracks and bachelors (except for V0 and cascades)
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 4, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -163,7 +162,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // helper object
@@ -172,10 +171,12 @@ struct HfFilter { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setPtBinsSingleTracks(pTBinsTrack);
-    helper.setMinPtBeautyBachelor(minPtCuts->get(0u, 0u));
-    helper.setMinPtDstarSoftPion(minPtCuts->get(0u, 1u));
+    helper.setPtLimitsBeautyBachelor(ptCuts->get(0u, 0u), ptCuts->get(1u, 0u));
+    helper.setPtLimitsDstarSoftPion(ptCuts->get(0u, 1u), ptCuts->get(1u, 1u));
+    helper.setPtLimitsProtonForFemto(ptCuts->get(0u, 2u), ptCuts->get(1u, 2u));
+    helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
-    helper.setMinPtProtonForFemto(minPtCuts->get(0u, 2u));
+    helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setPtThresholdPidStrategyForFemto(ptThresholdForFemtoPid);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
@@ -184,8 +185,6 @@ struct HfFilter { // Main struct for HF triggers
     helper.setDeltaMassCharmHadForBeauty(deltaMassBeauty->get(0u, kNBeautyParticles));
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u));
-    helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
-    helper.setMinPtCharmBaryonBachelor(minPtCuts->get(0u, 3u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
     helper.setTpcPidCalibrationOption(setTPCCalib);
 
@@ -552,6 +551,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
               if (TESTBIT(selV0, kPhoton)) {
@@ -867,6 +867,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
 
@@ -966,6 +967,7 @@ struct HfFilter { // Main struct for HF triggers
             gpu::gpustd::array<float, 2> dcaInfo;
             std::array<float, 3> pVecCascade = {casc.px(), casc.py(), casc.pz()};
             auto trackParCasc = o2::track::TrackPar(std::array{casc.x(), casc.y(), casc.z()}, pVecCascade, bachelorCasc.sign(), true);
+            trackParCasc.setPID(o2::track::PID::XiMinus);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParCasc, pVecCascade);
 

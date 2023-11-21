@@ -58,9 +58,6 @@ using namespace o2::aod::track;
 using namespace o2::aod;
 using namespace o2::aod::evsel;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_bplus;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -837,7 +834,7 @@ struct MultiplicityCounter {
         auto nTrack = v0.template negTrack_as<FiTracks>();
 
         if (v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau && fabs(z) < 10 && fabs(v0.eta()) < 0.5) {
 
@@ -882,7 +879,7 @@ struct MultiplicityCounter {
         auto nTrack = v0.template negTrack_as<DaughterTracks>();
 
         if (0 && v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {
 

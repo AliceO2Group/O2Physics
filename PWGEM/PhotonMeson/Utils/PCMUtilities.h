@@ -20,6 +20,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
+#include "Common/Core/RecoDecay.h"
 
 //_______________________________________________________________________
 bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
@@ -32,8 +33,23 @@ bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, co
   }
 }
 //_______________________________________________________________________
+float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+  float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+  return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
+}
+//_______________________________________________________________________
+float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
+  return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qt of v0
+}
+//_______________________________________________________________________
 template <typename TrackPrecision = float, typename T>
-void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, float xyz[3])
+void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 
@@ -42,6 +58,9 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
+
+  trackPosInformation.setPID(o2::track::PID::Electron);
+  trackNegInformation.setPID(o2::track::PID::Electron);
 
   o2::track::TrackAuxPar helixPos(trackPosInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
   o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -52,11 +71,13 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   // I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
+  trackPosInformationCopy.setPID(o2::track::PID::Electron);
+  trackNegInformationCopy.setPID(o2::track::PID::Electron);
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), (xyz[0] - helixPos.xC));
-  Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), (xyz[0] - helixNeg.xC));
+  Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
   Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
   Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
@@ -75,15 +96,13 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                     o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-  // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
+                     matCorr);
   prop->propagateToX(trackNegInformationCopy,
                      vertexNegRot.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                     o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-  // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
+                     matCorr);
 
   // TODO: This is still off and needs to be checked...
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);

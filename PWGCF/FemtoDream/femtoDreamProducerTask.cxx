@@ -78,8 +78,6 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
-  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
-
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
@@ -343,8 +341,7 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <bool isMC, typename V0Type, typename TrackType,
-            typename CollisionType>
+  template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
 
@@ -486,7 +483,7 @@ struct femtoDreamProducerTask {
                     aod::femtodreamparticle::ParticleType::kV0,
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0),
                     0,
-                    v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    v0.v0cosPA(),
                     indexChildID,
                     v0.mLambda(),
                     v0.mAntiLambda());

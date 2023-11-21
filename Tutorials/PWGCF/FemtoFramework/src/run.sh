@@ -5,18 +5,22 @@
 # export alien_CLOSE_SE=ALICE::UPB::EOS
 
 # make sure you can connect to central server
-# alien-token-init
+# alien.py
 
-# pass config file as argument or use the default
-ConfigFile="${1:-run-config.json}"
+# number of task you want to run, run task 1 by default
+Task="${1:-1}"
 
-# pass the same options to all workflows
+# config file to use, use config.json by default
+ConfigFile="${2:-config.json}"
+
+# options passed to each workflow
 Options=("-b" "--configuration" "json://${ConfigFile}")
 
-o2-analysis-timestamp "${Options[@]}" |
-        o2-analysis-event-selection "${Options[@]}" |
-        o2-analysis-multiplicity-table "${Options[@]}" |
-        o2-analysis-track-propagation "${Options[@]}" |
-        o2-analysis-pid-tpc-base "${Options[@]}" |
-        o2-analysis-pid-tpc "${Options[@]}" |
-        o2-analysistutorial-cf-femtodream-tutorial-0 "${Options[@]}"
+# command to be executed
+Command="o2-analysistutorial-cf-femtodream-tutorial-${Task} ${Options[*]}"
+
+# print comand before executing it
+echo "$Command"
+eval "$Command"
+
+exit 0
