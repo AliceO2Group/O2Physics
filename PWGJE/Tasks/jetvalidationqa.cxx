@@ -181,8 +181,8 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("leadJetConstEta"), leadingConstTrackEta);
   } // end of fillLeadingJetConstQA template
 
-  Filter etafilter = (aod::jtrack::eta < etaup) && (aod::jtrack::eta > etalow);
-  Filter ptfilter = (aod::jtrack::pt < ptUp) && (aod::jtrack::pt > ptLow);
+  Filter etafilter = (aod::jtrack::eta <= etaup) && (aod::jtrack::eta >= etalow);
+  Filter ptfilter = (aod::jtrack::pt <= ptUp) && (aod::jtrack::pt >= ptLow);
   using Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using TracksJE = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs>>;
 
@@ -329,7 +329,7 @@ struct jetTrackCollisionQa {
 struct mcJetTrackCollisionQa {
   // Track filter configs
   Configurable<float> ptLow{"ptLow", 0.15f, "lowest pt"};
-  Configurable<float> ptUp{"ptUp", 10e10f, "highest pt"};
+  Configurable<float> ptUp{"ptUp", 10e15f, "highest pt"};
   Configurable<float> etalow{"etaLow", -0.9f, "lowest eta"};
   Configurable<float> etaup{"etaUp", 0.9f, "highest eta"};
 

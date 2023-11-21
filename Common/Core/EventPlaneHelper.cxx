@@ -204,11 +204,11 @@ float EventPlaneHelper::GetEventPlane(const float qx, const float qy)
   return (TMath::ATan2(qy, qx));
 }
 
-double EventPlaneHelper::GetResolution(const std::shared_ptr<TProfile> prof)
+float EventPlaneHelper::GetResolution(const float RefA, const float RefB, const float sig, int nmode)
 {
-  double avgAB = prof->GetBinContent(1);
-  double avgAC = prof->GetBinContent(2);
-  double avgBC = prof->GetBinContent(3);
-
-  return TMath::Sqrt(avgAB * avgAC / avgBC);
+  if (std::abs(std::cos((RefA - RefB) * nmode)) > 1e-8) {
+    return std::sqrt(std::cos((sig - RefA) * nmode) * std::cos((sig - RefB) * nmode) / std::cos((RefA - RefB) * nmode));
+  } else {
+    return -1;
+  }
 }

@@ -520,20 +520,20 @@ struct straRecoStudy {
         histos.fill(HIST("h2dK0ShortQADCAV0Dau"), v0.pt(), v0.dcaV0daughters());
         histos.fill(HIST("h2dK0ShortQADCAPosToPV"), v0.pt(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
         histos.fill(HIST("h2dK0ShortQADCANegToPV"), v0.pt(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
-        histos.fill(HIST("h2dK0ShortQADCAToPV"), v0.pt(), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-        histos.fill(HIST("h2dK0ShortQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())));
+        histos.fill(HIST("h2dK0ShortQADCAToPV"), v0.pt(), v0.dcav0topv());
+        histos.fill(HIST("h2dK0ShortQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA()));
       }
       if (v0mc.pdgCode() == 3122) {
         histos.fill(HIST("h2dLambdaQAV0Radius"), v0.pt(), v0.v0radius());
         histos.fill(HIST("h2dLambdaQADCAV0Dau"), v0.pt(), v0.dcaV0daughters());
         histos.fill(HIST("h2dLambdaQADCAPosToPV"), v0.pt(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
         histos.fill(HIST("h2dLambdaQADCANegToPV"), v0.pt(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
-        histos.fill(HIST("h2dLambdaQADCAToPV"), v0.pt(), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-        histos.fill(HIST("h2dLambdaQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())));
+        histos.fill(HIST("h2dLambdaQADCAToPV"), v0.pt(), v0.dcav0topv());
+        histos.fill(HIST("h2dLambdaQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA()));
       }
 
       if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+        if (v0.v0cosPA() > v0setting_cospa) {
           if (v0.dcaV0daughters() < v0setting_dcav0dau) {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
             // Fill invariant masses
@@ -577,7 +577,7 @@ struct straRecoStudy {
         continue;
 
       if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+        if (v0.v0cosPA() > v0setting_cospa) {
           if (v0.dcaV0daughters() < v0setting_dcav0dau) {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
             // Fill invariant masses

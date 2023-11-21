@@ -70,7 +70,7 @@ struct perfK0sResolution {
     // Apply selections on V0
     if (TMath::Abs(v0.yK0Short()) > rapidity)
       return kFALSE;
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0setting_cospa)
+    if (v0.v0cosPA() < v0setting_cospa)
       return kFALSE;
     if (v0.v0radius() < v0setting_radius)
       return kFALSE;

@@ -381,11 +381,12 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
   {
 
     // Match reconstructed candidates.
     candidatesSigmac->bindExternalIndices(&tracks);
+    candidatesSigmac->bindExternalIndices(&candsLc);
 
     int indexRec = -1;
     int8_t sign = 0;

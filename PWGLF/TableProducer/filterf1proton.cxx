@@ -306,7 +306,7 @@ struct filterf1proton {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > cMaxV0DCA) {
+    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
 
@@ -314,7 +314,7 @@ struct filterf1proton {
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
     const float dcaDaughv0 = candidate.dcaV0daughters();
-    const float cpav0 = candidate.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float cpav0 = candidate.v0cosPA();
 
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
