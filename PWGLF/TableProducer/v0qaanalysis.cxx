@@ -110,14 +110,14 @@ struct v0qaanalysis {
       bool isPhysicalPrimary = isMC;
 
       if (v0.v0radius() > v0radius &&
-          v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+          v0.v0cosPA() > v0cospa &&
           TMath::Abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
           TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
         myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
-              v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+              v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
               v0.posTrack_as<DauTracks>().eta(), v0.negTrack_as<DauTracks>().eta(),
               v0.posTrack_as<DauTracks>().phi(), v0.negTrack_as<DauTracks>().phi(),
@@ -201,7 +201,7 @@ struct v0qaanalysis {
         float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
 
         if (v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
             TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
         ) {
@@ -211,7 +211,7 @@ struct v0qaanalysis {
           // Fill table
           myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
-                v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
                 v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
                 v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),

@@ -109,10 +109,10 @@ struct cascadeprefilter {
       cascGoodNegTracks(t0.globalIndex(), t0.collisionId(), -t0.dcaXY());
     }
     for (auto& v0 : goodV0s) {
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cospaV0) {
+      if (v0.v0cosPA() < cospaV0) {
         continue;
       }
-      if (v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < dcav0topv) {
+      if (v0.dcav0topv() < dcav0topv) {
         continue;
       }
       if (v0.dcaV0daughters() > dcav0dau) {

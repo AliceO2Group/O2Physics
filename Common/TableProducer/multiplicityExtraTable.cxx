@@ -76,11 +76,11 @@ struct MultiplicityExtraTable {
       std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
-      for (int i = 0; i < (int)CollidingBunch.size(); i++) {
-        if (CollidingBunch.test(i)) {
-          LOG(info) << i << "  ";
-        }
-      }
+      // for (int i = 0; i < (int)CollidingBunch.size(); i++) {
+      //   if (CollidingBunch.test(i)) {
+      //     LOG(info) << i << "  ";
+      //   }
+      // }
     } // new run number
 
     bool collidingBC = CollidingBunch.test(localBC);

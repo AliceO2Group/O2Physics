@@ -1534,7 +1534,7 @@ struct cascadeBuilder {
       buildStrangenessTables<FullTracksExt>(CascadeTable_thisCollision);
     }
   }
-  PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 cascade tables", true);
+  PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 cascade tables", false);
 
   void processRun3(aod::Collisions const& collisions, aod::V0sLinked const&, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
@@ -1548,7 +1548,7 @@ struct cascadeBuilder {
       buildStrangenessTables<FullTracksExtIU>(CascadeTable_thisCollision);
     }
   }
-  PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
+  PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", true);
 
   void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
   {

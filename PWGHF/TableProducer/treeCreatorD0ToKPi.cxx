@@ -52,10 +52,14 @@ DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
 DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -70,9 +74,11 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand2Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
@@ -91,10 +97,14 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -145,10 +155,14 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::CandidateSelFlag,
                   full::M,
                   full::MaxNormalisedDeltaIP,
@@ -177,14 +191,14 @@ DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
-                  full::CollisionId,
+                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
                   full::OriginMcGen,
-                  full::CandidateId);
+                  full::McParticleId);
 
 } // namespace o2::aod
 
@@ -202,7 +216,7 @@ struct HfTreeCreatorD0ToKPi {
 
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
@@ -257,10 +271,14 @@ struct HfTreeCreatorD0ToKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         1 << candFlag,
         invMass,
         candidate.pt(),
@@ -311,10 +329,14 @@ struct HfTreeCreatorD0ToKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         1 << candFlag,
         invMass,
         candidate.maxNormalisedDeltaIP(),

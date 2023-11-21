@@ -72,8 +72,8 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
 
 static constexpr int CentHistArray{15};
-std::shared_ptr<TH1> h1MultHistCentFT0C[CentHistArray];
-std::shared_ptr<TH1> h1EtaHistCentFT0C[CentHistArray];
+std::array<std::shared_ptr<TH1>, CentHistArray> h1MultHistCentFT0C;
+std::array<std::shared_ptr<TH1>, CentHistArray> h1EtaHistCentFT0C;
 
 AxisSpec axisEvent{4, -0.5, 3.5, "#Event"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
@@ -155,9 +155,9 @@ struct HeavyIonMultiplicity {
     }
   }
 
-  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+  expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                                   ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                                  ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                  ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
                                                   ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
                                                          ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
@@ -283,21 +283,20 @@ struct HeavyIonMultiplicity {
 
   void processDataCentFT0C(CollisionDataTableCentFT0C::iterator const& collision, FilTrackDataTable const& tracks)
   {
-    bool hasCentrality = false;
     float cent = -1;
     auto centinterval = static_cast<std::vector<float>>(CentInterval);
     int NchTracks[CentHistArray];
     for (int i = 0; i < CentHistArray; i++) {
       NchTracks[i] = 0;
     }
-    hasCentrality = CollisionDataTableCentFT0C::template contains<aod::CentFT0Cs>();
+    constexpr auto hasCentrality = CollisionDataTableCentFT0C::template contains<aod::CentFT0Cs>();
     histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
       histos.fill(HIST("EventHist"), 1);
       if (std::abs(collision.posZ()) < VtxRange) {
         histos.fill(HIST("EventHist"), 2);
         histos.fill(HIST("VtxZHist"), collision.posZ());
-        if (hasCentrality) {
+        if constexpr (hasCentrality) {
           cent = collision.centFT0C();
           histos.fill(HIST("CentPercentileHist"), cent);
           for (auto& track : tracks) {
