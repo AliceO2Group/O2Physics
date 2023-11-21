@@ -151,7 +151,7 @@ struct HfCandidateCreatorToXiPi {
 
         // preselect cascade candidates
         if (doCascadePreselection) {
-          if(casc.dcaXYCascToPV() > dcaXYToPVCascadeMax){
+          if (casc.dcaXYCascToPV() > dcaXYToPVCascadeMax) {
             continue;
           }
           if (std::abs(casc.mXi() - massXiFromPDG) > massToleranceCascade) {
