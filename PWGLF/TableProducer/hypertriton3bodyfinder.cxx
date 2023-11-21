@@ -226,7 +226,7 @@ struct hypertriton3bodyFinder {
                 kV0hasSV,
                 kV0Radius,
                 kV0Pt,
-                kV0tgLamda,
+                kV0TgLamda,
                 kV0InvMass,
                 kV0DcaXY,
                 kV0CosPA,
@@ -512,7 +512,7 @@ struct hypertriton3bodyFinder {
         if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
           continue;
         }
-        FillV0Counter(kV0tgLamda);
+        FillV0Counter(kV0TgLamda);
 
         // apply mass selections
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
@@ -706,7 +706,7 @@ struct hypertriton3bodyFinder {
         if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
           continue;
         }
-        FillV0Counter(kV0tgLamda, isTrue3bodyV0);
+        FillV0Counter(kV0TgLamda, isTrue3bodyV0);
 
         // apply mass selections
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
