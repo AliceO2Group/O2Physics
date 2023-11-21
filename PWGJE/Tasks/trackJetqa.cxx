@@ -295,19 +295,21 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
   }
 
+  Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
+  SliceCache cacheTrk;
   void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs> const& collisions,
                    soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEventQa(collision);
       if (fillMultiplicity) {
         histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
         histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
         histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
       }
-      Partition<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> groupedTracks = aod::track::collisionId == collision.globalIndex();
-      groupedTracks.bindTable(tracks);
-      for (auto& track : groupedTracks) {
+      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cacheTrk);
+      
+      for (const auto& track : tracksInCollision) {
         fillTrackQa(track);
         if (fillMultiplicity) {
           histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
@@ -319,7 +321,6 @@ struct TrackJetQa {
   PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
 
   Preslice<aod::JeTracks> jePerCol = aod::jetspectra::collisionId;
-  SliceCache cacheTrk;
   void processDerived(aod::JeColls const& collisions,
                       aod::JeTracks const& tracks)
   {
