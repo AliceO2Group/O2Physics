@@ -3386,8 +3386,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 rowTrackIndexCasc3Prong(thisCollId,
                                         casc.globalIndex(),
                                         trackPion1.globalIndex(),
-                                        trackPion2.globalIndex(),
-                                        hfFlag);
+                                        trackPion2.globalIndex());
               }
 
             } // end 3prong loop

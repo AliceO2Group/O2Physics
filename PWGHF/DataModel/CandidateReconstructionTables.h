@@ -269,8 +269,7 @@ DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 p
                   hf_track_index::CollisionId,
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
-                  hf_track_index::Prong1Id,
-                  hf_track_index::HFflag);
+                  hf_track_index::Prong1Id);
 using HfCascLf3Prong = HfCascLf3Prongs::iterator;
 
 namespace hf_track_index
