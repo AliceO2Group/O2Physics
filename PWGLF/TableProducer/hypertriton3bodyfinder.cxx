@@ -614,15 +614,15 @@ struct hypertriton3bodyFinder {
           gpu::gpustd::array<float, 2> dcaInfo;
 
           auto Track0Par = getTrackPar(t0);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track0dcaXY = dcaInfo[0];
 
           auto Track1Par = getTrackPar(t1);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track1dcaXY = dcaInfo[0];
 
           auto Track2Par = getTrackPar(t2);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track2dcaXY = dcaInfo[0];
 
           //  Not involved: H3L DCA Check
@@ -847,15 +847,15 @@ struct hypertriton3bodyFinder {
           gpu::gpustd::array<float, 2> dcaInfo;
 
           auto Track0Par = getTrackPar(t0);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track0dcaXY = dcaInfo[0];
 
           auto Track1Par = getTrackPar(t1);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track1dcaXY = dcaInfo[0];
 
           auto Track2Par = getTrackPar(t2);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
           auto Track2dcaXY = dcaInfo[0];
 
           //  Not involved: H3L DCA Check

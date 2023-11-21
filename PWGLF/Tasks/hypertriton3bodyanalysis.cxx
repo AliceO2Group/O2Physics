@@ -97,7 +97,7 @@ struct hypertriton3bodyAnalysis {
   Configurable<float> dcapiontopv{"dcapiontopv", .00, "DCA Pion To PV"};
   Configurable<float> etacut{"etacut", 1, "etacut"};
   Configurable<float> rapidity{"rapidity", 1, "rapidity"};
-  Configurable<float> TofPidNsigmaCut{"TofPidNsigmaCut", 5, "TofPidNsigmaCut"};
+  Configurable<float> TofPidNsigmaCut{"TofPidNsigmaCut", -4, "TofPidNsigmaCut"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
@@ -231,7 +231,7 @@ struct hypertriton3bodyAnalysis {
         continue;
       }
       registry.fill(HIST("hSelectedCandidatesCounter"), kCandDcaDau);
-      if (TMath::Abs(track2.tofNSigmaDe()) > TofPidNsigmaCut && track2.p() > minDeuteronPtUseTOF) {
+      if (track2.tofNSigmaDe() < TofPidNsigmaCut && track2.p() > minDeuteronPtUseTOF) {
         continue;
       }
       registry.fill(HIST("hSelectedCandidatesCounter"), kCandTOFPID);
