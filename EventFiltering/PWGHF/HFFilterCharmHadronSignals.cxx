@@ -65,7 +65,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   // additional selections for D*
   Configurable<float> minPtSoftPion{"minPtSoftPion", static_cast<float>(cutsPt[0][1]), "minimum pT for soft pion tracks in D*+ -> D0pi decay"};
   Configurable<float> maxPtSoftPion{"maxPtSoftPion", static_cast<float>(cutsPt[1][1]), "maximum pT for soft pion tracks in D*+ -> D0pi decay"};
-  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
+  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"}; 
   Configurable<float> maxDeltaMassDzeroFromDstar{"maxDeltaMassDzeroFromDstar", static_cast<float>(cutsDeltaMassB[0][kNBeautyParticles]), "maximum invariant-mass delta for D0 in D*+ -> D0pi decay"};
 
   // CCDB configuration
@@ -75,6 +75,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  int currentRun{0}; // needed to get proper magnetic field
 
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
@@ -102,11 +103,17 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   AxisSpec bdtPromptAxis{100, 0.f, 1.f, "BDT prompt"};
   AxisSpec bdtNonPromptAxis{100, 0.f, 1.f, "BDT nonprompt"};
 
-  HistogramRegistry registry{"registry", {{"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}}, {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
+  HistogramRegistry registry{"registry", {
+    {"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}},
+    {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
+    {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
 
-  // material correction for track propagation
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // no material correction for track propagation
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // helper object
@@ -179,6 +186,13 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         }
       }
 
+      // needed for track propagation
+      if (currentRun != bc.runNumber()) {
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        currentRun = bc.runNumber();
+      }
+
       // loop over 2-prong candidates
       auto cand2ProngsThisColl = cand2Prongs.sliceBy(hf2ProngPerCollision, thisCollId);
       for (const auto& cand2Prong : cand2ProngsThisColl) {                                // start loop over 2 prongs
@@ -232,7 +246,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
           }
 
-          if (!TESTBIT(tagBDT, RecoDecay::OriginType::Prompt) && !TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt)) { // if not tagged neither as prompt nor nonprompt, we skip
+          if (!TESTBIT(tagBDT, RecoDecay::OriginType::Prompt) && !TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt)) { // if not tagged neither as prompt nor nonprompt, we skip 
             continue;
           }
         }
