@@ -160,6 +160,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Energy, energy, float);
+DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -178,6 +179,7 @@ DECLARE_SOA_TABLE(JTracks, "AOD", "JTracks",
                   jtrack::Eta,
                   jtrack::Phi,
                   jtrack::Energy,
+                  jtrack::Sign,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
@@ -193,6 +195,7 @@ DECLARE_SOA_TABLE(StoredJTracks, "DYN", "JTracks",
                   jtrack::Eta,
                   jtrack::Phi,
                   jtrack::Energy,
+                  jtrack::Sign,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
@@ -221,7 +224,7 @@ DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); // TODO : We can look at combining this with the two below
 DECLARE_SOA_COLUMN(HepMCStatusCode, getHepMCStatusCode, int);
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t);
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
@@ -353,6 +356,21 @@ DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JClusterTracks", //!
 
 DECLARE_SOA_TABLE(StoredJClusterTracks, "DYN", "JClusterTracks", //!
                   jcluster::JTrackIds,
+                  o2::soa::Marker<1>);
+
+namespace jdummy
+{
+
+DECLARE_SOA_COLUMN(Dummy, dummy, bool);
+
+} // namespace jdummy
+DECLARE_SOA_TABLE(JDummys, "AOD", "JDummys",
+                  o2::soa::Index<>,
+                  jdummy::Dummy);
+
+DECLARE_SOA_TABLE(StoredJDummys, "DYN", "JDummys",
+                  o2::soa::Index<>,
+                  jdummy::Dummy,
                   o2::soa::Marker<1>);
 
 } // namespace o2::aod

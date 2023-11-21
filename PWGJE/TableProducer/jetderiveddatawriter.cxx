@@ -39,6 +39,7 @@ struct JetDerivedDataWriter {
   Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
   Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
 
+  Produces<aod::StoredJDummys> storedJDummysTable;
   Produces<aod::StoredJBCs> storedJBCsTable;
   Produces<aod::StoredJBCPIs> storedJBCParentIndexTable;
   Produces<aod::StoredJCollisions> storedJCollisionsTable;
@@ -128,6 +129,12 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
   PROCESS_SWITCH_JKL(JetDerivedDataWriter, processJets<aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
 
+  void processDummy(aod::JDummys const& Dummys)
+  {
+    storedJDummysTable(1);
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processDummy, "write out dummy output table", true);
+
   void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters)
   {
     std::map<int32_t, int32_t> trackMapping;
@@ -154,7 +161,7 @@ struct JetDerivedDataWriter {
       storedJFullTriggerSelsTable(collision.fullTriggerSel());
 
       for (const auto& track : tracks) {
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -183,6 +190,8 @@ struct JetDerivedDataWriter {
   void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JMcCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles)
   {
 
+    std::map<int32_t, int32_t> paticleMapping;
+    std::map<int32_t, int32_t> mcCollisionMapping;
     int particleTableIndex = 0;
     for (auto mcCollision : mcCollisions) {
       bool collisionSelected = false;
@@ -199,8 +208,8 @@ struct JetDerivedDataWriter {
 
         storedJMcCollisionsTable(mcCollision.posZ(), mcCollision.weight());
         storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
+        mcCollisionMapping.insert(std::make_pair(mcCollision.globalIndex(), storedJMcCollisionsTable.lastIndex()));
 
-        std::map<int32_t, int32_t> paticleMapping;
         for (auto particle : particlesPerMcCollision) {
           paticleMapping.insert(std::make_pair(particle.globalIndex(), particleTableIndex));
           particleTableIndex++;
@@ -208,23 +217,24 @@ struct JetDerivedDataWriter {
         for (auto particle : particlesPerMcCollision) {
 
           std::vector<int> mothersId;
-          int daughtersId[2];
           if (particle.has_mothers()) {
-            for (auto const& mother : particle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
+            auto mothersIdTemps = particle.mothersIds();
+            for (auto mothersIdTemp : mothersIdTemps) {
 
-              auto JMotherIndex = paticleMapping.find(mother.globalIndex());
+              auto JMotherIndex = paticleMapping.find(mothersIdTemp);
               if (JMotherIndex != paticleMapping.end()) {
                 mothersId.push_back(JMotherIndex->second);
               }
             }
           }
+          int daughtersId[2] = {-1, -1};
           auto i = 0;
           if (particle.has_daughters()) {
-            for (auto const& daughter : particle.template daughters_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
+            for (auto daughterId : particle.daughtersIds()) {
               if (i > 1) {
                 break;
               }
-              auto JDaughterIndex = paticleMapping.find(daughter.globalIndex());
+              auto JDaughterIndex = paticleMapping.find(daughterId);
               if (JDaughterIndex != paticleMapping.end()) {
                 daughtersId[i] = JDaughterIndex->second;
               }
@@ -234,6 +244,19 @@ struct JetDerivedDataWriter {
           storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
+      }
+    }
+
+    for (auto mcCollision : mcCollisions) {
+      bool collisionSelected = false;
+      const auto collisionsPerMcCollision = collisions.sliceBy(CollisionsPerMcCollision, mcCollision.globalIndex());
+      for (auto collision : collisionsPerMcCollision) {
+        if (collisionFlag[collision.globalIndex()]) {
+          collisionSelected = true;
+        }
+      }
+
+      if (McCollisionFlag[mcCollision.globalIndex()] || collisionSelected) {
 
         for (auto collision : collisionsPerMcCollision) {
           std::map<int32_t, int32_t> trackMapping;
@@ -248,7 +271,11 @@ struct JetDerivedDataWriter {
 
           storedJCollisionsTable(collision.posZ(), collision.eventSel(), collision.alias_raw());
           storedJCollisionsParentIndexTable(collision.collisionId());
-          storedJMcCollisionsLabelTable(storedJMcCollisionsTable.lastIndex());
+
+          auto JMcCollisionIndex = mcCollisionMapping.find(mcCollision.globalIndex());
+          if (JMcCollisionIndex != mcCollisionMapping.end()) {
+            storedJMcCollisionsLabelTable(JMcCollisionIndex->second);
+          }
           int32_t storedBCID = -1;
           auto JBCIndex = bcMapping.find(collision.bcId());
           if (JBCIndex != bcMapping.end()) {
@@ -260,13 +287,15 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {
               auto JParticleIndex = paticleMapping.find(track.mcParticleId());
               if (JParticleIndex != paticleMapping.end()) {
                 storedJMcTracksLabelTable(JParticleIndex->second);
+              } else {
+                storedJMcTracksLabelTable(-1); // this can happen because there are some tracks that are reconstucted in a wrong collision, but their original McCollision did not pass the required cuts so that McParticle is not saved. These are very few but we should look into them further and see what to do about them
               }
             } else {
               storedJMcTracksLabelTable(-1);
@@ -301,10 +330,10 @@ struct JetDerivedDataWriter {
   void processMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles)
   {
 
-    std::map<int32_t, int32_t> paticleMapping;
     int particleTableIndex = 0;
     for (auto mcCollision : mcCollisions) {
       if (McCollisionFlag[mcCollision.globalIndex()]) { // you can also check if any of its detector level counterparts are correct
+        std::map<int32_t, int32_t> paticleMapping;
 
         storedJMcCollisionsTable(mcCollision.posZ(), mcCollision.weight());
         storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());

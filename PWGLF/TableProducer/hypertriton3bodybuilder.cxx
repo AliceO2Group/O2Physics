@@ -56,6 +56,17 @@ struct hypertriton3bodyBuilder {
   // Configurables
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
+  enum vtxstep { kVtxAll = 0,
+                 kVtxSameCol,
+                 kVtxTPCNcls,
+                 kVtxhasSV,
+                 kVtxhasSVAfterCorr,
+                 kVtxDcaDau,
+                 kVtxCosPA,
+                 kNVtxSteps };
+
+  // Helper struct to pass V0 information
+
   HistogramRegistry registry{
     "registry",
     {
@@ -68,7 +79,7 @@ struct hypertriton3bodyBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.8, "minCosPA3body"};
-  Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
+  Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
 
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -111,7 +122,7 @@ struct hypertriton3bodyBuilder {
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "HasSV");
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "HasSVAfterCorr");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "DcaVtxDau");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "DcaDau");
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(7, "CosPA");
 
     // Material correction in the DCA fitter
@@ -189,7 +200,7 @@ struct hypertriton3bodyBuilder {
 
     for (auto& vtx3body : decay3bodys) {
 
-      registry.fill(HIST("hVtx3BodyCounter"), 0.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
 
       auto t0 = vtx3body.track0_as<FullTracksExtIU>();
       auto t1 = vtx3body.track1_as<FullTracksExtIU>();
@@ -197,12 +208,12 @@ struct hypertriton3bodyBuilder {
       if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 1.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxSameCol);
 
       if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 2.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
 
       auto Track0 = getTrackParCov(t0);
       auto Track1 = getTrackParCov(t1);
@@ -211,7 +222,7 @@ struct hypertriton3bodyBuilder {
       if (n3bodyVtx == 0) { // discard this pair
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 3.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSV);
 
       double finalXTrack0 = fitter3body.getTrack(0).getX();
       double finalXTrack1 = fitter3body.getTrack(1).getX();
@@ -237,7 +248,7 @@ struct hypertriton3bodyBuilder {
       if (n3bodyVtx == 0) { // discard this pair
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 4.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSVAfterCorr);
 
       std::array<float, 3> pos = {0.};
       const auto& vtxXYZ = fitter3body.getPCACandidate();
@@ -254,13 +265,13 @@ struct hypertriton3bodyBuilder {
       if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 5.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxDcaDau);
 
       float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{p3B[0], p3B[1], p3B[2]});
       if (VtxcosPA < minCosPA3body) {
         continue;
       }
-      registry.fill(HIST("hVtx3BodyCounter"), 6.5);
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
 
       vtx3bodydata(
         t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), vtx3body.globalIndex(),

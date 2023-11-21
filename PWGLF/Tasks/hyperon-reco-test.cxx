@@ -101,7 +101,7 @@ struct myLambda {
         TMath::Abs(posdau.eta()) < rapidity && TMath::Abs(negdau.eta()) < rapidity && posdau.tpcNClsCrossedRows() > tpcNcl && negdau.tpcNClsCrossedRows() > tpcNcl && TMath::Abs(posdau.tpcNSigmaPr()) < tpcsigma && TMath::Abs(negdau.tpcNSigmaPi()) < tpcsigma &&
 
         // V0 cuts
-        v0.pt() > minpt && v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa && TMath::Abs(v0.mK0Short() - o2::analysis::pdg::MassK0Short) > removeKs) {
+        v0.pt() > minpt && v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa && TMath::Abs(v0.mK0Short() - o2::analysis::pdg::MassK0Short) > removeKs) {
         registry.fill(HIST("hReduction"), 1.5);
         registry.fill(HIST("hmyLambda_after"), v0.mLambda(), v0.pt());
         registry.fill(HIST("hmyLambda_after_b"), v0.mLambda());
@@ -187,7 +187,7 @@ struct myXi {
         TMath::Abs(posdau.eta()) < rapidity && TMath::Abs(negdau.eta()) < rapidity && TMath::Abs(bachelor.eta()) < rapidity && posdau.tpcNClsCrossedRows() > mincrossedrow && negdau.tpcNClsCrossedRows() > mincrossedrow && bachelor.tpcNClsCrossedRows() > mincrossedrow && posdau.pt() > minpt && negdau.pt() > minpt && bachelor.pt() > minpt && TMath::Abs(casc.dcapostopv()) > dcatopv && TMath::Abs(casc.dcanegtopv()) > dcatopv && TMath::Abs(casc.dcabachtopv()) > dcatopv && TMath::Abs(posdau.tpcNSigmaPr()) < tpcsigma && TMath::Abs(negdau.tpcNSigmaPi()) < tpcsigma && TMath::Abs(bachelor.tpcNSigmaPi()) < tpcsigma && bachelor.sign() < 0 &&
 
         // V0 cuts
-        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv() > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("hmyLambda"), v0.mLambda());
 
         if (TMath::Abs(v0.mLambda() - o2::analysis::pdg::MassLambda0) < v0masswindow &&
@@ -285,7 +285,7 @@ struct myOmega {
         TMath::Abs(posdau.eta()) < rapidity && TMath::Abs(negdau.eta()) < rapidity && TMath::Abs(bachelor.eta()) < rapidity && posdau.tpcNClsCrossedRows() > mincrossedrow && negdau.tpcNClsCrossedRows() > mincrossedrow && bachelor.tpcNClsCrossedRows() > mincrossedrow && posdau.pt() > minpt && negdau.pt() > minpt && bachelor.pt() > minpt && TMath::Abs(casc.dcapostopv()) > dcatopv && TMath::Abs(casc.dcanegtopv()) > dcatopv && TMath::Abs(casc.dcabachtopv()) > dcatopv && TMath::Abs(posdau.tpcNSigmaPr()) < tpcsigma && TMath::Abs(negdau.tpcNSigmaPi()) < tpcsigma && TMath::Abs(bachelor.tpcNSigmaKa()) < tpcsigma && bachelor.sign() < 0 &&
 
         // V0 cuts
-        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv() > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("hmyLambda"), v0.mLambda());
 
         if (TMath::Abs(v0.mLambda() - o2::analysis::pdg::MassLambda0) < v0masswindow &&

@@ -134,12 +134,12 @@ struct tpcPid {
     /// TPC PID Response
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
-      LOGP(info, "Loading TPC response from file {}", fname);
+      LOGP(info, "Loading TPC response from file {}", fname.Data());
       try {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
         f->GetObject("Response", response);
       } catch (...) {
-        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
+        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname.Data());
       }
       response->PrintAll();
     } else {

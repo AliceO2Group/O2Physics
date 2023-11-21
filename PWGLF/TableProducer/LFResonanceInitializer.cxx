@@ -233,7 +233,7 @@ struct reso2initializer {
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
+    if (v0.v0cosPA() < cMinV0CosPA)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
@@ -471,7 +471,7 @@ struct reso2initializer {
                v0.eta(),
                v0.phi(),
                childIDs,
-               v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+               v0.v0cosPA(),
                v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {

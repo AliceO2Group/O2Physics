@@ -86,14 +86,14 @@ struct strangeness_tutorial {
       rKzeroShort.fill(HIST("hMassK0Short"), v0.mK0Short());
 
       // Cut on dynamic columns
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0setting_cospa)
+      if (v0.v0cosPA() < v0setting_cospa)
         continue;
       if (v0.v0radius() < v0setting_radius)
         continue;
 
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), v0.mK0Short());
       rKzeroShort.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
-      rKzeroShort.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      rKzeroShort.fill(HIST("hV0CosPA"), v0.v0cosPA());
     }
   }
 };

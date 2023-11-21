@@ -281,7 +281,7 @@ class V0PhotonCut : public TNamed
         return true;
 
       case V0PhotonCuts::kRxy:
-        return v0.recalculatedVtxR() >= mMinRxy && v0.recalculatedVtxR() <= mMaxRxy;
+        return v0.v0radius() >= mMinRxy && v0.v0radius() <= mMaxRxy;
 
       case V0PhotonCuts::kCosPA:
         return v0.cospa() >= mMinCosPA;
@@ -290,7 +290,7 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ; // as long as z recalculation is not fixed use this
+        return v0.v0radius() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ;
 
       case V0PhotonCuts::kOnWwireIB: {
         const float margin_xy = 1.0; // cm
@@ -299,9 +299,9 @@ class V0PhotonCut : public TNamed
         // const float rxy_max = 14.846;         // cm
         // const float z_min = -17.56; // cm
         // const float z_max = +31.15;           // cm
-        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
-        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
-        // float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+        float x = abs(v0.vx()); // cm, measured secondary vertex of gamma->ee
+        float y = v0.vy();      // cm, measured secondary vertex of gamma->ee
+        // float z = v0.vz();   // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
         if (rxy < 7.5 || 15.0 < rxy) {
@@ -325,9 +325,9 @@ class V0PhotonCut : public TNamed
         const float y_exp = rxy_exp * TMath::Sin(-1.3 * TMath::DegToRad()); // cm, expected position y of W wire
         const float z_min = -47.0;                                          // cm
         const float z_max = +47.0;                                          // cm
-        float x = v0.recalculatedVtxX();                                    // cm, measured secondary vertex of gamma->ee
-        float y = v0.recalculatedVtxY();                                    // cm, measured secondary vertex of gamma->ee
-        float z = v0.recalculatedVtxZ();                                    // cm, measured secondary vertex of gamma->ee
+        float x = v0.vx();                                                  // cm, measured secondary vertex of gamma->ee
+        float y = v0.vy();                                                  // cm, measured secondary vertex of gamma->ee
+        float z = v0.vz();                                                  // cm, measured secondary vertex of gamma->ee
         if (z + margin_z < z_min || z_max < z - margin_z) {
           return false;
         }

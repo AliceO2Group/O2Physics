@@ -53,9 +53,9 @@ struct JetMatching {
   Preslice<BaseJetCollection> baseJetsPerCollision = jetsBaseIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
   Preslice<TagJetCollection> tagJetsPerCollision = jetsTagIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
 
-  using Collisions = soa::Join<aod::JCollisions, aod::JMcCollisionLbs>;
-  PresliceUnsorted<Collisions> CollisionsCollectionPerMcCollision = aod::jmccollisionlb::mcCollisionId;
-  using Tracks = soa::Join<aod::JTracks, aod::JMcTrackLbs>;
+  using JetCollisions = soa::Join<aod::JCollisions, aod::JMcCollisionLbs>;
+  PresliceUnsorted<JetCollisions> CollisionsCollectionPerMcCollision = aod::jmccollisionlb::mcCollisionId;
+  using JetTracks = soa::Join<aod::JTracks, aod::JMcTrackLbs>;
 
   // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
   std::vector<std::vector<int>> geojetidBaseToTag, ptjetidBaseToTag, hfjetidBaseToTag;
@@ -119,7 +119,7 @@ struct JetMatching {
            bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
       const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
       if (hfcand.flagMcMatchRec() & getHfFlag()) {
-        const auto hfCandMC = hfcand.template prong0_as<Tracks>().template mcParticle_as<McParticles>();
+        const auto hfCandMC = hfcand.template prong1_as<JetTracks>().template mcParticle_as<McParticles>();
         const auto hfCandMcId = hfCandMC.template mothers_first_as<McParticles>().globalIndex();
         for (const auto& tjet : jetsTagPerColl) {
           const auto cand = tjet.template hfcandidates_first_as<McParticles>();
@@ -175,10 +175,10 @@ struct JetMatching {
 
     for (const auto& bjet : jetsBasePerColl) {
       for (const auto& tjet : jetsTagPerColl) {
+        auto btracksTracks = bjet.template tracks_as<JetTracks>();
         auto btracksMcParts = bjet.template tracks_as<McParticles>();
-        auto btracksTracks = bjet.template tracks_as<Tracks>();
         auto ttracksMcParts = tjet.template tracks_as<McParticles>();
-        auto ttracksTracks = tjet.template tracks_as<Tracks>();
+        auto ttracksTracks = tjet.template tracks_as<JetTracks>();
 
         jetsBaseIsMC ? ptSum = getPtSum_FirstArgIsMC(btracksMcParts, ttracksTracks) : ptSum = getPtSum_SecondArgIsMC(btracksTracks, ttracksMcParts);
 
@@ -200,9 +200,9 @@ struct JetMatching {
     for (const auto& tjet : jetsTagPerColl) {
       for (const auto& bjet : jetsBasePerColl) {
         auto btracksMcParts = bjet.template tracks_as<McParticles>();
-        auto btracksTracks = bjet.template tracks_as<Tracks>();
+        auto btracksTracks = bjet.template tracks_as<JetTracks>();
         auto ttracksMcParts = tjet.template tracks_as<McParticles>();
-        auto ttracksTracks = tjet.template tracks_as<Tracks>();
+        auto ttracksTracks = tjet.template tracks_as<JetTracks>();
 
         jetsBaseIsMC ? ptSum = getPtSum_SecondArgIsMC(ttracksTracks, btracksMcParts) : ptSum = getPtSum_FirstArgIsMC(ttracksMcParts, btracksTracks);
 
@@ -319,10 +319,11 @@ struct JetMatching {
 
   // for now:
   // BaseJetCollection and TagJetCollection must have MC info
-  void processJets(aod::JMcCollisions const& mcCollisions, Collisions const& collisions,
+  void processJets(aod::JMcCollisions const& mcCollisions, JetCollisions const& collisions,
                    BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag, McParticles const& particlesMC,
-                   Tracks const& tracks, HfCandidates const& hfcandidates)
+                   JetTracks const& tracks, HfCandidates const& hfcandidates)
   {
+
     // waiting for framework fix to make sliced collection of same type as original collection:
     geojetidBaseToTag.assign(jetsBase.size(), {});
     ptjetidBaseToTag.assign(jetsBase.size(), {});
@@ -379,7 +380,7 @@ using ChargedJetMatching = JetMatching<soa::Join<aod::ChargedMCDetectorLevelJets
                                        aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
                                        aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
                                        aod::JMcParticles,
-                                       aod::JTracks>;
+                                       aod::JDummys>;
 using D0ChargedJetMatching = JetMatching<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
                                          soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
                                          aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,

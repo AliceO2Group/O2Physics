@@ -22,17 +22,43 @@ using namespace o2::framework;
 #include "TableHelper.h"
 #include "iostream"
 
-#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+static constexpr int kFV0Mults = 0;
+static constexpr int kFT0Mults = 1;
+static constexpr int kFDDMults = 2;
+static constexpr int kZDCMults = 3;
+static constexpr int kTrackletMults = 4;
+static constexpr int kTPCMults = 5;
+static constexpr int kPVMults = 6;
+static constexpr int kMultsExtra = 7;
+static constexpr int kMultZeqs = 8;
+static constexpr int kMultsExtraMC = 9;
+static constexpr int nTables = 10;
+static constexpr int nParameters = 1;
+static const std::vector<std::string> tableNames{"FV0Mults",
+                                                 "FT0Mults",
+                                                 "FDDMults",
+                                                 "ZDCMults",
+                                                 "TrackletMults",
+                                                 "TPCMults",
+                                                 "PVMults",
+                                                 "MultsExtra",
+                                                 "MultZeqs",
+                                                 "MultsExtraMC"};
+static const std::vector<std::string> parameterNames{"Enable"};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
-  Produces<aod::FV0Mults> multFV0;
-  Produces<aod::FT0Mults> multFT0;
-  Produces<aod::FDDMults> multFDD;
-  Produces<aod::ZDCMults> multZDC;
-  Produces<aod::BarrelMults> multBarrel;
-  Produces<aod::MultsExtra> multExtra;
-  Produces<aod::MultZeqs> multzeq;
+  Produces<aod::FV0Mults> tableFV0;
+  Produces<aod::FT0Mults> tableFT0;
+  Produces<aod::FDDMults> tableFDD;
+  Produces<aod::ZDCMults> tableZDC;
+  Produces<aod::TrackletMults> tableTracklet;
+  Produces<aod::TPCMults> tableTpc;
+  Produces<aod::PVMults> tablePv;
+  Produces<aod::MultsExtra> tableExtra;
+  Produces<aod::MultZeqs> tableMultZeq;
+  Produces<aod::MultsExtraMC> tableExtraMc;
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -49,9 +75,10 @@ struct MultiplicityTableTaskIndexed {
 
   // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
-  Configurable<bool> populateMultExtra{"populateMultExtra", true, "if 1: populate table with some extra QA information"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
-
+  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
+                                                {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
+                                                "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
   int mRunNumber;
   bool lCalibLoaded;
   TList* lCalibObjects;
@@ -61,6 +88,7 @@ struct MultiplicityTableTaskIndexed {
   TProfile* hVtxZFDDA;
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
+  std::vector<int> mEnabledTables; // Vector of enabled tables
 
   unsigned int randomSeed = 0;
   void init(InitContext& context)
@@ -72,20 +100,32 @@ struct MultiplicityTableTaskIndexed {
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
-    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FV0Mults")) {
-      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    bool tEnabled[nTables] = {false};
+    for (int i = 0; i < nTables; i++) {
+      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, tableNames[i], f);
+      if (f == 1) {
+        tEnabled[i] = true;
+        mEnabledTables.push_back(i);
+        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
+          LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+        }
+      }
     }
-    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FT0Mults")) {
-      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
-    }
-    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "FDDMults")) {
-      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
-    }
-    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "ZDCMults")) {
-      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
-    }
-    if (fractionOfEvents <= 1.f && isTableRequiredInWorkflow(context, "BarrelMults")) {
-      LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
+    // Check that the tables are enabled consistenly
+    if (tEnabled[kMultZeqs]) {
+      if (!tEnabled[kFV0Mults]) {
+        LOG(fatal) << "Cannot have the extra table enabled and not the one on FV0";
+      }
+      if (!tEnabled[kFT0Mults]) {
+        LOG(fatal) << "Cannot have the extra table enabled and not the one on FT0";
+      }
+      if (!tEnabled[kFDDMults]) {
+        LOG(fatal) << "Cannot have the extra table enabled and not the one on FDD";
+      }
+      if (!tEnabled[kPVMults]) {
+        LOG(fatal) << "Cannot have the extra table enabled and not the one on PV";
+      }
     }
 
     mRunNumber = 0;
@@ -155,11 +195,13 @@ struct MultiplicityTableTaskIndexed {
     }
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    multFV0(multFV0A, multFV0C);
-    multFT0(multFT0A, multFT0C);
-    multFDD(multFDDA, multFDDC);
-    multZDC(multZNA, multZNC);
-    multBarrel(multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
+    tableFV0(multFV0A, multFV0C);
+    tableFT0(multFT0A, multFT0C);
+    tableFDD(multFDDA, multFDDC);
+    tableZDC(multZNA, multZNC);
+    tableTracklet(multTracklets);
+    tableTpc(multTPC);
+    tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
 
@@ -178,43 +220,64 @@ struct MultiplicityTableTaskIndexed {
                    aod::FDDs const&)
   {
     // reserve memory
-    multFV0.reserve(collisions.size());
-    multFT0.reserve(collisions.size());
-    multFDD.reserve(collisions.size());
-    multZDC.reserve(collisions.size());
-    multBarrel.reserve(collisions.size());
-    multzeq.reserve(collisions.size());
+    for (auto i : mEnabledTables) {
+      switch (i) {
+        case kFV0Mults: // FV0
+          tableFV0.reserve(collisions.size());
+          break;
+        case kFT0Mults: // FT0
+          tableFT0.reserve(collisions.size());
+          break;
+        case kFDDMults: // FDD
+          tableFDD.reserve(collisions.size());
+          break;
+        case kZDCMults: // ZDC
+          tableZDC.reserve(collisions.size());
+          break;
+        case kTrackletMults: // Tracklets (Run 2 only, nothing to do) (to be removed!)
+          tableTracklet.reserve(collisions.size());
+          break;
+        case kTPCMults: // TPC
+          tableTpc.reserve(collisions.size());
+          break;
+        case kPVMults: // PV multiplicity
+          tablePv.reserve(collisions.size());
+          break;
+        case kMultsExtra: // Extra information
+          tableExtra.reserve(collisions.size());
+          break;
+        case kMultZeqs: // Equalized multiplicity
+          tableMultZeq.reserve(collisions.size());
+          break;
+        case kMultsExtraMC: // MC extra information (nothing to do, this is data)
+          break;
+        default:
+          LOG(fatal) << "Unknown table requested: " << i;
+          break;
+      }
+    }
+
+    // Initializing multiplicity values
+    float multFV0A = 0.f;
+    float multFV0C = 0.f;
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+    float multZNA = -1.f;
+    float multZNC = -1.f;
+    int multNContribs = 0;
+
+    float multZeqFV0A = 0.f;
+    float multZeqFT0A = 0.f;
+    float multZeqFT0C = 0.f;
+    float multZeqFDDA = 0.f;
+    float multZeqFDDC = 0.f;
+    float multZeqNContribs = 0.f;
     for (auto const& collision : collisions) {
       if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
       }
-
-      float multFV0A = 0.f;
-      float multFV0C = 0.f;
-      float multFT0A = 0.f;
-      float multFT0C = 0.f;
-      float multFDDA = 0.f;
-      float multFDDC = 0.f;
-      float multZNA = -1.f;
-      float multZNC = -1.f;
-      int multTracklets = 0;
-
-      float multZeqFV0A = 0.f;
-      float multZeqFT0A = 0.f;
-      float multZeqFT0C = 0.f;
-      float multZeqFDDA = 0.f;
-      float multZeqFDDC = 0.f;
-      float multZeqNContribs = 0.f;
-
-      auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      int multTPC = tracksGrouped.size();
-      int multNContribs = pvContribsGrouped.size();
-      int multNContribsEta1 = pvContribsEta1Grouped.size();
-      int multNContribsEtaHalf = pvContribsEtaHalfGrouped.size();
 
       /* check the previous run number */
       const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
@@ -223,12 +286,12 @@ struct MultiplicityTableTaskIndexed {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
           if (lCalibObjects) {
-            hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
-            hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
-            hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
-            hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
-            hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
-            hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
+            hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+            hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+            hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+            hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+            hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+            hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
             lCalibLoaded = true;
             // Capture error
             if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -241,80 +304,151 @@ struct MultiplicityTableTaskIndexed {
           }
         }
       }
-      if (bc.has_zdc()) {
-        multZNA = bc.zdc().amplitudeZNA();
-        multZNC = bc.zdc().amplitudeZNC();
-      }
 
-      // using FT0 row index from event selection task
-      if (collision.has_foundFT0()) {
-        auto ft0 = collision.foundFT0();
-        for (auto amplitude : ft0.amplitudeA()) {
-          multFT0A += amplitude;
-        }
-        for (auto amplitude : ft0.amplitudeC()) {
-          multFT0C += amplitude;
-        }
-      }
-      // using FDD row index from event selection task
-      if (collision.has_foundFDD()) {
-        auto fdd = collision.foundFDD();
-        for (auto amplitude : fdd.chargeA()) {
-          multFDDA += amplitude;
-        }
-        for (auto amplitude : fdd.chargeC()) {
-          multFDDC += amplitude;
-        }
-      }
-      // using FV0 row index from event selection task
-      if (collision.has_foundFV0()) {
-        auto fv0 = collision.foundFV0();
-        for (auto amplitude : fv0.amplitude()) {
-          multFV0A += amplitude;
-        }
-      }
-      if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
-        multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-        multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
-        multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
-        multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
-        multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
-      }
+      for (auto i : mEnabledTables) {
+        switch (i) {
+          case kFV0Mults: // FV0
+          {
+            multFV0A = 0.f;
+            multFV0C = 0.f;
+            // using FV0 row index from event selection task
+            if (collision.has_foundFV0()) {
+              auto fv0 = collision.foundFV0();
+              for (auto amplitude : fv0.amplitude()) {
+                multFV0A += amplitude;
+              }
+            } else {
+              multFV0A = -999.f;
+              multFV0C = -999.f;
+            }
+            tableFV0(multFV0A, multFV0C);
+            LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f", multFV0A, multFV0C);
+          } break;
+          case kFT0Mults: // FT0
+          {
+            multFT0A = 0.f;
+            multFT0C = 0.f;
+            // using FT0 row index from event selection task
+            if (collision.has_foundFT0()) {
+              const auto& ft0 = collision.foundFT0();
+              for (auto amplitude : ft0.amplitudeA()) {
+                multFT0A += amplitude;
+              }
+              for (auto amplitude : ft0.amplitudeC()) {
+                multFT0C += amplitude;
+              }
+            } else {
+              multFT0A = -999.f;
+              multFT0C = -999.f;
+            }
+            tableFT0(multFT0A, multFT0C);
+            LOGF(debug, "multFT0A=%5.0f multFT0C=%5.0f", multFV0A, multFV0C);
+          } break;
+          case kFDDMults: // FDD
+          {
+            multFDDA = 0.f;
+            multFDDC = 0.f;
+            // using FDD row index from event selection task
+            if (collision.has_foundFDD()) {
+              const auto& fdd = collision.foundFDD();
+              for (auto amplitude : fdd.chargeA()) {
+                multFDDA += amplitude;
+              }
+              for (auto amplitude : fdd.chargeC()) {
+                multFDDC += amplitude;
+              }
+            } else {
+              multFDDA = -999.f;
+              multFDDC = -999.f;
+            }
+            tableFDD(multFDDA, multFDDC);
+            LOGF(debug, "multFDDA=%5.0f multFDDC=%5.0f", multFDDA, multFDDC);
+          } break;
+          case kZDCMults: // ZDC
+          {
+            multZNA = -1.f;
+            multZNC = -1.f;
+            if (bc.has_zdc()) {
+              multZNA = bc.zdc().amplitudeZNA();
+              multZNC = bc.zdc().amplitudeZNC();
+            } else {
+              multZNA = -999.f;
+              multZNC = -999.f;
+            }
+            tableZDC(multZNA, multZNC);
+            LOGF(debug, "multZNA=%6.0f multZNC=%6.0f", multZNA, multZNC);
+          } break;
+          case kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)
+          {
+            tableTracklet(0);
+          } break;
+          case kTPCMults: // TPC
+          {
+            const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            const int multTPC = tracksGrouped.size();
+            tableTpc(multTPC);
+            LOGF(debug, "multTPC=%i", multTPC);
+          } break;
+          case kPVMults: // PV multiplicity
+          {
+            const auto& pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            const auto& pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            const auto& pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            multNContribs = pvContribsGrouped.size();
+            const int multNContribsEta1 = pvContribsEta1Grouped.size();
+            const int multNContribsEtaHalf = pvContribsEtaHalfGrouped.size();
+            tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
+            LOGF(debug, "multNContribs=%i, multNContribsEta1=%i, multNContribsEtaHalf=%i", multNContribs, multNContribsEta1, multNContribsEtaHalf);
+          } break;
+          case kMultsExtra: // Extra
+          {
+            int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
+            int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
+            const auto& pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-      multFV0(multFV0A, multFV0C);
-      multFT0(multFT0A, multFT0C);
-      multFDD(multFDDA, multFDDC);
-      multZDC(multZNA, multZNC);
-      multBarrel(multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
-      multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+            for (auto track : pvAllContribsGrouped) {
+              if (track.hasITS()) {
+                nHasITS++;
+                if (track.hasTPC())
+                  nITSTPC++;
+                if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD())
+                  nITSonly++;
+              }
+              if (track.hasTPC()) {
+                nHasTPC++;
+                if (!track.hasITS() && !track.hasTOF() && !track.hasTRD())
+                  nTPConly++;
+              }
+              if (track.hasTOF())
+                nHasTOF++;
+              if (track.hasTRD())
+                nHasTRD++;
+            };
 
-      if (populateMultExtra) {
-        int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
-        int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
-        for (auto track : pvAllContribsGrouped) {
-          if (track.hasITS()) {
-            nHasITS++;
-            if (track.hasTPC())
-              nITSTPC++;
-            if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD())
-              nITSonly++;
-          }
-          if (track.hasTPC()) {
-            nHasTPC++;
-            if (!track.hasITS() && !track.hasTOF() && !track.hasTRD())
-              nTPConly++;
-          }
-          if (track.hasTOF())
-            nHasTOF++;
-          if (track.hasTRD())
-            nHasTRD++;
-        };
+            int bcNumber = bc.globalBC() % 3564;
 
-        int bcNumber = bc.globalBC() % 3564;
-
-        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+            tableExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+          } break;
+          case kMultZeqs: // Z equalized
+          {
+            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+              multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
+              multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
+              multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+              multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
+              multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
+              multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
+            }
+            tableMultZeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+          } break;
+          case kMultsExtraMC: // MC only (nothing to do)
+          {
+          } break;
+          default: // Default
+          {
+            LOG(fatal) << "Unknown table requested: " << i;
+          } break;
+        }
       }
     }
   }
