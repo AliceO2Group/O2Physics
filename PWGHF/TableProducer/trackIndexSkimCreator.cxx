@@ -3264,7 +3264,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             df2.propagateTracksToVertex();
 
-            if(df2.isPropagateTracksToVertexDone()){
+            if (df2.isPropagateTracksToVertexDone()) {
               std::array<float, 3> pVecXi = {0.};
               std::array<float, 3> pVecPion1XiHyp = {0.};
               df2.getTrack(0).getPxPyPzGlo(pVecXi);
@@ -3281,10 +3281,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
               if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi))) {
                 registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
               }
-            } else if (df2.isPropagationFailure()){
+            } else if (df2.isPropagationFailure()) {
               LOGF(info, "Exception caught: failed to propagate tracks (2prong - xi) to charm baryon decay vtx");
             }
-
           }
 
           // find charm baryon decay using omega PID hypothesis
@@ -3293,7 +3292,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             df2.propagateTracksToVertex();
 
-            if(df2.isPropagateTracksToVertexDone()){
+            if (df2.isPropagateTracksToVertexDone()) {
 
               std::array<float, 3> pVecOmega = {0.};
               std::array<float, 3> pVecPion1OmegaHyp = {0.};
@@ -3309,9 +3308,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
               // fill histograms
               if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) {
-              registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
+                registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
               }
-            } else if (df2.isPropagationFailure()){
+            } else if (df2.isPropagationFailure()) {
               LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega) to charm baryon decay vtx");
             }
           }
@@ -3357,7 +3356,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
                 df3.propagateTracksToVertex();
 
-                if(df3.isPropagateTracksToVertexDone()){
+                if (df3.isPropagateTracksToVertexDone()) {
 
                   std::array<float, 3> pVec1 = {0.};
                   std::array<float, 3> pVec2 = {0.};
@@ -3377,10 +3376,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
                   if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi))) {
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                   }
-                } else if (df3.isPropagationFailure()){
+                } else if (df3.isPropagationFailure()) {
                   LOGF(info, "Exception caught: failed to propagate tracks (3prong) to charm baryon decay vtx");
                 }
-                
               }
 
               // fill table row only if a vertex was found
