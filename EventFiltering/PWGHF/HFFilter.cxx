@@ -551,7 +551,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
-              trackParV0.setPID(o2::track::PID::K0S);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
               if (TESTBIT(selV0, kPhoton)) {
