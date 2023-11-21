@@ -117,6 +117,17 @@ struct hypertriton3bodyBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    }
+
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "CollisionID");
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
@@ -126,19 +137,12 @@ struct hypertriton3bodyBuilder {
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(7, "CosPA");
 
     // Material correction in the DCA fitter
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-    if (useMatCorrType == 1) {
-      LOGF(info, "TGeo correction requested, loading geometry");
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
-      }
-      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    }
-    if (useMatCorrType == 2) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    }
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+      if (useMatCorrType == 1)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+      if (useMatCorrType == 2)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
     fitter3body.setMatCorrType(matCorr);
   }
 
@@ -215,6 +219,21 @@ struct hypertriton3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
 
+    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    auto Track0Par = getTrackPar(t0);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track0dcaXY = dcaInfo[0];
+
+    auto Track1Par = getTrackPar(t1);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track1dcaXY = dcaInfo[0];
+
+    auto Track2Par = getTrackPar(t2);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track2dcaXY = dcaInfo[0];
+
       auto Track0 = getTrackParCov(t0);
       auto Track1 = getTrackParCov(t1);
       auto Track2 = getTrackParCov(t2);
@@ -224,31 +243,24 @@ struct hypertriton3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSV);
 
-      double finalXTrack0 = fitter3body.getTrack(0).getX();
-      double finalXTrack1 = fitter3body.getTrack(1).getX();
-      double finalXTrack2 = fitter3body.getTrack(2).getX();
+      //double finalXTrack0 = fitter3body.getTrack(0).getX();
+      //double finalXTrack1 = fitter3body.getTrack(1).getX();
+      //double finalXTrack2 = fitter3body.getTrack(2).getX();
 
       // Rotate to desired alpha
-      Track0.rotateParam(fitter3body.getTrack(0).getAlpha());
-      Track1.rotateParam(fitter3body.getTrack(1).getAlpha());
-      Track2.rotateParam(fitter3body.getTrack(2).getAlpha());
+      //Track0.rotateParam(fitter3body.getTrack(0).getAlpha());
+      //Track1.rotateParam(fitter3body.getTrack(1).getAlpha());
+      //Track2.rotateParam(fitter3body.getTrack(2).getAlpha());
 
-      // Retry closer to minimum with material corrections
-      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-      if (useMatCorrType == 1)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-      if (useMatCorrType == 2)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+      //o2::base::Propagator::Instance()->propagateToX(Track0, finalXTrack0, d_bz, maxSnp, maxStep, matCorr);
+      //o2::base::Propagator::Instance()->propagateToX(Track1, finalXTrack1, d_bz, maxSnp, maxStep, matCorr);
+      //o2::base::Propagator::Instance()->propagateToX(Track2, finalXTrack2, d_bz, maxSnp, maxStep, matCorr);
 
-      o2::base::Propagator::Instance()->propagateToX(Track0, finalXTrack0, d_bz, maxSnp, maxStep, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(Track1, finalXTrack1, d_bz, maxSnp, maxStep, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(Track2, finalXTrack2, d_bz, maxSnp, maxStep, matCorr);
-
-      n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
-      if (n3bodyVtx == 0) { // discard this pair
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSVAfterCorr);
+      //n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+      //if (n3bodyVtx == 0) { // discard this pair
+      //  continue;
+      //}
+      //registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSVAfterCorr);
 
       std::array<float, 3> pos = {0.};
       const auto& vtxXYZ = fitter3body.getPCACandidate();
@@ -278,7 +290,7 @@ struct hypertriton3bodyBuilder {
         pos[0], pos[1], pos[2],
         p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
         fitter3body.getChi2AtPCACandidate(),
-        t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+        Track0dcaXY, Track1dcaXY, Track2dcaXY);
     }
   }
 };
