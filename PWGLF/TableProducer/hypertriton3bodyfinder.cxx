@@ -279,7 +279,7 @@ struct hypertriton3bodyFinder {
       registry.fill(HIST("hVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii]);
       registry.fill(HIST("hVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 3]);
       registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii + 6]);
-      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii+3, statisticsRegistry.virtLambdastats[ii + 9]);
+      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 9]);
     }
   }
 
@@ -610,13 +610,28 @@ struct hypertriton3bodyFinder {
           }
           FillVtxCounter(kVtxDcaDau);
 
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
+
           //  Not involved: H3L DCA Check
           vtx3bodydata(
             t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), dCollision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
-            t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
         }
       }
     }
@@ -828,13 +843,28 @@ struct hypertriton3bodyFinder {
           }
           FillVtxCounter(kVtxDcaDau, isTrue3bodyVtx);
 
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
+
           //  Not involved: H3L DCA Check
           vtx3bodydata(
             t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), dCollision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
-            t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
         }
       }
     }
