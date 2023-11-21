@@ -40,7 +40,7 @@ struct multiplicityPbPb {
 
   Filter trackDCA = nabs(aod::track::dcaXY) < 0.2f; // makes a big difference in etaHistogram
 
-  using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+  using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
   // using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,  aod::McTrackLabels>;
   using myFilteredTracks = soa::Filtered<myCompleteTracks>;
 
@@ -97,9 +97,6 @@ struct multiplicityPbPb {
     histos.fill(HIST("Anton/ZvtxEvents"), collision.posZ());
 
     for (auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < 70)
-        continue; // badly tracked
-
       ++trackCounter;
 
       histos.fill(HIST("etaHistogram"), track.eta());
