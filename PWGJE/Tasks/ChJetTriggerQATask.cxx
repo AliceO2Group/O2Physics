@@ -196,7 +196,11 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    if ((bLowPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedHigh))) {
+    if ((bLowPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedHigh)) || ((!bLowPtTrigger) && (!bHighPtTrigger))) {
+      // bLowPtTrigger=1  and bHighPtTrigger=0 --> fill histos with low trigger only
+      // bLowPtTrigger=0  and bHighPtTrigger=1 --> fill histos with high trigger only
+      // bLowPtTrigger=1  and bHighPtTrigger=1 --> fill histos with mixture of low and high trigger
+      // bLowPtTrigger=0  and bHighPtTrigger=0 --> fill histos with minimum bias ie. ignore trigger decision
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;

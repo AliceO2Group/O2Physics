@@ -15,7 +15,7 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_MCV0TABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_MCV0TABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoA.h"
 
 namespace o2::aod
 {
@@ -31,6 +31,13 @@ enum TrackTypes : uint8_t {
   TPConly_ITSonly,
 };
 
+// V0
+DECLARE_SOA_COLUMN(V0X, v0X, float);   //! Reconstructed x position of V0
+DECLARE_SOA_COLUMN(V0Y, v0Y, float);   //! Reconstructed y position of V0
+DECLARE_SOA_COLUMN(V0Z, v0z, float);   //! Reconstructed z position of V0
+DECLARE_SOA_COLUMN(V0Px, v0Px, float); //! Reconstructed Px of V0
+DECLARE_SOA_COLUMN(V0Py, v0Py, float); //! Reconstructed Py of V0
+DECLARE_SOA_COLUMN(V0Pz, v0Pz, float); //! Reconstructed Pz of V0
 // Track Pos
 DECLARE_SOA_COLUMN(RecoPosPt, recoPosPt, float);        //! Reconstructed pt of pos track
 DECLARE_SOA_COLUMN(RecoPosEta, recoPosEta, float);      //! Reconstructed eta of pos track
@@ -100,6 +107,10 @@ DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t); //! Track type, see enum Trac
 } // namespace mcV0
 
 DECLARE_SOA_TABLE(MCV0, "AOD", "MCV0", o2::soa::Index<>,
+                  // V0
+                  mcV0::V0X, mcV0::V0Y, mcV0::V0Z,
+                  mcV0::V0Px, mcV0::V0Py, mcV0::V0Pz,
+                  /* mcV0::V0Pt<mcV0::V0Px, mcV0::V0Py>, */
                   // Track Pos
                   mcV0::RecoPosPt, mcV0::RecoPosEta, mcV0::RecoPosTgl,
                   mcV0::RecoPosX, mcV0::RecoPosY, mcV0::RecoPosZ,

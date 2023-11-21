@@ -152,6 +152,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "R2EP_CentFT0C", "", true, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -1.0, 1.0, VarManager::kR2EP);
       hm->AddHistogram(histClass, "R3EP_CentFT0C", "", true, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -1.0, 1.0, VarManager::kR3EP);
     }
+    if (subGroupStr.Contains("filter")) {
+      hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
+      hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
+      hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
+    }
   }
 
   if (groupStr.Contains("track")) {
@@ -459,6 +464,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "pdca_vs_p", "pDCA vs p", false, 2000, 0.0, 20.0, VarManager::kP, 200, 0.0, 1000., VarManager::kMuonPDca);
       hm->AddHistogram(histClass, "pdca_vs_pt", "pDCA vs pt", false, 2000, 0.0, 20.0, VarManager::kPt, 200, 0.0, 1000., VarManager::kMuonPDca);
       hm->AddHistogram(histClass, "pdca_vs_Rabs", "pDCA vs R_{abs}", false, 100, 0., 200., VarManager::kMuonRAtAbsorberEnd, 200, 0.0, 1000., VarManager::kMuonPDca);
+      hm->AddHistogram(histClass, "pdca_vs_Rabs_vs_p", "pDCA vs R_{abs} vs p", false, 2000, 0.0, 20.0, VarManager::kP, 100, 0., 200., VarManager::kMuonRAtAbsorberEnd, 200, 0.0, 1000., VarManager::kMuonPDca);
+      hm->AddHistogram(histClass, "pdca_vs_Rabs_vs_pt", "pDCA vs R_{abs} vs pt", false, 2000, 0.0, 20.0, VarManager::kPt, 100, 0., 200., VarManager::kMuonRAtAbsorberEnd, 200, 0.0, 1000., VarManager::kMuonPDca);
     }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "Pt_vs_PtMC", "pT vs MC pT", false, 200, 0.0, 20.0, VarManager::kPt, 200, 0.0, 20.0, VarManager::kMCPt);

@@ -124,6 +124,12 @@ struct TrackPropagation {
     }
     initCCDB(bcs.begin());
 
+    tracksParPropagated.reserve(tracks.size());
+    tracksParExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      tracksDCA.reserve(tracks.size());
+    }
+
     gpu::gpustd::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
@@ -163,6 +169,12 @@ struct TrackPropagation {
     tracksParExtensionPropagated.reserve(tracks.size());
     tracksParCovPropagated.reserve(tracks.size());
     tracksParCovExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      tracksDCA.reserve(tracks.size());
+    }
+    if (fillTracksDCACov) {
+      tracksDCACov.reserve(tracks.size());
+    }
 
     for (auto& track : tracks) {
       dcaInfoCov.set(999, 999, 999, 999, 999);

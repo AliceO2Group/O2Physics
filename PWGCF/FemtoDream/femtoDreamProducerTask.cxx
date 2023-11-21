@@ -483,7 +483,7 @@ struct femtoDreamProducerTask {
                     aod::femtodreamparticle::ParticleType::kV0,
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0),
                     0,
-                    v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    v0.v0cosPA(),
                     indexChildID,
                     v0.mLambda(),
                     v0.mAntiLambda());

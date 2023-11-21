@@ -23,6 +23,18 @@
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
 
+/// Function to print the table required in the full workflow
+/// @param initContext initContext of the init function
+void printTablesInWorkflow(o2::framework::InitContext& initContext)
+{
+  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  for (auto const& device : workflows.devices) {
+    for (auto const& input : device.inputs) {
+      LOG(info) << "Table: " << input.matcher.binding << " in device: " << device.name;
+    }
+  }
+}
+
 /// Function to check if a table is required in a workflow
 /// @param initContext initContext of the init function
 /// @param table name of the table to check for

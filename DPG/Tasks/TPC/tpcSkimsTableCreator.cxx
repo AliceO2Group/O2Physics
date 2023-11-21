@@ -82,7 +82,7 @@ struct TreeWriterTpcV0 {
 
     const float alpha = v0.alpha();
     const float qt = v0.qtarm();
-    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float cosPA = v0.v0cosPA();
     const float pT = v0.pt();
     const float v0radius = v0.v0radius();
     const float gammapsipair = v0.psipair();

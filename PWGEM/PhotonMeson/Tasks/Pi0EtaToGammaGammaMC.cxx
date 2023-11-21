@@ -60,7 +60,7 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq_lowB,mee_120_500_tpchadrejortofreq_lowB,mee_0_500_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
-  Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mmumu_0_500__lowB", "Comma separated list of Dalitz ee cuts"};
+  Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mmumu_0_500_lowB", "Comma separated list of Dalitz mumu cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -347,13 +347,6 @@ struct Pi0EtaToGammaGammaMC {
                 int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
                 int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
 
-                // if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                //   photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-                // }
-                // if (photonid2 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                //   photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, 11, -11, 22, mcparticles);
-                // }
-
                 // LOGF(info,"photonid1 = %d , photonid2 = %d", photonid1, photonid2);
                 if (photonid1 < 0 || photonid2 < 0) {
                   continue;
@@ -435,14 +428,38 @@ struct Pi0EtaToGammaGammaMC {
                   auto g1mc = mcparticles.iteratorAt(photonid1);
                   pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
                   etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
+
+                } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) { // check 4 legs
+                  auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
+                  auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
+                  auto pos2 = g2.template posTrack_as<MyMCMuons>();
+                  auto ele2 = g2.template negTrack_as<MyMCMuons>();
+                  if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {
+                    continue;
+                  }
+
+                  auto pos1mc = pos1.template emmcparticle_as<aod::EMMCParticles>();
+                  auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
+                  auto pos2mc = pos2.template emmcparticle_as<aod::EMMCParticles>();
+                  auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
+                  // LOGF(info,"pos1mc.globalIndex() = %d , ele1mc.globalIndex() = %d , pos2mc.globalIndex() = %d , ele2mc.globalIndex() = %d", pos1mc.globalIndex(), ele1mc.globalIndex(), pos2mc.globalIndex(), ele2mc.globalIndex());
+
+                  int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles); // real photon
+                  if (photonid1 < 0) {
+                    continue;
+                  }
+                  auto g1mc = mcparticles.iteratorAt(photonid1);
+                  pi0id = -1;
+                  etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -13, 13, 221, mcparticles);
                 }
+
                 if (pi0id < 0 && etaid < 0) {
                   continue;
                 }
 
                 ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
                 ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-                if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) {
                   v2.SetM(g2.mass());
                 }
                 ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
