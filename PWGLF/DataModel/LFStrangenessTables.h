@@ -656,6 +656,16 @@ DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with Ca
 using McCascLabel = McCascLabels::iterator;
 using McCascBBTag = McCascBBTags::iterator;
 
+// Definition of labels for KF cascades
+namespace mckfcasclabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for KF Cascade
+} // namespace mckfcasclabel
+
+DECLARE_SOA_TABLE(McKFCascLabels, "AOD", "MCKFCASCLABEL", //! Table joinable with KFCascData containing the MC labels
+                  mckfcasclabel::McParticleId);
+using McKFCascLabel = McKFCascLabels::iterator;
+
 // Definition of labels for tracked cascades
 namespace mctracasclabel
 {
