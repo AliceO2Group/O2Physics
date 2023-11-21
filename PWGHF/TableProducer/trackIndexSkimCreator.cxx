@@ -2929,10 +2929,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   // whether to do or not validation plots
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
+
   Configurable<bool> do3Prong{"do3Prong", false, "do 3-prong cascade"};
+  Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", false, "Reject tracks coming from different collisions"};
 
   // charm baryon invariant mass spectra limits
-  Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
   Configurable<double> massXiPiMin{"massXiPiMin", 2.1, "Invariant mass lower limit for xi pi decay channel"};
   Configurable<double> massXiPiMax{"massXiPiMax", 3., "Invariant mass upper limit for xi pi decay channel"};
   Configurable<double> massOmegaPiMin{"massOmegaPiMin", 2.4, "Invariant mass lower limit for omega pi decay channel"};
@@ -3263,22 +3264,27 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             df2.propagateTracksToVertex();
 
-            std::array<float, 3> pVecXi = {0.};
-            std::array<float, 3> pVecPion1XiHyp = {0.};
-            df2.getTrack(0).getPxPyPzGlo(pVecXi);
-            df2.getTrack(1).getPxPyPzGlo(pVecPion1XiHyp);
+            if(df2.isPropagateTracksToVertexDone()){
+              std::array<float, 3> pVecXi = {0.};
+              std::array<float, 3> pVecPion1XiHyp = {0.};
+              df2.getTrack(0).getPxPyPzGlo(pVecXi);
+              df2.getTrack(1).getPxPyPzGlo(pVecPion1XiHyp);
 
-            std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
-            auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
+              std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
+              auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
 
-            if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass2ProngXiHyp >= massXiPiMin) && (mass2ProngXiHyp <= massXiPiMax)) {
-              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
+              if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass2ProngXiHyp >= massXiPiMin) && (mass2ProngXiHyp <= massXiPiMax)) {
+                SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
+              }
+
+              // fill histograms
+              if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi))) {
+                registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
+              }
+            } else if (df2.isPropagationFailure()){
+              LOGF(info, "Exception caught: failed to propagate tracks (2prong - xi) to charm baryon decay vtx");
             }
 
-            // fill histograms
-            if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi))) {
-              registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
-            }
           }
 
           // find charm baryon decay using omega PID hypothesis
@@ -3287,21 +3293,26 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
             df2.propagateTracksToVertex();
 
-            std::array<float, 3> pVecOmega = {0.};
-            std::array<float, 3> pVecPion1OmegaHyp = {0.};
-            df2.getTrack(0).getPxPyPzGlo(pVecOmega);
-            df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
+            if(df2.isPropagateTracksToVertexDone()){
 
-            std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
-            auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
+              std::array<float, 3> pVecOmega = {0.};
+              std::array<float, 3> pVecPion1OmegaHyp = {0.};
+              df2.getTrack(0).getPxPyPzGlo(pVecOmega);
+              df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
 
-            if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaPiMin) && (mass2ProngOmegaHyp <= massOmegaPiMax)) {
-              SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
-            }
+              std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
+              auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
 
-            // fill histograms
-            if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) {
+              if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaPiMin) && (mass2ProngOmegaHyp <= massOmegaPiMax)) {
+                SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
+              }
+
+              // fill histograms
+              if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) {
               registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
+              }
+            } else if (df2.isPropagationFailure()){
+              LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega) to charm baryon decay vtx");
             }
           }
 
@@ -3346,24 +3357,30 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
                 df3.propagateTracksToVertex();
 
-                std::array<float, 3> pVec1 = {0.};
-                std::array<float, 3> pVec2 = {0.};
-                std::array<float, 3> pVec3 = {0.};
-                df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
-                df3.getTrack(1).getPxPyPzGlo(pVec2);
-                df3.getTrack(2).getPxPyPzGlo(pVec3);
+                if(df3.isPropagateTracksToVertexDone()){
 
-                std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
-                auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
+                  std::array<float, 3> pVec1 = {0.};
+                  std::array<float, 3> pVec2 = {0.};
+                  std::array<float, 3> pVec3 = {0.};
+                  df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
+                  df3.getTrack(1).getPxPyPzGlo(pVec2);
+                  df3.getTrack(2).getPxPyPzGlo(pVec3);
 
-                if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass3Prong >= massXiPiPiMin) && (mass3Prong <= massXiPiPiMax)) {
-                  SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
+                  std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                  auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
+
+                  if ((std::abs(casc.mXi() - massXi) < cascadeMassWindow) && (mass3Prong >= massXiPiPiMin) && (mass3Prong <= massXiPiPiMax)) {
+                    SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
+                  }
+
+                  // fill histograms
+                  if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi))) {
+                    registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
+                  }
+                } else if (df3.isPropagationFailure()){
+                  LOGF(info, "Exception caught: failed to propagate tracks (3prong) to charm baryon decay vtx");
                 }
-
-                // fill histograms
-                if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi))) {
-                  registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
-                }
+                
               }
 
               // fill table row only if a vertex was found
