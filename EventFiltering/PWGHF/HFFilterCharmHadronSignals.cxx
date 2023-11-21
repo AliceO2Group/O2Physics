@@ -65,7 +65,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   // additional selections for D*
   Configurable<float> minPtSoftPion{"minPtSoftPion", static_cast<float>(cutsPt[0][1]), "minimum pT for soft pion tracks in D*+ -> D0pi decay"};
   Configurable<float> maxPtSoftPion{"maxPtSoftPion", static_cast<float>(cutsPt[1][1]), "maximum pT for soft pion tracks in D*+ -> D0pi decay"};
-  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"}; 
+  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
   Configurable<float> maxDeltaMassDzeroFromDstar{"maxDeltaMassDzeroFromDstar", static_cast<float>(cutsDeltaMassB[0][kNBeautyParticles]), "maximum invariant-mass delta for D0 in D*+ -> D0pi decay"};
 
   // CCDB configuration
@@ -246,7 +246,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
           }
 
-          if (!TESTBIT(tagBDT, RecoDecay::OriginType::Prompt) && !TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt)) { // if not tagged neither as prompt nor nonprompt, we skip 
+          if (!TESTBIT(tagBDT, RecoDecay::OriginType::Prompt) && !TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt)) { // if not tagged neither as prompt nor nonprompt, we skip
             continue;
           }
         }
