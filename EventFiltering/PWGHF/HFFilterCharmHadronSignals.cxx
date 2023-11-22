@@ -114,6 +114,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setPtLimitsDstarSoftPion(minPtSoftPion, maxPtSoftPion);
+    helper.setPtBinsSingleTracks(std::vector<double>{hf_cuts_single_track::vecBinsPtTrack});
     helper.setCutsSingleTrackBeauty(cutsSingleTrackDummy, cutsSingleTrackDummy);
     helper.setDeltaMassCharmHadForBeauty(maxDeltaMassDzeroFromDstar);
 
