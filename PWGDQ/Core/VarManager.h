@@ -2219,8 +2219,73 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     KFParticle lepton2KF;
     KFParticle hadronKF;
     KFParticle KFGeoThreeProngBarrel;
-  }
+    
+    if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
+      KFPTrack kfpTrack0 = createKFPTrackFromTrack(lepton1);
+      lepton1KF = KFParticle(kfpTrack0, 11 * lepton1.sign());
+      KFPTrack kfpTrack1 = createKFPTrackFromTrack(lepton2);
+      lepton2KF = KFParticle(kfpTrack1, 11 * lepton2.sign());
+      KFPTrack kfpTrack2 = createKFPTrackFromTrack(track);
+      hadronKF = KFParticle(kfpTrack2, 321 * track.sign()); // kaon mass
+
+      KFGeoThreeProngBarrel.SetConstructMethod(2);
+      KFGeoThreeProngBarrel.AddDaughter(lepton1KF);
+      KFGeoThreeProngBarrel.AddDaughter(lepton2KF);
+
+      if (fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau] ) {
+        values[VarManager::kPairMassDau] = KFGeoThreeProngBarrel.GetMass();
+        values[VarManager::kPairPtDau] = KFGeoThreeProngBarrel.GetPt();
+      }
+
+      // Quantities between 3rd prong and candidate
+      if (fgUsedVars[kKFDCAxyzBetweenProngs])
+        values[kKFDCAxyzBetweenProngs] = KFGeoThreeProngBarrel.GetDistanceFromParticle(hadronKF);
+
+      KFGeoThreeProngBarrel.AddDaughter(hadronKF); // third prong
+
+      if (fgUsedVars[kKFMass])
+        values[kKFMass] = KFGeoThreeProngBarrel.GetMass();
+    
+      if constexpr (eventHasVtxCov) {
+        KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+        KFParticle KFPV(kfpVertex);
+        double dxTriplet3PV = KFGeoThreeProngBarrel.GetX() - KFPV.GetX();
+        double dyTriplet3PV = KFGeoThreeProngBarrel.GetY() - KFPV.GetY();
+        double dzTriplet3PV = KFGeoThreeProngBarrel.GetZ() - KFPV.GetZ();
+
+        if (fgUsedVars[kVertexingLxy] || fgUsedVars[kVertexingLz] || fgUsedVars[kVertexingLxyz] || fgUsedVars[kVertexingLxyErr] || fgUsedVars[kVertexingLzErr] || fgUsedVars[kVertexingTauxy] || fgUsedVars[kVertexingLxyOverErr] || fgUsedVars[kVertexingLzOverErr] || fgUsedVars[kVertexingLxyzOverErr] || fgUsedVars[kCosPointingAngle]) {
+          values[kVertexingLxy] = std::sqrt(dxTriplet3PV * dxTriplet3PV + dyTriplet3PV * dyTriplet3PV);
+          values[kVertexingLz] = std::sqrt(dzTriplet3PV * dzTriplet3PV);
+          values[kVertexingLxyz] = std::sqrt(dxTriplet3PV * dxTriplet3PV + dyTriplet3PV * dyTriplet3PV + dzTriplet3PV * dzTriplet3PV);
+          values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoThreeProngBarrel.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProngBarrel.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProngBarrel.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV);
+          values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoThreeProngBarrel.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV;
+          values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProngBarrel.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProngBarrel.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(5) + KFGeoThreeProngBarrel.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProngBarrel.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(3) + KFGeoThreeProngBarrel.GetCovariance(3)) * dxTriplet3PV * dzTriplet3PV + (KFPV.GetCovariance(4) + KFGeoThreeProngBarrel.GetCovariance(4)) * dyTriplet3PV * dzTriplet3PV);
+          if (fabs(values[kVertexingLxy]) < 1.e-8f)
+            values[kVertexingLxy] = 1.e-8f;
+          values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+          if (fabs(values[kVertexingLz]) < 1.e-8f)
+            values[kVertexingLz] = 1.e-8f;
+          values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+          if (fabs(values[kVertexingLxyz]) < 1.e-8f)
+            values[kVertexingLxyz] = 1.e-8f;
+          values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
+
+          if (fgUsedVars[kVertexingTauxy])
+            values[kVertexingTauxy] = KFGeoThreeProngBarrel.GetPseudoProperDecayTime(KFPV, KFGeoThreeProngBarrel.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
+          if (fgUsedVars[kVertexingTauxyErr])
+            values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoThreeProngBarrel.GetMass() / (KFGeoThreeProngBarrel.GetPt() * o2::constants::physics::LightSpeedCm2NS);
+
+          if (fgUsedVars[kCosPointingAngle])
+            values[VarManager::kCosPointingAngle] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx() +
+                                                    dyTriplet3PV * KFGeoThreeProngBarrel.GetPy() +
+                                                    dzTriplet3PV * KFGeoThreeProngBarrel.GetPz()) /
+                                                    (KFGeoThreeProngBarrel.GetP() * values[VarManager::kVertexingLxyz]);
+        } // end calculate vertex variables
+      } // end eventHasVtxCov
+    } // end (candidateType == kBtoJpsiEEK) && trackHasCov
+  } // end KF
 }
+
 
 template <typename C, typename A>
 void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA, float normB, float normC, float* values)
