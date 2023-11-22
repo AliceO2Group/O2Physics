@@ -68,7 +68,7 @@ struct OnTheFlyTracker {
 
   Configurable<float> magneticField{"magneticField", 20.0f, "magnetic field in kG"};
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
-  Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
+  Configurable<float> multEtaHalfRange{"multEtaHalfRange", 0.8, "Half eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
@@ -279,7 +279,7 @@ struct OnTheFlyTracker {
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.eta()) > multEtaRange) {
+      if (std::abs(mcParticle.eta()) > multEtaHalfRange) {
         continue;
       }
       if (!mcParticle.isPhysicalPrimary()) {
@@ -300,7 +300,7 @@ struct OnTheFlyTracker {
       dNdEta += 1.f;
     }
 
-    dNdEta /= (multEtaRange * 2.0f);
+    dNdEta /= (multEtaHalfRange * 2.0f);
     uint32_t multiplicityCounter = 0;
     histos.fill(HIST("hLUTMultiplicity"), dNdEta);
 
