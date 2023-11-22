@@ -2926,7 +2926,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // whether to do or not validation plots
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
-  Configurable<bool> do3Prong{"do3Prong", true, "do 3-prong cascade"};
+  Configurable<bool> do3Prong{"do3Prong", false, "do 3-prong cascade"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", false, "Reject tracks coming from different collisions"};
 
   // charm baryon invariant mass spectra limits
