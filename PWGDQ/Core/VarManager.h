@@ -2165,6 +2165,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
       }
 
+    auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
+    if (fgUsedVars[kVertexingChi2PCA])
+      values[VarManager::kVertexingChi2PCA] = chi2PCA;
+
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
                                 std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
@@ -2192,12 +2196,23 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
 
-      if (fgUsedVars[kCosPointingAngle]) {
+      if (fgUsedVars[kCosPointingAngle] && fgUsedVars[kVertexingLxyz]) {
         values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                              (collision.posY() - secondaryVertex[1]) * v123.Py() +
-                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
-                                              (v123.P() * values[VarManager::kVertexingLxyz]);
+                                                (collision.posY() - secondaryVertex[1]) * v123.Py() +
+                                                (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+                                                (v123.P() * values[VarManager::kVertexingLxyz]);
       }
+      // run 2 definitions: Lxy projected onto the momentum vector of the candidate
+      if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || values[kVertexingTauxyProjected]) {
+        values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
+        values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v123.Pz() * v123.Pz());
+        values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py());
+        values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()));
+        values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py()) + ((secondaryVertex[2] - collision.posZ()) * v123.Pz());
+        values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()) + (v123.Pz() * v123.Pz()));
+        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v123.M() / (v123.P());
+        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v123.M() / (v123.P());
+      } 
     }
   } else {
     KFParticle lepton1KF;
