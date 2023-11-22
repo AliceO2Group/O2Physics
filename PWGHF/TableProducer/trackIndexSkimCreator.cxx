@@ -2918,11 +2918,6 @@ struct HfTrackIndexSkimCreatorCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
-enum cascadeType {
-  kXi = 0,
-  kOmega
-};
-
 struct HfTrackIndexSkimCreatorLfCascades {
   Produces<aod::HfCascLf2Prongs> rowTrackIndexCasc2Prong;
   Produces<aod::HfCascLf3Prongs> rowTrackIndexCasc3Prong;
@@ -2957,16 +2952,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // selections have been set to run2 lambda dedicated cuts
   // selections for cascade have been set to the loosest value between xi and omega
   // a tolerance has been added to be more conservative
-  Configurable<float> v0TransvRadius{"v0TransvRadius", 0.6, "V0 radius in xy plane"};          // 0.5 in run2
-  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.7, "Cascade radius in xy plane"}; // 0.5 cm for xi and 0.6 for omega
-  Configurable<float> dcaBachToPv{"dcaBachToPv", .06, "DCA Bach To PV"};                       // 0.04 in run2
-  Configurable<float> dcaV0ToPv{"dcaV0ToPv", .08, "DCA V0 To PV"};                             // 0.06 in run2
+  Configurable<float> v0TransvRadius{"v0TransvRadius", 1.0, "V0 radius in xy plane"};          // 1.2 (xi) and 1.1 (omega) in run2
+  Configurable<float> cascTransvRadius{"cascTransvRadius", 0.4, "Cascade radius in xy plane"}; // 0.5 cm (xi) and 0.6 (omega) in run2
+  Configurable<float> dcaBachToPv{"dcaBachToPv", 0.03, "DCA Bach To PV"};                      // 0.04 in run2
+  Configurable<float> dcaV0ToPv{"dcaV0ToPv", 0.02, "DCA V0 To PV"};                            // 0.03 in run2
   Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};                           // conservative, a cut ar 1.0 should also be fine
   Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};                     // conservative, a cut ar 1.0 should also be fine
-  Configurable<float> dcaNegToPv{"dcaNegToPv", .08, "DCA Neg To PV"};                          // 0.06 in run2
-  Configurable<float> dcaPosToPv{"dcaPosToPv", .08, "DCA Pos To PV"};                          // 0.06 in run2
+  Configurable<float> dcaNegToPv{"dcaNegToPv", 0.05, "DCA Neg To PV"};                         // 0.06 in run2
+  Configurable<float> dcaPosToPv{"dcaPosToPv", 0.05, "DCA Pos To PV"};                         // 0.06 in run2
   Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};                    // 0.008 in run2
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
 
