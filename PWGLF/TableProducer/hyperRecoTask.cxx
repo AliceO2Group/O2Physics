@@ -93,6 +93,7 @@ struct hyperCandidate {
   bool isSignal = false; // true MC signal
   bool isReco = false;   // true if the candidate is actually reconstructed
   int pdgCode = 0;       // PDG code of the hypernucleus
+  uint8_t flags = 0u;    // flags for dughter particles
 };
 
 struct hyperRecoTask {
@@ -292,6 +293,9 @@ struct hyperRecoTask {
       hypCand.clusterSizeITSPi = !hypCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
       hypCand.momHe3TPC = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
       hypCand.momPiTPC = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
+
+      hypCand.flags |= static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4);
+      hypCand.flags |= static_cast<uint8_t>(negTrack.pidForTracking() & 0xF);
 
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
@@ -502,7 +506,7 @@ struct hyperRecoTask {
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi);
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -545,7 +549,7 @@ struct hyperRecoTask {
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi,
+                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }

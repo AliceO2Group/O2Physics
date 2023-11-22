@@ -15,6 +15,8 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
+#include <TPDGCode.h>
+
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -237,7 +239,8 @@ struct HfCandidateCreatorCascade {
                        v0.pxneg(), v0.pyneg(), v0.pzneg(),
                        v0.dcaV0daughters(),
                        v0.dcapostopv(),
-                       v0.dcanegtopv());
+                       v0.dcanegtopv(),
+                       v0.v0cosPA());
 
       // fill histograms
       if (fillHistograms) {

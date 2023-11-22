@@ -93,7 +93,7 @@ struct lambdakzeroQa {
       registry.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
 
       registry.fill(HIST("hV0Radius"), v0.v0radius());
-      registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("hV0CosPA"), v0.v0cosPA());
       registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
       registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
       registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
@@ -224,7 +224,7 @@ struct lambdakzeroAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
         auto reconegtrack = v0.negTrack_as<MyTracks>();
@@ -359,7 +359,7 @@ struct lambdakzeroAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
         auto reconegtrack = v0.negTrack_as<MyTracks>();

@@ -72,7 +72,6 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoUniverseProducerMCTruthTask {
-  int evCount = 0;
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
@@ -80,6 +79,8 @@ struct femtoUniverseProducerMCTruthTask {
   // Tables being produced
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
+  // Produces<aod::FDMCLabels> outputPartsMCLabels;
+  // Produces<aod::FDMCParticles> outputPartsMC;
 
   // Analysis configs
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -233,9 +234,6 @@ struct femtoUniverseProducerMCTruthTask {
                    aod::McCollisions const& mcCollisions,
                    aod::McParticles const& mcParticles)
   {
-    if (evCount > 30)
-      return;
-    evCount++;
     // magnetic field for run not needed for mc truth
     // fill the tables
     fillCollisions(col, mcParticles);

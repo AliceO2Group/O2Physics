@@ -25,6 +25,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -66,6 +67,7 @@ struct CheckMCV0 {
   using TracksMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TracksCovIU, aod::McTrackLabels>;
   using FilteredTracksMC = soa::Filtered<TracksMC>;
   using CollisionsMC = soa::Join<aod::McCollisionLabels, aod::Collisions>;
+  using V0s = aod::V0Datas;
 
   // Histogram Parameters
   Configurable<int> tglNBins{"tglNBins", 500, "nBins for tgl"};
@@ -97,8 +99,15 @@ struct CheckMCV0 {
   AxisSpec axisZPos{zNBins, -maxZ, maxZ, "reco. z of e^{#plus}"};
   AxisSpec axisZMCEle{zNBins, -maxZ, maxZ, "MC prop. z of e^{#minus}"};
   AxisSpec axisZMCPos{zNBins, -maxZ, maxZ, "MC prop. z of e^{#plus}"};
+  AxisSpec axisXDiff{xNBins, -maxX, maxX, "reco. X of e^{#plus} - reco. X of e^{#minus}"};
   AxisSpec axisYDiff{yNBins, -maxY, maxY, "reco. y of e^{#plus} - reco. y of e^{#minus}"};
   AxisSpec axisZDiff{zNBins, -maxZ, maxZ, "reco. z of e^{#plus} - reco. z of e^{#minus}"};
+  AxisSpec axisRMCDiff{xNBins, -30, 30, "#delta(R_{reco} - R_{MC})"};
+  AxisSpec axisXMCDiff{xNBins, -30, 30, "#delta(X_{reco} - X_{MC})"};
+  AxisSpec axisYMCDiff{yNBins, -30, 30, "#delta(Y_{reco} - Y_{MC})"};
+  AxisSpec axisZMCDiff{zNBins, -30, 30, "#delta(Z_{reco} - Z_{MC})"};
+  AxisSpec axisPhi{tglNBins, 0, TMath::Pi() * 2, "#phi"};
+  AxisSpec axisR{tglNBins, 0, 100, "R_{gen}"};
   AxisSpec axisPt{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c}"};
   AxisSpec axisPtPos{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c} of e^{#plus}"};
   AxisSpec axisPtEle{ptNBins, minpt, maxpt, "#it{p}_{T} GeV/#it{c} of e^{#minus}"};
@@ -190,6 +199,15 @@ struct CheckMCV0 {
       }
     }
 
+    registry.add("check/DeltaRPhi", "#deltaR", HistType::kTH2F, {axisPhi, axisRMCDiff});
+    registry.add("check/DeltaRR", "#deltaR", HistType::kTH2F, {axisR, axisRMCDiff});
+    for (const auto& v0type : v0Types) {
+      registry.add(Form("check/%sDeltaRPhi", v0type.data()), "#deltaR", HistType::kTH2F, {axisPhi, axisRMCDiff});
+      registry.add(Form("check/%sDeltaXPhi", v0type.data()), "#deltaX", HistType::kTH2F, {axisPhi, axisXMCDiff});
+      registry.add(Form("check/%sDeltaYPhi", v0type.data()), "#deltaY", HistType::kTH2F, {axisPhi, axisYMCDiff});
+      registry.add(Form("check/%sDeltaZPhi", v0type.data()), "#deltaZ", HistType::kTH2F, {axisPhi, axisZMCDiff});
+    }
+
     registry.add("V0Counter", "V0 counter", HistType::kTH1F, {{cutsBinLabels.size(), 0.5, 0.5 + cutsBinLabels.size()}});
     for (int iBin = 0; iBin < cutsBinLabels.size(); ++iBin) {
       registry.get<TH1>(HIST("V0Counter"))->GetXaxis()->SetBinLabel(iBin + 1, cutsBinLabels[iBin].data());
@@ -206,80 +224,107 @@ struct CheckMCV0 {
     }
   }
 
-  void processMCV0(CollisionsMC const& collisions, aod::V0s const& v0s, FilteredTracksMC const& /*unused*/, aod::McParticles const& /*unused*/, aod::McCollisions const& /*unused*/, aod::BCsWithTimestamps const& /*unused*/)
+  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+  void processMCV0(CollisionsMC const& collisions, V0s const& v0s, FilteredTracksMC const& /*unused*/, aod::McParticles const& /*unused*/, aod::McCollisions const& /*unused*/, aod::BCsWithTimestamps const& /*unused*/)
   {
     // Check for new ccdb parameters
-    const auto bc = collisions.begin().bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    for (auto& collision : collisions) {
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
-    // loop over all true photon pairs
-    for (const auto& v0 : v0s) {
-      registry.fill(HIST("V0Counter"), cutsBinEnum::PRE);
+      // Get the V0 candidates belonging to the current collision
+      for (const auto& v0 : v0s.sliceBy(perCollision, static_cast<int>(collision.globalIndex()))) {
+        registry.fill(HIST("V0Counter"), cutsBinEnum::PRE);
 
-      // tracks
-      const auto& pos = v0.template posTrack_as<TracksMC>(); // positive daughter
-      const auto& ele = v0.template negTrack_as<TracksMC>(); // negative daughter
-      if (!checkV0leg(pos) || !checkV0leg(ele)) {
-        registry.fill(HIST("V0Counter"), cutsBinEnum::CHECKV0LEG);
-        continue;
-      }
+        // tracks
+        const auto& pos = v0.template posTrack_as<TracksMC>(); // positive daughter
+        const auto& ele = v0.template negTrack_as<TracksMC>(); // negative daughter
+        if (!checkV0leg(pos) || !checkV0leg(ele)) {
+          registry.fill(HIST("V0Counter"), cutsBinEnum::CHECKV0LEG);
+          continue;
+        }
 
-      // set correct track types
-      checkPassed(pos, ele);
+        // set correct track types
+        checkPassed(pos, ele);
 
-      if (cutSign && (std::signbit(pos.sign()) || !std::signbit(ele.sign()))) { // wrong sign and same sign reject (e.g. loopers)
-        registry.fill(HIST("V0Counter"), cutsBinEnum::SIGN);
-        continue;
-      }
-      if (cutSameSign && (pos.sign() * ele.sign() > 0)) {
-        registry.fill(HIST("V0Counter"), cutsBinEnum::SAMESIGN);
-        continue;
-      }
-      const auto& posMC = pos.template mcParticle_as<aod::McParticles>();
-      const auto& eleMC = ele.template mcParticle_as<aod::McParticles>();
-      if (!checkMCParticles<kGamma>(posMC, eleMC)) {
-        registry.fill(HIST("V0Counter"), cutsBinEnum::PHOTON);
-        continue;
-      }
-      const auto& mother = posMC.mothers_first_as<aod::McParticles>();
+        if (cutSign && (std::signbit(pos.sign()) || !std::signbit(ele.sign()))) { // wrong sign and same sign reject (e.g. loopers)
+          registry.fill(HIST("V0Counter"), cutsBinEnum::SIGN);
+          continue;
+        }
+        if (cutSameSign && (pos.sign() * ele.sign() > 0)) {
+          registry.fill(HIST("V0Counter"), cutsBinEnum::SAMESIGN);
+          continue;
+        }
+        const auto& posMC = pos.template mcParticle_as<aod::McParticles>();
+        const auto& eleMC = ele.template mcParticle_as<aod::McParticles>();
+        if (!checkMCParticles<kGamma>(posMC, eleMC)) {
+          registry.fill(HIST("V0Counter"), cutsBinEnum::PHOTON);
+          continue;
+        }
+        const auto& mother = posMC.mothers_first_as<aod::McParticles>();
 
-      // Propagate the vertex position of the MC track to the reconstructed vertex position of the track
-      if (!recacluateMCVertex(ele, eleMC, mcEleXYZEtaTglPtProp) || !recacluateMCVertex(pos, posMC, mcPosXYZEtaTglPtProp)) {
-        registry.fill(HIST("V0Counter"), cutsBinEnum::PROPFAIL);
-        continue;
-      }
-      registry.fill(HIST("V0Counter"), SURVIVED);
+        // Propagate the vertex position of the MC track to the reconstructed vertex position of the track
+        if (!recacluateMCVertex(ele, eleMC, mcEleXYZEtaTglPtProp) || !recacluateMCVertex(pos, posMC, mcPosXYZEtaTglPtProp)) {
+          registry.fill(HIST("V0Counter"), cutsBinEnum::PROPFAIL);
+          continue;
+        }
+        registry.fill(HIST("V0Counter"), SURVIVED);
 
-      static_for<0, v0Types.size() - 1>([&](auto i) {
-        static_for<0, cuts.size() - 1>([&](auto j) {
-          fillHistograms<i, j>(pos, ele);
+        float mcR = std::sqrt(posMC.vx() * posMC.vx() + posMC.vy() * posMC.vy());
+        float dr = v0.v0radius() - mcR;
+        float dx = v0.x() - posMC.vx();
+        float dy = v0.y() - posMC.vy();
+        float dz = v0.z() - posMC.vz();
+
+        registry.fill(HIST("check/DeltaRPhi"), v0.phi(), dr);
+        registry.fill(HIST("check/DeltaRR"), mcR, dr);
+
+        // fill histograms
+        static_for<0, v0Types.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
+          if (!v0TypesPassed[i]) {
+            return;
+          }
+          registry.fill(HIST("check/") + HIST(v0Types[i]) + HIST("DeltaRPhi"), v0.phi(), dr);
+          registry.fill(HIST("check/") + HIST(v0Types[i]) + HIST("DeltaXPhi"), v0.phi(), dx);
+          registry.fill(HIST("check/") + HIST(v0Types[i]) + HIST("DeltaYPhi"), v0.phi(), dy);
+          registry.fill(HIST("check/") + HIST(v0Types[i]) + HIST("DeltaZPhi"), v0.phi(), dz);
+
+          static_for<0, cuts.size() - 1>([&](auto j_idx) {
+            constexpr unsigned int j = j_idx.value;
+            fillHistograms<i, j>(pos, ele);
+          });
         });
-      });
 
-      mcV0Table(
-        // Track Pos
-        pos.pt(), pos.eta(), pos.tgl(), pos.x(), pos.y(), pos.z(), pos.trackTime(), pos.sign(),
-        pos.hasITS(), pos.hasTPC(), pos.hasTRD(), pos.hasTOF(),
-        // Track Ele
-        ele.pt(), ele.eta(), ele.tgl(), ele.x(), ele.y(), ele.z(), ele.trackTime(), ele.sign(),
-        ele.hasITS(), ele.hasTPC(), ele.hasTRD(), ele.hasTOF(),
-        // MC particle Pos
-        posMC.pt(), posMC.eta(), posMC.vx(), posMC.vy(), posMC.vz(),
-        // MC particle Ele
-        eleMC.pt(), eleMC.eta(), eleMC.vx(), eleMC.vy(), eleMC.vz(),
-        // Propagated MC pos
-        mcPosXYZEtaTglPtProp[0], mcPosXYZEtaTglPtProp[1], mcPosXYZEtaTglPtProp[2],
-        mcPosXYZEtaTglPtProp[3], mcPosXYZEtaTglPtProp[4], mcPosXYZEtaTglPtProp[5],
-        // Propagated MC ele
-        mcEleXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[2],
-        mcEleXYZEtaTglPtProp[3], mcEleXYZEtaTglPtProp[4], mcEleXYZEtaTglPtProp[5],
-        // MC mother particle
-        mother.isPhysicalPrimary(), mother.producedByGenerator(), mother.pt(), mother.eta(),
-        mother.vx(), mother.vy(), mother.vz(),
-        // MC Primary Vertex
-        mother.vx(), mother.vy(), mother.vz(),
-        // TrackType
-        std::distance(v0TypesPassed.cbegin(), std::find(v0TypesPassed.cbegin(), v0TypesPassed.cend(), true)));
+        mcV0Table(
+          // V0
+          v0.x(), v0.y(), v0.z(),
+          v0.px(), v0.py(), v0.pz(),
+          // Track Pos
+          pos.pt(),
+          pos.eta(), pos.tgl(), pos.x(), pos.y(), pos.z(), pos.trackTime(), pos.sign(),
+          pos.hasITS(), pos.hasTPC(), pos.hasTRD(), pos.hasTOF(),
+          // Track Ele
+          ele.pt(), ele.eta(), ele.tgl(), ele.x(), ele.y(), ele.z(), ele.trackTime(), ele.sign(),
+          ele.hasITS(), ele.hasTPC(), ele.hasTRD(), ele.hasTOF(),
+          // MC particle Pos
+          posMC.pt(), posMC.eta(), posMC.vx(), posMC.vy(), posMC.vz(),
+          // MC particle Ele
+          eleMC.pt(), eleMC.eta(), eleMC.vx(), eleMC.vy(), eleMC.vz(),
+          // Propagated MC pos
+          mcPosXYZEtaTglPtProp[0], mcPosXYZEtaTglPtProp[1], mcPosXYZEtaTglPtProp[2],
+          mcPosXYZEtaTglPtProp[3], mcPosXYZEtaTglPtProp[4], mcPosXYZEtaTglPtProp[5],
+          // Propagated MC ele
+          mcEleXYZEtaTglPtProp[0], mcEleXYZEtaTglPtProp[1], mcEleXYZEtaTglPtProp[2],
+          mcEleXYZEtaTglPtProp[3], mcEleXYZEtaTglPtProp[4], mcEleXYZEtaTglPtProp[5],
+          // MC mother particle
+          mother.isPhysicalPrimary(), mother.producedByGenerator(), mother.pt(), mother.eta(),
+          mother.vx(), mother.vy(), mother.vz(),
+          // MC Primary Vertex
+          mother.vx(), mother.vy(), mother.vz(),
+          // TrackType
+          std::distance(v0TypesPassed.cbegin(), std::find(v0TypesPassed.cbegin(), v0TypesPassed.cend(), true)));
+      }
     }
   }
   PROCESS_SWITCH(CheckMCV0, processMCV0, "process reconstructed MC V0 info", true);
@@ -288,10 +333,6 @@ struct CheckMCV0 {
   inline void fillHistograms(TTrack const& pos, TTrack const& ele)
   {
     constexpr auto hist = HIST(v0Types[idxV0Type]) + HIST(cuts[idxCut]);
-
-    if (!v0TypesPassed[idxV0Type]) {
-      return;
-    }
 
     if constexpr (idxCut == 0) { // lowPt
       if (pos.pt() > ptLowCut && ele.pt() > ptLowCut) {
@@ -376,10 +417,6 @@ struct CheckMCV0 {
     }
     if (track.pt() > maxpt) {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::PTMAX);
-      return false;
-    }
-    if (!track.hasITS() && !track.hasTPC()) {
-      registry.fill(HIST("CheckV0Leg"), checkV0legEnum::NOITSTPC);
       return false;
     }
     if (abs(track.eta()) > maxeta) {

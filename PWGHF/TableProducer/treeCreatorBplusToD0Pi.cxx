@@ -93,6 +93,8 @@ DECLARE_SOA_COLUMN(NSigmaTPCTrk1Pi, nSigmaTPCTrk1Pi, float);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 } // namespace full
 
 // put the arguments into the table
@@ -171,12 +173,13 @@ DECLARE_SOA_TABLE(HfCandBpFullEvs, "AOD", "HFCANDBPFULLEV",
 
 DECLARE_SOA_TABLE(HfCandBpFullPs, "AOD", "HFCANDBPFULLP",
                   collision::BCId,
+                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::MCflag,
-                  full::CandidateId);
+                  full::McParticleId);
 
 } // namespace o2::aod
 
@@ -317,6 +320,7 @@ struct HfTreeCreatorBplusToD0Pi {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
+          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),

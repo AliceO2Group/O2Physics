@@ -11,129 +11,166 @@
 ///
 /// \brief this is a starting point for the Resonances tutorial
 /// \author
-/// \since 23/04/2023
+/// \since 08/11/2023
 
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "ReconstructionDataFormats/PID.h"
+#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// STEP 0
-// Starting point: loop over all tracks, produce combinations and fill invariant mass histogram
+// STEP 1
+// Producing same event invariant mass distribution
 struct resonances_tutorial {
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable for number of bins
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
+  // Configurable for min pT cut
+  Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
 
-  // histogram defined with HistogramRegistry
-  HistogramRegistry registry{"registry",
-                             {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
-                              {"InputTracks", "InputTracks", {HistType::kTH1F, {{nBins, -5., 5.}}}},
-                              {"SignTrk1", "SignTrk1", {HistType::kTH1F, {{2, -2., 2.}}}},
-                              {"SignTrk2", "SignTrk2", {HistType::kTH1F, {{2, -2., 2.}}}},
-                              {"hTrk1Pt", "hTrk1Pt", {HistType::kTH1F, {{nBins, 0., 5.}}}},
-                              {"hTrk2Pt", "hTrk2Pt", {HistType::kTH1F, {{nBins, 0., 5.}}}},
-                              {"hMassPhi", "hMassPhi", {HistType::kTH1F, {{200, 0.9f, 1.1f}}}},
-                              {"hMassPhiTrue", "hMassPhiTrue", {HistType::kTH1F, {{200, 0.9f, 1.1f}}}},
-                              {"hRecoPhiPtTrue", "hRecoPhiPtTrue", {HistType::kTH1F, {{nBins, 0., 5.}}}}}};
+  // Track selection
+  // primary track condition
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
+  // DCA Selections
+  // DCAr to PV
+  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
+  // DCAz to PV
+  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
-  float massKa = o2::track::PID::getMass(o2::track::PID::Kaon);
+  // PID selection
+  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
+  Configurable<float> nsigmacutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
 
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfulling the event selection requirements
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  // variables
+  double massKa = o2::analysis::pdg::MassKPlus;
 
-  // Processed collisions will be already fulfulling the position of the vertex along the z axis
-  Filter vtxFilter = (nabs(o2::aod::collision::posZ) < 10.f);
-
-  // Processed tracks will be already fulfulling the quality cuts
-  Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
-  Filter trackFilterITS = (aod::track::itsChi2NCl < 36.f);
-  Filter trackFilterTPC = ((aod::track::tpcChi2NCl < 4.f));
-
-  TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
-               aod::McParticles const& mcParticles)
+  // Initialize the ananlysis task
+  void init(o2::framework::InitContext&)
   {
-    // Fill the event counter
-    registry.fill(HIST("hVertexZ"), collision.posZ());
-    for (const auto& trk : resotracks) {
-      registry.fill(HIST("InputTracks"), trk.pt() * trk.sign());
+    // register histograms
+    histos.add("hVertexZ", "hVertexZ", HistType::kTH1F, {{nBins, -15., 15.}});
+    histos.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {{120, 0.0f, 120.0f}});
+    histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{100, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{100, -10.0f, 10.0f}});
+    histos.add("h1PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH1F, {{300, 0.9, 1.2}});
+    histos.add("h1PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH1F, {{300, 0.9, 1.2}});
+    histos.add("h1PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH1F, {{300, 0.9, 1.2}});
+    histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{120, 0.0f, 120.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+    histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{120, 0.0f, 120.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+    histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{120, 0.0f, 120.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+
+    // Print output histograms statistics
+    LOG(info) << "Size of the histograms in resonance tutorial step1:";
+    histos.print();
+  }
+
+  // Track selection
+  template <typename TrackType>
+  bool trackCut(const TrackType track)
+  {
+    // basic track cuts
+    if (std::abs(track.pt()) < cMinPtcut)
+      return false;
+    if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
+      return false;
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+      return false;
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+      return false;
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+      return false;
+    if (cfgPVContributor && !track.isPVContributor())
+      return false;
+    return true;
+  }
+
+  // PID selection TPC +TOF Veto
+  template <typename T>
+  bool selectionPID(const T& candidate)
+  {
+    bool tpcPass = std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC;
+    bool tofPass = (candidate.hasTOF()) ? std::abs(candidate.tofNSigmaKa()) < nsigmacutTOF : true;
+    if (tpcPass && tofPass) {
+      return true;
     }
+    return false;
+  }
 
-    for (auto& [trk1, trk2] : combinations(o2::soa::CombinationsUpperIndexPolicy(resotracks, resotracks))) {
-      registry.fill(HIST("SignTrk1"), trk1.sign());
-      registry.fill(HIST("SignTrk2"), trk2.sign());
-      // Un-like sign pair only
-      if (trk1.sign() * trk2.sign() > 0) {
-        continue;
+  // Fill histograms (main function)
+  double rapidity, mass, pT, paircharge;
+  TLorentzVector daughter1, daughter2, mother;
+  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  {
+    auto multiplicity = collision.multV0M();
+    for (auto track1 : dTracks1) { // loop over all dTracks1
+      if (!trackCut(track1) || !selectionPID(track1)) {
+        continue; // track selection and PID selection
       }
-
-      if (std::abs(trk1.tpcNSigmaKa()) > 2.0) {
-        continue;
+      // QA plots
+      histos.fill(HIST("hEta"), track1.eta());
+      histos.fill(HIST("hDcaxy"), track1.dcaXY());
+      histos.fill(HIST("hDcaz"), track1.dcaZ());
+      histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
+      if (track1.hasTOF()) {
+        histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       }
-
-      if (std::abs(trk2.tpcNSigmaKa()) > 2.0) {
-        continue;
-      }
-
-      registry.fill(HIST("hTrk1Pt"), trk1.pt());
-      registry.fill(HIST("hTrk2Pt"), trk2.pt());
-
-      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-      lResonance = lDecayDaughter1 + lDecayDaughter2;
-
-      if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5) {
-        continue;
-      }
-
-      registry.fill(HIST("hMassPhi"), lResonance.M());
-
-      // Checking the MC information
-      if (abs(trk1.pdgCode()) != kKPlus || abs(trk2.pdgCode()) != kKPlus) // check if the tracks are kaons
-      {
-        continue;
-      }
-      auto mother1 = trk1.motherId();
-      auto mother2 = trk2.motherId();
-      if (mother1 == mother2) {        // Same mother
-        if (trk1.motherPDG() == 333) { // Phi
-          registry.fill(HIST("hMassPhiTrue"), lResonance.M());
-          registry.fill(HIST("hRecoPhiPtTrue"), lResonance.Pt());
+      for (auto track2 : dTracks2) { // loop over all dTracks2
+        if (!trackCut(track2) || !selectionPID(track2)) {
+          continue; // track selection and PID selection
         }
-      }
-    }
-
-    for (auto& part : mcParticles) {             // loop over all MC particles
-      if (abs(part.pdgCode()) == 333) {          // Phi
-        if (part.y() > 0.5 || part.y() < -0.5) { // rapidity cut
-          continue;
+        if (track2.index() <= track1.index()) {
+          continue; // condition to avoid double counting of pair
         }
-        bool isDecaytoKaons = true;
-        for (auto& dau : part.daughters_as<aod::McParticles>()) {
-          if (abs(dau.pdgCode()) != kKPlus) { // Decay to Kaons
-            isDecaytoKaons = false;
-            break;
+        daughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa); // set the daughter1 4-momentum
+        daughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa); // set the daughter2 4-momentum
+        mother = daughter1 + daughter2;                                   // calculate the mother 4-momentum
+        mass = mother.M();
+        pT = mother.Pt();
+        rapidity = mother.Rapidity();
+        paircharge = track1.sign() * track2.sign();
+
+        if (std::abs(rapidity) > 0.5)
+          continue; // rapidity cut
+
+        if (paircharge < 0) { // unlike sign
+          histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
+          histos.fill(HIST("h1PhiInvMassUnlikeSign"), mass);
+        } else {                                        // like sign
+          if (track1.sign() > 0 && track2.sign() > 0) { // positive
+            histos.fill(HIST("h3PhiInvMassLikeSignPP"), multiplicity, pT, mass);
+            histos.fill(HIST("h1PhiInvMassLikeSignPP"), mass);
+          } else { // negative
+            histos.fill(HIST("h3PhiInvMassLikeSignMM"), multiplicity, pT, mass);
+            histos.fill(HIST("h1PhiInvMassLikeSignMM"), mass);
           }
         }
-        if (!isDecaytoKaons)
-          continue;
-        registry.fill(HIST("truephipt"), part.pt());
       }
     }
+  }
+
+  // Process the data
+  void process(aod::ResoCollision& collision, aod::ResoTracks const& resotracks)
+  {
+    // Fill the event counter
+    histos.fill(HIST("hVertexZ"), collision.posZ());
+    histos.fill(HIST("hMultiplicityPercent"), collision.multV0M());
+
+    fillHistograms<false, false>(collision, resotracks, resotracks); // Fill histograms, no MC, no mixing
   }
 };
 

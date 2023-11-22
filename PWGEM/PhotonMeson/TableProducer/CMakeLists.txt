@@ -34,8 +34,8 @@ o2physics_add_dpl_workflow(create-emreduced-event
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(create-emreduced-mc-event
-                    SOURCES createEMReducedMCEvent.cxx
+o2physics_add_dpl_workflow(associate-mc-info
+                    SOURCES associateMCinfo.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -49,8 +49,23 @@ o2physics_add_dpl_workflow(skimmer-phos
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(skimmer-primary-electron
+                    SOURCES skimmerPrimaryElectron.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-primary-muon
+                    SOURCES skimmerPrimaryMuon.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(skimmer-dalitz-ee
                     SOURCES skimmerDalitzEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-dalitz-mumu
+                    SOURCES skimmerDalitzMuMu.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

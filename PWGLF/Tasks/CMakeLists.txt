@@ -215,3 +215,8 @@ o2physics_add_dpl_workflow(rsn-analysis-thnsparse
                     SOURCES rsnanalysisTHnSparse.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-in-jets
+                    SOURCES nuclei_in_jets.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -1270,18 +1270,15 @@ struct LFNucleiBATask {
       if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut) {
         return;
       }
-      // if (event.centFV0M() < cfgLowMultCut || event.centFV0M() > cfgHighMultCut) {
-      //   return;
-      // }
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex) {
         return;
       }
     }
 
-    if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut)
-      return;
-    if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
-      return;
+    // if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut)
+    //   return;
+    // if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
+    //   return;
 
     float gamma = 0., massTOF = 0., hePt = 0.f, antiDPt = 0.f;
     bool isTriton = kFALSE;

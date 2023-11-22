@@ -264,6 +264,7 @@ struct lambdakzerofinder {
     // Attempt collision association on pure geometrical basis
     // FIXME this can of course be far better
     float smallestDCA = 1e+3;
+    float cosPA = -1;
     int collisionIndex = -1;
     //   float getDCAtoPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ){
     for (auto const& collision : collisions) {
@@ -271,10 +272,12 @@ struct lambdakzerofinder {
       if (thisDCA < smallestDCA) {
         collisionIndex = collision.globalIndex();
         smallestDCA = thisDCA;
+        cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posY()}, array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       }
     }
     if (smallestDCA > maxV0DCAtoPV)
       return 0; // unassociated
+
     v0(collisionIndex, t1.globalIndex(), t2.globalIndex());
     v0data(t1.globalIndex(), t2.globalIndex(), collisionIndex, 0,
            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
@@ -282,7 +285,7 @@ struct lambdakzerofinder {
            pvec0[0], pvec0[1], pvec0[2],
            pvec1[0], pvec1[1], pvec1[2],
            TMath::Sqrt(fitter.getChi2AtPCACandidate()),
-           t1.dcaXY(), t2.dcaXY());
+           t1.dcaXY(), t2.dcaXY(), cosPA, smallestDCA);
     v0datalink(v0data.lastIndex());
     return 1;
   }
@@ -367,9 +370,9 @@ struct lambdakzerofinderQa {
 
     Long_t lNCand = 0;
     for (auto& v0 : fullV0s) {
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("hV0Radius"), v0.v0radius());
-        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("hV0CosPA"), v0.v0cosPA());
         registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
         registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
         registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
@@ -400,9 +403,9 @@ struct lambdakzerofinderQa {
 
     Long_t lNCand = 0;
     for (auto& v0 : fullV0s) {
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("hV0Radius"), v0.v0radius());
-        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("hV0CosPA"), v0.v0cosPA());
         registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
         registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
         registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());

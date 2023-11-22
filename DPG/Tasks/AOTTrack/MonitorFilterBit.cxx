@@ -31,6 +31,8 @@ struct CheckFilterBit {
   ConfigurableAxis binsEta{"binsEta", {30, -1.5, 1.5}, ""};
   Configurable<float> zVtxCut{"zVtxCut", 10., "Primary Vtx z cut"};
   ConfigurableAxis binsPhi{"binsPhi", {180, 0., 2 * M_PI}, "Phi binning"};
+  ConfigurableAxis binsTPCITSmatching{"binsTPCITSmatching", {2, 0.5, 2.5}, "ITSTPCmatching"};
+  ConfigurableAxis binsNclustTPC{"binsNclustTPC", {VARIABLE_WIDTH, -0.5, 0.5, 10, 50, 60, 70, 80, 90, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160}, ""};
 
   HistogramRegistry histos;
   Int_t ncollisionCounter = 0;
@@ -40,7 +42,10 @@ struct CheckFilterBit {
 
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisEta{binsEta, "#it{#eta}"};
-    const AxisSpec axisPhi{binsPhi, "#it{#eta}"};
+    const AxisSpec axisPhi{binsPhi, "#it{#varphi}"};
+    const AxisSpec axisNclustTPC{binsNclustTPC, "NclustTPC"};
+    const AxisSpec axisTPCITSmatching{binsNclustTPC, "NclustTPC"};
+
     histos.add("EventProp/histMCcollZ", "MC coll Z (cm); #it{z_{MCcoll}} (cm)", kTH1D, {{100, -20., 20.}});
     histos.add("EventProp/histDatacollZ", "MC coll Z (cm); #it{z_{MCcoll}} (cm)", kTH1D, {{100, -20., 20.}});
     histos.add("EventProp/histPtTrackNegCollID", "pt", kTH1D, {axisPt});
@@ -88,16 +93,29 @@ struct CheckFilterBit {
     histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB3", "FB3;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB4", "FB4;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCfromHFdecayCollMatch/histptFB5", "FB5;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+
+    // plotting variables
+    //    HistogramConfigSpec defaultVariableHist({HistType::kTHnF, {axisPt, axisEta, axisPhi,axisNclustTPC}});
+    // histos.add("nclustTPC", "Sigmas", defaultParticleHist);
+    histos.add("Tracks/Reco/histNclustTPC", "N clusters TPC;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi};NclustTPCl;TPCITSmatching", HistType::kTHnF, {axisPt, axisEta, axisPhi, axisNclustTPC, binsTPCITSmatching});
+    histos.add("Tracks/RecoMCVariablesPrimary/histNclustTPC", "N clusters TPC;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi};NclustTPC;TPCITSmatching", HistType::kTHnF, {axisPt, axisEta, axisPhi, axisNclustTPC, binsTPCITSmatching});
   }
 
-  void processData(soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks)
+  void processData(soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks)
   { // test whether the name can be changed using the PROCESS_SWITCH method (see qaEventTrack class)
 
     for (auto& track : tracks) {
 
-      if (std::abs(track.eta()) < 0.9)
+      if (std::abs(track.eta()) < 0.9) {
         histos.fill(HIST("Tracks/Reco/histptAll"), track.pt());
+      }
       histos.fill(HIST("Tracks/Reco/histpt3DAll"), track.pt(), track.eta(), track.phi());
+      Int_t hasITS = 0;
+      if (track.itsNCls() > 0)
+        hasITS++;
+      if (track.itsNClsInnerBarrel() > 0)
+        hasITS++;
+      histos.fill(HIST("Tracks/Reco/histNclustTPC"), track.pt(), track.eta(), track.phi(), track.tpcNClsFound(), hasITS);
       if (track.isGlobalTrack())
         histos.fill(HIST("Tracks/Reco/histpt3DFB0"), track.pt(), track.eta(), track.phi());
       if (track.trackCutFlagFb1())
@@ -152,7 +170,7 @@ struct CheckFilterBit {
     return strangeness;
   }
 
-  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   { // this will loop over data (PV) collisions
 
     histos.fill(HIST("EventProp/histDatacollZ"), collision.posZ());
@@ -183,6 +201,12 @@ struct CheckFilterBit {
               if (std::abs(track.eta()) < 0.9) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histpt"), mcparticle.pt()); // note: one needs to avoid double counting of tracks reco both in TPC and ITS but not matched
               }
+              Int_t hasITS = 0;
+              if (track.itsNCls() > 0.)
+                hasITS++;
+              if (track.itsNClsInnerBarrel() > 0.)
+                hasITS++;
+              histos.fill(HIST("Tracks/RecoMCVariablesPrimary/histNclustTPC"), track.pt(), track.eta(), track.phi(), track.tpcNClsFound(), hasITS);
               if (track.isGlobalTrack()) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
               }

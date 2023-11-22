@@ -25,11 +25,13 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct phianalysis {
   SliceCache cache;
@@ -121,7 +123,7 @@ struct phianalysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
+  double massKa = MassKaonCharged;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -243,7 +245,7 @@ struct phianalysis {
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kKPlus || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 321 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -294,7 +296,7 @@ struct phianalysis {
       if (abs(part.y()) > 0.5) { // rapidity cut
         continue;
       }
-      if (abs(part.daughterPDG1()) != kKPlus || abs(part.daughterPDG2()) != kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) != 321 || abs(part.daughterPDG2()) != 321) { // At least one decay to Kaon
         continue;
       }
       histos.fill(HIST("phiGen"), part.pt());
