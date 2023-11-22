@@ -215,6 +215,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts1")) { // please do not remove or modify, this is used for the common Skimmed tree production, (Xiaozhi Bai)
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed"));
+    cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts13_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
@@ -832,8 +839,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   std::vector<TString> vecPIDcase;
-  vecPIDcase.emplace_back("");      // without post calibration
-  vecPIDcase.emplace_back("_Corr"); // case of using post calibrated PID spectra
+  vecPIDcase.emplace_back("");              // without post calibration
+  vecPIDcase.emplace_back("_Corr");         // case of using post calibrated PID spectra
   vecPIDcase.emplace_back("_CorrWithKaon"); // case of using post calibrated PID spectra with also the kaons
 
   // loop to define PID cuts with and without post calibration
@@ -2347,6 +2354,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiKineSkimmed")) {
+    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    return cut;
+  }
+
   if (!nameStr.compare("lmeePrefilterKine")) {
     cut->AddCut(VarManager::kPt, 0., 20.0);
     cut->AddCut(VarManager::kEta, -1.2, 1.2);
@@ -2578,6 +2591,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronTrackQualitySkimmed")) {
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kTPCncls, 60, 161);
+    cut->AddCut(VarManager::kTrackDCAxy, -1.5, 1.5);
+    cut->AddCut(VarManager::kTrackDCAz, -1.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("pidbasic")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kTPCncls, 60, 161.);
@@ -2700,6 +2722,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999);
     return cut;
   }
+  if (!nameStr.compare("electronPIDLooseSkimmed")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 2.5, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999);
+    return cut;
+  }
 
   if (!nameStr.compare("jpsi_TPCPID_debug6")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 3.0);
@@ -2778,8 +2806,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   std::vector<TString> vecPIDcase;
-  vecPIDcase.emplace_back("");      // without post calibration
-  vecPIDcase.emplace_back("_Corr"); // case of using post calibrated PID spectra
+  vecPIDcase.emplace_back("");              // without post calibration
+  vecPIDcase.emplace_back("_Corr");         // case of using post calibrated PID spectra
   vecPIDcase.emplace_back("_CorrWithKaon"); // case of using post calibrated PID spectra with also the kaons
 
   // loop to define TPC PID cuts with and without post calibration
