@@ -103,15 +103,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   AxisSpec bdtPromptAxis{100, 0.f, 1.f, "BDT prompt"};
   AxisSpec bdtNonPromptAxis{100, 0.f, 1.f, "BDT nonprompt"};
 
-  HistogramRegistry registry{"registry", {
-    {"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}},
-    {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}},
-    {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
+  HistogramRegistry registry{"registry", {{"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}}, {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
 
   // no material correction for track propagation
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
