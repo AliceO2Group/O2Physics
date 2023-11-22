@@ -495,7 +495,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
 
     // configure proton PID
-    for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+    for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
       selectorProton[iChannel].setRangePtTpc(selectionsProtonPid->get(iChannel, "minPtTpc"), selectionsProtonPid->get(iChannel, "maxPtTpc"));
       selectorProton[iChannel].setRangePtTof(selectionsProtonPid->get(iChannel, "minPtTof"), selectionsProtonPid->get(iChannel, "maxPtTof"));
       selectorProton[iChannel].setRangeNSigmaTpc(-selectionsProtonPid->get(iChannel, "nSigmaMaxTpc"), selectionsProtonPid->get(iChannel, "nSigmaMaxTpc"));
@@ -512,28 +512,28 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     std::array<int, 3> statusPid = {TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
     if constexpr (pidStrategy == ProtonPidStrategy::PidTofOnly) {
-      for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+      for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOnly) {
-      for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+      for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOrTof) {
-      for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+      for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcOrTof(hfTrack);
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcAndTof) {
-      for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+      for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcAndTof(hfTrack);
       }
     }
 
     int8_t flag = BIT(ChannelsProtonPid::NChannelsProtonPid) - 1; // all bits on
-    for (auto iChannel{0u}; iChannel<ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
+    for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
       if (statusPid[iChannel] == TrackSelectorPID::Rejected) {
         CLRBIT(flag, iChannel);
       }
@@ -747,7 +747,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param pvCoord is an array containing the coordinates of the refitted PV
   /// \param pvCovMatrix is an array containing the covariance matrix values of the refitted PV
   /// \param dcaXYdcaZ is an array containing the dcaXY and dcaZ of trackToRemove with respect to the refitted PV
-  template<typename TTrack>
+  template <typename TTrack>
   void performPvRefitTrack(aod::Collision const& collision,
                            aod::BCsWithTimestamps const& bcWithTimeStamps,
                            std::vector<int64_t> vecPvContributorGlobId,
@@ -924,14 +924,14 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
   /// Partition for PV contributors
 
-  template<int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
+  template <int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
-                       TTracks const& tracks, // all tracks
+                       TTracks const& tracks,                            // all tracks
                        GroupedTrackIndices const& trackIndicesCollision, // track indices associated to this collision (from track-to-collision-associator)
-                       GroupedPvContributors const& pvContrCollision, // PV contributors of this collision
-                       aod::BCsWithTimestamps const& bcWithTimeStamps, // for PV refit
-                       int64_t numTracksThisColl, // number of tracks in this collision (for PV refit)
-                       int64_t offsetTracksThisColl) // offset of tracks in this collision with respect to total table (for PV refit)
+                       GroupedPvContributors const& pvContrCollision,    // PV contributors of this collision
+                       aod::BCsWithTimestamps const& bcWithTimeStamps,   // for PV refit
+                       int64_t numTracksThisColl,                        // number of tracks in this collision (for PV refit)
+                       int64_t offsetTracksThisColl)                     // offset of tracks in this collision with respect to total table (for PV refit)
   {
     // prepare vectors to cache quantities needed for PV refit
     std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
