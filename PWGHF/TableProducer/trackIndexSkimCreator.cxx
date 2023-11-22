@@ -18,6 +18,7 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
+//// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
 #include <algorithm> // std::find
 #include <iterator>  // std::distance
