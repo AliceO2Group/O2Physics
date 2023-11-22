@@ -153,6 +153,8 @@ struct lambdakzeroBuilder {
 
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
+  ConfigurableAxis axisDeltaDistanceRadii{"axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
 
   int mRunNumber;
   float d_bz;
@@ -205,11 +207,11 @@ struct lambdakzeroBuilder {
 
   HistogramRegistry registry{
     "registry",
-    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
+     {"hV0Criteria", "hV0Criteria", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
 
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
@@ -290,6 +292,16 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
+
+      // QA for PCM
+      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisPtQA, axisPositionGuess});
     }
 
     mRunNumber = 0;
@@ -672,6 +684,45 @@ struct lambdakzeroBuilder {
       registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
       registry.fill(HIST("h2dTopoVarDCAV0ToPV"), lPt, dcaV0toPV);
 
+      // -------------------------------------------------------------------------------------
+      // PCM finding tests
+      //
+      // a) delta1 = D - R1 - R2
+      //             D: distance between two track helix centers in xy
+      //             R1, R2: track radii
+
+      o2::math_utils::CircleXYf_t trcCircle1, trcCircle2;
+      float sna, csa;
+      posTrackPar.getCircleParams(d_bz, trcCircle1, sna, csa);
+      negTrackPar.getCircleParams(d_bz, trcCircle2, sna, csa);
+
+      // distance between circle centers (one circle is at origin -> easy)
+      float centerDistance = std::hypot(trcCircle1.xC - trcCircle2.xC, trcCircle1.yC - trcCircle2.yC);
+
+      // b) delta2 = abs(R2/(R1+R2)*rvec1 + R1/(R1+R2)*rvec2)
+      float r1_r = trcCircle1.rC / (trcCircle1.rC + trcCircle2.rC);
+      float r2_r = trcCircle2.rC / (trcCircle1.rC + trcCircle2.rC);
+      float delta2 = std::hypot(r2_r * trcCircle1.xC + r1_r * trcCircle2.xC, r2_r * trcCircle1.yC + r1_r * trcCircle2.yC);
+
+      // c) delta3 = sqrt(D^2-R^2); D: distance origin-center, R: radius
+      float delta3_track1 = TMath::Sqrt(TMath::Power(trcCircle1.xC, 2) + TMath::Power(trcCircle1.yC, 2) - TMath::Power(trcCircle1.rC, 2));
+      float delta3_track2 = TMath::Sqrt(TMath::Power(trcCircle2.xC, 2) + TMath::Power(trcCircle2.yC, 2) - TMath::Power(trcCircle2.rC, 2));
+
+      // let's just use tagged, cause we can
+      if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
+        if (V0.isTrueGamma()) {
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
+        } else {
+          registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
+          registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
+          registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg"), lPt, delta3_track2);
+        }
+      }
+      // -------------------------------------------------------------------------------------
     } // end QA
     return true;
   }
@@ -769,6 +820,9 @@ struct lambdakzeroBuilder {
 struct lambdakzeroPreselector {
   Produces<aod::V0Tags> v0tags; // MC tags
 
+  // for bookkeeping
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   Configurable<bool> dIfMCgenerateK0Short{"dIfMCgenerateK0Short", true, "if MC, generate MC true K0Short (yes/no)"};
   Configurable<bool> dIfMCgenerateLambda{"dIfMCgenerateLambda", true, "if MC, generate MC true Lambda (yes/no)"};
   Configurable<bool> dIfMCgenerateAntiLambda{"dIfMCgenerateAntiLambda", true, "if MC, generate MC true AntiLambda (yes/no)"};
@@ -812,6 +866,17 @@ struct lambdakzeroPreselector {
                bitdEdxAntiHypertriton,
                bitUsedInCascade,
                bitUsedInTrackedCascade };
+
+  void init(InitContext const&)
+  {
+    auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{6, -0.5f, 5.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All");
+    h->GetXaxis()->SetBinLabel(2, "Tracks OK");
+    h->GetXaxis()->SetBinLabel(3, "MC label OK");
+    h->GetXaxis()->SetBinLabel(4, "dEdx OK");
+    h->GetXaxis()->SetBinLabel(5, "Used in Casc");
+    h->GetXaxis()->SetBinLabel(6, "Used in Tra-Casc");
+  }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -931,7 +996,11 @@ struct lambdakzeroPreselector {
   {
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
+      histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass track quality
+      }
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
         validV0 = validV0 && ((bitcheck(selectionMask[ii], bitTrueK0Short) && dIfMCgenerateK0Short) ||
                               (bitcheck(selectionMask[ii], bitTrueLambda) && dIfMCgenerateLambda) ||
@@ -939,6 +1008,9 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitTrueGamma) && dIfMCgenerateGamma) ||
                               (bitcheck(selectionMask[ii], bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
                               (bitcheck(selectionMask[ii], bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC
+      }
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
         validV0 = validV0 && ((bitcheck(selectionMask[ii], bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
                               (bitcheck(selectionMask[ii], bitdEdxLambda) && ddEdxPreSelectLambda) ||
@@ -946,10 +1018,19 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitdEdxGamma) && ddEdxPreSelectGamma) ||
                               (bitcheck(selectionMask[ii], bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
                               (bitcheck(selectionMask[ii], bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx
+      }
       if (doprocessSkipV0sNotUsedInCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInCascade);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 4.0f); // pass used in casc
+      }
       if (doprocessSkipV0sNotUsedInTrackedCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 5.0f); // pass used in tracasc
+      }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
              bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),

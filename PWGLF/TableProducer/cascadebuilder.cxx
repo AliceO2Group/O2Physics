@@ -198,6 +198,7 @@ struct cascadeBuilder {
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
   enum cascstep { kCascAll = 0,
+                  kCascHasV0Data,
                   kCascLambdaMass,
                   kBachTPCrefit,
                   kBachDCAxy,
@@ -254,12 +255,11 @@ struct cascadeBuilder {
 
   HistogramRegistry registry{
     "registry",
-    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hBachelorITSClusters", "hBachelorITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hCascadeCriteria", "hCascadeCriteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
+     {"hBachelorITSClusters", "hBachelorITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
 
   void resetHistos()
   {
@@ -293,6 +293,17 @@ struct cascadeBuilder {
   {
     resetHistos();
     registry.add("hKFParticleStatistics", "hKFParticleStatistics", kTH1F, {{10, -0.5f, 9.5f}});
+
+    auto h = registry.add<TH1>("hCascadeCriteria", "hCascadeCriteria", kTH1D, {{10, -0.5f, 9.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All sel");
+    h->GetXaxis()->SetBinLabel(2, "has V0Data");
+    h->GetXaxis()->SetBinLabel(3, "Lam mass");
+    h->GetXaxis()->SetBinLabel(4, "TPC refit");
+    h->GetXaxis()->SetBinLabel(5, "track DCAxy");
+    h->GetXaxis()->SetBinLabel(6, "DCA dau");
+    h->GetXaxis()->SetBinLabel(7, "CosPA");
+    h->GetXaxis()->SetBinLabel(8, "Radius");
+    h->GetXaxis()->SetBinLabel(9, "Tracked");
 
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
@@ -748,6 +759,9 @@ struct cascadeBuilder {
   template <class TTrackTo, typename TCascObject>
   bool buildCascadeCandidate(TCascObject const& cascade)
   {
+    // value 0.5: any considered cascade
+    statisticsRegistry.cascstats[kCascAll]++;
+
     // Track casting
     auto bachTrack = cascade.template bachelor_as<TTrackTo>();
     auto v0index = cascade.template v0_as<o2::aod::V0sLinked>();
@@ -770,7 +784,7 @@ struct cascadeBuilder {
     }
 
     // value 0.5: any considered cascade
-    statisticsRegistry.cascstats[kCascAll]++;
+    statisticsRegistry.cascstats[kCascHasV0Data]++;
 
     // Overall cascade charge
     cascadecandidate.charge = bachTrack.signed1Pt() > 0 ? +1 : -1;
@@ -1607,6 +1621,9 @@ struct cascadePreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  // extra QA
+  Configurable<bool> doQA{"doQA", false, "do extra selector QA"};
+
   // for bit-packed maps
   std::vector<uint16_t> selectionMask;
   enum v0bit { bitInteresting = 0,
@@ -1620,11 +1637,55 @@ struct cascadePreselector {
                bitdEdxOmegaMinus,
                bitdEdxOmegaPlus,
                bitUsedInTrackedCascade };
+  enum trackbit { bitITS = 0,
+                  bitTPC,
+                  bitTRD,
+                  bitTOF };
 
   void init(InitContext const&)
   {
-    histos.add("hPreselectorStatistics", "hPreselectorStatistics", kTH1F, {{5, -0.5f, 4.5f}});
+    auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{5, -0.5f, 4.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All");
+    h->GetXaxis()->SetBinLabel(2, "Tracks OK");
+    h->GetXaxis()->SetBinLabel(3, "MC label OK");
+    h->GetXaxis()->SetBinLabel(4, "dEdx OK");
+    h->GetXaxis()->SetBinLabel(5, "Used in tracked OK");
+
+    if (doQA) {
+      const AxisSpec traPropAx{16, -0.5f, 15.5f, "Track flags"};
+      histos.add("hTrackStat", "hTrackStat", kTH3D, {traPropAx, traPropAx, traPropAx});
+
+      const AxisSpec nCluAx{10, -0.5f, 9.5f, "N(ITS clu)"};
+      histos.add("hPosNClu", "hPosNClu", kTH1D, {nCluAx});
+      histos.add("hNegNClu", "hNegNClu", kTH1D, {nCluAx});
+      histos.add("hBachNClu", "hBachNClu", kTH1D, {nCluAx});
+      histos.add("hPosNCluNoTPC", "hPosNCluNoTPC", kTH1D, {nCluAx});
+      histos.add("hNegNCluNoTPC", "hNegNCluNoTPC", kTH1D, {nCluAx});
+      histos.add("hBachNCluNoTPC", "hBachNCluNoTPC", kTH1D, {nCluAx});
+    }
   }
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// function to pack track properties into an uint16_t
+  template <class TTrackTo>
+  uint16_t packTrackProperties(TTrackTo const& track)
+  {
+    uint16_t prop = 0;
+    if (track.hasITS()) {
+      bitset(prop, bitITS);
+    }
+    if (track.hasTPC()) {
+      bitset(prop, bitTPC);
+    }
+    if (track.hasTRD()) {
+      bitset(prop, bitTRD);
+    }
+    if (track.hasTOF()) {
+      bitset(prop, bitTOF);
+    }
+    return prop;
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -1641,6 +1702,23 @@ struct cascadePreselector {
     auto lBachTrack = lCascadeCandidate.template bachelor_as<TTrackTo>();
     auto lNegTrack = v0data.template negTrack_as<TTrackTo>();
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
+
+    if (doQA) {
+      histos.fill(HIST("hTrackStat"), packTrackProperties(lPosTrack), packTrackProperties(lNegTrack), packTrackProperties(lBachTrack));
+
+      histos.fill(HIST("hPosNClu"), lPosTrack.itsNCls());
+      histos.fill(HIST("hNegNClu"), lNegTrack.itsNCls());
+      histos.fill(HIST("hBachNClu"), lBachTrack.itsNCls());
+      if (!lPosTrack.hasTPC()) {
+        histos.fill(HIST("hPosNCluNoTPC"), lPosTrack.itsNCls());
+      }
+      if (!lNegTrack.hasTPC()) {
+        histos.fill(HIST("hNegNCluNoTPC"), lNegTrack.itsNCls());
+      }
+      if (!lBachTrack.hasTPC()) {
+        histos.fill(HIST("hBachNCluNoTPC"), lBachTrack.itsNCls());
+      }
+    }
 
     if ((bitcheck(maskElement, bitdEdxXiMinus) || bitcheck(maskElement, bitdEdxOmegaMinus) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
       bitset(maskElement, bitTrackQuality);
@@ -1769,22 +1847,30 @@ struct cascadePreselector {
     for (int ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // All cascades
       bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
-      histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass MC assoc (if requested)
+      if (validCascade) {
+        histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass MC assoc (if requested)
+      }
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
         validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
-      histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC assoc (if requested)
+      if (validCascade) {
+        histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC assoc (if requested)
+      }
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
         validCascade = validCascade && ((bitcheck(selectionMask[ii], bitdEdxXiMinus) && ddEdxPreSelectXiMinus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
-      histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx (if requested)
+      if (validCascade) {
+        histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx (if requested)
+      }
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
         validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
-      histos.fill(HIST("hPreselectorStatistics"), 4.0f); // All cascades
+      if (validCascade) {
+        histos.fill(HIST("hPreselectorStatistics"), 4.0f); // All cascades
+      }
       casctags(validCascade,
                bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
                bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),

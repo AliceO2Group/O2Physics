@@ -80,6 +80,7 @@ class VarManager : public TObject
     ReducedEventQvector = BIT(9),
     CollisionCent = BIT(10),
     CollisionMult = BIT(11),
+    EventFilter = BIT(12),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -193,6 +194,10 @@ class VarManager : public TObject
     kR3SP,
     kR2EP,
     kR3EP,
+    kIsDoubleGap,  // Double rapidity gap
+    kIsSingleGapA, // Rapidity gap on side A
+    kIsSingleGapC, // Rapidity gap on side C
+    kIsSingleGap,  // Rapidity gap on either side
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -453,6 +458,12 @@ class VarManager : public TObject
     kJPsi = 0,
     kD0ToPiK,
     kD0barToKPi
+  };
+
+  enum EventFilters {
+    kDoubleGap = 1,
+    kSingleGapA,
+    kSingleGapC
   };
 
   static TString fgVariableNames[kNVars]; // variable names
@@ -1003,6 +1014,13 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+  }
+
+  if constexpr ((fillMap & EventFilter) > 0) {
+    values[kIsDoubleGap] = (event.eventFilter() & (uint64_t(1) << kDoubleGap)) > 0;
+    values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
+    values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
+    values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
   }
 
   FillEventDerived(values);

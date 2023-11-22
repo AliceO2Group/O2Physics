@@ -162,7 +162,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // helper object
@@ -328,6 +328,9 @@ struct HfFilter { // Main struct for HF triggers
       if (currentRun != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
+        // setMatLUT only after magfield has been initalized
+        // (setMatLUT has implicit and problematic init field call if not)
+        o2::base::Propagator::Instance()->setMatLUT(lut);
 
         // needed for TPC PID postcalibrations
         if (setTPCCalib == 1) {
@@ -551,6 +554,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
               if (TESTBIT(selV0, kPhoton)) {
@@ -866,6 +870,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
 
@@ -965,6 +970,7 @@ struct HfFilter { // Main struct for HF triggers
             gpu::gpustd::array<float, 2> dcaInfo;
             std::array<float, 3> pVecCascade = {casc.px(), casc.py(), casc.pz()};
             auto trackParCasc = o2::track::TrackPar(std::array{casc.x(), casc.y(), casc.z()}, pVecCascade, bachelorCasc.sign(), true);
+            trackParCasc.setPID(o2::track::PID::XiMinus);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParCasc, pVecCascade);
 
