@@ -328,7 +328,10 @@ struct HfFilter { // Main struct for HF triggers
       if (currentRun != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
-
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      
         // needed for TPC PID postcalibrations
         if (setTPCCalib == 1) {
           helper.setTpcRecalibMaps(ccdb, bc, ccdbPathTPC);
