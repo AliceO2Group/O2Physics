@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//     Lambdakzero TOF PID
+//     Lambdakzero PID
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
 /// \author Nicolò Jacazio
 /// \author David Dobrigkeit Chinellato
 /// \since  11/05/2023
-/// \brief  Table producer for V0 daughter TOF info
+/// \brief  Table producer for V0 daughter PID info
 //
 // This task produces daughter PID information for strange daughters
 // taking into account the (candidate-by-candidate) time spent as a heavier
@@ -75,9 +75,15 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
-struct lambdakzerotofpid {
-  Produces<aod::LaDeltaTimeTOF> laDeltaTimeTOF;
-  Produces<aod::K0DeltaTimeTOF> k0DeltaTimeTOF;
+struct lambdakzeropid {
+  // TPC pid (copied over from central services for reference)
+  Produces<aod::V0TPC> v0tpc; // raw table for checks
+  Produces<aod::V0TPCPID> v0tpcpid; // table with Nsigmas
+
+  // TOF pid for strangeness (recalculated with topology)
+  Produces<aod::V0TOF> v0tof; // raw table for checks
+  Produces<aod::V0TOFPID> v0tofpid; // table with Nsigmas
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
@@ -88,7 +94,8 @@ struct lambdakzerotofpid {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<float> tofPosition{"tofPosition", 370, "TOF position for tests"};
-  Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx"};
+  Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx in QA plots"};
+  Configurable<bool> fillRawPID{"fillRawPID", true, "fill raw PID tables for debug/x-check"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -239,7 +246,31 @@ struct lambdakzerotofpid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
+  void processTPC(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s){
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      // V0 table sliced
+      for (auto const& v0 : V0Table_thisCollision) {
+        auto const& posTrackRow = v0.posTrack_as<TracksExtraWithPID>();
+        auto const& negTrackRow = v0.negTrack_as<TracksExtraWithPID>();
+        
+        // Fill raw information if requested 
+        if( fillRawPID ){
+          v0tpc(posTrackRow.tpcSignal(), negTrackRow.tpcSignal());
+        }
+        // Fill NSigma (always provided)
+        v0tpcpid(posTrackRow.tpcNSigmaPr(), posTrackRow.tpcNSigmaPi(), 
+                 negTrackRow.tpcNSigmaPr(), negTrackRow.tpcNSigmaPi());
+      }
+    }
+  }
+
+  void processTOF(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
@@ -293,9 +324,12 @@ struct lambdakzerotofpid {
         deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
         deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
 
-        laDeltaTimeTOF(deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-                       deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr);
-        k0DeltaTimeTOF(deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
+        if( fillRawPID ){
+          v0tof(posTrackRow.length(), negTrackRow.length(), 
+                deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
+                deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr, 
+                deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
+        }
 
         auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
@@ -316,10 +350,16 @@ struct lambdakzerotofpid {
       }
     }
   }
+
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  /// basic building options (one of them must be chosen)
+  PROCESS_SWITCH(lambdakzeropid, processTPC, "process dE/dx information", true); // generate TPC information tables for V0s
+  PROCESS_SWITCH(lambdakzeropid, processTOF, "process TOF information", true); // generate TOF information tables for V0s
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzerotofpid>(cfgc)};
+    adaptAnalysisTask<lambdakzeropid>(cfgc)};
 }

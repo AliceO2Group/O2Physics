@@ -20,12 +20,15 @@ namespace o2::aod
 {
 namespace v0data
 {
-// Needed to have shorter table that does not rely on existing one (filtering!)
+//______________________________________________________
+// REGULAR COLUMNS FOR V0INDICES
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 
+//______________________________________________________
+// REGULAR COLUMNS FOR V0CORES
 // General V0 properties: position, momentum
 DECLARE_SOA_COLUMN(PosX, posX, float);   //! positive track X at min
 DECLARE_SOA_COLUMN(NegX, negX, float);   //! negative track X at min
@@ -43,8 +46,8 @@ DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
-DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! DCA negative prong to PV
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA negative prong to PV
+DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! V0 CosPA
+DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -53,7 +56,136 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
 
-// Derived expressions
+//______________________________________________________
+// REGULAR COLUMNS FOR V0EXTRAS
+DECLARE_SOA_COLUMN(PosTrackDetectorMap, posTrackDetectorMap, uint8_t); //! detector map for reference
+DECLARE_SOA_COLUMN(NegTrackDetectorMap, negTrackDetectorMap, uint8_t); //! detector map for reference
+DECLARE_SOA_COLUMN(PosTrackITSClusterSizes, posTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(NegTrackITSClusterSizes, negTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(PosTrackTPCClusters, posTrackTPCClusters, uint8_t); //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCClusters, negTrackTPCClusters, uint8_t); //! N TPC clusters
+DECLARE_SOA_COLUMN(PosTrackTPCCrossedRows, posTrackTPCCrossedRows, uint8_t); //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCCrossedRows, negTrackTPCCrossedRows, uint8_t); //! N TPC clusters
+
+//______________________________________________________
+// REGULAR COLUMNS FOR V0MCCORES
+DECLARE_SOA_COLUMN(PDGCode, pdgCode, int); //! V0 PDG Code
+DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int); //! V0 mother PDG code (for feeddown)
+DECLARE_SOA_COLUMN(PDGCodePositive, pdgCodePositive, int); //! V0 positive prong PDG code
+DECLARE_SOA_COLUMN(PDGCodeNegative, pdgCodeNegative, int); //! V0 negative prong PDG code
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! is V0 physical primary
+DECLARE_SOA_COLUMN(XMC, xMC, float); //! V0 decay position X (cm)
+DECLARE_SOA_COLUMN(YMC, yMC, float); //! V0 decay position Y (cm)
+DECLARE_SOA_COLUMN(ZMC, zMC, float); //! V0 decay position Z (cm)
+DECLARE_SOA_COLUMN(PxPosMC, pxPosMC, float); //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyPosMC, pyPosMC, float); //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzPosMC, pzPosMC, float); //! V0 positive daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxNegMC, pxNegMC, float); //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyNegMC, pyNegMC, float); //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float); //! V0 positive daughter pz (GeV/c)
+
+//______________________________________________________
+// REGULAR COLUMNS FOR V0COLLISIONS
+DECLARE_SOA_COLUMN(MultiplicityPercentileFT0M, multiplicityPercentileFT0M, float); //! FT0M mult percentile
+DECLARE_SOA_COLUMN(MultiplicityPercentileFT0A, multiplicityPercentileFT0A, float); //! FT0A mult percentile
+DECLARE_SOA_COLUMN(MultiplicityPercentileFT0C, multiplicityPercentileFT0C, float); //! FT0C mult percentile
+DECLARE_SOA_COLUMN(MultiplicityPercentileFV0A, multiplicityPercentileFV0A, float); //! FT0C mult percentile
+DECLARE_SOA_COLUMN(PosZ, posZ, float); //! Z for reference
+
+//______________________________________________________
+// EXPRESSION COLUMNS
+DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! V0 px
+                              float, 1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg);
+DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! V0 py
+                              float, 1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg);
+DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
+                              float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
+DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg)));
+DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
+                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
+                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                    (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)));
+DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
+                              o2::constants::math::PI + natan2(-1.0f * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg), -1.0f * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg)));
+DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally defined to avoid FPEs
+                              ifnode((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                            (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                            (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
+                                      (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) < static_cast<float>(1e-7),
+                                     ifnode((1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) < 0.f, -100.f, 100.f),
+                                     0.5f * nlog((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) +
+                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) /
+                                                 (nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
+                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
+                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
+                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)))));
+
+//______________________________________________________
+// for extras: replicated here to ensure ease of manipulating the ITS information
+// directly from the V0 extras table in simple ways for derived data as well
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackITSClusterMap, posTrackITSClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t clmap = 0;
+                             for (unsigned int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+                                 clmap |= (1 << layer);
+                               }
+                             }
+                             return clmap;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackITSClusterMap, negTrackITSClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t clmap = 0;
+                             for (unsigned int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+                                 clmap |= (1 << layer);
+                               }
+                             }
+                             return clmap;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackITSNCls, posTrackITSNCls, //! Number of ITS clusters
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t itsNcls = 0;
+                             for (int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf)
+                                 itsNcls++;
+                             }
+                             return itsNcls;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackITSNCls, negTrackITSNCls, //! Number of ITS clusters
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t itsNcls = 0;
+                             for (int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf)
+                                 itsNcls++;
+                             }
+                             return itsNcls;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasITS, posTrackHasITS, //! Flag to check if track has a ITS match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTPC, posTrackHasTPC, //! Flag to check if track has a TPC match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTRD, posTrackHasTRD, //! Flag to check if track has a TRD match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
+DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTOF, posTrackHasTOF, //! Flag to check if track has a TOF measurement
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasITS, negTrackHasITS, //! Flag to check if track has a ITS match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTPC, negTrackHasTPC, //! Flag to check if track has a TPC match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTRD, negTrackHasTRD, //! Flag to check if track has a TRD match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
+DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTOF, negTrackHasTOF, //! Flag to check if track has a TOF measurement
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
+
+//______________________________________________________
+// DYNAMIC COLUMNS
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f * pxpos + pxneg, 2.0f * pypos + pyneg); });
@@ -174,45 +306,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositiveEta, positiveeta, //! positive daughter eta
                            [](float PxPos, float PyPos, float PzPos) -> float { return RecoDecay::eta(std::array{PxPos, PyPos, PzPos}); });
 DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
-
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! V0 px
-                              float, 1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! V0 py
-                              float, 1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
-                              float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
-
-DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
-                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
-                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                    (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
-                              o2::constants::math::PI + natan2(-1.0f * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg), -1.0f * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally defined to avoid FPEs
-                              ifnode((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                            (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                            (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
-                                      (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) < static_cast<float>(1e-7),
-                                     ifnode((1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) < 0.f, -100.f, 100.f),
-                                     0.5f * nlog((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) +
-                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) /
-                                                 (nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
-                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)))));
-
 } // namespace v0data
+ 
+DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
+                       o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id);
 
-DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
-                       o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id,
-                       v0data::PosX, v0data::NegX,
+DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima when using AO2Ds
+                       v0data::PosX, v0data::NegX);
+
+DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core information about decay, viable with AO2Ds or derived
                        v0data::X, v0data::Y, v0data::Z,
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
@@ -252,22 +354,62 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>);
 
-DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //!
-                       v0data::PositionCovMat, v0data::MomentumCovMat);
-
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT",                                                  //!
+DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",                                                  //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
-// using V0Datas = soa::Join<V0Indices,V0Topos>
+DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
+                       v0data::PositionCovMat, v0data::MomentumCovMat);
+
+DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! detector properties of the V0 decay
+                       v0data::PosTrackDetectorMap, v0data::NegTrackDetectorMap,
+                       v0data::PosTrackITSClusterSizes, v0data::NegTrackITSClusterSizes,
+                       v0data::PosTrackTPCClusters, v0data::NegTrackTPCClusters,
+                       v0data::PosTrackTPCCrossedRows, v0data::NegTrackTPCCrossedRows,
+                       
+                       // Dynamic columns for manipulating information
+                       v0data::PosTrackITSClusterMap<v0data::PosTrackITSClusterSizes>,
+                       v0data::NegTrackITSClusterMap<v0data::NegTrackITSClusterSizes>,
+                       v0data::PosTrackITSNCls<v0data::PosTrackITSClusterSizes>,
+                       v0data::NegTrackITSNCls<v0data::NegTrackITSClusterSizes>,
+                       v0data::PosTrackHasITS<v0data::PosTrackDetectorMap>,
+                       v0data::PosTrackHasTPC<v0data::PosTrackDetectorMap>,
+                       v0data::PosTrackHasTRD<v0data::PosTrackDetectorMap>,
+                       v0data::PosTrackHasTOF<v0data::PosTrackDetectorMap>,
+                       v0data::NegTrackHasITS<v0data::NegTrackDetectorMap>,
+                       v0data::NegTrackHasTPC<v0data::NegTrackDetectorMap>,
+                       v0data::NegTrackHasTRD<v0data::NegTrackDetectorMap>,
+                       v0data::NegTrackHasTOF<v0data::NegTrackDetectorMap>);
+
+DECLARE_SOA_TABLE(V0Collisions, "AOD", "V0COLLISION", //! detector properties of the V0 decay
+                       v0data::MultiplicityPercentileFT0M, v0data::MultiplicityPercentileFT0A,
+                       v0data::MultiplicityPercentileFT0C, v0data::MultiplicityPercentileFV0A,
+                       v0data::PosZ);
+
+DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
+                       v0data::PDGCode, v0data::PDGCodeMother, 
+                       v0data::PDGCodePositive, v0data::PDGCodeNegative, 
+                       v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                       v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                       v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+
+using V0Index = V0Indices::iterator;
+using V0Core = V0Cores::iterator;
+using V0TrackX = V0TrackXs::iterator;
+using V0Datas = soa::Join<V0Indices,V0TrackXs,V0Cores>;
 using V0Data = V0Datas::iterator;
+
+// definitions of indices for interlink tables
 namespace v0data
 {
 DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data); //! Index to V0Data entry
+DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC");       //!
 }
 
 DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
                   v0data::V0DataId);
+DECLARE_SOA_TABLE(V0MCRefs, "AOD", "V0MCREF", //! index table when using AO2Ds
+                       o2::soa::Index<>, v0data::V0MCId);
 
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
