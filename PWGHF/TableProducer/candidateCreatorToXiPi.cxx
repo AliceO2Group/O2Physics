@@ -71,10 +71,10 @@ struct HfCandidateCreatorToXiPi {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  // cascade invariant mass cuts
-  Configurable<bool> doCascadeInvMassCut{"doCascadeInvMassCut", false, "Use invariant mass cut to select cascade candidates"};
-  Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
-  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
+  // cascade cuts
+  Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
+  Configurable<double> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascade"};
+  Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3, "Max cascade DCA to PV in xy plane"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -149,6 +149,16 @@ struct HfCandidateCreatorToXiPi {
 
       for (const auto& casc : groupedCascades) {
 
+        // preselect cascade candidates
+        if (doCascadePreselection) {
+          if (casc.dcaXYCascToPV() > dcaXYToPVCascadeMax) {
+            continue;
+          }
+          if (std::abs(casc.mXi() - massXiFromPDG) > massToleranceCascade) {
+            continue;
+          }
+        }
+
         //----------------accessing particles in the decay chain-------------
         // cascade daughter - charged particle
         // int indexTrackXiDauCharged = casc.bachelorId();     // pion <- xi index from cascade table (not used)
@@ -170,13 +180,6 @@ struct HfCandidateCreatorToXiPi {
             continue;
           }
           if (trackXiDauCharged.collisionId() != trackV0Dau0.collisionId()) {
-            continue;
-          }
-        }
-
-        // use invariant mass cut to select cascades candidates
-        if (doCascadeInvMassCut) {
-          if (std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
             continue;
           }
         }
