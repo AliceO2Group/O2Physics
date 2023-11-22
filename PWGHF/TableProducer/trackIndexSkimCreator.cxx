@@ -2918,7 +2918,6 @@ struct HfTrackIndexSkimCreatorCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
-
 struct HfTrackIndexSkimCreatorLfCascades {
   Produces<aod::HfCascLf2Prongs> rowTrackIndexCasc2Prong;
   Produces<aod::HfCascLf3Prongs> rowTrackIndexCasc3Prong;
