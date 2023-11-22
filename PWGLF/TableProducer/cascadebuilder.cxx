@@ -1640,7 +1640,7 @@ struct cascadePreselector {
   enum trackbit { bitITS = 0,
                   bitTPC,
                   bitTRD,
-                  bitTOF};
+                  bitTOF };
 
   void init(InitContext const&)
   {
@@ -1651,9 +1651,9 @@ struct cascadePreselector {
     h->GetXaxis()->SetBinLabel(4, "dEdx OK");
     h->GetXaxis()->SetBinLabel(5, "Used in tracked OK");
 
-    if(doQA){
+    if (doQA) {
       const AxisSpec traPropAx{16, -0.5f, 15.5f, "Track flags"};
-      histos.add("hTrackStat", "hTrackStat", kTH3D, {traPropAx,traPropAx,traPropAx});
+      histos.add("hTrackStat", "hTrackStat", kTH3D, {traPropAx, traPropAx, traPropAx});
 
       const AxisSpec nCluAx{10, -0.5f, 9.5f, "N(ITS clu)"};
       histos.add("hPosNClu", "hPosNClu", kTH1D, {nCluAx});
@@ -1671,16 +1671,16 @@ struct cascadePreselector {
   uint16_t packTrackProperties(TTrackTo const& track)
   {
     uint16_t prop = 0;
-    if(track.hasITS()){
+    if (track.hasITS()) {
       bitset(prop, bitITS);
     }
-    if(track.hasTPC()){
+    if (track.hasTPC()) {
       bitset(prop, bitTPC);
     }
-    if(track.hasTRD()){
+    if (track.hasTRD()) {
       bitset(prop, bitTRD);
     }
-    if(track.hasTOF()){
+    if (track.hasTOF()) {
       bitset(prop, bitTOF);
     }
     return prop;
@@ -1703,20 +1703,20 @@ struct cascadePreselector {
     auto lNegTrack = v0data.template negTrack_as<TTrackTo>();
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
 
-    if(doQA){
-      histos.fill(HIST("hTrackStat"), packTrackProperties(lPosTrack), packTrackProperties(lNegTrack), packTrackProperties(lBachTrack)); 
+    if (doQA) {
+      histos.fill(HIST("hTrackStat"), packTrackProperties(lPosTrack), packTrackProperties(lNegTrack), packTrackProperties(lBachTrack));
 
-      histos.fill(HIST("hPosNClu"), lPosTrack.itsNCls()); 
-      histos.fill(HIST("hNegNClu"), lNegTrack.itsNCls()); 
-      histos.fill(HIST("hBachNClu"), lBachTrack.itsNCls()); 
-      if(!lPosTrack.hasTPC()){
-        histos.fill(HIST("hPosNCluNoTPC"), lPosTrack.itsNCls()); 
+      histos.fill(HIST("hPosNClu"), lPosTrack.itsNCls());
+      histos.fill(HIST("hNegNClu"), lNegTrack.itsNCls());
+      histos.fill(HIST("hBachNClu"), lBachTrack.itsNCls());
+      if (!lPosTrack.hasTPC()) {
+        histos.fill(HIST("hPosNCluNoTPC"), lPosTrack.itsNCls());
       }
-      if(!lNegTrack.hasTPC()){
-      histos.fill(HIST("hNegNCluNoTPC"), lNegTrack.itsNCls()); 
+      if (!lNegTrack.hasTPC()) {
+        histos.fill(HIST("hNegNCluNoTPC"), lNegTrack.itsNCls());
       }
-      if(!lBachTrack.hasTPC()){
-      histos.fill(HIST("hBachNCluNoTPC"), lBachTrack.itsNCls()); 
+      if (!lBachTrack.hasTPC()) {
+        histos.fill(HIST("hBachNCluNoTPC"), lBachTrack.itsNCls());
       }
     }
 
@@ -1847,7 +1847,7 @@ struct cascadePreselector {
     for (int ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // All cascades
       bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
-      if(validCascade){
+      if (validCascade) {
         histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass MC assoc (if requested)
       }
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
@@ -1855,7 +1855,7 @@ struct cascadePreselector {
                                         (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
-      if(validCascade){
+      if (validCascade) {
         histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC assoc (if requested)
       }
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
@@ -1863,12 +1863,12 @@ struct cascadePreselector {
                                         (bitcheck(selectionMask[ii], bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
-      if(validCascade){
+      if (validCascade) {
         histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx (if requested)
       }
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
         validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
-      if(validCascade){
+      if (validCascade) {
         histos.fill(HIST("hPreselectorStatistics"), 4.0f); // All cascades
       }
       casctags(validCascade,

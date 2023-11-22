@@ -932,7 +932,7 @@ struct lambdakzeroPreselector {
     for (int ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
-      if(validV0){
+      if (validV0) {
         histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass track quality
       }
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
@@ -942,8 +942,8 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitTrueGamma) && dIfMCgenerateGamma) ||
                               (bitcheck(selectionMask[ii], bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
                               (bitcheck(selectionMask[ii], bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
-      if(validV0){
-        histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC 
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC
       }
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
         validV0 = validV0 && ((bitcheck(selectionMask[ii], bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
@@ -952,17 +952,17 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitdEdxGamma) && ddEdxPreSelectGamma) ||
                               (bitcheck(selectionMask[ii], bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
                               (bitcheck(selectionMask[ii], bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
-      if(validV0){
+      if (validV0) {
         histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx
       }
       if (doprocessSkipV0sNotUsedInCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInCascade);
-      if(validV0){
+      if (validV0) {
         histos.fill(HIST("hPreselectorStatistics"), 4.0f); // pass used in casc
       }
       if (doprocessSkipV0sNotUsedInTrackedCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
-      if(validV0){
+      if (validV0) {
         histos.fill(HIST("hPreselectorStatistics"), 5.0f); // pass used in tracasc
       }
       v0tags(validV0,
