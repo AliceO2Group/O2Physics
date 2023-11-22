@@ -287,7 +287,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("pt_leading"), pt_max);
 
     // Selection of Events with pt > pt_leading
-    if (static_cast<int>particle_ID.size() < 2)
+    if (particle_ID.size() < 2)
       return;
     if (pt_max < min_pt_leading)
       return;
@@ -322,7 +322,7 @@ struct nuclei_in_jets {
       int label_jet_particle(0);
       int i_jet_particle(0);
 
-      for (int i = 0; i < static_cast<int>particle_ID.size(); i++) {
+      for (int i = 0; i < particle_ID.size(); i++) {
 
         // Skip Leading Particle & Elements already associated to the Jet
         if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -372,7 +372,7 @@ struct nuclei_in_jets {
         nPartAssociated++;
       }
 
-      if (nPartAssociated >= (static_cast<int>particle_ID.size() - 1))
+      if (nPartAssociated >= (particle_ID.size() - 1))
         exit = 1;
       if (distance_jet_min > distance_bkg_min)
         exit = 2;
@@ -393,7 +393,7 @@ struct nuclei_in_jets {
     // Store UE
     vector<int> ue_particle_ID;
 
-    for (int i = 0; i < static_cast<int>particle_ID.size(); i++) {
+    for (int i = 0; i < particle_ID.size(); i++) {
 
       // Skip Leading Particle & Elements already associated to the Jet
       if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -423,14 +423,14 @@ struct nuclei_in_jets {
         ue_particle_ID.push_back(particle_ID[i]);
       }
     }
-    registryQC.fill(HIST("ue_multiplicity"), static_cast<int>ue_particle_ID.size() / 4);
+    registryQC.fill(HIST("ue_multiplicity"), ue_particle_ID.size() / 4);
 
     // Jet Multiplicity
-    int jet_Nch = static_cast<int>jet_particle_ID.size() - static_cast<int>ue_particle_ID.size() / 4;
+    int jet_Nch = jet_particle_ID.size() - ue_particle_ID.size() / 4;
     registryQC.fill(HIST("jet_multiplicity"), jet_Nch);
 
     // Loop over particles inside Jet
-    for (int i = 0; i < static_cast<int>jet_particle_ID.size(); i++) {
+    for (int i = 0; i < jet_particle_ID.size(); i++) {
 
       auto jet_track = tracks.iteratorAt(jet_particle_ID[i]);
       TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
@@ -476,7 +476,7 @@ struct nuclei_in_jets {
     }
 
     // Loop over particles inside UE
-    for (int i = 0; i < static_cast<int>ue_particle_ID.size(); i++) {
+    for (int i = 0; i < ue_particle_ID.size(); i++) {
 
       auto ue_track = tracks.iteratorAt(ue_particle_ID[i]);
 
