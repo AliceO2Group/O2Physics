@@ -59,7 +59,6 @@ struct FwdTrackExtension {
     ccdb->setURL(ccdburl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
   }
 
   void process(aod::FwdTracks const& tracks, aod::BCsWithTimestamps const& bcs, aod::Collisions const&)
@@ -71,7 +70,7 @@ struct FwdTrackExtension {
         if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
 
           auto const& collision = track.collision();
-  	  auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
           if (fCurrentRun != bc.runNumber()) {
             if (fUseRemoteField.value) {
@@ -87,13 +86,12 @@ struct FwdTrackExtension {
             fCurrentRun = bc.runNumber();
           }
 
-
           double chi2 = track.chi2();
           SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
           std::vector<double> v1;
           SMatrix55 tcovs(v1.begin(), v1.end());
           o2::track::TrackParCovFwd pars1{track.z(), tpars, tcovs, chi2};
-	  
+
           pars1.propagateToZhelix(collision.posZ(), mMagField);
 
           dcaX = (pars1.getX() - collision.posX());
