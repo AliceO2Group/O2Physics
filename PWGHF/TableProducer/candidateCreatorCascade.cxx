@@ -250,6 +250,10 @@ struct HfCandidateCreatorCascadeMc {
 
       // if (isLc) {
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
+      if (sign != 0) { // we have already positively checked the K0s
+        // then we check the Lc
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+      }
 
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
