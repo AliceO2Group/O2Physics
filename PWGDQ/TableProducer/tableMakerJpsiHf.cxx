@@ -43,17 +43,6 @@ using MyDileptonCandidatesSelectedWithDca = soa::Join<aod::Dileptons, aod::Dilep
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 
-static constexpr int nPtBinsForBdt = 6;
-constexpr float ptLimitsForBdtCuts[nPtBinsForBdt + 1] = {0., 1., 2., 4., 6., 10., 50.};
-constexpr float cutsBdt[nPtBinsForBdt][3] = {{1., 0., 0.},
-                                             {1., 0., 0.},
-                                             {1., 0., 0.},
-                                             {1., 0., 0.},
-                                             {1., 0., 0.},
-                                             {1., 0., 0.}}; // background, prompt, nonprompt
-static const std::vector<std::string> labelsBdt = {"Background", "Prompt", "Nonprompt"};
-static const std::vector<std::string> labelsEmpty{};
-
 HfHelper hfHelper;
 
 struct tableMakerJpsiHf {
@@ -71,8 +60,6 @@ struct tableMakerJpsiHf {
 
   // HF configurables
   // cuts on BDT output scores to be applied only for the histograms
-  Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{ptLimitsForBdtCuts, ptLimitsForBdtCuts + nPtBinsForBdt + 1}, "D-meson pT bin limits for BDT cut"};
-  Configurable<LabeledArray<float>> bdtCutsForHistos{"bdtCutsForHistos", {cutsBdt[0], nPtBinsForBdt, 3, labelsEmpty, labelsBdt}, "Additional bdt cut values only for histograms"};
   Configurable<double> yCandDmesonMax{"yCandDmesonMax", -1., "max. cand. rapidity"};
   // DQ configurables
   Configurable<std::string> dileptonDecayChannel{"dileptonDecayChannel", "JPsiToMuMu", "Dilepton decay channel (JPsiToMuMu/JPsiToEE)"};
@@ -141,7 +128,7 @@ struct tableMakerJpsiHf {
             }
           }
           if (dmeson.mlProbD0bar().size() == 3) {
-            for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+            for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
               scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
             }
           }
@@ -153,19 +140,15 @@ struct tableMakerJpsiHf {
           continue;
         }
 
-        auto ptBinForBdt = (withBdt) ? findBin(pTBinsBDT, dmeson.pt()) : 0;
-
-        if (ptBinForBdt >= 0) {
-          if (dmeson.isSelD0() >= 1 && (!withBdt || (scores[0] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[1] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[2] > bdtCutsForHistos->get(ptBinForBdt, 2u)))) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-          }
-          if (dmeson.isSelD0bar() >= 1 && (!withBdt || (scores[3] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[4] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[5] > bdtCutsForHistos->get(ptBinForBdt, 2u)))) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-          }
+        if (dmeson.isSelD0() >= 1) {
+          VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
+          fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+          VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+        }
+        if (dmeson.isSelD0bar() >= 1) {
+          VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
+          fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+          VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
         }
       }
     }
@@ -180,7 +163,8 @@ struct tableMakerJpsiHf {
       }
 
       if (configDebug) {
-        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsi>(dilepton, hfHelper, fValuesDileptonCharmHadron);
+        float dummyScore{-999.f};
+        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsi>(dilepton, hfHelper, dummyScore, fValuesDileptonCharmHadron);
         fHistMan->FillHistClass("JPsi", fValuesDileptonCharmHadron);
         VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
       }
@@ -223,29 +207,24 @@ struct tableMakerJpsiHf {
               }
             }
             if (dmeson.mlProbD0bar().size() == 3) {
-              for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+              for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
                 scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
               }
             }
             redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
           }
 
-          auto ptBinForBdt = (withBdt) ? findBin(pTBinsBDT, dmeson.pt()) : 0;
           if (dmeson.isSelD0() >= 1) {
             massD0 = hfHelper.invMassD0ToPiK(dmeson);
-            if (ptBinForBdt >= 0 && (!withBdt || (scores[0] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[1] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[2] > bdtCutsForHistos->get(ptBinForBdt, 2u)))) {
-              VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
-              fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
-              VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-            }
+            VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           if (dmeson.isSelD0bar() >= 1) {
             massD0bar = hfHelper.invMassD0barToKPi(dmeson);
-            if (ptBinForBdt >= 0 && (!withBdt || (scores[3] < bdtCutsForHistos->get(ptBinForBdt, 0u) && scores[4] > bdtCutsForHistos->get(ptBinForBdt, 1u) && scores[5] > bdtCutsForHistos->get(ptBinForBdt, 2u)))) {
-              VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
-              fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
-              VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-            }
+            VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
+            fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
+            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           redD0Masses(massD0, massD0bar);
         }
