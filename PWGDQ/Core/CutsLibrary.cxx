@@ -2663,7 +2663,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTrackDCAsigZ, -0.5, 0.5);
     return cut;
   }
-    
+
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(VarManager::kTrackDCAz, -0.3, 0.3);
     return cut;

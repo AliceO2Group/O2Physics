@@ -1297,7 +1297,6 @@ struct AnalysisDileptonHadron {
       fCurrentRun = event.runNumber();
     } // end: runNumber
 
-
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
