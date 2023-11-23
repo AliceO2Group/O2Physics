@@ -56,18 +56,13 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildNsigmaTPCTOFBins{"ConfChildNsigmaTPCTOFBins", {1000, 0, 10}, "binning of the Nsigma TPC+TOF plot"};
 
   Configurable<uint32_t> ConfCutChildPos{"ConfCutChildPos", 150, "Positive Child of V0 - Selection bit from cutCulator"};
-  Configurable<uint32_t> ConfCutChildNeg{"ConfCutChildNeg", 149, "Negative Child of V0 - Selection bit from cutCulator"};
-  Configurable<float> ConfChildPosPidnSigmaMax{"ConfChildPosPidnSigmaMax", 3.f, "Positive Child of V0 - Selection bit from cutCulator"};
-  Configurable<float> ConfChildNegPidnSigmaMax{"ConfChildNegPidnSigmaMax", 3.f, "Negative Child of V0 - Selection bit from cutCulator"};
-  Configurable<int> ConfChildPosIndex{"ConfChildPosIndex", 1, "Positive Child of V0 - Index from cutCulator"};
-  Configurable<int> ConfChildNegIndex{"ConfChildNegIndex", 0, "Negative Child of V0 - Index from cutCulator"};
-  Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{4.f, 3.f}, "V0 child sel: Max. PID nSigma TPC"};
-  Configurable<int> ConfChildnSpecies{"ConfChildnSpecies", 2, "Number of particle spieces (for V0 children) with PID info"};
+  Configurable<uint32_t> ConfPIDTPCChildPos{"ConfPIDTPCChildPos", 4, "Positive Child of V0 - PID bit from cutCulator"};
+  Configurable<uint32_t> ConfPIDTPCChildNeg{"ConfPIDTPCChildNeg", 8, "Negative Child of V0 - PID bit from cutCulator"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutV0) == ConfCutV0);
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut,ConfCutV0));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming
@@ -104,9 +99,12 @@ struct femtoDreamDebugV0 {
         continue;
       }
       // check cuts on V0 children
-      if ((posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
-          (negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
-          isFullPIDSelected(posChild.pidcut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) && isFullPIDSelected(negChild.pidcut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+      if (posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
+				(posChild.cut() & ConfCutChildPos) == ConfCutChildPos &&
+				(posChild.pidcut() & ConfPIDTPCChildPos) == ConfPIDTPCChildPos &&
+          negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
+				(negChild.cut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg &&
+				(negChild.pidcut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg){
         V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
