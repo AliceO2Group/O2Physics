@@ -555,7 +555,7 @@ struct HfCandidateCreatorToXiPiMc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         }
       }
       if (matchXicMc) {
@@ -576,7 +576,7 @@ struct HfCandidateCreatorToXiPiMc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         }
       }
 
