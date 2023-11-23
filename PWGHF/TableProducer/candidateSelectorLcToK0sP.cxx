@@ -33,6 +33,11 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
+/// Struct to extend TracksPidPr table
+struct HfCandidateSelectorLcToK0sPExpressions {
+  Spawns<aod::TracksPidPrExt> rowTracksPidFullPr;
+};
+
 struct HfCandidateSelectorLcToK0sP {
   Produces<aod::HfSelLcToK0sP> hfSelLcToK0sPCandidate;
 
@@ -82,7 +87,7 @@ struct HfCandidateSelectorLcToK0sP {
   std::vector<std::shared_ptr<TH1>> hModelScore;
   std::vector<std::shared_ptr<TH2>> hModelScoreVsPtCand;
 
-  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPrExt>;
   using TracksSelBayes = soa::Join<TracksSel, aod::pidBayesPr>;
 
   HistogramRegistry registry{"registry", {}};
@@ -303,5 +308,6 @@ struct HfCandidateSelectorLcToK0sP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorLcToK0sPExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorLcToK0sP>(cfgc)};
 }

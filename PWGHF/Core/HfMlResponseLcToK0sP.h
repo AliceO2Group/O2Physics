@@ -62,14 +62,6 @@ namespace o2::analysis
 {
 // possible input features for ML
 enum class InputFeaturesLcToK0sP : uint8_t {
-  posX,
-  posY,
-  posZ,
-  xSecondaryVertex,
-  ySecondaryVertex,
-  zSecondaryVertex,
-  errorDecayLength,
-  errorDecayLengthXY,
   chi2PCA,
   rSecondaryVertex,
   decayLength,
@@ -80,19 +72,8 @@ enum class InputFeaturesLcToK0sP : uint8_t {
   ptProng0,
   impactParameterNormalised1,
   ptProng1,
-  pxProng0,
-  pyProng0,
-  pzProng0,
-  pxProng1,
-  pyProng1,
-  pzProng1,
   impactParameter0,
   impactParameter1,
-  errorImpactParameter0,
-  errorImpactParameter1,
-  v0X,
-  v0Y,
-  v0Z,
   v0Radius,
   v0cosPA,
   v0MLambda,
@@ -101,28 +82,16 @@ enum class InputFeaturesLcToK0sP : uint8_t {
   v0MGamma,
   ctV0,
   dcaV0daughters,
-  pxPos,
-  pyPos,
-  pzPos,
   ptV0Pos,
   dcaPosToPV,
-  pxNeg,
-  pyNeg,
-  pzNeg,
   ptV0Neg,
   dcaNegToPV,
   nSigmaTPCPr0,
   nSigmaTOFPr0,
-  m,
-  pt,
-  p,
+  nSigmaTpcTOFPr0,
   cpa,
   cpaXY,
-  ct,
-  eta,
-  phi,
-  y,
-  e
+  ct
 };
 
 template <typename TypeOutputScore = float>
@@ -148,14 +117,6 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_LC(posX);
-        CHECK_AND_FILL_VEC_LC(posY);
-        CHECK_AND_FILL_VEC_LC(posZ);
-        CHECK_AND_FILL_VEC_LC(xSecondaryVertex);
-        CHECK_AND_FILL_VEC_LC(ySecondaryVertex);
-        CHECK_AND_FILL_VEC_LC(zSecondaryVertex);
-        CHECK_AND_FILL_VEC_LC(errorDecayLength);
-        CHECK_AND_FILL_VEC_LC(errorDecayLengthXY);
         CHECK_AND_FILL_VEC_LC(chi2PCA);
         CHECK_AND_FILL_VEC_LC(rSecondaryVertex);
         CHECK_AND_FILL_VEC_LC(decayLength);
@@ -166,19 +127,8 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LC(ptProng0);
         CHECK_AND_FILL_VEC_LC(impactParameterNormalised1);
         CHECK_AND_FILL_VEC_LC(ptProng1);
-        CHECK_AND_FILL_VEC_LC(pxProng0);
-        CHECK_AND_FILL_VEC_LC(pyProng0);
-        CHECK_AND_FILL_VEC_LC(pzProng0);
-        CHECK_AND_FILL_VEC_LC(pxProng1);
-        CHECK_AND_FILL_VEC_LC(pyProng1);
-        CHECK_AND_FILL_VEC_LC(pzProng1);
         CHECK_AND_FILL_VEC_LC(impactParameter0);
         CHECK_AND_FILL_VEC_LC(impactParameter1);
-        CHECK_AND_FILL_VEC_LC(errorImpactParameter0);
-        CHECK_AND_FILL_VEC_LC(errorImpactParameter1);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, v0X, v0x);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, v0Y, v0y);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, v0Z, v0z);
         CHECK_AND_FILL_VEC_LC_FULL(candidate, v0Radius, v0radius);
         CHECK_AND_FILL_VEC_LC(v0cosPA);
         CHECK_AND_FILL_VEC_LC_FULL(candidate, v0MLambda, mLambda);
@@ -188,30 +138,19 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ctV0, ctV0K0s);
         // CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ctV0, ctV0Lambda);
         CHECK_AND_FILL_VEC_LC(dcaV0daughters);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pxPos, pxpos);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pyPos, pypos);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pzPos, pzpos);
         CHECK_AND_FILL_VEC_LC(ptV0Pos);
         CHECK_AND_FILL_VEC_LC_FULL(candidate, dcaPosToPV, dcapostopv);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pxNeg, pxneg);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pyNeg, pyneg);
-        CHECK_AND_FILL_VEC_LC_FULL(candidate, pzNeg, pzneg);
         CHECK_AND_FILL_VEC_LC(ptV0Neg);
         CHECK_AND_FILL_VEC_LC_FULL(candidate, dcaNegToPV, dcanegtopv);
-        CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, m, invMassLcToK0sP);
-        CHECK_AND_FILL_VEC_LC(pt);
-        CHECK_AND_FILL_VEC_LC(p);
         CHECK_AND_FILL_VEC_LC(cpa);
         CHECK_AND_FILL_VEC_LC(cpaXY);
         CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ct, ctLc);
-        CHECK_AND_FILL_VEC_LC(eta);
-        CHECK_AND_FILL_VEC_LC(phi);
-        CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, y, yLc);
-        CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, e, eLc);
         // TPC PID variables
         CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTPCPr0, tpcNSigmaPr);
         // TOF PID variables
         CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTOFPr0, tofNSigmaPr);
+        // Combined nSigma variable
+        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTpcTOFPr0, tpcTofNSigmaPr);
       }
     }
 
@@ -223,14 +162,6 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_LC(posX),
-      FILL_MAP_LC(posY),
-      FILL_MAP_LC(posZ),
-      FILL_MAP_LC(xSecondaryVertex),
-      FILL_MAP_LC(ySecondaryVertex),
-      FILL_MAP_LC(zSecondaryVertex),
-      FILL_MAP_LC(errorDecayLength),
-      FILL_MAP_LC(errorDecayLengthXY),
       FILL_MAP_LC(chi2PCA),
       FILL_MAP_LC(rSecondaryVertex),
       FILL_MAP_LC(decayLength),
@@ -241,19 +172,8 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(ptProng0),
       FILL_MAP_LC(impactParameterNormalised1),
       FILL_MAP_LC(ptProng1),
-      FILL_MAP_LC(pxProng0),
-      FILL_MAP_LC(pyProng0),
-      FILL_MAP_LC(pzProng0),
-      FILL_MAP_LC(pxProng1),
-      FILL_MAP_LC(pyProng1),
-      FILL_MAP_LC(pzProng1),
       FILL_MAP_LC(impactParameter0),
       FILL_MAP_LC(impactParameter1),
-      FILL_MAP_LC(errorImpactParameter0),
-      FILL_MAP_LC(errorImpactParameter1),
-      FILL_MAP_LC(v0X),
-      FILL_MAP_LC(v0Y),
-      FILL_MAP_LC(v0Z),
       FILL_MAP_LC(v0Radius),
       FILL_MAP_LC(v0cosPA),
       FILL_MAP_LC(v0MLambda),
@@ -262,31 +182,19 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(v0MGamma),
       FILL_MAP_LC(ctV0),
       FILL_MAP_LC(dcaV0daughters),
-      FILL_MAP_LC(pxPos),
-      FILL_MAP_LC(pyPos),
-      FILL_MAP_LC(pzPos),
       FILL_MAP_LC(ptV0Pos),
       FILL_MAP_LC(dcaPosToPV),
-      FILL_MAP_LC(pxNeg),
-      FILL_MAP_LC(pyNeg),
-      FILL_MAP_LC(pzNeg),
       FILL_MAP_LC(ptV0Neg),
       FILL_MAP_LC(dcaNegToPV),
-      FILL_MAP_LC(m),
-      FILL_MAP_LC(pt),
-      FILL_MAP_LC(p),
       FILL_MAP_LC(cpa),
       FILL_MAP_LC(cpaXY),
       FILL_MAP_LC(ct),
-      FILL_MAP_LC(eta),
-      FILL_MAP_LC(phi),
-      FILL_MAP_LC(y),
-      FILL_MAP_LC(e),
       // TPC PID variables
       FILL_MAP_LC(nSigmaTPCPr0),
       // TOF PID variables
       FILL_MAP_LC(nSigmaTOFPr0),
-    };
+      // Combined nSigma variable
+      FILL_MAP_LC(nSigmaTpcTOFPr0)};
   }
 };
 
