@@ -103,9 +103,15 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
 struct cascadeBuilder {
-  Produces<aod::StoredCascDatas> cascdata;
-  Produces<aod::StoredKFCascDatas> kfcascdata;
-  Produces<aod::StoredTraCascDatas> trackedcascdata;
+  Produces<aod::CascIndices> cascidx;
+  Produces<aod::KFCascIndices> kfcascidx;
+  Produces<aod::TraCascIndices> trackedcascidx;
+  Produces<aod::StoredCascCores> cascdata;
+  Produces<aod::StoredKFCascCores> kfcascdata;
+  Produces<aod::StoredTraCascCores> trackedcascdata;
+  Produces<aod::CascBBs> cascbb;
+  Produces<aod::KFCascBBs> kfcascbb;
+  Produces<aod::TraCascBBs> trackedcascbb;
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -1254,11 +1260,9 @@ struct cascadeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      cascdata(cascadecandidate.v0Id,
-               cascade.globalIndex(),
-               cascadecandidate.bachelorId,
-               cascade.collisionId(),
-               cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
+      cascidx(cascadecandidate.v0Id, cascade.globalIndex(),
+              cascadecandidate.bachelorId, cascade.collisionId());
+      cascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
                cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
@@ -1269,8 +1273,8 @@ struct cascadeBuilder {
                cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz, // <--- no corresponding stratrack information available
-               cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
+      cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -1311,11 +1315,10 @@ struct cascadeBuilder {
       if (!validCascadeCandidateKF)
         continue; // doesn't pass cascade selections
       registry.fill(HIST("hKFParticleStatistics"), 2.0f);
-      kfcascdata(cascadecandidate.v0Id,
-                 cascade.globalIndex(),
-                 cascadecandidate.bachelorId,
-                 cascade.collisionId(),
-                 cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
+
+      kfcascidx(cascadecandidate.v0Id, cascade.globalIndex(),
+                cascadecandidate.bachelorId, cascade.collisionId());
+      kfcascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                  cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                  cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
                  cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
@@ -1327,8 +1330,8 @@ struct cascadeBuilder {
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
-                 cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV,
                  cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
+      kfcascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       if (createCascCovMats) {
         gpu::gpustd::array<float, 15> covmatrix;
@@ -1360,24 +1363,22 @@ struct cascadeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      // fill regular table (no strangeness tracking)
-      cascdata(cascadecandidate.v0Id,
-               cascade.globalIndex(),
-               cascadecandidate.bachelorId,
-               cascade.collisionId(),
-               cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
+      // fill regular tables (no strangeness tracking)
+      cascidx(cascadecandidate.v0Id, cascade.globalIndex(),
+              cascadecandidate.bachelorId, cascade.collisionId());
+      cascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
                cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-               cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0],
-               cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1],
-               cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2],
+               cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
+               cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
+               cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
-               cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
+      cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -1512,12 +1513,9 @@ struct cascadeBuilder {
         std::array<float, 3> cascadeMomentumVector;
         cascadeTrackPar.getPxPyPzGlo(cascadeMomentumVector);
 
-        trackedcascdata(cascadecandidate.v0Id,
-                        cascade.globalIndex(),
-                        cascadecandidate.bachelorId,
-                        trackedCascade.trackId(),
-                        cascade.collisionId(),
-                        cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
+        trackedcascidx(cascadecandidate.v0Id, cascade.globalIndex(), cascadecandidate.bachelorId,
+                       trackedCascade.trackId(), cascade.collisionId());
+        trackedcascdata(cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
                         trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(),    // <--- stratrack position
                         cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
                         cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
@@ -1527,8 +1525,8 @@ struct cascadeBuilder {
                         cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                         cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                         cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
-                        cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV,                     // <--- anti-inv-mass structure
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
+        trackedcascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
       }
     }
     // En masse filling at end of process call
@@ -1948,9 +1946,9 @@ struct cascadePreselector {
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascData> cascdataext;
-  Spawns<aod::KFCascData> kfcascdataext;
-  Spawns<aod::TraCascData> tracascdataext;
+  Spawns<aod::CascCore> cascdataext;
+  Spawns<aod::KFCascCore> kfcascdataext;
+  Spawns<aod::TraCascCore> tracascdataext;
   void init(InitContext const&) {}
 };
 
@@ -1982,6 +1980,27 @@ struct kfcascadeLinkBuilder {
 
   // build Cascade -> CascData link table
   void process(aod::Cascades const& casctable, aod::KFCascDatas const& cascdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(casctable.size());
+    for (int ii = 0; ii < casctable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& cascdata : cascdatatable) {
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
+    }
+    for (int ii = 0; ii < casctable.size(); ii++) {
+      cascdataLink(lIndices[ii]);
+    }
+  }
+};
+
+struct tracascadeLinkBuilder {
+  Produces<aod::TraCascDataLink> cascdataLink;
+
+  void init(InitContext const&) {}
+
+  // build Cascade -> CascData link table
+  void process(aod::Cascades const& casctable, aod::TraCascDatas const& cascdatatable)
   {
     std::vector<int> lIndices;
     lIndices.reserve(casctable.size());

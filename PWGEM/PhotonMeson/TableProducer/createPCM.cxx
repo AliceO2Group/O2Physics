@@ -48,7 +48,9 @@ using FullTrackExtIU = FullTracksExtIU::iterator;
 struct createPCM {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
-  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0Indices> v0indices;
+  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0TrackXs> v0trackXs;
 
   // Basic checks
   HistogramRegistry registry{
@@ -300,14 +302,15 @@ struct createPCM {
       if (v0radius < v0Rmin || v0Rmax < v0radius) {
         return;
       }
-      v0data(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1,
-             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-             svpos[0], svpos[1], svpos[2],
-             pvec0[0], pvec0[1], pvec0[2],
-             pvec1[0], pvec1[1], pvec1[2],
-             v0dca, pos.dcaXY(), ele.dcaXY(),
-             v0CosinePA, dcaV0toPV);
 
+      // populates the various tables that comprise V0Datas
+      v0indices(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1);
+      v0trackXs(fitter.getTrack(0).getX(), fitter.getTrack(1).getX());
+      v0cores(svpos[0], svpos[1], svpos[2],
+              pvec0[0], pvec0[1], pvec0[2],
+              pvec1[0], pvec1[1], pvec1[2],
+              v0dca, pos.dcaXY(), ele.dcaXY(),
+              v0CosinePA, dcaV0toPV);
     } else {
       // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);
       pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0dca;
@@ -546,7 +549,7 @@ struct createPCM {
 
 // Extends the v0data table with expression columns
 struct v0Initializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::V0Cores> v0cores;
   void init(InitContext const&) {}
 };
 
