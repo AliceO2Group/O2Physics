@@ -146,7 +146,6 @@ DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
-  Configurable<double> bz{"bz", -5., "magnetic field"};
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -158,6 +157,16 @@ struct HfTreeCreatorOmegacSt {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
+  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
+  Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda"};
+  Configurable<float> massWindowOmegaC{"massWindowOmegaC", 0.1, "Inv. mass window for Omegac"};
+  Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
+  Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
+  Configurable<float> maxNSigmaBachelor{"maxNSigmaBachelor", 5., "Max Nsigma for bachelor of tracked Xi (Ka)"};
+  Configurable<float> maxNSigmaV0Pr{"maxNSigmaV0Pr", 5., "Max Nsigma for proton from V0 fromtracked Xi"};
+  Configurable<float> maxNSigmaV0Pi{"maxNSigmaV0Pi", 5., "Max Nsigma for pion from V0 fromtracked Xi"};
+  Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega2git s2"};
 
   Produces<aod::HfOmegacSt> outputTable;
   Produces<aod::HfOmegaStGen> outputTableGen;
@@ -165,6 +174,7 @@ struct HfTreeCreatorOmegacSt {
   o2::vertexing::DCAFitterN<2> df2;
 
   bool bzOnly = true;
+  float bz = 0.;
   int runNumber{0};
 
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
@@ -208,7 +218,6 @@ struct HfTreeCreatorOmegacSt {
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
 
-    df2.setBz(bz);
     df2.setPropagateToPCA(propToDCA);
     df2.setMaxR(maxR);
     df2.setMaxDZIni(maxDZIni);
@@ -252,15 +261,19 @@ struct HfTreeCreatorOmegacSt {
 
       if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
+        bz = grpo->getNominalL3Field();
       } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
+        bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       } else {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
+      df2.setBz(bz);
     }
 
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
     const auto primaryVertex = getPrimaryVertex(collision);
+    const std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
     o2::dataformats::DCA impactParameterTrk;
     for (const auto& trackedCascade : trackedCascades) {
       const auto trackCasc = trackedCascade.track_as<TracksExt>();
@@ -277,15 +290,47 @@ struct HfTreeCreatorOmegacSt {
       const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
       const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
 
-      std::array<double, 3> m{o2::analysis::pdg::MassProton, o2::analysis::pdg::MassPiMinus, o2::analysis::pdg::MassKMinus};
-      std::array<std::array<float, 3>, 3> p;
-      // TODO: treat properly as omega +-
-      p[0] = {v0TrackPos.px(), v0TrackPos.py(), v0TrackPos.pz()};
-      p[1] = {v0TrackNeg.px(), v0TrackNeg.py(), v0TrackNeg.pz()};
-      p[2] = {bachelor.px(), bachelor.py(), bachelor.pz()};
-      double massOmega1 = RecoDecay::m(p, m);
-      std::swap(p[0], p[1]);
-      double massOmega2 = RecoDecay::m(p, m);
+      if (!v0TrackPos.hasTPC() || !v0TrackNeg.hasTPC() || !bachelor.hasTPC() ||
+          v0TrackPos.tpcNClsFindable() < minNoClsTrackedCascade ||
+          v0TrackNeg.tpcNClsFindable() < minNoClsTrackedCascade ||
+          bachelor.tpcNClsFindable() < minNoClsTrackedCascade) {
+        continue;
+      }
+
+      const auto& v0TrackPr = trackCasc.sign() > 0 ? v0TrackPos : v0TrackNeg;
+      const auto& v0TrackPi = trackCasc.sign() > 0 ? v0TrackNeg : v0TrackPos;
+
+      // track propagation
+      o2::track::TrackParCov trackParCovV0;
+      o2::track::TrackPar trackParV0;
+      o2::track::TrackPar trackParBachelor;
+      std::array<std::array<float, 3>, 2> momentaOmegaDaughters;
+      float cpaOmega = -1;
+      float decayLengthOmega = -1.;
+      float decayLengthOmegaXY = -1.;
+      if (df2.process(getTrackParCov(v0TrackNeg), getTrackParCov(v0TrackPos))) {
+        trackParCovV0 = df2.createParentTrackParCov(0);
+        if (df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+          const auto& secondaryVertex = df2.getPCACandidate();
+          decayLengthOmega = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+          decayLengthOmegaXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+          trackParV0 = df2.getTrackParamAtPCA(0);
+          trackParBachelor = df2.getTrackParamAtPCA(1);
+          trackParV0.getPxPyPzGlo(momentaOmegaDaughters[0]);
+          trackParBachelor.getPxPyPzGlo(momentaOmegaDaughters[1]);
+          std::array<float, 3> pVec;
+          df2.createParentTrackParCov().getPxPyPzGlo(pVec);
+          std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
+          cpaOmega = RecoDecay::cpa(pvPos, df2.getPCACandidate(), pVec);
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+
+      std::array<double, 2> masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassKPlus};
+      const auto massOmega = RecoDecay::m(momentaOmegaDaughters, masses);
 
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
       registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
@@ -294,23 +339,19 @@ struct HfTreeCreatorOmegacSt {
       registry.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
       registry.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      registry.fill(HIST("hMassVsPt"), massOmega1, trackCasc.pt());
-      registry.fill(HIST("hMassVsPt"), massOmega2, trackCasc.pt());
+      registry.fill(HIST("hMassVsPt"), massOmega, trackCasc.pt());
 
-      // TODO: separate cases of omega +-
-      if ((std::abs(massOmega1 - o2::analysis::pdg::MassOmegaMinus) < .1) ||
-          (std::abs(massOmega2 - o2::analysis::pdg::MassOmegaMinus) < .1)) {
+      if ((std::abs(massOmega - o2::analysis::pdg::MassOmegaMinus) < massWindowTrackedOmega)) {
         LOGF(debug, "found candidate in mass range");
-        if ((std::abs(bachelor.tpcNSigmaKa()) < 3.) &&
-            (((std::abs(v0TrackPos.tpcNSigmaPr()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPi()) < 3.)) ||
-             ((std::abs(v0TrackPos.tpcNSigmaPi()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPr()) < 3.)))) {
+        if ((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) &&
+            (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
+            (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
           LOGF(debug, ".. species compatible with Omega");
           std::array<double, 2> masses{o2::analysis::pdg::MassOmegaMinus, o2::analysis::pdg::MassPiPlus};
           std::array<std::array<float, 3>, 2> momenta;
-          std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
-          auto trackParCovPr = getTrackParCov(v0TrackPos); // TODO: depends on charge!
-          auto trackParCovKa = getTrackParCov(v0TrackNeg); // TODO: depends on charge!
+          auto trackParCovPr = getTrackParCov(v0TrackPr);
+          auto trackParCovKa = getTrackParCov(v0TrackPi);
           auto trackParCovPi = getTrackParCov(bachelor);
           o2::dataformats::DCA impactParameterPr;
           o2::dataformats::DCA impactParameterKa;
@@ -326,9 +367,11 @@ struct HfTreeCreatorOmegacSt {
           }
 
           for (const auto& track : tracks) {
-            if (std::abs(track.tpcNSigmaPi()) < 3.) {
+            if (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) {
               LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
-              // TODO: need to check charge
+              if (trackCasc.sign() == track.sign()) {
+                continue;
+              }
               auto trackParCovPion = getTrackParCov(track);
               o2::dataformats::DCA impactParameterPion;
               if (bzOnly) {
@@ -337,7 +380,7 @@ struct HfTreeCreatorOmegacSt {
                 o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
               }
 
-              trackParCovTrk.getPxPyPzGlo(momenta[0]);
+              trackParCovTrk.getPxPyPzGlo(momenta[0]); // or better use momentum from DCA fitter?
               trackParCovPion.getPxPyPzGlo(momenta[1]);
               const auto massOmegaC = RecoDecay::m(momenta, masses);
               registry.fill(HIST("hMassOmegac"), massOmegaC);
@@ -346,15 +389,21 @@ struct HfTreeCreatorOmegacSt {
               if (df2.process(trackParCovTrk, trackParCovPion)) {
                 const auto& secondaryVertex = df2.getPCACandidate();
                 const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                if (std::abs(massOmegaC - o2::analysis::pdg::MassOmegaC0) < 0.02) {
+                const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+                const auto chi2TopOmegac = df2.getChi2AtPCACandidate();
+                std::array<float, 3> pVec;
+                df2.createParentTrackParCov().getPxPyPzGlo(pVec);
+                const auto cpaOmegaC = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pVec);
+
+                if (std::abs(massOmegaC - o2::analysis::pdg::MassOmegaC0) < massWindowOmegaC) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                   registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   outputTable(massOmegaC,
-                              massOmega1, // TODO: need to choose according to supposed sign
+                              massOmega,
                               track.tpcNSigmaPi(),
                               track.tofNSigmaPi(),
-                              v0TrackPos.tpcNSigmaPr(), // TODO: depends on charge
-                              v0TrackPos.tofNSigmaPr(),
+                              v0TrackPr.tpcNSigmaPr(),
+                              v0TrackPi.tofNSigmaPr(),
                               bachelor.tpcNSigmaKa(),
                               bachelor.tofNSigmaKa(),
                               v0TrackNeg.tpcNSigmaPi(),
@@ -365,8 +414,8 @@ struct HfTreeCreatorOmegacSt {
                               momenta[1][0], // pion momentum
                               momenta[1][1],
                               momenta[1][2],
-                              0., // st_omegac::CpaOmegaC,
-                              0., // trackedCascade.cpa(),
+                              cpaOmegaC,
+                              cpaOmega,
                               impactParameterTrk.getY(),
                               impactParameterTrk.getZ(),
                               impactParameterPion.getY(),
@@ -377,12 +426,12 @@ struct HfTreeCreatorOmegacSt {
                               impactParameterKa.getZ(),
                               impactParameterPi.getY(),
                               impactParameterPi.getZ(),
-                              0., // st_omegac::Chi2TopologicalOmegaC,
-                              0., // st_omegac::Chi2TopologicalOmega,
+                              chi2TopOmegac,
+                              trackedCascade.topologyChi2(),
                               decayLength,
-                              0.,  // st_omegac::DecayLengthXYOmegaC,
-                              0.,  // st_omegac::DecayLengthOmega,
-                              0.); // st_omegac::DecayLengthXYOmega
+                              decayLengthXY,
+                              decayLengthOmega,
+                              decayLengthOmegaXY);
                 }
               }
             }
