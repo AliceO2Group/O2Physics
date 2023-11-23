@@ -200,13 +200,13 @@ struct HfCandidateCreator3Prong {
       auto indexCollision = collision.globalIndex();
       uint8_t nProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()){
-	nProngsContributorsPV += 1;
+        nProngsContributorsPV += 1;
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()){
-	nProngsContributorsPV += 1;
+        nProngsContributorsPV += 1;
       }
       if (indexCollision == track2.collisionId() && track2.isPVContributor()){
-	nProngsContributorsPV += 1;
+        nProngsContributorsPV += 1;
       }
 
       // fill candidate table rows
