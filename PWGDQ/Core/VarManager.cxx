@@ -660,4 +660,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRapCharmHadron] = " ";
   fgVariableNames[kPhiCharmHadron] = "#varphi (charm hadron)";
   fgVariableUnits[kPhiCharmHadron] = "rad.";
+  fgVariableNames[kBdtCharmHadron] = "BDT score (charm hadron)";
+  fgVariableUnits[kBdtCharmHadron] = " ";
+  fgVariableNames[kIsDoubleGap] = "is double gap event";
+  fgVariableUnits[kIsDoubleGap] = "";
+  fgVariableNames[kIsSingleGapA] = "is single gap event side A";
+  fgVariableUnits[kIsSingleGapA] = "";
+  fgVariableNames[kIsSingleGapC] = "is single gap event side C";
+  fgVariableUnits[kIsSingleGapC] = "";
 }

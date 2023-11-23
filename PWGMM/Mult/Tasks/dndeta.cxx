@@ -59,15 +59,24 @@ struct MultiplicityCounter {
     "Common",
     {
       {BCSelection.data(), ";status;count", {HistType::kTH1F, {{3, 0.5, 3.5}}}} //
-    }                                                                           //
+    },                                                                          //
+    OutputObjHandlingPolicy::AnalysisObject,
+    false,
+    true //
   };
 
   HistogramRegistry inclusiveRegistry{
     InclusivePrefix.data(),
-    {}};
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    false,
+    true};
   HistogramRegistry binnedRegistry{
     BinnedPrefix.data(),
-    {}};
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    false,
+    true};
 
   std::vector<int> usedTracksIds;
   std::vector<int> usedTracksIdsDF;
@@ -257,7 +266,8 @@ struct MultiplicityCounter {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+      if (!useEvSel || (bc.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
+                        bc.selection_bit(aod::evsel::kIsBBT0A) &&
                         bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
         commonRegistry.fill(HIST(BCSelection), 1.);
         cols.clear();
@@ -369,7 +379,7 @@ struct MultiplicityCounter {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
-    if (!useEvSel || collision.sel8()) {
+    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 2., c);
       } else {
@@ -447,7 +457,7 @@ struct MultiplicityCounter {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
-    if (!useEvSel || collision.sel8()) {
+    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 2., c);
       } else {
@@ -660,7 +670,7 @@ struct MultiplicityCounter {
     MC const&, ParticlesI const& particles,
     FiLTracks const& /*tracks*/)
   {
-    if (useEvSel && !collision.sel8()) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -771,7 +781,7 @@ struct MultiplicityCounter {
     FiLTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
   {
-    if (useEvSel && !collision.sel8()) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -877,7 +887,7 @@ struct MultiplicityCounter {
     MC const&, Particles const& particles,
     FiLTracks const& tracks)
   {
-    if (useEvSel && !collision.sel8()) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -1038,7 +1048,7 @@ struct MultiplicityCounter {
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
-      if (!useEvSel || collision.sel8()) {
+      if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         Nrec = 0;
         ++moreThanOne;
         atLeastOne = true;
