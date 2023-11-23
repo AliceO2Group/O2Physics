@@ -105,15 +105,17 @@ struct jetspectraDerivedMaker {
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
 
-    const AxisSpec axisPercentile{binsPercentile, "Centrality FT0M"};
+    const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
+    const AxisSpec axisPercentileFT0C{binsPercentile, "Centrality FT0C"};
     const AxisSpec axisMultiplicityPV{binsMultiplicity, "MultNTracksPV"};
-    const AxisSpec axisMultiplicityTracklets{binsMultiplicity, "MultTracklets"};
-    const AxisSpec axisMultiplicityFT0M{binsMultiplicity, "Multiplicity FT0M"};
+    const AxisSpec axisMultiplicityFT0A{binsMultiplicity, "Multiplicity FT0A"};
+    const AxisSpec axisMultiplicityFT0C{binsMultiplicity, "Multiplicity FT0C"};
 
-    histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentile});
+    histos.add("Centrality/FT0A", "CentFT0A", HistType::kTH1D, {axisPercentileFT0A});
+    histos.add("Centrality/FT0C", "CentFT0C", HistType::kTH1D, {axisPercentileFT0C});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
-    histos.add("Mult/NTracklets", "MultTracklets", HistType::kTH1D, {axisMultiplicityTracklets});
-    histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
+    histos.add("Mult/FT0A", "MultFT0A", HistType::kTH1D, {axisMultiplicityFT0A});
+    histos.add("Mult/FT0C", "MultFT0C", HistType::kTH1D, {axisMultiplicityFT0C});
   }
 
   template <typename CollisionType, typename TrackType>
@@ -137,9 +139,10 @@ struct jetspectraDerivedMaker {
 
     if (fillMultiplicity) {
       histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-      histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
+      histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
       histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
-      histos.fill(HIST("Mult/NTracklets"), collision.multTracklets());
+      histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
+      histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
     }
   }
 
@@ -152,7 +155,7 @@ struct jetspectraDerivedMaker {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
 
   Produces<o2::aod::JeColls> tableColl;
@@ -172,9 +175,10 @@ struct jetspectraDerivedMaker {
               collision.posZ(),
               collision.sel8(),
               collision.multNTracksPV(),
-              collision.multTracklets(),
-              collision.multFT0M(),
-              collision.centFT0M(),
+              collision.multFT0A(),
+              collision.multFT0C(),
+              collision.centFT0A(),
+              collision.centFT0C(),
               collision.bc().runNumber());
 
     tableTrack.reserve(tracks.size());
