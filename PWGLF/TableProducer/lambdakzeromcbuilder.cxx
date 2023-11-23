@@ -41,14 +41,23 @@ using namespace o2::framework::expressions;
 using std::array;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct lambdakzeroLabelBuilder {
+struct lambdakzeromcbuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
+  Produces<aod::V0MCCores> v0mccores; // optionally aggregate information from MC side for posterior analysis (derived data)
+
+  Configurable<bool> populateV0MCCores{"populateV0MCCores", false, "populate V0MCCores table for derived data analysis"};
+
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels
   void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
   {
+    int pdgCode = -1, pdgCodeMother = -1, pdgCodePositive = -1, pdgCodeNegative = -1;
+    bool isPhysicalPrimary = false;
+    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
     for (auto& v0 : v0table) {
       int lLabel = -1;
 
@@ -60,12 +69,30 @@ struct lambdakzeroLabelBuilder {
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+        pdgCodePositive = lMCPosTrack.pdgCode();
+        pdgCodeNegative = lMCNegTrack.pdgCode();
+        pxposmc = lMCPosTrack.px();
+        pyposmc = lMCPosTrack.py();
+        pzposmc = lMCPosTrack.pz();
+        pxnegmc = lMCNegTrack.px();
+        pynegmc = lMCNegTrack.py();
+        pznegmc = lMCNegTrack.pz();
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 lLabel = lNegMother.globalIndex();
+                // acquire information
+                xmc = lNegMother.vx();
+                ymc = lNegMother.vy();
+                zmc = lNegMother.vz();
+                pdgCode = lNegMother.pdgCode();
+                isPhysicalPrimary = lNegMother.isPhysicalPrimary();
+                if (lNegMother.has_mothers()) {
+                  for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
+                    pdgCodeMother = lNegGrandMother.pdgCode();
+                  }
+                }
               }
             }
           }
@@ -74,6 +101,13 @@ struct lambdakzeroLabelBuilder {
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
         lLabel);
+      if (populateV0MCCores) {
+        v0mccores(
+          pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,
+          isPhysicalPrimary, xmc, ymc, zmc,
+          pxposmc, pyposmc, pzposmc,
+          pxnegmc, pynegmc, pznegmc);
+      }
     }
   }
 };
@@ -81,5 +115,5 @@ struct lambdakzeroLabelBuilder {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroLabelBuilder>(cfgc)};
+    adaptAnalysisTask<lambdakzeromcbuilder>(cfgc)};
 }
