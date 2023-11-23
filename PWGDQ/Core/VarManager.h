@@ -1945,14 +1945,14 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       }
       // As defined in Run 2 (projected onto momentum)
       if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingLzProjected]) {
-        values[kVertexingLzProjected] = (dzPair2PV * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
-        values[kVertexingLxyProjected] = (dxPair2PV * v12.Px()) + (dyPair2PV * v12.Py());
-        values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
-        values[kVertexingLxyzProjected] = (dxPair2PV * v12.Px()) + (dyPair2PV * v12.Py()) + (dzPair2PV * v12.Pz());        
-        values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
-        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.P());
+        values[kVertexingLzProjected] = (dzPair2PV * KFGeoTwoProng.GetPz()) / TMath::Sqrt(KFGeoTwoProng.GetPz() * KFGeoTwoProng.GetPz());
+        values[kVertexingLxyProjected] = (dxPair2PV * KFGeoTwoProng.GetPx()) + (dyPair2PV * KFGeoTwoProng.GetPy());
+        values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()));
+        values[kVertexingLxyzProjected] = (dxPair2PV * KFGeoTwoProng.GetPx()) + (dyPair2PV * KFGeoTwoProng.GetPy()) + (dzPair2PV * KFGeoTwoProng.GetPz());        
+        values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()) + (KFGeoTwoProng.GetPz() * KFGeoTwoProng.GetPz()));
+        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetP());
         values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
-        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / (v12.P());
+        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetP());
       }
 
       if (fgUsedVars[kVertexingLxyOverErr] || fgUsedVars[kVertexingLzOverErr] || fgUsedVars[kVertexingLxyzOverErr]) {
@@ -2270,6 +2270,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
             values[kVertexingLxyz] = 1.e-8f;
           values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
+
           if (fgUsedVars[kVertexingTauxy])
             values[kVertexingTauxy] = KFGeoThreeProngBarrel.GetPseudoProperDecayTime(KFPV, KFGeoThreeProngBarrel.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
           if (fgUsedVars[kVertexingTauxyErr])
@@ -2281,6 +2282,18 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
                                                     dzTriplet3PV * KFGeoThreeProngBarrel.GetPz()) /
                                                     (KFGeoThreeProngBarrel.GetP() * values[VarManager::kVertexingLxyz]);
         } // end calculate vertex variables
+
+        // As defined in Run 2 (projected onto momentum)
+        if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingLzProjected]) {
+          values[kVertexingLzProjected] = (dzTriplet3PV * KFGeoThreeProngBarrel.GetPz()) / TMath::Sqrt(KFGeoThreeProngBarrel.GetPz() * KFGeoThreeProngBarrel.GetPz());
+          values[kVertexingLxyProjected] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx()) + (dyTriplet3PV * KFGeoThreeProngBarrel.GetPy());
+          values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoThreeProngBarrel.GetPx() * KFGeoThreeProngBarrel.GetPx()) + (KFGeoThreeProngBarrel.GetPy() * KFGeoThreeProngBarrel.GetPy()));
+          values[kVertexingLxyzProjected] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx()) + (dyTriplet3PV * KFGeoThreeProngBarrel.GetPy()) + (dzTriplet3PV * KFGeoThreeProngBarrel.GetPz());        
+          values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoThreeProngBarrel.GetPx() * KFGeoThreeProngBarrel.GetPx()) + (KFGeoThreeProngBarrel.GetPy() * KFGeoThreeProngBarrel.GetPy()) + (KFGeoThreeProngBarrel.GetPz() * KFGeoThreeProngBarrel.GetPz()));
+          values[kVertexingTauxyProjected] = (values[kVertexingLxyProjected] * KFGeoThreeProngBarrel.GetMass()) / (KFGeoThreeProngBarrel.GetP());
+          values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
+          values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProngBarrel.GetMass()) / KFGeoThreeProngBarrel.GetP();
+        } // end Run 2 quantities 
       } // end eventHasVtxCov
     } // end (candidateType == kBtoJpsiEEK) && trackHasCov
   } // end KF
