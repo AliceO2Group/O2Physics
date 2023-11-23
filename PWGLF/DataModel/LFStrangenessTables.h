@@ -885,4 +885,22 @@ using AssignedTracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyCol
 using AssignedTracked3Body = AssignedTracked3Bodys::iterator;
 } // namespace o2::aod
 
+//______________________________________________________
+// Equivalency declarations
+namespace o2::soa
+{
+DECLARE_EQUIVALENT_FOR_INDEX(aod::V0Indices, aod::V0Cores);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::V0TrackXs, aod::V0Cores);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::V0TrackXs, aod::V0Indices);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::CascIndices, aod::CascCores);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::CascIndices, aod::CascBBs);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::CascCores, aod::CascBBs);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascIndices, aod::KFCascCores);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascIndices, aod::KFCascBBs);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascCores, aod::KFCascBBs);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascIndices, aod::TraCascCores);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascIndices, aod::TraCascBBs);
+DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascCores, aod::TraCascBBs);
+} // namespace o2::soa
+
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
