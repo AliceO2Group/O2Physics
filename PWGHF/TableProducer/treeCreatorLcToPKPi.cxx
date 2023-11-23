@@ -32,6 +32,7 @@ namespace o2::aod
 namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, int8_t);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -97,6 +98,7 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  hf_cand::NProngsContributorsPV,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -254,6 +256,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
+            candidate.nProngsContributorsPV(),
             candidate.xSecondaryVertex(),
             candidate.ySecondaryVertex(),
             candidate.zSecondaryVertex(),
@@ -390,6 +393,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
+            candidate.nProngsContributorsPV(),
             candidate.xSecondaryVertex(),
             candidate.ySecondaryVertex(),
             candidate.zSecondaryVertex(),
