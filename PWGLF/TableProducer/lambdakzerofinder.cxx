@@ -286,10 +286,10 @@ struct lambdakzerofinder {
     v0indices(t1.globalIndex(), t2.globalIndex(), collisionIndex, 0);
     v0trackXs(fitter.getTrack(0).getX(), fitter.getTrack(1).getX());
     v0cores(pos[0], pos[1], pos[2],
-          pvec0[0], pvec0[1], pvec0[2],
-          pvec1[0], pvec1[1], pvec1[2],
-          TMath::Sqrt(fitter.getChi2AtPCACandidate()),
-          t1.dcaXY(), t2.dcaXY(), cosPA, smallestDCA);
+            pvec0[0], pvec0[1], pvec0[2],
+            pvec1[0], pvec1[1], pvec1[2],
+            TMath::Sqrt(fitter.getChi2AtPCACandidate()),
+            t1.dcaXY(), t2.dcaXY(), cosPA, smallestDCA);
     v0datalink(v0cores.lastIndex());
     return 1;
   }

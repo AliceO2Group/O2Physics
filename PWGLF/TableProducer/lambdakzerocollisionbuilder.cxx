@@ -48,7 +48,7 @@ using std::array;
 struct lambdakzerocollisionbuilder {
   // TPC pid (copied over from central services for reference)
   Produces<aod::V0CollRefs> v0collref; // raw table for checks
-  Produces<aod::V0Collision> v0coll; // table with Nsigmas
+  Produces<aod::V0Collision> v0coll;   // table with Nsigmas
 
   // For manual sliceBy
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
@@ -57,19 +57,20 @@ struct lambdakzerocollisionbuilder {
   {
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s){
+  void process(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s)
+  {
     int currentCollIdx = -1;
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       // V0 table sliced
-      if(currentCollIdx != collIdx){
-        v0coll(collision.posX(), collision.posY(), collision.posZ(), 
-               collision.centFT0M(), collision.centFT0A(), 
+      if (currentCollIdx != collIdx) {
+        v0coll(collision.posX(), collision.posY(), collision.posZ(),
+               collision.centFT0M(), collision.centFT0A(),
                collision.centFT0C(), collision.centFV0A());
         currentCollIdx = collIdx;
       }
-      for (int i=0; i<V0Table_thisCollision.size(); i++) {
+      for (int i = 0; i < V0Table_thisCollision.size(); i++) {
         v0collref(v0coll.lastIndex());
       }
     }

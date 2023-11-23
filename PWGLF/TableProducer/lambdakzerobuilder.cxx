@@ -198,14 +198,14 @@ struct lambdakzeroBuilder {
     float V0radius;
     float lambdaMass;
     float antilambdaMass;
-    uint8_t posTrackDetMap; 
-    uint8_t negTrackDetMap; 
-    uint32_t posTrackITSClusterSizes; 
-    uint32_t negTrackITSClusterSizes; 
-    uint8_t posTrackTPCClusters; 
-    uint8_t negTrackTPCClusters; 
-    uint8_t posTrackTPCCrossedRows; 
-    uint8_t negTrackTPCCrossedRows; 
+    uint8_t posTrackDetMap;
+    uint8_t negTrackDetMap;
+    uint32_t posTrackITSClusterSizes;
+    uint32_t negTrackITSClusterSizes;
+    uint8_t posTrackTPCClusters;
+    uint8_t negTrackTPCClusters;
+    uint8_t posTrackTPCCrossedRows;
+    uint8_t negTrackTPCCrossedRows;
   } v0candidate;
 
   // Helper struct to do bookkeeping of building parameters
@@ -787,10 +787,10 @@ struct lambdakzeroBuilder {
               v0candidate.dcav0topv);
 
       // populate V0 extras in case requested
-      if (populateExtras) { 
-        v0extras(v0candidate.posTrackDetMap, v0candidate.negTrackDetMap, 
+      if (populateExtras) {
+        v0extras(v0candidate.posTrackDetMap, v0candidate.negTrackDetMap,
                  v0candidate.posTrackITSClusterSizes, v0candidate.negTrackITSClusterSizes,
-                 v0candidate.posTrackTPCClusters, v0candidate.negTrackTPCClusters, 
+                 v0candidate.posTrackTPCClusters, v0candidate.negTrackTPCClusters,
                  v0candidate.posTrackTPCCrossedRows, v0candidate.negTrackTPCCrossedRows);
       }
 

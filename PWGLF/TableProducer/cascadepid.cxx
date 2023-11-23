@@ -77,11 +77,11 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct cascadepid {
   // TPC pid (copied over from central services for reference)
-  Produces<aod::CascTPC> casctpc; // raw table for checks
+  Produces<aod::CascTPC> casctpc;       // raw table for checks
   Produces<aod::CascTPCPID> casctpcpid; // table with Nsigmas
 
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOF> casctof; // raw table for checks
+  Produces<aod::CascTOF> casctof;       // raw table for checks
   Produces<aod::CascTOFPID> casctofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -102,7 +102,6 @@ struct cascadepid {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-
 
   int mRunNumber;
   float d_bz;
@@ -234,7 +233,8 @@ struct cascadepid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void processTPC(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades){
+  void processTPC(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades)
+  {
     for (const auto& collision : collisions) {
       // Fire up CCDB
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -250,12 +250,12 @@ struct cascadepid {
         auto posTrack = v0.posTrack_as<TracksExtraWithPID>();
         auto negTrack = v0.negTrack_as<TracksExtraWithPID>();
 
-        // Fill raw information if requested 
-        if( fillRawPID ){
+        // Fill raw information if requested
+        if (fillRawPID) {
           casctpc(posTrack.tpcSignal(), negTrack.tpcSignal(), bachTrack.tpcSignal());
         }
         // Fill NSigma (always provided)
-        casctpcpid(posTrack.tpcNSigmaPr(), posTrack.tpcNSigmaPi(), 
+        casctpcpid(posTrack.tpcNSigmaPr(), posTrack.tpcNSigmaPi(),
                    negTrack.tpcNSigmaPr(), negTrack.tpcNSigmaPi(),
                    bachTrack.tpcNSigmaKa(), bachTrack.tpcNSigmaPi());
       }
@@ -278,13 +278,13 @@ struct cascadepid {
         auto v0 = cascade.v0();
         auto posTrack = v0.posTrack_as<TracksExtraWithPID>();
         auto negTrack = v0.negTrack_as<TracksExtraWithPID>();
-      
+
         // FIXME: TOF calculation: under construction, to follow
 
-        if( fillRawPID ){
+        if (fillRawPID) {
           casctof(posTrack.length(), negTrack.length(), bachTrack.length(),
-                0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }
       }
     }
@@ -293,7 +293,7 @@ struct cascadepid {
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   /// basic building options (one of them must be chosen)
   PROCESS_SWITCH(cascadepid, processTPC, "process dE/dx information", true); // generate TPC information tables for V0s
-  PROCESS_SWITCH(cascadepid, processTOF, "process TOF information", true); // generate TOF information tables for V0s
+  PROCESS_SWITCH(cascadepid, processTOF, "process TOF information", true);   // generate TOF information tables for V0s
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 

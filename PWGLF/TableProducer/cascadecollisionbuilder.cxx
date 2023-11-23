@@ -48,7 +48,7 @@ using std::array;
 struct cascadecollisionbuilder {
   // TPC pid (copied over from central services for reference)
   Produces<aod::CascCollRefs> casccollref; // raw table for checks
-  Produces<aod::CascCollision> casccoll; // table with Nsigmas
+  Produces<aod::CascCollision> casccoll;   // table with Nsigmas
 
   // For manual sliceBy
   Preslice<aod::CascDatas> perCollision = o2::aod::cascdata::collisionId;
@@ -57,19 +57,20 @@ struct cascadecollisionbuilder {
   {
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::CascDatas const& Cascades){
+  void process(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::CascDatas const& Cascades)
+  {
     int currentCollIdx = -1;
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
       // V0 table sliced
-      if(currentCollIdx != collIdx){
-        casccoll(collision.posX(), collision.posY(), collision.posZ(), 
-               collision.centFT0M(), collision.centFT0A(), 
-               collision.centFT0C(), collision.centFV0A());
+      if (currentCollIdx != collIdx) {
+        casccoll(collision.posX(), collision.posY(), collision.posZ(),
+                 collision.centFT0M(), collision.centFT0A(),
+                 collision.centFT0C(), collision.centFV0A());
         currentCollIdx = collIdx;
       }
-      for (int i=0;i<CascTable_thisCollision.size(); i++) {
+      for (int i = 0; i < CascTable_thisCollision.size(); i++) {
         casccollref(casccoll.lastIndex());
       }
     }

@@ -55,9 +55,9 @@ struct lambdakzeromcbuilder {
   {
     int pdgCode = -1, pdgCodeMother = -1, pdgCodePositive = -1, pdgCodeNegative = -1;
     bool isPhysicalPrimary = false;
-    float xmc=-999.0f, ymc=-999.0f, zmc=-999.0f;
-    float pxposmc=-999.0f, pyposmc=-999.0f, pzposmc=-999.0f;
-    float pxnegmc=-999.0f, pynegmc=-999.0f, pznegmc=-999.0f;
+    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
     for (auto& v0 : v0table) {
       int lLabel = -1;
 
@@ -82,13 +82,13 @@ struct lambdakzeromcbuilder {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 lLabel = lNegMother.globalIndex();
-                // acquire information 
-                xmc = lNegMother.vx(); 
-                ymc = lNegMother.vy(); 
-                zmc = lNegMother.vz(); 
+                // acquire information
+                xmc = lNegMother.vx();
+                ymc = lNegMother.vy();
+                zmc = lNegMother.vz();
                 pdgCode = lNegMother.pdgCode();
                 isPhysicalPrimary = lNegMother.isPhysicalPrimary();
-                if(lNegMother.has_mothers()){ 
+                if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     pdgCodeMother = lNegGrandMother.pdgCode();
                   }
@@ -101,11 +101,11 @@ struct lambdakzeromcbuilder {
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
         lLabel);
-      if(populateV0MCCores){
+      if (populateV0MCCores) {
         v0mccores(
           pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,
-          isPhysicalPrimary, xmc, ymc, zmc, 
-          pxposmc, pyposmc, pzposmc, 
+          isPhysicalPrimary, xmc, ymc, zmc,
+          pxposmc, pyposmc, pzposmc,
           pxnegmc, pynegmc, pznegmc);
       }
     }

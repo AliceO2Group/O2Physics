@@ -1317,7 +1317,7 @@ struct cascadeBuilder {
       registry.fill(HIST("hKFParticleStatistics"), 2.0f);
 
       kfcascidx(cascadecandidate.v0Id, cascade.globalIndex(),
-              cascadecandidate.bachelorId, cascade.collisionId());
+                cascadecandidate.bachelorId, cascade.collisionId());
       kfcascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                  cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                  cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
@@ -1514,7 +1514,7 @@ struct cascadeBuilder {
         cascadeTrackPar.getPxPyPzGlo(cascadeMomentumVector);
 
         trackedcascidx(cascadecandidate.v0Id, cascade.globalIndex(), cascadecandidate.bachelorId,
-                        trackedCascade.trackId(), cascade.collisionId());
+                       trackedCascade.trackId(), cascade.collisionId());
         trackedcascdata(cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
                         trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(),    // <--- stratrack position
                         cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],

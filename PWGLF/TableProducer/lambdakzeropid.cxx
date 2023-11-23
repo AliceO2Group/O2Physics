@@ -77,11 +77,11 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeropid {
   // TPC pid (copied over from central services for reference)
-  Produces<aod::V0TPC> v0tpc; // raw table for checks
+  Produces<aod::V0TPC> v0tpc;       // raw table for checks
   Produces<aod::V0TPCPID> v0tpcpid; // table with Nsigmas
 
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOF> v0tof; // raw table for checks
+  Produces<aod::V0TOF> v0tof;       // raw table for checks
   Produces<aod::V0TOFPID> v0tofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -246,7 +246,8 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void processTPC(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s){
+  void processTPC(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
+  {
     for (const auto& collision : collisions) {
       // Fire up CCDB
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -258,13 +259,13 @@ struct lambdakzeropid {
       for (auto const& v0 : V0Table_thisCollision) {
         auto const& posTrackRow = v0.posTrack_as<TracksExtraWithPID>();
         auto const& negTrackRow = v0.negTrack_as<TracksExtraWithPID>();
-        
-        // Fill raw information if requested 
-        if( fillRawPID ){
+
+        // Fill raw information if requested
+        if (fillRawPID) {
           v0tpc(posTrackRow.tpcSignal(), negTrackRow.tpcSignal());
         }
         // Fill NSigma (always provided)
-        v0tpcpid(posTrackRow.tpcNSigmaPr(), posTrackRow.tpcNSigmaPi(), 
+        v0tpcpid(posTrackRow.tpcNSigmaPr(), posTrackRow.tpcNSigmaPi(),
                  negTrackRow.tpcNSigmaPr(), negTrackRow.tpcNSigmaPi());
       }
     }
@@ -324,10 +325,10 @@ struct lambdakzeropid {
         deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
         deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
 
-        if( fillRawPID ){
-          v0tof(posTrackRow.length(), negTrackRow.length(), 
+        if (fillRawPID) {
+          v0tof(posTrackRow.length(), negTrackRow.length(),
                 deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-                deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr, 
+                deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                 deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
         }
 
@@ -354,7 +355,7 @@ struct lambdakzeropid {
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   /// basic building options (one of them must be chosen)
   PROCESS_SWITCH(lambdakzeropid, processTPC, "process dE/dx information", true); // generate TPC information tables for V0s
-  PROCESS_SWITCH(lambdakzeropid, processTOF, "process TOF information", true); // generate TOF information tables for V0s
+  PROCESS_SWITCH(lambdakzeropid, processTOF, "process TOF information", true);   // generate TOF information tables for V0s
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 

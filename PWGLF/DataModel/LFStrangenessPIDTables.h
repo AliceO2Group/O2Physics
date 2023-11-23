@@ -25,32 +25,32 @@ namespace o2::aod
 namespace v0data
 {
 // ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float);   //! positive track signal
-DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float);   //! negative track signal
+DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float); //! positive track signal
+DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float); //! negative track signal
 
-DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);   //! positive track Nsigma proton
-DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);   //! positive track Nsigma pion
-DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);   //! negative track Nsigma proton
-DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);   //! negative track Nsigma pion
+DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float); //! positive track Nsigma proton
+DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float); //! positive track Nsigma pion
+DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float); //! negative track Nsigma proton
+DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float); //! negative track Nsigma pion
 
-// ==== TOF INFORMATION ===  
+// ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
-DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);   //! positive track length
-DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);   //! negative track length
+DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length
+DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length
 
 // delta-times
-DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float);   //! positive track TOFDeltaT from pion <- lambda expectation
-DECLARE_SOA_COLUMN(PosTOFDeltaTLaPr, posTOFDeltaTLaPr, float);   //! positive track TOFDeltaT from proton <- lambda expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTLaPi, negTOFDeltaTLaPi, float);   //! negative track TOFDeltaT from pion <- lambda expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTLaPr, negTOFDeltaTLaPr, float);   //! negative track TOFDeltaT from proton <- lambda expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTLaPr, posTOFDeltaTLaPr, float); //! positive track TOFDeltaT from proton <- lambda expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTLaPi, negTOFDeltaTLaPi, float); //! negative track TOFDeltaT from pion <- lambda expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTLaPr, negTOFDeltaTLaPr, float); //! negative track TOFDeltaT from proton <- lambda expectation
 DECLARE_SOA_COLUMN(PosTOFDeltaTK0Pi, posTOFDeltaTK0Pi, float); //! positive track TOFDeltaT from pion <- k0short expectation
 DECLARE_SOA_COLUMN(NegTOFDeltaTK0Pi, negTOFDeltaTK0Pi, float); //! positive track TOFDeltaT from pion <- k0short expectation
 
 // n-sigmas
-DECLARE_SOA_COLUMN(PosNSigmaLaPi, posNSigmaLaPi, float);   //! positive track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(PosNSigmaLaPr, posNSigmaLaPr, float);   //! positive track NSigma from proton <- lambda expectation
-DECLARE_SOA_COLUMN(NegNSigmaLaPi, negNSigmaLaPi, float);   //! negative track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(NegNSigmaLaPr, negNSigmaLaPr, float);   //! negative track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(PosNSigmaLaPi, posNSigmaLaPi, float); //! positive track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(PosNSigmaLaPr, posNSigmaLaPr, float); //! positive track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(NegNSigmaLaPi, negNSigmaLaPi, float); //! negative track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(NegNSigmaLaPr, negNSigmaLaPr, float); //! negative track NSigma from proton <- lambda expectation
 DECLARE_SOA_COLUMN(PosNSigmaK0Pi, posNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(NegNSigmaK0Pi, negNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
 } // namespace v0data
@@ -76,27 +76,27 @@ namespace cascdata
 // ==== TPC INFORMATION ===
 DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float);   //! positive track signal
 DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float);   //! negative track signal
-DECLARE_SOA_COLUMN(BachTPCSignal, bachTPCSignal, float);   //! negative track signal
+DECLARE_SOA_COLUMN(BachTPCSignal, bachTPCSignal, float); //! negative track signal
 
 DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);   //! positive track Nsigma proton
 DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);   //! positive track Nsigma pion
 DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);   //! negative track Nsigma proton
 DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);   //! negative track Nsigma pion
-DECLARE_SOA_COLUMN(BachTPCNSigmaKa, bachTPCNSigmaKa, float);   //! negative track Nsigma proton
-DECLARE_SOA_COLUMN(BachTPCNSigmaPi, bachTPCNSigmaPi, float);   //! negative track Nsigma pion
+DECLARE_SOA_COLUMN(BachTPCNSigmaKa, bachTPCNSigmaKa, float); //! negative track Nsigma proton
+DECLARE_SOA_COLUMN(BachTPCNSigmaPi, bachTPCNSigmaPi, float); //! negative track Nsigma pion
 
-// ==== TOF INFORMATION ===  
+// ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);   //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);   //! negative track length
-DECLARE_SOA_COLUMN(BachTOFLength, bachTOFLength, float);   //! bachelor track length
+DECLARE_SOA_COLUMN(BachTOFLength, bachTOFLength, float); //! bachelor track length
 
 // delta-times
-DECLARE_SOA_COLUMN(PosTOFDeltaTXiPi, posTOFDeltaTXiPi, float);         //! positive track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(PosTOFDeltaTXiPr, posTOFDeltaTXiPr, float);         //! positive track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTXiPi, negTOFDeltaTXiPi, float);         //! negative track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTXiPr, negTOFDeltaTXiPr, float);         //! negative track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(BachTOFDeltaTXiPi, bachTOFDeltaTXiPi, float);       //! bachelor track TOFDeltaT from pion <- xi expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTXiPi, posTOFDeltaTXiPi, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTXiPr, posTOFDeltaTXiPr, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTXiPi, negTOFDeltaTXiPi, float);   //! negative track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTXiPr, negTOFDeltaTXiPr, float);   //! negative track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(BachTOFDeltaTXiPi, bachTOFDeltaTXiPi, float); //! bachelor track TOFDeltaT from pion <- xi expectation
 DECLARE_SOA_COLUMN(PosTOFDeltaTOmPi, posTOFDeltaTOmPi, float);   //! positive track TOFDeltaT from pion <- lambda <- omega expectation
 DECLARE_SOA_COLUMN(PosTOFDeltaTOmPr, posTOFDeltaTOmPr, float);   //! positive track TOFDeltaT from pion <- lambda <- omega expectation
 DECLARE_SOA_COLUMN(NegTOFDeltaTOmPi, negTOFDeltaTOmPi, float);   //! negative track TOFDeltaT from pion <- lambda <- omega expectation
@@ -109,11 +109,11 @@ DECLARE_SOA_COLUMN(PosNSigmaXiPr, posNSigmaXiPr, float);         //! positive tr
 DECLARE_SOA_COLUMN(NegNSigmaXiPi, negNSigmaXiPi, float);         //! negative track NSigma from pion <- lambda <- xi expectation
 DECLARE_SOA_COLUMN(NegNSigmaXiPr, negNSigmaXiPr, float);         //! negative track NSigma from proton <- lambda <- xi expectation
 DECLARE_SOA_COLUMN(BachNSigmaXiPi, bachNSigmaXiPi, float);       //! bachelor track NSigma from pion <- xi expectation
-DECLARE_SOA_COLUMN(PosNSigmaOmPi, posNSigmaOmPi, float);   //! positive track NSigma from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(PosNSigmaOmPr, posNSigmaOmPr, float);   //! positive track NSigma from proton <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(NegNSigmaOmPi, negNSigmaOmPi, float);   //! negative track NSigma from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(NegNSigmaOmPr, negNSigmaOmPr, float);   //! negative track NSigma from proton <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(BachNSigmaOmKa, bachNSigmaOmKa, float); //! bachelor track NSigma from kaon <- omega expectation
+DECLARE_SOA_COLUMN(PosNSigmaOmPi, posNSigmaOmPi, float);         //! positive track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(PosNSigmaOmPr, posNSigmaOmPr, float);         //! positive track NSigma from proton <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegNSigmaOmPi, negNSigmaOmPi, float);         //! negative track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegNSigmaOmPr, negNSigmaOmPr, float);         //! negative track NSigma from proton <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(BachNSigmaOmKa, bachNSigmaOmKa, float);       //! bachelor track NSigma from kaon <- omega expectation
 } // namespace cascdata
 
 DECLARE_SOA_TABLE(CascTPC, "AOD", "CASCTPC", // raw information table (for debug, etc)
