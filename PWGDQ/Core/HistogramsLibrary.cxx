@@ -529,8 +529,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("vertexing")) {
         hm->AddHistogram(histClass, "UsedKF", "", false, 2, -0.5, 1.5, VarManager::kUsedKF);
         hm->AddHistogram(histClass, "Lz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLz);
-        hm->AddHistogram(histClass, "Lxy", "", false, 41000, -2.0, 2.0,  VarManager::kVertexingLxy);
-        hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -2.0, 2.0,  VarManager::kVertexingLxyz);
+        hm->AddHistogram(histClass, "Lxy", "", false, 41000, -2.0, 2.0, VarManager::kVertexingLxy);
+        hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyz);
         hm->AddHistogram(histClass, "Tauz", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauz);
         hm->AddHistogram(histClass, "Tauxy", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauxy);
       }
@@ -563,36 +563,35 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("run2-vertexing-definitions")) {
         hm->AddHistogram(histClass, "LzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLzProjected);
-        hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -2.0, 2.0,  VarManager::kVertexingLxyProjected);
+        hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyzProjected);
         hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyProjNs", "", false, 4000, -0.1, 0.1, VarManager::kVertexingTauxyProjectedNs);
         hm->AddHistogram(histClass, "TauxyProjCm", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
       }
-      if (subGroupStr.Contains("multidimentional-vertexing-histograms")) { 
+      if (subGroupStr.Contains("multidimentional-vertexing-histograms")) {
         hm->AddHistogram(histClass, "pT_TauxyProj", "", false, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected, 20, 0.0, 20., VarManager::kPt);
         hm->AddHistogram(histClass, "InvMass_TauxyProj", "", false, 500, 0.0, 5.0, VarManager::kMass, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
         hm->AddHistogram(histClass, "Eta_TauxyProj", "", false, 40, -2.0, 2.0, VarManager::kEta, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
         hm->AddHistogram(histClass, "Rap_TauxyProj", "", false, 200, -1.0, 1.0, VarManager::kRap, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
 
-
         const int kNvarsPair = 4;
         const int kInvMassNbins = 3;
-        double InvMassBinLims[kInvMassNbins + 1] = {2.2, 2.6, 3.4, 3.6}; 
+        double InvMassBinLims[kInvMassNbins + 1] = {2.2, 2.6, 3.4, 3.6};
 
-        const int kPtNbins = 10; 
-        double PtBinLims[kPtNbins + 1] = {1., 2., 3., 4., 5., 6., 7., 8., 9., 12., 20.}; 
+        const int kPtNbins = 10;
+        double PtBinLims[kPtNbins + 1] = {1., 2., 3., 4., 5., 6., 7., 8., 9., 12., 20.};
 
         const int kTauNBins = 500;
-        double TauBinLims[kTauNBins + 1]; 
+        double TauBinLims[kTauNBins + 1];
         for (int i = 0; i <= kTauNBins; ++i)
-            TauBinLims[i] = -0.3 + (0.0015* i);
+          TauBinLims[i] = -0.3 + (0.0015 * i);
 
         TArrayD nCutsBinLimits[kNvarsPair];
         nCutsBinLimits[0] = TArrayD(kInvMassNbins + 1, InvMassBinLims);
         nCutsBinLimits[1] = TArrayD(kPtNbins + 1, PtBinLims);
-        nCutsBinLimits[2] = TArrayD(kTauNBins  + 1, TauBinLims);
-        nCutsBinLimits[3] = TArrayD(kTauNBins  + 1, TauBinLims);
+        nCutsBinLimits[2] = TArrayD(kTauNBins + 1, TauBinLims);
+        nCutsBinLimits[3] = TArrayD(kTauNBins + 1, TauBinLims);
 
         int varsPair[kNvarsPair] = {VarManager::kMass, VarManager::kPt, VarManager::kVertexingTauzProjected, VarManager::kVertexingTauxyProjected};
         hm->AddHistogram(histClass, "tau_MultiD", "Invariant mass vs. pT vs. eta vs. rapidity vs. Run2 tau", kNvarsPair, varsPair, nCutsBinLimits);
@@ -729,7 +728,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
     }
   }
-    
+
   if (groupStr.Contains("dilepton-hadron-mass")) {
     hm->AddHistogram(histClass, "Mass_Dilepton", "", false, 125, 0.0, 5.0, VarManager::kPairMassDau);
     hm->AddHistogram(histClass, "Mass_Hadron", "", false, 125, 0.0, 5.0, VarManager::kMassDau);
@@ -746,20 +745,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Lz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLz);
     hm->AddHistogram(histClass, "Lxy", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxy);
     hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyz);
-    hm->AddHistogram(histClass, "Tauz", "", false, 4000, -0.01, 0.01 ,VarManager::kVertexingTauz);
+    hm->AddHistogram(histClass, "Tauz", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauz);
     hm->AddHistogram(histClass, "Tauxy", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauxy);
     hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);
     hm->AddHistogram(histClass, "LzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLzErr);
     hm->AddHistogram(histClass, "TauzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingTauzErr);
     hm->AddHistogram(histClass, "VtxingProcCode", "", false, 10, 0.0, 10.0, VarManager::kVertexingProcCode);
     hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
-    hm->AddHistogram(histClass, "LzProj", "", false, 1000, -2.0, 2.0,  VarManager::kVertexingLzProjected);
+    hm->AddHistogram(histClass, "LzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLzProjected);
     hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyProjected);
     hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyzProjected);
-    hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5,VarManager::kVertexingTauzProjected);
-    hm->AddHistogram(histClass, "TauxyProj", "", false, 4000, -0.5, 0.5,VarManager::kVertexingTauxyProjected);
+    hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
+    hm->AddHistogram(histClass, "TauxyProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
     hm->AddHistogram(histClass, "CosPointingAngle", "", false, 100, 0.0, 1.0, VarManager::kCosPointingAngle);
-
   }
 
   if (groupStr.Contains("dilepton-hadron-correlation")) {
