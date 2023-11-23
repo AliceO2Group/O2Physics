@@ -82,7 +82,7 @@ class MlResponse
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of paths (" << onnxFiles.size() << ")! Please check your configurables.";
     }
 
-    for (auto iFile{0}; iFile<mNModels; ++iFile) {
+    for (auto iFile{0}; iFile < mNModels; ++iFile) {
       std::map<std::string, std::string> metadata;
       bool retrieveSuccess = ccdbApi.retrieveBlob(pathsCCDB[iFile], ".", metadata, timestampCCDB, false, onnxFiles[iFile]);
       if (retrieveSuccess) {
