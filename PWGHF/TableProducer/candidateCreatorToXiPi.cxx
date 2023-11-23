@@ -428,7 +428,7 @@ struct HfCandidateCreatorToXiPiMc {
     int indexRecCharmBaryon = -1;
     int8_t sign = -9;
     int8_t flag = 0;
-    int8_t origin = 0; //to be used for prompt/non prompt
+    int8_t origin = 0; // to be used for prompt/non prompt
     int8_t debug = 0;
     int8_t debugGenCharmBar = 0;
     int8_t debugGenXi = 0;
