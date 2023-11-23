@@ -98,7 +98,7 @@ struct PCMQCMC {
     for (auto& cut : fPCMCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg", "mc");
     }
 
     // for V0s
@@ -218,6 +218,10 @@ struct PCMQCMC {
 
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
+              auto mcleg = leg.template emmcparticle_as<aod::EMMCParticles>();
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mcleg.pt(), (v0.pt() - mcleg.pt()) / mcleg.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mcleg.pt(), v0.eta() - mcleg.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mcleg.pt(), v0.phi() - mcleg.phi());
             }
           }
         } // end of v0 loop
