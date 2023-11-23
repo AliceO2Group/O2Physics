@@ -303,7 +303,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Momentum of the Leading Particle
-    auto leading_track = tracks.iteratorAt(leading_ID);
+    const auto& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Array of Particles inside Jet
@@ -329,7 +329,7 @@ struct nuclei_in_jets {
           continue;
 
         // Get Particle Momentum
-        auto stored_track = tracks.iteratorAt(particle_ID[i]);
+        const auto& stored_track = tracks.iteratorAt(particle_ID[i]);
         TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
         // Variables
@@ -363,7 +363,7 @@ struct nuclei_in_jets {
         jet_particle_ID.push_back(label_jet_particle);
 
         // Update Momentum of Leading Particle
-        auto jet_track = tracks.iteratorAt(label_jet_particle);
+        const auto& jet_track = tracks.iteratorAt(label_jet_particle);
         TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
         p_leading = p_leading + p_i;
 
@@ -400,7 +400,7 @@ struct nuclei_in_jets {
         continue;
 
       // Get UE Track
-      auto ue_track = tracks.iteratorAt(particle_ID[i]);
+      const auto& ue_track = tracks.iteratorAt(particle_ID[i]);
 
       // Variables
       float deltaEta1 = ue_track.eta() - v1.Eta();
@@ -432,7 +432,7 @@ struct nuclei_in_jets {
     // Loop over particles inside Jet
     for (int i = 0; i < jet_particle_ID.size(); i++) {
 
-      auto jet_track = tracks.iteratorAt(jet_particle_ID[i]);
+      const auto& jet_track = tracks.iteratorAt(jet_particle_ID[i]);
       TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
 
       float deltaEta = p_i.Eta() - p_leading.Eta();
@@ -478,7 +478,7 @@ struct nuclei_in_jets {
     // Loop over particles inside UE
     for (int i = 0; i < ue_particle_ID.size(); i++) {
 
-      auto ue_track = tracks.iteratorAt(ue_particle_ID[i]);
+      const auto& ue_track = tracks.iteratorAt(ue_particle_ID[i]);
 
       // Track Selection
       if (!passedTrackSelection(ue_track))
