@@ -536,7 +536,7 @@ struct HfCandidateCreatorToXiPiMc {
       debugGenCharmBar = 0;
       debugGenXi = 0;
       debugGenLambda = 0;
-      origin = 0;
+      origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
