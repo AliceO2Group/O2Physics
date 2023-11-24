@@ -445,7 +445,7 @@ struct HfCandidateCreatorToXiPiMc {
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
       flag = 0;
-      origin = 0;
+      origin = RecoDecay::OriginType::None;
       debug = 0;
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
                                        candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
