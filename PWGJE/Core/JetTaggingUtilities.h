@@ -30,6 +30,7 @@
 #include "TF1.h"
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
 enum JetTaggingSpecies {
@@ -149,7 +150,7 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
 {
 
   int origin = -1;
-  for (auto& particle : jet.template tracks_as<U>()) {
+  for (const auto& particle : jet.template tracks_as<U>()) {
     origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
@@ -213,7 +214,7 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
  * @param dRMax maximum distance in eta-phi of initiating heavy-flavour quark from the jet axis
  */
 
-template <typename T, typename U, typename V>
+template <typename T, typename U>
 int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25)
 {
 
