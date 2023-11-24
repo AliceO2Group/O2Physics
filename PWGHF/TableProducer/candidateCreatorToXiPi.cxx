@@ -72,7 +72,7 @@ struct HfCandidateCreatorToXiPi {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  // cascade cuts
+  // cascade cuts for indexes combinatorics
   Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
   Configurable<double> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascade"};
   Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3, "Max cascade DCA to PV in xy plane"};
@@ -88,13 +88,17 @@ struct HfCandidateCreatorToXiPi {
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
+  Filter filterSelectIndexes = (aod:: hf_track_index::HFflag == 1 || aod:: hf_track_index::HFflag == 3)
+
 
   Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
+  Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::CollisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
 
@@ -107,19 +111,14 @@ struct HfCandidateCreatorToXiPi {
     runNumber = 0;
   }
 
-  void processDoNoCombineIdx(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function
-  }
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDoNoCombineIdx, "Don't do indexes combinatorics", false);
 
-  void processDoCombineIdx(SelectedCollisions const& collisions,
-                           aod::BCsWithTimestamps const& bcWithTimeStamps,
-                           MyTracks const& tracks,
-                           FilteredHfTrackAssocSel const& trackIndices,
-                           MyCascTable const& cascades,
-                           MyV0Table const&,
-                           aod::V0sLinked const&)
+  void processIdxCombinatorics(SelectedCollisions const& collisions,
+                               aod::BCsWithTimestamps const& bcWithTimeStamps,
+                               MyTracks const& tracks,
+                               FilteredHfTrackAssocSel const& trackIndices,
+                               MyCascTable const& cascades,
+                               MyV0Table const&,
+                               aod::V0sLinked const&)
   {
 
     double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
@@ -409,83 +408,15 @@ struct HfCandidateCreatorToXiPi {
       }   // loop over cascades
     }     // close loop collisions
   }       // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDoCombineIdx, "Do indexes combinatorics", true);
-}; // end of struct
+  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processIdxCombinatorics, "Do indexes combinatorics", true);
 
-
-
-
-
-struct HfCandidateCreatorToXiPiDerivedData {
-  Produces<aod::HfCandToXiPiDD> rowCandidateDD;
-
-  Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimCreator.cxx"};
-
-  Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
-  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> maxDXYIni{"maxDXYIni", 4., "reject (if>0) PCA candidate if tracks DXY exceeds threshold"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
-  Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
-
-  // magnetic field setting from CCDB
-  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
-  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
-  int runNumber;
-
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using MyTracks = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
-  using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
-  // ambiguous tracks FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>> already handled in trackIndexSkimCreator
-
-  Filter filterSelectIndexes = (aod:: hf_track_index::HFflag == 1 || aod:: hf_track_index::HFflag == 3)
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  //Filter aod::hf_sel_track::isSelProng >= 4 already applied in trackIndexSkimCreator
-  
-  //Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
-  //Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
-  //Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
-  Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::CollisionId;
-
-  OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-
-  void init(InitContext const&)
-  {
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    runNumber = 0;
-  }
-
-  void processDoNoUseDerivedData(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function
-  }
-  PROCESS_SWITCH(HfCandidateCreatorToXiPiDerivedData, processDoNoUseDerivedData, "Don't use derived data", true);
-
-  void processUseDerivedData(SelectedCollisions const& collisions,
-                             aod::BCsWithTimestamps const& bcWithTimeStamps,
-                             MyTracks const& tracks,
-                             //FilteredHfTrackAssocSel const& trackIndices,
-                             MyCascTable const& cascades,
-                             MyV0Table const&,
-                             aod::V0sLinked const&,
-                             MySkimIdx const& candidates)
+  void processDerivedData(SelectedCollisions const& collisions,
+                          aod::BCsWithTimestamps const& bcWithTimeStamps,
+                          MyTracks const& tracks,
+                          MyCascTable const& cascades,
+                          MyV0Table const&,
+                          aod::V0sLinked const&,
+                          MySkimIdx const& candidates)
   {
 
     double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
@@ -692,7 +623,7 @@ struct HfCandidateCreatorToXiPiDerivedData {
           hInvMassCharmBaryon->Fill(mCharmBaryon);
 
           // fill the table
-          rowCandidateDD(collision.globalIndex(),
+          rowCandidate(collision.globalIndex(),
                        pvCoord[0], pvCoord[1], pvCoord[2],
                        vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
@@ -722,11 +653,11 @@ struct HfCandidateCreatorToXiPiDerivedData {
                        decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
                        hfFlag);
 
-
       }   // loop over LF Cascade-bachelor candidates
     }     // loop over collisions
   }       // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiDerivedData, processUseDerivedData, "Use derived data", false);
+
 }; // end of struct
 
 
@@ -897,6 +828,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorToXiPi>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorToXiPiDerivedData>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorToXiPiMc>(cfgc)};
 }

@@ -278,8 +278,8 @@ struct HfTreeCreatorToXiPi {
       debugMc);
   }
 
-  void processCombinatoricsData(aod::Collisions const& collisions,
-                                soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processData(aod::Collisions const& collisions,
+                   soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -287,25 +287,11 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, -7, -7);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processCombinatoricsData, "Process dedicated combinatorics data", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
 
 
-
-  void processDerivedData(aod::Collisions const& collisions,
-                          soa::Join<aod::HfCandToXiPiDD, aod::HfSelToXiPi> const& candidates)
-  {
-    // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7);
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDerivedData, "Process derived data", false);
-
-
-
-  void processCombinatoricsMc(aod::Collisions const& collisions,
-                              soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
+  void processMc(aod::Collisions const& collisions,
+                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -313,21 +299,9 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processCombinatoricsMc, "Process dedicated combinatorics MC", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);
 
-
-
-  void processDerivedDataMc(aod::Collisions const& collisions,
-                            soa::Join<aod::HfCandToXiPiDD, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
-  {
-    // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDerivedDataMc, "Process derived data MC", false);
-};
+}; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
