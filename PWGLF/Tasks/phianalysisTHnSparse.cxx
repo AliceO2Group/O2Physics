@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct rsnanalysisTHnSparse {
+struct phianalysisTHnSparse {
 
   SliceCache cache;
 
@@ -206,7 +206,7 @@ struct rsnanalysisTHnSparse {
     }
   }
 
-  PROCESS_SWITCH(rsnanalysisTHnSparse, processData, "Process Event for Data", true);
+  PROCESS_SWITCH(phianalysisTHnSparse, processData, "Process Event for Data", true);
 
   void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
@@ -280,7 +280,7 @@ struct rsnanalysisTHnSparse {
     }
   }
 
-  PROCESS_SWITCH(rsnanalysisTHnSparse, processTrue, "Process Event for MC reconstruction.", false);
+  PROCESS_SWITCH(phianalysisTHnSparse, processTrue, "Process Event for MC reconstruction.", false);
 
   int numberofEntries = 0;
 
@@ -335,11 +335,11 @@ struct rsnanalysisTHnSparse {
     }
   }
 
-  PROCESS_SWITCH(rsnanalysisTHnSparse, processGen, "Process generated.", false);
+  PROCESS_SWITCH(phianalysisTHnSparse, processGen, "Process generated.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<rsnanalysisTHnSparse>(cfgc)};
+    adaptAnalysisTask<phianalysisTHnSparse>(cfgc)};
 }
