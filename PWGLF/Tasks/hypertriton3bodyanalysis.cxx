@@ -100,12 +100,12 @@ struct hypertriton3bodyQa {
       registry.fill(HIST("hMassHypertriton"), vtx.mHypertriton());
       registry.fill(HIST("hMassAntiHypertriton"), vtx.mAntiHypertriton());
       registry.fill(HIST("hTOFPIDDeuteron"), track2.tofNSigmaDe());
-      registry.fill(HIST("hDeuTOFNsigma"), track2.tpcInnerParam()*track2.sign(), track2.tofNSigmaDe());
-      if (std::abs(track2.tpcNSigmaDe()) < 5){
+      registry.fill(HIST("hDeuTOFNsigma"), track2.tpcInnerParam() * track2.sign(), track2.tofNSigmaDe());
+      if (std::abs(track2.tpcNSigmaDe()) < 5) {
         registry.fill(HIST("hTOFPIDDeuteronWithTPC"), track2.tofNSigmaDe());
-        registry.fill(HIST("hDeuTOFNsigmaWithTPC"), track2.tpcInnerParam()*track2.sign(), track2.tofNSigmaDe());
+        registry.fill(HIST("hDeuTOFNsigmaWithTPC"), track2.tpcInnerParam() * track2.sign(), track2.tofNSigmaDe());
       }
-      if (track2.sign() > 0){
+      if (track2.sign() > 0) {
         registry.fill(HIST("hPtProton"), track0.pt());
         registry.fill(HIST("hPtAntiPion"), track1.pt());
         registry.fill(HIST("hPtDeuteron"), track2.pt());
@@ -113,8 +113,7 @@ struct hypertriton3bodyQa {
         registry.fill(HIST("hDCAPionToPV"), vtx.dcatrack1topv());
         registry.fill(HIST("hProtonTPCNcls"), track0.tpcNClsCrossedRows());
         registry.fill(HIST("hPionTPCNcls"), track1.tpcNClsCrossedRows());
-      }
-      else{
+      } else {
         registry.fill(HIST("hPtPion"), track0.pt());
         registry.fill(HIST("hPtAntiProton"), track1.pt());
         registry.fill(HIST("hPtAntiDeuteron"), track2.pt());
@@ -277,7 +276,7 @@ struct hypertriton3bodyAnalysis {
         continue;
       }
       registry.fill(HIST("hSelectedCandidatesCounter"), kCandDcaDau);
-      if ( (track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
+      if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
       registry.fill(HIST("hSelectedCandidatesCounter"), kCandTOFPID);
