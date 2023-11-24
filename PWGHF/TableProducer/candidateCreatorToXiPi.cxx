@@ -263,10 +263,18 @@ struct HfCandidateCreatorToXiPi {
           auto trackParVarPi = getTrackParCov(trackPion);
 
           // reconstruct charm baryon with DCAFitter
-          int nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+          int nVtxFromFitterCharmBaryon = 0;
+          try{
+            nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+          } catch (...) {
+            LOG(error) << "Exception caught in charm DCA fitter process call!";
+            hFitterExceptions->Fill(1);
+            continue;
+          }
           if (nVtxFromFitterCharmBaryon == 0) {
             continue;
           }
+          hFitterExceptions->Fill(0);
           auto vertexCharmBaryonFromFitter = df.getPCACandidate();
           auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
           std::array<float, 3> pVecCascAsD;
@@ -509,10 +517,19 @@ struct HfCandidateCreatorToXiPi {
         //------------reconstruct charm baryon decay vtx---------------
         auto trackParVarPi = getTrackParCov(trackPion); // charm bachelor pion track to be processed with DCAFitter
 
-        int nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+        // reconstruct charm baryon with DCAFitter
+        int nVtxFromFitterCharmBaryon = 0;
+        try{
+          nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+        } catch (...) {
+          LOG(error) << "Exception caught in charm DCA fitter process call!";
+          hFitterExceptions->Fill(1);
+          continue;
+        }
         if (nVtxFromFitterCharmBaryon == 0) {
           continue;
         }
+        hFitterExceptions->Fill(0);
         auto vertexCharmBaryonFromFitter = df.getPCACandidate();
         auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
         std::array<float, 3> pVecCascAsD;
