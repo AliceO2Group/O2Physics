@@ -923,28 +923,26 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     return;
   } /// end of performPvRefitTrack function
 
-  /// Partition for PV contributors
-
+  /// Selection tag for tracks
+  /// \param collision is the collision iterator
+  /// \param tracks is the entire track table
+  /// \param trackIndicesCollision are the track indices associated to this collision (from track-to-collision-associator)
+  /// \param pvContrCollision are the PV contributors of this collision
+  /// \param bcWithTimeStamps is the bc with timestamp for PVrefit
+  /// \param pvRefitDcaPerTrack is a vector to be filled with track dcas after PV refit
+  /// \param pvRefitPvCoordPerTrack is a vector to be filled with PV coordinates after PV refit
+  /// \param pvRefitPvCovMatrixPerTrack is a vector to be filled with PV coordinate covariances after PV refit
+  /// \return true if the track is compatible with a proton hypothesis
   template <int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
-                       TTracks const& tracks,                            // all tracks
-                       GroupedTrackIndices const& trackIndicesCollision, // track indices associated to this collision (from track-to-collision-associator)
-                       GroupedPvContributors const& pvContrCollision,    // PV contributors of this collision
-                       aod::BCsWithTimestamps const& bcWithTimeStamps,   // for PV refit
-                       int64_t numTracksThisColl,                        // number of tracks in this collision (for PV refit)
-                       int64_t offsetTracksThisColl)                     // offset of tracks in this collision with respect to total table (for PV refit)
+                       TTracks const& tracks,
+                       GroupedTrackIndices const& trackIndicesCollision,
+                       GroupedPvContributors const& pvContrCollision,
+                       aod::BCsWithTimestamps const& bcWithTimeStamps,
+                       std::vector<std::array<float, 2>>& pvRefitDcaPerTrack,
+                       std::vector<std::array<float, 3>>& pvRefitPvCoordPerTrack,
+                       std::vector<std::array<float, 6>>& pvRefitPvCovMatrixPerTrack)
   {
-    // prepare vectors to cache quantities needed for PV refit
-    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
-    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
-    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
-    if (doPvRefit) {
-      pvRefitDcaPerTrack.resize(numTracksThisColl);
-      pvRefitPvCoordPerTrack.resize(numTracksThisColl);
-      pvRefitPvCovMatrixPerTrack.resize(numTracksThisColl);
-      tabPvRefitTrack.reserve(numTracksThisColl);
-    }
-
     auto thisCollId = collision.globalIndex();
     for (const auto& trackId : trackIndicesCollision) {
       int statusProng = BIT(CandidateType::NCandidateTypes) - 1; // all bits on
@@ -980,9 +978,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         }
         performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
         // we subtract the offset since trackIdx is the global index referred to the total track table
-        pvRefitDcaPerTrack[trackIdx - offsetTracksThisColl] = pvRefitDcaXYDcaZ;
-        pvRefitPvCoordPerTrack[trackIdx - offsetTracksThisColl] = pvRefitPvCoord;
-        pvRefitPvCovMatrixPerTrack[trackIdx - offsetTracksThisColl] = pvRefitPvCovMatrix;
+        pvRefitDcaPerTrack[trackIdx] = pvRefitDcaXYDcaZ;
+        pvRefitPvCoordPerTrack[trackIdx] = pvRefitPvCoord;
+        pvRefitPvCovMatrixPerTrack[trackIdx] = pvRefitPvCovMatrix;
       } else if (track.collisionId() != thisCollId) {
         auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
@@ -1008,21 +1006,25 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       int8_t isProton = isSelectedProton<pidStrategy>(track);
       rowSelectedTrack(statusProng, isProton);
     }
+  }
 
-    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
-      for (auto iTrack{0}; iTrack < numTracksThisColl; ++iTrack) {
-        tabPvRefitTrack(pvRefitPvCoordPerTrack[iTrack][0], pvRefitPvCoordPerTrack[iTrack][1], pvRefitPvCoordPerTrack[iTrack][2],
-                        pvRefitPvCovMatrixPerTrack[iTrack][0], pvRefitPvCovMatrixPerTrack[iTrack][1], pvRefitPvCovMatrixPerTrack[iTrack][2], pvRefitPvCovMatrixPerTrack[iTrack][3], pvRefitPvCovMatrixPerTrack[iTrack][4], pvRefitPvCovMatrixPerTrack[iTrack][5],
-                        pvRefitDcaPerTrack[iTrack][0], pvRefitDcaPerTrack[iTrack][1]);
-      }
+  /// Helper function to fill PVrefit table
+  /// \param pvRefitDcaPerTrack is a vector to be filled with track dcas after PV refit
+  /// \param pvRefitPvCoordPerTrack is a vector to be filled with PV coordinates after PV refit
+  /// \param pvRefitPvCovMatrixPerTrack is a vector to be filled with PV coordinate covariances after PV refit
+  /// \return true if the track is compatible with a proton hypothesis
+  void fillPvRefitTable(std::vector<std::array<float, 2>>& pvRefitDcaPerTrack,
+                        std::vector<std::array<float, 3>>& pvRefitPvCoordPerTrack,
+                        std::vector<std::array<float, 6>>& pvRefitPvCovMatrixPerTrack)
+  {
+    for (auto iTrack{0u}; iTrack < pvRefitDcaPerTrack.size(); ++iTrack) {
+      tabPvRefitTrack(pvRefitPvCoordPerTrack[iTrack][0], pvRefitPvCoordPerTrack[iTrack][1], pvRefitPvCoordPerTrack[iTrack][2],
+                      pvRefitPvCovMatrixPerTrack[iTrack][0], pvRefitPvCovMatrixPerTrack[iTrack][1], pvRefitPvCovMatrixPerTrack[iTrack][2], pvRefitPvCovMatrixPerTrack[iTrack][3], pvRefitPvCovMatrixPerTrack[iTrack][4], pvRefitPvCovMatrixPerTrack[iTrack][5],
+                      pvRefitDcaPerTrack[iTrack][0], pvRefitDcaPerTrack[iTrack][1]);
     }
   }
 
   Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<TracksWithSelAndDca> tracksPerCollision = aod::track_association::collisionId;
-  Preslice<TracksWithSelAndDcaAndPidTpc> tracksWithPidTpcPerCollision = aod::track_association::collisionId;
-  Preslice<TracksWithSelAndDcaAndPidTof> tracksWithPidTofPerCollision = aod::track_association::collisionId;
-  Preslice<TracksWithSelAndDcaAndPidTpcTof> tracksWithPidTpcTofPerCollision = aod::track_association::collisionId;
   Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
   Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
   Partition<TracksWithSelAndDcaAndPidTof> pvContributorsWithPidTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
@@ -1034,13 +1036,27 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     rowSelectedTrack.reserve(tracks.size());
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      auto numTracks = tracks.size();
+      pvRefitDcaPerTrack.resize(numTracks);
+      pvRefitPvCoordPerTrack.resize(numTracks);
+      pvRefitPvCovMatrixPerTrack.resize(numTracks);
+      tabPvRefitTrack.reserve(numTracks);
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      auto groupedTracks = tracks.sliceBy(tracksPerCollision, thisCollId); // we need to know the number of tracks in this collision and the offset for the PV refit
       auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, thisCollId, cache);
-      runTagSelTracks<NoPid>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, groupedTracks.size(), groupedTracks.offset());
+      runTagSelTracks<NoPid>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
+    }
+
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
+      fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
 
@@ -1052,13 +1068,27 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                            aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     rowSelectedTrack.reserve(tracks.size());
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      auto numTracks = tracks.size();
+      pvRefitDcaPerTrack.resize(numTracks);
+      pvRefitPvCoordPerTrack.resize(numTracks);
+      pvRefitPvCovMatrixPerTrack.resize(numTracks);
+      tabPvRefitTrack.reserve(numTracks);
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      auto groupedTracks = tracks.sliceBy(tracksWithPidTpcPerCollision, thisCollId); // we need to know the number of tracks in this collision and the offset for the PV refit
       auto pvContrCollision = pvContributorsWithPidTpc->sliceByCached(aod::track::collisionId, thisCollId, cache);
-      runTagSelTracks<PidTpcOnly>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, groupedTracks.size(), groupedTracks.offset());
+      runTagSelTracks<PidTpcOnly>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
+    }
+
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
+      fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
 
@@ -1070,13 +1100,27 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                            aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     rowSelectedTrack.reserve(tracks.size());
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      auto numTracks = tracks.size();
+      pvRefitDcaPerTrack.resize(numTracks);
+      pvRefitPvCoordPerTrack.resize(numTracks);
+      pvRefitPvCovMatrixPerTrack.resize(numTracks);
+      tabPvRefitTrack.reserve(numTracks);
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      auto groupedTracks = tracks.sliceBy(tracksWithPidTofPerCollision, thisCollId); // we need to know the number of tracks in this collision and the offset for the PV refit
       auto pvContrCollision = pvContributorsWithPidTof->sliceByCached(aod::track::collisionId, thisCollId, cache);
-      runTagSelTracks<PidTofOnly>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, groupedTracks.size(), groupedTracks.offset());
+      runTagSelTracks<PidTofOnly>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
+    }
+
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
+      fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
 
@@ -1088,13 +1132,27 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     rowSelectedTrack.reserve(tracks.size());
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      auto numTracks = tracks.size();
+      pvRefitDcaPerTrack.resize(numTracks);
+      pvRefitPvCoordPerTrack.resize(numTracks);
+      pvRefitPvCovMatrixPerTrack.resize(numTracks);
+      tabPvRefitTrack.reserve(numTracks);
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      auto groupedTracks = tracks.sliceBy(tracksWithPidTpcTofPerCollision, thisCollId); // we need to know the number of tracks in this collision and the offset for the PV refit
       auto pvContrCollision = pvContributorsWithPidTpcTof->sliceByCached(aod::track::collisionId, thisCollId, cache);
-      runTagSelTracks<PidTpcOrTof>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, groupedTracks.size(), groupedTracks.offset());
+      runTagSelTracks<PidTpcOrTof>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
+    }
+
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
+      fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
 
@@ -1106,13 +1164,27 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                                  aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     rowSelectedTrack.reserve(tracks.size());
+    // prepare vectors to cache quantities needed for PV refit
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      auto numTracks = tracks.size();
+      pvRefitDcaPerTrack.resize(numTracks);
+      pvRefitPvCoordPerTrack.resize(numTracks);
+      pvRefitPvCovMatrixPerTrack.resize(numTracks);
+      tabPvRefitTrack.reserve(numTracks);
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      auto groupedTracks = tracks.sliceBy(tracksWithPidTpcTofPerCollision, thisCollId); // we need to know the number of tracks in this collision and the offset for the PV refit
       auto pvContrCollision = pvContributorsWithPidTpcTof->sliceByCached(aod::track::collisionId, thisCollId, cache);
-      runTagSelTracks<PidTpcAndTof>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, groupedTracks.size(), groupedTracks.offset());
+      runTagSelTracks<PidTpcAndTof>(collision, tracks, groupedTrackIndices, pvContrCollision, bcWithTimeStamps, pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
+    }
+
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track and not track index)
+      fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
 
