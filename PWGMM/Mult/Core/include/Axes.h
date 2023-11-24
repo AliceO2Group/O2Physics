@@ -49,7 +49,8 @@ enum struct EvSelBins : int {
 };
 
 // labels for event selection axis
-std::array<std::string_view, static_cast<size_t>(EvSelBins::kRejected)> EvSelBinLabels{
+std::array<std::string_view, static_cast<size_t>(EvSelBins::kRejected) + 1> EvSelBinLabels{
+  "dummy",
   "All",
   "Selected",
   "Selected INEL>0",
@@ -66,7 +67,8 @@ enum struct EvEffBins : int {
 };
 
 // labels for event efficiency axis
-std::array<std::string_view, static_cast<size_t>(EvEffBins::kSelectedPVgt0)> EvEffBinLabels{
+std::array<std::string_view, static_cast<size_t>(EvEffBins::kSelectedPVgt0) + 1> EvEffBinLabels{
+  "dummy",
   "Generated",
   "Generated INEL>0",
   "Reconstructed",
