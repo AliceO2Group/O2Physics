@@ -85,7 +85,7 @@ struct HfCandidateCreatorToXiPi {
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  using FilteredHfTrackAssocSel = soa::Join<aod::TrackAssoc, aod::HfSelTrack>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
