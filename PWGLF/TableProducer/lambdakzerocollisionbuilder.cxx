@@ -50,6 +50,8 @@ struct lambdakzerocollisionbuilder {
   Produces<aod::V0CollRefs> v0collref; // raw table for checks
   Produces<aod::V0Collision> v0coll;   // table with Nsigmas
 
+  Configurable<bool> fillEmptyCollisions{"fillEmptyCollisions", false, "fill collision entries without candidates"};
+
   // For manual sliceBy
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
 
@@ -64,11 +66,13 @@ struct lambdakzerocollisionbuilder {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       // V0 table sliced
-      if (currentCollIdx != collIdx) {
-        v0coll(collision.posX(), collision.posY(), collision.posZ(),
-               collision.centFT0M(), collision.centFT0A(),
-               collision.centFT0C(), collision.centFV0A());
-        currentCollIdx = collIdx;
+      if (V0Table_thisCollision.size() > 0 || fillEmptyCollisions) {
+        if (currentCollIdx != collIdx) {
+          v0coll(collision.posX(), collision.posY(), collision.posZ(),
+                 collision.centFT0M(), collision.centFT0A(),
+                 collision.centFT0C(), collision.centFV0A());
+          currentCollIdx = collIdx;
+        }
       }
       for (int i = 0; i < V0Table_thisCollision.size(); i++) {
         v0collref(v0coll.lastIndex());
