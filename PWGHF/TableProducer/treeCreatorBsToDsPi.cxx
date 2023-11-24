@@ -16,6 +16,7 @@
 /// \note Adapted from treeCreatorB0T0DPi.cxx
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 

@@ -17,6 +17,7 @@
 ///
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 

@@ -15,6 +15,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -27,7 +28,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 // PWGHF
-#include "CommonConstants/PhysicsConstants.h"
 #include "Tutorials/PWGHF/DataModelMini.h"
 
 using namespace o2;

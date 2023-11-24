@@ -17,6 +17,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN, Warsaw University of Technology
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/CcdbApi.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

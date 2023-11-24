@@ -21,9 +21,10 @@
 #include <string>
 #include <vector>
 
+#include "CommonConstants/PhysicsConstants.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

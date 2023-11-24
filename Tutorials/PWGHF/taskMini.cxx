@@ -15,6 +15,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
