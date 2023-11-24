@@ -328,7 +328,8 @@ float FT0AmplitudeC(aod::FT0&& ft0)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeA(aod::FDD&& fdd)
+//int16_t FDDAmplitudeA(aod::FDD&& fdd)
+float FDDAmplitudeA(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
   for (auto amp : fdd.chargeA()) {
@@ -339,7 +340,8 @@ int16_t FDDAmplitudeA(aod::FDD&& fdd)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeC(aod::FDD&& fdd)
+//int16_t FDDAmplitudeC(aod::FDD&& fdd)
+float FDDAmplitudeC(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
   for (auto amp : fdd.chargeC()) {
@@ -357,6 +359,7 @@ bool cleanFV0(T& bc, float maxFITtime, float limitA)
     bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
     bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
     return ota && oma;
+//    if (!oma) LOGF(info, "FV0A Amp = %f", FV0AmplitudeA(bc.foundFV0()));
   } else {
     return true;
   }
@@ -413,6 +416,7 @@ bool cleanFT0A(T& bc, float maxFITtime, float limitA)
     bool ora = !triggers[o2::ft0::Triggers::bitA];
     LOGF(debug, "ota %f ora/FT0AmplitudeA %d/%d", bc.foundFT0().timeA(), ora, oma);
 
+//    if (!oma) LOGF(info, "FT0A Amp = %f", FT0AmplitudeA(bc.foundFT0()));
     return ota && oma;
   } else {
     return true;
@@ -432,8 +436,10 @@ bool cleanFT0C(T& bc, float maxFITtime, float limitC)
     bool orc = !triggers[o2::ft0::Triggers::bitC];
     LOGF(debug, "otc %f orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeC(), orc, omc);
 
+//    if (!omc) LOGF(info, "FT0C Amp = %f", FT0AmplitudeC(bc.foundFT0()));
     return otc && omc;
   } else {
+//  LOGF(info, "BC FT0C = %i", bc);
     return true;
   }
 }
@@ -445,6 +451,7 @@ bool cleanFDDA(T& bc, float maxFITtime, float limitA)
   if (bc.has_foundFDD()) {
     bool ota = std::abs(bc.foundFDD().timeA()) <= maxFITtime;
     bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
+//    if (!oma) LOGF(info, "FDDA Amp = %f", FDDAmplitudeA(bc.foundFDD()));
     return ota && oma;
   } else {
     return true;
@@ -458,6 +465,7 @@ bool cleanFDDC(T& bc, float maxFITtime, float limitC)
   if (bc.has_foundFDD()) {
     bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
+//    if (!omc) LOGF(info, "FDDC Amp = %f", FDDAmplitudeC(bc.foundFDD()));
     return otc && omc;
   } else {
     return true;
@@ -585,7 +593,7 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 // -----------------------------------------------------------------------------
 // extract FIT information
 template <typename B>
-void getFITinfo(upchelpers::FITInfo info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
 {
   // find bc with globalBC = bcnum
   Partition<B> selbc = aod::bc::globalBC == bcnum;
@@ -594,9 +602,11 @@ void getFITinfo(upchelpers::FITInfo info, uint64_t const& bcnum, B const& bcs, a
   // if BC exists then update FIT information for this BC
   if (selbc.size() > 0) {
     auto bc = selbc.begin();
-
+    LOGF(info, "BC Size = %i", selbc.size());
+    LOGF(info, "BC  = %i", bcnum);
     // FT0
     if (bc.has_foundFT0()) {
+      LOGF(info, "FT0 found");
       auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
       info.timeFT0A = ft0.timeA();
       info.timeFT0C = ft0.timeC();
@@ -615,6 +625,7 @@ void getFITinfo(upchelpers::FITInfo info, uint64_t const& bcnum, B const& bcs, a
 
     // FV0A
     if (bc.has_foundFV0()) {
+      LOGF(info, "FV0 found");
       auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
       info.timeFV0A = fv0a.time();
       const auto& amps = fv0a.amplitude();
@@ -627,6 +638,7 @@ void getFITinfo(upchelpers::FITInfo info, uint64_t const& bcnum, B const& bcs, a
 
     // FDD
     if (bc.has_foundFDD()) {
+      LOGF(info, "FDD found");
       auto fdd = fdds.iteratorAt(bc.foundFDDId());
       info.timeFDDA = fdd.timeA();
       info.timeFDDC = fdd.timeC();
