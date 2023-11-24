@@ -436,8 +436,8 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
 
-    int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
-    int pdgCodeXic0 = Pdg::kXiCZero;    // 4132
+    int pdgCodeOmegac0 = Pdg::kOmegaC0;       // 4332
+    int pdgCodeXic0 = Pdg::kXiCZero;          // 4132
     int pdgCodeXiMinus = kXiMinus;            // 3312
     int pdgCodeLambda = kLambda0;             // 3122
     int pdgCodePiPlus = kPiPlus;              // 211
