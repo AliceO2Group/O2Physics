@@ -17,4 +17,3 @@
 #pragma link C++ class SGCutParHolder + ;
 
 #endif // PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
-

@@ -58,7 +58,7 @@ struct SGCandProducer {
                         aod::TOFSignal, aod::pidTOFbeta,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
-  
+
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
   void updateUDFwdTrackTables(TFwdTrack const& fwdtrack, uint64_t const& bcnum)

@@ -328,7 +328,7 @@ float FT0AmplitudeC(aod::FT0&& ft0)
 }
 
 // -----------------------------------------------------------------------------
-//int16_t FDDAmplitudeA(aod::FDD&& fdd)
+// int16_t FDDAmplitudeA(aod::FDD&& fdd)
 float FDDAmplitudeA(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
@@ -340,7 +340,7 @@ float FDDAmplitudeA(aod::FDD&& fdd)
 }
 
 // -----------------------------------------------------------------------------
-//int16_t FDDAmplitudeC(aod::FDD&& fdd)
+// int16_t FDDAmplitudeC(aod::FDD&& fdd)
 float FDDAmplitudeC(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
@@ -359,7 +359,7 @@ bool cleanFV0(T& bc, float maxFITtime, float limitA)
     bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
     bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
     return ota && oma;
-//    if (!oma) LOGF(info, "FV0A Amp = %f", FV0AmplitudeA(bc.foundFV0()));
+    //    if (!oma) LOGF(info, "FV0A Amp = %f", FV0AmplitudeA(bc.foundFV0()));
   } else {
     return true;
   }
@@ -446,7 +446,7 @@ bool cleanFDDA(T& bc, float maxFITtime, float limitA)
   if (bc.has_foundFDD()) {
     bool ota = std::abs(bc.foundFDD().timeA()) <= maxFITtime;
     bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
-//    if (!oma) LOGF(info, "FDDA Amp = %f", FDDAmplitudeA(bc.foundFDD()));
+    //    if (!oma) LOGF(info, "FDDA Amp = %f", FDDAmplitudeA(bc.foundFDD()));
     return ota && oma;
   } else {
     return true;
@@ -460,7 +460,7 @@ bool cleanFDDC(T& bc, float maxFITtime, float limitC)
   if (bc.has_foundFDD()) {
     bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
-//    if (!omc) LOGF(info, "FDDC Amp = %f", FDDAmplitudeC(bc.foundFDD()));
+    //    if (!omc) LOGF(info, "FDDC Amp = %f", FDDAmplitudeC(bc.foundFDD()));
     return otc && omc;
   } else {
     return true;
