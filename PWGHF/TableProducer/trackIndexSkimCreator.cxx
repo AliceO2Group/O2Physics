@@ -1564,6 +1564,7 @@ struct HfTrackIndexSkimCreator {
     for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
 
       // check proton PID for Lc and Xic
+      whichHypo[iDecay3P] = 3;
       if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && applyProtonPidForLcToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && applyProtonPidForXicToPKPi)) {
         if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isProtonTrack0, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isProtonTrack0, ChannelsProtonPid::XicToPKPi))) {
           CLRBIT(whichHypo[iDecay3P], 0);
@@ -1585,6 +1586,7 @@ struct HfTrackIndexSkimCreator {
       // return immediately if it is outside the defined pT bins
       if (pTBin == -1) {
         CLRBIT(isSelected, iDecay3P);
+        whichHypo[iDecay3P] = 0;
         if (debug) {
           cutStatus[iDecay3P][0] = false;
         }
@@ -1593,7 +1595,6 @@ struct HfTrackIndexSkimCreator {
 
       // invariant mass
       double massHypos[2];
-      whichHypo[iDecay3P] = 3;
       double min2 = pow(cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]), 2);
       double max2 = pow(cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]), 2);
 
