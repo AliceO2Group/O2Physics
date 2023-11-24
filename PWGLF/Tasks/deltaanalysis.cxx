@@ -93,6 +93,7 @@ struct deltaAnalysis {
     AxisSpec antiDeltaPlusPlusAxis{cfgMassAxis, "m(#bar{p} + #pi^{-}) (GeV/#it{c}^{2})"};
     AxisSpec deltaZeroAxis{cfgMassAxis, "m(p + #pi^{-}) (GeV/#it{c}^{2})"};
     AxisSpec antiDeltaZeroAxis{cfgMassAxis, "m(#bar{p} + #pi^{+}) (GeV/#it{c}^{2})"};
+    AxisSpec ptAxis{cfgPtAxis, "#it{p}_{T} (GeV/#it{c})"};
 
     // Collision
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
@@ -102,47 +103,47 @@ struct deltaAnalysis {
     // Single track
     histos.add("hPiPlusDCAxy", "DCA_{xy} distribution for #pi^{+}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiPlusDCAz", "DCA_{z} distribution for #pi^{+}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPiPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
-    histos.add("hPiPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
+    histos.add("hPiPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPiPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPiMinusDCAxy", "DCA_{xy} distribution for #pi^{-}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiMinusDCAz", "DCA_{z} distribution for #pi^{-}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPiMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
-    histos.add("hPiMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
+    histos.add("hPiMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPiMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPrPlusDCAxy", "DCA_{xy} distribution for p; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrPlusDCAz", "DCA_{z} distribution for p; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPrPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
-    histos.add("hPrPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for p", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
+    histos.add("hPrPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPrPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPrMinusDCAxy", "DCA_{xy} distribution for #bar{p}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrMinusDCAz", "DCA_{z} distribution for #bar{p};  DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hPrMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {cfgPtAxis, nSigmaTPCaxis});
-    histos.add("hPrMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {cfgPtAxis, nSigmaTOFaxis});
+    histos.add("hPrMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPrMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     // Deltas
-    histos.add("hDeltaPlusPlusInvMass", "Invariant mass distribution for #Delta^{++}", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
-    histos.add("hAntiDeltaPlusPlusInvMass", "Invariant mass distribution for #bar{#Delta^{++}}", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
+    histos.add("hDeltaPlusPlusInvMass", "Invariant mass distribution for #Delta^{++}", kTH2F, {ptAxis, deltaPlusPlusAxis});
+    histos.add("hAntiDeltaPlusPlusInvMass", "Invariant mass distribution for #bar{#Delta^{++}}", kTH2F, {ptAxis, antiDeltaPlusPlusAxis});
 
-    histos.add("hDeltaZeroInvMass", "Invariant mass distribution for #Delta^{0}", kTH2F, {cfgPtAxis, deltaZeroAxis});
-    histos.add("hAntiDeltaZeroInvMass", "Invariant mass distribution for #bar{#Delta^{0}}", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
+    histos.add("hDeltaZeroInvMass", "Invariant mass distribution for #Delta^{0}", kTH2F, {ptAxis, deltaZeroAxis});
+    histos.add("hAntiDeltaZeroInvMass", "Invariant mass distribution for #bar{#Delta^{0}}", kTH2F, {ptAxis, antiDeltaZeroAxis});
 
     if (doprocessMixedEvent) {
       // Deltas - Event mixing
-      histos.add("hDeltaPlusPlusInvMassEM", "Invariant mass distribution for #Delta^{++} - event mixing", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
-      histos.add("hAntiDeltaPlusPlusInvMassEM", "Invariant mass distribution for #bar{#Delta^{++}} - event mixing", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
+      histos.add("hDeltaPlusPlusInvMassEM", "Invariant mass distribution for #Delta^{++} - event mixing", kTH2F, {ptAxis, deltaPlusPlusAxis});
+      histos.add("hAntiDeltaPlusPlusInvMassEM", "Invariant mass distribution for #bar{#Delta^{++}} - event mixing", kTH2F, {ptAxis, antiDeltaPlusPlusAxis});
 
-      histos.add("hDeltaZeroInvMassEM", "Invariant mass distribution for #Delta^{0} - event mixing", kTH2F, {cfgPtAxis, deltaZeroAxis});
-      histos.add("hAntiDeltaZeroInvMassEM", "Invariant mass distribution for #bar{#Delta^{0}} - event mixing", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
+      histos.add("hDeltaZeroInvMassEM", "Invariant mass distribution for #Delta^{0} - event mixing", kTH2F, {ptAxis, deltaZeroAxis});
+      histos.add("hAntiDeltaZeroInvMassEM", "Invariant mass distribution for #bar{#Delta^{0}} - event mixing", kTH2F, {ptAxis, antiDeltaZeroAxis});
     }
 
     if (doprocessMC) {
       // generated quantities
-      histos.add("hDeltaPlusPlusInvMassGen", "Invariant mass distribution for #Delta^{++} - generated", kTH2F, {cfgPtAxis, deltaPlusPlusAxis});
-      histos.add("hAntiDeltaPlusPlusInvMassGen", "Invariant mass distribution for #bar{#Delta^{++}} - generated", kTH2F, {cfgPtAxis, antiDeltaPlusPlusAxis});
+      histos.add("hDeltaPlusPlusInvMassGen", "Invariant mass distribution for #Delta^{++} - generated", kTH2F, {ptAxis, deltaPlusPlusAxis});
+      histos.add("hAntiDeltaPlusPlusInvMassGen", "Invariant mass distribution for #bar{#Delta^{++}} - generated", kTH2F, {ptAxis, antiDeltaPlusPlusAxis});
 
-      histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {cfgPtAxis, deltaZeroAxis});
-      histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {cfgPtAxis, antiDeltaZeroAxis});
+      histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {ptAxis, deltaZeroAxis});
+      histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {ptAxis, antiDeltaZeroAxis});
     }
   }
 
@@ -264,10 +265,10 @@ struct deltaAnalysis {
   BinningType binningOnPositions{{cfgVtxAxis}, true};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
 
-  void processSameEvent(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TrackCandidates const& tracks, aod::BCs const&)
+  void processSameEvent(EventCandidates const& collisions, TrackCandidates const& tracks, aod::BCs const&)
   {
     for (auto& collision : collisions) {
-      if (!collision.sel8() || std::abs(collision.posZ()) > cfgCutVertex) {
+      if (!collision.sel8()) {
         continue;
       }
       histos.fill(HIST("hNcontributor"), collision.numContrib());
@@ -321,7 +322,7 @@ struct deltaAnalysis {
   }
   PROCESS_SWITCH(deltaAnalysis, processSameEvent, "Process same event", false);
 
-  void processMixedEvent(EventCandidates& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
@@ -333,7 +334,7 @@ struct deltaAnalysis {
 
       for (auto& [t0, t1] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (!selectionTrack(t0) || selectionTrack(t1)) {
+        if (!selectionTrack(t0) || !selectionTrack(t1)) {
           continue;
         }
 
@@ -348,6 +349,10 @@ struct deltaAnalysis {
             pion.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), pionMass);
 
             TLorentzVector delta = proton + pion;
+
+            if (abs(delta.Rapidity()) > cfgCutY) {
+              continue;
+            }
 
             if (t0.sign() < 0) {
               if (t1.sign() < 0) {
