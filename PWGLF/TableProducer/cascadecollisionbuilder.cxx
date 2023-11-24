@@ -50,6 +50,8 @@ struct cascadecollisionbuilder {
   Produces<aod::CascCollRefs> casccollref; // raw table for checks
   Produces<aod::CascCollision> casccoll;   // table with Nsigmas
 
+  Configurable<bool> fillEmptyCollisions{"fillEmptyCollisions", false, "fill collision entries without candidates"};
+
   // For manual sliceBy
   Preslice<aod::CascDatas> perCollision = o2::aod::cascdata::collisionId;
 
@@ -63,12 +65,14 @@ struct cascadecollisionbuilder {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
-      // V0 table sliced
-      if (currentCollIdx != collIdx) {
-        casccoll(collision.posX(), collision.posY(), collision.posZ(),
-                 collision.centFT0M(), collision.centFT0A(),
-                 collision.centFT0C(), collision.centFV0A());
-        currentCollIdx = collIdx;
+      // casc table sliced
+      if (CascTable_thisCollision.size() > 0 || fillEmptyCollisions) {
+        if (currentCollIdx != collIdx) {
+          casccoll(collision.posX(), collision.posY(), collision.posZ(),
+                   collision.centFT0M(), collision.centFT0A(),
+                   collision.centFT0C(), collision.centFV0A());
+          currentCollIdx = collIdx;
+        }
       }
       for (int i = 0; i < CascTable_thisCollision.size(); i++) {
         casccollref(casccoll.lastIndex());
