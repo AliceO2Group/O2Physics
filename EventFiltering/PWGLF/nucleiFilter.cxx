@@ -74,7 +74,7 @@ struct nucleiFilter {
 
   Produces<aod::NucleiFilters> tags;
 
-  //configurable for nuclei
+  // configurable for nuclei
   Configurable<float> cfgCutVertex{"cfgCutVertex", 12.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 1.f, "Eta range for tracks"};
 
@@ -89,7 +89,7 @@ struct nucleiFilter {
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
-  //configurable for hypertriton 3body decay
+  // configurable for hypertriton 3body decay
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
   Configurable<float> dcapiontopv{"dcapiontopv", 0.00, "DCA Pion To PV"};
@@ -109,7 +109,6 @@ struct nucleiFilter {
   Configurable<int> mincrossedrowsproton{"mincrossedrowsproton", 90, "min tpc crossed rows for pion"};
   Configurable<int> mincrossedrowspion{"mincrossedrowspion", 70, "min tpc crossed rows"};
   Configurable<int> mincrossedrowsdeuteron{"mincrossedrowsdeuteron", 100, "min tpc crossed rows for deuteron"};
-
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -136,13 +135,13 @@ struct nucleiFilter {
     }
   }
 
-  //Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
-  //using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
+  // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
+  // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
-  void process(aod::Collisions::iterator const& collision,  aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
+  void process(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   {
     // collision process loop
-    bool keepEvent[nNuclei+nHyperNuclei]{false};
+    bool keepEvent[nNuclei + nHyperNuclei]{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
     qaHists.fill(HIST("fProcessedEvents"), 0);
@@ -158,8 +157,8 @@ struct nucleiFilter {
         continue;
       }
 
-      if (std::abs(track.tpcNSigmaDe()) < 5 ){
-        qaHists.fill(HIST("fDeuTOFNsigma"), track.p()*track.sign(), track.tofNSigmaDe());
+      if (std::abs(track.tpcNSigmaDe()) < 5) {
+        qaHists.fill(HIST("fDeuTOFNsigma"), track.p() * track.sign(), track.tofNSigmaDe());
       }
 
       if (track.sign() > 0 && (std::abs(track.dcaXY()) > cfgCutDCAxy ||
@@ -204,7 +203,7 @@ struct nucleiFilter {
 
     } // end loop over tracks
 
-    //hypertriton 3body loop
+    // hypertriton 3body loop
     for (auto& vtx : vtx3bodydatas) {
 
       auto track0 = vtx.track0_as<TrackCandidates>();
@@ -221,7 +220,7 @@ struct nucleiFilter {
       if (vtx.dcaVtxdaughters() > dcavtxdau) {
         continue;
       }
-      if ( (track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
+      if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
       if (TMath::Abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
@@ -248,7 +247,6 @@ struct nucleiFilter {
       }
     }
     tags(keepEvent[2], keepEvent[3]);
-
   }
 };
 
