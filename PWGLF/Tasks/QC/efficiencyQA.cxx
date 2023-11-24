@@ -39,6 +39,7 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, 
 
 namespace
 {
+const float piMass = o2::constants::physics::MassPionCharged;
 std::shared_ptr<TH2> hPiRec;
 std::shared_ptr<TH3> hPiRecMass;
 std::shared_ptr<TH2> hTagCuts;
@@ -62,16 +63,18 @@ float invMass2Body(std::array<float, 3>& momA, std::array<float, 3> const& momB,
 } // namespace
 
 struct ProbeTrack {
-  ProbeTrack(uint64_t const& idx, uint64_t const& idxTpc, float const& p, float const& pt, float const& eta, float const& phi, uint8_t const& map, float const& xv, float const& yv, float const& zv) : globalIndex{idx},
-                                                                                                                                                                                                        globalIndexTpc{idxTpc},
-                                                                                                                                                                                                        p{p},
-                                                                                                                                                                                                        pt{pt},
-                                                                                                                                                                                                        eta{eta},
-                                                                                                                                                                                                        phi{phi},
-                                                                                                                                                                                                        vtx0{xv},
-                                                                                                                                                                                                        vtx1{yv},
-                                                                                                                                                                                                        vtx2{zv},
-                                                                                                                                                                                                        detectorMap{map}
+  ProbeTrack(uint64_t const& idx, uint64_t const& idxTpc, uint64_t const& idxTag, float const& p, float const& pt, float const& eta, float const& phi, float const& mass, uint8_t const& map, float const& xv, float const& yv, float const& zv) : globalIndex{idx},
+                                                                                                                                                                                                                                                   globalIndexTpc{idxTpc},
+                                                                                                                                                                                                                                                   p{p},
+                                                                                                                                                                                                                                                   pt{pt},
+                                                                                                                                                                                                                                                   eta{eta},
+                                                                                                                                                                                                                                                   phi{phi},
+                                                                                                                                                                                                                                                   massTagProbe{mass},
+                                                                                                                                                                                                                                                   vtx0{xv},
+                                                                                                                                                                                                                                                   vtx1{yv},
+                                                                                                                                                                                                                                                   vtx2{zv},
+                                                                                                                                                                                                                                                   detectorMap{map},
+                                                                                                                                                                                                                                                   globalIndexTag{idxTag}
   {
   }
   uint64_t globalIndex;
@@ -80,10 +83,12 @@ struct ProbeTrack {
   float pt;
   float eta;
   float phi;
+  float massTagProbe;
   float vtx0;
   float vtx1;
   float vtx2;
   uint8_t detectorMap;
+  uint64_t globalIndexTag;
 };
 
 struct efficiencyQA {
@@ -112,7 +117,7 @@ struct efficiencyQA {
   Configurable<float> v0cosPaMin{"v0cosPaMin", 0.99f, "minimum cosine of pointing angle of V0"};
 
   Configurable<bool> findTpcLeg{"findTpcLeg", false, "toggle search of missing tpc segment"};
-  Configurable<bool> matchWithCov{"matchWithCov", false, "toggle ITS-TPC post-matching using covariance"};
+  Configurable<bool> refitVertex{"refitVertex", false, "toggle refit of decay vertex using tag and tpc prolongation"};
   Configurable<float> ptWindow{"ptWindow", 0.05f, "pt window to search tpc segment"};
   Configurable<float> etaWindow{"etaWindow", 0.3f, "eta window to search tpc segment"};
   Configurable<float> phiWindow{"phiWindow", 0.2f, "phi window to search tpc segment"};
@@ -128,16 +133,18 @@ struct efficiencyQA {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
-  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, 0.497648f - 0.1f, 0.497648f + 0.1f}, "binning for the Lambda invariant-mass"};
+  ConfigurableAxis massK0sAxis{"massK0sAxis", {400, 0.497648f - 0.1f, 0.497648f + 0.1f}, "binning for the K0s invariant-mass"};
+  ConfigurableAxis massResAxis{"massResAxis", {400, -0.1f, 0.1f}, "binning for the invariant-mass resolution"};
   ConfigurableAxis zVtxAxis{"zVtxAxis", {200, -10.f, 10.f}, "binning for the z coordinate of the primary vertex"};
   ConfigurableAxis recAxis{"recAxis", {8, 0.f, 8.f}, "binning for the reconstruction flag"};
   ConfigurableAxis tpcAxis{"tpcAxis", {3, 0.f, 3.f}, "binning for the matching of tpc segment"};
   ConfigurableAxis ptAxis{"ptAxis", {100, -5.f, 5.f}, "binning for the pt of V0 daughter tracks"};
-  ConfigurableAxis ptResAxis{"ptResAxis", {100, -1.f, 1.f}, "binning for the pt resolution of V0 daughter tracks"};
+  ConfigurableAxis ptResAxis{"ptResAxis", {200, -1.f, 1.f}, "binning for the pt resolution of V0 daughter tracks"};
   ConfigurableAxis etaAxis{"etaAxis", {900, -.9f, .9f}, "binning for the eta of V0 daughter tracks"};
-  ConfigurableAxis etaResAxis{"etaResAxis", {300, -.3f, .3f}, "binning for the eta resolution of V0 daughter tracks"};
+  ConfigurableAxis etaResAxis{"etaResAxis", {500, -.5f, .5f}, "binning for the eta resolution of V0 daughter tracks"};
   ConfigurableAxis phiAxis{"phiAxis", {630, 0.f, 6.3f}, "binning for the phi of V0 daughter tracks"};
-  ConfigurableAxis phiResAxis{"phiResAxis", {100, -.5f, .5f}, "binning for the phi resolution of V0 daughter tracks"};
+  ConfigurableAxis phiResAxis{"phiResAxis", {800, -4.f, 4.f}, "binning for the phi resolution of V0 daughter tracks"};
+  ConfigurableAxis cosPaAxis{"cosPaAxis", {1000, -1.f, 1.f}, "binning for the cosine of pointing angle"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -191,8 +198,8 @@ struct efficiencyQA {
       int mat{static_cast<int>(cfgMaterialCorrection)};
       fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
-      histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massLambdaAxis});
-      hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2})", HistType::kTH3F, {recAxis, ptAxis, massLambdaAxis});
+      histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massK0sAxis});
+      hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2})", HistType::kTH3F, {recAxis, ptAxis, massK0sAxis});
       hTagCuts = histos.add<TH2>("tagCuts", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {recAxis, ptAxis});
 
       std::string binLabelsTag[]{"hasITS && hasTPC", "tracking", "PID", "v0 mass", "dcaV0dau", "cosPA", "dcaXYZ", "V0radius"};
@@ -211,9 +218,13 @@ struct efficiencyQA {
           hTpcSegment->GetXaxis()->SetBinLabel(iB + 1, binLabelsTpc[iB].data());
         }
         histos.add<TH2>("pTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#it{p}^{TPC} - #it{p}^{ITS} (GeV/#it{c});Entries", HistType::kTH2F, {ptAxis, ptResAxis});
-        histos.add<TH2>("ptTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#it{p}^{TPC}_{T} - #it{p}^{ITS}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {ptAxis, ptResAxis});
+        histos.add<TH2>("ptTpcIts", ";#it{p}_{T}^{ITS} (GeV/#it{c});#it{p}^{TPC}_{T} - #it{p}^{ITS}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {ptAxis, ptResAxis});
         histos.add<TH2>("etaTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#eta^{TPC} - #eta^{ITS};Entries", HistType::kTH2F, {ptAxis, etaResAxis});
         histos.add<TH2>("phiTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#phi^{TPC} - #phi^{ITS} (rad);Entries", HistType::kTH2F, {ptAxis, phiResAxis});
+        histos.add<TH2>("massTpc", ";#it{p}^{ITS} (GeV/#it{c});#it{M}^{TPC} (GeV/#it{c}^{2});Entries", HistType::kTH2F, {ptAxis, massK0sAxis});
+        histos.add<TH2>("massTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#it{M}^{TPC} - #it{M}^{ITS} (GeV/#it{c}^{2});Entries", HistType::kTH2F, {ptAxis, massResAxis});
+        histos.add<TH2>("cosPaTpc", ";#it{p}^{ITS} (GeV/#it{c});cos#theta_{p}", HistType::kTH2F, {ptAxis, cosPaAxis});
+        histos.add<TH3>("ptEtaPhiTpcIts", ";#it{p}^{TPC}_{T} - #it{p}^{ITS}_{T} (GeV/#it{c});#eta^{TPC} - #eta^{ITS};#phi^{TPC} - #phi^{ITS} (rad)", HistType::kTH3F, {ptResAxis, etaResAxis, phiResAxis});
       }
     }
   }
@@ -257,7 +268,7 @@ struct efficiencyQA {
   template <class T, class Hist>
   void fillHistTrack(T const& track, std::shared_ptr<Hist> hist, float const& y, float const& z = 1)
   {
-    bool itsAccept = !(track.itsChi2NCl() > 36.);
+    bool itsAccept = !(track.itsChi2NCl() > 36. || track.itsNCls() < 4);
     bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4. || track.tpcNClsFound() < 90);
     if (track.hasITS()) {
       hist->Fill(1., y, z);
@@ -345,7 +356,6 @@ struct efficiencyQA {
       propTrackProbe.getPxPyPzGlo(momProbe);
 
       std::array<float, 3> v0Mom;
-      float piMass = o2::constants::physics::MassPionCharged;
       float massV0 = invMass2Body(v0Mom, momTag, momProbe, piMass, piMass);
       bool isMassV0 = false;
       if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massWidth)
@@ -394,7 +404,14 @@ struct efficiencyQA {
       histos.fill(HIST("massV0"), massV0);
 
       uint64_t idxTpc{0};
+      uint8_t map{0};
       if (probeTrack.hasITS() && !probeTrack.hasTPC() && findTpcLeg) {
+        auto acceptIts = !(probeTrack.itsChi2NCl() > 36. || probeTrack.itsNCls() < 4);
+        if (!acceptIts) {
+          continue;
+        }
+        map = probeTrack.detectorMap();
+
         std::array<float, 3> momTpc;
         for (auto& tpcTrack : tpcTracks) {
           if (std::abs(tpcTrack.eta()) > etaMax) {
@@ -420,36 +437,45 @@ struct efficiencyQA {
           bool acceptTrackPhi = std::abs(tpcTrackCov.getPhi() - propTrackProbe.getPhi()) < phiWindow;
           bool acceptTpcTrack = acceptTrackPt && acceptTrackEta && acceptTrackPhi;
 
+          // LOGF(debug, "idx = %lld, Dpt = %f, Deta = %f, Dphi = %f", tpcTrack.globalIndex(), std::abs(tpcTrackCov.getPt() - propTrackProbe.getPt()), std::abs(tpcTrackCov.getEta() - propTrackProbe.getEta()), std::abs(tpcTrackCov.getPhi() - propTrackProbe.getPhi()));
+
           if (acceptTpcTrack) {
             tpcTrackCov.getPxPyPzGlo(momTpc);
             auto massTpcLeg = invMass2Body(v0Mom, momTag, momTpc, piMass, piMass);
-            auto massDiff = std::abs(massTpcLeg - massV0);
+            auto massDiff = std::abs(massTpcLeg - o2::constants::physics::MassKaonNeutral);
 
+            LOGF(debug, "idx = %lld, p = %f, Dpt = %f, Deta = %f, Dphi = %f, mass = %f", tpcTrack.globalIndex(), propTrackProbe.getP(), std::abs(tpcTrackCov.getPt() - propTrackProbe.getPt()), std::abs(tpcTrackCov.getEta() - propTrackProbe.getEta()), std::abs(tpcTrackCov.getPhi() - propTrackProbe.getPhi()), massDiff);
             if (massDiff < massWindow) {
-              tpcTrackCov = getTrackParCov(tpcTrack);
-              tagTrackCov = getTrackParCov(tagTrack);
-              int nCand = 0;
-              try {
-                nCand = fitter.process(tagTrackCov, tpcTrackCov);
-              } catch (...) {
-                LOG(error) << "Exception caught in DCA fitter process call!";
-                continue;
-              }
-              if (nCand == 0) {
-                continue;
-              }
+              if (refitVertex) {
+                tpcTrackCov = getTrackParCov(tpcTrack);
+                tagTrackCov = getTrackParCov(tagTrack);
+                int nCand = 0;
+                try {
+                  nCand = fitter.process(tagTrackCov, tpcTrackCov);
+                } catch (...) {
+                  LOG(error) << "Exception caught in DCA fitter process call!";
+                  continue;
+                }
+                if (nCand == 0) {
+                  continue;
+                }
 
-              std::array<float, 3> momTpcRefit, momTagRefit, v0MomRefit;
-              auto& propTrackTagRefit = fitter.getTrack(0);
-              auto& propTrackTpcRefit = fitter.getTrack(1);
-              propTrackTagRefit.getPxPyPzGlo(momTagRefit);
-              propTrackTpcRefit.getPxPyPzGlo(momTpcRefit);
-              invMass2Body(v0MomRefit, momTagRefit, momTpcRefit, piMass, piMass);
+                std::array<float, 3> momTpcRefit, momTagRefit, v0MomRefit;
+                auto& propTrackTagRefit = fitter.getTrack(0);
+                auto& propTrackTpcRefit = fitter.getTrack(1);
+                propTrackTagRefit.getPxPyPzGlo(momTagRefit);
+                propTrackTpcRefit.getPxPyPzGlo(momTpcRefit);
+                auto massTpcLeg2 = invMass2Body(v0MomRefit, momTagRefit, momTpcRefit, piMass, piMass);
+                auto massDiff2 = std::abs(massTpcLeg2 - o2::constants::physics::MassKaonNeutral);
 
-              const auto& vtxRefit = fitter.getPCACandidate();
-              double cosPaXY = RecoDecay::cpaXY(primVtx, vtxRefit, v0MomRefit);
-              if (cosPaXY < cosPaWindow) {
-                continue;
+                const auto& vtxRefit = fitter.getPCACandidate();
+                double cosPa = RecoDecay::cpa(primVtx, vtxRefit, v0MomRefit);
+
+                LOGF(debug, "idx = %lld, p = %f, Dpt = %f, Deta = %f, Dphi = %f, mass = %f, mass2 = %f, cosPA = %f", tpcTrack.globalIndex(), propTrackProbe.getP(), std::abs(propTrackTpcRefit.getPt() - propTrackProbe.getPt()), std::abs(propTrackTpcRefit.getEta() - propTrackProbe.getEta()), std::abs(propTrackTpcRefit.getPhi() - propTrackProbe.getPhi()), massDiff, massDiff2, cosPa);
+
+                if (cosPa < cosPaWindow) {
+                  continue;
+                }
               }
               idxTpc = tpcTrack.globalIndex();
             }
@@ -466,7 +492,7 @@ struct efficiencyQA {
       }
       fillHistTrack(probeTrack, hPiRecMass, trackPt, massV0);
       if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massMax) {
-        probeTracks.emplace_back(probeTrack.globalIndex(), idxTpc, trackP, trackPt, propTrackProbe.getEta(), propTrackProbe.getPhi(), probeTrack.detectorMap(), vtx[0], vtx[1], vtx[2]);
+        probeTracks.emplace_back(probeTrack.globalIndex(), idxTpc, tagTrack.globalIndex(), trackP, trackPt, propTrackProbe.getEta(), propTrackProbe.getPhi(), massV0, map, vtx[0], vtx[1], vtx[2]);
         hPiRec->Fill(0., trackPt);
         fillHistTrack(probeTrack, hPiRec, trackPt);
         if (idxTpc > 0) {
@@ -478,7 +504,7 @@ struct efficiencyQA {
 
   void fillProbeMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    auto tpcTracks = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
+    auto tracks_thisEvent = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
 
     for (const auto& probeTrack : probeTracks) {
       auto mcLab = trackLabelsMC.rawIteratorAt(probeTrack.globalIndex);
@@ -488,12 +514,19 @@ struct efficiencyQA {
       bool hasITS = (probeTrack.detectorMap & o2::aod::track::ITS) == o2::aod::track::ITS;
       bool hasTPC = (probeTrack.detectorMap & o2::aod::track::TPC) == o2::aod::track::TPC;
       if (hasITS && !hasTPC) {
-        for (const auto& tpcTrack : tpcTracks) {
+        auto tagTrack = tracks.rawIteratorAt(probeTrack.globalIndexTag);
+        auto tagTrackCov = getTrackParCov(tagTrack);
+        gpu::gpustd::array<float, 2> dcaInfo;
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({probeTrack.vtx0, probeTrack.vtx1, probeTrack.vtx2}, tagTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+        std::array<float, 3> momTag;
+        tagTrackCov.getPxPyPzGlo(momTag);
+
+        for (const auto& tpcTrack : tracks_thisEvent) {
           if (std::abs(tpcTrack.eta()) > etaMax) {
             continue;
           }
 
-          if (!tpcTrack.hasTPC() || tpcTrack.hasITS()) {
+          if (!tpcTrack.hasTPC() || tpcTrack.hasITS() || tpcTrack.sign() != probeTrack.pt / std::abs(probeTrack.pt)) {
             continue;
           }
           if (tpcTrack.tpcCrossedRowsOverFindableCls() < 0.8 || tpcTrack.tpcNClsCrossedRows() < 70 || tpcTrack.tpcChi2NCl() > 4. || tpcTrack.tpcNClsFound() < 90) {
@@ -509,9 +542,41 @@ struct efficiencyQA {
             auto trackCov = getTrackParCov(tpcTrack);
             gpu::gpustd::array<float, 2> dcaInfo;
             o2::base::Propagator::Instance()->propagateToDCABxByBz({probeTrack.vtx0, probeTrack.vtx1, probeTrack.vtx2}, trackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-            histos.fill(HIST("ptTpcIts"), probeTrack.p, trackCov.getP() - trackCov.getSign() * probeTrack.p);
+            std::array<float, 3> v0Mom, momTpc;
+            trackCov.getPxPyPzGlo(momTpc);
+            auto massTpcLeg = invMass2Body(v0Mom, momTag, momTpc, piMass, piMass);
+
+            histos.fill(HIST("pTpcIts"), probeTrack.p, trackCov.getP() - probeTrack.p * probeTrack.p / std::abs(probeTrack.p));
+            histos.fill(HIST("ptTpcIts"), probeTrack.p, trackCov.getPt() - probeTrack.pt * probeTrack.pt / std::abs(probeTrack.pt));
             histos.fill(HIST("etaTpcIts"), probeTrack.p, trackCov.getEta() - probeTrack.eta);
             histos.fill(HIST("phiTpcIts"), probeTrack.p, trackCov.getPhi() - probeTrack.phi);
+            histos.fill(HIST("massTpc"), probeTrack.p, massTpcLeg);
+            histos.fill(HIST("massTpcIts"), probeTrack.p, massTpcLeg - probeTrack.massTagProbe);
+            histos.fill(HIST("ptEtaPhiTpcIts"), trackCov.getPt() - probeTrack.pt * probeTrack.pt / std::abs(probeTrack.pt), trackCov.getEta() - probeTrack.eta, trackCov.getPhi() - probeTrack.phi);
+
+            LOGF(debug, "MC::DEBUG: idx = %lld, p = %f, Dpt = %f, Deta = %f, Dphi = %f", tpcTrack.globalIndex(), probeTrack.pt, std::abs(trackCov.getPt() - probeTrack.pt * probeTrack.pt / std::abs(probeTrack.pt)), std::abs(trackCov.getEta() - probeTrack.eta), std::abs(trackCov.getPhi() - probeTrack.phi));
+
+            int nCand = 0;
+            try {
+              nCand = fitter.process(tagTrackCov, trackCov);
+            } catch (...) {
+              LOG(error) << "Exception caught in DCA fitter process call!";
+              continue;
+            }
+            if (nCand == 0) {
+              continue;
+            }
+
+            auto& propTrackTagRefit = fitter.getTrack(0);
+            auto& propTrackTpcRefit = fitter.getTrack(1);
+            propTrackTagRefit.getPxPyPzGlo(momTag);
+            propTrackTpcRefit.getPxPyPzGlo(momTpc);
+            invMass2Body(v0Mom, momTag, momTpc, piMass, piMass);
+
+            const auto& vtxRefit = fitter.getPCACandidate();
+            double cosPa = RecoDecay::cpa(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, vtxRefit, v0Mom);
+
+            histos.fill(HIST("cosPaTpc"), probeTrack.p, cosPa);
 
             break;
           }
@@ -626,7 +691,6 @@ struct efficiencyQA {
           auto trackPt = track.sign() * trackParCov.getPt();
           fillHistTrack(track, hPiRec, trackPt);
 
-          fillHistTrack(track, hPtRes, track.sign() * trackParCov.getPt(), trackParCov.getPt() - mcTrack.pt());
           fillHistTrack(track, hPtRes, track.sign() * trackParCov.getPt(), trackParCov.getPt() - mcTrack.pt());
           fillHistTrack(track, hEtaRes, track.sign() * trackParCov.getPt(), trackParCov.getEta() - mcTrack.eta());
           fillHistTrack(track, hPhiRes, track.sign() * trackParCov.getPt(), trackParCov.getPhi() - mcTrack.phi());
