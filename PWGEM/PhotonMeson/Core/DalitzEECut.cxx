@@ -106,6 +106,11 @@ void DalitzEECut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "DalitzEE Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
+void DalitzEECut::ApplyPrefilter(bool flag)
+{
+  mApplyPF = flag;
+  LOG(info) << "DalitzEE Cut, apply prefilter: " << mApplyPF;
+}
 
 void DalitzEECut::SetPIDScheme(PIDSchemes scheme)
 {
