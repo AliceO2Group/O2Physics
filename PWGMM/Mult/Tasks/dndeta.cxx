@@ -87,12 +87,13 @@ struct MultiplicityCounter {
   {
     AxisSpec MultAxis = {multBinning};
     AxisSpec CentAxis = {centBinning, "centrality"};
-
-    auto hstat = commonRegistry.get<TH1>(HIST(BCSelection));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "Good BCs");
-    x->SetBinLabel(2, "BCs with collisions");
-    x->SetBinLabel(3, "BCs with pile-up/splitting");
+    {
+      auto hstat = commonRegistry.get<TH1>(HIST(BCSelection));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "Good BCs");
+      x->SetBinLabel(2, "BCs with collisions");
+      x->SetBinLabel(3, "BCs with pile-up/splitting");
+    }
 
     if (doprocessEventStat) {
       inclusiveRegistry.add({EventChi2.data(), " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}});
@@ -105,8 +106,8 @@ struct MultiplicityCounter {
 
     if (doprocessCounting || doprocessCountingNoAmb) {
       inclusiveRegistry.add({EventSelection.data(), ";status;events", {HistType::kTH1F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}}}});
-      hstat = inclusiveRegistry.get<TH1>(HIST(EventSelection));
-      x = hstat->GetXaxis();
+      auto hstat = inclusiveRegistry.get<TH1>(HIST(EventSelection));
+      auto* x = hstat->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvSelBins::kAll), EvSelBinLabels[static_cast<int>(EvSelBins::kAll)].data());
       x->SetBinLabel(static_cast<int>(EvSelBins::kSelected), EvSelBinLabels[static_cast<int>(EvSelBins::kSelected)].data());
       x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedgt0), EvSelBinLabels[static_cast<int>(EvSelBins::kSelectedgt0)].data());
@@ -136,8 +137,8 @@ struct MultiplicityCounter {
 
     if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M || doprocessCountingCentralityFT0CNoAmb || doprocessCountingCentralityFT0MNoAmb) {
       binnedRegistry.add({EventSelection.data(), ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
-      hstat = binnedRegistry.get<TH2>(HIST(EventSelection));
-      x = hstat->GetXaxis();
+      auto hstat = binnedRegistry.get<TH2>(HIST(EventSelection));
+      auto* x = hstat->GetXaxis();
       x->SetBinLabel(1, EvSelBinLabels[static_cast<int>(EvSelBins::kAll)].data());
       x->SetBinLabel(2, EvSelBinLabels[static_cast<int>(EvSelBins::kSelected)].data());
       x->SetBinLabel(3, EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
@@ -186,7 +187,7 @@ struct MultiplicityCounter {
       }
 
       auto heff = inclusiveRegistry.get<TH1>(HIST(Efficiency));
-      x = heff->GetXaxis();
+      auto* x = heff->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvEffBins::kGen), EvEffBinLabels[static_cast<int>(EvEffBins::kGen)].data());
       x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), EvEffBinLabels[static_cast<int>(EvEffBins::kGengt0)].data());
       x->SetBinLabel(static_cast<int>(EvEffBins::kRec), EvEffBinLabels[static_cast<int>(EvEffBins::kRec)].data());
@@ -222,7 +223,7 @@ struct MultiplicityCounter {
       }
 
       auto heff = binnedRegistry.get<TH2>(HIST(Efficiency));
-      x = heff->GetXaxis();
+      auto* x = heff->GetXaxis();
       x->SetBinLabel(static_cast<int>(EvEffBins::kGen), EvEffBinLabels[static_cast<int>(EvEffBins::kGen)].data());
       x->SetBinLabel(static_cast<int>(EvEffBins::kGengt0), EvEffBinLabels[static_cast<int>(EvEffBins::kGengt0)].data());
       x->SetBinLabel(static_cast<int>(EvEffBins::kRec), EvEffBinLabels[static_cast<int>(EvEffBins::kRec)].data());
