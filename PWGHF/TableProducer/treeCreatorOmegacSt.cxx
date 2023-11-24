@@ -305,29 +305,23 @@ struct HfTreeCreatorOmegacSt {
       o2::track::TrackPar trackParV0;
       o2::track::TrackPar trackParBachelor;
       std::array<std::array<float, 3>, 2> momentaOmegaDaughters;
-      float cpaOmega = -1;
-      float decayLengthOmega = -1.;
-      float decayLengthOmegaXY = -1.;
-      if (df2.process(getTrackParCov(v0TrackNeg), getTrackParCov(v0TrackPos))) {
-        trackParCovV0 = df2.createParentTrackParCov(0);
-        if (df2.process(trackParCovV0, getTrackParCov(bachelor))) {
-          const auto& secondaryVertex = df2.getPCACandidate();
-          decayLengthOmega = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-          decayLengthOmegaXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
-          trackParV0 = df2.getTrackParamAtPCA(0);
-          trackParBachelor = df2.getTrackParamAtPCA(1);
-          trackParV0.getPxPyPzGlo(momentaOmegaDaughters[0]);
-          trackParBachelor.getPxPyPzGlo(momentaOmegaDaughters[1]);
-          std::array<float, 3> pVec;
-          df2.createParentTrackParCov().getPxPyPzGlo(pVec);
-          std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
-          cpaOmega = RecoDecay::cpa(pvPos, df2.getPCACandidate(), pVec);
-        } else {
-          continue;
-        }
-      } else {
+      if (!df2.process(getTrackParCov(v0TrackNeg), getTrackParCov(v0TrackPos))) {
         continue;
       }
+      trackParCovV0 = df2.createParentTrackParCov(0);
+      if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+        continue;
+      }
+      const auto& secondaryVertex = df2.getPCACandidate();
+      const auto decayLengthOmega = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+      const auto decayLengthOmegaXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+      trackParV0 = df2.getTrackParamAtPCA(0);
+      trackParBachelor = df2.getTrackParamAtPCA(1);
+      trackParV0.getPxPyPzGlo(momentaOmegaDaughters[0]);
+      trackParBachelor.getPxPyPzGlo(momentaOmegaDaughters[1]);
+      std::array<float, 3> pVec;
+      df2.createParentTrackParCov().getPxPyPzGlo(pVec);
+      const auto cpaOmega = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pVec);
 
       std::array<double, 2> masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassKPlus};
       const auto massOmega = RecoDecay::m(momentaOmegaDaughters, masses);
