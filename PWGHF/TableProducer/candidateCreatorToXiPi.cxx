@@ -91,14 +91,11 @@ struct HfCandidateCreatorToXiPi {
   using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
-  Filter filterSelectIndexes = (aod:: hf_track_index::HFflag == 1 || aod:: hf_track_index::HFflag == 3)
+  Filter filterSelectIndexes = (aod::hf_track_index::hfflag == 1);
 
-
-  Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
-  Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::CollisionId;
+  Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
 
@@ -238,6 +235,11 @@ struct HfCandidateCreatorToXiPi {
         //-------------------combining cascade and pion tracks--------------------------
         auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackIndexPion : groupedTrackIndices) {
+
+          // use bachelor selections from HfTrackIndexSkimCreatorTagSelTracks --> bit =2 is CandidateType::CandV0bachelor
+          if(!TESTBIT(trackIndexPion.isSelProng(),2)){
+            continue;
+          }
 
           auto trackPion = trackIndexPion.track_as<MyTracks>();
 
@@ -399,7 +401,7 @@ struct HfCandidateCreatorToXiPi {
                        pseudorapV0Dau0, pseudorapV0Dau1, pseudorapPiFromCas, pseudorapPiFromCharmBaryon,
                        pseudorapCharmBaryon, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
-                       dcazV0Dau00, dcazV0Dau1, dcazPiFromCasc,
+                       dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                        dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                        decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
                        hfFlag);
@@ -656,7 +658,7 @@ struct HfCandidateCreatorToXiPi {
       }   // loop over LF Cascade-bachelor candidates
     }     // loop over collisions
   }       // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPiDerivedData, processUseDerivedData, "Use derived data", false);
+  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDerivedData, "Process derived data", false);
 
 }; // end of struct
 

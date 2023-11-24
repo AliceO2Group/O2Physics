@@ -295,7 +295,7 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // dcaXY pi <-- cascade to PV cut
-      if (cand.dcabachtopv() < dcaBachToPvMin) {
+      if (candidate.dcaXYToPvCascDau() < dcaBachToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvPiFromCasc"), 0);
       } else {
