@@ -514,12 +514,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     std::array<int, 3> statusPid = {TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
     if constexpr (pidStrategy == ProtonPidStrategy::PidTofOnly) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
-        statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
+        if (hfTrack.hasTOF()) {
+          statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
+        }
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOnly) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
-        statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
+        if (hfTrack.hasTPC()) {
+          statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
+        }
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOrTof) {
