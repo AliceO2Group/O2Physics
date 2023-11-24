@@ -43,7 +43,6 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
-using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates

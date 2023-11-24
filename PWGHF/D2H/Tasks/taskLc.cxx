@@ -28,7 +28,6 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
