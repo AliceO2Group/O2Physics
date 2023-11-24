@@ -219,7 +219,7 @@ struct HfTaskBplus {
       // auto candD0 = candidate.prong0_as<aod::HfCand2Prong>();
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), o2::constants::physics::Pdg::kBPlus, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandBplus);

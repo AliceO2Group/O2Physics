@@ -371,10 +371,10 @@ struct HfCandidateCreatorB0Expressions {
                                         candD.prong2_as<aod::TracksWMc>()};
 
       // B0 → D- π+ → (π- K+ π-) π+
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, pdg::Code::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, o2::constants::physics::Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // D- → π- K+ π-
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, pdg::Code::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, o2::constants::physics::Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
         } else {
@@ -385,10 +385,10 @@ struct HfCandidateCreatorB0Expressions {
 
       // B0 → Ds- π+ → (K- K+ π-) π+
       if (!flag) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, pdg::Code::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, o2::constants::physics::Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
           // Ds- → K- K+ π-
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, -pdg::Code::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, -o2::constants::physics::Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
           }
@@ -403,7 +403,7 @@ struct HfCandidateCreatorB0Expressions {
         auto particleProng2 = arrayDaughtersB0[2].mcParticle();
         auto particleProng3 = arrayDaughtersB0[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 3> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBS, pdg::Code::kLambdaB0};
+        std::array<int, 3> bHadronMotherHypos = {o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBS, o2::constants::physics::Pdg::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
           int index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
@@ -429,10 +429,10 @@ struct HfCandidateCreatorB0Expressions {
       flag = 0;
       origin = 0;
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kB0, std::array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kB0, std::array{-static_cast<int>(o2::constants::physics::Pdg::kDPlus), +kPiPlus}, true)) {
         // D- → π- K+ π-
         auto candDMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(pdg::Code::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(o2::constants::physics::Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }

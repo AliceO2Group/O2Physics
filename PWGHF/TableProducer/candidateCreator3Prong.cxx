@@ -295,14 +295,14 @@ struct HfCandidateCreator3ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
           if (arrayDaughters[0].has_mcParticle()) {
@@ -325,7 +325,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
@@ -352,7 +352,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
@@ -375,13 +375,13 @@ struct HfCandidateCreator3ProngExpressions {
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
       // Ds± → K± K∓ π±
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
@@ -400,7 +400,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
           // Flagging the different Λc± → p± K∓ π± decay channels
@@ -423,7 +423,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
       }

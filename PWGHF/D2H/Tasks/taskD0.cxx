@@ -275,7 +275,7 @@ struct HfTaskD0 {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         auto ptGen = particleMother.pt();                                                                                                                     // gen. level pT
         auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::constants::physics::MassD0);                       // gen. level y

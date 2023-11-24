@@ -328,7 +328,7 @@ struct HfTaskLc {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
-        auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, pdg::Code::kLambdaCPlus, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
         auto pt = candidate.pt();

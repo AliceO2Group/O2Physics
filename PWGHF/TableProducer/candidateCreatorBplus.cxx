@@ -354,7 +354,7 @@ struct HfCandidateCreatorBplusExpressions {
     int8_t signB = 0, signD0 = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int kD0pdg = pdg::Code::kD0;
+    int kD0pdg = o2::constants::physics::Pdg::kD0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -367,8 +367,8 @@ struct HfCandidateCreatorBplusExpressions {
       auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
-      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -pdg::Code::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
+      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -o2::constants::physics::Pdg::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
         flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
@@ -386,12 +386,12 @@ struct HfCandidateCreatorBplusExpressions {
 
       // B± → D0bar(D0) π± → (K± π∓) π±
       std::vector<int> arrayDaughterB;
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
         // D0(bar) → π± K∓
         for (auto iD : arrayDaughterB) {
           auto candDaughterMC = mcParticles.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
-            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, pdg::Code::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
+            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, o2::constants::physics::Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
           }
         }
         if (indexGenD0 > -1) {

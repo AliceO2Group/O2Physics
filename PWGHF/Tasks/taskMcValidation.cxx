@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 namespace
 {
 static const int nCharmHadrons = 7;
-static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, pdg::Code::kDStar, pdg::Code::kD0, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
+static const std::array<int, nCharmHadrons> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kJPsi};
 static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
 static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
 static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}", "J/#psi"};

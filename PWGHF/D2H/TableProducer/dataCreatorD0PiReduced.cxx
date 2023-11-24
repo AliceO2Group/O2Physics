@@ -349,18 +349,18 @@ struct HfDataCreatorD0PiReduced {
           int8_t flag{0};
           // B+ → D0(bar) π+ → (K+ π-) π+
           // Printf("Checking B+ → D0bar π+");
-          auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, o2::constants::physics::Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             // D0bar → K+ π-
             // Printf("Checking D0bar → K+ π-");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD0, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
             if (indexRec > -1) {
               flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
             } else {
               LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
             }
           }
-          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), pdg::Code::kBPlus, true);
+          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), o2::constants::physics::Pdg::kBPlus, true);
           auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
           rowHfD0PiMcRecReduced(indexHfCand2Prong, selectedTracksPion[trackPion.globalIndex()], flag, particleMother.pt());
@@ -406,11 +406,11 @@ struct HfDataCreatorD0PiReduced {
       int8_t sign{0};
       int8_t flag{0};
       // B+ → D0bar π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBPlus, std::array{static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, o2::constants::physics::Pdg::kBPlus, std::array{static_cast<int>(o2::constants::physics::Pdg::kD0), +kPiPlus}, true)) {
         // Match D0bar -> π- K+
         auto candD0MC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D0bar -> π- K+");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, static_cast<int>(pdg::Code::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, static_cast<int>(o2::constants::physics::Pdg::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
         }
       }

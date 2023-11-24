@@ -132,7 +132,7 @@ struct HfDplusSelection {
   {
     bool isDplusFound = 0;
     for (const auto& particle1 : mcParticles) {
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kDPlus) {
         continue;
       }
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassDPlus);
@@ -443,7 +443,7 @@ struct HfCorrelatorDplusHadrons {
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kDPlus) {
         continue;
       }
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassDPlus);
@@ -460,7 +460,7 @@ struct HfCorrelatorDplusHadrons {
       counterDplusHadron++;
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kDPlus) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
         continue;
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
@@ -569,7 +569,7 @@ struct HfCorrelatorDplusHadrons {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         // Check track t1 is Dplus
-        if (std::abs(t1.pdgCode()) != pdg::Code::kDPlus) {
+        if (std::abs(t1.pdgCode()) != o2::constants::physics::Pdg::kDPlus) {
           continue;
         }
 

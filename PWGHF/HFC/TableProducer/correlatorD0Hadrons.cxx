@@ -147,7 +147,7 @@ struct HfCorrelatorD0HadronsSelection {
   {
     bool isD0Found = 0;
     for (const auto& particle1 : mcParticles) {
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kD0) {
         continue;
       }
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassD0);
@@ -203,7 +203,7 @@ struct HfCorrelatorD0Hadrons {
                        (aod::track::dcaZ > static_cast<float>(-dcaZTrackMax)) && (aod::track::dcaZ < static_cast<float>(dcaZTrackMax));
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(pdg::Code::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(o2::constants::physics::Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   HistogramRegistry registry{
     "registry",
@@ -573,7 +573,7 @@ struct HfCorrelatorD0Hadrons {
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kD0) {
         continue;
       }
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassD0);
@@ -590,7 +590,7 @@ struct HfCorrelatorD0Hadrons {
 
       // =============== D-h correlation dedicated section =====================
 
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      if (std::abs(particle1.pdgCode()) != o2::constants::physics::Pdg::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
         continue;
       }
       registry.fill(HIST("hCountD0TriggersGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
@@ -611,8 +611,8 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounterGen"), 2); // fill before soft pi removal
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, o2::constants::physics::Pdg::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, o2::constants::physics::Pdg::kDStar, true, nullptr, 1);
         if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
           continue;
 
@@ -834,7 +834,7 @@ struct HfCorrelatorD0Hadrons {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         // Check track t1 is D0
-        if (std::abs(t1.pdgCode()) != pdg::Code::kD0) {
+        if (std::abs(t1.pdgCode()) != o2::constants::physics::Pdg::kD0) {
           continue;
         }
 
@@ -856,8 +856,8 @@ struct HfCorrelatorD0Hadrons {
         // ==============================soft pion removal================================
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
-        auto indexMotherPi = RecoDecay::getMother(mcParticles, t2, pdg::Code::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
-        auto indexMotherD0 = RecoDecay::getMother(mcParticles, t1, pdg::Code::kDStar, true, nullptr, 1);
+        auto indexMotherPi = RecoDecay::getMother(mcParticles, t2, o2::constants::physics::Pdg::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
+        auto indexMotherD0 = RecoDecay::getMother(mcParticles, t1, o2::constants::physics::Pdg::kDStar, true, nullptr, 1);
         if (std::abs(t2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
           continue;
         }

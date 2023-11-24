@@ -261,10 +261,10 @@ struct HfCandidateCreatorLbMc {
                                          lcCand.prong1_as<aod::TracksWMc>(),
                                          lcCand.prong2_as<aod::TracksWMc>()};
       // Λb → Λc+ π-
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Λb → Λc+ π-
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
         } else {
@@ -280,10 +280,10 @@ struct HfCandidateCreatorLbMc {
       flag = 0;
       origin = 0;
       // Λb → Λc+ π-
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaB0, std::array{static_cast<int>(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kLambdaB0, std::array{static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus), -kPiPlus}, true)) {
         // Λc+ → p K- π+
         auto LcCandMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, LcCandMC, static_cast<int>(pdg::Code::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, LcCandMC, static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }
       }

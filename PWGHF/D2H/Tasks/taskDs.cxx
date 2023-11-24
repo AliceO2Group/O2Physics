@@ -245,7 +245,7 @@ struct HfTaskDs {
       }
 
       auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
-      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, pdg::Code::kDS, true);
+      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, o2::constants::physics::Pdg::kDS, true);
       auto particleMother = mcParticles.iteratorAt(indexMother);
       registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
 

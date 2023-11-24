@@ -139,7 +139,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   {
     bool isDsFound = false;
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
+      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
         continue;
       }
       double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
@@ -599,7 +599,7 @@ struct HfCorrelatorDsHadrons {
     // MC gen level for Ds meson reconstruction's efficiency
     for (const auto& particle : mcParticles) {
       // check if the particle is Ds
-      if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
+      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
@@ -655,7 +655,7 @@ struct HfCorrelatorDsHadrons {
     // MC gen level
     for (const auto& particle : mcParticles) {
       // check if the particle is Ds
-      if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
+      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {

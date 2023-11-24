@@ -238,10 +238,10 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong1_as<aod::TracksWMc>(),
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, o2::constants::physics::Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
         } else {
@@ -257,10 +257,10 @@ struct HfCandidateCreatorXiccMc {
       flag = 0;
       origin = 0;
       // Ξcc±± → Ξc± + π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kXiCCPlusPlus, std::array{static_cast<int>(pdg::Code::kXiCPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kXiCCPlusPlus, std::array{static_cast<int>(o2::constants::physics::Pdg::kXiCPlus), +kPiPlus}, true)) {
         // Ξc± → p± K∓ π±
         auto candXicMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(pdg::Code::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(o2::constants::physics::Pdg::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << aod::hf_cand_xicc::DecayType::XiccToXicPi);
         }
       }

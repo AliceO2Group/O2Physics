@@ -151,7 +151,7 @@ struct HfCorrelatorLcHadronsSelection {
   {
     bool isLcFound = 0;
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != pdg::Code::kLambdaCPlus) {
+      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
         continue;
       }
       double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
@@ -516,7 +516,7 @@ struct HfCorrelatorLcHadrons {
 
     // Mc gen level
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != pdg::Code::kLambdaCPlus) {
+      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
@@ -669,7 +669,7 @@ struct HfCorrelatorLcHadrons {
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // Check track t1 is Lc
-        if (std::abs(t1.pdgCode()) != pdg::Code::kLambdaCPlus) {
+        if (std::abs(t1.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
           continue;
         }
 

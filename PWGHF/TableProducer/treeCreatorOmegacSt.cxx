@@ -237,7 +237,7 @@ struct HfTreeCreatorOmegacSt {
     for (const auto& mcParticle : mcParticles) {
       if ((mcParticle.pdgCode() == kOmegaMinus) &&
           mcParticle.has_mothers() &&
-          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == analysis::pdg::Code::kOmegaC0)) {
+          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == constants::physics::Pdg::kOmegaC0)) {
         const auto& mcColl = mcParticle.mcCollision();
         std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
         std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
@@ -530,7 +530,7 @@ struct HfTreeCreatorOmegacSt {
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
-                    if (std::abs(cand.pdgCode()) == analysis::pdg::Code::kOmegaC0 && mcpart.has_mothers()) {
+                    if (std::abs(cand.pdgCode()) == constants::physics::Pdg::kOmegaC0 && mcpart.has_mothers()) {
                       if (mcpart.mothersIds()[0] == cand.globalIndex()) {
                         registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
                         registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);

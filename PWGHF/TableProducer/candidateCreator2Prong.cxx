@@ -427,14 +427,14 @@ struct HfCandidateCreator2ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -442,7 +442,7 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -463,20 +463,20 @@ struct HfCandidateCreator2ProngExpressions {
       origin = 0;
 
       // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
       }
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
       }

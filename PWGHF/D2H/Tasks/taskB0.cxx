@@ -211,7 +211,7 @@ struct HfTaskB0 {
       int flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), o2::constants::physics::Pdg::kB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
