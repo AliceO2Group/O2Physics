@@ -266,7 +266,7 @@ struct HfCandidateCreatorToXiPi {
 
           // reconstruct charm baryon with DCAFitter
           int nVtxFromFitterCharmBaryon = 0;
-          try{
+          try {
             nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
           } catch (...) {
             LOG(error) << "Exception caught in charm DCA fitter process call!";
@@ -521,7 +521,7 @@ struct HfCandidateCreatorToXiPi {
 
         // reconstruct charm baryon with DCAFitter
         int nVtxFromFitterCharmBaryon = 0;
-        try{
+        try {
           nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
         } catch (...) {
           LOG(error) << "Exception caught in charm DCA fitter process call!";
