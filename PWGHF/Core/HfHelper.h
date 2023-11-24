@@ -24,7 +24,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 class HfHelper
