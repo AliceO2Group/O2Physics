@@ -22,7 +22,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -44,7 +44,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 

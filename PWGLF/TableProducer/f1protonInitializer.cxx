@@ -33,7 +33,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"

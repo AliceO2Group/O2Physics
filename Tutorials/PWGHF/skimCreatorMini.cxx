@@ -27,7 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 // PWGHF
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Tutorials/PWGHF/DataModelMini.h"
 
 using namespace o2;

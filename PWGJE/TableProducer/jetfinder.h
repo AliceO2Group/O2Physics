@@ -36,7 +36,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 // #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/FastJetUtilities.h"

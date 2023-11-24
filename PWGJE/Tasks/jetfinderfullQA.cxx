@@ -25,7 +25,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
