@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PhiInJets.cxx
+/// \file phiInJets.cxx
 /// \brief Reconstruction of Phi yield through track-track Minv correlations for resonance hadrochemistry analysis.
 ///
 ///
-/// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>, Jimun Lee <jimun.lee@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>, Sawan Sawan <sawan.sawan@cern.ch>
+/// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
 #include <TLorentzVector.h>
 #include <TVector2.h>
@@ -22,6 +22,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -32,8 +34,6 @@
 #include "Common/DataModel/Multiplicity.h"
 //#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
-
-#include "ReconstructionDataFormats/Track.h"
 
 #include "PWGHF/Core/PDG.h"
 
@@ -48,39 +48,37 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
 
 
-struct PhiInJetsJE {
+struct phiInJets{
   SliceCache cache;
   //Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry JEhistos{"JEhistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry LFhistos{"LFhistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
 
-  Configurable<std::string> c_eventSelections{"c_eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> c_trackSelections{"c_trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> cfgeventSelections{"cfgeventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> cfgtrackSelections{"cfgtrackSelections", "globalTracks", "set track selections"};
 
-  Configurable<double> c_trkMinPt{"c_trkMinPt", 0.15, "set track min pT"};
-  Configurable<double> c_MaxDCArToPVcut{"c_MaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
-  Configurable<double> c_MaxDCAzToPVcut{"c_MaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<bool> c_PrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> c_ConnectedToPV{"c_ConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
-  Configurable<bool> c_GlobalWoDCATrack{"c_GlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
-  Configurable<double> c_nFindableTPCClusters{"c_nFindableTPCClusters", 50, "nFindable TPC Clusters"};
-  Configurable<double> c_nTPCCrossedRows{"c_nTPCCrossedRows", 70, "nCrossed TPC Rows"};
-  Configurable<double> c_nRowsOverFindable{"c_nRowsOverFindable", 1.2, "nRowsOverFindable TPC CLusters"};
-  Configurable<double> c_nTPCChi2{"c_nTPChi2", 4.0, "nTPC Chi2 per Cluster"};
-  Configurable<double> c_nITSChi2{"c_nITShi2", 36.0, "nITS Chi2 per Cluster"};
-  Configurable<int> c_nTPCPID{"c_nTPCPID", 4, "nTPC PID"};
-  Configurable<int> c_nTOFPID{"c_nTOFPID", 4, "nTOF PID"};
-  Configurable<float> c_jetPtMin{"c_jetPtMin", 10.0, "minimum jet pT cut"};
-  Configurable<float> c_jetR{"c_jetR", 0.4, "jet resolution parameter"};
+  Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
+  Configurable<double> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
+  Configurable<double> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};// kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgConnectedToPV{"cfgConnectedToPV", true, "PV contributor track selection"};// PV Contriuibutor
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};// kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+  Configurable<double> cfgnFindableTPCClusters{"cfgnFindableTPCClusters", 50, "nFindable TPC Clusters"};
+  Configurable<double> cfgnTPCCrossedRows{"cfgnTPCCrossedRows", 70, "nCrossed TPC Rows"};
+  Configurable<double> cfgnRowsOverFindable{"cfgnRowsOverFindable", 1.2, "nRowsOverFindable TPC CLusters"};
+  Configurable<double> cfgnTPCChi2{"cfgnTPChi2", 4.0, "nTPC Chi2 per Cluster"};
+  Configurable<double> cfgnITSChi2{"cfgnITShi2", 36.0, "nITS Chi2 per Cluster"};
+  Configurable<int> cfgnTPCPID{"cfgnTPCPID", 4, "nTPC PID"};
+  Configurable<int> cfgnTOFPID{"cfgnTOFPID", 4, "nTOF PID"};
+  Configurable<float> cfgjetPtMin{"cfgjetPtMin", 5.0, "minimum jet pT cut"};
+  Configurable<float> cfgjetR{"cfgjetR", 0.4, "jet resolution parameter"};
   //CONFIG DONE
   /////////////////////////////////////////  //INIT
 
   int eventSelection = -1;
-  //int trackSelection = -1;
 
   void init(o2::framework::InitContext&){
     //HISTOGRAMS
@@ -89,7 +87,7 @@ struct PhiInJetsJE {
     const AxisSpec axisPt{200, 0, +200, "#pt"};
     const AxisSpec MinvAxis = {400,0.95,1.35};
     const AxisSpec PtAxis = {200,0,20.0};
-    const AxisSpec MultAxis = {1000,0,10000};
+    const AxisSpec MultAxis = {100,0,100};
     
     JEhistos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     JEhistos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
@@ -168,13 +166,10 @@ struct PhiInJetsJE {
 
     
     //EVENT SELECTION
-    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(c_eventSelections));
-    // trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
 
   
   } //end of init
-
-  //  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();  // FIXME: Get from the common header
 
   double massKa = o2::analysis::pdg::MassKPlus;
 
@@ -182,41 +177,41 @@ struct PhiInJetsJE {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
 				    aod::pidTPCFullKa, aod::pidTOFFullKa>;  
-  Filter jetCuts = aod::jet::pt > c_jetPtMin&& aod::jet::r == nround(c_jetR.node() * 100.0f);
+  Filter jetCuts = aod::jet::pt > cfgjetPtMin&& aod::jet::r == nround(cfgjetR.node() * 100.0f);
 
 
   //Function for track quality cuts
   template <typename TrackType>
   bool trackSelection(const TrackType track){
     // basic track cuts
-    if (std::abs(track.pt()) < c_trkMinPt)
+    if (std::abs(track.pt()) < cfgtrkMinPt)
       return false;
     
-    if (std::abs(track.dcaXY()) > c_MaxDCArToPVcut)
+    if (std::abs(track.dcaXY()) > cfgMaxDCArToPVcut)
       return false;
     
-    if (std::abs(track.dcaZ()) > c_MaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
       return false;
     
-    if (c_PrimaryTrack && !track.isPrimaryTrack())
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
     
-    if(std::abs(track.tpcNClsFindable()) < c_nFindableTPCClusters)
+    if(std::abs(track.tpcNClsFindable()) < cfgnFindableTPCClusters)
       return false;
     
-    if(std::abs(track.tpcNClsCrossedRows()) < c_nTPCCrossedRows)
+    if(std::abs(track.tpcNClsCrossedRows()) < cfgnTPCCrossedRows)
       return false;
     
-    if(std::abs(track.tpcCrossedRowsOverFindableCls()) > c_nRowsOverFindable)
+    if(std::abs(track.tpcCrossedRowsOverFindableCls()) > cfgnRowsOverFindable)
       return false;
     
-    if(std::abs(track.tpcChi2NCl() > c_nTPCChi2))
+    if(std::abs(track.tpcChi2NCl() > cfgnTPCChi2))
       return false;
     
-    if(std::abs(track.itsChi2NCl() > c_nITSChi2))
+    if(std::abs(track.itsChi2NCl() > cfgnITSChi2))
       return false;
     
-    if (c_ConnectedToPV && !track.isPVContributor())
+    if (cfgConnectedToPV && !track.isPVContributor())
       return false;    
     return true;
   };
@@ -225,11 +220,11 @@ struct PhiInJetsJE {
   bool trackPID(const T& candidate)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaKa()) < c_nTPCPID) 
+    if (std::abs(candidate.tpcNSigmaKa()) < cfgnTPCPID) 
       tpcPIDPassed = true;
     
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < c_nTOFPID) {
+      if (std::abs(candidate.tofNSigmaKa()) < cfgnTOFPID) {
         tofPIDPassed = true;
       }
     }
@@ -245,7 +240,7 @@ struct PhiInJetsJE {
 
   
   template <bool IsMC, bool IsMix, typename TracksType, typename JetType>
-  void MinvReconstruction(double mult, const TracksType& trk1, const TracksType& trk2, const JetType& jets) {
+  void minvReconstruction(double mult, const TracksType& trk1, const TracksType& trk2, const JetType& jets) {
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
 
     if(!trackSelection(trk1) || !trackSelection(trk2))
@@ -261,7 +256,7 @@ struct PhiInJetsJE {
     lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
     lResonance = lDecayDaughter1 + lDecayDaughter2;
 
-    if (abs(lResonance.Rapidity()) > 0.5)
+    if (std::abs(lResonance.Rapidity()) > 0.5)
       return;
 
     if (trk1.sign() * trk2.sign() < 0) {
@@ -287,49 +282,55 @@ struct PhiInJetsJE {
       double phidiff = TVector2::Phi_mpi_pi(jet.phi()-lResonance.Phi());
       double etadiff = jet.eta() - lResonance.Eta();     
       double R = TMath::Sqrt((etadiff*etadiff) + (phidiff*phidiff));
-      if(R<c_jetR)
-	jetFlag=true;
+      if(R<cfgjetR)
+     	jetFlag=true;
     }
     if(jetFlag){
       if (trk1.sign() * trk2.sign() < 0) {
-	JEhistos.fill(HIST("hUSS_INSIDE_1D"), lResonance.M());
+     	JEhistos.fill(HIST("hUSS_INSIDE_1D"), lResonance.M());
 	
-	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-	  JEhistos.fill(HIST("hUSS_INSIDE_1D_2_3"), lResonance.M());
+     	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+     	  JEhistos.fill(HIST("hUSS_INSIDE_1D_2_3"), lResonance.M());
 
-	JEhistos.fill(HIST("hUSS_INSIDE"), mult, lResonance.Pt(), lResonance.M());
+     	JEhistos.fill(HIST("hUSS_INSIDE"), mult, lResonance.Pt(), lResonance.M());
       }
       else if(trk1.sign() * trk2.sign() > 0){
 	
-	JEhistos.fill(HIST("hLSS_INSIDE_1D"), lResonance.M());	
-	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-	  JEhistos.fill(HIST("hLSS_INSIDE_1D_2_3"), lResonance.M());
+     	JEhistos.fill(HIST("hLSS_INSIDE_1D"), lResonance.M());	
+     	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+     	  JEhistos.fill(HIST("hLSS_INSIDE_1D_2_3"), lResonance.M());
 
-	JEhistos.fill(HIST("hLSS_INSIDE"), mult, lResonance.Pt(), lResonance.M());	
+     	JEhistos.fill(HIST("hLSS_INSIDE"), mult, lResonance.Pt(), lResonance.M());	
       }      
     }//jetflag
     if(!jetFlag){
       if (trk1.sign() * trk2.sign() < 0) {
-	JEhistos.fill(HIST("hUSS_OUTSIDE_1D"), lResonance.M());
+     	JEhistos.fill(HIST("hUSS_OUTSIDE_1D"), lResonance.M());
 	
-	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-	  JEhistos.fill(HIST("hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+     	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+     	  JEhistos.fill(HIST("hUSS_OUTSIDE_1D_2_3"), lResonance.M());
 
-	JEhistos.fill(HIST("hUSS_OUTSIDE"), mult, lResonance.Pt(), lResonance.M());
+     	JEhistos.fill(HIST("hUSS_OUTSIDE"), mult, lResonance.Pt(), lResonance.M());
       }
       else if(trk1.sign() * trk2.sign() > 0){
 	
-	JEhistos.fill(HIST("hLSS_OUTSIDE_1D"), lResonance.M());	
-	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-	  JEhistos.fill(HIST("hLSS_OUTSIDE_1D_2_3"), lResonance.M());
+     	JEhistos.fill(HIST("hLSS_OUTSIDE_1D"), lResonance.M());	
+     	if(lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+     	  JEhistos.fill(HIST("hLSS_OUTSIDE_1D_2_3"), lResonance.M());
 
-	JEhistos.fill(HIST("hLSS_OUTSIDE"), mult, lResonance.Pt(), lResonance.M());	
+     	JEhistos.fill(HIST("hLSS_OUTSIDE"), mult, lResonance.Pt(), lResonance.M());	
       }      
     }//!jetflag
   }//MinvReconstruction
-  
+
+
+  int nEvents =0;
   void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::FullJets> const& fulljets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&){
     JEhistos.fill(HIST("nEvents"), 0.5);
+
+    // nEvents++;
+    // if((nEvents+1)%10000==0)
+    //   std::cout<<nEvents<<std::endl;
 
     if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) 
       return;
@@ -337,9 +338,9 @@ struct PhiInJetsJE {
      for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))){
        auto trk1 = track1.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,aod::pidTPCFullKa, aod::pidTOFFullKa>>();      
        auto trk2 = track2.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,aod::pidTPCFullKa, aod::pidTOFFullKa>>();      
-       MinvReconstruction<false, false>(1.0, trk1, trk2, fulljets);
+       minvReconstruction<false, false>(1.0, trk1, trk2, fulljets);
      }
-     for (auto const& fulljet : fulljets){
+     for (auto fulljet : fulljets){
        JEhistos.fill(HIST("FJetaHistogram"), fulljet.eta());
        JEhistos.fill(HIST("FJphiHistogram"), fulljet.phi());  	     	 
        JEhistos.fill(HIST("FJptHistogram"), fulljet.phi());  	     	 
@@ -370,7 +371,7 @@ struct PhiInJetsJE {
 
     
   }; //Process Switch
-  PROCESS_SWITCH(PhiInJetsJE, processJetTracks, "process JE Framework", true);
+  PROCESS_SWITCH(phiInJets, processJetTracks, "process JE Framework", true);
   
   void processLFTracks(EventCandidates::iterator const& collision, TrackCandidates const& tracks){
     
@@ -401,12 +402,12 @@ struct PhiInJetsJE {
       LFhistos.fill(HIST("phiHistogram"), track.phi());  	     	 
     }// LFTrack Loop  
   };
-   PROCESS_SWITCH(PhiInJetsJE, processLFTracks, "Process tracks in resonance framework", true);
+   PROCESS_SWITCH(phiInJets, processLFTracks, "Process tracks in resonance framework", true);
 
 };// end of main struct
 
   
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<PhiInJetsJE>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<phiInJets>(cfgc)};
 };
