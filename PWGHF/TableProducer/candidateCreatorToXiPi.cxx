@@ -99,6 +99,7 @@ struct HfCandidateCreatorToXiPi {
   Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1F> hFitterExceptions{TH1F("hFitterExceptions", "Charm DCAFitter exceptions;status;entries", 3, 0.0, 3.0)};
 
   void init(InitContext const&)
   {
