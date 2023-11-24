@@ -233,7 +233,7 @@ struct cascadepid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void processTPC(aod::Collisions const& collisions, aod::CascDatas const& Cascades, TracksExtraWithPID const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades)
+  void processTPC(aod::Collisions const& collisions, aod::CascDatas const& Cascades, TracksExtraWithPID const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades, aod::V0s const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
@@ -262,7 +262,7 @@ struct cascadepid {
     }
   }
 
-  void processTOF(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades)
+  void processTOF(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedCascades const& allCascades, aod::V0s const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
