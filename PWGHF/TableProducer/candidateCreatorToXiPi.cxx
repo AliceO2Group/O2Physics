@@ -44,6 +44,7 @@ using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
