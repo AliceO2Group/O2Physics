@@ -18,6 +18,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -286,7 +288,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, -7);
+      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", true);
