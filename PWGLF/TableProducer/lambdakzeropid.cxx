@@ -246,7 +246,7 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void processTPC(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
+  void processTPC(aod::Collisions const& collisions, aod::V0Datas const& V0s, TracksExtraWithPID const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
