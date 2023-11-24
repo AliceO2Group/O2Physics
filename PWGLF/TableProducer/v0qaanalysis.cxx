@@ -29,7 +29,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{{"add-fill", VariantType::Int, 0, {"Add histogram filling"}}};
+  std::vector<ConfigParamSpec> options{{"add-fill", VariantType::Int, 1, {"Add histogram filling"}}};
   std::swap(workflowOptions, options);
 }
 
