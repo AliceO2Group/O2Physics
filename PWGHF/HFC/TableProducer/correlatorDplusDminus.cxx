@@ -382,7 +382,7 @@ struct HfCorrelatorDplusDminus {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassDPlus);
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -405,7 +405,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != -pdg::Code::kDPlus) { // check that inner particle is a Dminus
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::analysis::pdg::MassDPlus)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::constants::physics::MassDPlus)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
@@ -415,8 +415,8 @@ struct HfCorrelatorDplusDminus {
                              particle2.eta() - particle1.eta(),
                              particle1.pt(),
                              particle2.pt());
-        entryDplusDminusRecoInfo(o2::analysis::pdg::MassDPlus,
-                                 o2::analysis::pdg::MassDPlus,
+        entryDplusDminusRecoInfo(o2::constants::physics::MassDPlus,
+                                 o2::constants::physics::MassDPlus,
                                  8); // Dummy
         double etaCut = 0.;
         double ptCut = 0.;
@@ -479,7 +479,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassCharm);
+      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassCharm);
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
@@ -503,7 +503,7 @@ struct HfCorrelatorDplusDminus {
         if (particle2.pdgCode() != PDG_t::kCharmBar) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::analysis::pdg::MassCharmBar)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::constants::physics::MassCharmBar)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {

@@ -190,14 +190,14 @@ struct HfCorrelatorDMesonPairs {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassD0)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::constants::physics::MassD0)) > yCandMax) {
         return false;
       }
     } else {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassDPlus)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(o2::constants::physics::MassDPlus)) > yCandMax) {
         return false;
       }
     }
@@ -235,9 +235,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEtaMcRec"), candidate.eta());
       registry.fill(HIST("hPhiMcRec"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassD0));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::constants::physics::MassD0));
       } else {
-        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassDPlus));
+        registry.fill(HIST("hYMcRec"), candidate.y(o2::constants::physics::MassDPlus));
       }
     } else {
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -246,9 +246,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassD0));
+        registry.fill(HIST("hY"), candidate.y(o2::constants::physics::MassD0));
       } else {
-        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassDPlus));
+        registry.fill(HIST("hY"), candidate.y(o2::constants::physics::MassDPlus));
       }
     }
   }
@@ -334,7 +334,7 @@ struct HfCorrelatorDMesonPairs {
       if (pdgCode != pdg::Code::kD0 && pdgCode != pdg::Code::kDPlus) {
         continue;
       }
-      auto massD = pdgCode == pdg::Code::kD0 ? o2::analysis::pdg::MassD0 : o2::analysis::pdg::MassDPlus;
+      auto massD = pdgCode == pdg::Code::kD0 ? o2::constants::physics::MassD0 : o2::constants::physics::MassDPlus;
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, massD);
       if (!kinematicCutsGen(particle1)) {
         continue;
@@ -374,8 +374,8 @@ struct HfCorrelatorDMesonPairs {
                       particle2.pt(),
                       particle1.y(),
                       particle2.y(),
-                      o2::analysis::pdg::MassD0,
-                      o2::analysis::pdg::MassD0,
+                      o2::constants::physics::MassD0,
+                      o2::constants::physics::MassD0,
                       candidateType1,
                       candidateType2,
                       2);
@@ -391,8 +391,8 @@ struct HfCorrelatorDMesonPairs {
                          particle2.pt(),
                          particle1.y(),
                          particle2.y(),
-                         o2::analysis::pdg::MassDPlus,
-                         o2::analysis::pdg::MassDPlus,
+                         o2::constants::physics::MassDPlus,
+                         o2::constants::physics::MassDPlus,
                          candidateType1,
                          candidateType2,
                          2);

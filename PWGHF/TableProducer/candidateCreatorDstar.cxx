@@ -37,8 +37,8 @@ struct HfCandidateCreatorDstar {
                aod::Tracks const&,
                aod::Hf2Prongs const&)
   {
-    auto massPi = o2::analysis::pdg::MassPiPlus;
-    auto massD0 = o2::analysis::pdg::MassD0;
+    auto massPi = o2::constants::physics::MassPiPlus;
+    auto massD0 = o2::constants::physics::MassD0;
 
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {

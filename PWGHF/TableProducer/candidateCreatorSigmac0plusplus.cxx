@@ -178,10 +178,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
       }
 
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPKPiCandLcMax) {
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::constants::physics::MassLambdaCPlus) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - o2::constants::physics::MassLambdaCPlus) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

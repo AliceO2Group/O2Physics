@@ -125,9 +125,9 @@ struct HfCandidateCreatorB0 {
     runNumber = 0;
 
     // invariant-mass window cut
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massD = o2::analysis::pdg::MassDMinus;
-    massB0 = o2::analysis::pdg::MassB0;
+    massPi = o2::constants::physics::MassPiPlus;
+    massD = o2::constants::physics::MassDMinus;
+    massB0 = o2::constants::physics::MassB0;
     invMass2DPiMin = (massB0 - invMassWindowB0) * (massB0 - invMassWindowB0);
     invMass2DPiMax = (massB0 + invMassWindowB0) * (massB0 + invMassWindowB0);
   }

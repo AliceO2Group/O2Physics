@@ -209,11 +209,11 @@ struct HfCandidateSelectorD0 {
       massD0bar = hfHelper.invMassD0barToKPi(candidate);
     }
     if (trackPion.sign() > 0) {
-      if (std::abs(massD0 - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0 - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(massD0bar - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0bar - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -242,11 +242,11 @@ struct HfCandidateSelectorD0 {
     // in case only sideband candidates have to be stored, additional invariant-mass cut
     if (keepOnlySidebandCandidates) {
       if (trackPion.sign() > 0) {
-        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       } else {
-        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       }

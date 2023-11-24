@@ -148,7 +148,7 @@ struct HfCorrelatorD0HadronsSelection {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassD0);
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -238,9 +238,9 @@ struct HfCorrelatorD0Hadrons {
 
   void init(InitContext&)
   {
-    massD0 = o2::analysis::pdg::MassD0;
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
+    massD0 = o2::constants::physics::MassD0;
+    massPi = o2::constants::physics::MassPiPlus;
+    massK = o2::constants::physics::MassKPlus;
 
     auto vbins = (std::vector<double>)bins;
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -574,7 +574,7 @@ struct HfCorrelatorD0Hadrons {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassD0);
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::constants::physics::MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -836,7 +836,7 @@ struct HfCorrelatorD0Hadrons {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, o2::analysis::pdg::MassD0);
+        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, o2::constants::physics::MassD0);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }

@@ -105,8 +105,8 @@ struct HfCandidateCreator2Prong {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
 
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
+    massPi = o2::constants::physics::MassPiPlus;
+    massK = o2::constants::physics::MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

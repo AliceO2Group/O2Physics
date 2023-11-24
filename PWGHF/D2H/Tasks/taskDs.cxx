@@ -276,7 +276,7 @@ struct HfTaskDs {
           continue;
         }
         auto pt = particle.pt();
-        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS);
+        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
         if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
           continue;
         }

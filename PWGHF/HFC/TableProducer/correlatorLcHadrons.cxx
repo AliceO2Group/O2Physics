@@ -152,7 +152,7 @@ struct HfCorrelatorLcHadronsSelection {
       if (std::abs(particle.pdgCode()) != pdg::Code::kLambdaCPlus) {
         continue;
       }
-      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus);
+      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
       if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
         continue;
       }
@@ -518,7 +518,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus);
+        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }
@@ -559,7 +559,7 @@ struct HfCorrelatorLcHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
-          entryLcHadronRecoInfo(o2::analysis::pdg::MassLambdaCPlus, true);
+          entryLcHadronRecoInfo(o2::constants::physics::MassLambdaCPlus, true);
         } // end inner loop
       }
     } // end outer loop
@@ -671,7 +671,7 @@ struct HfCorrelatorLcHadrons {
           continue;
         }
 
-        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, o2::analysis::pdg::MassLambdaCPlus);
+        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, o2::constants::physics::MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }

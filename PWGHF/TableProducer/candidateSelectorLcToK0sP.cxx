@@ -516,15 +516,15 @@ struct HfCandidateSelectorLcToK0sP {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfCandCascade.mK0Short() - o2::analysis::pdg::MassK0Short) > cuts->get(ptBin, "mK0s")) {
+    if (std::abs(hfCandCascade.mK0Short() - o2::constants::physics::MassK0Short) > cuts->get(ptBin, "mK0s")) {
       return false; // mass of the K0s
     }
 
-    if ((std::abs(hfCandCascade.mLambda() - o2::analysis::pdg::MassLambda0) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - o2::analysis::pdg::MassLambda0) < cuts->get(ptBin, "mLambda"))) {
+    if ((std::abs(hfCandCascade.mLambda() - o2::constants::physics::MassLambda0) < cuts->get(ptBin, "mLambda")) || (std::abs(hfCandCascade.mAntiLambda() - o2::constants::physics::MassLambda0) < cuts->get(ptBin, "mLambda"))) {
       return false; // mass of the Lambda
     }
 
-    if (std::abs(hfCandCascade.mGamma() - o2::analysis::pdg::MassGamma) < cuts->get(ptBin, "mGamma")) {
+    if (std::abs(hfCandCascade.mGamma() - o2::constants::physics::MassGamma) < cuts->get(ptBin, "mGamma")) {
       return false; // mass of the Gamma
     }
 

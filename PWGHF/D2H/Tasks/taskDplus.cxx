@@ -196,7 +196,7 @@ struct HfTaskDplus {
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDPlus);
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }

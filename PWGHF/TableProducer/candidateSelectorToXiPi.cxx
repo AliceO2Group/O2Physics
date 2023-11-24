@@ -177,8 +177,8 @@ struct HfCandidateSelectorToXiPi {
   void process(aod::HfCandToXiPi const& candidates,
                TracksSel const&)
   {
-    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0;
-    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;
+    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
+    double massXiFromPDG = o2::constants::physics::MassXiMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {

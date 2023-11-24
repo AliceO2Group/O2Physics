@@ -207,7 +207,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     }
 
     // Filling particle properties
-    float massChic = o2::analysis::pdg::MassChiC1;
+    float massChic = o2::constants::physics::MassChiC1;
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToEEGamma || std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma) {

@@ -100,7 +100,7 @@ struct phianalysisrun3 {
     }
   }
 
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = o2::constants::physics::MassKPlus;
   double rapidity;
   double genMass, recMass, resolution;
   double mass{0.};

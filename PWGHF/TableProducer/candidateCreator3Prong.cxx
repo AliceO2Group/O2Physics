@@ -81,8 +81,8 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
 
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
+    massPi = o2::constants::physics::MassPiPlus;
+    massK = o2::constants::physics::MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

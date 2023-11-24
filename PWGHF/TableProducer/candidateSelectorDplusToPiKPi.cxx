@@ -146,7 +146,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::analysis::pdg::MassDPlus) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

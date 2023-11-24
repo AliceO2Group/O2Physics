@@ -159,7 +159,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToKKPi(candidate) - o2::analysis::pdg::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDsToKKPi(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (hfHelper.deltaMassPhiDsToKKPi(candidate) > cuts->get(pTBin, "deltaM Phi")) {
@@ -188,7 +188,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToPiKK(candidate) - o2::analysis::pdg::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDsToPiKK(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (hfHelper.deltaMassPhiDsToPiKK(candidate) > cuts->get(pTBin, "deltaM Phi")) {

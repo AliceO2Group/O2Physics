@@ -92,9 +92,9 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massDs = o2::analysis::pdg::MassDSBar;
-    massBs = o2::analysis::pdg::MassBS;
+    massPi = o2::constants::physics::MassPiPlus;
+    massDs = o2::constants::physics::MassDSBar;
+    massBs = o2::constants::physics::MassBS;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

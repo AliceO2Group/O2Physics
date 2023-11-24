@@ -76,8 +76,8 @@ struct HfCandidateCreatorLb {
 
   void init(InitContext const&)
   {
-    massPi = o2::analysis::pdg::MassPiMinus;
-    massLc = o2::analysis::pdg::MassLambdaCPlus;
+    massPi = o2::constants::physics::MassPiMinus;
+    massLc = o2::constants::physics::MassLambdaCPlus;
   }
 
   void process(aod::Collision const& collision,

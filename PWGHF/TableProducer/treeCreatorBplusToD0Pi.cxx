@@ -324,7 +324,7 @@ struct HfTreeCreatorBplusToD0Pi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBPlus),
           particle.flagMcMatchGen(),
           particle.globalIndex());
       }

@@ -124,8 +124,8 @@ struct resonanceqa {
       histos.add("h1LambdastarRec", "Lambdastar meson Rec", kTH1F, {{100, 0.0f, 10.0f}});
     }
   }
-  double massPi = o2::analysis::pdg::MassPiPlus;
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
   double massPr = 0.938272088f;
   double rapidity;
   double genMass, recMass, resolution;
