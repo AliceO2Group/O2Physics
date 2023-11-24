@@ -16,6 +16,7 @@
 #include <TPDGCode.h>
 #include <TObjArray.h>
 #include <TRandom.h>
+#include <vector>
 #include <TVector2.h>
 #include <TVector3.h>
 #include <TDatabasePDG.h>
@@ -250,7 +251,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 1.5);
 
     // Reduced Event
-    vector<int> particle_ID;
+    std::vector<int> particle_ID;
     int leading_ID;
     bool containsParticleOfInterest(false);
     float pt_max(0);
@@ -307,7 +308,7 @@ struct nuclei_in_jets {
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Array of Particles inside Jet
-    vector<int> jet_particle_ID;
+    std::vector<int> jet_particle_ID;
     jet_particle_ID.push_back(leading_ID);
 
     // Labels
@@ -383,15 +384,15 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("jet_plus_ue_multiplicity"), jet_particle_ID.size());
 
     // Perpendicular Cones for UE Estimate
-    TVector3 z_positive(0, 0, 1);
-    TVector3 z_negative(0, 0, -1);
+    TVector3 z_positive(0.0, 0.0, 1.0);
+    TVector3 z_negative(0.0, 0.0, -1.0);
     TVector3 v1 = (z_positive.Cross(p_leading)).Unit();
     TVector3 v2 = (z_negative.Cross(p_leading)).Unit();
     TVector3 v3 = (p_leading.Cross(v1)).Unit();
     TVector3 v4 = (p_leading.Cross(v2)).Unit();
 
     // Store UE
-    vector<int> ue_particle_ID;
+    std::vector<int> ue_particle_ID;
 
     for (int i = 0; i < particle_ID.size(); i++) {
 
