@@ -16,6 +16,7 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "CCDB/BasicCCDBManager.h"             // for dca recalculation
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
 #include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
 #include "DetectorsBase/GeometryManager.h"     // for dca recalculation

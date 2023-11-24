@@ -17,6 +17,7 @@
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"

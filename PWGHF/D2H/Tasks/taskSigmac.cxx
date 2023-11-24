@@ -15,6 +15,7 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

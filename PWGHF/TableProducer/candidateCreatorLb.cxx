@@ -15,6 +15,7 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"

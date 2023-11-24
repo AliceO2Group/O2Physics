@@ -12,7 +12,9 @@
 /// \file candidateCreatorToXiPi.cxx
 /// \brief Reconstruction of Omegac0 and Xic0 -> xi pi candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"

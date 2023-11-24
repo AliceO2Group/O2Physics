@@ -14,6 +14,7 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"

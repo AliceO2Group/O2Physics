@@ -15,6 +15,7 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

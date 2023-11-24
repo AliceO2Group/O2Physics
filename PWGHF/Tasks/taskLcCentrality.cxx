@@ -16,6 +16,7 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 

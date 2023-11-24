@@ -16,6 +16,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 

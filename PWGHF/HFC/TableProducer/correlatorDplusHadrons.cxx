@@ -12,6 +12,7 @@
 /// \file correlatorDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

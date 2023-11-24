@@ -14,6 +14,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"

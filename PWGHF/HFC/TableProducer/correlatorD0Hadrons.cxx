@@ -15,6 +15,7 @@
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

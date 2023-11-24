@@ -14,6 +14,7 @@
 ///
 /// \author Jan Fiete Grosse-Oetringhaus, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"

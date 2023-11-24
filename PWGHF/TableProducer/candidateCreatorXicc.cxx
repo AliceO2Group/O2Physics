@@ -17,6 +17,7 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"

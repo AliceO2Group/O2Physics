@@ -15,6 +15,7 @@
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

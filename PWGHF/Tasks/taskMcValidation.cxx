@@ -17,6 +17,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

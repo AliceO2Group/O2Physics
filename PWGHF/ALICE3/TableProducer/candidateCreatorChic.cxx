@@ -15,6 +15,7 @@
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"
