@@ -45,10 +45,10 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
   Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
   Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
-  Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};                      
-  Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};                         
-  Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};                        
-  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};                   
+  Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
+  Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
+  Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
 
   // limit charm baryon invariant mass spectrum
@@ -172,7 +172,6 @@ struct HfCandidateSelectorToXiPi {
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hSelDcaXYToPvPiFromCasc", "hSelDcaXYToPvPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-
   }
 
   void process(aod::HfCandToXiPi const& candidates,
@@ -201,7 +200,7 @@ struct HfCandidateSelectorToXiPi {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
         registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
-      } else if(signDecay < 0) {
+      } else if (signDecay < 0) {
         registry.fill(HIST("hSelSignDec"), 0); // particle decay
       }
 
@@ -524,7 +523,7 @@ struct HfCandidateSelectorToXiPi {
       double invMassCascade = candidate.invMassCascade();
       double invMassCharmBaryon = candidate.invMassCharmBaryon();
 
-      if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow ) {
+      if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow) {
         statusInvMassLambda = true;
         registry.fill(HIST("hSelMassLam"), 1);
         if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && resultSelections) {
@@ -602,8 +601,7 @@ struct HfCandidateSelectorToXiPi {
       }
     }
   } // end process
-}; // end struct
-
+};  // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
