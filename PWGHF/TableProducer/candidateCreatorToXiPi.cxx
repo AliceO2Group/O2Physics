@@ -425,9 +425,10 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
+    int indexRecCharmBaryon = -1;
     int8_t sign = -9;
-    int8_t flag = -9;
-    // int8_t origin = 0; //to be used for prompt/non prompt
+    int8_t flag = 0;
+    int8_t origin = 0; // to be used for prompt/non prompt
     int8_t debug = 0;
     int8_t debugGenCharmBar = 0;
     int8_t debugGenXi = 0;
@@ -444,7 +445,7 @@ struct HfCandidateCreatorToXiPiMc {
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
       flag = 0;
-      // origin = 0;
+      origin = RecoDecay::OriginType::None;
       debug = 0;
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
                                        candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
@@ -460,6 +461,7 @@ struct HfCandidateCreatorToXiPiMc {
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
@@ -480,11 +482,18 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+
+        // Check whether the charm baryon is non-prompt (from a b quark).
+        if (flag != 0) {
+          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
       // Xic matching
       if (matchXicMc) {
         // Xic → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
@@ -505,23 +514,29 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+
+        // Check whether the charm baryon is non-prompt (from a b quark).
+        if (flag != 0) {
+          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
 
       if (debug == 2 || debug == 3) {
         LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
-      rowMCMatchRec(flag, debug);
+      rowMCMatchRec(flag, debug, origin);
 
     } // close loop over candidates
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      flag = -9;
+      flag = 0;
       sign = -9;
       debugGenCharmBar = 0;
       debugGenXi = 0;
       debugGenLambda = 0;
-      // origin = 0;
+      origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
@@ -537,6 +552,10 @@ struct HfCandidateCreatorToXiPiMc {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
             }
           }
+        }
+        // Check whether the charm baryon is non-prompt (from a b quark)
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         }
       }
       if (matchXicMc) {
@@ -555,10 +574,13 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+        // Check whether the charm baryon is non-prompt (from a b quark)
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
 
-      // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, origin);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
