@@ -21,6 +21,7 @@
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -43,6 +44,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::hffilters;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
