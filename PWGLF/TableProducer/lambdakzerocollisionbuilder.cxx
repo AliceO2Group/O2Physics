@@ -66,7 +66,7 @@ struct lambdakzerocollisionbuilder {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       // V0 table sliced
-      if (V0Table_thisCollision.size()>0 || fillEmptyCollisions){
+      if (V0Table_thisCollision.size() > 0 || fillEmptyCollisions) {
         if (currentCollIdx != collIdx) {
           v0coll(collision.posX(), collision.posY(), collision.posZ(),
                  collision.centFT0M(), collision.centFT0A(),

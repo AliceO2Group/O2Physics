@@ -66,7 +66,7 @@ struct cascadecollisionbuilder {
       const uint64_t collIdx = collision.globalIndex();
       auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
       // casc table sliced
-      if (CascTable_thisCollision.size()>0 || fillEmptyCollisions){
+      if (CascTable_thisCollision.size() > 0 || fillEmptyCollisions) {
         if (currentCollIdx != collIdx) {
           casccoll(collision.posX(), collision.posY(), collision.posZ(),
                    collision.centFT0M(), collision.centFT0A(),
