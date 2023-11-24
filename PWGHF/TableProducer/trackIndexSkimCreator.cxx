@@ -2667,12 +2667,12 @@ struct HfTrackIndexSkimCreatorCascades {
   double massLc{0.};
   double mass2K0sP{0.}; // WHY HERE?
 
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
+
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
-  // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
@@ -2748,6 +2748,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
       // for (const auto& bach : selectedTracks) {
       for (const auto& bachIdx : groupedBachTrackIndices) {
+
         auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
 
         MY_DEBUG_MSG(1, printf("\n"); LOG(info) << "Bachelor loop");
