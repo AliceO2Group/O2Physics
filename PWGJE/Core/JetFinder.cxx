@@ -51,10 +51,8 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
 {
   setParams();
   jets.clear();
-
   fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDef, areaDef);
   jets = clusterSeq.inclusive_jets();
-
   jets = selJets(jets);
   jets = fastjet::sorted_by_pt(jets);
   if (isReclustering) {

@@ -159,7 +159,7 @@ struct phiInJets {
     LFhistos.add("hMultFT0M", "hMultFT0M", kTH1F, {MultAxis});
 
     // EVENT SELECTION
-    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
 
   } // end of init
 
@@ -309,7 +309,7 @@ struct phiInJets {
   }   // MinvReconstruction
 
   int nEvents = 0;
-  void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::ChargedJets> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracks(JetCollision const& collision, soa::Filtered<aod::ChargedJets> const& chargedjets, soa::Join<JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
     if (cDebugLevel > 0) {
       nEvents++;
@@ -318,7 +318,7 @@ struct phiInJets {
     }
     JEhistos.fill(HIST("nEvents"), 0.5);
 
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
