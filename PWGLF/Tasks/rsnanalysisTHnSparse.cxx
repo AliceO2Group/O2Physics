@@ -30,8 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct rsnanalysisTHnSparse
-{
+struct rsnanalysisTHnSparse {
 
   SliceCache cache;
 
@@ -93,7 +92,7 @@ struct rsnanalysisTHnSparse
 
   TLorentzVector d1, d2, mother;
 
-  void init(o2::framework::InitContext &)
+  void init(o2::framework::InitContext&)
   {
     AxisSpec invAxis = {invaxis, "Inv. mass (GeV/c^{2})", "im"};
     AxisSpec ptAxis = {ptaxis, "p_{T} (GeV/c)", "pt"};
@@ -111,7 +110,7 @@ struct rsnanalysisTHnSparse
   }
 
   template <typename T>
-  bool selectedTrack(const T &track)
+  bool selectedTrack(const T& track)
   {
     if (!track.isPrimaryTrack())
       return false;
@@ -119,7 +118,7 @@ struct rsnanalysisTHnSparse
   }
 
   template <typename T>
-  bool selectedPair(TLorentzVector &mother, const T &track1, const T &track2)
+  bool selectedPair(TLorentzVector& mother, const T& track1, const T& track2)
   {
     d1.SetXYZM(track1.px(), track1.py(), track1.pz(), mass1);
     d2.SetXYZM(track2.px(), track2.py(), track2.pz(), mass2);
@@ -131,13 +130,12 @@ struct rsnanalysisTHnSparse
     return true;
   }
 
-  void processData(EventCandidate const &collision, TrackCandidates const &tracks)
+  void processData(EventCandidate const& collision, TrackCandidates const& tracks)
   {
     auto posDauthers = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDauthers = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    if (ignorezeroevent && collision.globalIndex() == 0)
-    {
+    if (ignorezeroevent && collision.globalIndex() == 0) {
       if (verboselevel > 0)
         LOGF(info, "BAD pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
              collision.globalIndex(), multiplicity);
@@ -151,18 +149,15 @@ struct rsnanalysisTHnSparse
       LOGF(info, "pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
            collision.globalIndex(), multiplicity);
 
-    for (const auto &trk : posDauthers)
-    {
+    for (const auto& trk : posDauthers) {
       registry.fill(HIST("hNsigmaPos"), trk.tpcNSigmaKa());
     }
 
-    for (const auto &trk : negDauthers)
-    {
+    for (const auto& trk : negDauthers) {
       registry.fill(HIST("hNsigmaNeg"), trk.tpcNSigmaKa());
     }
 
-    for (auto &[track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthers, negDauthers)))
-    {
+    for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthers, negDauthers))) {
 
       if (!selectedTrack(track1))
         continue;
@@ -178,8 +173,7 @@ struct rsnanalysisTHnSparse
       registry.fill(HIST("unlike"), mother.Mag(), mother.Pt(), multiplicity, track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), mother.Rapidity());
     }
 
-    for (auto &[track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDauthers, posDauthers)))
-    {
+    for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDauthers, posDauthers))) {
 
       if (!selectedTrack(track1))
         continue;
@@ -195,8 +189,7 @@ struct rsnanalysisTHnSparse
       registry.fill(HIST("likep"), mother.Mag(), mother.Pt(), multiplicity, track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), mother.Rapidity());
     }
 
-    for (auto &[track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDauthers, negDauthers)))
-    {
+    for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDauthers, negDauthers))) {
 
       if (!selectedTrack(track1))
         continue;
@@ -215,34 +208,29 @@ struct rsnanalysisTHnSparse
 
   PROCESS_SWITCH(rsnanalysisTHnSparse, processData, "Process Event for Data", true);
 
-  void processTrue(EventCandidatesMC::iterator const &collision, TrackCandidatesMC const &tracks, aod::McParticles const &mcParticles, aod::McCollisions const &mcCollisions)
+  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     auto posDauthersMC = positiveMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDauthersMC = negativeMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    if (!collision.has_mcCollision())
-    {
+    if (!collision.has_mcCollision()) {
       LOGF(warning, "No MC collision for this collision, skip...");
       return;
     }
 
-    if (std::abs(collision.posZ()) < zVertex)
-    {
+    if (std::abs(collision.posZ()) < zVertex) {
       registry.fill(HIST("mcTrueposZ"), collision.posZ());
 
       multiplicityMC = collision.multFT0A() + collision.multFT0C();
 
-      for (auto &[track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthersMC, negDauthersMC)))
-      {
+      for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthersMC, negDauthersMC))) {
 
-        if (!track1.has_mcParticle())
-        {
+        if (!track1.has_mcParticle()) {
           LOGF(warning, "No MC particle for track, skip...");
           continue;
         }
 
-        if (!track2.has_mcParticle())
-        {
+        if (!track2.has_mcParticle()) {
           LOGF(warning, "No MC particle for track, skip...");
           continue;
         }
@@ -258,14 +246,11 @@ struct rsnanalysisTHnSparse
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (!(track1PDG == 321 && track2PDG == 321))
-        {
+        if (!(track1PDG == 321 && track2PDG == 321)) {
           continue;
         }
-        for (auto &mothertrack1 : mctrack1.mothers_as<aod::McParticles>())
-        {
-          for (auto &mothertrack2 : mctrack2.mothers_as<aod::McParticles>())
-          {
+        for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+          for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
             if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
               continue;
 
@@ -299,21 +284,18 @@ struct rsnanalysisTHnSparse
 
   int numberofEntries = 0;
 
-  void processGen(aod::McCollision const &mcCollision, aod::McParticles const &mcParticles)
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    if (std::abs(mcCollision.posZ()) < zVertex)
-    {
+    if (std::abs(mcCollision.posZ()) < zVertex) {
       registry.fill(HIST("mcGenposZ"), mcCollision.posZ());
 
       int nuberofPhi = 0;
 
-      for (auto &particle : mcParticles)
-      {
+      for (auto& particle : mcParticles) {
         if (std::abs(particle.y()) > rapidityCut)
           continue;
 
-        if (particle.pdgCode() == 333)
-        {
+        if (particle.pdgCode() == 333) {
           auto daughters = particle.daughters_as<aod::McParticles>();
           if (daughters.size() != 2)
             continue;
@@ -321,18 +303,14 @@ struct rsnanalysisTHnSparse
           auto daup = false;
           auto daun = false;
 
-          for (auto &dau : daughters)
-          {
+          for (auto& dau : daughters) {
             if (!dau.isPhysicalPrimary())
               continue;
 
-            if (dau.pdgCode() == +321)
-            {
+            if (dau.pdgCode() == +321) {
               daup = true;
               d1.SetXYZM(dau.px(), dau.py(), dau.pz(), mass1);
-            }
-            else if (dau.pdgCode() == -321)
-            {
+            } else if (dau.pdgCode() == -321) {
               daun = true;
               d2.SetXYZM(dau.px(), dau.py(), dau.pz(), mass2);
             }
@@ -350,9 +328,7 @@ struct rsnanalysisTHnSparse
 
           if (verboselevel > 0)
             LOGF(info, "Gen:  %d, #Phi =%d, mother=%d (%ld), Inv.mass:%f, Pt= %f", numberofEntries, nuberofPhi, particle.pdgCode(), particle.globalIndex(), mother.Mag(), mother.Pt());
-        }
-        else
-        {
+        } else {
           registry.fill(HIST("motherBgr"), particle.pt());
         }
       }
@@ -362,8 +338,8 @@ struct rsnanalysisTHnSparse
   PROCESS_SWITCH(rsnanalysisTHnSparse, processGen, "Process generated.", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<rsnanalysisTHnSparse>(cfgc)};
+    adaptAnalysisTask<rsnanalysisTHnSparse>(cfgc)};
 }
