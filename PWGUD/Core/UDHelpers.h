@@ -415,8 +415,6 @@ bool cleanFT0A(T& bc, float maxFITtime, float limitA)
     std::bitset<8> triggers = bc.foundFT0().triggerMask();
     bool ora = !triggers[o2::ft0::Triggers::bitA];
     LOGF(debug, "ota %f ora/FT0AmplitudeA %d/%d", bc.foundFT0().timeA(), ora, oma);
-
-//    if (!oma) LOGF(info, "FT0A Amp = %f", FT0AmplitudeA(bc.foundFT0()));
     return ota && oma;
   } else {
     return true;
@@ -435,11 +433,8 @@ bool cleanFT0C(T& bc, float maxFITtime, float limitC)
     std::bitset<8> triggers = bc.foundFT0().triggerMask();
     bool orc = !triggers[o2::ft0::Triggers::bitC];
     LOGF(debug, "otc %f orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeC(), orc, omc);
-
-//    if (!omc) LOGF(info, "FT0C Amp = %f", FT0AmplitudeC(bc.foundFT0()));
     return otc && omc;
   } else {
-//  LOGF(info, "BC FT0C = %i", bc);
     return true;
   }
 }
@@ -521,44 +516,6 @@ bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
   return cleanFT0C(bc, maxFITtime, lims[2]) &&
          cleanFDDC(bc, maxFITtime, lims[4]);
 }
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFITACollision(T& col, float maxFITtime, std::vector<float> lims)
-{
-  bool isCleanFV0 = true;
-  if (col.has_foundFV0()) {
-    isCleanFV0 = (std::abs(col.foundFV0().time()) <= maxFITtime) && (FV0AmplitudeA(col.foundFV0()) < lims[0]);
-  }
-
-  bool isCleanFT0A = true;
-  if (col.has_foundFT0()) {
-    isCleanFT0A = (std::abs(col.foundFT0().timeA()) <= maxFITtime) && (FT0AmplitudeA(col.foundFT0()) < lims[1]);
-  }
-
-  bool isCleanFDDA = true;
-  if (col.has_foundFDD()) {
-    isCleanFDDA = (std::abs(col.foundFDD().timeA()) <= maxFITtime) && (FDDAmplitudeA(col.foundFDD()) < lims[3]);
-  }
-
-  return (isCleanFV0 && isCleanFT0A && isCleanFDDA);
-}
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFITCCollision(T& col, float maxFITtime, std::vector<float> lims)
-{
-  bool isCleanFT0C = true;
-  if (col.has_foundFT0()) {
-    isCleanFT0C = (std::abs(col.foundFT0().timeC()) <= maxFITtime) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
-  }
-
-  bool isCleanFDDC = true;
-  if (col.has_foundFDD()) {
-    isCleanFDDC = (std::abs(col.foundFDD().timeC()) <= maxFITtime) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
-  }
-
-  return (isCleanFT0C && isCleanFDDC);
-}
-// -----------------------------------------------------------------------------
 // fill BB and BG information into FITInfo
 template <typename BCR>
 void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& bcrange)

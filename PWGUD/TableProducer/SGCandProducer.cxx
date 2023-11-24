@@ -58,10 +58,7 @@ struct SGCandProducer {
                         aod::TOFSignal, aod::pidTOFbeta,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
-//  using FT0 = aod::FT0s;
-//  using FV0A = aod::FV0As;
-//  using FDD = aod::FDDs;
-
+  
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
   void updateUDFwdTrackTables(TFwdTrack const& fwdtrack, uint64_t const& bcnum)
@@ -143,7 +140,7 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     // nominal BC
@@ -165,16 +162,11 @@ struct SGCandProducer {
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
     if (isSGEvent <= 2) {
-      LOGF(info, "<SGCandProducer>  Data: good collision! %i %d", isSGEvent, bcRange.size());
+      LOGF(debug, "<SGCandProducer>  Data: good collision! %i %d", isSGEvent, bcRange.size());
 
       // fill FITInfo
-      for (auto const& bc : bcRange) {
       upchelpers::FITInfo fitInfo{};
-//      udhelpers::getFITRangeinfo(fitInfo, bc, ft0s, fv0as, fdds);
-//      LOGF(info, "FitInfo init: %f", fitInfo.ampFDDC);
       udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
-//      LOGF(info, "FitInfo: %f", fitInfo.ampFDDC);
-//      udhelpers::getFITinfo(fitInfo, bcRange, bcs, ft0s, fv0as, fdds);
 
       // update SG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -193,7 +185,6 @@ struct SGCandProducer {
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollsLabels(collision.globalIndex());
-      }
       // update SGTracks tables
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
