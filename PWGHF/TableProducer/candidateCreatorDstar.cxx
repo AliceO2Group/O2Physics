@@ -21,6 +21,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of D* decay candidates
@@ -38,8 +39,8 @@ struct HfCandidateCreatorDstar {
                aod::Tracks const&,
                aod::Hf2Prongs const&)
   {
-    auto massPi = o2::constants::physics::MassPiPlus;
-    auto massD0 = o2::constants::physics::MassD0;
+    auto massPi = MassPiPlus;
+    auto massD0 = MassD0;
 
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {

@@ -31,6 +31,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -74,9 +75,9 @@ struct HfCandidateCreatorXicc {
 
   void init(InitContext const&)
   {
-    massPi = o2::constants::physics::MassPiPlus;
-    massK = o2::constants::physics::MassKPlus;
-    massXic = o2::constants::physics::MassXiCPlus;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massXic = MassXiCPlus;
   }
 
   void process(aod::Collision const& collision,
@@ -237,10 +238,10 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong1_as<aod::TracksWMc>(),
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, o2::constants::physics::Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi;
         } else {
@@ -256,10 +257,10 @@ struct HfCandidateCreatorXiccMc {
       flag = 0;
       origin = 0;
       // Ξcc±± → Ξc± + π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kXiCCPlusPlus, std::array{static_cast<int>(o2::constants::physics::Pdg::kXiCPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCCPlusPlus, std::array{static_cast<int>(Pdg::kXiCPlus), +kPiPlus}, true)) {
         // Ξc± → p± K∓ π±
         auto candXicMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(o2::constants::physics::Pdg::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, candXicMC, static_cast<int>(Pdg::kXiCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << aod::hf_cand_xicc::DecayType::XiccToXicPi);
         }
       }

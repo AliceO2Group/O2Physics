@@ -37,6 +37,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -161,9 +162,9 @@ struct HfDataCreatorDplusPiReduced {
     runNumber = 0;
 
     // invariant-mass window cut
-    massPi = o2::constants::physics::MassPiPlus;
-    massD = o2::constants::physics::MassDMinus;
-    massB0 = o2::constants::physics::MassB0;
+    massPi = MassPiPlus;
+    massD = MassDMinus;
+    massB0 = MassB0;
     invMass2DPiMin = (massB0 - invMassWindowDPi) * (massB0 - invMassWindowDPi);
     invMass2DPiMax = (massB0 + invMassWindowDPi) * (massB0 + invMassWindowDPi);
   }
@@ -351,11 +352,11 @@ struct HfDataCreatorDplusPiReduced {
           int8_t flag{0};
           int8_t debug{0};
           // B0 → D- π+ → (π- K+ π-) π+
-          auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, o2::constants::physics::Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+          auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) {
             // D- → π- K+ π-
             // Printf("Checking D- → π- K+ π-");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, o2::constants::physics::Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
               flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
             } else {
@@ -363,7 +364,7 @@ struct HfDataCreatorDplusPiReduced {
               LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
             }
           }
-          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), o2::constants::physics::Pdg::kB0, true);
+          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), Pdg::kB0, true);
           auto particleMother = particlesMc.rawIteratorAt(indexMother);
           rowHfDPiMcRecReduced(indexHfCand3Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, particleMother.pt());
         }
@@ -409,11 +410,11 @@ struct HfDataCreatorDplusPiReduced {
       int8_t sign{0};
       int8_t flag{0};
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, o2::constants::physics::Pdg::kB0, std::array{-static_cast<int>(o2::constants::physics::Pdg::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
         // Match D- -> π- K+ π-
         auto candDMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D- -> π- K+ π-");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(o2::constants::physics::Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }

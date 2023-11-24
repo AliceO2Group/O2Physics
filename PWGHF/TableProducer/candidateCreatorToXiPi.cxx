@@ -44,6 +44,7 @@ using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -116,11 +117,11 @@ struct HfCandidateCreatorToXiPi {
                aod::V0sLinked const&)
   {
 
-    double massPionFromPDG = o2::constants::physics::MassPiPlus;    // pdg code 211
-    double massLambdaFromPDG = o2::constants::physics::MassLambda0; // pdg code 3122
-    double massXiFromPDG = o2::constants::physics::MassXiMinus;     // pdg code 3312
-    double massOmegacFromPDG = o2::constants::physics::MassOmegaC0; // pdg code 4332
-    double massXicFromPDG = o2::constants::physics::MassXiCZero;    // pdg code 4132
+    double massPionFromPDG = MassPiPlus;    // pdg code 211
+    double massLambdaFromPDG = MassLambda0; // pdg code 3122
+    double massXiFromPDG = MassXiMinus;     // pdg code 3312
+    double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
+    double massXicFromPDG = MassXiCZero;    // pdg code 4132
 
     // 2-prong vertex fitter to build the omegac/xic vertex
     o2::vertexing::DCAFitterN<2> df;
@@ -434,8 +435,8 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
 
-    int pdgCodeOmegac0 = o2::constants::physics::Pdg::kOmegaC0; // 4332
-    int pdgCodeXic0 = o2::constants::physics::Pdg::kXiCZero;    // 4132
+    int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
+    int pdgCodeXic0 = Pdg::kXiCZero;    // 4132
     int pdgCodeXiMinus = kXiMinus;            // 3312
     int pdgCodeLambda = kLambda0;             // 3122
     int pdgCodePiPlus = kPiPlus;              // 211

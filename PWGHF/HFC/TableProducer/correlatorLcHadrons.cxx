@@ -33,6 +33,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -150,10 +151,10 @@ struct HfCorrelatorLcHadronsSelection {
   {
     bool isLcFound = 0;
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
+      if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
       }
-      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
+      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
       if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
         continue;
       }
@@ -515,11 +516,11 @@ struct HfCorrelatorLcHadrons {
 
     // Mc gen level
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
+      if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
+        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }
@@ -560,7 +561,7 @@ struct HfCorrelatorLcHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
-          entryLcHadronRecoInfo(o2::constants::physics::MassLambdaCPlus, true);
+          entryLcHadronRecoInfo(MassLambdaCPlus, true);
         } // end inner loop
       }
     } // end outer loop
@@ -668,11 +669,11 @@ struct HfCorrelatorLcHadrons {
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // Check track t1 is Lc
-        if (std::abs(t1.pdgCode()) != o2::constants::physics::Pdg::kLambdaCPlus) {
+        if (std::abs(t1.pdgCode()) != Pdg::kLambdaCPlus) {
           continue;
         }
 
-        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, o2::constants::physics::MassLambdaCPlus);
+        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }

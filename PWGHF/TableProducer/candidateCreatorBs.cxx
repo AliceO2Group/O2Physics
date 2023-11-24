@@ -33,6 +33,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -93,9 +94,9 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
-    massPi = o2::constants::physics::MassPiPlus;
-    massDs = o2::constants::physics::MassDSBar;
-    massBs = o2::constants::physics::MassBS;
+    massPi = MassPiPlus;
+    massDs = MassDSBar;
+    massBs = MassBS;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -340,7 +341,7 @@ struct HfCandidateCreatorBsExpressions {
     int8_t flag = 0;
     std::vector<int> arrDaughDsIndex;
     std::array<int, 2> arrPDGDaughDs;
-    std::array<int, 2> arrPDGResonantDsPhiPi = {o2::constants::physics::Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
+    std::array<int, 2> arrPDGResonantDsPhiPi = {Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -357,10 +358,10 @@ struct HfCandidateCreatorBsExpressions {
                                          candDs.prong2_as<aod::TracksWMc>()};
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, o2::constants::physics::Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // Checking Ds∓ → K- K+ π∓
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, o2::constants::physics::Pdg::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, Pdg::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
@@ -377,10 +378,10 @@ struct HfCandidateCreatorBsExpressions {
 
       if (!flag) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, o2::constants::physics::Pdg::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, Pdg::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
           // Checking Ds± → K- K+ π±
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, o2::constants::physics::Pdg::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDs, Pdg::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
             if (arrDaughDsIndex.size() == 2) {
@@ -404,7 +405,7 @@ struct HfCandidateCreatorBsExpressions {
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
         auto particleProng3 = arrayDaughtersBs[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 4> bHadronMotherHypos = {o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBPlus, o2::constants::physics::Pdg::kBS, o2::constants::physics::Pdg::kLambdaB0};
+        std::array<int, 4> bHadronMotherHypos = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
           int index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
@@ -431,10 +432,10 @@ struct HfCandidateCreatorBsExpressions {
       arrDaughDsIndex.clear();
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kBS, std::array{+o2::constants::physics::Pdg::kDSBar, +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBS, std::array{+Pdg::kDSBar, +kPiPlus}, true)) {
         // Checking Ds∓ → K- K+ π∓
         auto candDsMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, o2::constants::physics::Pdg::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, Pdg::kDSBar, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
           RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
@@ -450,10 +451,10 @@ struct HfCandidateCreatorBsExpressions {
 
       if (!flag) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, o2::constants::physics::Pdg::kB0, std::array{+o2::constants::physics::Pdg::kDS, -kPiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{+Pdg::kDS, -kPiPlus}, true)) {
           // Checking Ds± → K- K+ π±
           auto candDsMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, o2::constants::physics::Pdg::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, candDsMC, Pdg::kDS, std::array{-kKPlus, +kKPlus, +kPiPlus}, true, &sign, 2)) {
             RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, std::array{0}, 1);
             if (arrDaughDsIndex.size() == 2) {
               for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {

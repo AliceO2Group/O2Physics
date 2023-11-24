@@ -32,6 +32,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -138,10 +139,10 @@ struct HfCorrelatorDsHadronsSelCollision {
   {
     bool isDsFound = false;
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
+      if (std::abs(particle.pdgCode()) != Pdg::kDS) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+      double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -598,11 +599,11 @@ struct HfCorrelatorDsHadrons {
     // MC gen level for Ds meson reconstruction's efficiency
     for (const auto& particle : mcParticles) {
       // check if the particle is Ds
-      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
+      if (std::abs(particle.pdgCode()) != Pdg::kDS) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
@@ -654,11 +655,11 @@ struct HfCorrelatorDsHadrons {
     // MC gen level
     for (const auto& particle : mcParticles) {
       // check if the particle is Ds
-      if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDS) {
+      if (std::abs(particle.pdgCode()) != Pdg::kDS) {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
@@ -688,7 +689,7 @@ struct HfCorrelatorDsHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(o2::constants::physics::MassDS, true);
+          entryDsHadronRecoInfo(MassDS, true);
           entryDsHadronGenInfo(isDsPrompt);
         }
       }
