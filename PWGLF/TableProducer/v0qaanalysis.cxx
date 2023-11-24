@@ -101,7 +101,6 @@ struct LfV0qaanalysis {
     return true;
   }
 
-
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
