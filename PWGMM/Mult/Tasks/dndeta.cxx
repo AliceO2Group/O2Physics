@@ -1179,7 +1179,9 @@ struct MultiplicityCounter {
         }
         NrecPerCol.emplace_back(Nrec);
         NPVPerCol.emplace_back(collision.numContrib());
-        fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
+        if (responseStudy) {
+          fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
+        }
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kSelected), c_gen);
@@ -1334,7 +1336,9 @@ struct MultiplicityCounter {
         }
         NrecPerCol.emplace_back(Nrec);
         NPVPerCol.emplace_back(collision.numContrib());
-        fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
+        if (responseStudy) {
+          fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
+        }
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kSelected), c_gen);
