@@ -3233,7 +3233,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           hfFlag = 0;
 
-          if(!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandV0Bachelor)){
+          if (!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandV0Bachelor)) {
             continue;
           }
 
@@ -3329,7 +3329,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
               hfFlag = 0;
 
-              if(!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandV0Bachelor)){
+              if (!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandV0Bachelor)) {
                 continue;
               }
 
