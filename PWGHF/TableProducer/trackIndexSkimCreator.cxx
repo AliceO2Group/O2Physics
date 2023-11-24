@@ -3054,10 +3054,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
   }
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4); // select tracks passing bachelor selection
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  using SelectedHfTrackAssoc = soa::Join<aod::TrackAssoc, aod::HfSelTrack>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
@@ -3234,6 +3233,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           hfFlag = 0;
 
+          if(!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandV0Bachelor)){
+            continue;
+          }
+
           auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
           if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
@@ -3325,6 +3328,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
             for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
 
               hfFlag = 0;
+
+              if(!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandV0Bachelor)){
+                continue;
+              }
 
               auto trackPion2 = trackIdPion2.track_as<aod::TracksWCovDca>();
 
