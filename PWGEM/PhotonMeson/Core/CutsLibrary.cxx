@@ -282,7 +282,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   if (!nameStr.compare("mee_all_tpchadrejortofreq_lowB")) {
     // for pair
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -312,7 +312,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   if (!nameStr.compare("mee_all_tpchadrej_lowB")) {
     // for pair
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -342,7 +342,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   if (!nameStr.compare("mee_all_tofreq_lowB")) {
     // for pair
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -367,7 +367,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   if (!nameStr.compare("mee_all_nopid_lowB")) {
     // for pair
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -389,7 +389,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.12);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -414,7 +414,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0.12, 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -439,7 +439,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -509,7 +509,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.12);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -557,7 +557,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0.12, 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -582,7 +582,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -630,7 +630,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.12);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -660,7 +660,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0.12, 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -690,7 +690,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -854,7 +854,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   if (!nameStr.compare("mee_all_tpchadrejortofreq")) {
     // for pair
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -882,7 +882,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0, 0.12);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -935,7 +935,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0.12, 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
@@ -963,7 +963,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0., 0.5);
     cut->SetMaxPhivPairMeeDep([](float mee) {
-      return mee < 0.01 ? 1.5 : (mee < 0.02 ? 2.0 : (mee < 0.03 ? 2.5 : 3.2));
+      return (mee - -0.028) / 0.0185;
     });
 
     // for track
