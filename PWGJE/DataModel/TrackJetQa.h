@@ -44,7 +44,8 @@ namespace jetspectra
 {
 
 // Collision info
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
+//DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int64_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
@@ -53,7 +54,8 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
 // Track info
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);             //! Index to the collision
+//DECLARE_SOA_INDEX_COLUMN(Collision, collision);             //! Index to the collision
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);             //! Index to the collision
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
@@ -70,11 +72,12 @@ DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 } // namespace jetspectra
 
 DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
-                  o2::soa::Index<>,
+                  //o2::soa::Index<>,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  jetspectra::GlobalIndex,
                   jetspectra::Sel8,
                   jetspectra::MultNTracksPV,
                   jetspectra::MultFT0A,

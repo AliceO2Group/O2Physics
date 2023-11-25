@@ -173,6 +173,7 @@ struct jetspectraDerivedMaker {
               collision.posX(),
               collision.posY(),
               collision.posZ(),
+              collision.globalIndex(),
               collision.sel8(),
               collision.multNTracksPV(),
               collision.multFT0A(),
