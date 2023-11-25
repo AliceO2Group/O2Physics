@@ -567,7 +567,12 @@ struct prefilterPrimaryElectron {
   }
   PROCESS_SWITCH(prefilterPrimaryElectron, processPrefilter, "process prefilter", false);
 
-  void processDummy(aod::Collisions const& collisions) {}
+  void processDummy(aod::EMPrimaryElectrons const& primaryelectrons)
+  {
+    for (int i = 0; i < primaryelectrons.size(); i++) {
+      ele_pfb(0);
+    }
+  }
   PROCESS_SWITCH(prefilterPrimaryElectron, processDummy, "process dummy", true);
 };
 
