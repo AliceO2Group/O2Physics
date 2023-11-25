@@ -156,6 +156,7 @@ struct CentralityTable {
           if (doprocessRun3) {
             LOGF(fatal, "Cannot enable Run2 tables in Run3 mode. Please check and disable them.");
           }
+        } else {
           if (doprocessRun2) {
             LOGF(fatal, "Cannot enable Run3 tables in Run2 mode. Please check and disable them.");
           }
