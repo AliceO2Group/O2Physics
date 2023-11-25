@@ -12,19 +12,24 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
 /// \since November 22, 2023
 
+#include <vector>
 #include <TMath.h>
 #include <TPDGCode.h>
-#include <TObjArray.h>
 #include <TRandom.h>
-#include <vector>
 #include <TVector2.h>
 #include <TVector3.h>
 #include <TDatabasePDG.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -32,11 +37,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 
+using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-using namespace std;
+using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
@@ -303,6 +309,12 @@ struct nuclei_in_jets {
     // Event Counter (events with pt > pt_max that contain particle of interest)
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
+      
+      
+    /*
+      
+      
+      
     // Momentum of the Leading Particle
     const auto& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
@@ -516,6 +528,7 @@ struct nuclei_in_jets {
         registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe, jet_Nch);
       }
     }
+    */
 
   } // end processData
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
