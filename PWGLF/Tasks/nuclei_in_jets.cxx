@@ -309,12 +309,10 @@ struct nuclei_in_jets {
     // Event Counter (events with pt > pt_max that contain particle of interest)
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
-      
-      
     /*
-      
-      
-      
+
+
+
     // Momentum of the Leading Particle
     const auto& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
