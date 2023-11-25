@@ -367,10 +367,8 @@ struct tpc_dEdx_postcalibration {
 
       // Kaons
       if (trk.tpcInnerParam() > 0.4 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
-        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), signedP,
-                        trk.tpcSignal());
-        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedP,
-                        trk.tpcNSigmaKa());
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), signedP, trk.tpcSignal());
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedP, trk.tpcNSigmaKa());
 
         if (doContaminations) {
           registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedP, trk.tpcNSigmaPi());
