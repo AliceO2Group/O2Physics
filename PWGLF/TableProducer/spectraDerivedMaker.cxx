@@ -303,7 +303,7 @@ struct spectraDerivedMaker {
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
                  trk.isPVContributor(),
-                 trk.itsClusterMap(),
+                 trk.itsClusterSizes(),
                  trk.hasTRD(),
                  trk.tofFlags(),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
