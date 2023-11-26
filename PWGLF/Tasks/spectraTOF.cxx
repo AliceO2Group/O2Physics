@@ -229,7 +229,7 @@ struct tofSpectra {
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "MultFT0M"}});
     histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1D, {{binsMultiplicity, "MultFDDM"}});
 
-    histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracklets"}});
+    // histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracklets"}});
     histos.add("Mult/TPC", "MultTPC", HistType::kTH1D, {{binsMultiplicity, "MultTPC"}});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
@@ -536,49 +536,7 @@ struct tofSpectra {
     const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
-    float multiplicity = 0.f;
-
-    switch (multiplicityEstimator) {
-      case MultCodes::kNoMultiplicity: // No multiplicity
-        break;
-      case MultCodes::kMultFV0M: // MultFV0M
-        // multiplicity = collision.multFV0M();
-        // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
-        multiplicity = collision.multZeqFV0A();
-        break;
-      case MultCodes::kMultFT0M: // MultFT0M
-        // multiplicity = collision.multFT0M();
-        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-        break;
-      case MultCodes::kMultFDDM: // MultFDDM
-        // multiplicity = collision.multFDDM();
-        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-        break;
-      case MultCodes::kMultTracklets: // MultTracklets
-        multiplicity = collision.multTracklets();
-        break;
-      case MultCodes::kMultTPC: // MultTPC
-        multiplicity = collision.multTPC();
-        break;
-      case MultCodes::kMultNTracksPV: // MultNTracksPV
-        // multiplicity = collision.multNTracksPV();
-        multiplicity = collision.multZeqNTracksPV();
-        break;
-      case MultCodes::kMultNTracksPVeta1: // MultNTracksPVeta1
-        multiplicity = collision.multNTracksPVeta1();
-        break;
-      case MultCodes::kCentralityFT0C: // Centrality FT0C
-        multiplicity = collision.centFT0C();
-        break;
-      case MultCodes::kCentralityFT0M: // Centrality FT0M
-        multiplicity = collision.centFT0M();
-        break;
-      case MultCodes::kCentralityFV0A: // Centrality FT0M
-        multiplicity = collision.centFV0A();
-        break;
-      default:
-        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
-    }
+    const float multiplicity = getMultiplicity(collision);
 
     if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
       if (track.sign() > 0) {
@@ -852,7 +810,7 @@ struct tofSpectra {
         histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
         histos.fill(HIST("Mult/FDDM"), collision.multZeqFDDA() + collision.multZeqFDDC());
 
-        histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
+        // histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
         histos.fill(HIST("Mult/TPC"), collision.multTPC());
         histos.fill(HIST("Mult/NTracksPV"), collision.multZeqNTracksPV());
         histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
@@ -1055,8 +1013,7 @@ struct tofSpectra {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-  // using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
@@ -1142,7 +1099,50 @@ struct tofSpectra {
   makeProcessFunctionFull(Al, Alpha);
 #undef makeProcessFunctionFull
 
-  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultZeqs, aod::CentFT0Ms>; // RD
+  template <typename CollisionType>
+  float getMultiplicity(const CollisionType& collision)
+  {
+
+    switch (multiplicityEstimator) {
+      case MultCodes::kNoMultiplicity: // No multiplicity
+        return 50;                     // to check if its filled
+        break;
+      case MultCodes::kMultFV0M: // MultFV0M
+        return collision.multZeqFV0A();
+        break;
+      case MultCodes::kMultFT0M:
+        return collision.multZeqFT0A() + collision.multZeqFT0C();
+        break;
+      case MultCodes::kMultFDDM: // MultFDDM
+        return collision.multZeqFDDA() + collision.multZeqFDDC();
+        break;
+      case MultCodes::kMultTracklets: // MultTracklets
+        // return collision.multTracklets();
+        return 0.f; // Undefined in Run3
+        break;
+      case MultCodes::kMultTPC: // MultTPC
+        return collision.multTPC();
+        break;
+      case MultCodes::kMultNTracksPV: // MultNTracksPV
+        // return collision.multNTracksPV();
+        return collision.multZeqNTracksPV();
+        break;
+      case MultCodes::kMultNTracksPVeta1: // MultNTracksPVeta1
+        return collision.multNTracksPVeta1();
+        break;
+      case MultCodes::kCentralityFT0C: // Centrality FT0C
+        return collision.centFT0C();
+        break;
+      case MultCodes::kCentralityFT0M: // Centrality FT0M
+        return collision.centFT0M();   // collision.centFT0A()
+        break;
+      default:
+        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
+        return 0.f;
+    }
+  }
+
+  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
   template <std::size_t i, typename TrackType, typename ParticleType>
   void fillTrackHistograms_MC(TrackType const& track, ParticleType const& mcParticle, CollisionCandidateMC::iterator const& collision)
   {
@@ -1206,44 +1206,6 @@ struct tofSpectra {
 
     //************************************RD**************************************************
     float multiplicity = 0.f;
-
-    switch (multiplicityEstimator) {
-      case MultCodes::kNoMultiplicity: // No multiplicity
-        multiplicity = 50;             // to check if its filled
-        break;
-      case MultCodes::kMultFV0M: // MultFV0M
-
-        multiplicity = collision.multZeqFV0A();
-        break;
-      case MultCodes::kMultFT0M:
-        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-        break;
-      case MultCodes::kMultFDDM: // MultFDDM
-
-        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-        break;
-      case MultCodes::kMultTracklets: // MultTracklets
-        multiplicity = collision.multTracklets();
-        break;
-      case MultCodes::kMultTPC: // MultTPC
-        multiplicity = collision.multTPC();
-        break;
-      case MultCodes::kMultNTracksPV: // MultNTracksPV
-        // multiplicity = collision.multNTracksPV();
-        multiplicity = collision.multZeqNTracksPV();
-        break;
-      case MultCodes::kMultNTracksPVeta1: // MultNTracksPVeta1
-        multiplicity = collision.multNTracksPVeta1();
-        break;
-      case MultCodes::kCentralityFT0C: // Centrality FT0C
-        multiplicity = collision.centFT0C();
-        break;
-      case MultCodes::kCentralityFT0M:       // Centrality FT0M
-        multiplicity = collision.centFT0M(); // collision.centFT0A()
-        break;
-      default:
-        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
-    }
 
     //************************************RD**************************************************
 
@@ -1395,45 +1357,7 @@ struct tofSpectra {
     }
 
     //************************************RD**************************************************
-    float multiplicity = 0.f;
-
-    switch (multiplicityEstimator) {
-      case MultCodes::kNoMultiplicity: // No multiplicity
-        multiplicity = 50;             // to check if its filled
-        break;
-      case MultCodes::kMultFV0M: // MultFV0M
-
-        multiplicity = collision.multZeqFV0A();
-        break;
-      case MultCodes::kMultFT0M:
-        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-        break;
-      case MultCodes::kMultFDDM: // MultFDDM
-
-        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
-        break;
-      case MultCodes::kMultTracklets: // MultTracklets
-        multiplicity = collision.multTracklets();
-        break;
-      case MultCodes::kMultTPC: // MultTPC
-        multiplicity = collision.multTPC();
-        break;
-      case MultCodes::kMultNTracksPV: // MultNTracksPV
-        // multiplicity = collision.multNTracksPV();
-        multiplicity = collision.multZeqNTracksPV();
-        break;
-      case MultCodes::kMultNTracksPVeta1: // MultNTracksPVeta1
-        multiplicity = collision.multNTracksPVeta1();
-        break;
-      case MultCodes::kCentralityFT0C: // Centrality FT0C
-        multiplicity = collision.centFT0C();
-        break;
-      case MultCodes::kCentralityFT0M:       // Centrality FT0M
-        multiplicity = collision.centFT0M(); // collision.centFT0A()
-        break;
-      default:
-        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
-    }
+    const float multiplicity = getMultiplicity(collision);
 
     //************************************RD**************************************************
 
