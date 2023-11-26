@@ -29,7 +29,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -76,8 +75,6 @@ struct PhotonConversionBuilder {
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
@@ -108,9 +105,6 @@ struct PhotonConversionBuilder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-
-  //// Define o2 fitter, 2-prong, active memory (no need to redefine per event)
-  // o2::vertexing::DCAFitterN<2> fitter;
 
   HistogramRegistry registry{
     "registry",
@@ -158,21 +152,10 @@ struct PhotonConversionBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    //// initialize O2 2-prong fitter (only once)
-    // fitter.setPropagateToPCA(true);
-    // fitter.setMaxR(200.);
-    // fitter.setMinParamChange(1e-3);
-    // fitter.setMinRelChi2Change(0.9);
-    // fitter.setMaxDZIni(1e9);
-    // fitter.setMaxChi2(1e9);
-    // fitter.setUseAbsDCA(d_UseAbsDCA);
-    // fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    // fitter.setMatCorrType(matCorr);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -184,7 +167,6 @@ struct PhotonConversionBuilder {
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
-      // fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
       if (fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
@@ -215,8 +197,6 @@ struct PhotonConversionBuilder {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
-    // Set magnetic field value once known
-    // fitter.setBz(d_bz);
 
     if (useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
