@@ -146,6 +146,7 @@ struct cascadeBuilder {
   Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
   Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
   Configurable<bool> calculateBachBaryonVars{"calculateBachBaryonVars", false, "calculate variables for removing cascade inv mass bump"};
+  Configurable<bool> populateExtras{"populateExtras", false, "populate casc extras (for derived data)"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -1275,6 +1276,13 @@ struct cascadeBuilder {
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
       cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+      // populate V0 extras in case requested
+      // if (populateExtras) {
+      //   cascextras(cascadecandidate.posTrackDetMap, cascadecandidate.negTrackDetMap, cascadecandidate.bachTrackDetMap,
+      //            cascadecandidate.posTrackITSClusterSizes, cascadecandidate.negTrackITSClusterSizes, cascadecandidate.bachTrackITSClusterSizes,
+      //            cascadecandidate.posTrackTPCClusters, cascadecandidate.negTrackTPCClusters, cascadecandidate.bachTrackTPCClusters,
+      //            cascadecandidate.posTrackTPCCrossedRows, cascadecandidate.negTrackTPCCrossedRows, cascadecandidate.bachTrackTPCCrossedRows);
+      // }
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
