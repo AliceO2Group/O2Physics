@@ -309,12 +309,11 @@ struct nuclei_in_jets {
     // Event Counter (events with pt > pt_max that contain particle of interest)
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
-    /*
-
-
+    // Number of Stored Particles
+    int nParticles = static_cast<int>(particle_ID.size());
 
     // Momentum of the Leading Particle
-    const auto& leading_track = tracks.iteratorAt(leading_ID);
+    auto leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Array of Particles inside Jet
@@ -333,14 +332,14 @@ struct nuclei_in_jets {
       int label_jet_particle(0);
       int i_jet_particle(0);
 
-      for (int i = 0; i < particle_ID.size(); i++) {
+      for (int i = 0; i < nParticles; i++) {
 
         // Skip Leading Particle & Elements already associated to the Jet
         if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
           continue;
 
         // Get Particle Momentum
-        const auto& stored_track = tracks.iteratorAt(particle_ID[i]);
+        auto stored_track = tracks.iteratorAt(particle_ID[i]);
         TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
         // Variables
@@ -374,7 +373,7 @@ struct nuclei_in_jets {
         jet_particle_ID.push_back(label_jet_particle);
 
         // Update Momentum of Leading Particle
-        const auto& jet_track = tracks.iteratorAt(label_jet_particle);
+        auto jet_track = tracks.iteratorAt(label_jet_particle);
         TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
         p_leading = p_leading + p_i;
 
@@ -383,7 +382,7 @@ struct nuclei_in_jets {
         nPartAssociated++;
       }
 
-      if (nPartAssociated >= (particle_ID.size() - 1))
+      if (nPartAssociated >= (nParticles - 1))
         exit = 1;
       if (distance_jet_min > distance_bkg_min)
         exit = 2;
@@ -391,7 +390,9 @@ struct nuclei_in_jets {
     } while (exit == 0);
 
     // Fill Jet Multiplicity
-    registryQC.fill(HIST("jet_plus_ue_multiplicity"), jet_particle_ID.size());
+    registryQC.fill(HIST("jet_plus_ue_multiplicity"), static_cast<int>(jet_particle_ID.size()));
+
+    /*
 
     // Perpendicular Cones for UE Estimate
     TVector3 z_positive(0.0, 0.0, 1.0);
