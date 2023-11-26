@@ -51,8 +51,8 @@ o2physics_add_dpl_workflow(cascadebuilder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadelabelbuilder
-                    SOURCES cascadelabelbuilder.cxx
+o2physics_add_dpl_workflow(cascademcbuilder
+                    SOURCES cascademcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

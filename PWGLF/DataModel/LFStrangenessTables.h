@@ -549,6 +549,49 @@ DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
 DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
 
 //______________________________________________________
+// REGULAR COLUMNS FOR CASCEXTRAS
+DECLARE_SOA_COLUMN(PosTrackDetectorMap, posTrackDetectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(NegTrackDetectorMap, negTrackDetectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(BachTrackDetectorMap, bachTrackDetectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(PosTrackITSClusterSizes, posTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(NegTrackITSClusterSizes, negTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(BachTrackITSClusterSizes, bachTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(PosTrackTPCClusters, posTrackTPCClusters, uint8_t);          //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCClusters, negTrackTPCClusters, uint8_t);          //! N TPC clusters
+DECLARE_SOA_COLUMN(BachTrackTPCClusters, bachTrackTPCClusters, uint8_t);          //! N TPC clusters
+DECLARE_SOA_COLUMN(PosTrackTPCCrossedRows, posTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCCrossedRows, negTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
+DECLARE_SOA_COLUMN(BachTrackTPCCrossedRows, bachTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
+
+//______________________________________________________
+// REGULAR COLUMNS FOR CASCMCCORES
+DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! cascade PDG Code
+DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);          //! cascade mother PDG code (for feeddown)
+DECLARE_SOA_COLUMN(PDGCodeV0, pdgCodeV0, int);                      //! cascade PDG Code
+DECLARE_SOA_COLUMN(PDGCodePositive, pdgCodePositive, int);      //! V0 positive prong PDG code
+DECLARE_SOA_COLUMN(PDGCodeNegative, pdgCodeNegative, int);      //! V0 negative prong PDG code
+DECLARE_SOA_COLUMN(PDGCodeBachelor, pdgCodeBachelor, int);      //! cascade bachelor prong PDG code
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! is cascade physical primary
+DECLARE_SOA_COLUMN(XMC, xMC, float);                            //! cascade decay position X (cm)
+DECLARE_SOA_COLUMN(YMC, yMC, float);                            //! cascade decay position Y (cm)
+DECLARE_SOA_COLUMN(ZMC, zMC, float);                            //! cascade decay position Z (cm)
+DECLARE_SOA_COLUMN(XlambdaMC, xlambdaMC, float);                //! V0 decay position X (cm)
+DECLARE_SOA_COLUMN(YlambdaMC, ylambdaMC, float);                //! V0 decay position Y (cm)
+DECLARE_SOA_COLUMN(ZlambdaMC, zlambdaMC, float);                //! V0 decay position Z (cm)
+DECLARE_SOA_COLUMN(PxPosMC, pxPosMC, float);                    //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyPosMC, pyPosMC, float);                    //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzPosMC, pzPosMC, float);                    //! V0 positive daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxNegMC, pxNegMC, float);                    //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyNegMC, pyNegMC, float);                    //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float);                    //! V0 positive daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxBachMC, pxBachMC, float);                  //! cascade bachelor daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyBachMC, pyBachMC, float);                  //! cascade bachelor daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzBachMC, pzBachMC, float);                  //! cascade bachelor daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxMC, pxMC, float);                          //! cascade px (GeV/c)
+DECLARE_SOA_COLUMN(PyMC, pyMC, float);                          //! cascade py (GeV/c)
+DECLARE_SOA_COLUMN(PzMC, pzMC, float);                          //! cascade pz (GeV/c)
+
+//______________________________________________________
 // DERIVED
 // Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //!
@@ -730,6 +773,56 @@ DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>);
 
+DECLARE_SOA_TABLE(CascExtras, "AOD", "CASCEXTRA", //! bachelor-baryon correlation variables
+                  cascdata::PosTrackDetectorMap, cascdata::NegTrackDetectorMap, cascdata::BachTrackDetectorMap, 
+                  cascdata::PosTrackITSClusterSizes, cascdata::NegTrackITSClusterSizes, cascdata::BachTrackITSClusterSizes, 
+                  cascdata::PosTrackTPCClusters, cascdata::NegTrackTPCClusters, cascdata::BachTrackTPCClusters, 
+                  cascdata::PosTrackTPCCrossedRows, cascdata::NegTrackTPCCrossedRows, cascdata::BachTrackTPCCrossedRows, 
+                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(KFCascExtras, "AOD", "KFCASCEXTRA", //! bachelor-baryon correlation variables
+                  cascdata::PosTrackDetectorMap, cascdata::NegTrackDetectorMap, cascdata::BachTrackDetectorMap, 
+                  cascdata::PosTrackITSClusterSizes, cascdata::NegTrackITSClusterSizes, cascdata::BachTrackITSClusterSizes, 
+                  cascdata::PosTrackTPCClusters, cascdata::NegTrackTPCClusters, cascdata::BachTrackTPCClusters, 
+                  cascdata::PosTrackTPCCrossedRows, cascdata::NegTrackTPCCrossedRows, cascdata::BachTrackTPCCrossedRows, 
+                  o2::soa::Marker<2>);
+DECLARE_SOA_TABLE(TraCascExtras, "AOD", "TRACASCEXTRA", //! bachelor-baryon correlation variables
+                  cascdata::PosTrackDetectorMap, cascdata::NegTrackDetectorMap, cascdata::BachTrackDetectorMap, 
+                  cascdata::PosTrackITSClusterSizes, cascdata::NegTrackITSClusterSizes, cascdata::BachTrackITSClusterSizes, 
+                  cascdata::PosTrackTPCClusters, cascdata::NegTrackTPCClusters, cascdata::BachTrackTPCClusters, 
+                  cascdata::PosTrackTPCCrossedRows, cascdata::NegTrackTPCCrossedRows, cascdata::BachTrackTPCCrossedRows, 
+                  o2::soa::Marker<3>);
+
+DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary, 
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor, 
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC, 
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC, 
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC, 
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC, 
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC, 
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC, 
+                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(KFCascMCCores, "AOD", "KFCASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary, 
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor, 
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC, 
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC, 
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC, 
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC, 
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC, 
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC, 
+                  o2::soa::Marker<2>);
+DECLARE_SOA_TABLE(TraCascMCCores, "AOD", "TRACASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary, 
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor, 
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC, 
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC, 
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC, 
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC, 
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC, 
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC, 
+                  o2::soa::Marker<3>);
+
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, o2::soa::Marker<1>)
 DECLARE_SOA_TABLE(KFCascBBs, "AOD", "KFCASCBB", //! bachelor-baryon correlation variables, KF
@@ -855,6 +948,16 @@ DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with Ca
                   mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
 using McCascBBTag = McCascBBTags::iterator;
+
+// Definition of labels for kf cascades
+namespace mckfcasclabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mctracasclabel
+
+DECLARE_SOA_TABLE(McKFCascLabels, "AOD", "MCKFCASCLABEL", //! Table joinable to cascdata containing the MC labels
+                  mckfcasclabel::McParticleId);
+using McKFCascLabel = McKFCascLabels::iterator;
 
 // Definition of labels for tracked cascades
 namespace mctracasclabel
