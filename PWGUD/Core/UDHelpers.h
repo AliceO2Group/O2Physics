@@ -328,9 +328,9 @@ float FT0AmplitudeC(aod::FT0&& ft0)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeA(aod::FDD&& fdd)
+float FDDAmplitudeA(aod::FDD&& fdd)
 {
-  int16_t totAmplitude = 0;
+  float totAmplitude = 0;
   for (auto amp : fdd.chargeA()) {
     totAmplitude += amp;
   }
@@ -339,9 +339,9 @@ int16_t FDDAmplitudeA(aod::FDD&& fdd)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeC(aod::FDD&& fdd)
+float FDDAmplitudeC(aod::FDD&& fdd)
 {
-  int16_t totAmplitude = 0;
+  float totAmplitude = 0;
   for (auto amp : fdd.chargeC()) {
     totAmplitude += amp;
   }
@@ -548,7 +548,7 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 // -----------------------------------------------------------------------------
 // extract FIT information
 template <typename B>
-void getFITinfo(upchelpers::FITInfo info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
 {
   // find bc with globalBC = bcnum
   Partition<B> selbc = aod::bc::globalBC == bcnum;
