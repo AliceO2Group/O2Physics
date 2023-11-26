@@ -41,18 +41,13 @@ o2physics_add_dpl_workflow(lambdakzeropid
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdakzerocollisionbuilder
-                    SOURCES lambdakzerocollisionbuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadelabelbuilder
-                    SOURCES cascadelabelbuilder.cxx
+o2physics_add_dpl_workflow(cascademcbuilder
+                    SOURCES cascademcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -71,8 +66,8 @@ o2physics_add_dpl_workflow(cascadepid
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadecollisionbuilder
-                    SOURCES cascadecollisionbuilder.cxx
+o2physics_add_dpl_workflow(strangederivedbuilder
+                    SOURCES strangederivedbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
