@@ -93,7 +93,6 @@ struct lambdakzeroBuilder {
   Produces<aod::V0Indices> v0indices;
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
-  Produces<aod::V0Extras> v0extras;
   Produces<aod::V0Covs> v0covs; // covariances
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -124,7 +123,6 @@ struct lambdakzeroBuilder {
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
   Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
   Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
-  Configurable<bool> populateExtras{"populateExtras", false, "populate V0 extras (for derived data)"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -198,14 +196,6 @@ struct lambdakzeroBuilder {
     float V0radius;
     float lambdaMass;
     float antilambdaMass;
-    uint8_t posTrackDetMap;
-    uint8_t negTrackDetMap;
-    uint32_t posTrackITSClusterSizes;
-    uint32_t negTrackITSClusterSizes;
-    uint8_t posTrackTPCClusters;
-    uint8_t negTrackTPCClusters;
-    uint8_t posTrackTPCCrossedRows;
-    uint8_t negTrackTPCCrossedRows;
   } v0candidate;
 
   // Helper struct to do bookkeeping of building parameters
@@ -635,15 +625,6 @@ struct lambdakzeroBuilder {
     statisticsRegistry.v0stats[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
 
-    v0candidate.posTrackDetMap = posTrack.detectorMap();
-    v0candidate.negTrackDetMap = negTrack.detectorMap();
-    v0candidate.posTrackITSClusterSizes = posTrack.itsClusterSizes();
-    v0candidate.negTrackITSClusterSizes = negTrack.itsClusterSizes();
-    v0candidate.posTrackTPCClusters = posTrack.tpcNClsFound();
-    v0candidate.negTrackTPCClusters = negTrack.tpcNClsFound();
-    v0candidate.posTrackTPCCrossedRows = posTrack.tpcNClsCrossedRows();
-    v0candidate.negTrackTPCCrossedRows = negTrack.tpcNClsCrossedRows();
-
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
@@ -785,14 +766,6 @@ struct lambdakzeroBuilder {
               v0candidate.negDCAxy,
               v0candidate.cosPA,
               v0candidate.dcav0topv);
-
-      // populate V0 extras in case requested
-      if (populateExtras) {
-        v0extras(v0candidate.posTrackDetMap, v0candidate.negTrackDetMap,
-                 v0candidate.posTrackITSClusterSizes, v0candidate.negTrackITSClusterSizes,
-                 v0candidate.posTrackTPCClusters, v0candidate.negTrackTPCClusters,
-                 v0candidate.posTrackTPCCrossedRows, v0candidate.negTrackTPCCrossedRows);
-      }
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
