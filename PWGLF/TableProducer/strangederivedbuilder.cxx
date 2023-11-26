@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 //__________________________________________________
-// this task provides general links between collisions 
-// and strange objects reconstructed in various ways. 
+// this task provides general links between collisions
+// and strange objects reconstructed in various ways.
 // It is meant to help with providing auxiliary information
-// when dealing with derived data. 
+// when dealing with derived data.
 
 #include <cmath>
 #include <array>
@@ -54,20 +54,20 @@ using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 struct strangederivedbuilder {
   //__________________________________________________
-  // fundamental building blocks of derived data 
-  Produces<aod::StraCollision> strangeColl;     // characterises collisions
-  Produces<aod::V0CollRefs> v0collref;     // references collisions from V0s
-  Produces<aod::CascCollRefs> casccollref; // references collisions from cascades
-  Produces<aod::KFCascCollRefs> kfcasccollref; // references collisions from cascades
+  // fundamental building blocks of derived data
+  Produces<aod::StraCollision> strangeColl;      // characterises collisions
+  Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
+  Produces<aod::CascCollRefs> casccollref;       // references collisions from cascades
+  Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from cascades
   Produces<aod::TraCascCollRefs> tracasccollref; // references collisions from cascades
-  
+
   //__________________________________________________
   // track extra references
-  Produces<aod::DauTrackExtras> dauTrackExtras;     // DauTrackExtras
-  Produces<aod::V0Extras> v0Extras;     // references DauTracks from V0s
-  Produces<aod::CascExtras> cascExtras;     // references DauTracks from V0s
+  Produces<aod::DauTrackExtras> dauTrackExtras; // DauTrackExtras
+  Produces<aod::V0Extras> v0Extras;             // references DauTracks from V0s
+  Produces<aod::CascExtras> cascExtras;         // references DauTracks from V0s
   Produces<aod::KFCascExtras> kfcascExtras;     // references DauTracks from V0s
-  Produces<aod::TraCascExtras> tracascExtras;     // references DauTracks from V0s
+  Produces<aod::TraCascExtras> tracascExtras;   // references DauTracks from V0s
 
   //__________________________________________________
   // correlation information between cascades: standard<->KF, standard<->tracked, KF<->tracked
@@ -76,9 +76,9 @@ struct strangederivedbuilder {
 
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
-  Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId; 
-  Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId; 
-  Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId; 
+  Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
+  Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
+  Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
 
   void init(InitContext& context)
   {
@@ -93,10 +93,10 @@ struct strangederivedbuilder {
       auto CascTable_thisColl = Cascades.sliceBy(CascperCollision, collIdx);
       auto KFCascTable_thisColl = KFCascades.sliceBy(KFCascperCollision, collIdx);
       auto TraCascTable_thisColl = TraCascades.sliceBy(TraCascperCollision, collIdx);
-      bool strange = V0Table_thisColl.size() > 0 || 
-                     CascTable_thisColl.size() > 0 || 
-                     KFCascTable_thisColl.size() > 0 || 
-                     TraCascTable_thisColl.size() > 0; 
+      bool strange = V0Table_thisColl.size() > 0 ||
+                     CascTable_thisColl.size() > 0 ||
+                     KFCascTable_thisColl.size() > 0 ||
+                     TraCascTable_thisColl.size() > 0;
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         if (currentCollIdx != collIdx) {
@@ -123,7 +123,7 @@ struct strangederivedbuilder {
 
     //__________________________________________________
     // mark tracks that belong to V0s
-    for (auto const&  v0 : V0s){
+    for (auto const& v0 : V0s) {
       auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
       auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
@@ -132,7 +132,7 @@ struct strangederivedbuilder {
 
     //__________________________________________________
     // index tracks that belong to CascDatas
-    for (auto const&  casc : Cascades){
+    for (auto const& casc : Cascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
@@ -143,7 +143,7 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // index tracks that belong to KFCascDatas
-    for (auto const&  casc : KFCascades){
+    for (auto const& casc : KFCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
@@ -154,7 +154,7 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // index tracks that belong to TraCascDatas
-    for (auto const&  casc : TraCascades){
+    for (auto const& casc : TraCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
@@ -167,56 +167,56 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new tracks table
     // assume filling per order
     int nTracks = 0;
-    for(int i=0; i<trackMap.size(); i++){ 
-      if (trackMap[i]>=0){ 
+    for (int i = 0; i < trackMap.size(); i++) {
+      if (trackMap[i] >= 0) {
         trackMap[i] = nTracks++;
       }
     }
     //__________________________________________________
     // populate track references
-    for (auto const&  v0 : V0s){
+    for (auto const& v0 : V0s) {
       auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
       auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
-      v0Extras(trackMap[posTrack.globalIndex()], 
+      v0Extras(trackMap[posTrack.globalIndex()],
                trackMap[negTrack.globalIndex()]); // joinable with V0Datas
     }
     //__________________________________________________
     // populate track references
-    for (auto const&  casc : Cascades){
+    for (auto const& casc : Cascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
       auto negTrack = v0.negTrack_as<TracksWithExtra>();
-      cascExtras(trackMap[posTrack.globalIndex()], 
+      cascExtras(trackMap[posTrack.globalIndex()],
                  trackMap[negTrack.globalIndex()],
                  trackMap[bachTrack.globalIndex()]); // joinable with CascDatas
     }
     //__________________________________________________
     // populate track references
-    for (auto const&  casc : KFCascades){
+    for (auto const& casc : KFCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
       auto negTrack = v0.negTrack_as<TracksWithExtra>();
-      kfcascExtras(trackMap[posTrack.globalIndex()], 
+      kfcascExtras(trackMap[posTrack.globalIndex()],
                    trackMap[negTrack.globalIndex()],
                    trackMap[bachTrack.globalIndex()]); // joinable with KFCascDatas
     }
     //__________________________________________________
     // populate track references
-    for (auto const&  casc : TraCascades){
+    for (auto const& casc : TraCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
       auto negTrack = v0.negTrack_as<TracksWithExtra>();
-      tracascExtras(trackMap[posTrack.globalIndex()], 
+      tracascExtras(trackMap[posTrack.globalIndex()],
                     trackMap[negTrack.globalIndex()],
                     trackMap[bachTrack.globalIndex()]); // joinable with TraCascDatas
     }
     //__________________________________________________
     // circle back and populate actual DauTrackExtra table
-    for (auto const&  tr : tracksExtra){
-      if (trackMap[tr.globalIndex()]>=0){ 
+    for (auto const& tr : tracksExtra) {
+      if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
       }
@@ -226,7 +226,6 @@ struct strangederivedbuilder {
 
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

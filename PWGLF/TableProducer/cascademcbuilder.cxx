@@ -46,12 +46,12 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct cascademcbuilder {
   Produces<aod::McCascLabels> casclabels;       // MC labels for cascades
-  Produces<aod::McKFCascLabels> kfcasclabels; // MC labels for tracked cascades
+  Produces<aod::McKFCascLabels> kfcasclabels;   // MC labels for tracked cascades
   Produces<aod::McTraCascLabels> tracasclabels; // MC labels for tracked cascades
   Produces<aod::McCascBBTags> bbtags;           // bb tags (inv structure tagging)
   Produces<aod::CascMCCores> cascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
-  Produces<aod::KFCascMCCores> kfcascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
-  Produces<aod::TraCascMCCores> tracascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::KFCascMCCores> kfcascmccores;   // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::TraCascMCCores> tracascmccores; // optionally aggregate information from MC side for posterior analysis (derived data)
 
   Configurable<bool> populateCascMCCores{"populateCascMCCores", false, "populate CascMCCores table for derived data analysis"};
   Configurable<bool> populateKFCascMCCores{"populateKFCascMCCores", false, "populate KFCascMCCores table for derived data analysis"};
@@ -152,7 +152,7 @@ struct cascademcbuilder {
         cascmccores(
           pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
           pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
-          xmc, ymc, zmc, xlmc, ylmc, zlmc, 
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
           pxposmc, pyposmc, pzposmc,
           pxnegmc, pynegmc, pznegmc,
           pxbachmc, pybachmc, pzbachmc,
@@ -249,7 +249,7 @@ struct cascademcbuilder {
         kfcascmccores(
           pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
           pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
-          xmc, ymc, zmc, xlmc, ylmc, zlmc, 
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
           pxposmc, pyposmc, pzposmc,
           pxnegmc, pynegmc, pznegmc,
           pxbachmc, pybachmc, pzbachmc,
@@ -351,7 +351,7 @@ struct cascademcbuilder {
         tracascmccores(
           pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
           pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
-          xmc, ymc, zmc, xlmc, ylmc, zlmc, 
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
           pxposmc, pyposmc, pzposmc,
           pxnegmc, pynegmc, pznegmc,
           pxbachmc, pybachmc, pzbachmc,
