@@ -25,24 +25,48 @@
 template <typename TrackPrecision = float, typename T>
 o2::track::TrackParametrization<TrackPrecision> getTrackPar(const T& track)
 {
-  std::array<TrackPrecision, 5> arraypar = {track.y(), track.z(), track.snp(),
-                                            track.tgl(), track.signed1Pt()};
+  std::array<TrackPrecision, o2::track::kNParams> arraypar = {track.y(), track.z(), track.snp(),
+                                                              track.tgl(), track.signed1Pt()};
   return o2::track::TrackParametrization<TrackPrecision>(track.x(), track.alpha(), std::move(arraypar));
+}
+
+/// Extracts track parameters from a track and sets a TrackParametrization object.
+template <typename TrackPrecision = float, typename T>
+void setTrackPar(const T& track, o2::track::TrackParametrization<TrackPrecision>& trackPar)
+{
+  std::array<TrackPrecision, o2::track::kNParams> arraypar = {track.y(), track.z(), track.snp(),
+                                                              track.tgl(), track.signed1Pt()};
+  trackPar.set(track.x(), track.alpha(), std::move(arraypar));
 }
 
 /// Extracts track parameters and covariance matrix from a track.
 template <typename TrackPrecision = float, typename T>
 o2::track::TrackParametrizationWithError<TrackPrecision> getTrackParCov(const T& track)
 {
-  std::array<TrackPrecision, 5> arraypar = {track.y(), track.z(), track.snp(),
-                                            track.tgl(), track.signed1Pt()};
-  std::array<TrackPrecision, 15> covpar = {track.cYY(), track.cZY(), track.cZZ(),
-                                           track.cSnpY(), track.cSnpZ(),
-                                           track.cSnpSnp(), track.cTglY(), track.cTglZ(),
-                                           track.cTglSnp(), track.cTglTgl(),
-                                           track.c1PtY(), track.c1PtZ(), track.c1PtSnp(),
-                                           track.c1PtTgl(), track.c1Pt21Pt2()};
+  std::array<TrackPrecision, o2::track::kNParams> arraypar = {track.y(), track.z(), track.snp(),
+                                                              track.tgl(), track.signed1Pt()};
+  std::array<TrackPrecision, o2::track::kCovMatSize> covpar = {track.cYY(), track.cZY(), track.cZZ(),
+                                                               track.cSnpY(), track.cSnpZ(),
+                                                               track.cSnpSnp(), track.cTglY(), track.cTglZ(),
+                                                               track.cTglSnp(), track.cTglTgl(),
+                                                               track.c1PtY(), track.c1PtZ(), track.c1PtSnp(),
+                                                               track.c1PtTgl(), track.c1Pt21Pt2()};
   return o2::track::TrackParametrizationWithError<TrackPrecision>(track.x(), track.alpha(), std::move(arraypar), std::move(covpar));
+}
+
+/// Extracts track parameters and covariance matrix from a track and sets a TrackParametrizationWithError object.
+template <typename TrackPrecision = float, typename T>
+void setTrackParCov(const T& track, o2::track::TrackParametrizationWithError<TrackPrecision>& trackParCov)
+{
+  std::array<TrackPrecision, o2::track::kNParams> arraypar = {track.y(), track.z(), track.snp(),
+                                                              track.tgl(), track.signed1Pt()};
+  std::array<TrackPrecision, o2::track::kCovMatSize> covpar = {track.cYY(), track.cZY(), track.cZZ(),
+                                                               track.cSnpY(), track.cSnpZ(),
+                                                               track.cSnpSnp(), track.cTglY(), track.cTglZ(),
+                                                               track.cTglSnp(), track.cTglTgl(),
+                                                               track.c1PtY(), track.c1PtZ(), track.c1PtSnp(),
+                                                               track.c1PtTgl(), track.c1Pt21Pt2()};
+  trackParCov.set(track.x(), track.alpha(), std::move(arraypar), std::move(covpar));
 }
 
 /// Extracts primary vertex position and covariance matrix from a collision.
@@ -63,9 +87,9 @@ template <typename T, typename U, typename V, typename W>
 void getPointDirection(const T& point1, const U& point2, V& phi, W& theta)
 {
   phi = std::atan2(point2[1] - point1[1], point2[0] - point1[0]);
-  //auto x1 = point1[0] * std::cos(phi) + point1[1] * std::sin(phi);
-  //auto x2 = point2[0] * std::cos(phi) + point2[1] * std::sin(phi);
-  //theta = std::atan2(point2[2] - point1[2], x2 - x1);
+  // auto x1 = point1[0] * std::cos(phi) + point1[1] * std::sin(phi);
+  // auto x2 = point2[0] * std::cos(phi) + point2[1] * std::sin(phi);
+  // theta = std::atan2(point2[2] - point1[2], x2 - x1);
   theta = std::atan2(point2[2] - point1[2], RecoDecay::distanceXY(point1, point2));
 }
 
