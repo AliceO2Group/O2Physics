@@ -44,6 +44,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,6 +52,10 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
+
+// simple checkers
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct strangederivedbuilder {
   //__________________________________________________
@@ -69,8 +74,28 @@ struct strangederivedbuilder {
   Produces<aod::KFCascExtras> kfcascExtras;     // references DauTracks from V0s
   Produces<aod::TraCascExtras> tracascExtras;   // references DauTracks from V0s
 
-  //__________________________________________________
-  // correlation information between cascades: standard<->KF, standard<->tracked, KF<->tracked
+  // histogram registry for bookkeeping
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  static constexpr int nSpecies = 14;
+  static constexpr int nParameters = 1;
+  static const std::vector<std::string> particleNames;
+  static const std::vector<int> particlePDGCodes;
+  static const std::vector<std::string> parameterNames;
+  static const int defaultParameters[nSpecies][nParameters];
+  static constexpr std::string_view particleNamesConstExpr[] = {"Gamma", "K0Short", "Lambda", "AntiLambda", 
+                                                               "Sigma0", "AntiSigma0", "SigmaPlus", "SigmaMinus", 
+                                                               "Hypertriton", "AntiHypertriton", 
+                                                               "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
+
+  uint32_t enabledBits = 0;
+
+  Configurable<LabeledArray<int>> enableGeneratedInfo{"enableGeneratedInfo",
+                                                      {defaultParameters[0], nSpecies, 
+                                                      nParameters, particleNames, parameterNames},
+                                                      "Fill generated particle histograms for each species. 0: no, 1: yes"};
+
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
 
   Configurable<bool> fillEmptyCollisions{"fillEmptyCollisions", false, "fill collision entries without candidates"};
 
@@ -82,6 +107,19 @@ struct strangederivedbuilder {
 
   void init(InitContext& context)
   {
+    // setup map for fast checking if enabled
+    static_for<0, nSpecies-1>([&](auto i) {
+      constexpr int index = i.value;
+      int f = enableGeneratedInfo->get(particleNames[index].c_str(), "Enable");
+      if (f == 1) {
+        bitset(enabledBits, index);
+      }
+    });
+
+    // Creation of histograms: MC generated
+    for (Int_t i = 0; i < nSpecies; i++)
+      histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
+
   }
 
   void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades)
@@ -224,8 +262,24 @@ struct strangederivedbuilder {
     // done!
   }
 
+  void processSimulation(aod::McParticles const& mcParticles)
+  {
+    // check if collision successfully reconstructed
+    for (auto& mcp : mcParticles) {
+      if (TMath::Abs(mcp.y()) < 0.5) {
+        static_for<0, nSpecies-1>([&](auto i) {
+          constexpr int index = i.value;
+          if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits,index)) {
+            histos.fill(HIST("hGen") + HIST(particleNamesConstExpr[index]), mcp.pt());
+          }
+        });
+      }
+    }
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information", true);
+  PROCESS_SWITCH(strangederivedbuilder, processSimulation, "Produce simulated information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -233,3 +287,17 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<strangederivedbuilder>(cfgc)};
 }
+
+//__________________________________________________
+// do not over-populate general namespace, keep scope strangederivedbuilder::
+const std::vector<std::string> strangederivedbuilder::particleNames{"Gamma", "K0Short", "Lambda", "AntiLambda", 
+                                                    "Sigma0", "AntiSigma0", "SigmaPlus", "SigmaMinus", 
+                                                    "Hypertriton", "AntiHypertriton", 
+                                                    "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
+const std::vector<int> strangederivedbuilder::particlePDGCodes{22, 310, 3122, -3122, 3212, -3212, 3222, 3112,
+                                                1010010030, -1010010030, 3312, -3312, 3334, -3334};
+const std::vector<std::string> strangederivedbuilder::parameterNames{"Enable"};
+
+const int strangederivedbuilder::defaultParameters[strangederivedbuilder::nSpecies][strangederivedbuilder::nParameters] = {{1}, {1}, {1}, {1}, {1}, 
+                                        {1}, {1}, {1}, {1}, {1},  
+                                        {1}, {1}, {1}, {1}};
