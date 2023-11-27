@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(kfperformancestudy
                     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lfpropstudy
+                    SOURCES lfpropStudy.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tpc-dedx-postcalibration
                     SOURCES tpc_dEdx_postcalibration.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
