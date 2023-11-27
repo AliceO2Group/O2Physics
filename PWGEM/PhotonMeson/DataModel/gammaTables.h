@@ -30,8 +30,8 @@ namespace o2::aod
 
 namespace emreducedevent
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_COLUMN(Tag, tag, uint64_t);         //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
+DECLARE_SOA_COLUMN(Tag, tag, uint64_t);            //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
@@ -315,6 +315,7 @@ DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent); //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);        //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);                //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
@@ -346,6 +347,10 @@ using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 DECLARE_SOA_TABLE(EMPrimaryElectronEMReducedEventIds, "AOD", "PRMELEMEVENTID", emprimaryelectron::EMReducedEventId); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronEMReducedEventId = EMPrimaryElectronEMReducedEventIds::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBit, "AOD", "PRMELEPFB", emprimaryelectron::PrefilterBit); // To be joined with EMPrimaryElectrons table at analysis level.
+// iterators
+using EMPrimaryElectronPrefilterBit = EMPrimaryElectronsPrefilterBit::iterator;
 
 namespace dalitzee
 {
@@ -380,6 +385,7 @@ DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent); //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);        //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);                //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
@@ -411,6 +417,10 @@ using EMPrimaryMuon = EMPrimaryMuons::iterator;
 DECLARE_SOA_TABLE(EMPrimaryMuonEMReducedEventIds, "AOD", "PRMMUEMEVENTID", emprimarymuon::EMReducedEventId); // To be joined with EMPrimaryMuons table at analysis level.
 // iterators
 using EMPrimaryMuonEMReducedEventId = EMPrimaryMuonEMReducedEventIds::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryMuonsPrefilterBit, "AOD", "PRMMUPFB", emprimarymuon::PrefilterBit); // To be joined with EMPrimaryMuons table at analysis level.
+// iterators
+using EMPrimaryMuonPrefilterBit = EMPrimaryMuonsPrefilterBit::iterator;
 
 namespace dalitzmumu
 {

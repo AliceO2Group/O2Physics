@@ -41,6 +41,7 @@ struct skimmerPrimaryMuon {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryMuons> emprimarymuons;
+  Produces<aod::EMPrimaryMuonsPrefilterBit> muon_pfb;
 
   // Configurables
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -257,6 +258,7 @@ struct skimmerPrimaryMuon {
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_after"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl_after"), track.tpcInnerParam(), track.tofNSigmaEl());
       stored_trackIds.emplace_back(track.globalIndex());
+      muon_pfb(0);
     }
   }
 

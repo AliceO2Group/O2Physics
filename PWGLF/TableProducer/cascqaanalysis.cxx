@@ -319,7 +319,9 @@ struct cascqaanalysis {
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels,
+                             aod::PVMults, aod::FT0Mults, aod::FV0Mults,
+                             aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::CascDataExt> const& Cascades,
                    aod::V0sLinked const&,
                    aod::V0Datas const&,
@@ -414,7 +416,9 @@ struct cascqaanalysis {
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels,
+                              aod::PVMults, aod::FT0Mults, aod::FV0Mults,
+                              aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     aod::V0Datas const&,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     DauTracks const&,
@@ -528,7 +532,7 @@ struct cascqaanalysis {
 
   void processMCgen(aod::McCollision const& mcCollision,
                     aod::McParticles const& mcParticles,
-                    const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions,
+                    const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions,
                     DauTracks const&)
   {
     // All generated collisions

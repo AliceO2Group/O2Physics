@@ -58,6 +58,12 @@ using MyDalitzEE = MyDalitzEEs::iterator;
 using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectron = MyPrimaryElectrons::iterator;
+
+using MyPrimaryMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyPrimaryMuon = MyPrimaryMuons::iterator;
+
 struct Pi0EtaToGammaGamma {
 
   Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
@@ -345,9 +351,9 @@ struct Pi0EtaToGammaGamma {
     } else if constexpr (pairtype == PairType::kPCMEMC) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::EMPrimaryElectrons>(g1, g2, cut1, cut2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, MyPrimaryElectrons>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::EMPrimaryMuons>(g1, g2, cut1, cut2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, MyPrimaryMuons>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPHOSEMC) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else {
@@ -465,8 +471,8 @@ struct Pi0EtaToGammaGamma {
                   v2.SetM(g2.mass());
                   auto pos_sv = g1.template posTrack_as<aod::V0Legs>();
                   auto ele_sv = g1.template negTrack_as<aod::V0Legs>();
-                  auto pos_pv = g2.template posTrack_as<aod::EMPrimaryElectrons>();
-                  auto ele_pv = g2.template negTrack_as<aod::EMPrimaryElectrons>();
+                  auto pos_pv = g2.template posTrack_as<MyPrimaryElectrons>();
+                  auto ele_pv = g2.template negTrack_as<MyPrimaryElectrons>();
                   if (pos_sv.trackId() == pos_pv.trackId() || ele_sv.trackId() == ele_pv.trackId()) {
                     continue;
                   }
@@ -474,8 +480,8 @@ struct Pi0EtaToGammaGamma {
                   v2.SetM(g2.mass());
                   auto pos_sv = g1.template posTrack_as<aod::V0Legs>();
                   auto ele_sv = g1.template negTrack_as<aod::V0Legs>();
-                  auto pos_pv = g2.template posTrack_as<aod::EMPrimaryMuons>();
-                  auto ele_pv = g2.template negTrack_as<aod::EMPrimaryMuons>();
+                  auto pos_pv = g2.template posTrack_as<MyPrimaryMuons>();
+                  auto ele_pv = g2.template negTrack_as<MyPrimaryMuons>();
                   if (pos_sv.trackId() == pos_pv.trackId() || ele_sv.trackId() == ele_pv.trackId()) {
                     continue;
                   }
@@ -640,12 +646,12 @@ struct Pi0EtaToGammaGamma {
     MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, emcmatchedtracks);
   }
 
-  void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dileptons, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dileptons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     SameEventPairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dileptons, perCollision, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, nullptr, nullptr);
     MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dileptons, perCollision, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, nullptr, nullptr);
   }
-  void processPCMDalitzMuMu(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzMuMus const& dileptons, aod::EMPrimaryMuons const& emprimarymuons)
+  void processPCMDalitzMuMu(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzMuMus const& dileptons, MyPrimaryMuons const& emprimarymuons)
   {
     SameEventPairing<PairType::kPCMDalitzMuMu>(grouped_collisions, v0photons, dileptons, perCollision, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, legs, nullptr, emprimarymuons, nullptr);
     MixedEventPairing<PairType::kPCMDalitzMuMu>(filtered_collisions, v0photons, dileptons, perCollision, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, legs, nullptr, emprimarymuons, nullptr);
