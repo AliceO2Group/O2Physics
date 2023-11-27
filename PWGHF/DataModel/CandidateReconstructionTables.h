@@ -153,10 +153,12 @@ DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
 namespace hf_sel_track
 {
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
+DECLARE_SOA_COLUMN(IsProton, isProton, int8_t);  //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
-                  hf_sel_track::IsSelProng);
+                  hf_sel_track::IsSelProng,
+                  hf_sel_track::IsProton);
 
 namespace hf_pv_refit_track
 {
