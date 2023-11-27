@@ -117,7 +117,7 @@ struct VdMAO2D {
       } // vertex
     }   // ft0
     nTF++;
-  }     // process
+  } // process
 
   PROCESS_SWITCH(VdMAO2D, processFT0, "Process FT0 trigger rates for VdM", true);
 
