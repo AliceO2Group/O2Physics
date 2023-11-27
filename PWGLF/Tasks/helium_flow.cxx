@@ -140,8 +140,8 @@ struct helium_flow {
   {
     // Variables
     float nsigmaTPCHe3 = track.tpcNSigmaHe();
-    float nsigmaTPCH3 = track.tpcNSigmatr();
-    float nsigmaTOFH3 = track.tofNSigmatr();
+    float nsigmaTPCH3 = track.tpcNSigmaTr();
+    float nsigmaTOFH3 = track.tofNSigmaTr();
     float nsigmaTPCHe4 = track.tpcNSigmaAl();
     float pt = track.pt();
 
