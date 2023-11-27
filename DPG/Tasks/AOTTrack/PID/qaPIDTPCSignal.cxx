@@ -34,6 +34,7 @@ struct tpcPidQaSignal {
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<bool> runPerRunOutput{"runPerRunOutput", false, "Flag to produce run by run output for e.g. lite calibration purposes"};
+  Configurable<bool> enabledEdxPerID{"enabledEdxPerID", false, "Flag to produce dE/dx per particle ID histograms"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
@@ -42,6 +43,7 @@ struct tpcPidQaSignal {
   Configurable<float> minNClsCrossedRows{"minNClsCrossedRows", 70.f, "Minimum number or TPC crossed rows for tracks"};
 
   std::shared_ptr<TH3> hdedx;
+  std::array<std::shared_ptr<TH3>, 9> hdedx_perID;
   int lastRun = -1;
   unsigned int randomSeed = 0;
   void init(o2::framework::InitContext&)
@@ -63,6 +65,11 @@ struct tpcPidQaSignal {
 
     histos.add("event/vertexz", "", kTH1D, {vtxZAxis});
     hdedx = histos.add<TH3>("event/tpcsignal", "", kTH3D, {pAxis, dedxAxis, chargeAxis});
+    if (enabledEdxPerID) {
+      for (int i = 0; i < 9; i++) {
+        hdedx_perID[i] = histos.add<TH3>(Form("event/tpcsignal_%i", i), "", kTH3D, {pAxis, dedxAxis, chargeAxis});
+      }
+    }
     LOG(info) << "QA PID TPC histograms:";
     histos.print();
   }
@@ -120,6 +127,9 @@ struct tpcPidQaSignal {
         hdedx = histos.add<TH3>(Form("Run%i/tpcsignal", lastRun), "", kTH3D, {pAxis, dedxAxis, chargeAxis});
       }
       hdedx->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      if (enabledEdxPerID) {
+        hdedx_perID[t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      }
     }
   }
   PROCESS_SWITCH(tpcPidQaSignal, processEvSel, "Process with event selection", false);
@@ -156,7 +166,10 @@ struct tpcPidQaSignal {
       if (t.tpcNClsCrossedRows() < minNClsCrossedRows) {
         continue;
       }
-      histos.fill(HIST("event/tpcsignal"), t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      hdedx->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      if (enabledEdxPerID) {
+        hdedx_perID[t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      }
     }
   }
   PROCESS_SWITCH(tpcPidQaSignal, processNoEvSel, "Process without event selection", true);

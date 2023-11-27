@@ -90,7 +90,9 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeroBuilder {
-  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0Indices> v0indices;
+  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs; // covariances
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -207,11 +209,10 @@ struct lambdakzeroBuilder {
 
   HistogramRegistry registry{
     "registry",
-    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}},
-     {"hV0Criteria", "hV0Criteria", {HistType::kTH1F, {{10, -0.5f, 9.5f}}}}}};
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
+     {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
 
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
@@ -250,6 +251,14 @@ struct lambdakzeroBuilder {
   void init(InitContext& context)
   {
     resetHistos();
+
+    auto h = registry.add<TH1>("hV0Criteria", "hV0Criteria", kTH1D, {{10, -0.5f, 9.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All sel");
+    h->GetXaxis()->SetBinLabel(2, "TPC requirement");
+    h->GetXaxis()->SetBinLabel(3, "DCAxy Dau to PV");
+    h->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
+    h->GetXaxis()->SetBinLabel(5, "CosPA");
+    h->GetXaxis()->SetBinLabel(6, "Radius");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -615,6 +624,7 @@ struct lambdakzeroBuilder {
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
+
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
@@ -730,8 +740,6 @@ struct lambdakzeroBuilder {
   template <class TTrackTo, typename TV0Table>
   void buildStrangenessTables(TV0Table const& V0s)
   {
-    statisticsRegistry.eventCounter++;
-
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
       // downscale some V0s if requested to do so
@@ -746,20 +754,18 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
-      // populates table for V0 analysis
-      v0data(V0.posTrackId(),
-             V0.negTrackId(),
-             V0.collisionId(),
-             V0.globalIndex(),
-             v0candidate.posTrackX, v0candidate.negTrackX,
-             v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
-             v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
-             v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
-             v0candidate.dcaV0dau,
-             v0candidate.posDCAxy,
-             v0candidate.negDCAxy,
-             v0candidate.cosPA,
-             v0candidate.dcav0topv);
+      // populates the various tables for analysis
+      v0indices(V0.posTrackId(), V0.negTrackId(),
+                V0.collisionId(), V0.globalIndex());
+      v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
+      v0cores(v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
+              v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
+              v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
+              v0candidate.dcaV0dau,
+              v0candidate.posDCAxy,
+              v0candidate.negDCAxy,
+              v0candidate.cosPA,
+              v0candidate.dcav0topv);
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
@@ -794,6 +800,7 @@ struct lambdakzeroBuilder {
 
   void processRun2(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
+    statisticsRegistry.eventCounter += collisions.size();
     // Fire up CCDB
     auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -804,6 +811,7 @@ struct lambdakzeroBuilder {
 
   void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
+    statisticsRegistry.eventCounter += collisions.size();
     // Fire up CCDB
     auto bc = collisions.size() ? collisions.begin().bc_as<aod::BCsWithTimestamps>() : bcs.begin();
     if (!bcs.size()) {
@@ -819,6 +827,9 @@ struct lambdakzeroBuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroPreselector {
   Produces<aod::V0Tags> v0tags; // MC tags
+
+  // for bookkeeping
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<bool> dIfMCgenerateK0Short{"dIfMCgenerateK0Short", true, "if MC, generate MC true K0Short (yes/no)"};
   Configurable<bool> dIfMCgenerateLambda{"dIfMCgenerateLambda", true, "if MC, generate MC true Lambda (yes/no)"};
@@ -863,6 +874,17 @@ struct lambdakzeroPreselector {
                bitdEdxAntiHypertriton,
                bitUsedInCascade,
                bitUsedInTrackedCascade };
+
+  void init(InitContext const&)
+  {
+    auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{6, -0.5f, 5.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All");
+    h->GetXaxis()->SetBinLabel(2, "Tracks OK");
+    h->GetXaxis()->SetBinLabel(3, "MC label OK");
+    h->GetXaxis()->SetBinLabel(4, "dEdx OK");
+    h->GetXaxis()->SetBinLabel(5, "Used in Casc");
+    h->GetXaxis()->SetBinLabel(6, "Used in Tra-Casc");
+  }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -982,7 +1004,11 @@ struct lambdakzeroPreselector {
   {
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
+      histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 1.0f); // pass track quality
+      }
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
         validV0 = validV0 && ((bitcheck(selectionMask[ii], bitTrueK0Short) && dIfMCgenerateK0Short) ||
                               (bitcheck(selectionMask[ii], bitTrueLambda) && dIfMCgenerateLambda) ||
@@ -990,6 +1016,9 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitTrueGamma) && dIfMCgenerateGamma) ||
                               (bitcheck(selectionMask[ii], bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
                               (bitcheck(selectionMask[ii], bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 2.0f); // pass MC
+      }
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
         validV0 = validV0 && ((bitcheck(selectionMask[ii], bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
                               (bitcheck(selectionMask[ii], bitdEdxLambda) && ddEdxPreSelectLambda) ||
@@ -997,10 +1026,19 @@ struct lambdakzeroPreselector {
                               (bitcheck(selectionMask[ii], bitdEdxGamma) && ddEdxPreSelectGamma) ||
                               (bitcheck(selectionMask[ii], bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
                               (bitcheck(selectionMask[ii], bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 3.0f); // pass dEdx
+      }
       if (doprocessSkipV0sNotUsedInCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInCascade);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 4.0f); // pass used in casc
+      }
       if (doprocessSkipV0sNotUsedInTrackedCascades)
         validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
+      if (validV0) {
+        histos.fill(HIST("hPreselectorStatistics"), 5.0f); // pass used in tracasc
+      }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
              bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
@@ -1116,7 +1154,7 @@ struct lambdakzeroV0DataLinkBuilder {
 
 // Extends the v0data table with expression columns
 struct lambdakzeroInitializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::V0Cores> v0cores;
   void init(InitContext const&) {}
 };
 

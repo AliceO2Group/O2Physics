@@ -71,7 +71,7 @@ DECLARE_SOA_COLUMN(MagField, magField, float); // Magnetic field corresponding t
 
 } // namespace singletrackselector
 
-DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SCSEL", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variables for single track selection.
                   o2::soa::Index<>,
                   singletrackselector::Mult,
                   singletrackselector::PosZ,
@@ -131,7 +131,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
 
 } // namespace singletrackselector
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "STSEL", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SingleTrackSels", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,

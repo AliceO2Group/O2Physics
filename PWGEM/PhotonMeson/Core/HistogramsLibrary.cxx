@@ -65,6 +65,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hZY", "Z vs. Y;Z (cm);Y (cm)", 200, -100, 100, 100, -50, 50));
     list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
     list->Add(new TH2F("hXZ_tgl", "correlation of tgl vs. z/x;tgl;z/x", 300, -1.5, 1.5, 300, -1.5, 1.5));
+    if (TString(subGroup) == "mc") {
+      list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 1000, -1.0f, 1.0f));
+    }
   }
   if (TString(histClass) == "V0") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
@@ -76,7 +81,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 200, 0.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
-    list->Add(new TH2F("hMassGammaPV", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
@@ -412,16 +416,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   for (int i = 0; i < nmgg04; i++) {
     mgg04[i] = 0.002 * i;
   }
-  const int npTgg10 = 71;
+  const int npTgg10 = 61;
   float pTgg10[npTgg10] = {};
-  for (int i = 0; i < 10; i++) {
-    pTgg10[i] = 0.01 * (i - 0) + 0.0; // from 0 to 0.1 GeV/c, every 0.01 GeV/c
+  for (int i = 0; i < 50; i++) {
+    pTgg10[i] = 0.1 * (i - 0) + 0.0; // from 0 to 5 GeV/c, every 0.1 GeV/c
   }
-  for (int i = 10; i < 60; i++) {
-    pTgg10[i] = 0.1 * (i - 10) + 0.1; // from 0.1 to 5 GeV/c, every 0.1 GeV/c
-  }
-  for (int i = 60; i < npTgg10; i++) {
-    pTgg10[i] = 0.5 * (i - 60) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
+  for (int i = 50; i < npTgg10; i++) {
+    pTgg10[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
   }
   if (TString(histClass) == "tagging_pi0") {
     list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));

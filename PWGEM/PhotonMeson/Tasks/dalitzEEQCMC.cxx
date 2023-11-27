@@ -43,7 +43,7 @@ using MyCollision = MyCollisions::iterator;
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryElectronMCLabels>;
 
 struct DalitzEEQCMC {

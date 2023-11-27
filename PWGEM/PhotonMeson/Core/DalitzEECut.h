@@ -60,6 +60,7 @@ class DalitzEECut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
+    kPrefilter,
     kNCuts
   };
   static const char* mCutNames[static_cast<int>(DalitzEECuts::kNCuts)];
@@ -166,6 +167,10 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTPCChi2NDF)) {
+      return false;
+    }
+
+    if (mApplyPF && !IsSelectedTrack(track, DalitzEECuts::kPrefilter)) {
       return false;
     }
 
@@ -352,6 +357,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
+      case DalitzEECuts::kPrefilter:
+        return track.pfb() <= 0;
+
       default:
         return false;
     }
@@ -391,6 +399,7 @@ class DalitzEECut : public TNamed
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void ApplyPrefilter(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -419,6 +428,7 @@ class DalitzEECut : public TNamed
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  bool mApplyPF{false};
 
   // pid cuts
   PIDSchemes mPIDScheme{PIDSchemes::kUnDef};

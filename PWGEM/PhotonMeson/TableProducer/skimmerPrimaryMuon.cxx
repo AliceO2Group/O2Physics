@@ -12,15 +12,10 @@
 /// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
-#include <map>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -46,6 +41,7 @@ struct skimmerPrimaryMuon {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryMuons> emprimarymuons;
+  Produces<aod::EMPrimaryMuonsPrefilterBit> muon_pfb;
 
   // Configurables
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -92,6 +88,34 @@ struct skimmerPrimaryMuon {
       {"Track/hTPCNsigmaPi_after", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
       {"Track/hTOFNsigmaPi_after", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
       {"Pair/hMmumuPtmumu", "ULS m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", {HistType::kTH2F, {{100, 0.2f, 1.2f}, {120, 0.f, 1.2f}}}},
+      // for MC primary muon
+      {"MC/Primary/hNclsITS", "Ncls ITS;N_{cls}^{ITS}", {HistType::kTH1F, {{8, -0.5f, +7.5f}}}},
+      {"MC/Primary/hChi2ITS", "chi2 ITS;#chi^{2}/N_{cls}^{ITS}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
+      {"MC/Primary/hNclsTPC", "Ncls TPC;N_{cls}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Primary/hNcrTPC", "Ncr TPC;N_{cr}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Primary/hNfTPC", "Nfindable TPC;N_{f}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Primary/hChi2TPC", "chi2 TPC;#chi^{2}/N_{cls}^{TPC}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
+      {"MC/Primary/hDCAxy_NclsTPC", "DCA xy vs. N_{cls}^{TPC};DCA_{xy} (cm);N_{cls}^{TPC}", {HistType::kTH2F, {{200, -1.f, +1.f}, {161, -0.5f, +160.5f}}}},
+      {"MC/Primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Primary/hDCA3D", "DCA;DCA_{3D} (cm)", {HistType::kTH1F, {{100, 0.f, +1.f}}}},
+      {"MC/Primary/hDCAxy_resolution", "DCA xy resolution;DCA_{xy} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
+      {"MC/Primary/hDCAz_resolution", "DCA z resolution;DCA_{z} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
+      {"MC/Primary/hDCAxyz_sigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", {HistType::kTH2F, {{200, -10.f, +10.f}, {200, -10.f, +10.f}}}},
+      {"MC/Primary/hDCA3D_sigma", "DCA;DCA_{3D} (#sigma)", {HistType::kTH1F, {{100, 0.f, +10.f}}}},
+      // for MC seconday muon
+      {"MC/Secondary/hNclsITS", "Ncls ITS;N_{cls}^{ITS}", {HistType::kTH1F, {{8, -0.5f, +7.5f}}}},
+      {"MC/Secondary/hChi2ITS", "chi2 ITS;#chi^{2}/N_{cls}^{ITS}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
+      {"MC/Secondary/hNclsTPC", "Ncls TPC;N_{cls}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Secondary/hNcrTPC", "Ncr TPC;N_{cr}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Secondary/hNfTPC", "Nfindable TPC;N_{f}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
+      {"MC/Secondary/hChi2TPC", "chi2 TPC;#chi^{2}/N_{cls}^{TPC}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
+      {"MC/Secondary/hDCAxy_NclsTPC", "DCA xy vs. N_{cls}^{TPC};DCA_{xy} (cm);N_{cls}^{TPC}", {HistType::kTH2F, {{200, -1.f, +1.f}, {161, -0.5f, +160.5f}}}},
+      {"MC/Secondary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Secondary/hDCA3D", "DCA;DCA_{3D} (cm)", {HistType::kTH1F, {{100, 0.f, +1.f}}}},
+      {"MC/Secondary/hDCAxy_resolution", "DCA xy resolution;DCA_{xy} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
+      {"MC/Secondary/hDCAz_resolution", "DCA z resolution;DCA_{z} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
+      {"MC/Secondary/hDCAxyz_sigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", {HistType::kTH2F, {{200, -10.f, +10.f}, {200, -10.f, +10.f}}}},
+      {"MC/Secondary/hDCA3D_sigma", "DCA;DCA_{3D} (#sigma)", {HistType::kTH1F, {{100, 0.f, +10.f}}}},
     },
   };
 
@@ -111,6 +135,11 @@ struct skimmerPrimaryMuon {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
+
+    // if(abs(track.dcaXY()) > dca_xy_max || abs(track.dcaZ()) > dca_z_max){
+    //   return false;
+    // }
+
     if (track.itsNCls() < minitsncls) {
       return false;
     }
@@ -160,6 +189,7 @@ struct skimmerPrimaryMuon {
       if (!checkTrack<isMC>(track)) {
         continue;
       }
+
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_before"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_before"), track.tpcInnerParam(), track.beta());
       fRegistry.fill(HIST("Track/hTPCNsigmaMu_before"), track.tpcInnerParam(), track.tpcNSigmaMu());
@@ -168,6 +198,42 @@ struct skimmerPrimaryMuon {
       fRegistry.fill(HIST("Track/hTOFNsigmaPi_before"), track.tpcInnerParam(), track.tofNSigmaPi());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_before"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl_before"), track.tpcInnerParam(), track.tofNSigmaEl());
+
+      if constexpr (isMC) {
+        auto mctrack = track.template mcParticle_as<aod::McParticles>();
+        if (abs(mctrack.pdgCode()) == 13 && mctrack.has_mothers()) {
+          auto mp = mctrack.template mothers_first_as<aod::McParticles>();
+          if (abs(mp.pdgCode()) == 221 || abs(mp.pdgCode()) == 223 || abs(mp.pdgCode()) == 333 || abs(mp.pdgCode()) == 113 || abs(mp.pdgCode()) == 331) {
+            fRegistry.fill(HIST("MC/Primary/hNclsITS"), track.itsNCls());
+            fRegistry.fill(HIST("MC/Primary/hChi2ITS"), track.itsChi2NCl());
+            fRegistry.fill(HIST("MC/Primary/hNcrTPC"), track.tpcNClsCrossedRows());
+            fRegistry.fill(HIST("MC/Primary/hNclsTPC"), track.tpcNClsFound());
+            fRegistry.fill(HIST("MC/Primary/hNfTPC"), track.tpcNClsFindable());
+            fRegistry.fill(HIST("MC/Primary/hChi2TPC"), track.tpcChi2NCl());
+            fRegistry.fill(HIST("MC/Primary/hDCAxy_NclsTPC"), track.dcaXY(), track.tpcNClsFound());
+            fRegistry.fill(HIST("MC/Primary/hDCAxyz"), track.dcaXY(), track.dcaZ());
+            fRegistry.fill(HIST("MC/Primary/hDCA3D"), sqrt(pow(track.dcaXY(), 2) + pow(track.dcaZ(), 2)));
+            fRegistry.fill(HIST("MC/Primary/hDCAxy_resolution"), sqrt(track.cYY()));
+            fRegistry.fill(HIST("MC/Primary/hDCAz_resolution"), sqrt(track.cZZ()));
+            fRegistry.fill(HIST("MC/Primary/hDCAxyz_sigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
+            fRegistry.fill(HIST("MC/Primary/hDCA3D_sigma"), sqrt(pow(track.dcaXY() / sqrt(track.cYY()), 2) + pow(track.dcaZ() / sqrt(track.cZZ()), 2)));
+          } else if (abs(mp.pdgCode()) == 211 || abs(mp.pdgCode()) == 321) {
+            fRegistry.fill(HIST("MC/Secondary/hNclsITS"), track.itsNCls());
+            fRegistry.fill(HIST("MC/Secondary/hChi2ITS"), track.itsChi2NCl());
+            fRegistry.fill(HIST("MC/Secondary/hNcrTPC"), track.tpcNClsCrossedRows());
+            fRegistry.fill(HIST("MC/Secondary/hNclsTPC"), track.tpcNClsFound());
+            fRegistry.fill(HIST("MC/Secondary/hNfTPC"), track.tpcNClsFindable());
+            fRegistry.fill(HIST("MC/Secondary/hChi2TPC"), track.tpcChi2NCl());
+            fRegistry.fill(HIST("MC/Secondary/hDCAxy_NclsTPC"), track.dcaXY(), track.tpcNClsFound());
+            fRegistry.fill(HIST("MC/Secondary/hDCAxyz"), track.dcaXY(), track.dcaZ());
+            fRegistry.fill(HIST("MC/Secondary/hDCA3D"), sqrt(pow(track.dcaXY(), 2) + pow(track.dcaZ(), 2)));
+            fRegistry.fill(HIST("MC/Secondary/hDCAxy_resolution"), sqrt(track.cYY()));
+            fRegistry.fill(HIST("MC/Secondary/hDCAz_resolution"), sqrt(track.cZZ()));
+            fRegistry.fill(HIST("MC/Secondary/hDCAxyz_sigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
+            fRegistry.fill(HIST("MC/Secondary/hDCA3D_sigma"), sqrt(pow(track.dcaXY() / sqrt(track.cYY()), 2) + pow(track.dcaZ() / sqrt(track.cZZ()), 2)));
+          }
+        }
+      }
     }
   }
 
@@ -192,6 +258,7 @@ struct skimmerPrimaryMuon {
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_after"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl_after"), track.tpcInnerParam(), track.tofNSigmaEl());
       stored_trackIds.emplace_back(track.globalIndex());
+      muon_pfb(0);
     }
   }
 
@@ -244,8 +311,7 @@ struct skimmerPrimaryMuon {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = o2::aod::track::x < 10.f && minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx && o2::aod::track::tpcInnerParam < maxPin;
-  ;
+  Filter trackFilter = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx && o2::aod::track::tpcInnerParam < maxPin;
 
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -254,7 +320,6 @@ struct skimmerPrimaryMuon {
   {
     stored_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {
-
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       fillTrackHistogram<false>(posTracks_per_coll);
@@ -275,10 +340,9 @@ struct skimmerPrimaryMuon {
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
-  void processMC(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
+  void processMC(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const&)
   {
     stored_trackIds.reserve(tracks.size());
-
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;
