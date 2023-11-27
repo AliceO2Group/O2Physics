@@ -894,6 +894,8 @@ struct QaEfficiency {
 
     // HMPID
     if (doprocessHmpid) {
+      histos.add("Data/pos/hmpidMomDiff", "HMPID Positive Momentum difference", kTH1F, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
+      histos.add("Data/neg/hmpidMomDiff", "HMPID Negative Momentum difference", kTH1F, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
       histos.add("Data/pos/pt/hmpid", "HMPID Positive " + tagPt, kTH1F, {axisPt});
       histos.add("Data/neg/pt/hmpid", "HMPID Negative " + tagPt, kTH1F, {axisPt});
 
@@ -1386,8 +1388,7 @@ struct QaEfficiency {
 
   // Global process
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               TrackCandidates const& tracks)
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision)
   {
     isCollisionSelected<true>(collision);
   }
@@ -1858,11 +1859,13 @@ struct QaEfficiency {
       }
 
       if (track.sign() > 0) {
+        histos.fill(HIST("Data/pos/hmpidMomDiff"), track.p() - hmpid.hmpidMom());
         histos.fill(HIST("Data/pos/pt/hmpid"), track.pt());
         histos.fill(HIST("Data/pos/eta/hmpid"), track.eta());
         histos.fill(HIST("Data/pos/phi/hmpid"), track.phi());
         histos.fill(HIST("Data/pos/etaphi/hmpid"), track.eta(), track.phi());
       } else {
+        histos.fill(HIST("Data/neg/hmpidMomDiff"), track.p() - hmpid.hmpidMom());
         histos.fill(HIST("Data/neg/pt/hmpid"), track.pt());
         histos.fill(HIST("Data/neg/eta/hmpid"), track.eta());
         histos.fill(HIST("Data/neg/phi/hmpid"), track.phi());
