@@ -64,7 +64,7 @@ struct VdMAO2D {
       return;
     }
 
-    nBins = int(endTimeInS - startTimeInS);
+    nBins = static_cast<int>(endTimeInS - startTimeInS);
     nCollBins = collBCArray->size();
     // Hist for FT0
     registry.add("FT0/VtxTrig", "vertex trigger;ts (s); Counts", {HistType::kTH1F, {{nBins, 0., static_cast<double>(endTimeInS - startTimeInS)}}});
