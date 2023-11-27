@@ -15,6 +15,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
+#include <TDatabasePDG.h> // FIXME
+
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -286,10 +288,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -662,7 +664,7 @@ struct femtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0,
                   cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0),
                   0,
-                  v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                  v0.v0cosPA(),
                   indexChildID,
                   v0.mLambda(),
                   v0.mAntiLambda());
@@ -697,8 +699,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass();
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass();
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -778,7 +780,7 @@ struct femtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kPhi,
                   -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0),
                   0,
-                  phiM, // v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                  phiM, // v0.v0cosPA(),
                   indexChildID,
                   phiM,  // phi.mLambda(), //for now it will have a mLambda getter, maybe we will change it in the future so it's more logical
                   -999); // v0.mAntiLambda()
@@ -802,17 +804,26 @@ struct femtoUniverseProducerTask {
     for (auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
-      if (!particle.isPhysicalPrimary())
+
+      if (particle.eta() < -ConfFilterCuts.ConfEtaFilterCut || particle.eta() > ConfFilterCuts.ConfEtaFilterCut)
+        continue;
+      if (particle.pt() < ConfFilterCuts.ConfPtLowFilterCut || particle.pt() > ConfFilterCuts.ConfPtHighFilterCut)
         continue;
 
       uint32_t pdgCode = (uint32_t)particle.pdgCode();
 
       if (ConfMCTruthAnalysisWithPID) {
         bool pass = false;
-        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
+        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes;
+        ; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            pass = true;
+            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+              pass = true;
+            } else {
+              if (particle.isPhysicalPrimary())
+                pass = true;
+            }
           }
         }
         if (!pass)

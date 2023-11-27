@@ -108,14 +108,14 @@ struct UDTutorial03b {
     return true;
   }
 
-  // check if a generated event is of the type rho0 -> mu+ + mu- using the MC particle stack
+  // check if a generated event is of the type J/Psi -> mu+ + mu- using the MC particle stack
   template <typename MCTrack>
   std::vector<int64_t> getDaughterParts_gen(MCTrack const& parts)
   {
     std::vector<int64_t> selectedParts;
 
-    // in this case we expect the data files to contain events of the type rho0 -> mu+ + mu-
-    if (udhelpers::isSTARLightRhomumu(parts)) {
+    // in this case we expect the data files to contain events of the type J/Psi -> mu+ + mu-
+    if (udhelpers::isSTARLightJPsimumu(parts)) {
       selectedParts.push_back(1);
       selectedParts.push_back(2);
     }
@@ -141,8 +141,8 @@ struct UDTutorial03b {
   }
 
   // retrieve the reconstructed tracks which are associated with the given McParticles
-  template <typename MCTrack>
-  std::vector<int64_t> getDaughterTracks_gen(MCTrack const& parts, std::vector<int64_t> partIds, TCs const& tracks)
+  template <typename McPart>
+  std::vector<int64_t> getDaughterTracks_gen(McPart const& parts, std::vector<int64_t> partIds, TCs const& tracks)
   {
     // return a vector of track indices
     std::vector<int64_t> emptySelection;
@@ -249,7 +249,7 @@ struct UDTutorial03b {
     }
   }
 
-  // check a reconstructed pair of tracks to be a candidate for an event of the type rho0 -> mu+ + mu-
+  // check a reconstructed pair of tracks to be a candidate for an event of the type J/Psi -> mu+ + mu-
   bool isSelected_rec(TCs const& tracks, std::vector<int64_t> const& trackIds)
   {
     // tracks is expected to contain two tracks
@@ -311,7 +311,7 @@ struct UDTutorial03b {
     TLorentzVector* lv2_rec = new TLorentzVector();
     TLorentzVector* lv_rec = new TLorentzVector();
 
-    // loop over all genererated collisions
+    // loop over all generated collisions
     for (auto mccollision : mccollisions) {
       registry.get<TH1>(HIST("MC/Stat"))->Fill(0., 1.);
 

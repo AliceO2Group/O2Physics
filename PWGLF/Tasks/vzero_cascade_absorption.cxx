@@ -130,6 +130,12 @@ struct vzero_cascade_absorption {
     registryMC.add("AntiLambda_before_target_mc", "AntiLambda before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
     registryMC.add("AntiLambda_after_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
 
+    // Generated Distributions
+    registryMC.add("Lambda_before_target_mc_gen", "Lambda before target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("Lambda_after_target_mc_gen", "Lambda after target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("AntiLambda_before_target_mc_gen", "AntiLambda before target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("AntiLambda_after_target_mc_gen", "AntiLambda after target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
+
     // Resolution
     registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
     registryMC.add("K0_Rresolution_after_target", "K0 Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
@@ -200,7 +206,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -250,7 +256,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -300,7 +306,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -548,6 +554,35 @@ struct vzero_cascade_absorption {
     } // end loop on V0s
   }   // end processMC
   PROCESS_SWITCH(vzero_cascade_absorption, processMC, "Process mc", false);
+
+  void processMCgen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  {
+    for (auto& mcParticle : mcParticles) {
+
+      if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
+        continue;
+
+      float R = TMath::Sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
+      float p = mcParticle.p();
+
+      // Lambda
+      if (mcParticle.pdgCode() == +3122) {
+        if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
+          registryMC.fill(HIST("Lambda_before_target_mc_gen"), p);
+        if (R > Rmin_afterAbs && R < Rmax_afterAbs)
+          registryMC.fill(HIST("Lambda_after_target_mc_gen"), p);
+      }
+
+      // AntiLambda
+      if (mcParticle.pdgCode() == -3122) {
+        if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
+          registryMC.fill(HIST("AntiLambda_before_target_mc_gen"), p);
+        if (R > Rmin_afterAbs && R < Rmax_afterAbs)
+          registryMC.fill(HIST("AntiLambda_after_target_mc_gen"), p);
+      }
+    }
+  }
+  PROCESS_SWITCH(vzero_cascade_absorption, processMCgen, "Process generated MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

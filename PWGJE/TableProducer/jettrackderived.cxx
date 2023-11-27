@@ -11,7 +11,7 @@
 
 ///
 /// \file   for derived process JetTrackQa.h and .cxx
-/// \author Johanna Lömker
+/// \author Johanna Lömker <johanna.lomker@cern.ch>
 /// \since  2023-10-02
 /// \brief  Header for the trackJetQa task for the analysis of the tracks for jets..
 ///
@@ -29,19 +29,26 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGJE/DataModel/TrackJetQa.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct spectraDerivedMaker {
+struct jetspectraDerivedMaker {
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
+  ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
 
   Configurable<double> ValVtx{"ValVtx", 10, "Value of the vertex position"};
   Configurable<float> ValCutEta{"ValCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> ValCutY{"ValCutY", 0.5f, "Y range for tracks"};
+  Configurable<float> minPt{"minPt", 0.15f, "minimum pT for tracks"};
+  Configurable<float> maxPt{"maxPt", 10e10, "maximum pT for tracks"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 2.f, "Downsampling factor for the events for derived data"};
+  Configurable<bool> fillMultiplicity{"fillMultiplicity", true, "To fill multiplicity and centrality histograms"};
+
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
   Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
@@ -55,7 +62,6 @@ struct spectraDerivedMaker {
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -70,10 +76,16 @@ struct spectraDerivedMaker {
     LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
     LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
     LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
+    LOG(info) << "\tRequireHitsInITSLayers=" << maxChi2PerClusterITS.value;
     LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
+    LOG(info) << "\tminPt=" << minPt.value;
+    LOG(info) << "\tmaxPt=" << maxPt.value;
+    LOG(info) << "\tmaxEta=" << ValCutEta.value;
 
     customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
     LOG(info) << "Customizing track cuts:";
+    customTrackCuts.SetEtaRange(-ValCutEta.value, ValCutEta.value);
+    customTrackCuts.SetPtRange(minPt.value, maxPt.value);
     customTrackCuts.SetRequireITSRefit(requireITS.value);
     customTrackCuts.SetRequireTPCRefit(requireTPC.value);
     customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
@@ -81,6 +93,7 @@ struct spectraDerivedMaker {
     customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
     customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
     customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
+    // customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
     customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
@@ -91,12 +104,24 @@ struct spectraDerivedMaker {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
+
+    const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
+    const AxisSpec axisPercentileFT0C{binsPercentile, "Centrality FT0C"};
+    const AxisSpec axisMultiplicityPV{binsMultiplicity, "MultNTracksPV"};
+    const AxisSpec axisMultiplicityFT0A{binsMultiplicity, "Multiplicity FT0A"};
+    const AxisSpec axisMultiplicityFT0C{binsMultiplicity, "Multiplicity FT0C"};
+
+    histos.add("Centrality/FT0A", "CentFT0A", HistType::kTH1D, {axisPercentileFT0A});
+    histos.add("Centrality/FT0C", "CentFT0C", HistType::kTH1D, {axisPercentileFT0C});
+    histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
+    histos.add("Mult/FT0A", "MultFT0A", HistType::kTH1D, {axisMultiplicityFT0A});
+    histos.add("Mult/FT0C", "MultFT0C", HistType::kTH1D, {axisMultiplicityFT0C});
   }
 
   template <typename CollisionType, typename TrackType>
   bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
   {
-    // here we could already fill some histos fo cross checks
+    // here we could already fill some histos for cross checks
     if (!collision.sel8()) {
       return false;
     }
@@ -111,22 +136,30 @@ struct spectraDerivedMaker {
     }
     histos.fill(HIST("EventProp/sampledvertexz"), collision.posZ());
     return true;
+
+    if (fillMultiplicity) {
+      histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+      histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
+      histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+      histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
+      histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
+    }
   }
 
   template <typename TrackType>
   bool isTrackSelected(TrackType const& track) // add trackselections and corresponding histos for cross checks to derived table
   {
-    if (!track.isGlobalTrackWoPtEta()) { // in principle we would liek to check all these cuts
+    if (!track.isGlobalTrackWoPtEta()) { // in principle we would like to check all these cuts
       return false;
     }
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
 
-  Produces<o2::aod::SpColls> tableColl;
-  Produces<o2::aod::SpTracks> tableTrack;
+  Produces<o2::aod::JeColls> tableColl;
+  Produces<o2::aod::JeTracks> tableTrack;
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate::iterator const& collision,
                    TrackCandidates const& tracks,
@@ -141,6 +174,11 @@ struct spectraDerivedMaker {
               collision.posY(),
               collision.posZ(),
               collision.sel8(),
+              collision.multNTracksPV(),
+              collision.multFT0A(),
+              collision.multFT0C(),
+              collision.centFT0A(),
+              collision.centFT0C(),
               collision.bc().runNumber());
 
     tableTrack.reserve(tracks.size());
@@ -150,26 +188,36 @@ struct spectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.pt() * trk.sign(), trk.eta(), trk.phi(),
+                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
                  trk.sigma1Pt(),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()),
+                 trk.alpha(),
+                 trk.x(), trk.y(), trk.z(),
+                 trk.snp(),
+                 trk.tgl(),
+                 trk.isPVContributor(),
+                 trk.hasTRD(),
+                 trk.isGlobalTrack(),
+                 trk.isGlobalTrackWoDCA(),
+                 trk.isGlobalTrackWoPtEta(),
+                 trk.flags(),
                  trk.length(),
-                 trk.tpcSignal(),
                  trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
                  trk.tpcNClsShared(),
                  trk.tpcNClsFindable(),
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
-                 trk.isPVContributor(),
                  trk.itsClusterMap(),
-                 trk.hasTRD(),
-                 trk.isGlobalTrack(),
-                 trk.isGlobalTrackWoDCA(),
-                 trk.isGlobalTrackWoPtEta());
+                 trk.itsNCls(),
+                 trk.tpcFractionSharedCls(),
+                 trk.tpcNClsFound(),
+                 trk.tpcNClsCrossedRows(),
+                 trk.tpcCrossedRowsOverFindableCls(),
+                 trk.tpcFoundOverFindableCls(),
+                 trk.dcaXY(),
+                 trk.dcaZ());
     }
   }
-  PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);
+  PROCESS_SWITCH(jetspectraDerivedMaker, processData, "Process data for derived dataset production", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<spectraDerivedMaker>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<jetspectraDerivedMaker>(cfgc)}; }

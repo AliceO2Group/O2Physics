@@ -41,7 +41,9 @@ enum CutDirection {
 } // namespace cuts_ml
 namespace analysis
 {
-template <typename T = float>
+
+// TypeOutputScore is the type of the output score from o2::ml::OnnxModel (float by default)
+template <typename TypeOutputScore = float>
 class MlResponse
 {
  public:
@@ -71,22 +73,23 @@ class MlResponse
   /// \param ccdbApi is the CCDB API
   /// \param pathCCDB is the model path in CCDB
   /// \param timestampCCDB is the CCDB timestamp
-  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
+    if (pathsCCDB.size() != mNModels) {
+      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of paths (" << onnxFiles.size() << ")! Please check your configurables.";
+    }
 
-    uint8_t counterModel{0};
-    for (const auto& onnxFile : onnxFiles) {
+    for (auto iFile{0}; iFile < mNModels; ++iFile) {
       std::map<std::string, std::string> metadata;
-      bool retrieveSuccess = ccdbApi.retrieveBlob(pathCCDB, ".", metadata, timestampCCDB, false, onnxFile);
+      bool retrieveSuccess = ccdbApi.retrieveBlob(pathsCCDB[iFile], ".", metadata, timestampCCDB, false, onnxFiles[iFile]);
       if (retrieveSuccess) {
-        mPaths[counterModel] = onnxFile;
+        mPaths[iFile] = onnxFiles[iFile];
       } else {
         LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
       }
-      ++counterModel;
     }
   }
 
@@ -113,15 +116,29 @@ class MlResponse
     }
   }
 
+  /// Method to translate configurable input-feature strings into integers
+  /// \param cfgInputFeatures array of input features names
+  void cacheInputFeaturesIndices(std::vector<std::string> const& cfgInputFeatures)
+  {
+    setAvailableInputFeatures();
+    for (const auto& inputFeature : cfgInputFeatures) {
+      if (mAvailableInputFeatures.count(inputFeature)) {
+        mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
+      } else {
+        LOG(fatal) << "Input feature " << inputFeature << " not available. Please check your configurables.";
+      }
+    }
+  }
+
   /// Get vector with model predictions
   /// \param input a vector containing the values of features used in the model
   /// \param nModel is the model index
   /// \return model prediction for each class and the selected model
   template <typename T1, typename T2>
-  std::vector<T> getModelOutput(T1& input, const T2& nModel)
+  std::vector<TypeOutputScore> getModelOutput(T1& input, const T2& nModel)
   {
-    T* outputPtr = mModels[nModel].evalModel(input);
-    return std::vector<T>{outputPtr, outputPtr + mNClasses};
+    TypeOutputScore* outputPtr = mModels[nModel].evalModel(input);
+    return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
 
   /// Finds pT bin in an array.
@@ -172,7 +189,7 @@ class MlResponse
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& pt, std::vector<T>& output)
+  bool isSelectedMl(T1& input, const T2& pt, std::vector<TypeOutputScore>& output)
   {
     auto nModel = findBin(&mBinsLimits, pt);
     output = getModelOutput(input, nModel);
@@ -193,13 +210,17 @@ class MlResponse
   }
 
  protected:
-  std::vector<o2::ml::OnnxModel> mModels;         // OnnxModel objects, one for each bin
-  uint8_t mNModels = 1;                           // number of bins
-  uint8_t mNClasses = 3;                          // number of model classes
-  std::vector<double> mBinsLimits = {};           // bin limits of the variable (e.g. pT) used to select which model to use
-  std::vector<std::string> mPaths = {""};         // paths to the models, one for each bin
-  std::vector<int> mCutDir = {};                  // direction of the cuts on the model scores (no cut is also supported)
-  o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
+  std::vector<o2::ml::OnnxModel> mModels;                 // OnnxModel objects, one for each bin
+  uint8_t mNModels = 1;                                   // number of bins
+  uint8_t mNClasses = 3;                                  // number of model classes
+  std::vector<double> mBinsLimits = {};                   // bin limits of the variable (e.g. pT) used to select which model to use
+  std::vector<std::string> mPaths = {""};                 // paths to the models, one for each bin
+  std::vector<int> mCutDir = {};                          // direction of the cuts on the model scores (no cut is also supported)
+  o2::framework::LabeledArray<double> mCuts = {};         // array of cut values to apply on the model scores
+  std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
+  std::vector<uint8_t> mCachedIndices;                    // vector of indices correspondance between configurable and available input features
+
+  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
 };
 
 } // namespace analysis

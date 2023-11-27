@@ -36,15 +36,18 @@
 #include "Math/GenVector/Boost.h"
 
 #include "Framework/DataTypes.h"
+// #include "MCHTracking/TrackExtrap.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "DCAFitter/FwdDCAFitterN.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
 #include "CommonConstants/PhysicsConstants.h"
 
 #include "KFParticle.h"
@@ -77,6 +80,7 @@ class VarManager : public TObject
     ReducedEventQvector = BIT(9),
     CollisionCent = BIT(10),
     CollisionMult = BIT(11),
+    EventFilter = BIT(12),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -128,6 +132,7 @@ class VarManager : public TObject
     kTimestamp,
     kBC,
     kIsPhysicsSelection,
+    kIsSel8, // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -189,12 +194,21 @@ class VarManager : public TObject
     kR3SP,
     kR2EP,
     kR3EP,
+    kIsDoubleGap,  // Double rapidity gap
+    kIsSingleGapA, // Rapidity gap on side A
+    kIsSingleGapC, // Rapidity gap on side C
+    kIsSingleGap,  // Rapidity gap on either side
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
+    kX,
+    kY,
+    kZ,
     kPt,
+    kSignedPt,
     kInvPt,
     kEta,
+    kTgl,
     kPhi,
     kP,
     kPx,
@@ -307,9 +321,19 @@ class VarManager : public TObject
     kMuonChi2MatchMCHMFT,
     kMuonMatchScoreMCHMFT,
     kMuonCXX,
+    kMuonCXY,
     kMuonCYY,
+    kMuonCPhiX,
+    kMuonCPhiY,
     kMuonCPhiPhi,
+    kMuonCTglX,
+    kMuonCTglY,
+    kMuonCTglPhi,
     kMuonCTglTgl,
+    kMuonC1Pt2X,
+    kMuonC1Pt2Y,
+    kMuonC1Pt2Phi,
+    kMuonC1Pt2Tgl,
     kMuonC1Pt21Pt2,
     kNMuonTrackVariables,
     kMuonTrackType,
@@ -411,6 +435,7 @@ class VarManager : public TObject
     kPtCharmHadron,
     kRapCharmHadron,
     kPhiCharmHadron,
+    kBdtCharmHadron,
 
     // Index used to scan bit maps
     kBitMapIndex,
@@ -434,6 +459,12 @@ class VarManager : public TObject
     kJPsi = 0,
     kD0ToPiK,
     kD0barToKPi
+  };
+
+  enum EventFilters {
+    kDoubleGap = 1,
+    kSingleGapA,
+    kSingleGapC
   };
 
   static TString fgVariableNames[kNVars]; // variable names
@@ -556,6 +587,8 @@ class VarManager : public TObject
     return (1.0 / harm) * TMath::ATan(qnya / qnxa);
   };
 
+  template <uint32_t fillMap, typename T, typename C>
+  static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -576,10 +609,10 @@ class VarManager : public TObject
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T>
   static void FillHadron(T const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <int partType, typename Cand, typename H>
-  static void FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values = nullptr);
-  template <int partTypeCharmHad, typename DQ, typename HF, typename H>
-  static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values = nullptr);
+  template <int partType, typename Cand, typename H, typename T>
+  static void FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, T& bdtScoreCharmHad, float* values = nullptr);
+  template <int partTypeCharmHad, typename DQ, typename HF, typename H, typename T>
+  static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, T& bdtScoreCharmHad, float* values = nullptr);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -647,6 +680,7 @@ class VarManager : public TObject
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
   static o2::vertexing::FwdDCAFitterN<2> fgFitterTwoProngFwd;
   static o2::vertexing::FwdDCAFitterN<3> fgFitterThreeProngFwd;
+  static o2::globaltracking::MatchGlobalFwd mMatching;
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
@@ -741,6 +775,53 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
+template <uint32_t fillMap, typename T, typename C>
+void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((fillMap & MuonCov) > 0) {
+    o2::mch::TrackExtrap::setField();
+    double chi2 = muon.chi2();
+    SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
+    std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
+                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
+                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
+    SMatrix55 tcovs(v1.begin(), v1.end());
+    o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+    o2::dataformats::GlobalFwdTrack track{fwdtrack};
+    auto mchTrack = mMatching.FwdtoMCH(track);
+    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+    auto propmuon = mMatching.MCHtoFwd(mchTrack);
+
+    values[kPt] = propmuon.getPt();
+    values[kX] = propmuon.getX();
+    values[kY] = propmuon.getY();
+    values[kZ] = propmuon.getZ();
+    values[kEta] = propmuon.getEta();
+    values[kTgl] = propmuon.getTgl();
+    values[kPhi] = propmuon.getPhi();
+
+    SMatrix55 cov = propmuon.getCovariances();
+    values[kMuonCXX] = cov(0, 0);
+    values[kMuonCXY] = cov(1, 0);
+    values[kMuonCYY] = cov(1, 1);
+    values[kMuonCPhiX] = cov(2, 0);
+    values[kMuonCPhiY] = cov(2, 1);
+    values[kMuonCPhiPhi] = cov(2, 2);
+    values[kMuonCTglX] = cov(3, 0);
+    values[kMuonCTglY] = cov(3, 1);
+    values[kMuonCTglPhi] = cov(3, 2);
+    values[kMuonCTglTgl] = cov(3, 3);
+    values[kMuonC1Pt2X] = cov(4, 0);
+    values[kMuonC1Pt2Y] = cov(4, 1);
+    values[kMuonC1Pt2Phi] = cov(4, 2);
+    values[kMuonC1Pt2Tgl] = cov(4, 3);
+    values[kMuonC1Pt21Pt2] = cov(4, 4);
+  }
+}
+
 template <uint32_t fillMap, typename T>
 void VarManager::FillEvent(T const& event, float* values)
 {
@@ -755,6 +836,9 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & Collision) > 0) {
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
+    if (fgUsedVars[kIsSel8]) {
+      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
@@ -831,6 +915,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
+
+    if (fgUsedVars[kIsSel8]) {
+      values[kIsSel8] = (event.tag() & (uint64_t(1) << o2::aod::evsel::kIsTriggerTVX)) > 0;
+    }
   }
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
@@ -929,6 +1017,13 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventImpParam] = event.impactParameter();
   }
 
+  if constexpr ((fillMap & EventFilter) > 0) {
+    values[kIsDoubleGap] = (event.eventFilter() & (uint64_t(1) << kDoubleGap)) > 0;
+    values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
+    values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
+    values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+  }
+
   FillEventDerived(values);
 }
 
@@ -942,6 +1037,7 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the basic table (contains just kine information and filter bits)
   if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
     values[kPt] = track.pt();
+    values[kSignedPt] = track.pt() * track.sign();
     if (fgUsedVars[kP]) {
       values[kP] = track.p();
     }
@@ -1259,10 +1355,24 @@ void VarManager::FillTrack(T const& track, float* values)
   }
   // Quantities based on the muon covariance table
   if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
+    values[kX] = track.x();
+    values[kY] = track.y();
+    values[kZ] = track.z();
+    values[kTgl] = track.tgl();
     values[kMuonCXX] = track.cXX();
+    values[kMuonCXY] = track.cXY();
     values[kMuonCYY] = track.cYY();
+    values[kMuonCPhiX] = track.cPhiX();
+    values[kMuonCPhiY] = track.cPhiY();
     values[kMuonCPhiPhi] = track.cPhiPhi();
+    values[kMuonCTglX] = track.cTglX();
+    values[kMuonCTglY] = track.cTglY();
+    values[kMuonCTglPhi] = track.cTglPhi();
     values[kMuonCTglTgl] = track.cTglTgl();
+    values[kMuonC1Pt2X] = track.c1PtX();
+    values[kMuonC1Pt2Y] = track.c1PtY();
+    values[kMuonC1Pt2Phi] = track.c1PtPhi();
+    values[kMuonC1Pt2Tgl] = track.c1PtTgl();
     values[kMuonC1Pt21Pt2] = track.c1Pt21Pt2();
   }
 
@@ -2185,8 +2295,8 @@ void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
   values[kRap] = vhadron.Rapidity();
 }
 
-template <int partType, typename Cand, typename H>
-void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, float* values)
+template <int partType, typename Cand, typename H, typename T>
+void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, T& bdtScoreCharmHad, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -2203,20 +2313,22 @@ void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper
     values[kPtCharmHadron] = candidate.pt();
     values[kPhiCharmHadron] = candidate.phi();
     values[kRapCharmHadron] = hfHelper.yD0(candidate);
+    values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
   }
   if constexpr (partType == kD0barToKPi) {
     values[kMassCharmHadron] = hfHelper.invMassD0barToKPi(candidate);
     values[kPtCharmHadron] = candidate.pt();
     values[kPhiCharmHadron] = candidate.phi();
     values[kRapCharmHadron] = hfHelper.yD0(candidate);
+    values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
   }
 }
 
-template <int partTypeCharmHad, typename DQ, typename HF, typename H>
-void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, float* values)
+template <int partTypeCharmHad, typename DQ, typename HF, typename H, typename T>
+void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, T& bdtScoreCharmHad, float* values)
 {
-  FillSingleDileptonCharmHadron<kJPsi>(dilepton, hfHelper, values);
-  FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, values);
+  FillSingleDileptonCharmHadron<kJPsi>(dilepton, hfHelper, bdtScoreCharmHad, values);
+  FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, bdtScoreCharmHad, values);
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

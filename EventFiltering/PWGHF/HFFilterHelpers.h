@@ -425,7 +425,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
     return kRejected;
   }
 
-  if (pT < mPtMinSoftPionForDstar || pT > mPtMaxSoftPionForDstar) { // soft pion should be less stringent than usual tracks
+  if (pT < mPtMinSoftPionForDstar) { // soft pion min pT cut should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -435,6 +435,11 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
 
   if (std::fabs(dca[1]) > 2.f) {
     return kRejected;
+  }
+
+  if (pT > mPtMaxSoftPionForDstar) {
+    CLRBIT(retValue, kSoftPion);
+    CLRBIT(retValue, kSoftPionForBeauty);
   }
 
   // below only regular beauty tracks, not required for soft pions
@@ -840,7 +845,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
     }
   }
 
-  auto v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+  auto v0CosinePa = v0.v0cosPA();
   // cosine of pointing angle
   if (TESTBIT(isSelected, kPhoton) && v0CosinePa < mMinGammaCosinePa) {
     CLRBIT(isSelected, kPhoton);
@@ -885,7 +890,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 
   // DCA V0 and V0 daughters
   for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > 0.1f) { // we want only primary V0s
+    if (TESTBIT(isSelected, iV0) && v0.dcav0topv() > 0.1f) { // we want only primary V0s
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(5., iV0);

@@ -14,6 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
+#include <TDatabasePDG.h> // FIXME
+
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
@@ -689,7 +691,7 @@ struct femtoWorldProducerTask {
                     aod::femtoworldparticle::ParticleType::kV0,
                     cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
-                    v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    v0.v0cosPA(),
                     indexChildID,
                     v0.mLambda(),
                     v0.mAntiLambda(),
@@ -843,8 +845,8 @@ struct femtoWorldProducerTask {
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -997,7 +999,7 @@ struct femtoWorldProducerTask {
                     aod::femtoworldparticle::ParticleType::kPhi,
                     cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
-                    0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    0, // p1.v0cosPA(),
                     indexChildID,
                     0, // v0.mLambda(),
                     0, // v0.mAntiLambda(),
@@ -1282,7 +1284,7 @@ struct femtoWorldProducerTask {
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
-                    0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    0, // p1.v0cosPA(),
                     indexChildID,
                     -999,  // v0.mLambda(),
                     -999,  // v0.mAntiLambda(),
@@ -1648,7 +1650,7 @@ struct femtoWorldProducerTask {
                       aod::femtoworldparticle::ParticleType::kV0,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                       0,
-                      v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                      v0.v0cosPA(),
                       indexChildID,
                       v0.mLambda(),
                       v0.mAntiLambda(),
@@ -1803,8 +1805,8 @@ struct femtoWorldProducerTask {
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1957,7 +1959,7 @@ struct femtoWorldProducerTask {
                     aod::femtoworldparticle::ParticleType::kPhi,
                     cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
-                    0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    0, // p1.v0cosPA(),
                     indexChildID,
                     0, // v0.mLambda(),
                     0, // v0.mAntiLambda(),
@@ -2231,7 +2233,7 @@ struct femtoWorldProducerTask {
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
-                    0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                    0, // p1.v0cosPA(),
                     indexChildID,
                     -999,  // v0.mLambda(),
                     -999,  // v0.mAntiLambda(),

@@ -42,8 +42,8 @@ o2physics_add_dpl_workflow(hf-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-filter-qc
-    SOURCES PWGHF/HFFilterQC.cxx
+o2physics_add_dpl_workflow(hf-filter-charm-hadron-signals
+    SOURCES PWGHF/HFFilterCharmHadronSignals.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
     COMPONENT_NAME Analysis)
 

@@ -13,6 +13,7 @@
 /// \brief Basic QA of HF jet matching
 ///
 /// \author Jochen Klein <jochen.klein@cern.ch>
+/// \author Aimeric Lanodu <aimeric.landou@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -75,7 +76,7 @@ struct JetMatchingQA {
   {
   }
 
-  void processMCD(aod::Collisions::iterator const& collision, aod::McParticles const& mcParticles, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks,
+  void processMCD(aod::JCollision const& collision, aod::JMcParticles const& mcParticles, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks,
                   BaseJetCollection const& djets, TagJetCollection const& pjets)
   {
     for (const auto& djet : djets) {
@@ -101,13 +102,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_hf_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::McParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::Tracks, aod::McTrackLabels>>()) {
+        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -130,13 +131,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_geo_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::McParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::Tracks, aod::McTrackLabels>>()) {
+        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -159,13 +160,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_pt_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::McParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::Tracks, aod::McTrackLabels>>()) {
+        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -176,7 +177,7 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
 
-  void processMCP(aod::McCollision const& collision,
+  void processMCP(aod::JMcCollision const& collision,
                   TagJetCollection const& pjets, BaseJetCollection const& djets)
   {
     for (const auto& pjet : pjets) {
@@ -205,7 +206,7 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", true);
 
-  void processDummy(aod::McCollisions const& mcCollisions)
+  void processDummy(aod::JMcCollision const& mcCollision)
   {
   }
   PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);

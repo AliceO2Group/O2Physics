@@ -959,7 +959,7 @@ struct UpcCandProducer {
     for (auto ft0 : ft0s) {
       if (std::abs(ft0.timeA()) > 2.)
         continue;
-      uint64_t globalBC = ft0.bc().globalBC();
+      uint64_t globalBC = ft0.bc_as<BCsWithBcSels>().globalBC();
       mapGlobalBcWithT0[globalBC] = ft0.globalIndex();
     }
 
@@ -967,7 +967,7 @@ struct UpcCandProducer {
     for (auto fv0a : fv0as) {
       if (std::abs(fv0a.time()) > 15.)
         continue;
-      uint64_t globalBC = fv0a.bc().globalBC();
+      uint64_t globalBC = fv0a.bc_as<BCsWithBcSels>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -1014,7 +1014,6 @@ struct UpcCandProducer {
       fitInfo.BBFV0Apf = -999;
       if (nFT0s > 0) {
         uint64_t closestBcT0 = findClosestBC(globalBC, mapGlobalBcWithT0);
-        LOGP(info, "closestBcT0={}", closestBcT0);
         int64_t distClosestBcT0 = globalBC - static_cast<int64_t>(closestBcT0);
         if (std::abs(distClosestBcT0) < fFilterFT0)
           continue;

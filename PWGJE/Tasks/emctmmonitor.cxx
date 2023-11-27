@@ -26,6 +26,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
@@ -55,13 +56,13 @@ using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::it
 using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
-using tracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks>;
+using tracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>;
 struct TrackMatchingMonitor {
   HistogramRegistry mHistManager{"TrackMatchingMonitorHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::emcal::Geometry* mGeometry = nullptr;
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
@@ -85,6 +86,7 @@ struct TrackMatchingMonitor {
   Configurable<float> minDEta{"minDEta", 0.01, "Minimum dEta between track and cluster"};
   Configurable<float> minDPhi{"minDPhi", 0.01, "Minimum dPhi between track and cluster"};
   Configurable<std::vector<float>> eOverPRange{"eOverPRange", {0.9, 1.2}, "E/p range where one would search for electrons (first <= E/p <= second)"};
+  Configurable<bool> hasTRD{"hasTRD", false, "demand track to have a hit in TRD."};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -104,14 +106,16 @@ struct TrackMatchingMonitor {
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeEnergyBinningAliPhysics(), "E_{clus} (GeV)"};
     const o2Axis amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplitude (GeV)"};
-    const o2Axis dEtaAxis{100, -0.01, 0.01, "d#it{#eta}"};
-    const o2Axis dPhiAxis{100, -0.01, 0.01, "d#it{#varphi} (rad)"};
+    const o2Axis dEtaAxis{100, -1.f * minDEta, minDEta, "d#it{#eta}"};
+    const o2Axis dPhiAxis{100, -1.f * minDPhi, minDPhi, "d#it{#varphi} (rad)"};
     const o2Axis dRAxis{150, 0.0, 0.015, "d#it{R}"};
     const o2Axis eoverpAxis{500, 0, 10, "#it{E}_{cluster}/#it{p}_{track}"};
-    const o2Axis nSigmaAxis{130, -10., +3., "N#sigma"};
+    const o2Axis nSigmaAxis{400, -10., +30., "N#sigma"};
     const o2Axis trackptAxis{makePtBinning(), "#it{p}_{T,track}"};
     const o2Axis trackpAxis{200, 0, 100, "#it{p}_{track}"};
     const o2Axis clusterptAxis{makePtBinning(), "#it{p}_{T}"};
+    const o2Axis etaAxis{160, -0.8, 0.8, "#eta"};
+    const o2Axis phiAxis{72, 0, 2 * 3.14159, "#varphi (rad)"};
     o2Axis timeAxis{mClusterTimeBinning, "t_{cl} (ns)"};
 
     int MaxMatched = 20; // maximum number of matched tracks, hardcoded in emcalCorrectionTask.cxx!
@@ -124,49 +128,63 @@ struct TrackMatchingMonitor {
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
     // cluster properties (matched clusters)
-    mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
-    mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                                    // dEta dPhi of the Nth clostest track
-    mHistManager.add("clusterTM_dEtadPhi_ASide", "cluster trackmatching in A-Side dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                    // dEta dPhi of the Nth clostest track in A-Aside
-    mHistManager.add("clusterTM_dEtadPhi_CSide", "cluster trackmatching in C-Side tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                             // dEta dPhi of the Nth clostest track in C-Side
-    mHistManager.add("clusterTM_PosdEtadPhi", "cluster trackmatching positive tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                 // dEta dPhi of the Nth clostest positive track
-    mHistManager.add("clusterTM_NegdEtadPhi", "cluster trackmatching negative tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                 // dEta dPhi of the Nth clostest negative track
-    mHistManager.add("clusterTM_PosdEtadPhi_Pl0_75", "cluster trackmatching positive tracks, p < 0.75 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                // dEta dPhi of the Nth clostest positive track with p < 0.75 GeV/c
-    mHistManager.add("clusterTM_NegdEtadPhi_Pl0_75", "cluster trackmatching negative tracks, p < 0.75 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                // dEta dPhi of the Nth clostest negative track with p < 0.75 GeV/c
-    mHistManager.add("clusterTM_PosdEtadPhi_0_75leqPl1_25", "cluster trackmatching positive tracks, 0.75 <= p < 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack}); // dEta dPhi of the Nth clostest positive track with 0.75 <= p < 1.25 GeV/c
-    mHistManager.add("clusterTM_NegdEtadPhi_0_75leqPl1_25", "cluster trackmatching negative tracks, 0.75 <= p < 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack}); // dEta dPhi of the Nth clostest negative track with 0.75 <= p < 1.25 GeV/c
-    mHistManager.add("clusterTM_PosdEtadPhi_Pgeq1_25", "cluster trackmatching positive tracks, p >= 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});             // dEta dPhi of the Nth clostest positive track with p >= 1.25 GeV/c
-    mHistManager.add("clusterTM_NegdEtadPhi_Pgeq1_25", "cluster trackmatching negative tracks, p >= 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});             // dEta dPhi of the Nth clostest negative track with p >= 1.25 GeV/c
-    mHistManager.add("clusterTM_dEtaPt", "cluster trackmatching dEta/#it{p}_{T};d#it{#eta};#it{p}_{T} (GeV/#it{c})", o2HistType::kTH3F, {dEtaAxis, clusterptAxis, nmatchedtrack});        // dEta vs pT of the Nth clostest track
-    mHistManager.add("clusterTM_PosdPhiPt", "cluster trackmatching positive tracks dPhi/#it{p}_{T}", o2HistType::kTH3F, {dPhiAxis, clusterptAxis, nmatchedtrack});                        // dPhi vs pT of the Nth clostest positive track
-    mHistManager.add("clusterTM_NegdPhiPt", "cluster trackmatching negative tracks dPh/#it{p}_{T}", o2HistType::kTH3F, {dPhiAxis, clusterptAxis, nmatchedtrack});                         // dPhi vs pT of the Nth clostest negative track
-    mHistManager.add("clusterTM_dEtaTN", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {dEtaAxis, nmatchedtrack});                               // dEta compared to the Nth closest track
-    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {dPhiAxis, nmatchedtrack});                      // dPhi compared to the Nth closest track
-    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {dRAxis, nmatchedtrack});                                        // dR compared to the Nth closest track
-    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {nmatchedtrack});                                                                     // how many tracks are matched
-    mHistManager.add("clusterTM_dEtaTNAli", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {dEtaAxis, nmatchedtrack});                            // dEta compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
-    mHistManager.add("clusterTM_dPhiTNAli", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {dPhiAxis, nmatchedtrack});                   // dPhi compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
-    mHistManager.add("clusterTM_dRTNAli", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {dRAxis, nmatchedtrack});                                     // dR compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
-    mHistManager.add("clusterTM_NTrackAli", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {nmatchedtrack});                                                                  // how many tracks are matched with cuts from latest Pi0 Run2 analysis
-    mHistManager.add("clusterTM_EoverP_E", "E/p ", o2HistType::kTH3F, {eoverpAxis, energyAxis, nmatchedtrack});                                                                           // E/p vs p for the Nth closest track
-    mHistManager.add("clusterTM_EoverP_Pt", "E/p vs track pT", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                              // E/p vs track pT for the Nth closest track
-    mHistManager.add("clusterTM_EvsP", "cluster E/track p", o2HistType::kTH3F, {energyAxis, trackpAxis, nmatchedtrack});                                                                  // E vs p for the Nth closest track
-    mHistManager.add("clusterTM_EoverP_ep", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                         // E over p vs track pT for the Nth closest electron/positron track
-    mHistManager.add("clusterTM_EoverP_e", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                          // E over p vs track pT for the Nth closest electron track
-    mHistManager.add("clusterTM_EoverP_p", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                          // E over p vs track pT for the Nth closest positron track
-    mHistManager.add("clusterTM_EoverP_electron_ASide", "cluster E/electron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                   // E over p vs track pT for the Nth closest electron/positron track in A-Side
-    mHistManager.add("clusterTM_EoverP_electron_CSide", "cluster E/electron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                   // E over p vs track pT for the Nth closest electron/positron track in C-Side
-    mHistManager.add("clusterTM_NSigma", "electron NSigma for matched track", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                               // NSigma_electron vs track pT for the Nth closest track
-    mHistManager.add("clusterTM_NSigma_cut", "electron NSigma for matched track with cuts", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                 // NSigma_electron vs track pT for the Nth closest track with cuts on E/p and cluster cuts
-    mHistManager.add("clusterTM_NSigma_e", "NSigma electron", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                               // NSigma vs track pT for the Nth closest electron track
-    mHistManager.add("clusterTM_NSigma_p", "NSigma positron", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                               // NSigma vs track pT for the Nth closest positron track
-    mHistManager.add("clusterTM_NSigma_electron_ASide", "NSigma electron in A-Side", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                        // NSigma vs track pT for the Nth closest electron/positron track in A-Side
-    mHistManager.add("clusterTM_NSigma_electron_CSide", "NSigma positron in C-Side", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                        // NSigma vs track pT for the Nth closest electron/positron track in C-Side
-    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                        // E over p vs track pT for the Nth closest hadron track
-    mHistManager.add("clusterTM_EoverP_hn", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                            // E over p vs track pT for the Nth closest negative hadron track
-    mHistManager.add("clusterTM_EoverP_hp", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                            // E over p vs track pT for the Nth closest positive hadron track
-    mHistManager.add("clusterTM_EoverP_hadron_ASide", "cluster E/hadron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in A-Side
-    mHistManager.add("clusterTM_EoverP_hadron_CSide", "cluster E/hadron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in C-Side
+    mHistManager.add("TrackEtaPhi", "#eta vs #varphi of all selected tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                                             // eta vs phi of all selected tracks
+    mHistManager.add("TrackEtaPhi_Neg", "#eta vs #varphi of all selected negative tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                                // eta vs phi of all selected negative tracks
+    mHistManager.add("TrackEtaPhi_Pos", "#eta vs #varphi of all selected positive tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                                // eta vs phi of all selected positive tracks
+    mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});                                                                                       // energy of matched clusters
+    mHistManager.add("MatchedTrackEtaPhi_BeforeCut", "#eta vs #varphi of all selected matched tracks before d#eta and #dvarphi cut", o2HistType::kTH2F, {etaAxis, phiAxis});                      // eta vs phi of all selected matched tracks before dEta and dPhi cut
+    mHistManager.add("MatchedTrackEtaPhi_Neg_BeforeCut", "#eta vs #varphi of all selected negative matched tracks before d#eta and #dvarphi cut", o2HistType::kTH2F, {etaAxis, phiAxis});         // eta vs phi of all selected negative matched tracks before dEta and dPhi cut
+    mHistManager.add("MatchedTrackEtaPhi_Pos_BeforeCut", "#eta vs #varphi of all selected positive matched tracks before d#eta and #dvarphi cut", o2HistType::kTH2F, {etaAxis, phiAxis});         // eta vs phi of all selected positive matched tracks before dEta and dPhi cut
+    mHistManager.add("MatchedTrackEtaPhi", "#eta vs #varphi of all selected matched tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                              // eta vs phi of all selected matched tracks
+    mHistManager.add("MatchedTrackEtaPhi_Neg", "#eta vs #varphi of all selected negative matched tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                 // eta vs phi of all selected negative matched tracks
+    mHistManager.add("MatchedTrackEtaPhi_Pos", "#eta vs #varphi of all selected positive matched tracks", o2HistType::kTH2F, {etaAxis, phiAxis});                                                 // eta vs phi of all selected positive matched tracks
+    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                                            // dEta dPhi of the Nth clostest track
+    mHistManager.add("clusterTM_dEtadPhi_ASide", "cluster trackmatching in A-Side dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                            // dEta dPhi of the Nth clostest track in A-Aside
+    mHistManager.add("clusterTM_dEtadPhi_CSide", "cluster trackmatching in C-Side tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                     // dEta dPhi of the Nth clostest track in C-Side
+    mHistManager.add("clusterTM_PosdEtadPhi", "cluster trackmatching positive tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                         // dEta dPhi of the Nth clostest positive track
+    mHistManager.add("clusterTM_NegdEtadPhi", "cluster trackmatching negative tracks dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                                         // dEta dPhi of the Nth clostest negative track
+    mHistManager.add("clusterTM_PosdEtadPhi_Pl0_75", "cluster trackmatching positive tracks, p < 0.75 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                        // dEta dPhi of the Nth clostest positive track with p < 0.75 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_Pl0_75", "cluster trackmatching negative tracks, p < 0.75 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                        // dEta dPhi of the Nth clostest negative track with p < 0.75 GeV/c
+    mHistManager.add("clusterTM_PosdEtadPhi_0_75leqPl1_25", "cluster trackmatching positive tracks, 0.75 <= p < 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});         // dEta dPhi of the Nth clostest positive track with 0.75 <= p < 1.25 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_0_75leqPl1_25", "cluster trackmatching negative tracks, 0.75 <= p < 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});         // dEta dPhi of the Nth clostest negative track with 0.75 <= p < 1.25 GeV/c
+    mHistManager.add("clusterTM_PosdEtadPhi_Pgeq1_25", "cluster trackmatching positive tracks, p >= 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                     // dEta dPhi of the Nth clostest positive track with p >= 1.25 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_Pgeq1_25", "cluster trackmatching negative tracks, p >= 1.25 dEta/dPhi", o2HistType::kTH3F, {dEtaAxis, dPhiAxis, nmatchedtrack});                     // dEta dPhi of the Nth clostest negative track with p >= 1.25 GeV/c
+    mHistManager.add("clusterTM_dEtaPt", "cluster trackmatching dEta/#it{p}_{T};d#it{#eta};#it{p}_{T} (GeV/#it{c})", o2HistType::kTH3F, {dEtaAxis, clusterptAxis, nmatchedtrack});                // dEta vs pT of the Nth clostest track
+    mHistManager.add("clusterTM_PosdPhiPt", "cluster trackmatching positive tracks dPhi/#it{p}_{T}", o2HistType::kTH3F, {dPhiAxis, clusterptAxis, nmatchedtrack});                                // dPhi vs pT of the Nth clostest positive track
+    mHistManager.add("clusterTM_NegdPhiPt", "cluster trackmatching negative tracks dPh/#it{p}_{T}", o2HistType::kTH3F, {dPhiAxis, clusterptAxis, nmatchedtrack});                                 // dPhi vs pT of the Nth clostest negative track
+    mHistManager.add("clusterTM_dEtaTN", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {dEtaAxis, nmatchedtrack});                                       // dEta compared to the Nth closest track
+    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {dPhiAxis, nmatchedtrack});                              // dPhi compared to the Nth closest track
+    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {dRAxis, nmatchedtrack});                                                // dR compared to the Nth closest track
+    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {nmatchedtrack});                                                                             // how many tracks are matched
+    mHistManager.add("clusterTM_EoverP_E", "E/p ", o2HistType::kTH3F, {eoverpAxis, energyAxis, nmatchedtrack});                                                                                   // E/p vs p for the Nth closest track
+    mHistManager.add("clusterTM_EoverP_Pt", "E/p vs track pT", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                                      // E/p vs track pT for the Nth closest track
+    mHistManager.add("clusterTM_EvsP", "cluster E/track p", o2HistType::kTH3F, {energyAxis, trackpAxis, nmatchedtrack});                                                                          // E vs p for the Nth closest track
+    mHistManager.add("clusterTM_EoverP_ep", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                                 // E over p vs track pT for the Nth closest electron/positron track
+    mHistManager.add("clusterTM_EoverP_e", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                                  // E over p vs track pT for the Nth closest electron track
+    mHistManager.add("clusterTM_EoverP_p", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                                  // E over p vs track pT for the Nth closest positron track
+    mHistManager.add("clusterTM_EoverP_electron_ASide", "cluster E/electron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                           // E over p vs track pT for the Nth closest electron/positron track in A-Side
+    mHistManager.add("clusterTM_EoverP_electron_CSide", "cluster E/electron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                           // E over p vs track pT for the Nth closest electron/positron track in C-Side
+    mHistManager.add("clusterTM_NSigma_BeforeCut", "electron NSigma for matched tracks before d#eta and #dvarphi cut", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});              // NSigma_electron vs track pT for the Nth closest track before dEta and dPhi cut
+    mHistManager.add("clusterTM_NSigma_neg_BeforeCut", "electron NSigma for matched negative tracks before d#eta and #dvarphi cut", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack}); // NSigma_electron vs track pT for the Nth closest negative tracks before dEta and dPhi cut
+    mHistManager.add("clusterTM_NSigma_pos_BeforeCut", "electron NSigma for matched positive tracks before d#eta and #dvarphi cut", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack}); // NSigma_electron vs track pT for the Nth closest positive tracks before dEta and dPhi cut
+    mHistManager.add("clusterTM_NSigma", "electron NSigma for matched track", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                       // NSigma_electron vs track pT for the Nth closest track
+    mHistManager.add("clusterTM_NSigma_neg", "electron NSigma for matched negative track", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                          // NSigma_electron vs track pT for the Nth closest negative tracks
+    mHistManager.add("clusterTM_NSigma_pos", "electron NSigma for matched positive track", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                          // NSigma_electron vs track pT for the Nth closest positive tracks
+    mHistManager.add("clusterTM_NSigma_cut", "electron NSigma for matched track with cuts", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                         // NSigma_electron vs track pT for the Nth closest track with cuts on E/p and cluster cuts
+    mHistManager.add("clusterTM_NSigma_e", "NSigma electron", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                                       // NSigma vs track pT for the Nth closest electron track
+    mHistManager.add("clusterTM_NSigma_p", "NSigma positron", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                                       // NSigma vs track pT for the Nth closest positron track
+    mHistManager.add("clusterTM_NSigma_e_cut", "NSigma electron with E over p cut", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                 // NSigma vs track pT for the Nth closest electron track with E/p cut
+    mHistManager.add("clusterTM_NSigma_p_cut", "NSigma positron with E over p cut", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                 // NSigma vs track pT for the Nth closest positron track with E/p cut
+    mHistManager.add("TrackTM_NSigma", "electron NSigma for global tracks", o2HistType::kTH2F, {nSigmaAxis, trackptAxis});                                                                        // NSigma_electron vs track pT for global track
+    mHistManager.add("TrackTM_NSigma_e", "NSigma e for global negative tracks", o2HistType::kTH2F, {nSigmaAxis, trackptAxis});                                                                    // NSigma vs track pT for negative global track
+    mHistManager.add("TrackTM_NSigma_p", "NSigma e for global positive tracks", o2HistType::kTH2F, {nSigmaAxis, trackptAxis});                                                                    // NSigma vs track pT for positive global track
+    mHistManager.add("clusterTM_NSigma_electron_ASide", "NSigma electron in A-Side", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                // NSigma vs track pT for the Nth closest electron/positron track in A-Side
+    mHistManager.add("clusterTM_NSigma_electron_CSide", "NSigma positron in C-Side", o2HistType::kTH3F, {nSigmaAxis, trackptAxis, nmatchedtrack});                                                // NSigma vs track pT for the Nth closest electron/positron track in C-Side
+    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                                // E over p vs track pT for the Nth closest hadron track
+    mHistManager.add("clusterTM_EoverP_hn", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                                    // E over p vs track pT for the Nth closest negative hadron track
+    mHistManager.add("clusterTM_EoverP_hp", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                                    // E over p vs track pT for the Nth closest positive hadron track
+    mHistManager.add("clusterTM_EoverP_hadron_ASide", "cluster E/hadron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                // E over p vs track pT for the Nth closest hadron track in A-Side
+    mHistManager.add("clusterTM_EoverP_hadron_CSide", "cluster E/hadron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                // E over p vs track pT for the Nth closest hadron track in C-Side
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -196,7 +214,7 @@ struct TrackMatchingMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, tracksPID const& alltrack)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, tracksPID const& alltracks)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -227,9 +245,29 @@ struct TrackMatchingMonitor {
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
 
+    for (const auto& alltrack : alltracks) {
+      double trackEta, trackPhi;
+      if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
+        trackEta = alltrack.trackEtaEmcal();
+        trackPhi = alltrack.trackPhiEmcal();
+      } else {
+        trackEta = alltrack.eta();
+        trackPhi = alltrack.phi();
+      }
+      if (alltrack.isGlobalTrack()) { // NSigma of all global tracks without matching
+        mHistManager.fill(HIST("TrackTM_NSigma"), alltrack.tpcNSigmaEl(), alltrack.pt());
+        mHistManager.fill(HIST("TrackEtaPhi"), trackEta, trackPhi);
+        if (alltrack.sign() == 1) { // NSigma of all global positive tracks without matching
+          mHistManager.fill(HIST("TrackTM_NSigma_p"), alltrack.tpcNSigmaEl(), alltrack.pt());
+          mHistManager.fill(HIST("TrackEtaPhi_Pos"), trackEta, trackPhi);
+        } else if (alltrack.sign() == -1) { // NSigma of all global negative tracks without matching
+          mHistManager.fill(HIST("TrackTM_NSigma_e"), alltrack.tpcNSigmaEl(), alltrack.pt());
+          mHistManager.fill(HIST("TrackEtaPhi_Neg"), trackEta, trackPhi);
+        }
+      }
+    }
+
     LOG(debug) << "bunch crossing ID" << theCollision.bcId();
-    std::array<int, 20> numberOfClustersSM;
-    std::fill(numberOfClustersSM.begin(), numberOfClustersSM.end(), 0);
     // loop over all clusters from accepted collision
     for (const auto& cluster : clusters) {
       // fill histograms of cluster properties
@@ -245,23 +283,6 @@ struct TrackMatchingMonitor {
       LOG(debug) << "ncells in cluster: " << cluster.nCells();
       LOG(debug) << "real cluster id" << cluster.id();
 
-      // example of loop over all cells of current cluster
-      // cell.calo() allows to access the cell properties as defined in AnalysisDataModel
-      // In this exammple, we loop over all cells and find the cell of maximum energy and plot the fraction
-      // it carries of the whole cluster
-      auto cellsofcluster = emccluscells.sliceBy(perCluster, cluster.globalIndex());
-      double maxamp = 0;
-      double ampfraction = 0;
-      for (const auto& cell : cellsofcluster) {
-        // example how to get any information of the cell associated with cluster
-        LOG(debug) << "Cell ID:" << cell.calo().amplitude() << " Time " << cell.calo().time();
-        if (cell.calo().amplitude() > maxamp) {
-          maxamp = cell.calo().amplitude();
-        }
-      }
-      ampfraction = maxamp / cluster.energy();
-      mHistManager.fill(HIST("clusterAmpFractionLeadingCell"), ampfraction);
-
       // Example of loop over tracks matched to cluster within dR=0.4, where only the
       // 20 most closest tracks are stored. If needed the number of tracks can be later
       // increased in the correction framework. Access to all track properties via match.track()
@@ -269,31 +290,44 @@ struct TrackMatchingMonitor {
       // match.track_as<globTracks>() with
       // using globTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>;
       // In this example the counter t is just used to only look at the closest match
-      double dEta, dPhi, pT, abs_p;
+      double dEta, dPhi, pT, abs_p, trackEta, trackPhi, NSigmaEl;
       pT = cluster.energy() / cosh(cluster.eta());
       if (M02highPt > 0. && cluster.m02() >= maxM02HighPt && pT >= M02highPt) { // high pT M02 cut
         continue;
       }
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
       int t = 0;
-      int tAli = 0;
       for (const auto& match : tracksofcluster) {
+        NSigmaEl = match.track_as<tracksPID>().tpcNSigmaEl();
         // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
         LOG(debug) << "Pt of match" << match.track_as<tracksPID>().pt();
         abs_p = abs(match.track_as<tracksPID>().p());
         // only consider closest match
         if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
-          dEta = match.track_as<tracksPID>().trackEtaEmcal() - cluster.eta();
-          dPhi = match.track_as<tracksPID>().trackPhiEmcal() - cluster.phi();
+          trackEta = match.track_as<tracksPID>().trackEtaEmcal();
+          trackPhi = match.track_as<tracksPID>().trackPhiEmcal();
         } else {
-          dEta = match.track_as<tracksPID>().eta() - cluster.eta();
-          dPhi = match.track_as<tracksPID>().phi() - cluster.phi();
+          trackEta = match.track_as<tracksPID>().eta();
+          trackPhi = match.track_as<tracksPID>().phi();
+        }
+        dPhi = trackPhi - cluster.phi();
+        dEta = trackEta - cluster.eta();
+        mHistManager.fill(HIST("MatchedTrackEtaPhi_BeforeCut"), trackEta, trackPhi);
+        mHistManager.fill(HIST("clusterTM_NSigma_BeforeCut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+        if (match.track_as<tracksPID>().sign() == -1) {
+          mHistManager.fill(HIST("MatchedTrackEtaPhi_Neg_BeforeCut"), trackEta, trackPhi);
+          mHistManager.fill(HIST("clusterTM_NSigma_neg_BeforeCut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+        } else if (match.track_as<tracksPID>().sign() == 1) {
+          mHistManager.fill(HIST("MatchedTrackEtaPhi_Pos_BeforeCut"), trackEta, trackPhi);
+          mHistManager.fill(HIST("clusterTM_NSigma_pos_BeforeCut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
         }
         if (fabs(dEta) >= minDEta || fabs(dPhi) >= minDPhi) { // dEta and dPhi cut
           continue;
         }
+        if (hasTRD && !(match.track_as<tracksPID>().hasTRD())) { // request TRD hit cut
+          continue;
+        }
         double eOverP = cluster.energy() / abs_p;
-        double NSigmaEl = match.track_as<tracksPID>().tpcNSigmaEl();
         mHistManager.fill(HIST("clusterTM_dEtaTN"), dEta, t);
         mHistManager.fill(HIST("clusterTM_dPhiTN"), dPhi, t);
         mHistManager.fill(HIST("clusterTM_dRTN"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
@@ -304,6 +338,7 @@ struct TrackMatchingMonitor {
         mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), abs_p, t);
         mHistManager.fill(HIST("clusterTM_EoverP_Pt"), eOverP, match.track_as<tracksPID>().pt(), t);
         mHistManager.fill(HIST("clusterTM_NSigma"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+        mHistManager.fill(HIST("MatchedTrackEtaPhi"), trackEta, trackPhi);
         if (eOverPRange->at(0) <= eOverP && eOverP <= eOverPRange->at(1)) {
           mHistManager.fill(HIST("clusterTM_NSigma_cut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
         }
@@ -317,6 +352,8 @@ struct TrackMatchingMonitor {
         if (match.track_as<tracksPID>().sign() == 1) {
           mHistManager.fill(HIST("clusterTM_PosdEtadPhi"), dEta, dPhi, t);
           mHistManager.fill(HIST("clusterTM_PosdPhiPt"), dPhi, pT, t);
+          mHistManager.fill(HIST("clusterTM_NSigma_pos"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+          mHistManager.fill(HIST("MatchedTrackEtaPhi_Pos"), trackEta, trackPhi);
           if (abs_p < 0.75) {
             mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pl0_75"), dEta, dPhi, t);
           } else if (abs_p >= 1.25) {
@@ -324,9 +361,11 @@ struct TrackMatchingMonitor {
           } else {
             mHistManager.fill(HIST("clusterTM_PosdEtadPhi_0_75leqPl1_25"), dEta, dPhi, t);
           }
-        } else {
+        } else if (match.track_as<tracksPID>().sign() == -1) {
           mHistManager.fill(HIST("clusterTM_NegdEtadPhi"), dEta, dPhi, t);
           mHistManager.fill(HIST("clusterTM_NegdPhiPt"), dPhi, pT, t);
+          mHistManager.fill(HIST("clusterTM_NSigma_neg"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+          mHistManager.fill(HIST("MatchedTrackEtaPhi_Neg"), trackEta, trackPhi);
           if (abs_p < 0.75) {
             mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pl0_75"), dEta, dPhi, t);
           } else if (abs_p >= 1.25) {
@@ -348,9 +387,15 @@ struct TrackMatchingMonitor {
             if (match.track_as<tracksPID>().sign() == -1) {
               mHistManager.fill(HIST("clusterTM_EoverP_e"), eOverP, match.track_as<tracksPID>().pt(), t);
               mHistManager.fill(HIST("clusterTM_NSigma_e"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              if (eOverPRange->at(0) <= eOverP && eOverP <= eOverPRange->at(1)) {
+                mHistManager.fill(HIST("clusterTM_NSigma_e_cut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              }
             } else if (match.track_as<tracksPID>().sign() == +1) {
               mHistManager.fill(HIST("clusterTM_EoverP_p"), eOverP, match.track_as<tracksPID>().pt(), t);
               mHistManager.fill(HIST("clusterTM_NSigma_p"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              if (eOverPRange->at(0) <= eOverP && eOverP <= eOverPRange->at(1)) {
+                mHistManager.fill(HIST("clusterTM_NSigma_p_cut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              }
             }
           } else { // without pion rejection
             mHistManager.fill(HIST("clusterTM_EoverP_ep"), eOverP, match.track_as<tracksPID>().pt(), t);
@@ -364,9 +409,15 @@ struct TrackMatchingMonitor {
             if (match.track_as<tracksPID>().sign() == -1) {
               mHistManager.fill(HIST("clusterTM_EoverP_e"), eOverP, match.track_as<tracksPID>().pt(), t);
               mHistManager.fill(HIST("clusterTM_NSigma_e"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              if (eOverPRange->at(0) <= eOverP && eOverP <= eOverPRange->at(1)) {
+                mHistManager.fill(HIST("clusterTM_NSigma_e_cut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              }
             } else if (match.track_as<tracksPID>().sign() == +1) {
               mHistManager.fill(HIST("clusterTM_EoverP_p"), eOverP, match.track_as<tracksPID>().pt(), t);
               mHistManager.fill(HIST("clusterTM_NSigma_p"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              if (eOverPRange->at(0) <= eOverP && eOverP <= eOverPRange->at(1)) {
+                mHistManager.fill(HIST("clusterTM_NSigma_p_cut"), NSigmaEl, match.track_as<tracksPID>().pt(), t);
+              }
             }
           }
         } else if (tpcNsigmaBack->at(0) <= NSigmaEl && NSigmaEl <= tpcNsigmaBack->at(1)) { // E/p for hadrons / background
@@ -382,17 +433,8 @@ struct TrackMatchingMonitor {
             mHistManager.fill(HIST("clusterTM_EoverP_hp"), eOverP, match.track_as<tracksPID>().pt(), t);
           }
         }
-        if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
-            (fabs(dPhi) <= 0.015 + pow(match.track_as<tracksPID>().pt() + 3.65, -2.)) &&
-            cluster.energy() / abs_p < 1.75) {
-          mHistManager.fill(HIST("clusterTM_dEtaTNAli"), dEta, tAli);
-          mHistManager.fill(HIST("clusterTM_dPhiTNAli"), dPhi, tAli);
-          mHistManager.fill(HIST("clusterTM_dRTNAli"), std::sqrt(dPhi * dPhi + dEta * dEta), tAli);
-          tAli++;
-        }
         t++;
       }
-      mHistManager.fill(HIST("clusterTM_NTrackAli"), tAli);
       mHistManager.fill(HIST("clusterTM_NTrack"), t);
     }
   }

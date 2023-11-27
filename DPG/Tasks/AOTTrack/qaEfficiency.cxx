@@ -892,6 +892,23 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
 
+    // HMPID
+    if (doprocessHmpid) {
+      histos.add("Data/pos/hmpidMomDiff", "HMPID Positive Momentum difference", kTH1F, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
+      histos.add("Data/neg/hmpidMomDiff", "HMPID Negative Momentum difference", kTH1F, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
+      histos.add("Data/pos/pt/hmpid", "HMPID Positive " + tagPt, kTH1F, {axisPt});
+      histos.add("Data/neg/pt/hmpid", "HMPID Negative " + tagPt, kTH1F, {axisPt});
+
+      histos.add("Data/pos/eta/hmpid", "HMPID Positive " + tagEta, kTH1F, {axisEta});
+      histos.add("Data/neg/eta/hmpid", "HMPID Negative " + tagEta, kTH1F, {axisEta});
+
+      histos.add("Data/pos/phi/hmpid", "HMPID Positive " + tagPhi, kTH1F, {axisPhi});
+      histos.add("Data/neg/phi/hmpid", "HMPID Negative " + tagPhi, kTH1F, {axisPhi});
+
+      histos.add("Data/pos/etaphi/hmpid", "HMPID Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+      histos.add("Data/neg/etaphi/hmpid", "HMPID Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    }
+
     listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
@@ -1371,33 +1388,40 @@ struct QaEfficiency {
 
   // Global process
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               TrackCandidates const& tracks)
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision)
   {
     isCollisionSelected<true>(collision);
   }
 
   // Function to apply particle selection
-  template <bool isMC = true, typename particleType, typename histoType>
-  bool isInAcceptance(const particleType& particle, const histoType& countingHisto, const int offset = 0)
+  template <bool isMC = true, bool doFillHisto = true, typename particleType, typename histoType = int>
+  bool isInAcceptance(const particleType& particle, const histoType& countingHisto = 0, const int offset = 0)
   {
     if (particle.pt() < ptMin || particle.pt() > ptMax) { // Check pt
       return false;
     }
-    histos.fill(countingHisto, 1 + offset);
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 1 + offset);
+    }
     if (particle.eta() < etaMin || particle.eta() > etaMax) { // Check eta
       return false;
     }
-    histos.fill(countingHisto, 2 + offset);
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 2 + offset);
+    }
     if (particle.phi() < phiMin || particle.phi() > phiMax) { // Check phi
       return false;
     }
-    histos.fill(countingHisto, 3 + offset);
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 3 + offset);
+    }
     if constexpr (isMC) {
       if (particle.y() < yMin || particle.y() > yMax) { // Check rapidity
         return false;
       }
-      histos.fill(countingHisto, 4 + offset);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 4 + offset);
+      }
     }
 
     return true;
@@ -1408,8 +1432,8 @@ struct QaEfficiency {
   bool passedTPC = false;
   bool passedTRD = false;
   bool passedTOF = false;
-  template <bool isMC = true, typename trackType, typename histoType>
-  bool isTrackSelected(trackType& track, const histoType& countingHisto)
+  template <bool isMC = true, bool doFillHisto = true, typename trackType, typename histoType = int>
+  bool isTrackSelected(trackType& track, const histoType& countingHisto = 0)
   {
     // Reset selections
     passedITS = false;
@@ -1417,16 +1441,20 @@ struct QaEfficiency {
     passedTRD = false;
     passedTOF = false;
 
-    histos.fill(countingHisto, 1); // Read tracks
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 1); // Read tracks
+    }
 
     if constexpr (isMC) { // MC only
       if (!track.has_mcParticle()) {
         histos.fill(HIST("MC/fakeTrackNoiseHits"), 0.5);
         return false;
       }
-      histos.fill(countingHisto, 2); // Tracks with particles (i.e. no fakes)
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 2); // Tracks with particles (i.e. no fakes)
+      }
       const auto mcParticle = track.mcParticle();
-      if (!isInAcceptance(mcParticle, countingHisto, 2)) {
+      if (!isInAcceptance<true, doFillHisto>(mcParticle, countingHisto, 2)) {
         // 3: pt cut 4: eta cut 5: phi cut 6: y cut
         return false;
       }
@@ -1443,9 +1471,11 @@ struct QaEfficiency {
           return false;
         }
       }
-      histos.fill(countingHisto, 7);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 7);
+      }
     } else { // Data only
-      if (!isInAcceptance<false>(track, countingHisto, 2)) {
+      if (!isInAcceptance<false, doFillHisto>(track, countingHisto, 2)) {
         return false;
       }
     }
@@ -1453,37 +1483,53 @@ struct QaEfficiency {
     if (!track.has_collision()) {
       return false;
     }
-    histos.fill(countingHisto, 8);
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 8);
+    }
 
     if (trackSelection) { // Check general cuts
       if (!track.passedTrackType()) {
         return false;
       }
-      histos.fill(countingHisto, 9);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 9);
+      }
       if (!track.passedPtRange()) {
         return false;
       }
-      histos.fill(countingHisto, 10);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 10);
+      }
       if (!track.passedEtaRange()) {
         return false;
       }
-      histos.fill(countingHisto, 11);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 11);
+      }
       if (!track.passedDCAxy()) {
         return false;
       }
-      histos.fill(countingHisto, 12);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 12);
+      }
       if (!track.passedDCAz()) {
         return false;
       }
-      histos.fill(countingHisto, 13);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 13);
+      }
       if (!track.passedGoldenChi2()) {
         return false;
       }
-      histos.fill(countingHisto, 14);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 14);
+      }
       if (doPVContributorCut && !track.isPVContributor()) {
         return false;
       }
-      histos.fill(countingHisto, 15);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 15);
+      }
 
       passedITS = track.passedITSNCls() &&
                   track.passedITSChi2NDF() &&
@@ -1507,15 +1553,21 @@ struct QaEfficiency {
     }
 
     if (passedITS) { // Partial
-      histos.fill(countingHisto, 16);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 16);
+      }
     }
 
     if (passedTPC) { // Partial
-      histos.fill(countingHisto, 17);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 17);
+      }
     }
 
     if (passedTOF) { // Partial
-      histos.fill(countingHisto, 18);
+      if constexpr (doFillHisto) {
+        histos.fill(countingHisto, 18);
+      }
     }
 
     switch (globalTrackSelection) {
@@ -1536,7 +1588,9 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
-    histos.fill(countingHisto, 19);
+    if constexpr (doFillHisto) {
+      histos.fill(countingHisto, 19);
+    }
 
     return false;
   }
@@ -1788,6 +1842,38 @@ struct QaEfficiency {
     }
   }
   PROCESS_SWITCH(QaEfficiency, processData, "process data", true);
+
+  void processHmpid(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+                    TrackCandidates const& tracks,
+                    o2::aod::HMPIDs const& hmpids)
+  {
+
+    if (!isCollisionSelected<false>(collision)) {
+      return;
+    }
+
+    for (const auto& hmpid : hmpids) {
+      const auto& track = hmpid.track_as<TrackCandidates>();
+      if (!isTrackSelected<false, false>(track)) {
+        continue;
+      }
+
+      if (track.sign() > 0) {
+        histos.fill(HIST("Data/pos/hmpidMomDiff"), track.p() - hmpid.hmpidMom());
+        histos.fill(HIST("Data/pos/pt/hmpid"), track.pt());
+        histos.fill(HIST("Data/pos/eta/hmpid"), track.eta());
+        histos.fill(HIST("Data/pos/phi/hmpid"), track.phi());
+        histos.fill(HIST("Data/pos/etaphi/hmpid"), track.eta(), track.phi());
+      } else {
+        histos.fill(HIST("Data/neg/hmpidMomDiff"), track.p() - hmpid.hmpidMom());
+        histos.fill(HIST("Data/neg/pt/hmpid"), track.pt());
+        histos.fill(HIST("Data/neg/eta/hmpid"), track.eta());
+        histos.fill(HIST("Data/neg/phi/hmpid"), track.phi());
+        histos.fill(HIST("Data/neg/etaphi/hmpid"), track.eta(), track.phi());
+      }
+    }
+  }
+  PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

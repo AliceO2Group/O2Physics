@@ -89,7 +89,7 @@ struct qaK0sTrackingEfficiency {
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
   {
     // Apply selections on V0
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa)
+    if (v0.v0cosPA() < v0cospa)
       return kFALSE;
     if (TMath::Abs(v0.yK0Short()) > rapidity)
       return kFALSE;

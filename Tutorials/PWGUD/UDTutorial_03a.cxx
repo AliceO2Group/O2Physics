@@ -96,14 +96,14 @@ struct UDTutorial03a {
     return true;
   }
 
-  // check if a generated event is of the type rho0 -> mu+ + mu- using the MC particle stack
+  // check if a generated event is of the type J/Psi -> mu+ + mu- using the MC particle stack
   template <typename MCTrack>
   std::vector<int64_t> getDaughterParts_gen(MCTrack const& parts)
   {
     std::vector<int64_t> selectedParts;
 
-    // in this case we expect the data files to contain events of the type rho0 -> mu+ + mu-
-    if (udhelpers::isSTARLightRhomumu(parts)) {
+    // in this case we expect the data files to contain events of the type J/Psi -> mu+ + mu-
+    if (udhelpers::isSTARLightJPsimumu(parts)) {
       selectedParts.push_back(1);
       selectedParts.push_back(2);
     }
@@ -145,6 +145,7 @@ struct UDTutorial03a {
   }
 
   // compute the 2-track invariant mass using muon hypothesis
+  // bool computeIVM_gen(aod::McParticles const& parts, std::vector<int64_t> partIds, TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   template <typename TMcPart>
   bool computeIVM_gen(TMcPart const& parts, std::vector<int64_t> partIds, TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   {
@@ -219,7 +220,7 @@ struct UDTutorial03a {
     }
   }
 
-  // check a reconstructed pair of tracks to be a candidate for an event of the type rho0 -> mu+ + mu-
+  // check a reconstructed pair of tracks to be a candidate for an event of the type J/Psi -> mu+ + mu-
   bool isSelected_rec(TCs const& tracks, std::vector<int64_t> const& trackIds)
   {
     // tracks is expected to contain two tracks
@@ -239,18 +240,6 @@ struct UDTutorial03a {
       return false;
     }
 
-    // apply selection criteria
-    TLorentzVector* lv1 = new TLorentzVector();
-    TLorentzVector* lv2 = new TLorentzVector();
-    TLorentzVector* lv = new TLorentzVector();
-    if (!computeIVM_rec(tracks, trackIds, lv1, lv2, lv)) {
-      return false;
-    }
-    // select generated events which are in the acceptance
-    // (!isInAcceptance(lv1, lv2, lv)) {
-    //  return false;
-    //}
-
     // check tracks to be muon candidates
     if (!isMuonCandidate_rec(tr1)) {
       return false;
@@ -258,6 +247,19 @@ struct UDTutorial03a {
     if (!isMuonCandidate_rec(tr2)) {
       return false;
     }
+
+    // apply selection criteria
+    TLorentzVector* lv1 = new TLorentzVector();
+    TLorentzVector* lv2 = new TLorentzVector();
+    TLorentzVector* lv = new TLorentzVector();
+    if (!computeIVM_rec(tracks, trackIds, lv1, lv2, lv)) {
+      return false;
+    }
+
+    // select generated events which are in the acceptance
+    // (!isInAcceptance(lv1, lv2, lv)) {
+    //  return false;
+    //}
 
     // more selection criteria can be applied here ...
 

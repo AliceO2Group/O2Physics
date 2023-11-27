@@ -11,7 +11,7 @@
 
 // Task to produce a table joinable to the jet tables for MC Particle level event weights
 //
-// Author: Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,12 +31,12 @@ template <typename MCParticleLevelJetTable, typename MCParticleLevelWeightsTable
 struct JetEventWeightMCPTask {
   Produces<MCParticleLevelWeightsTable> mcParticleLevelWeightsTable;
 
-  void processDummy(aod::McCollisions const& collisions)
+  void processDummy(aod::JMcCollisions const& collisions)
   {
   }
   PROCESS_SWITCH(JetEventWeightMCPTask, processDummy, "Dummy process", true);
 
-  void processMCParticleLevelEventWeight(MCParticleLevelJetTable const& jet, aod::McCollisions const& collisions)
+  void processMCParticleLevelEventWeight(MCParticleLevelJetTable const& jet, aod::JMcCollisions const& collisions)
   {
     mcParticleLevelWeightsTable(jet.globalIndex(), jet.mcCollision().weight());
   }

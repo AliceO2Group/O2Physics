@@ -16,8 +16,8 @@
 /// \author Nasir Mehdi Malik
 
 #include <array>
-#include <iostream>
-#include <tuple>
+
+#include <TPDGCode.h>
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,6 +25,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
@@ -45,31 +47,30 @@ struct rhoanalysis {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> nsigmaCutTOF{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
+  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
+  Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<int> cMultiplicityType{"cMultiplicityType", 1, " Set 1 For multTPC, 2 for MultFT0M, 3for MultFV0M"};
-
-  Configurable<bool> isUnlike{"isUnlike", false, "Use unlike charged tracks"};
-  Configurable<bool> isLike{"isLike", false, "use same charge tracks"};
+  Configurable<int> cMultiplicityType{"cMultiplicityType", 2, " Set 1 for MultFT0M, 2 for centFT0M"};
+  Configurable<bool> isUnlike{"isUnlike", true, "Use unlike charged tracks"};
+  Configurable<bool> isLike{"isLike", true, "use same charge tracks"};
   Configurable<bool> isMixed{"isMixed", false, "Use mixed events"};
   Configurable<bool> isMC{"isMC", false, "Run MC"};
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec ptAxis = {100, 0., 10., "#it{p}_{T} (GeV/c)"};
+    AxisSpec ptAxis = {140, 0., 7., "#it{p}_{T} (GeV/c)"};
     AxisSpec dcaxyAxis = {100, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {100, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
 
-    AxisSpec multAxis = {1000, 0, 1000, "mult"};
+    AxisSpec multAxis = {2000, 0., 2000, "mult"};
+    if (cMultiplicityType == 2)
+      multAxis = {100, 0., 100., "multiplicity percentile"};
     AxisSpec ptAxiss = {100, 0.0f, 10.0f, "#it{p}_{T}  (GeV/#it{c})"};
-    AxisSpec invmassAxis = {320, 0.2, 1.8, "{M}_{#pi #pi}} (GeV/#it{c}^2)"};
+    AxisSpec invmassAxis = {180, 0.2, 2.0, "{M}_{#pi #pi}} (GeV/#it{c}^2)"};
     AxisSpec rapidityAxis = {100, -1.0, 1.0, "y"};
     if (isUnlike) {
-      histos.add("hmultTPC", "Multipicity TPC", kTH1F, {multAxis});
       histos.add("hmultFT0M", "Multipicity FT0M", kTH1F, {multAxis});
-      histos.add("hmultFV0M", "Multipicity FV0M", kTH1F, {multAxis});
-      histos.add("hmultTracklets", "Multipicity tracklets", kTH1F, {multAxis});
 
       histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{1000, 0.0f, 1000.0f}});
@@ -82,13 +83,12 @@ struct rhoanalysis {
       histos.add("hNsigmaPionTPCvspT_aftercut", "NsigmaPion TPC distribution after cuts Vs pT", kTH2F, {ptAxis, {100, -10.0f, 10.0f}});
       histos.add("hNsigmaPionTOF", "NsigmaPion TOF distribution", kTH1F, {{100, -10.0f, 10.0f}});
 
-      histos.add("fTPCSignal", "TPCSignal;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{1000, 0.0f, 6.0f}, {2000, -100.f, 1000.f}}});
-
       histos.add("hrhoUnlike", "Invariant mass of rho", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
     }
 
     if (isLike) {
-      histos.add("hrhoLike", "Invariant mass of rho", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
+      histos.add("hrhoLikepp", "Invariant mass of rho like sign pp", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
+      histos.add("hrhoLikemm", "Invariant mass of rho like sign mm", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
     }
     if (isMixed) {
       histos.add("hrhoMixed", "Invariant mass of rho mixed event", kTHnSparseF, {invmassAxis, ptAxiss, multAxis});
@@ -102,80 +102,124 @@ struct rhoanalysis {
       histos.add("hrhoGen", "Gen mass of rho mc", kTHnSparseF, {ptAxiss, {30, 100, 130, "pdg code"}});
     }
   }
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta) && (nabs(aod::track::pt) > cfgCutPT);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  template <typename T>
+  bool selectionPID(const T& candidate)
+  {
+    if (std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC)
+      return true;
+    else
+      return false;
+  }
 
-  using TrackPi = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  using Event = soa::Filtered<soa::Join<aod::Collisions, aod::Mults>>;
+  template <typename T>
+  float Multiplicity(const T& event)
+  {
+    float multiplicity = 0.0;
+    if (cMultiplicityType == 2)
+      multiplicity = event.centFT0M();
+    else
+      multiplicity = event.multFT0M();
+
+    return multiplicity;
+  }
+
+  enum class FillMode {
+    Unlike,
+    Mixed,
+    LikeSign
+  };
+
   std::array<float, 3> pvec0;
   std::array<float, 3> pvec1;
-
-  Service<o2::framework::O2DatabasePDG> Ipdg;
 
   double mass{0.};
   double recMass{0.};
   double pT{0.};
   double rapidity;
-  void processUnlike(Event::iterator const& events, TrackPi const& tracks)
+
+  Service<o2::framework::O2DatabasePDG> Ipdg;
+
+  template <typename T1, typename T2>
+  void FillHistogam(const T1& candidate1, const T2& candidate2, FillMode fillMode, float multiplicity = 0.0, float massd1 = 0., float massd2 = 0.)
   {
 
-    histos.fill(HIST("hmultTPC"), events.multTPC());
-    histos.fill(HIST("hmultFT0M"), events.multFT0M());
-    histos.fill(HIST("hmultFV0M"), events.multFV0M());
-    histos.fill(HIST("hmultTracklets"), events.multTracklets());
-    histos.fill(HIST("hNcontributor"), events.numContrib());
-    histos.fill(HIST("hVtxZ"), events.posZ());
-    float multiplicity = 0;
-    if (cMultiplicityType == 1)
-      multiplicity = events.multTPC();
-    else if (cMultiplicityType == 2)
-      multiplicity = events.multFT0M();
-    else
-      multiplicity = events.multFV0M();
+    auto _px1 = candidate1.px();
+    auto _py1 = candidate1.py();
+    auto _pz1 = candidate1.pz();
+    auto _px2 = candidate2.px();
+    auto _py2 = candidate2.py();
+    auto _pz2 = candidate2.pz();
 
+    pvec0 = std::array{_px1, _py1, _pz1};
+    pvec1 = std::array{_px2, _py2, _pz2};
+
+    auto arrMom = std::array{pvec0, pvec1};
+    mass = RecoDecay::m(arrMom, std::array{massd1, massd2});
+
+    rapidity = RecoDecay::y(std::array{_px1 + _px2, _py1 + _py2, _pz1 + _pz2}, mass);
+    if (std::abs(rapidity) >= 0.5)
+      return;
+    pT = RecoDecay::pt(std::array{_px1 + _px2, _py1 + _py2});
+
+    switch (fillMode) {
+      case FillMode::LikeSign:
+        if (candidate1.sign() > 0 && candidate2.sign() > 0)
+          histos.fill(HIST("hrhoLikepp"), mass, pT, multiplicity);
+        else
+          histos.fill(HIST("hrhoLikemm"), mass, pT, multiplicity);
+        break;
+      case FillMode::Mixed:
+        histos.fill(HIST("hrhoMixed"), mass, pT, multiplicity);
+        break;
+      case FillMode::Unlike:
+        histos.fill(HIST("hrhoUnlike"), mass, pT, multiplicity);
+        break;
+    }
+  }
+
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta) && (nabs(aod::track::pt) > cfgCutPT);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+
+  using TrackPi = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
+  using Event = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::FT0Mults, aod::CentFT0Ms>>;
+
+  void processUnlike(Event::iterator const& events, TrackPi const& tracks)
+  {
+    if (!events.sel8())
+      return;
     float massPiplus = Ipdg->Mass(kPiPlus);
     float massPiminus = Ipdg->Mass(kPiMinus);
+    float multiplicity = Multiplicity(events);
+
+    histos.fill(HIST("hmultFT0M"), multiplicity);
+    histos.fill(HIST("hNcontributor"), events.numContrib());
+    histos.fill(HIST("hVtxZ"), events.posZ());
 
     for (auto& track1 : tracks) {
-      auto _px1 = track1.px();
-      auto _py1 = track1.py();
-      auto _pz1 = track1.pz();
+
       auto _pt1 = track1.pt();
 
       histos.fill(HIST("hNsigmaPionTPCvspT_beforecut"), _pt1, track1.tpcNSigmaPi());
 
-      if (abs(track1.tpcNSigmaPi()) > nsigmaCutCombined)
-        continue;
-      histos.fill(HIST("hNsigmaPionTPCvspT_aftercut"), _pt1, track1.tpcNSigmaPi());
-      histos.fill(HIST("ptpi"), _pt1);
-      histos.fill(HIST("dcaXY"), track1.dcaXY());
-      histos.fill(HIST("dcaZ"), track1.dcaZ());
-      histos.fill(HIST("hNsigmaPionTPC"), track1.tpcNSigmaPi());
-      //  histos.fill(HIST("hNsigmaPionTOF"), track1.tofNSigmaPi());
-
       for (auto& track2 : tracks) {
+
         if (track1.sign() * track2.sign() > 0)
           continue;
-        auto _px2 = track2.px();
-        auto _py2 = track2.py();
-        auto _pz2 = track2.pz();
 
-        if (abs(track2.tpcNSigmaPi()) > nsigmaCutCombined)
+        if (!(selectionPID(track1)))
+          continue;
+        if (!(selectionPID(track2)))
           continue;
 
-        pvec0 = std::array{_px1, _py1, _pz1};
-        pvec1 = std::array{_px2, _py2, _pz2};
+        histos.fill(HIST("hNsigmaPionTPCvspT_aftercut"), _pt1, track1.tpcNSigmaPi());
+        histos.fill(HIST("ptpi"), _pt1);
+        histos.fill(HIST("dcaXY"), track1.dcaXY());
+        histos.fill(HIST("dcaZ"), track1.dcaZ());
+        histos.fill(HIST("hNsigmaPionTPC"), track1.tpcNSigmaPi());
+        histos.fill(HIST("hNsigmaPionTOF"), track1.tofNSigmaPi());
 
-        auto arrMom = std::array{pvec0, pvec1};
-        mass = RecoDecay::m(arrMom, std::array{massPiplus, massPiminus});
-        pT = RecoDecay::pt(std::array{_px1 + _px2, _py1 + _py2});
-
-        rapidity = RecoDecay::y(std::array{_px1 + _px2, _py1 + _py2, _pz1 + _pz2}, mass);
-        if (std::abs(rapidity) >= 0.5)
-          continue;
-
-        histos.fill(HIST("hrhoUnlike"), mass, pT, multiplicity);
+        FillHistogam(track1, track2, FillMode::Unlike, multiplicity, massPiplus, massPiminus);
       }
     }
   }
@@ -183,52 +227,26 @@ struct rhoanalysis {
 
   void processlike(Event::iterator const& events, TrackPi const& tracks)
   {
-
-    float multiplicity = 0;
-    if (cMultiplicityType == 1)
-      multiplicity = events.multTPC();
-    else if (cMultiplicityType == 2)
-      multiplicity = events.multFT0M();
-    else
-      multiplicity = events.multFV0M();
-
+    if (!events.sel8())
+      return;
     float massPiplus = Ipdg->Mass(kPiPlus);
     float massPiminus = Ipdg->Mass(kPiMinus);
+    float multiplicity = Multiplicity(events);
 
     for (auto& track1 : tracks) {
-      auto _px1 = track1.px();
-      auto _py1 = track1.py();
-      auto _pz1 = track1.pz();
-
-      if (abs(track1.tpcNSigmaPi()) > nsigmaCutCombined)
-        continue;
 
       for (auto& track2 : tracks) {
+
         if (track1.sign() * track2.sign() < 0)
           continue;
-        auto _px2 = track2.px();
-        auto _py2 = track2.py();
-        auto _pz2 = track2.pz();
-
-        if (abs(track2.tpcNSigmaPi()) > nsigmaCutCombined)
+        if (!(selectionPID(track1)))
           continue;
-
-        pvec0 = std::array{_px1, _py1, _pz1};
-        pvec1 = std::array{_px2, _py2, _pz2};
-
-        auto arrMom = std::array{pvec0, pvec1};
-        mass = RecoDecay::m(arrMom, std::array{massPiplus, massPiminus});
-        pT = RecoDecay::pt(std::array{_px1 + _px2, _py1 + _py2});
-
-        rapidity = RecoDecay::y(std::array{_px1 + _px2, _py1 + _py2, _pz1 + _pz2}, mass);
-        if (std::abs(rapidity) >= 0.5)
+        if (!(selectionPID(track2)))
           continue;
-
-        histos.fill(HIST("hrhoLike"), mass, pT, multiplicity);
+        FillHistogam(track1, track2, FillMode::LikeSign, multiplicity, massPiplus, massPiminus);
       }
     }
   }
-
   PROCESS_SWITCH(rhoanalysis, processlike, "Process Same event with like sign track", isLike);
 
   ConfigurableAxis axisVertex{"axisVertex", {VARIABLE_WIDTH, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12}, "vertex axis for bin"};
@@ -242,64 +260,38 @@ struct rhoanalysis {
     auto tracksTuple = std::make_tuple(tracks);
     BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
     SameKindPair<Event, TrackPi, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, events, tracksTuple, &cache};
-
+    float massPiplus = Ipdg->Mass(kPiPlus);
+    float massPiminus = Ipdg->Mass(kPiMinus);
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-
-      float multiplicity = 0;
-      if (cMultiplicityType == 1)
-        multiplicity = c1.multTPC();
-      else if (cMultiplicityType == 2)
-        multiplicity = c1.multFT0M();
-      else
-        multiplicity = c1.multFV0M();
+      if (!c1.sel8())
+        continue;
+      if (!c2.sel8())
+        continue;
+      float multiplicity = Multiplicity(c1);
 
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-
         if (track1.sign() * track2.sign() > 0)
           continue;
-
-        if (abs(track1.tpcNSigmaPi()) > nsigmaCutCombined)
+        if (!(selectionPID(track1)))
           continue;
-        if (abs(track2.tpcNSigmaPi()) > nsigmaCutCombined)
-          continue;
-
-        auto _px1 = track1.px();
-        auto _py1 = track1.py();
-        auto _pz1 = track1.pz();
-
-        auto _px2 = track2.px();
-        auto _py2 = track2.py();
-        auto _pz2 = track2.pz();
-
-        pvec0 = std::array{_px1, _py1, _pz1};
-        pvec1 = std::array{_px2, _py2, _pz2};
-        float massPi = Ipdg->Mass(kPiPlus);
-        auto arrMom = std::array{pvec0, pvec1};
-        mass = RecoDecay::m(arrMom, std::array{massPi, massPi});
-        pT = RecoDecay::pt(std::array{_px1 + _px2, _py1 + _py2});
-
-        rapidity = RecoDecay::y(std::array{_px1 + _px2, _py1 + _py2, _pz1 + _pz2}, mass);
-        if (std::abs(rapidity) >= 0.5)
+        if (!(selectionPID(track2)))
           continue;
 
-        histos.fill(HIST("hrhoMixed"), mass, pT, multiplicity);
+        FillHistogam(track1, track2, FillMode::Mixed, multiplicity, massPiplus, massPiminus);
       }
     }
   }
   PROCESS_SWITCH(rhoanalysis, processMixedEvent, "Process Mixed event", isMixed);
 
-  using EventMC = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
+  using EventMC = soa::Join<aod::Collisions, aod::TPCMults, aod::FT0Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
   using TrackMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::pidTPCFullPi, aod::McTrackLabels>>;
   void processMC(EventMC::iterator const& events, TrackMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
+    if (!events.has_mcCollision())
+      return;
+
     float massPi = Ipdg->Mass(kPiPlus);
-    float multiplicity = 0;
-    if (cMultiplicityType == 1)
-      multiplicity = events.multTPC();
-    else if (cMultiplicityType == 2)
-      multiplicity = events.multFT0M();
-    else
-      multiplicity = events.multFV0M();
+    float multiplicity = Multiplicity(events);
 
     if (std::abs(events.mcCollision().posZ()) > cfgCutVertex) {
       return;
