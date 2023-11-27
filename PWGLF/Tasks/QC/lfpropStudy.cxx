@@ -47,7 +47,7 @@ struct lfpropStudy {
   Configurable<float> d_pTMin{"d_pTMin", 0.3, "minimum track momentum"};
   Configurable<float> d_TPCrowsMin{"d_TPCrowsMin", 70, "minimum number of TPC crossed rows"};
   Configurable<float> d_TPCrowsOverFindMin{"d_TPCrowsOverFindMin", 0.8, "minimum for ratio of TPC crossed rows over findable"};
-  
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Filter collisionFilter = (aod::evsel::sel8 == true);
@@ -115,64 +115,67 @@ struct lfpropStudy {
     for (auto& track : Tracks) {
 
       // track selection
-      if (d_noITS && track.hasITS()) continue; // optional: only look at tracks which start outside the ITS
-      if (track.trackType() == aod::track::TrackIU) continue; // only look at tracks which were propagated
-      if (track.tpcNClsCrossedRows() < d_TPCrowsMin || track.tpcCrossedRowsOverFindableCls() < d_TPCrowsOverFindMin) continue;
+      if (d_noITS && track.hasITS())
+        continue; // optional: only look at tracks which start outside the ITS
+      if (track.trackType() == aod::track::TrackIU)
+        continue; // only look at tracks which were propagated
+      if (track.tpcNClsCrossedRows() < d_TPCrowsMin || track.tpcCrossedRowsOverFindableCls() < d_TPCrowsOverFindMin)
+        continue;
 
       if (track.pidForTracking() == o2::track::PID::Electron) {
         histos.fill(HIST("hPxEl"), track.px());
         histos.fill(HIST("hPyEl"), track.py());
         histos.fill(HIST("hPzEl"), track.pz());
-        histos.fill(HIST("hPtEl"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtEl"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyEl"), track.dcaXY());
         histos.fill(HIST("hDCAzEl"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Pion) {
         histos.fill(HIST("hPxPi"), track.px());
         histos.fill(HIST("hPyPi"), track.py());
         histos.fill(HIST("hPzPi"), track.pz());
-        histos.fill(HIST("hPtPi"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtPi"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyPi"), track.dcaXY());
         histos.fill(HIST("hDCAzPi"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Kaon) {
         histos.fill(HIST("hPxKa"), track.px());
         histos.fill(HIST("hPyKa"), track.py());
         histos.fill(HIST("hPzKa"), track.pz());
-        histos.fill(HIST("hPtKa"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtKa"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyKa"), track.dcaXY());
         histos.fill(HIST("hDCAzKa"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Proton) {
         histos.fill(HIST("hPxPr"), track.px());
         histos.fill(HIST("hPyPr"), track.py());
         histos.fill(HIST("hPzPr"), track.pz());
-        histos.fill(HIST("hPtPr"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtPr"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyPr"), track.dcaXY());
         histos.fill(HIST("hDCAzPr"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Deuteron) {
         histos.fill(HIST("hPxDe"), track.px());
         histos.fill(HIST("hPyDe"), track.py());
         histos.fill(HIST("hPzDe"), track.pz());
-        histos.fill(HIST("hPtDe"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtDe"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyDe"), track.dcaXY());
         histos.fill(HIST("hDCAzDe"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Triton) {
         histos.fill(HIST("hPxTr"), track.px());
         histos.fill(HIST("hPyTr"), track.py());
         histos.fill(HIST("hPzTr"), track.pz());
-        histos.fill(HIST("hPtTr"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtTr"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyTr"), track.dcaXY());
         histos.fill(HIST("hDCAzTr"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Helium3) {
         histos.fill(HIST("hPxHe"), track.px());
         histos.fill(HIST("hPyHe"), track.py());
         histos.fill(HIST("hPzHe"), track.pz());
-        histos.fill(HIST("hPtHe"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtHe"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyHe"), track.dcaXY());
         histos.fill(HIST("hDCAzHe"), track.dcaZ());
       } else if (track.pidForTracking() == o2::track::PID::Alpha) {
         histos.fill(HIST("hPxAl"), track.px());
         histos.fill(HIST("hPyAl"), track.py());
         histos.fill(HIST("hPzAl"), track.pz());
-        histos.fill(HIST("hPtAl"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtAl"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyAl"), track.dcaXY());
         histos.fill(HIST("hDCAzAl"), track.dcaZ());
       }
@@ -185,67 +188,70 @@ struct lfpropStudy {
     histos.fill(HIST("hEventCounter"), 0.5);
     for (auto& track : Tracks) {
 
-      if (!track.has_mcParticle() || track.mcParticleId() <= -1 || track.mcParticleId() > particlesMC.size()) continue;
-      if (d_noITS && track.hasITS()) continue; // optional: only look at tracks which start outside the ITS
-      if (track.trackType() == aod::track::TrackIU) continue; // only look at tracks which were propagated
+      if (!track.has_mcParticle() || track.mcParticleId() <= -1 || track.mcParticleId() > particlesMC.size())
+        continue;
+      if (d_noITS && track.hasITS())
+        continue; // optional: only look at tracks which start outside the ITS
+      if (track.trackType() == aod::track::TrackIU)
+        continue; // only look at tracks which were propagated
 
       if (track.mcParticle().pdgCode() == kElectron) {
         histos.fill(HIST("hPxEl"), track.px());
         histos.fill(HIST("hPyEl"), track.py());
         histos.fill(HIST("hPzEl"), track.pz());
-        histos.fill(HIST("hPtEl"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtEl"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyEl"), track.dcaXY());
         histos.fill(HIST("hDCAzEl"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == kPiPlus) {
         histos.fill(HIST("hPxPi"), track.px());
         histos.fill(HIST("hPyPi"), track.py());
         histos.fill(HIST("hPzPi"), track.pz());
-        histos.fill(HIST("hPtPi"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtPi"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyPi"), track.dcaXY());
         histos.fill(HIST("hDCAzPi"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == kKPlus) {
         histos.fill(HIST("hPxKa"), track.px());
         histos.fill(HIST("hPyKa"), track.py());
         histos.fill(HIST("hPzKa"), track.pz());
-        histos.fill(HIST("hPtKa"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtKa"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyKa"), track.dcaXY());
         histos.fill(HIST("hDCAzKa"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == kProton) {
         histos.fill(HIST("hPxPr"), track.px());
         histos.fill(HIST("hPyPr"), track.py());
         histos.fill(HIST("hPzPr"), track.pz());
-        histos.fill(HIST("hPtPr"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtPr"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyPr"), track.dcaXY());
         histos.fill(HIST("hDCAzPr"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == 1000010020) {
         histos.fill(HIST("hPxDe"), track.px());
         histos.fill(HIST("hPyDe"), track.py());
         histos.fill(HIST("hPzDe"), track.pz());
-        histos.fill(HIST("hPtDe"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtDe"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyDe"), track.dcaXY());
         histos.fill(HIST("hDCAzDe"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == 1000010030) {
         histos.fill(HIST("hPxTr"), track.px());
         histos.fill(HIST("hPyTr"), track.py());
         histos.fill(HIST("hPzTr"), track.pz());
-        histos.fill(HIST("hPtTr"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtTr"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyTr"), track.dcaXY());
         histos.fill(HIST("hDCAzTr"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == 1000020030) {
         histos.fill(HIST("hPxHe"), track.px());
         histos.fill(HIST("hPyHe"), track.py());
         histos.fill(HIST("hPzHe"), track.pz());
-        histos.fill(HIST("hPtHe"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtHe"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyHe"), track.dcaXY());
         histos.fill(HIST("hDCAzHe"), track.dcaZ());
       } else if (track.mcParticle().pdgCode() == 1000020040) {
         histos.fill(HIST("hPxAl"), track.px());
         histos.fill(HIST("hPyAl"), track.py());
         histos.fill(HIST("hPzAl"), track.pz());
-        histos.fill(HIST("hPtAl"), sqrt(track.px()*track.px() + track.py()*track.py()));
+        histos.fill(HIST("hPtAl"), sqrt(track.px() * track.px() + track.py() * track.py()));
         histos.fill(HIST("hDCAxyAl"), track.dcaXY());
         histos.fill(HIST("hDCAzAl"), track.dcaZ());
-      } 
+      }
     }
   }
   PROCESS_SWITCH(lfpropStudy, processMC, "process MC", false);
