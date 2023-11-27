@@ -52,14 +52,10 @@ struct VdMAO2D {
     if (fillNumber == 8379) { /// VdM Nov22, pp 13.6 TeV
       startTimeInS = 1668079200;
       endTimeInS = 1668098700;
-    }
-
-    else if (fillNumber == 9126) { /// VdM 23, pp 13.6 TeV
+    } else if (fillNumber == 9126) { /// VdM 23, pp 13.6 TeV
       startTimeInS = 1694118600;
       endTimeInS = 1694138220;
-    }
-
-    else if (fillNumber == 9140) { /// VdM 23, Pb-Pb 5.36 ATeV
+    } else if (fillNumber == 9140) { /// VdM 23, Pb-Pb 5.36 ATeV
       startTimeInS = 1696962082;
       endTimeInS = 1696973263;
     }
