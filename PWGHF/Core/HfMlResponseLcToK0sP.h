@@ -146,11 +146,11 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LC(cpaXY);
         CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ct, ctLc);
         // TPC PID variables
-        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTPCPr0, tpcNSigmaPr);
+        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTpcPr0, tpcNSigmaPr);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTOFPr0, tofNSigmaPr);
+        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTofPr0, tofNSigmaPr);
         // Combined nSigma variable
-        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTpcTOFPr0, tpcTofNSigmaPr);
+        CHECK_AND_FILL_VEC_LC_FULL(bach, nSigmaTpcTofPr0, tpcTofNSigmaPr);
       }
     }
 
