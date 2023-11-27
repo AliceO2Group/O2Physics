@@ -190,11 +190,11 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(cpaXY),
       FILL_MAP_LC(ct),
       // TPC PID variables
-      FILL_MAP_LC(nSigmaTPCPr0),
+      FILL_MAP_LC(nSigmaTpcPr0),
       // TOF PID variables
-      FILL_MAP_LC(nSigmaTOFPr0),
+      FILL_MAP_LC(nSigmaTofPr0),
       // Combined nSigma variable
-      FILL_MAP_LC(nSigmaTpcTOFPr0)};
+      FILL_MAP_LC(nSigmaTpcTofPr0)};
   }
 };
 
