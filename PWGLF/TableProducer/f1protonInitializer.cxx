@@ -178,7 +178,7 @@ struct f1protoninitializer {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > cMaxV0DCA) {
+    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;

@@ -44,17 +44,34 @@ using std::array;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct cascadeLabelBuilder {
-  Produces<aod::McCascLabels> casclabels; // MC labels for cascades
-  Produces<aod::McKFCascLabels> kfcasclabels; // MC labels for cascades
-  Produces<aod::McTraCascLabels> tracasclabels; // MC labels for cascades
-  Produces<aod::McCascBBTags> bbtags;           // MC labels for cascades
+struct cascademcbuilder {
+  Produces<aod::McCascLabels> casclabels;       // MC labels for cascades
+  Produces<aod::McKFCascLabels> kfcasclabels;   // MC labels for tracked cascades
+  Produces<aod::McTraCascLabels> tracasclabels; // MC labels for tracked cascades
+  Produces<aod::McCascBBTags> bbtags;           // bb tags (inv structure tagging)
+  Produces<aod::CascMCCores> cascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::KFCascMCCores> kfcascmccores;   // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::TraCascMCCores> tracascmccores; // optionally aggregate information from MC side for posterior analysis (derived data)
+
+  Configurable<bool> populateCascMCCores{"populateCascMCCores", false, "populate CascMCCores table for derived data analysis"};
+  Configurable<bool> populateKFCascMCCores{"populateKFCascMCCores", false, "populate KFCascMCCores table for derived data analysis"};
+  Configurable<bool> populateTraCascMCCores{"populateTraCascMCCores", false, "populate TraCascMCCores table for derived data analysis"};
+
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels
   void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
+    int pdgCode = -1, pdgCodeMother = -1;
+    int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
+    bool isPhysicalPrimary = false;
+    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+    float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
+    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
+    float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
+    float px = -999.0f, py = -999.0f, pz = -999.0f;
     for (auto& casc : casctable) {
       // Loop over those that actually have the corresponding V0 associated to them
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
@@ -77,17 +94,49 @@ struct cascadeLabelBuilder {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
 
+        pdgCodePositive = lMCPosTrack.pdgCode();
+        pdgCodeNegative = lMCNegTrack.pdgCode();
+        pdgCodeBachelor = lMCBachTrack.pdgCode();
+        pxposmc = lMCPosTrack.px();
+        pyposmc = lMCPosTrack.py();
+        pzposmc = lMCPosTrack.pz();
+        pxnegmc = lMCNegTrack.px();
+        pynegmc = lMCNegTrack.py();
+        pznegmc = lMCNegTrack.pz();
+        pxbachmc = lMCBachTrack.px();
+        pybachmc = lMCBachTrack.py();
+        pzbachmc = lMCBachTrack.pz();
+
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother == lPosMother) {
+                // acquire information
+                xlmc = lNegMother.vx();
+                ylmc = lNegMother.vy();
+                zlmc = lNegMother.vz();
+                pdgCodeV0 = lNegMother.pdgCode();
+
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
                 for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
                   for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
                     if (lV0Mother == lBachMother) {
                       lLabel = lV0Mother.globalIndex();
+                      pdgCode = lV0Mother.pdgCode();
+                      isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                      xmc = lV0Mother.vx();
+                      ymc = lV0Mother.vy();
+                      zmc = lV0Mother.vz();
+                      px = lV0Mother.px();
+                      py = lV0Mother.py();
+                      pz = lV0Mother.pz();
+                      if (lV0Mother.has_mothers()) {
+                        for (auto& lV0GrandMother : lV0Mother.mothers_as<aod::McParticles>()) {
+                          pdgCodeMother = lV0GrandMother.pdgCode();
+                        }
+                      }
                     }
                   }
                 } // end conditional V0-bach pair
@@ -99,16 +148,35 @@ struct cascadeLabelBuilder {
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
         lLabel);
+      if (populateCascMCCores) {
+        cascmccores(
+          pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
+          pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
+          pxposmc, pyposmc, pzposmc,
+          pxnegmc, pynegmc, pznegmc,
+          pxbachmc, pybachmc, pzbachmc,
+          px, py, pz);
+      }
     } // end casctable loop
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build kf cascade labels
-  void processKFCascades(aod::KFCascDatas const& casctable, aod::V0sLinked const&, aod::McTrackLabels const&, aod::McParticles const&)
+  void processKFCascades(aod::KFCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
+    int pdgCode = -1, pdgCodeMother = -1;
+    int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
+    bool isPhysicalPrimary = false;
+    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+    float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
+    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
+    float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
+    float px = -999.0f, py = -999.0f, pz = -999.0f;
     for (auto& casc : casctable) {
-
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
+      // Loop over those that actually have the corresponding V0 associated to them
+      auto v0 = casc.v0();
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
@@ -123,17 +191,49 @@ struct cascadeLabelBuilder {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
 
+        pdgCodePositive = lMCPosTrack.pdgCode();
+        pdgCodeNegative = lMCNegTrack.pdgCode();
+        pdgCodeBachelor = lMCBachTrack.pdgCode();
+        pxposmc = lMCPosTrack.px();
+        pyposmc = lMCPosTrack.py();
+        pzposmc = lMCPosTrack.pz();
+        pxnegmc = lMCNegTrack.px();
+        pynegmc = lMCNegTrack.py();
+        pznegmc = lMCNegTrack.pz();
+        pxbachmc = lMCBachTrack.px();
+        pybachmc = lMCBachTrack.py();
+        pzbachmc = lMCBachTrack.pz();
+
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother == lPosMother) {
+                // acquire information
+                xlmc = lNegMother.vx();
+                ylmc = lNegMother.vy();
+                zlmc = lNegMother.vz();
+                pdgCodeV0 = lNegMother.pdgCode();
+
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
                 for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
                   for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
                     if (lV0Mother == lBachMother) {
                       lLabel = lV0Mother.globalIndex();
+                      pdgCode = lV0Mother.pdgCode();
+                      isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                      xmc = lV0Mother.vx();
+                      ymc = lV0Mother.vy();
+                      zmc = lV0Mother.vz();
+                      px = lV0Mother.px();
+                      py = lV0Mother.py();
+                      pz = lV0Mother.pz();
+                      if (lV0Mother.has_mothers()) {
+                        for (auto& lV0GrandMother : lV0Mother.mothers_as<aod::McParticles>()) {
+                          pdgCodeMother = lV0GrandMother.pdgCode();
+                        }
+                      }
                     }
                   }
                 } // end conditional V0-bach pair
@@ -145,6 +245,16 @@ struct cascadeLabelBuilder {
       // Construct label table (note: this will be joinable with CascDatas)
       kfcasclabels(
         lLabel);
+      if (populateKFCascMCCores) {
+        kfcascmccores(
+          pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
+          pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
+          pxposmc, pyposmc, pzposmc,
+          pxnegmc, pynegmc, pznegmc,
+          pxbachmc, pybachmc, pzbachmc,
+          px, py, pz);
+      }
     } // end casctable loop
   }
 
@@ -152,6 +262,15 @@ struct cascadeLabelBuilder {
   // build tracked cascade labels
   void processTrackedCascades(aod::TraCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
+    int pdgCode = -1, pdgCodeMother = -1;
+    int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
+    bool isPhysicalPrimary = false;
+    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+    float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
+    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
+    float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
+    float px = -999.0f, py = -999.0f, pz = -999.0f;
     for (auto& casc : casctable) {
       // Loop over those that actually have the corresponding V0 associated to them
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
@@ -174,17 +293,49 @@ struct cascadeLabelBuilder {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
 
+        pdgCodePositive = lMCPosTrack.pdgCode();
+        pdgCodeNegative = lMCNegTrack.pdgCode();
+        pdgCodeBachelor = lMCBachTrack.pdgCode();
+        pxposmc = lMCPosTrack.px();
+        pyposmc = lMCPosTrack.py();
+        pzposmc = lMCPosTrack.pz();
+        pxnegmc = lMCNegTrack.px();
+        pynegmc = lMCNegTrack.py();
+        pznegmc = lMCNegTrack.pz();
+        pxbachmc = lMCBachTrack.px();
+        pybachmc = lMCBachTrack.py();
+        pzbachmc = lMCBachTrack.pz();
+
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
           for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother == lPosMother) {
+                // acquire information
+                xlmc = lNegMother.vx();
+                ylmc = lNegMother.vy();
+                zlmc = lNegMother.vz();
+                pdgCodeV0 = lNegMother.pdgCode();
+
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
                 for (auto& lV0Mother : lNegMother.mothers_as<aod::McParticles>()) {
                   for (auto& lBachMother : lMCBachTrack.mothers_as<aod::McParticles>()) {
                     if (lV0Mother == lBachMother) {
                       lLabel = lV0Mother.globalIndex();
+                      pdgCode = lV0Mother.pdgCode();
+                      isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                      xmc = lV0Mother.vx();
+                      ymc = lV0Mother.vy();
+                      zmc = lV0Mother.vz();
+                      px = lV0Mother.px();
+                      py = lV0Mother.py();
+                      pz = lV0Mother.pz();
+                      if (lV0Mother.has_mothers()) {
+                        for (auto& lV0GrandMother : lV0Mother.mothers_as<aod::McParticles>()) {
+                          pdgCodeMother = lV0GrandMother.pdgCode();
+                        }
+                      }
                     }
                   }
                 } // end conditional V0-bach pair
@@ -196,6 +347,16 @@ struct cascadeLabelBuilder {
       // Construct label table (note: this will be joinable with CascDatas)
       tracasclabels(
         lLabel);
+      if (populateTraCascMCCores) {
+        tracascmccores(
+          pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
+          pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
+          xmc, ymc, zmc, xlmc, ylmc, zlmc,
+          pxposmc, pyposmc, pzposmc,
+          pxnegmc, pynegmc, pznegmc,
+          pxbachmc, pybachmc, pzbachmc,
+          px, py, pz);
+      }
     } // end casctable loop
   }
 
@@ -258,14 +419,14 @@ struct cascadeLabelBuilder {
     } // end casctable loop
   }
 
-  PROCESS_SWITCH(cascadeLabelBuilder, processCascades, "Produce regular cascade label tables", true);
-  PROCESS_SWITCH(cascadeLabelBuilder, processKFCascades, "Produce KF cascade label tables", true);
-  PROCESS_SWITCH(cascadeLabelBuilder, processTrackedCascades, "Produce tracked cascade label tables", false);
-  PROCESS_SWITCH(cascadeLabelBuilder, processBBTags, "Produce cascade bach-baryon correlation tags", true);
+  PROCESS_SWITCH(cascademcbuilder, processCascades, "Produce regular cascade label tables", true);
+  PROCESS_SWITCH(cascademcbuilder, processKFCascades, "Produce KF cascade label tables", false);
+  PROCESS_SWITCH(cascademcbuilder, processTrackedCascades, "Produce tracked cascade label tables", false);
+  PROCESS_SWITCH(cascademcbuilder, processBBTags, "Produce cascade bach-baryon correlation tags", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeLabelBuilder>(cfgc)};
+    adaptAnalysisTask<cascademcbuilder>(cfgc)};
 }

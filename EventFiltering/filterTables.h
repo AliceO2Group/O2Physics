@@ -22,6 +22,7 @@ namespace o2::aod
 namespace filtering
 {
 DECLARE_SOA_COLUMN(He, hasHe, bool); //!
+DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
 
 // diffraction
 DECLARE_SOA_COLUMN(UDdiff, hasDiff, bool); //! Double Gap events, DG
@@ -132,7 +133,7 @@ DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::He);
+                  filtering::He, filtering::H3L3Body);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
@@ -173,7 +174,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedCascade, filtering::TrackedXi, filtering::TrackedOmega, filtering::Tracked3Body);
+                  filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 

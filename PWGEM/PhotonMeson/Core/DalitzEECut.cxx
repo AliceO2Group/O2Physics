@@ -106,6 +106,11 @@ void DalitzEECut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "DalitzEE Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
+void DalitzEECut::ApplyPrefilter(bool flag)
+{
+  mApplyPF = flag;
+  LOG(info) << "DalitzEE Cut, apply prefilter: " << mApplyPF;
+}
 
 void DalitzEECut::SetPIDScheme(PIDSchemes scheme)
 {
@@ -192,6 +197,11 @@ void DalitzEECut::SetTOFNsigmaPrRange(float min, float max)
   mMinTOFNsigmaPr = min;
   mMaxTOFNsigmaPr = max;
   LOG(info) << "DalitzEE selection, set TOF n sigma Pr range: " << mMinTOFNsigmaPr << " - " << mMaxTOFNsigmaPr;
+}
+void DalitzEECut::SetMaxPinMuonTPConly(float max)
+{
+  mMaxPinMuonTPConly = max;
+  LOG(info) << "DalitzEE Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
 }
 
 void DalitzEECut::print() const

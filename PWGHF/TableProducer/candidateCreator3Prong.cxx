@@ -93,7 +93,7 @@ struct HfCandidateCreator3Prong {
   template <bool doPvRefit = false, typename Cand>
   void runCreator3Prong(aod::Collisions const& collisions,
                         Cand const& rowsTrackIndexProng3,
-                        aod::TracksWCov const& tracks,
+                        aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
@@ -109,9 +109,9 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
-      auto track0 = rowTrackIndexProng3.template prong0_as<aod::TracksWCov>();
-      auto track1 = rowTrackIndexProng3.template prong1_as<aod::TracksWCov>();
-      auto track2 = rowTrackIndexProng3.template prong2_as<aod::TracksWCov>();
+      auto track0 = rowTrackIndexProng3.template prong0_as<aod::TracksWCovExtra>();
+      auto track1 = rowTrackIndexProng3.template prong1_as<aod::TracksWCovExtra>();
+      auto track2 = rowTrackIndexProng3.template prong2_as<aod::TracksWCovExtra>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -197,8 +197,20 @@ struct HfCandidateCreator3Prong {
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
+      auto indexCollision = collision.globalIndex();
+      uint8_t nProngsContributorsPV = 0;
+      if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+      if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+      if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+
       // fill candidate table rows
-      rowCandidateBase(collision.globalIndex(),
+      rowCandidateBase(indexCollision,
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
@@ -208,7 +220,7 @@ struct HfCandidateCreator3Prong {
                        pvec2[0], pvec2[1], pvec2[2],
                        impactParameter0.getY(), impactParameter1.getY(), impactParameter2.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameter2.getSigmaY2()),
-                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(),
+                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
       // fill histograms
@@ -223,7 +235,7 @@ struct HfCandidateCreator3Prong {
 
   void processPvRefit(aod::Collisions const& collisions,
                       soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
-                      aod::TracksWCov const& tracks,
+                      aod::TracksWCovExtra const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
@@ -233,7 +245,7 @@ struct HfCandidateCreator3Prong {
 
   void processNoPvRefit(aod::Collisions const& collisions,
                         aod::Hf3Prongs const& rowsTrackIndexProng3,
-                        aod::TracksWCov const& tracks,
+                        aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);

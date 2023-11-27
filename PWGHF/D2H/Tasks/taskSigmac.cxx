@@ -605,7 +605,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hPtGenSc0Sig"), ptGenSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSc0Sig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0Sig"), phiSc, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0Sig"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0Sig"), deltaMass, ptSc, channel);
           ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0Sig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0Sig"), ptGenSoftPi, origin, channel);
@@ -615,7 +615,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hPtGenLcFromSc0Sig"), ptGenLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0Sig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0Sig"), phiLc, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0Sig"), deltaMass, ptLc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0Sig"), deltaMass, ptLc, channel);
           ////////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
@@ -623,7 +623,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hPtGenSc0PlusPlusSig"), ptGenSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc);
+          registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
           ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
@@ -638,15 +638,15 @@ struct HfTaskSigmac {
 
           if (origin == RecoDecay::OriginType::Prompt) {
             /// prompt signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc);                        // Σc0 signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc);                  // Λc+ ← Σc0 signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc);                // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigPrompt"), deltaMass, ptSc, channel);               // Σc0 signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigPrompt"), deltaMass, ptLc, channel);         // Λc+ ← Σc0 signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
             registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
             /// non-prompt signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc);                        // Σc0 signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc);                  // Λc+ ← Σc0 signal
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc);                // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0SigNonPrompt"), deltaMass, ptSc, channel);               // Σc0 signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0SigNonPrompt"), deltaMass, ptLc, channel);         // Λc+ ← Σc0 signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
             registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
           }
 
@@ -757,25 +757,17 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
-          } //////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
+          //////////////////////////////////////////////////////////////////////////////////////////////// Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, origin, channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, origin, channel); // π ← Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtLcFromScPlusPlusSig"), ptLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenLcFromScPlusPlusSig"), ptGenLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaLcFromScPlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromScPlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSig"), deltaMass, ptLc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
-          } //////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
+          //////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc++ signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -783,11 +775,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
-          } /////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
+          /////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
@@ -797,11 +785,21 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
+          ////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
           if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+            /// prompt signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);        // Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);  // Λc+ ← Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
-          } ////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+            /// non-prompt signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);        // Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);  // Λc+ ← Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          }
 
           /// THn for candidate Σc0,++ cut variation
           if (enableTHn) {
@@ -821,25 +819,17 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaScPlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiScPlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSig"), deltaMass, ptSc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
-          } ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc0 signal
+          ////////////////////////////////////////////////////////////////////////////////////////////////////// Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiScPlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiScPlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiScPlusPlusSig"), etaSoftPi, origin, channel);
-          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, origin, channel); // π ← Σc0 signal
+          registry.fill(HIST("MC/reconstructed/hPhiSoftPiScPlusPlusSig"), phiSoftPi, origin, channel); // π ← Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtLcFromScPlusPlusSig"), ptLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenLcFromScPlusPlusSig"), ptGenLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaLcFromScPlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromScPlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSig"), deltaMass, ptLc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
-          } ///////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0 signal
+          ///////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc++ signal
 
           /// Fill the histograms for reconstructed Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSc0PlusPlusSig"), ptSc, origin, channel);
@@ -847,11 +837,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaSc0PlusPlusSig"), etaSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiSc0PlusPlusSig"), phiSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSig"), deltaMass, ptSc, channel);
-          if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);
-          } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);
-          } ///////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
+          ///////////////////////////////////////////////////////////////////////////////////////////////////// Σc0,++ signal
           registry.fill(HIST("MC/reconstructed/hPtSoftPiSc0PlusPlusSig"), ptSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSoftPiSc0PlusPlusSig"), ptGenSoftPi, origin, channel);
           registry.fill(HIST("MC/reconstructed/hEtaSoftPiSc0PlusPlusSig"), etaSoftPi, origin, channel);
@@ -861,11 +847,19 @@ struct HfTaskSigmac {
           registry.fill(HIST("MC/reconstructed/hEtaLcFromSc0PlusPlusSig"), etaLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPhiLcFromSc0PlusPlusSig"), phiLc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSig"), deltaMass, ptLc, channel);
+          //////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+
           if (origin == RecoDecay::OriginType::Prompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel);
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigPrompt"), deltaMass, ptSc, channel);        // Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigPrompt"), deltaMass, ptLc, channel);  // Λc+ ← Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
-            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel);
-          } //////////////////////////////////////////////////////////////////////////////////////////////////// Λc+ ← Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassScPlusPlusSigNonPrompt"), deltaMass, ptSc, channel);        // Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromScPlusPlusSigNonPrompt"), deltaMass, ptLc, channel);  // Λc+ ← Σc++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassSc0PlusPlusSigNonPrompt"), deltaMass, ptSc, channel);       // Σc0,++ signal
+            registry.fill(HIST("MC/reconstructed/hDeltaMassLcFromSc0PlusPlusSigNonPrompt"), deltaMass, ptLc, channel); // Λc+ ← Σc0,++ signal
+          }
 
           /// THn for candidate Σc0,++ cut variation
           if (enableTHn) {
