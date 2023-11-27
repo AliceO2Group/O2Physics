@@ -40,7 +40,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackJetQa {
-  Configurable<bool> enable{"selectTrack", true, "false = disable track selection, true = enable track selection"};
+  Configurable<bool> enable{"selectTrack", true, "false = disable the isGlobalTrackWoPtEta track selection, true = enable the isGlobalTrackWoPtEta track selection"};
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
@@ -210,11 +210,8 @@ struct TrackJetQa {
     if (enable && !track.isGlobalTrackWoPtEta()) {
       return;
     }
-    if (fabs(track.eta()) > ValCutEta) {
-      return;
-    }
-    if (track.pt() < minPt || track.pt() > maxPt) {
-      return;
+    if (!customTrackCuts.IsSelected(track)) {
+        return;
     }
     histos.fill(HIST("Kine/pt"), track.pt());
     if (track.hasTRD()) {
@@ -326,7 +323,7 @@ struct TrackJetQa {
   {
     for (const auto& collision : collisions) {
       fillEventQa(collision);
-      const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIndex(), cacheTrk);
+      const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIdx(), cacheTrk);
 
       for (const auto& track : tracksInCollision) {
         fillTrackQa(track);

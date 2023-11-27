@@ -146,18 +146,10 @@ struct jetspectraDerivedMaker {
     }
   }
 
-  template <typename TrackType>
-  bool isTrackSelected(TrackType const& track) // add trackselections and corresponding histos for cross checks to derived table
-  {
-    if (!track.isGlobalTrackWoPtEta()) { // in principle we would like to check all these cuts
-      return false;
-    }
-    return true;
-  }
-
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
-
+  Preslice<TrackCandidates> trackPerColl = aod::track::collisionId;
+  SliceCache cacheTrk;
   Produces<o2::aod::JeColls> tableColl;
   Produces<o2::aod::JeTracks> tableTrack;
   unsigned int randomSeed = 0;
@@ -169,11 +161,11 @@ struct jetspectraDerivedMaker {
       return;
     }
 
-    tableColl(collision.numContrib(),
+    tableColl(collision.globalIndex(),
+              collision.numContrib(),
               collision.posX(),
               collision.posY(),
               collision.posZ(),
-              collision.globalIndex(),
               collision.sel8(),
               collision.multNTracksPV(),
               collision.multFT0A(),
@@ -183,12 +175,19 @@ struct jetspectraDerivedMaker {
               collision.bc().runNumber());
 
     tableTrack.reserve(tracks.size());
+
+    //const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cacheTrk);
+
     for (const auto& trk : tracks) {
-      if (!isTrackSelected(trk)) {
+      if (!customTrackCuts.IsSelected(trk)) {
+        return;
+      }
+      if (!(collision.globalIndex() == trk.collisionId())){
         return;
       }
 
       tableTrack(tableColl.lastIndex(),
+                 //trk.collisionId(),
                  trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
                  trk.sigma1Pt(),
                  trk.alpha(),
@@ -197,10 +196,13 @@ struct jetspectraDerivedMaker {
                  trk.tgl(),
                  trk.isPVContributor(),
                  trk.hasTRD(),
+                 trk.hasITS(),
+                 trk.hasTPC(),
                  trk.isGlobalTrack(),
                  trk.isGlobalTrackWoDCA(),
                  trk.isGlobalTrackWoPtEta(),
                  trk.flags(),
+                 trk.trackType(),
                  trk.length(),
                  trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
                  trk.tpcNClsShared(),
