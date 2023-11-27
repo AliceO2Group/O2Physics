@@ -121,6 +121,27 @@ struct strangederivedbuilder {
       histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
   }
 
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s)
+  {
+    int currentCollIdx = -1;
+    for (const auto& collision : collisions) {
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
+      bool strange = V0Table_thisColl.size() > 0;
+      // casc table sliced
+      if (strange || fillEmptyCollisions) {
+        if (currentCollIdx != collIdx) {
+          strangeColl(collision.posX(), collision.posY(), collision.posZ(),
+                      collision.centFT0M(), collision.centFT0A(),
+                      collision.centFT0C(), collision.centFV0A());
+          currentCollIdx = collIdx;
+        }
+      }
+      for (int i = 0; i < V0Table_thisColl.size(); i++)
+        v0collref(strangeColl.lastIndex());
+    }
+  }
+
   void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades)
   {
     int currentCollIdx = -1;
@@ -152,6 +173,46 @@ struct strangederivedbuilder {
       for (int i = 0; i < TraCascTable_thisColl.size(); i++)
         tracasccollref(strangeColl.lastIndex());
     }
+  }
+
+  void processTrackExtrasV0sOnly(aod::V0Datas const& V0s, TracksWithExtra const& tracksExtra)
+  {
+    std::vector<int> trackMap(tracksExtra.size(), -1); // index -1: not used
+
+    //__________________________________________________
+    // mark tracks that belong to V0s
+    for (auto const& v0 : V0s) {
+      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
+      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      trackMap[posTrack.globalIndex()] = 0;
+      trackMap[negTrack.globalIndex()] = 0;
+    }
+    //__________________________________________________
+    // Figure out the numbering of the new tracks table
+    // assume filling per order
+    int nTracks = 0;
+    for (int i = 0; i < trackMap.size(); i++) {
+      if (trackMap[i] >= 0) {
+        trackMap[i] = nTracks++;
+      }
+    }
+    //__________________________________________________
+    // populate track references
+    for (auto const& v0 : V0s) {
+      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
+      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      v0Extras(trackMap[posTrack.globalIndex()],
+               trackMap[negTrack.globalIndex()]); // joinable with V0Datas
+    }
+    //__________________________________________________
+    // circle back and populate actual DauTrackExtra table
+    for (auto const& tr : tracksExtra) {
+      if (trackMap[tr.globalIndex()] >= 0) {
+        dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
+                       tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+      }
+    }
+    // done!
   }
 
   void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, TracksWithExtra const& tracksExtra, aod::V0s const&)
@@ -276,8 +337,10 @@ struct strangederivedbuilder {
     }
   }
 
-  PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
-  PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processSimulation, "Produce simulated information", true);
 };
 
