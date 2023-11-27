@@ -220,3 +220,8 @@ o2physics_add_dpl_workflow(nuclei-in-jets
                     SOURCES nuclei_in_jets.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(helium-flow
+                    SOURCES helium_flow.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
