@@ -347,6 +347,9 @@ DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
+DECLARE_SOA_COLUMN(PxV0, pxv0, float);   //!
+DECLARE_SOA_COLUMN(PyV0, pyv0, float);   //!
+DECLARE_SOA_COLUMN(PzV0, pzv0, float);   //!
 DECLARE_SOA_COLUMN(Px, px, float);           //! cascade momentum X
 DECLARE_SOA_COLUMN(Py, py, float);           //! cascade momentum Y
 DECLARE_SOA_COLUMN(Pz, pz, float);           //! cascade momentum Z
@@ -499,6 +502,7 @@ DECLARE_SOA_TABLE(StoredKFCascDatas, "AOD", "KFCASCDATA", //!
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::PxV0, cascdata::PyV0, cascdata::PzV0,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,

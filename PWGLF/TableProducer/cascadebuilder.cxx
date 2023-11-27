@@ -224,6 +224,7 @@ struct cascadeBuilder {
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
     std::array<float, 3> cascademom;
+    std::array<float, 3> v0mom;
     float v0dcadau;
     float v0dcapostopv;
     float v0dcanegtopv;
@@ -1208,6 +1209,11 @@ struct cascadeBuilder {
     cascadecandidate.v0pos[1] = KFV0.GetY();
     cascadecandidate.v0pos[2] = KFV0.GetZ();
 
+    // mother momentumm information from KF
+    cascadecandidate.v0mom[0] = KFV0.GetPx();
+    cascadecandidate.v0mom[1] = KFV0.GetPy();
+    cascadecandidate.v0mom[2] = KFV0.GetPz();
+
     // Mother position + momentum is KF updated
     if (!kfTuneForOmega) {
       cascadecandidate.pos[0] = KFXi.GetX();
@@ -1341,6 +1347,7 @@ struct cascadeBuilder {
                  cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
                  cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
                  cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+                 cascadecandidate.v0mom[0], cascadecandidate.v0mom[1], cascadecandidate.v0mom[2],
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,

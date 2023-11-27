@@ -58,12 +58,15 @@ struct kfStrangenessStudy {
   /// Cascade data
   int isDCAfitter = 0, isKF = 0;
   float pt = -1.0f, ptKF = -1.0f;
+  float ptV0 = -1.0f, ptKFV0 = -1.0f;
   float massXi = -1.0f, massXiKF = -1.0f;
   float massOmega = -1.0f, massOmegaKF = -1.0f;
   float massLambda = -1.0f, massLambdaKF = -1.0f;
   float cascRad = -1.0f, cascRadKF = -1.0f;
   float vtxX = -1.0f, vtxY = -1.0f, vtxZ = -1.0f, vtxXKF = -1.0f, vtxYKF = -1.0f, vtxZKF = -1.0f;
   float vtxXErr = -1.0f, vtxYErr = -1.0f, vtxZErr = -1.0f, vtxXErrKF = -1.0f, vtxYErrKF = -1.0f, vtxZErrKF = -1.0f;
+  float vtxXV0 = -1.0f, vtxYV0 = -1.0f, vtxZV0 = -1.0f, vtxXKFV0 = -1.0f, vtxYKFV0 = -1.0f, vtxZKFV0 = -1.0f;
+  float vtxXErrV0 = -1.0f, vtxYErrV0 = -1.0f, vtxZErrV0 = -1.0f, vtxXErrKFV0 = -1.0f, vtxYErrKFV0 = -1.0f, vtxZErrKFV0 = -1.0f;
   float dcaXYCascToPV = -1.0f, dcaXYCascToPVKF = -1.0f;
   float dcaZCascToPV = -1.0f, dcaZCascToPVKF = -1.0f;
   float dcaCascDaughters = -1.0f, dcaCascDaughtersKF = -1.0f;
@@ -80,12 +83,18 @@ struct kfStrangenessStudy {
   /// Additional cascade MC data
   int isTrueCasc = 0;
   float ptRec = -1.0f, ptRecKF = -1.0f, ptGen = -1.0f;
+  float ptRecV0 = -1.0f, ptRecKFV0 = -1.0f, ptGenV0 = -1.0f;
   float vtxXrec = -1.0f, vtxYrec = -1.0f, vtxZrec = -1.0f, vtxXrecKF = -1.0f, vtxYrecKF = -1.0f, vtxZrecKF = -1.0f;
   float vtxXrecErr = -1.0f, vtxYrecErr = -1.0f, vtxZrecErr = -1.0f, vtxXrecErrKF = -1.0f, vtxYrecErrKF = -1.0f, vtxZrecErrKF = -1.0f;
+  float vtxXrecV0 = -1.0f, vtxYrecV0 = -1.0f, vtxZrecV0 = -1.0f, vtxXrecKFV0 = -1.0f, vtxYrecKFV0 = -1.0f, vtxZrecKFV0 = -1.0f;
+  float vtxXrecErrV0 = -1.0f, vtxYrecErrV0 = -1.0f, vtxZrecErrV0 = -1.0f, vtxXrecErrKFV0 = -1.0f, vtxYrecErrKFV0 = -1.0f, vtxZrecErrKFV0 = -1.0f;
   float vtxXgen = -1.0f, vtxYgen = -1.0f, vtxZgen = -1.0f;
+  float vtxXgenV0 = -1.0f, vtxYgenV0 = -1.0f, vtxZgenV0 = -1.0f;
   float vtxXgen_firstDau = -1., vtxYgen_firstDau = -1., vtxZgen_firstDau = -1;
   float vtxXgen_lastDau = -1., vtxYgen_lastDau = -1., vtxZgen_lastDau = -1;
+  float vtxXgen_firstV0Dau = -1., vtxYgen_firstV0Dau = -1., vtxZgen_firstV0Dau = -1;
   float prodVtxXgen  = -1.0f, prodVtxYgen  = -1.0f, prodVtxZgen  = -1.0f;
+  float prodVtxXgenV0  = -1.0f, prodVtxYgenV0  = -1.0f, prodVtxZgenV0  = -1.0f;
   int source = 0;
 
   void init(InitContext const&)
@@ -147,6 +156,13 @@ struct kfStrangenessStudy {
         vtxXrecErr = sqrt(cascdata.positionCovMat()[0]);
         vtxYrecErr = sqrt(cascdata.positionCovMat()[2]);
         vtxZrecErr = sqrt(cascdata.positionCovMat()[5]);
+        ptRecV0 = sqrt((cascdata.pxpos()+cascdata.pxneg())*(cascdata.pxpos()+cascdata.pxneg()) + (cascdata.pypos()+cascdata.pyneg())*(cascdata.pypos()+cascdata.pyneg())); // taken from daughters from lambdakzerobuiler
+        vtxXrecV0 = cascdata.xlambda();
+        vtxYrecV0 = cascdata.ylambda();
+        vtxZrecV0 = cascdata.zlambda();
+        // vtxXrecErrV0 = 
+        // vtxYrecErrV0 = 
+        // vtxZrecErrV0 = 
       } else {
         pt = cascdata.pt();
         vtxX = cascdata.x();
@@ -155,6 +171,13 @@ struct kfStrangenessStudy {
         vtxXErr = sqrt(cascdata.positionCovMat()[0]);
         vtxYErr = sqrt(cascdata.positionCovMat()[2]);
         vtxZErr = sqrt(cascdata.positionCovMat()[5]);
+        ptV0 = sqrt((cascdata.pxpos()+cascdata.pxneg())*(cascdata.pxpos()+cascdata.pxneg()) + (cascdata.pypos()+cascdata.pyneg())*(cascdata.pypos()+cascdata.pyneg())); // taken from daughters from lambdakzerobuiler
+        vtxXV0 = cascdata.xlambda();
+        vtxYV0 = cascdata.ylambda();
+        vtxZV0 = cascdata.zlambda();
+        // vtxXErrV0 = 
+        // vtxYErrV0 = 
+        // vtxZErrV0 = 
       }
       massLambda = cascdata.mLambda();
       massXi = cascdata.mXi();
@@ -197,6 +220,13 @@ struct kfStrangenessStudy {
         vtxXrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
         vtxYrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
         vtxZrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+        ptRecKFV0 = sqrt(cascdatakf.pxv0()*cascdatakf.pxv0() + cascdatakf.pyv0()*cascdatakf.pyv0()); // taken from KFV0
+        vtxXrecKFV0 = cascdatakf.xlambda();
+        vtxYrecKFV0 = cascdatakf.ylambda();
+        vtxZrecKFV0 = cascdatakf.zlambda();
+        // vtxXrecErrKFV0 = 
+        // vtxYrecErrKFV0 = 
+        // vtxZrecErrKFV0 = 
       } else {
         ptKF = cascdatakf.pt();
         vtxXKF = cascdatakf.x();
@@ -205,6 +235,13 @@ struct kfStrangenessStudy {
         vtxXErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
         vtxYErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
         vtxZErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+        ptKFV0 = sqrt(cascdatakf.pxv0()*cascdatakf.pxv0() + cascdatakf.pyv0()*cascdatakf.pyv0()); // taken from KFV0
+        vtxXKFV0 = cascdatakf.xlambda();
+        vtxYKFV0 = cascdatakf.ylambda();
+        vtxZKFV0 = cascdatakf.zlambda();
+        // vtxXErrKFV0 = 
+        // vtxYErrKFV0 = 
+        // vtxZErrKFV0 = 
       }
       massLambdaKF = cascdatakf.mLambda();
       massXiKF = cascdatakf.mXi();
@@ -218,12 +255,6 @@ struct kfStrangenessStudy {
       dcaBachToPVKF = cascdatakf.dcabachtopv();
       cascPointingAngleKF = TMath::ACos(cascdatakf.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       cascRadKF = cascdatakf.cascradius();
-      vtxXKF = cascdatakf.x();
-      vtxYKF = cascdatakf.y();
-      vtxZKF = cascdatakf.z();
-      vtxXErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
-      vtxYErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
-      vtxZErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
       V0RadKF = cascdatakf.v0radius();
       cascChi2geoKF = cascdatakf.kfCascadeChi2();
       v0PointingAngleKF = TMath::ACos(cascdatakf.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
@@ -242,12 +273,18 @@ struct kfStrangenessStudy {
   }
 
   template <typename TCollision, typename TCascData, typename TMCParticle>
-  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TMCParticle const& mcparticles) {
+  void getCascMCdata(TCollision const& collision, TCascData const& cascadata, TMCParticle const& mcparticles) {
     if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
       auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
+      auto v0 = cascdata.v0Id();
+      auto MCv0 = v0.template mcParticle_as<TMCParticle>();
+      if (!(abs(MCv0.pdgCode()) == 3122)) {
+        LOG(info) << "V0 is no Lambda";
+      }
 
       if (MCcascade.has_daughters()) {
         LOG(info) << "MC cascade has daughters, getting MC info.";
+        // cascade
         ptGen = MCcascade.pt();
         prodVtxXgen = MCcascade.vx();
         prodVtxYgen = MCcascade.vy();
@@ -258,6 +295,14 @@ struct kfStrangenessStudy {
         vtxXgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vx();
         vtxYgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vy();
         vtxZgen_lastDau = (MCcascade.template daughters_as<TMCParticle>().begin() + 1).vz();
+        // V0
+        ptGenV0 = MCv0.pt();
+        prodVtxXgenV0 = MCv0.vx();
+        prodVtxYgenV0 = MCv0.vy();
+        prodVtxZgenV0 = MCv0.vz();
+        vtxXgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vx();
+        vtxYgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vy();
+        vtxZgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vz();
 
         if (abs(MCcascade.pdgCode()) == 3312) { // Xi
           isTrueCasc = 1;
