@@ -86,9 +86,9 @@ enum class InputFeaturesLcToK0sP : uint8_t {
   dcaPosToPV,
   ptV0Neg,
   dcaNegToPV,
-  nSigmaTPCPr0,
-  nSigmaTOFPr0,
-  nSigmaTpcTOFPr0,
+  nSigmaTpcPr0,
+  nSigmaTofPr0,
+  nSigmaTpcTofPr0,
   cpa,
   cpaXY,
   ct
