@@ -18,6 +18,7 @@
 #include <TPDGCode.h>
 
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -35,7 +36,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGHF/Core/PDG.h"
 #include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
@@ -236,12 +236,12 @@ struct HfTreeCreatorOmegacSt {
     for (const auto& mcParticle : mcParticles) {
       if ((mcParticle.pdgCode() == kOmegaMinus) &&
           mcParticle.has_mothers() &&
-          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == analysis::pdg::Code::kOmegaC0)) {
+          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == constants::physics::Pdg::kOmegaC0)) {
         const auto& mcColl = mcParticle.mcCollision();
         std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
         std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
       }
     }
   }
@@ -323,7 +323,7 @@ struct HfTreeCreatorOmegacSt {
       df2.createParentTrackParCov().getPxPyPzGlo(pVec);
       const auto cpaOmega = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pVec);
 
-      std::array<double, 2> masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassKPlus};
+      std::array<double, 2> masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
       const auto massOmega = RecoDecay::m(momentaOmegaDaughters, masses);
 
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
@@ -335,13 +335,13 @@ struct HfTreeCreatorOmegacSt {
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       registry.fill(HIST("hMassVsPt"), massOmega, trackCasc.pt());
 
-      if ((std::abs(massOmega - o2::analysis::pdg::MassOmegaMinus) < massWindowTrackedOmega)) {
+      if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega)) {
         LOGF(debug, "found candidate in mass range");
         if ((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) &&
             (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
             (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
           LOGF(debug, ".. species compatible with Omega");
-          std::array<double, 2> masses{o2::analysis::pdg::MassOmegaMinus, o2::analysis::pdg::MassPiPlus};
+          std::array<double, 2> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
           std::array<std::array<float, 3>, 2> momenta;
 
           auto trackParCovPr = getTrackParCov(v0TrackPr);
@@ -389,9 +389,9 @@ struct HfTreeCreatorOmegacSt {
                 df2.createParentTrackParCov().getPxPyPzGlo(pVec);
                 const auto cpaOmegaC = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pVec);
 
-                if (std::abs(massOmegaC - o2::analysis::pdg::MassOmegaC0) < massWindowOmegaC) {
+                if (std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                  registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                  registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   outputTable(massOmegaC,
                               massOmega,
                               track.tpcNSigmaPi(),
@@ -498,7 +498,7 @@ struct HfTreeCreatorOmegacSt {
           LOG(debug) << "cascade with PDG code: " << pdgCode;
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
-            std::array<double, 2> masses{o2::analysis::pdg::MassOmegaMinus, o2::analysis::pdg::MassPiPlus};
+            std::array<double, 2> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, 2> momenta;
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
@@ -529,15 +529,15 @@ struct HfTreeCreatorOmegacSt {
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
-                    if (std::abs(cand.pdgCode()) == analysis::pdg::Code::kOmegaC0 && mcpart.has_mothers()) {
+                    if (std::abs(cand.pdgCode()) == constants::physics::Pdg::kOmegaC0 && mcpart.has_mothers()) {
                       if (mcpart.mothersIds()[0] == cand.globalIndex()) {
                         registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
 
                         std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
                         const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                         registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::analysis::pdg::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
 
                         registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
                       }

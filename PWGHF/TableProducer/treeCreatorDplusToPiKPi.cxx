@@ -16,6 +16,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -447,7 +448,7 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDPlus),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
