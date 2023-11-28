@@ -463,7 +463,7 @@ struct HfCandidateCreatorToXiPi {
 
       for (const auto& cand : groupedCandidates) {
 
-        if(!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)){
+        if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
           continue;
         }
 
