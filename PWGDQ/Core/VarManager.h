@@ -790,7 +790,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
                            muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
-    o2::dataformats::GlobalFwdTrack track{fwdtrack};
+    o2::dataformats::GlobalFwdTrack track(fwdtrack);
     auto mchTrack = mMatching.FwdtoMCH(track);
     o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
     auto propmuon = mMatching.MCHtoFwd(mchTrack);
