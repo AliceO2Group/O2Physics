@@ -912,7 +912,6 @@ struct hypertriton3bodyFinder {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
-    registry.fill(HIST("hEventCounter"), 1.5);
 
     DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
   }
@@ -941,12 +940,11 @@ struct hypertriton3bodyFinder {
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", true);
 
-  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
-    registry.fill(HIST("hEventCounter"), 1.5);
 
     DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
   }
@@ -1028,7 +1026,7 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());
@@ -1044,7 +1042,7 @@ struct hypertriton3bodyLabelBuilder {
       double MClifetime = -1;
       bool is3bodyDecay = false;
       int lGlobalIndex = -1;
-
+      
       auto lTrack0 = vtx3body.track0_as<LabeledTracks>();
       auto lTrack1 = vtx3body.track1_as<LabeledTracks>();
       auto lTrack2 = vtx3body.track2_as<LabeledTracks>();
