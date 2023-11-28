@@ -88,10 +88,9 @@ struct HfCandidateCreatorToXiPi {
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
+  using MySkimIdx = HfCascLf2Prongs;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  Filter filterSelectIndexes = (aod::hf_track_index::hfflag == 1);
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
 
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
@@ -463,6 +462,10 @@ struct HfCandidateCreatorToXiPi {
       auto groupedCandidates = candidates.sliceBy(candidatesPerCollision, thisCollId);
 
       for (const auto& cand : groupedCandidates) {
+
+        if(!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)){
+          continue;
+        }
 
         auto casc = cand.cascade_as<MyCascTable>();
         auto trackPion = cand.prong0_as<MyTracks>();           // pi <-- charm baryon
