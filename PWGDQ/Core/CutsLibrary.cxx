@@ -2341,6 +2341,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventDoubleGap")) {
+    cut->AddCut(VarManager::kIsDoubleGap, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSingleGap")) {
+    cut->AddCut(VarManager::kIsSingleGap, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSingleGapA")) {
+    cut->AddCut(VarManager::kIsSingleGapA, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSingleGapC")) {
+    cut->AddCut(VarManager::kIsSingleGapC, 0.5, 1.5);
+    return cut;
+  }
+
   // Event cuts based on centrality
   if (!nameStr.compare("eventStandardNoINT7Cent090")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
