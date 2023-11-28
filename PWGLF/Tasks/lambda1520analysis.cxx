@@ -456,23 +456,23 @@ struct lambda1520analysis {
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
           histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
-          histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         } else {
           histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
-          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
 
@@ -497,29 +497,29 @@ struct lambda1520analysis {
           if (trk1.motherPDG() > 0) {
             histos.fill(HIST("Result/MC/lambda1520Reco"), lResonance.Pt());
             histos.fill(HIST("Result/MC/hlambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("Result/MC/antilambda1520Reco"), lResonance.Pt());
             histos.fill(HIST("Result/MC/hantilambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
       } else {
         if constexpr (!IsMix) {
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
           // Like sign pair ++
           if (trk1.sign() > 0) {
             histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else { // Like sign pair --
             histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
       }
@@ -568,7 +568,7 @@ struct lambda1520analysis {
   PROCESS_SWITCH(lambda1520analysis, processMCTrue, "Process Event for MC only", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
