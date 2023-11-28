@@ -213,7 +213,7 @@ struct DQFilterPbPbTask {
       if (isSideAClean && isSideCClean) {
         FITDecision |= (uint64_t(1) << VarManager::kDoubleGap);
       }
-    } 
+    }
     if (eventTypes & (uint32_t(1) << 1)) {
       if (isSideAClean && !isSideCClean) {
         FITDecision |= (uint64_t(1) << VarManager::kSingleGapA);
@@ -300,7 +300,7 @@ struct DQFilterPbPbTask {
     TString eventTypesString = fConfigEventTypes.value;
     for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
       if (eventTypesString.Contains(eventTypeOptions[i])) {
-        eventTypeMap |= (uint32_t(1) << i); 
+        eventTypeMap |= (uint32_t(1) << i);
         LOGF(info, "filterPbPb will select '%s' events", eventTypeOptions[i]);
       }
     }
