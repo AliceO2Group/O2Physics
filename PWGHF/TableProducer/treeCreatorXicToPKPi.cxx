@@ -11,10 +11,11 @@
 
 /// \file treeCreatorXicToPKPi.cxx
 /// \brief Writer of XiC -> pKpi candidates in the form of flat tables to be stored in TTrees.
-/// inspired from file treeCreatorLcToPKPi.cxx
+/// inspired from file treeCreatorLcToPKPi.cxx and to treeCreatorDplusToPiKPi.cxx
+
 
 /// \author Himanshu Sharma <himanshu.sharma@cern.ch>, INFN Padova
-
+/// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN Bari
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -82,6 +83,48 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
+
+DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
+                  hf_cand::Chi2PCA,
+                  full::DecayLength,
+                  full::DecayLengthXY,
+                  full::DecayLengthNormalised,
+                  full::DecayLengthXYNormalised,
+                  full::PtProng0,
+                  full::PtProng1,
+                  full::PtProng2,
+                  hf_cand::ImpactParameter0,
+                  hf_cand::ImpactParameter1,
+                  hf_cand::ImpactParameter2,
+                  full::NSigTpcPi0,
+                  full::NSigTpcKa0,
+                  full::NSigTpcPr0,
+                  full::NSigTofPi0,
+                  full::NSigTofKa0,
+                  full::NSigTofPr0,
+                  full::NSigTpcPi1,
+                  full::NSigTpcKa1,
+                  full::NSigTpcPr1,
+                  full::NSigTofPi1,
+                  full::NSigTofKa1,
+                  full::NSigTofPr1,
+                  full::NSigTpcPi2,
+                  full::NSigTpcKa2,
+                  full::NSigTpcPr2,
+                  full::NSigTofPi2,
+                  full::NSigTofKa2,
+                  full::NSigTofPr2,
+                  full::CandidateSelFlag,
+                  full::M,
+                  full::Pt,
+                  full::Cpa,
+                  full::CpaXY,
+                  full::Eta,
+                  full::Phi,
+                  full::FlagMc,
+                  full::OriginMcRec,
+                  full::IsCandidateSwapped)
+
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CollisionId,
@@ -185,8 +228,11 @@ struct HfTreeCreatorXicToPKPi {
   Produces<o2::aod::HfCandXicFulls> rowCandidateFull;
   Produces<o2::aod::HfCandXicFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXicLites> rowCandidateLite;
 
-  Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+  Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false,        "Switch to fill lite table with candidate properties"};
+  //parameters for production of training samples
+  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   HfHelper hfHelper;
 
@@ -217,7 +263,11 @@ struct HfTreeCreatorXicToPKPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
+     if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else{
+      rowCandidateFull.reserve(candidates.size());
+    }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
@@ -229,7 +279,49 @@ struct HfTreeCreatorXicToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if(FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor){
+        if(fillCandidateLiteTable) {
+          rowCandidateLite(
+            candidate.chi2PCA(),
+            candidate.decayLength(),
+            candidate.decayLengthXY(),
+            candidate.decayLengthNormalised(),
+            candidate.decayLengthXYNormalised(),
+            candidate.ptProng0(),
+            candidate.ptProng1(),
+            candidate.ptProng2(),
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.impactParameter2(),
+            trackPos1.tpcNSigmaPi(),
+            trackPos1.tpcNSigmaKa(),
+            trackPos1.tpcNSigmaPr(),
+            trackPos1.tofNSigmaPi(),
+            trackPos1.tofNSigmaKa(),
+            trackPos1.tofNSigmaPr(),
+            trackNeg.tpcNSigmaPi(),
+            trackNeg.tpcNSigmaKa(),
+            trackNeg.tpcNSigmaPr(),
+            trackNeg.tofNSigmaPi(),
+            trackNeg.tofNSigmaKa(),
+            trackNeg.tofNSigmaPr(),
+            trackPos2.tpcNSigmaPi(),
+            trackPos2.tpcNSigmaKa(),
+            trackPos2.tpcNSigmaPr(),
+            trackPos2.tofNSigmaPi(),
+            trackPos2.tofNSigmaKa(),
+            trackPos2.tofNSigmaPr(),
+            1 << CandFlag,
+            FunctionInvMass,
+            candidate.pt(),
+            candidate.cpa(),
+            candidate.cpaXY(),
+            candidate.eta(),
+            candidate.phi(),
+            candidate.flagMcMatchRec(),
+            candidate.originMcRec(),
+            candidate.isCandidateSwapped());
+          }else{
           rowCandidateFull(
             candidate.collisionId(),
             candidate.posX(),
@@ -304,6 +396,7 @@ struct HfTreeCreatorXicToPKPi {
             candidate.isCandidateSwapped(),
             candidate.globalIndex());
         }
+      }
       };
 
       fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
@@ -349,7 +442,11 @@ struct HfTreeCreatorXicToPKPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else{
+      rowCandidateFull.reserve(candidates.size());
+    }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
@@ -362,6 +459,48 @@ struct HfTreeCreatorXicToPKPi {
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+          if(fillCandidateLiteTable){
+           rowCandidateLite(
+            candidate.chi2PCA(),
+            candidate.decayLength(),
+            candidate.decayLengthXY(),
+            candidate.decayLengthNormalised(),
+            candidate.decayLengthXYNormalised(),
+            candidate.ptProng0(),
+            candidate.ptProng1(),
+            candidate.ptProng2(),
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.impactParameter2(),
+            trackPos1.tpcNSigmaPi(),
+            trackPos1.tpcNSigmaKa(),
+            trackPos1.tpcNSigmaPr(),
+            trackPos1.tofNSigmaPi(),
+            trackPos1.tofNSigmaKa(),
+            trackPos1.tofNSigmaPr(),
+            trackNeg.tpcNSigmaPi(),
+            trackNeg.tpcNSigmaKa(),
+            trackNeg.tpcNSigmaPr(),
+            trackNeg.tofNSigmaPi(),
+            trackNeg.tofNSigmaKa(),
+            trackNeg.tofNSigmaPr(),
+            trackPos2.tpcNSigmaPi(),
+            trackPos2.tpcNSigmaKa(),
+            trackPos2.tpcNSigmaPr(),
+            trackPos2.tofNSigmaPi(),
+            trackPos2.tofNSigmaKa(),
+            trackPos2.tofNSigmaPr(),
+            1 << CandFlag,
+            FunctionInvMass,
+            candidate.pt(),
+            candidate.cpa(),
+            candidate.cpaXY(),
+            candidate.eta(),
+            candidate.phi(),
+            0.,
+            0.,
+            0.);
+            }else{
           rowCandidateFull(
             candidate.collisionId(),
             candidate.posX(),
@@ -436,8 +575,8 @@ struct HfTreeCreatorXicToPKPi {
             0.,
             candidate.globalIndex());
         }
-      };
-
+      }
+     };
       fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
       fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }
