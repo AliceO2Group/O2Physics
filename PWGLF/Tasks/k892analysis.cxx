@@ -219,6 +219,7 @@ struct k892analysis {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    auto multiplicity = collision.cent();
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -303,14 +304,14 @@ struct k892analysis {
         if constexpr (!IsMix) {
           if (trk1.sign() > 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDS"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDSAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         } else {
           histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
         }
 
         // MC
@@ -332,11 +333,11 @@ struct k892analysis {
           if (trk1.motherPDG() > 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt());
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3Reck892invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3Reck892invmass"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("k892RecAnti"), lResonance.Pt());
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3Reck892invmassAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3Reck892invmassAnti"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         }
       } else {
@@ -344,10 +345,10 @@ struct k892analysis {
           continue;
         if (trk1.sign() > 0) {
           histos.fill(HIST("k892invmassLS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLS"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M());
         } else {
           histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLSAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
         }
       }
     }
