@@ -432,11 +432,11 @@ struct HfCandidateCreatorToXiPi {
                           MySkimIdx const& candidates)
   {
 
-    double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
-    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
-    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
-    double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
-    double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
+    double massPionFromPDG = MassPiPlus;    // pdg code 211
+    double massLambdaFromPDG = MassLambda0; // pdg code 3122
+    double massXiFromPDG = MassXiMinus;     // pdg code 3312
+    double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
+    double massXicFromPDG = MassXiCZero;    // pdg code 4132
 
     // 2-prong vertex fitter to build the omegac/xic vertex
     o2::vertexing::DCAFitterN<2> df;
