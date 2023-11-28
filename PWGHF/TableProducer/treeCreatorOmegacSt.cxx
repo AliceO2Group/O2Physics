@@ -59,11 +59,11 @@ DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);
 DECLARE_SOA_COLUMN(PxOmega, pxOmega, float);
 DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
 DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(ChargeOmega, chargeOmega, bool);
+DECLARE_SOA_COLUMN(IsPositiveOmega, isPositiveOmega, bool);
 DECLARE_SOA_COLUMN(PxPion, pxPion, float);
 DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
-DECLARE_SOA_COLUMN(ChargePion, chargePion, bool);
+DECLARE_SOA_COLUMN(IsPositivePion, isPositivePion, bool);
 DECLARE_SOA_COLUMN(CpaOmegac, cpaOmegac, float);
 DECLARE_SOA_COLUMN(CpaOmega, cpaOmega, float);
 DECLARE_SOA_COLUMN(DcaXYOmega, dcaXYOmega, float);
@@ -89,11 +89,11 @@ namespace st_omegac_gen
 DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
 DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
 DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
-DECLARE_SOA_COLUMN(ChargeOmegac, chargeOmegac, bool);
+DECLARE_SOA_COLUMN(IsPositiveOmegac, isPositiveOmegac, bool);
 DECLARE_SOA_COLUMN(PxOmega, pxOmega, float);
 DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
 DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(ChargeOmega, chargeOmega, bool);
+DECLARE_SOA_COLUMN(IsPositiveOmega, isPositiveOmega, bool);
 DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
@@ -114,11 +114,11 @@ DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
                   st_omegac::PxOmega,
                   st_omegac::PyOmega,
                   st_omegac::PzOmega,
-                  st_omegac::ChargeOmega,
+                  st_omegac::IsPositiveOmega,
                   st_omegac::PxPion,
                   st_omegac::PyPion,
                   st_omegac::PzPion,
-                  st_omegac::ChargePion,
+                  st_omegac::IsPositivePion,
                   st_omegac::CpaOmegac,
                   st_omegac::CpaOmega,
                   st_omegac::DcaXYOmega,
@@ -142,11 +142,11 @@ DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
                   st_omegac_gen::PxOmegac,
                   st_omegac_gen::PyOmegac,
                   st_omegac_gen::PzOmegac,
-                  st_omegac_gen::ChargeOmegac,
+                  st_omegac_gen::IsPositiveOmegac,
                   st_omegac_gen::PxOmega,
                   st_omegac_gen::PyOmega,
                   st_omegac_gen::PzOmega,
-                  st_omegac_gen::ChargeOmega,
+                  st_omegac_gen::IsPositiveOmega,
                   st_omegac_gen::DecayLengthOmegac,
                   st_omegac_gen::DecayLengthXYOmegac,
                   st_omegac_gen::DecayLengthOmega,
@@ -407,11 +407,11 @@ struct HfTreeCreatorOmegacSt {
                               momenta[0][0], // omega momentum
                               momenta[0][1],
                               momenta[0][2],
-                              trackCasc.sign(),
+                              trackCasc.sign() > 0 ? true : false,
                               momenta[1][0], // pion momentum
                               momenta[1][1],
                               momenta[1][2],
-                              track.sign(),
+                              track.sign() > 0 ? true : false,
                               cpaOmegaC,
                               cpaOmega,
                               impactParameterTrk.getY(),
