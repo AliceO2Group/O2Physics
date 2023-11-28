@@ -17,6 +17,7 @@
 
 #include <TPDGCode.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -30,6 +31,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour cascade decay candidates
@@ -72,10 +74,10 @@ struct HfCandidateCreatorCascade {
 
   void init(InitContext const&)
   {
-    massP = o2::analysis::pdg::MassProton;
-    massK0s = o2::analysis::pdg::MassK0Short;
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massLc = o2::analysis::pdg::MassLambdaCPlus;
+    massP = MassProton;
+    massK0s = MassK0Short;
+    massPi = MassPiPlus;
+    massLc = MassLambdaCPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -101,7 +103,7 @@ struct HfCandidateCreatorCascade {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // loop over pairs of track indeces
+    // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
 
       const auto& bach = casc.prong0_as<aod::TracksWCov>();
@@ -252,7 +254,7 @@ struct HfCandidateCreatorCascadeMc {
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (sign != 0) { // we have already positively checked the K0s
         // then we check the Lc
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
       }
 
       // Check whether the particle is non-prompt (from a b quark).
@@ -269,9 +271,9 @@ struct HfCandidateCreatorCascadeMc {
     for (const auto& particle : mcParticles) {
       origin = 0;
       // checking if I have a Lc --> K0S + p
-      RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
+      RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
       if (sign == 0) { // now check for anti-Lc
-        RecoDecay::isMatchedMCGen(mcParticles, particle, -pdg::Code::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
+        RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
         sign = -sign;
       }
       if (sign != 0) {

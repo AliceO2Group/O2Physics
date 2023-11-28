@@ -14,8 +14,11 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#include "PWGJE/TableProducer/jetfinder.h"
+#include "CommonConstants/PhysicsConstants.h"
+
 #include "Common/Core/RecoDecay.h"
+
+#include "PWGJE/TableProducer/jetfinder.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -130,15 +133,15 @@ struct JetFinderHFTask {
     jetFinder.ghostRepeatN = ghostRepeat;
 
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesD0Data>) { // Note : need to be careful if configurable workflow options are added later
-      candMass = pdg::MassD0;
+      candMass = o2::constants::physics::MassD0;
       candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::D0ToPiK);
     }
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesBplusData>) {
-      candMass = pdg::MassBPlus;
+      candMass = o2::constants::physics::MassBPlus;
       candDecay = static_cast<int>(aod::hf_cand_bplus::DecayType::BplusToD0Pi);
     }
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesLcData>) {
-      candMass = pdg::MassLambdaCPlus;
+      candMass = o2::constants::physics::MassLambdaCPlus;
       candDecay = static_cast<int>(aod::hf_cand_3prong::DecayType::LcToPKPi);
     }
   }

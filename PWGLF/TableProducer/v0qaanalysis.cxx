@@ -21,7 +21,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -120,9 +120,9 @@ struct LfV0qaanalysis {
     for (auto& v0 : V0s) { // loop over V0s
 
       // c tau
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
       // ITS clusters
       int posITSNhits = 0, negITSNhits = 0;
@@ -236,9 +236,9 @@ struct LfV0qaanalysis {
           evFlag = 1;
         }
 
-        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
         if (v0.v0radius() > v0radius &&
             v0.v0cosPA() > v0cospa &&
