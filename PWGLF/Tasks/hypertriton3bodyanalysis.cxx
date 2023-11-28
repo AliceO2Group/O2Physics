@@ -227,7 +227,7 @@ struct hypertriton3bodyAnalysis {
 
     TString CandCounterbinLabel[11] = {"Total", "VtxCosPA", "TrackEta", "MomRapidity", "Lifetime", "DcaV0Dau", "d TOFPID", "TPCPID&Mass", "TPCNcls", "DauPt", "PionDcatoPV"};
     for (int i{0}; i < kNVtxSteps; i++) {
-      registry.get<TH1>(HIST("hSelectedCandidatesCounter"))->GetXaxis()->SetBinLabel(i+1, CandCounterbinLabel[i]);
+      registry.get<TH1>(HIST("hSelectedCandidatesCounter"))->GetXaxis()->SetBinLabel(i + 1, CandCounterbinLabel[i]);
     }
   }
 
