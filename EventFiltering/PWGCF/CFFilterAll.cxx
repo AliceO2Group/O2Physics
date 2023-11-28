@@ -988,7 +988,8 @@ struct CFFilter {
       SpeciesForTracking = o2::track::PID::Deuteron;
     } else {
       LOG(warn) << "Unknown PID for tracking encountered";
-    };
+    }
+
     if (ConfPIDForTracking->get(partSpecies, "Switch") > 0 && track.tpcInnerParam() < ConfPIDForTracking->get(partSpecies, "Momemtum Threshold")) {
       if (track.pidForTracking() != SpeciesForTracking) {
         return false;
