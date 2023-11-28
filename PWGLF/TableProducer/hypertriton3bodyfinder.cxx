@@ -163,6 +163,7 @@ struct hypertriton3bodyFinder {
   // Configurables
   Configurable<bool> UseCFFilter{"UseCFFilter", true, "Reject event without CF LD trigger"};
   Configurable<bool> RejectBkgInMC{"RejectBkgInMC", false, "Reject fake 3-body pairs in MC check"};
+  Configurable<bool> KeepSignalInMC{"KeepSignalInMC", false, "Reject fake 3-body pairs in MC check"};
 
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -946,6 +947,7 @@ struct hypertriton3bodyFinder {
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
 
+    CheckGoodTracks<FullTracksExtMCIU>(goodtracks, mcparticles);
     DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC", false);
