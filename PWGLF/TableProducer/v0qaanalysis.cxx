@@ -22,6 +22,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,6 +102,34 @@ struct LfV0qaanalysis {
     return true;
   }
 
+  // Event selection
+  template <typename TMcParticles>
+  bool isTrueINELgt0(TMcParticles particles)
+  {
+    int nPart = 0;
+    for (const auto& particle : particles) {
+      if (particle.isPhysicalPrimary() == 0)
+        continue; // consider only primaries
+
+      const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (TMath::Abs(pdgInfo->Charge()) < 0.001) {
+        continue; // consider only charged particles
+      }
+
+      if (particle.eta() < -1.0 || particle.eta() > 1.0)
+        continue; // consider only particles in |eta| < 1
+
+      nPart++;
+    }
+    if (nPart > 0)
+      return true;
+    else
+      return false;
+  }
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
@@ -173,6 +202,8 @@ struct LfV0qaanalysis {
 
   SliceCache cache1;
   SliceCache cache2;
+
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
                  aod::McCollisions const& mcCollisions,
@@ -295,13 +326,12 @@ struct LfV0qaanalysis {
 
       const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache2);
 
+      if (!isTrueINELgt0(particlesInMCCollision))
+        continue;
+
       for (auto& mcParticle : particlesInMCCollision) {
 
-        if (!mcParticle.isPhysicalPrimary()) {
-          continue;
-        }
-
-        if (std::abs(mcParticle.pdgCode()) == 211) {
+        if (std::abs(mcParticle.pdgCode()) == 211) { // simulated sel8
           if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
             isFT0C = true;
           }
@@ -322,9 +352,9 @@ struct LfV0qaanalysis {
           registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt()); // AntiLambda
       }
 
-      if (isFT0A && isFT0C) {
-        registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
-      }
+      // if (isFT0A && isFT0C) {
+      registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
+      //}
     }
   }
   PROCESS_SWITCH(LfV0qaanalysis, processMC, "Process MC", true);
