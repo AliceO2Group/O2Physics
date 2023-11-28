@@ -40,7 +40,7 @@ struct lambdaAnalysis {
 
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histogram"};
-  Configurable<int> nBinsInvM{"nBinsInvM", 400, "N bins in InvMass histogram"};
+  Configurable<int> nBinsInvM{"nBinsInvM", 120, "N bins in InvMass histogram"};
   Configurable<int> nBinsSp{"nBinsSp", 100, "N bins in spherocity histogram"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
@@ -58,15 +58,19 @@ struct lambdaAnalysis {
   // PID Selections
   Configurable<bool> cUseOnlyTOFTrackPr{"cUseOnlyTOFTrackPr", false, "Use only TOF track for PID selection"}; // Use only TOF track for Proton PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
+  Configurable<bool> cUseTpcAndTof{"cUseTpcAndTof", false, "Use TPC and TOF PID selection"};                  // TPC And TOF tracks
   // Proton
-  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};               // TPC
-  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};               // TOF
-  Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", -999, "Combined nSigma cut for Proton"}; // Combined
+  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};              // TPC
+  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};              // TOF
+  Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", 3.0, "Combined nSigma cut for Proton"}; // Combined
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.5, 0.7, 0.8}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {5., 3.5, 2.5}, "TPC nsigma cuts protons"};
   // Kaon
-  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};               // TPC
-  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};               // TOF
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
-
+  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0., 0.25, 0.3, 0.45}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {6, 3.5, 2.5}, "TPC nsigma cuts kaons"};
   // Event Mixing.
   Configurable<bool> doSphMix{"doSphMix", true, "Include Sph Bins to be mixed"};
   Configurable<int> nMix{"nMix", 10, "Number of Events to be mixed"};
@@ -89,9 +93,9 @@ struct lambdaAnalysis {
     const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
     const AxisSpec axisDCAxy(240, -0.12, 0.12, {"DCA_{xy} (cm)"});
     const AxisSpec axisTPCNCls(200, 0, 200, {"TPCNCls"});
-    const AxisSpec axisTPCNsigma(140, -10, 10, {"n#sigma^{TPC}"});
-    const AxisSpec axisTOFNsigma(140, -10, 10, {"n#sigma^{TOF}"});
-    const AxisSpec axisInvM(nBinsInvM, 1.4, 3.4, {"M_{inv} (GeV/c^{2})"});
+    const AxisSpec axisTPCNsigma(120, -6, 6, {"n#sigma^{TPC}"});
+    const AxisSpec axisTOFNsigma(120, -6, 6, {"n#sigma^{TOF}"});
+    const AxisSpec axisInvM(nBinsInvM, 1.44, 2.04, {"M_{inv} (GeV/c^{2})"});
 
     // Create Histograms.
     // Event
@@ -182,8 +186,17 @@ struct lambdaAnalysis {
   bool selectionPIDProton(const T& candidate)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-      tpcPIDPassed = true;
+    auto tpcPIDpt = static_cast<std::vector<float>>(protonTPCPIDpt);
+    auto tpcPIDcut = static_cast<std::vector<float>>(protonTPCPIDcut);
+    int nitr = static_cast<int>(tpcPIDpt.size());
+
+    for (int i = 0; i < nitr - 1; ++i) {
+      if (candidate.pt() >= tpcPIDpt[i] && candidate.pt() < tpcPIDpt[i + 1] && std::abs(candidate.tpcNSigmaPr()) < tpcPIDcut[i]) {
+        tpcPIDPassed = true;
+      }
+      if (candidate.pt() >= tpcPIDpt[nitr - 1] && std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
+        tpcPIDPassed = true;
+      }
     }
     if (candidate.hasTOF()) {
       if (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton) {
@@ -194,6 +207,9 @@ struct lambdaAnalysis {
       }
     } else {
       tofPIDPassed = true;
+      if (cUseTpcAndTof && candidate.pt() >= tpcPIDpt[nitr - 1]) {
+        tpcPIDPassed = false;
+      }
     }
     if (tpcPIDPassed && tofPIDPassed) {
       return true;
@@ -204,8 +220,17 @@ struct lambdaAnalysis {
   bool selectionPIDKaon(const T& candidate)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
-      tpcPIDPassed = true;
+    auto tpcPIDpt = static_cast<std::vector<float>>(kaonTPCPIDpt);
+    auto tpcPIDcut = static_cast<std::vector<float>>(kaonTPCPIDcut);
+    int nitr = static_cast<int>(tpcPIDpt.size());
+
+    for (int i = 0; i < nitr - 1; ++i) {
+      if (candidate.pt() >= tpcPIDpt[i] && candidate.pt() < tpcPIDpt[i + 1] && std::abs(candidate.tpcNSigmaKa()) < tpcPIDcut[i]) {
+        tpcPIDPassed = true;
+      }
+      if (candidate.pt() >= tpcPIDpt[nitr - 1] && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+        tpcPIDPassed = true;
+      }
     }
     if (candidate.hasTOF()) {
       if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
@@ -216,6 +241,9 @@ struct lambdaAnalysis {
       }
     } else {
       tofPIDPassed = true;
+      if (cUseTpcAndTof && candidate.pt() >= tpcPIDpt[nitr - 1]) {
+        tpcPIDPassed = false;
+      }
     }
     if (tpcPIDPassed && tofPIDPassed) {
       return true;
@@ -310,7 +338,7 @@ struct lambdaAnalysis {
           histos.fill(HIST("Analysis/hInvMass"), p.M());
           histos.fill(HIST("Analysis/h4InvMass"), p.M(), p.Pt(), sph, mult);
           if (doRotate) {
-            float theta = rn->Uniform(2.2, 2.6);
+            float theta = rn->Uniform(3.12, 3.16);
             p1.RotateZ(theta);
             p = p1 + p2;
             if (std::abs(p.Rapidity()) < 0.5) {

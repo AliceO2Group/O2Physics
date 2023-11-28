@@ -182,7 +182,7 @@ struct rhoanalysis {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using TrackPi = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  using Event = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
+  using Event = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::FT0Mults, aod::CentFT0Ms>>;
 
   void processUnlike(Event::iterator const& events, TrackPi const& tracks)
   {
@@ -283,7 +283,7 @@ struct rhoanalysis {
   }
   PROCESS_SWITCH(rhoanalysis, processMixedEvent, "Process Mixed event", isMixed);
 
-  using EventMC = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using EventMC = soa::Join<aod::Collisions, aod::TPCMults, aod::FT0Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
   using TrackMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::pidTPCFullPi, aod::McTrackLabels>>;
   void processMC(EventMC::iterator const& events, TrackMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {

@@ -23,27 +23,80 @@ namespace o2::aod
 // Collision declarations for derived data analysis
 // this is optional but will ensure full flexibility
 // if required (for 2pc, etc)
-DECLARE_SOA_TABLE(V0Collisions, "AOD", "V0COLLISION", //! track X positions at minima when using AO2Ds
-                  collision::PosX, collision::PosY, collision::PosZ,
-                  cent::CentFT0M, cent::CentFT0A,
-                  cent::CentFT0C, cent::CentFV0A, o2::soa::Marker<1>);
-DECLARE_SOA_TABLE(CascCollisions, "AOD", "CASCCOLLISION", //! track X positions at minima when using AO2Ds
+DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! track X positions at minima when using AO2Ds
                   collision::PosX, collision::PosY, collision::PosZ,
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A, o2::soa::Marker<2>);
 
-using V0Collision = V0Collisions::iterator;
-using CascCollision = CascCollisions::iterator;
+using StraCollision = StraCollisions::iterator;
+
+namespace dautrack
+{
+//______________________________________________________
+// Daughter track declarations for derived data analysis
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(TPCClusters, tpcClusters, uint8_t);          //! N TPC clusters
+DECLARE_SOA_COLUMN(TPCCrossedRows, tpcCrossedRows, uint8_t);    //! N TPC clusters
+
+//______________________________________________________
+// for extras: replicated here to ensure ease of manipulating the ITS information
+// directly from the V0 extras table in simple ways for derived data as well
+DECLARE_SOA_DYNAMIC_COLUMN(ITSClusterMap, itsClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t clmap = 0;
+                             for (unsigned int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+                                 clmap |= (1 << layer);
+                               }
+                             }
+                             return clmap;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNCls, itsNCls, //! Number of ITS clusters
+                           [](uint32_t itsClusterSizes) -> uint8_t {
+                             uint8_t itsNcls = 0;
+                             for (int layer = 0; layer < 7; layer++) {
+                               if ((itsClusterSizes >> (layer * 4)) & 0xf)
+                                 itsNcls++;
+                             }
+                             return itsNcls;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS, //! Flag to check if track has a ITS match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Flag to check if track has a TPC match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
+} // namespace dautrack
+
+DECLARE_SOA_TABLE(DauTrackExtras, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
+                  dautrack::DetectorMap, dautrack::ITSClusterSizes,
+                  dautrack::TPCClusters, dautrack::TPCCrossedRows,
+
+                  // Dynamic columns for manipulating information
+                  dautrack::ITSClusterMap<dautrack::ITSClusterSizes>,
+                  dautrack::ITSNCls<dautrack::ITSClusterSizes>,
+                  dautrack::HasITS<dautrack::DetectorMap>,
+                  dautrack::HasTPC<dautrack::DetectorMap>,
+                  dautrack::HasTRD<dautrack::DetectorMap>,
+                  dautrack::HasTOF<dautrack::DetectorMap>);
+
+using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace v0data
 {
 //______________________________________________________
-// REGULAR COLUMNS FOR V0INDICES
+// REGULAR COLUMNS FOR INDEXING
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
-DECLARE_SOA_INDEX_COLUMN(V0Collision, v0collision);                     //!
+// FOR DERIVED
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
+DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0CORES
@@ -73,17 +126,6 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
-
-//______________________________________________________
-// REGULAR COLUMNS FOR V0EXTRAS
-DECLARE_SOA_COLUMN(PosTrackDetectorMap, posTrackDetectorMap, uint8_t);          //! detector map for reference
-DECLARE_SOA_COLUMN(NegTrackDetectorMap, negTrackDetectorMap, uint8_t);          //! detector map for reference
-DECLARE_SOA_COLUMN(PosTrackITSClusterSizes, posTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
-DECLARE_SOA_COLUMN(NegTrackITSClusterSizes, negTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
-DECLARE_SOA_COLUMN(PosTrackTPCClusters, posTrackTPCClusters, uint8_t);          //! N TPC clusters
-DECLARE_SOA_COLUMN(NegTrackTPCClusters, negTrackTPCClusters, uint8_t);          //! N TPC clusters
-DECLARE_SOA_COLUMN(PosTrackTPCCrossedRows, posTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
-DECLARE_SOA_COLUMN(NegTrackTPCCrossedRows, negTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0MCCORES
@@ -135,64 +177,6 @@ DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally
                                                         (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
                                                         (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
                                                   (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)))));
-
-//______________________________________________________
-// for extras: replicated here to ensure ease of manipulating the ITS information
-// directly from the V0 extras table in simple ways for derived data as well
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackITSClusterMap, posTrackITSClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
-                           [](uint32_t itsClusterSizes) -> uint8_t {
-                             uint8_t clmap = 0;
-                             for (unsigned int layer = 0; layer < 7; layer++) {
-                               if ((itsClusterSizes >> (layer * 4)) & 0xf) {
-                                 clmap |= (1 << layer);
-                               }
-                             }
-                             return clmap;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackITSClusterMap, negTrackITSClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
-                           [](uint32_t itsClusterSizes) -> uint8_t {
-                             uint8_t clmap = 0;
-                             for (unsigned int layer = 0; layer < 7; layer++) {
-                               if ((itsClusterSizes >> (layer * 4)) & 0xf) {
-                                 clmap |= (1 << layer);
-                               }
-                             }
-                             return clmap;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackITSNCls, posTrackITSNCls, //! Number of ITS clusters
-                           [](uint32_t itsClusterSizes) -> uint8_t {
-                             uint8_t itsNcls = 0;
-                             for (int layer = 0; layer < 7; layer++) {
-                               if ((itsClusterSizes >> (layer * 4)) & 0xf)
-                                 itsNcls++;
-                             }
-                             return itsNcls;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackITSNCls, negTrackITSNCls, //! Number of ITS clusters
-                           [](uint32_t itsClusterSizes) -> uint8_t {
-                             uint8_t itsNcls = 0;
-                             for (int layer = 0; layer < 7; layer++) {
-                               if ((itsClusterSizes >> (layer * 4)) & 0xf)
-                                 itsNcls++;
-                             }
-                             return itsNcls;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasITS, posTrackHasITS, //! Flag to check if track has a ITS match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTPC, posTrackHasTPC, //! Flag to check if track has a TPC match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTRD, posTrackHasTRD, //! Flag to check if track has a TRD match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
-DECLARE_SOA_DYNAMIC_COLUMN(PosTrackHasTOF, posTrackHasTOF, //! Flag to check if track has a TOF measurement
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasITS, negTrackHasITS, //! Flag to check if track has a ITS match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTPC, negTrackHasTPC, //! Flag to check if track has a TPC match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTRD, negTrackHasTRD, //! Flag to check if track has a TRD match
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
-DECLARE_SOA_DYNAMIC_COLUMN(NegTrackHasTOF, negTrackHasTOF, //! Flag to check if track has a TOF measurement
-                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
 
 //______________________________________________________
 // DYNAMIC COLUMNS
@@ -322,7 +306,10 @@ DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id);
 
 DECLARE_SOA_TABLE(V0CollRefs, "AOD", "V0COLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, v0data::V0CollisionId);
+                  o2::soa::Index<>, v0data::StraCollisionId);
+
+DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
 
 DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima when using AO2Ds
                   v0data::PosX, v0data::NegX);
@@ -373,26 +360,6 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",            
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat);
-
-DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! detector properties of the V0 decay
-                  v0data::PosTrackDetectorMap, v0data::NegTrackDetectorMap,
-                  v0data::PosTrackITSClusterSizes, v0data::NegTrackITSClusterSizes,
-                  v0data::PosTrackTPCClusters, v0data::NegTrackTPCClusters,
-                  v0data::PosTrackTPCCrossedRows, v0data::NegTrackTPCCrossedRows,
-
-                  // Dynamic columns for manipulating information
-                  v0data::PosTrackITSClusterMap<v0data::PosTrackITSClusterSizes>,
-                  v0data::NegTrackITSClusterMap<v0data::NegTrackITSClusterSizes>,
-                  v0data::PosTrackITSNCls<v0data::PosTrackITSClusterSizes>,
-                  v0data::NegTrackITSNCls<v0data::NegTrackITSClusterSizes>,
-                  v0data::PosTrackHasITS<v0data::PosTrackDetectorMap>,
-                  v0data::PosTrackHasTPC<v0data::PosTrackDetectorMap>,
-                  v0data::PosTrackHasTRD<v0data::PosTrackDetectorMap>,
-                  v0data::PosTrackHasTOF<v0data::PosTrackDetectorMap>,
-                  v0data::NegTrackHasITS<v0data::NegTrackDetectorMap>,
-                  v0data::NegTrackHasTPC<v0data::NegTrackDetectorMap>,
-                  v0data::NegTrackHasTRD<v0data::NegTrackDetectorMap>,
-                  v0data::NegTrackHasTOF<v0data::NegTrackDetectorMap>);
 
 DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
                   v0data::PDGCode, v0data::PDGCodeMother,
@@ -480,7 +447,11 @@ DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                                 //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "");         //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrack, strangeTrack, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
-DECLARE_SOA_INDEX_COLUMN(CascCollision, cascCollision);                     //!
+// FOR DERIVED
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra");   //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra");   //!
+DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra"); //!
+DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                          //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCORES
@@ -547,6 +518,49 @@ DECLARE_SOA_COLUMN(KFCascadeChi2, kfCascadeChi2, float); //!
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
 DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
+
+//______________________________________________________
+// REGULAR COLUMNS FOR CASCEXTRAS
+DECLARE_SOA_COLUMN(PosTrackDetectorMap, posTrackDetectorMap, uint8_t);            //! detector map for reference
+DECLARE_SOA_COLUMN(NegTrackDetectorMap, negTrackDetectorMap, uint8_t);            //! detector map for reference
+DECLARE_SOA_COLUMN(BachTrackDetectorMap, bachTrackDetectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(PosTrackITSClusterSizes, posTrackITSClusterSizes, uint32_t);   //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(NegTrackITSClusterSizes, negTrackITSClusterSizes, uint32_t);   //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(BachTrackITSClusterSizes, bachTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
+DECLARE_SOA_COLUMN(PosTrackTPCClusters, posTrackTPCClusters, uint8_t);            //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCClusters, negTrackTPCClusters, uint8_t);            //! N TPC clusters
+DECLARE_SOA_COLUMN(BachTrackTPCClusters, bachTrackTPCClusters, uint8_t);          //! N TPC clusters
+DECLARE_SOA_COLUMN(PosTrackTPCCrossedRows, posTrackTPCCrossedRows, uint8_t);      //! N TPC clusters
+DECLARE_SOA_COLUMN(NegTrackTPCCrossedRows, negTrackTPCCrossedRows, uint8_t);      //! N TPC clusters
+DECLARE_SOA_COLUMN(BachTrackTPCCrossedRows, bachTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
+
+//______________________________________________________
+// REGULAR COLUMNS FOR CASCMCCORES
+DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! cascade PDG Code
+DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);          //! cascade mother PDG code (for feeddown)
+DECLARE_SOA_COLUMN(PDGCodeV0, pdgCodeV0, int);                  //! cascade PDG Code
+DECLARE_SOA_COLUMN(PDGCodePositive, pdgCodePositive, int);      //! V0 positive prong PDG code
+DECLARE_SOA_COLUMN(PDGCodeNegative, pdgCodeNegative, int);      //! V0 negative prong PDG code
+DECLARE_SOA_COLUMN(PDGCodeBachelor, pdgCodeBachelor, int);      //! cascade bachelor prong PDG code
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! is cascade physical primary
+DECLARE_SOA_COLUMN(XMC, xMC, float);                            //! cascade decay position X (cm)
+DECLARE_SOA_COLUMN(YMC, yMC, float);                            //! cascade decay position Y (cm)
+DECLARE_SOA_COLUMN(ZMC, zMC, float);                            //! cascade decay position Z (cm)
+DECLARE_SOA_COLUMN(XlambdaMC, xlambdaMC, float);                //! V0 decay position X (cm)
+DECLARE_SOA_COLUMN(YlambdaMC, ylambdaMC, float);                //! V0 decay position Y (cm)
+DECLARE_SOA_COLUMN(ZlambdaMC, zlambdaMC, float);                //! V0 decay position Z (cm)
+DECLARE_SOA_COLUMN(PxPosMC, pxPosMC, float);                    //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyPosMC, pyPosMC, float);                    //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzPosMC, pzPosMC, float);                    //! V0 positive daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxNegMC, pxNegMC, float);                    //! V0 positive daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyNegMC, pyNegMC, float);                    //! V0 positive daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float);                    //! V0 positive daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxBachMC, pxBachMC, float);                  //! cascade bachelor daughter px (GeV/c)
+DECLARE_SOA_COLUMN(PyBachMC, pyBachMC, float);                  //! cascade bachelor daughter py (GeV/c)
+DECLARE_SOA_COLUMN(PzBachMC, pzBachMC, float);                  //! cascade bachelor daughter pz (GeV/c)
+DECLARE_SOA_COLUMN(PxMC, pxMC, float);                          //! cascade px (GeV/c)
+DECLARE_SOA_COLUMN(PyMC, pyMC, float);                          //! cascade py (GeV/c)
+DECLARE_SOA_COLUMN(PzMC, pzMC, float);                          //! cascade pz (GeV/c)
 
 //______________________________________________________
 // DERIVED
@@ -641,11 +655,21 @@ DECLARE_SOA_TABLE(TraCascIndices, "AOD", "TraCascINDEX", //! index table when us
                   o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::StrangeTrackId, cascdata::CollisionId);
 
 DECLARE_SOA_TABLE(CascCollRefs, "AOD", "CASCCOLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, cascdata::CascCollisionId, o2::soa::Marker<1>);
+                  o2::soa::Index<>, cascdata::StraCollisionId, o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(KFCascCollRefs, "AOD", "KFCASCCOLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, cascdata::CascCollisionId, o2::soa::Marker<2>);
+                  o2::soa::Index<>, cascdata::StraCollisionId, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(TraCascCollRefs, "AOD", "TRACASCCOLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, cascdata::CascCollisionId, o2::soa::Marker<3>);
+                  o2::soa::Index<>, cascdata::StraCollisionId, o2::soa::Marker<3>);
+
+DECLARE_SOA_TABLE(CascExtras, "AOD", "CASCEXTRA", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
+                  cascdata::BachTrackExtraId, o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(KFCascExtras, "AOD", "KFCASCEXTRA", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
+                  cascdata::BachTrackExtraId, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE(TraCascExtras, "AOD", "TRACASCEXTRA", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
+                  cascdata::BachTrackExtraId, o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about decay, viable with AO2Ds or derived
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
@@ -729,6 +753,37 @@ DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>);
+
+DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor,
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC,
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC,
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
+                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(KFCascMCCores, "AOD", "KFCASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor,
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC,
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC,
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
+                  o2::soa::Marker<2>);
+DECLARE_SOA_TABLE(TraCascMCCores, "AOD", "TRACASCMCCORE", //! bachelor-baryon correlation variables
+                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
+                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor,
+                  cascdata::XMC, cascdata::YMC, cascdata::ZMC,
+                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC,
+                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
+                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
+                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
+                  o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, o2::soa::Marker<1>)
@@ -855,6 +910,16 @@ DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with Ca
                   mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
 using McCascBBTag = McCascBBTags::iterator;
+
+// Definition of labels for kf cascades
+namespace mckfcasclabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mckfcasclabel
+
+DECLARE_SOA_TABLE(McKFCascLabels, "AOD", "MCKFCASCLABEL", //! Table joinable to cascdata containing the MC labels
+                  mckfcasclabel::McParticleId);
+using McKFCascLabel = McKFCascLabels::iterator;
 
 // Definition of labels for tracked cascades
 namespace mctracasclabel

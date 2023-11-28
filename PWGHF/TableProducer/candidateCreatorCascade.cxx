@@ -17,6 +17,7 @@
 
 #include <TPDGCode.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -27,24 +28,11 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
-
-// #define MY_DEBUG
-
-#ifdef MY_DEBUG
-using MyBigTracks = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
-#define MY_DEBUG_MSG(condition, cmd) \
-  if (condition) {                   \
-    cmd;                             \
-  }
-#else
-using MyBigTracks = aod::TracksWCov;
-#define MY_DEBUG_MSG(condition, cmd)
-#endif
 
 /// Reconstruction of heavy-flavour cascade decay candidates
 struct HfCandidateCreatorCascade {
@@ -72,13 +60,6 @@ struct HfCandidateCreatorCascade {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-  // for debugging
-#ifdef MY_DEBUG
-  Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
-  Configurable<std::vector<int>> indexK0Sneg{"indexK0Sneg", {730, 2867, 4755, 5458, 6892, 7825, 9244, 9811}, "indices of K0S negative daughters, for debug"};
-  Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
-#endif
-
   int runNumber{0};
   double massP{0.};
   double massK0s{0.};
@@ -93,10 +74,10 @@ struct HfCandidateCreatorCascade {
 
   void init(InitContext const&)
   {
-    massP = o2::analysis::pdg::MassProton;
-    massK0s = o2::analysis::pdg::MassK0Short;
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massLc = o2::analysis::pdg::MassLambdaCPlus;
+    massP = MassProton;
+    massK0s = MassK0Short;
+    massPi = MassPiPlus;
+    massLc = MassLambdaCPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -106,15 +87,10 @@ struct HfCandidateCreatorCascade {
 
   void process(aod::Collisions const&,
                aod::HfCascades const& rowsTrackIndexCasc,
-               MyBigTracks const&,
+               aod::TracksWCov const&,
                aod::V0sLinked const&,
                aod::V0Datas const&,
-               aod::BCsWithTimestamps const&
-#ifdef MY_DEBUG
-               ,
-               aod::McParticles const& mcParticles
-#endif
-  )
+               aod::BCsWithTimestamps const&)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
@@ -127,10 +103,10 @@ struct HfCandidateCreatorCascade {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // loop over pairs of track indeces
+    // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
 
-      const auto& bach = casc.prong0_as<MyBigTracks>();
+      const auto& bach = casc.prong0_as<aod::TracksWCov>();
       LOGF(debug, "V0 %d in HF cascade %d.", casc.v0Id(), casc.globalIndex());
       if (!casc.has_v0()) {
         LOGF(error, "V0 not there for HF cascade %d. Skipping candidate.", casc.globalIndex());
@@ -144,8 +120,8 @@ struct HfCandidateCreatorCascade {
       }
       LOGF(debug, "V0Data ID: %d", casc.v0_as<aod::V0sLinked>().v0DataId());
       const auto& v0 = casc.v0_as<aod::V0sLinked>().v0Data();
-      const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
-      const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
+      const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCov>();
+      const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCov>();
 
       auto collision = casc.collision();
 
@@ -160,18 +136,9 @@ struct HfCandidateCreatorCascade {
       }
       df.setBz(bz);
 
-#ifdef MY_DEBUG
-      auto indexBach = bach.mcParticleId();
-      auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
-      auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
-      bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
-#endif
-
-      MY_DEBUG_MSG(isLc, LOG(info) << "Processing the Lc with proton " << indexBach << " trackV0DaughPos " << indexV0DaughPos << " trackV0DaughNeg " << indexV0DaughNeg);
-
       auto trackParCovBach = getTrackParCov(bach);
-      auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that MyBigTracks does not need TracksDCA!
-      auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that MyBigTracks does not need TracksDCA!
+      auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that aod::TracksWCov does not need TracksDCA!
+      auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that aod::TracksWCov does not need TracksDCA!
       trackParCovV0DaughPos.propagateTo(v0.posX(), bz);             // propagate the track to the X closest to the V0 vertex
       trackParCovV0DaughNeg.propagateTo(v0.negX(), bz);             // propagate the track to the X closest to the V0 vertex
       const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
@@ -181,10 +148,6 @@ struct HfCandidateCreatorCascade {
 
       // reconstruct the cascade secondary vertex
       if (df.process(trackV0, trackParCovBach) == 0) {
-        MY_DEBUG_MSG(isLc, LOG(info) << "Vertexing failed for Lc candidate");
-        //  if (isLc) {
-        // LOG(info) << "Vertexing failed for Lc with proton " << indexBach << " trackV0DaughPos " << indexV0DaughPos << " trackV0DaughNeg " << indexV0DaughNeg;
-        //}
         continue;
       } else {
         // LOG(info) << "Vertexing succeeded for Lc candidate";
@@ -221,7 +184,6 @@ struct HfCandidateCreatorCascade {
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       // fill candidate table rows
-      MY_DEBUG_MSG(isLc, LOG(info) << "IT IS A Lc! Filling for Lc with proton " << indexBach << " trackV0DaughPos " << indexV0DaughPos << " trackV0DaughNeg " << indexV0DaughNeg);
       rowCandidateBase(collision.globalIndex(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
@@ -258,12 +220,6 @@ struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
-#ifdef MY_DEBUG
-  Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
-  Configurable<std::vector<int>> indexK0Sneg{"indexK0Sneg", {730, 2867, 4755, 5458, 6892, 7825, 9244, 9811}, "indices of K0S negative daughters, for debug"};
-  Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
-#endif
-
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
 
   void processMc(MyTracksWMc const& tracks,
@@ -293,24 +249,12 @@ struct HfCandidateCreatorCascadeMc {
       LOG(debug) << "\n";
       LOG(debug) << "Checking MC for candidate!";
       LOG(debug) << "Looking for K0s";
-#ifdef MY_DEBUG
-      auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
-      auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
-      auto indexBach = bach.mcParticleId();
-      bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
-      bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
-#endif
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "correct K0S in the Lc daughters: posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
       // if (isLc) {
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
-
       if (sign != 0) { // we have already positively checked the K0s
         // then we check the Lc
-        MY_DEBUG_MSG(sign, LOG(info) << "K0S was correct! now we check the Lc");
-        MY_DEBUG_MSG(sign, LOG(info) << "index proton = " << indexBach);
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
-        MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
       }
 
       // Check whether the particle is non-prompt (from a b quark).
@@ -327,13 +271,12 @@ struct HfCandidateCreatorCascadeMc {
     for (const auto& particle : mcParticles) {
       origin = 0;
       // checking if I have a Lc --> K0S + p
-      RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
+      RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
       if (sign == 0) { // now check for anti-Lc
-        RecoDecay::isMatchedMCGen(mcParticles, particle, -pdg::Code::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
+        RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
         sign = -sign;
       }
       if (sign != 0) {
-        MY_DEBUG_MSG(sign, LOG(info) << "Lc in K0S p");
         arrDaughLcIndex.clear();
         // checking that the final daughters (decay depth = 3) are p, pi+, pi-
         RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
@@ -347,7 +290,6 @@ struct HfCandidateCreatorCascadeMc {
           } else {
             LOG(debug) << "Lc --> K0S+p found in MC table";
           }
-          MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
       }
       // Check whether the particle is non-prompt (from a b quark).

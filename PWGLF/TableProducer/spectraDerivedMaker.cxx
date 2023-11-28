@@ -137,7 +137,7 @@ struct spectraDerivedMaker {
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "MultFT0M"}});
     histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1D, {{binsMultiplicity, "MultFDDM"}});
 
-    histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracklets"}});
+    // histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1D, {{binsMultiplicity, "MultTracklets"}});
     histos.add("Mult/TPC", "MultTPC", HistType::kTH1D, {{binsMultiplicity, "MultTPC"}});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPV"}});
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
@@ -203,7 +203,7 @@ struct spectraDerivedMaker {
         histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
         histos.fill(HIST("Mult/FDDM"), collision.multZeqFDDA() + collision.multZeqFDDC());
 
-        histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
+        // histos.fill(HIST("Mult/Tracklets"), collision.multTracklets());
         histos.fill(HIST("Mult/TPC"), collision.multTPC());
         histos.fill(HIST("Mult/NTracksPV"), collision.multZeqNTracksPV());
         histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
@@ -255,7 +255,7 @@ struct spectraDerivedMaker {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
@@ -303,7 +303,7 @@ struct spectraDerivedMaker {
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
                  trk.isPVContributor(),
-                 trk.itsClusterMap(),
+                 trk.itsClusterSizes(),
                  trk.hasTRD(),
                  trk.tofFlags(),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
@@ -314,7 +314,7 @@ struct spectraDerivedMaker {
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);
 
-  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultZeqs, aod::CentFT0Ms>; // RD
+  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>;
 
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;

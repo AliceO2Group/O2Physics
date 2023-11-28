@@ -291,7 +291,7 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
 
   void processMc(aod::Collisions const& collisions,
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
@@ -302,8 +302,9 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC tree writer", false);
-};
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);
+
+}; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

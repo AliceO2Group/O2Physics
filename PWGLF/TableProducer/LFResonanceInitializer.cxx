@@ -168,7 +168,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;

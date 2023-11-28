@@ -13,6 +13,7 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -27,7 +28,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/DataModel/Jet.h"
 
@@ -74,13 +74,13 @@ struct JetFinderHFQATask {
     trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCand2Prong, aod::HfSelD0>>) { // Note : need to be careful if configurable workflow options are added later
-      candMass = pdg::MassD0;
+      candMass = o2::constants::physics::MassD0;
     }
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCand3Prong, aod::HfSelLc>>) {
-      candMass = pdg::MassLambdaCPlus;
+      candMass = o2::constants::physics::MassLambdaCPlus;
     }
     if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>) {
-      candMass = pdg::MassBPlus;
+      candMass = o2::constants::physics::MassBPlus;
     }
 
     jetRadiiValues = (std::vector<double>)jetRadii;
