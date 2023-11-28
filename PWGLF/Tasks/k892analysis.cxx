@@ -303,14 +303,14 @@ struct k892analysis {
         if constexpr (!IsMix) {
           if (trk1.sign() > 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassDS"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassDSAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         } else {
           histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
 
         // MC
@@ -332,11 +332,11 @@ struct k892analysis {
           if (trk1.motherPDG() > 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt());
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3Reck892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3Reck892invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("k892RecAnti"), lResonance.Pt());
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3Reck892invmassAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3Reck892invmassAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
       } else {
@@ -344,10 +344,10 @@ struct k892analysis {
           continue;
         if (trk1.sign() > 0) {
           histos.fill(HIST("k892invmassLS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassLS"), collision.cent(), lResonance.Pt(), lResonance.M());
         } else {
           histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassLSAnti"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
       }
     }
@@ -395,7 +395,7 @@ struct k892analysis {
   PROCESS_SWITCH(k892analysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

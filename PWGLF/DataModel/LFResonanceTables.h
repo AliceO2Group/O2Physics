@@ -31,8 +31,8 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity percentile (run2: V0M, run3: FT0A/C/M)
-DECLARE_SOA_COLUMN(MultFT0, multFT0, int);           //! FT0 multiplicity
+DECLARE_SOA_COLUMN(Cent, cent, float);               //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Mult, mult, int);                 //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float);   //! Spherocity of the event
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);     //! Magnetic field
 } // namespace resocollision
@@ -41,8 +41,8 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  resocollision::MultV0M,
-                  resocollision::MultFT0,
+                  resocollision::Cent,
+                  resocollision::Mult,
                   resocollision::Spherocity,
                   resocollision::BMagField,
                   timestamp::Timestamp);

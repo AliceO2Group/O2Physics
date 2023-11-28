@@ -116,7 +116,7 @@ struct resonances_tutorial {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    auto multiplicity = collision.multV0M();
+    auto multiplicity = collision.cent();
     for (auto track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1) || !selectionPID(track1)) {
         continue; // track selection and PID selection
@@ -168,7 +168,7 @@ struct resonances_tutorial {
   {
     // Fill the event counter
     histos.fill(HIST("hVertexZ"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercent"), collision.multV0M());
+    histos.fill(HIST("hMultiplicityPercent"), collision.cent());
 
     fillHistograms<false, false>(collision, resotracks, resotracks); // Fill histograms, no MC, no mixing
   }
