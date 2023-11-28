@@ -313,18 +313,15 @@ struct HfCandidateSelectorDsToKKPi {
 
       if (applyMl) {
         // ML selections
-        bool caseDsToKKPi = false;
         bool isSelectedMlDsToKKPi = false;
         bool isSelectedMlDsToPiKK = false;
 
         if (topolDsToKKPi && pidDsToKKPi) {
-          caseDsToKKPi = true;
-          std::vector<float> inputFeaturesDsToKKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, caseDsToKKPi);
+          std::vector<float> inputFeaturesDsToKKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
           isSelectedMlDsToKKPi = hfMlResponse.isSelectedMl(inputFeaturesDsToKKPi, candidate.pt(), outputMlDsToKKPi);
         }
         if (topolDsToPiKK && pidDsToPiKK) {
-          caseDsToKKPi = false;
-          std::vector<float> inputFeaturesDsToPiKK = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, caseDsToKKPi);
+          std::vector<float> inputFeaturesDsToPiKK = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
           isSelectedMlDsToPiKK = hfMlResponse.isSelectedMl(inputFeaturesDsToPiKK, candidate.pt(), outputMlDsToPiKK);
         }
 
