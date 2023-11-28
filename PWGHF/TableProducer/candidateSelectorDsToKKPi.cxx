@@ -125,8 +125,8 @@ struct HfCandidateSelectorDsToKKPi {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
-      outputMlDsToKKPi.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
-      outputMlDsToPiKK.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
+      outputMlDsToKKPi.assign(static_cast<std::vector<int>>(cutDirMl).size(), -1.f); // dummy value for ML output
+      outputMlDsToPiKK.assign(static_cast<std::vector<int>>(cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
