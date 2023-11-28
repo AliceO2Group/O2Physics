@@ -21,6 +21,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 
 #include "ALICE3/DataModel/ECAL.h"
@@ -31,7 +32,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/PDG.h"
 
 namespace o2::aod
 {

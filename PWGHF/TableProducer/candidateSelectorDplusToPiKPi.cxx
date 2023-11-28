@@ -15,6 +15,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -146,7 +147,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::analysis::pdg::MassDPlus) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

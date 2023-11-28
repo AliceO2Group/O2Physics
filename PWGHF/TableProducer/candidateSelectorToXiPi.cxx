@@ -13,6 +13,7 @@
 /// \brief Xic0 and Omegac0 → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -25,7 +26,6 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::analysis::pdg;
 
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -178,8 +178,8 @@ struct HfCandidateSelectorToXiPi {
                TracksSel const&)
   {
 
-    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0;
-    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;
+    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
+    double massXiFromPDG = o2::constants::physics::MassXiMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {

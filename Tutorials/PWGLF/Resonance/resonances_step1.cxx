@@ -16,11 +16,11 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,7 +53,7 @@ struct resonances_tutorial {
   Configurable<float> nsigmacutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
 
   // variables
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = o2::constants::physics::MassKPlus;
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
