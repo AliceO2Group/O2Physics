@@ -344,10 +344,10 @@ struct k1analysis {
           if (trk2.sign() > 0)                                // Positive kaon
             histos.fill(HIST("hK892invmass_PP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
           else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
+            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // Anti-K(892)0
         } else {                                                                                                // Negative pion
           if (trk2.sign() > 0)                                                                                  // Positive kaon
-            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M()); // K(892)0
+            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // K(892)0
           else                                                                                                  // Negative kaon
             histos.fill(HIST("hK892invmass_NN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
         }
