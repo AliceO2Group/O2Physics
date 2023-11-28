@@ -51,8 +51,8 @@ struct MftTracksConverter {
                     track0.chi2(),
                     track0.trackTime(),
                     track0.trackTimeRes());
-      }
     }
+  }
 };
 
 /// Spawn the extended table for MFTTracks001 to avoid the call to the internal spawner and a consequent circular dependency
