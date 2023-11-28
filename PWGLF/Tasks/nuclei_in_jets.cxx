@@ -313,7 +313,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Momentum of the Leading Particle
-    auto leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Instruction to be removed
