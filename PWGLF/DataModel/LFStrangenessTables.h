@@ -450,7 +450,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
 // FOR DERIVED
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra");   //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra");   //!
-DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                          //!
 
 //______________________________________________________

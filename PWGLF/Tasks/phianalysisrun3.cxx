@@ -44,7 +44,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -100,7 +100,7 @@ struct phianalysisrun3 {
     }
   }
 
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = o2::constants::physics::MassKPlus;
   double rapidity;
   double genMass, recMass, resolution;
   double mass{0.};

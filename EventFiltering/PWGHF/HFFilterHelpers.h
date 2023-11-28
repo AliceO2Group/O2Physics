@@ -134,25 +134,25 @@ static const std::tuple pdgCharmDaughters{
   std::array{2212, -321, 211},  // Lc
   std::array{2212, -321, 211}}; // Xic
 
-constexpr float massPi = o2::analysis::pdg::MassPiPlus;
-constexpr float massKa = o2::analysis::pdg::MassKPlus;
-constexpr float massProton = o2::analysis::pdg::MassProton;
-constexpr float massGamma = o2::analysis::pdg::MassGamma;
-constexpr float massK0S = o2::analysis::pdg::MassK0Short;
-constexpr float massLambda = o2::analysis::pdg::MassLambda0;
-constexpr float massXi = o2::analysis::pdg::MassXiMinus;
-constexpr float massPhi = o2::analysis::pdg::MassPhi;
-constexpr float massD0 = o2::analysis::pdg::MassD0;
-constexpr float massDPlus = o2::analysis::pdg::MassDPlus;
-constexpr float massDs = o2::analysis::pdg::MassDS;
-constexpr float massLc = o2::analysis::pdg::MassLambdaCPlus;
-constexpr float massXic = o2::analysis::pdg::MassXiCPlus;
-constexpr float massDStar = o2::analysis::pdg::MassDStar;
-constexpr float massBPlus = o2::analysis::pdg::MassBPlus;
-constexpr float massB0 = o2::analysis::pdg::MassB0;
-constexpr float massBs = o2::analysis::pdg::MassBS;
-constexpr float massLb = o2::analysis::pdg::MassLambdaB0;
-constexpr float massXib = o2::analysis::pdg::MassXiB0;
+constexpr float massPi = o2::constants::physics::MassPiPlus;
+constexpr float massKa = o2::constants::physics::MassKPlus;
+constexpr float massProton = o2::constants::physics::MassProton;
+constexpr float massGamma = o2::constants::physics::MassGamma;
+constexpr float massK0S = o2::constants::physics::MassK0Short;
+constexpr float massLambda = o2::constants::physics::MassLambda0;
+constexpr float massXi = o2::constants::physics::MassXiMinus;
+constexpr float massPhi = o2::constants::physics::MassPhi;
+constexpr float massD0 = o2::constants::physics::MassD0;
+constexpr float massDPlus = o2::constants::physics::MassDPlus;
+constexpr float massDs = o2::constants::physics::MassDS;
+constexpr float massLc = o2::constants::physics::MassLambdaCPlus;
+constexpr float massXic = o2::constants::physics::MassXiCPlus;
+constexpr float massDStar = o2::constants::physics::MassDStar;
+constexpr float massBPlus = o2::constants::physics::MassBPlus;
+constexpr float massB0 = o2::constants::physics::MassB0;
+constexpr float massBs = o2::constants::physics::MassBS;
+constexpr float massLb = o2::constants::physics::MassLambdaB0;
+constexpr float massXib = o2::constants::physics::MassXiB0;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};

@@ -15,6 +15,7 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -209,11 +210,11 @@ struct HfCandidateSelectorD0 {
       massD0bar = hfHelper.invMassD0barToKPi(candidate);
     }
     if (trackPion.sign() > 0) {
-      if (std::abs(massD0 - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0 - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(massD0bar - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0bar - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -242,11 +243,11 @@ struct HfCandidateSelectorD0 {
     // in case only sideband candidates have to be stored, additional invariant-mass cut
     if (keepOnlySidebandCandidates) {
       if (trackPion.sign() > 0) {
-        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       } else {
-        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       }
@@ -373,11 +374,11 @@ struct HfCandidateSelectorD0 {
         bool isSelectedMlD0bar = false;
 
         if (statusD0 > 0) {
-          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0);
+          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0);
           isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
         }
         if (statusD0bar > 0) {
-          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::analysis::pdg::kD0Bar);
+          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0Bar);
           isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
         }
 

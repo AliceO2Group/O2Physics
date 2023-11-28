@@ -17,6 +17,7 @@
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -73,13 +74,13 @@ struct JetSubstructureHFTask {
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
 
     if constexpr (std::is_same_v<std::decay_t<JetTableMCP>, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>>) {
-      candPDG = static_cast<int>(pdg::Code::kD0);
+      candPDG = static_cast<int>(o2::constants::physics::Pdg::kD0);
     }
     if constexpr (std::is_same_v<std::decay_t<JetTableMCP>, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>>) {
-      candPDG = static_cast<int>(pdg::Code::kBPlus);
+      candPDG = static_cast<int>(o2::constants::physics::Pdg::kBPlus);
     }
     if constexpr (std::is_same_v<std::decay_t<JetTableMCP>, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>>) {
-      candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
+      candPDG = static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
     }
   }
 
