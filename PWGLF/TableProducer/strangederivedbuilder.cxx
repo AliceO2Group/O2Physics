@@ -50,24 +50,34 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
+using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe>;
 
 struct strangederivedbuilder {
   //__________________________________________________
   // fundamental building blocks of derived data
   Produces<aod::StraCollision> strangeColl;      // characterises collisions
+  Produces<aod::StraCents> strangeCents;         // characterises collisions / centrality
   Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;       // references collisions from cascades
-  Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from cascades
-  Produces<aod::TraCascCollRefs> tracasccollref; // references collisions from cascades
+  Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from KF cascades
+  Produces<aod::TraCascCollRefs> tracasccollref; // references collisions from tracked cascades
 
   //__________________________________________________
   // track extra references
-  Produces<aod::DauTrackExtras> dauTrackExtras; // DauTrackExtras
-  Produces<aod::V0Extras> v0Extras;             // references DauTracks from V0s
-  Produces<aod::CascExtras> cascExtras;         // references DauTracks from V0s
-  Produces<aod::KFCascExtras> kfcascExtras;     // references DauTracks from V0s
-  Produces<aod::TraCascExtras> tracascExtras;   // references DauTracks from V0s
+  Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
+  Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID 
+  Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
+  Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
+  Produces<aod::KFCascExtras> kfcascExtras;       // references DauTracks from KF cascades
+  Produces<aod::TraCascExtras> tracascExtras;     // references DauTracks from tracked cascades
+
+  //__________________________________________________
+  // cascade interlinks
+  Produces<aod::CascToTraRefs> cascToTraRefs;   // cascades -> tracked
+  Produces<aod::CascToKFRefs> cascToKFRefs;     // cascades -> KF
+  Produces<aod::TraToCascRefs> traToCascRefs;   // tracked -> cascades
+  Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
+  
 
   //__________________________________________________
   // correlation information between cascades: standard<->KF, standard<->tracked, KF<->tracked
@@ -100,9 +110,9 @@ struct strangederivedbuilder {
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         if (currentCollIdx != collIdx) {
-          strangeColl(collision.posX(), collision.posY(), collision.posZ(),
-                      collision.centFT0M(), collision.centFT0A(),
-                      collision.centFT0C(), collision.centFV0A());
+          strangeColl(collision.posX(), collision.posY(), collision.posZ());
+          strangeCents(collision.centFT0M(), collision.centFT0A(),
+                       collision.centFT0C(), collision.centFV0A());
           currentCollIdx = collIdx;
         }
       }
@@ -159,9 +169,11 @@ struct strangederivedbuilder {
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
       auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
+      trackMap[strangeTrack.globalIndex()] = 0;
     }
     //__________________________________________________
     // Figure out the numbering of the new tracks table
@@ -209,9 +221,11 @@ struct strangederivedbuilder {
       auto v0 = casc.v0();
       auto posTrack = v0.posTrack_as<TracksWithExtra>();
       auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
       tracascExtras(trackMap[posTrack.globalIndex()],
                     trackMap[negTrack.globalIndex()],
-                    trackMap[bachTrack.globalIndex()]); // joinable with TraCascDatas
+                    trackMap[bachTrack.globalIndex()],
+                    trackMap[strangeTrack.globalIndex()]); // joinable with TraCascDatas
     }
     //__________________________________________________
     // circle back and populate actual DauTrackExtra table
@@ -219,13 +233,52 @@ struct strangederivedbuilder {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+        dauTrackTPCPIDs(tr.tpcSignal(), tr.tpcNSigmaEl(),
+                        tr.tpcNSigmaPi(), tr.tpcNSigmaKa(),
+                        tr.tpcNSigmaPr(), tr.tpcNSigmaHe());
       }
     }
     // done!
   }
 
+  using interlinkedCascades = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink, aod::TraCascDataLink>;
+
+  void processCascadeInterlink(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades, aod::TraCascIndices const& TraCascades)
+  {
+    //Standard to tracked
+    for (auto const& c : Cascades) {
+      int indexTracked = -1, indexKF = -1;
+      if(c.has_cascade()){
+        auto cascade = c.cascade_as<interlinkedCascades>();
+        indexTracked = cascade.traCascDataId();
+        indexKF = cascade.kfCascDataId();
+      }
+      cascToTraRefs(indexTracked);
+      cascToKFRefs(indexKF);
+    }
+    //Tracked to standard
+    for (auto const& c : TraCascades) {
+      int index = -1;
+      if(c.has_cascade()){
+        auto cascade = c.cascade_as<interlinkedCascades>();
+        index = cascade.cascDataId();
+      }
+      traToCascRefs(index);
+    }
+    //Tracked to KF
+    for (auto const& c : KFCascades) {
+      int index = -1;
+      if(c.has_cascade()){
+        auto cascade = c.cascade_as<interlinkedCascades>();
+        index = cascade.cascDataId();
+      }
+      kfToCascRefs(index);
+    }
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlink, "Produce tables connecting cascades", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
