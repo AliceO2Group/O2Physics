@@ -1170,7 +1170,7 @@ struct strangenessFilter {
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
         // Xi
         if ((std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi) &&
-            (RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()) >= minDcaTrackedXi) &&
+            (impactParameterTrk.getY() >= minDcaTrackedXi) &&
             (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
@@ -1190,7 +1190,7 @@ struct strangenessFilter {
         // Omega
         if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega) &&
             (std::abs(massXi - o2::constants::physics::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
-            (RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()) >= minDcaTrackedXi) &&
+            (impactParameterTrk.getY() >= minDcaTrackedOmega) &&
             (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
