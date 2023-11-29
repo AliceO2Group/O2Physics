@@ -33,11 +33,11 @@ struct MftTracksConverter {
 
     for (const auto& track0 : mftTracks_000) {
       uint64_t mftClusterSizesAndTrackFlags = 0;
-      int8_t nCluster = track0.nCluster();
+      int8_t nClusters = track0.nClusters();
 
       for (int layer = 0; layer < 10; ++layer) {
         mftClusterSizesAndTrackFlags &= ~(0x3fULL << (layer * 6));
-        mftClusterSizesAndTrackFlags |= (layer < nCluster) ? (1ULL << (layer * 6)) : 0;
+        mftClusterSizesAndTrackFlags |= (layer < nClusters) ? (1ULL << (layer * 6)) : 0;
       }
 
       mftTracks_001(track0.collisionId(),
