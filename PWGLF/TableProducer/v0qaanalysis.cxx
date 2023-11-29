@@ -57,7 +57,7 @@ struct LfV0qaanalysis {
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
-      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{2, 0.f, 2.f}}});
       registry.add("hNEventsMC_RecoColl", "hNEventsMC_RecoColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
       registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
       registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
@@ -352,9 +352,10 @@ struct LfV0qaanalysis {
           registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt()); // AntiLambda
       }
 
-      // if (isFT0A && isFT0C) {
       registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
-      //}
+      if (isFT0A && isFT0C) {
+      registry.fill(HIST("hNEventsMC_AllColl"), 1.5);
+      }
     }
   }
   PROCESS_SWITCH(LfV0qaanalysis, processMC, "Process MC", true);
