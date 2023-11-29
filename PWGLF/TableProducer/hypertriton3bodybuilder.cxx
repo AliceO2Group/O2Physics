@@ -77,7 +77,7 @@ struct hypertriton3bodyBuilder {
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<float> minCosPA3body{"minCosPA3body", 0.8, "minCosPA3body"};
+  Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
 
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
@@ -339,7 +339,7 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());

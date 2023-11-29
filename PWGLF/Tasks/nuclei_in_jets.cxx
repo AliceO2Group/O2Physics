@@ -104,7 +104,7 @@ struct nuclei_in_jets {
   void init(InitContext const&)
   {
     // Global Properties and QC
-    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{4, 0, 4, "1 = all events, 2 = selected events, 3 = events with pt>pt_threshold, 4 = events with pt>pt_threshold and particle of interest"}});
+    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "1 = all events, 2 = selected events, 3 = events with pt>pt_threshold, 4 = events with pt>pt_threshold and particle of interest"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
@@ -262,8 +262,14 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
+    // Track Index Initialization
+    int i = -1;
+
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
+
+      // Track Index
+      i++;
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -274,7 +280,7 @@ struct nuclei_in_jets {
         continue;
 
       // Track Index
-      int i = track.globalIndex();
+      // int i = track.globalIndex();
 
       // Trigger: Particle of Interest
       if (isParticleOfInterest(track))
@@ -293,8 +299,11 @@ struct nuclei_in_jets {
     // Histogram with pt_leading
     registryQC.fill(HIST("pt_leading"), pt_max);
 
+    // Number of Stored Particles
+    int nParticles = static_cast<int>(particle_ID.size());
+
     // Selection of Events with pt > pt_leading
-    if (particle_ID.size() < 2)
+    if (nParticles < 2)
       return;
     if (pt_max < min_pt_leading)
       return;
@@ -309,13 +318,14 @@ struct nuclei_in_jets {
     // Event Counter (events with pt > pt_max that contain particle of interest)
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
-    // Number of Stored Particles
-    int nParticles = static_cast<int>(particle_ID.size());
-
     // Momentum of the Leading Particle
-    auto leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
+    // Instruction to be removed
+    registryQC.fill(HIST("number_of_events_data"), 4.5);
+
+    /*
     // Array of Particles inside Jet
     std::vector<int> jet_particle_ID;
     jet_particle_ID.push_back(leading_ID);
@@ -389,10 +399,12 @@ struct nuclei_in_jets {
 
     } while (exit == 0);
 
-    // Fill Jet Multiplicity
-    registryQC.fill(HIST("jet_plus_ue_multiplicity"), static_cast<int>(jet_particle_ID.size()));
+    // Multiplicity inside Jet + UE
+    int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
 
-    /*
+    // Fill Jet Multiplicity
+    registryQC.fill(HIST("jet_plus_ue_multiplicity"), nParticlesJetUE);
+
 
     // Perpendicular Cones for UE Estimate
     TVector3 z_positive(0.0, 0.0, 1.0);

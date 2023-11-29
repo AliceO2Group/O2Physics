@@ -16,6 +16,7 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -30,6 +31,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -79,8 +81,8 @@ struct HfCandidateCreatorX {
 
   void init(InitContext const&)
   {
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massJpsi = o2::analysis::pdg::MassJPsi;
+    massPi = MassPiPlus;
+    massJpsi = MassJPsi;
   }
 
   void process(aod::Collision const& collision,
@@ -275,8 +277,8 @@ struct HfCandidateCreatorXMc {
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
-    int pdgCodeX = pdg::Code::kX3872;
-    int pdgCodeJpsi = pdg::Code::kJPsi;
+    int pdgCodeX = Pdg::kX3872;
+    int pdgCodeJpsi = Pdg::kJPsi;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -299,7 +301,7 @@ struct HfCandidateCreatorXMc {
       // X → J/ψ π+ π−
 
       // J/ψ → e+ e−
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
       // X → π+ π− e+ e−
       if (indexRec > -1) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
@@ -310,7 +312,7 @@ struct HfCandidateCreatorXMc {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         // X → π+ π− μ+ μ−
         if (indexRec > -1) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeX, std::array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);

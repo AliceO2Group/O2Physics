@@ -400,11 +400,11 @@ struct lambdaAnalysis {
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
   {
 
-    histos.fill(HIST("Event/hCent"), collision.multV0M());
+    histos.fill(HIST("Event/hCent"), collision.cent());
     histos.fill(HIST("Event/hSph"), collision.spherocity());
-    histos.fill(HIST("Event/hSpCent"), collision.multV0M(), collision.spherocity());
+    histos.fill(HIST("Event/hSpCent"), collision.cent(), collision.spherocity());
 
-    fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.multV0M());
+    fillDataHistos<false, false>(tracks, tracks, collision.spherocity(), collision.cent());
   }
 
   PROCESS_SWITCH(lambdaAnalysis, processData, "Process for Same Event Data", true);
@@ -414,8 +414,8 @@ struct lambdaAnalysis {
   {
 
     histos.fill(HIST("Event/hSphRec"), collision.spherocity());
-    histos.fill(HIST("Event/hSpCentRec"), collision.multV0M(), collision.spherocity());
-    fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.multV0M());
+    histos.fill(HIST("Event/hSpCentRec"), collision.cent(), collision.spherocity());
+    fillDataHistos<false, true>(tracks, tracks, collision.spherocity(), collision.cent());
   }
   PROCESS_SWITCH(lambdaAnalysis, processMC, "Process Event for MC", false);
 
@@ -452,8 +452,8 @@ struct lambdaAnalysis {
   PROCESS_SWITCH(lambdaAnalysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningType1 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M, aod::resocollision::Spherocity>;
-  using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningType1 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent, aod::resocollision::Spherocity>;
+  using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
@@ -464,12 +464,12 @@ struct lambdaAnalysis {
     if (doSphMix) {
       SameKindPair<resoCols, resoTracks, BinningType1> pairs{binningPositions1, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
       for (auto& [c1, t1, c2, t2] : pairs) {
-        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
+        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.cent());
       }
     } else {
       SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
       for (auto& [c1, t1, c2, t2] : pairs) {
-        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.multV0M());
+        fillDataHistos<true, false>(t1, t2, c1.spherocity(), c1.cent());
       }
     }
   }

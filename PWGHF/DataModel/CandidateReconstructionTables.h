@@ -21,6 +21,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 
 #include "ALICE3/DataModel/ECAL.h"
@@ -31,7 +32,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/PDG.h"
 
 namespace o2::aod
 {
@@ -1050,8 +1050,8 @@ DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, double);
 DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float); // pos dau
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float); // neg dau
 DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
 DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
