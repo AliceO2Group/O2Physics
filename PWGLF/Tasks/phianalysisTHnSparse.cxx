@@ -98,8 +98,8 @@ struct phianalysisTHnSparse {
     AxisSpec ptAxis = {ptaxis, "p_{T} (GeV/c)", "pt"};
     AxisSpec mAxis = {multiplicityaxis, "N", "m"};
     AxisSpec yAxis = {rapidityaxis, "y", "y"};
-    AxisSpec nsigmatrackaxis1 = {nsigmaaxis1, fmt::format("nSigma particle X({})", mass1), "sx"};
-    AxisSpec nsigmatrackaxis2 = {nsigmaaxis1, fmt::format("nSigma particle Y({})", mass2), "sy"};
+    AxisSpec nsigmatrackaxis1 = {nsigmaaxis1, fmt::format("nSigma particle 1({})", mass1), "ns1"};
+    AxisSpec nsigmatrackaxis2 = {nsigmaaxis1, fmt::format("nSigma particle 2({})", mass2), "ns2"};
     HistogramConfigSpec pairHisto({HistType::kTHnSparseF, {invAxis, ptAxis, mAxis, nsigmatrackaxis1, nsigmatrackaxis2, yAxis}});
     registry.add("unlike", "Unlike", pairHisto);
     registry.add("likep", "Likep", pairHisto);
@@ -170,7 +170,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Unlike-sign: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("unlike"), mother.Mag(), mother.Pt(), multiplicity, track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), mother.Rapidity());
+      registry.fill(HIST("unlike"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDauthers, posDauthers))) {
@@ -186,7 +186,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign positive: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("likep"), mother.Mag(), mother.Pt(), multiplicity, track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), mother.Rapidity());
+      registry.fill(HIST("likep"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDauthers, negDauthers))) {
@@ -202,7 +202,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign negative: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("liken"), mother.Mag(), mother.Pt(), multiplicity, track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), mother.Rapidity());
+      registry.fill(HIST("liken"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
   }
 
@@ -268,12 +268,12 @@ struct phianalysisTHnSparse {
 
             registry.fill(HIST("motherTrue"), mothertrack1.pt());
             n++;
-            if (verboselevel > 0)
+            if (verboselevel > 1)
               LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
 
             if (!selectedPair(mother, mctrack1, mctrack2))
               continue;
-            registry.fill(HIST("unlikeTrue"), mother.Mag(), mother.Pt(), multiplicityMC, tpcnSigma1 / 2.0, tpcnSigma2 / 2.0, mother.Rapidity());
+            registry.fill(HIST("unlikeTrue"), mother.Mag(), mother.Pt(), multiplicityMC, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
           }
         }
       }
@@ -326,7 +326,7 @@ struct phianalysisTHnSparse {
           nuberofPhi++;
           numberofEntries++;
 
-          if (verboselevel > 0)
+          if (verboselevel > 1)
             LOGF(info, "Gen:  %d, #Phi =%d, mother=%d (%ld), Inv.mass:%f, Pt= %f", numberofEntries, nuberofPhi, particle.pdgCode(), particle.globalIndex(), mother.Mag(), mother.Pt());
         } else {
           registry.fill(HIST("motherBgr"), particle.pt());
