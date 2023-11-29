@@ -31,11 +31,76 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
-// #include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
+#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+struct NPCascCandidate {
+  float cascPt;
+  float cascEta;
+  float cascPhi;
+  float cascDCAxy;
+  float cascDCAz;
+  float protonDCAxy;
+  float protonDCAz;
+  float pionDCAxy;
+  float pionDCAz;
+  float bachDCAxy;
+  float bachDCAz;
+  float casccosPA;
+  float v0cosPA;
+  float bachcosPA;
+  double massXi;
+  double massOmega;
+  double massV0;
+  float cascRadius;
+  float v0radius;
+  float cascLength;
+  float v0length;
+  int cascNClusITS;
+  int cascNClusTPC;
+  int protonNClusTPC;
+  int pionNClusTPC;
+  int bachKaonNClusTPC;
+  int bachPionNClusTPC;
+  float protonTPCSignal;
+  float pionTPCSignal;
+  float bachKaonTPCSignal;
+  float bachPionTPCSignal;
+  float protonTPCNSigma;
+  float pionTPCNSigma;
+  float bachKaonTPCNSigma;
+  float bachPionTPCNSigma;
+  bool protonHasTOF;
+  bool pionHasTOF;
+  bool bachKaonHasTOF;
+  bool bachPionHasTOF;
+  float protonTOFSignal;
+  float pionTOFSignal;
+  float bachKaonTOFSignal;
+  float bachPionTOFSignal;
+  float protonTOFNSigma;
+  float pionTOFNSigma;
+  float bachKaonTOFNSigma;
+  float bachPionTOFNSigma;
+};
+
+
+struct motherDCA{
+  float DCAxy;
+  float DCAz ;
+};
+
+struct daughtersDCA{
+  float bachDCAxy;
+  float bachDCAz;
+  float protonDCAxy;
+  float protonDCAz;
+  float pionDCAxy;
+  float pionDCAz;
+};
 
 namespace
 {
@@ -60,12 +125,15 @@ std::shared_ptr<TH1> invMassACXi;
 std::shared_ptr<TH1> invMassBCV0;
 std::shared_ptr<TH1> invMassACV0;
 
+std::vector<NPCascCandidate> candidates;
+
+
 } // namespace
 
 struct NonPromptCascadeTask {
 
-  // Produces<o2::aod::NonPromptCascadeTable> nonPromptCascadeTable;
-  // Produces<o2::aod::NonPromptCascadeTableMC> nonPromptCascadeTableMC;
+  Produces<o2::aod::NonPromptCascadeTable> NPCTable;
+  Produces<o2::aod::NonPromptCascadeTableMC> NPCTableMC;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -191,8 +259,11 @@ struct NonPromptCascadeTask {
     invMassACV0 = registry.add<TH1>("h_invariantmass_afterCuts_V0", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.090, 1.140, "Invariant Mass (GeV/#it{c}^{2})"}});
  }
 
-  template <typename TC, typename T, typename B, typename PR, typename PI>
-  void fillCascadeDCA(TC const& trackedCascade, T const track, B const bachelor, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega)
+
+
+
+  template <typename T, typename PR, typename PI>
+  void fillCascadeDCA(T const track, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, motherDCA & mDCA)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
     auto trackCovTrk = getTrackParCov(track);
@@ -217,12 +288,13 @@ struct NonPromptCascadeTask {
         registry.fill(HIST("h_dcavsr_Xi"), impactParameterTrk.getY(), std::hypot(track.x(), track.y()));
       }
     }
+    mDCA.DCAxy = impactParameterTrk.getY();
+    mDCA.DCAz = impactParameterTrk.getZ();
   }
 
   template <typename TC, typename B, typename PR, typename PI>
-  void fillDauDCA(TC const& trackedCascade, B const& bachelor, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega)
+  void fillDauDCA(TC const& trackedCascade, B const& bachelor, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, daughtersDCA & dDCA)
   {
-
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
 
     auto trackCovBach = getTrackParCov(bachelor);
@@ -253,22 +325,29 @@ struct NonPromptCascadeTask {
     }
 
     auto trackCovNtrack = getTrackParCov(pionTrack);
-    o2::dataformats::DCA impactParameterNtrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, bz, 2.f, matCorr, &impactParameterNtrack)) {
+    o2::dataformats::DCA impactParameterPiontrack;
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, bz, 2.f, matCorr, &impactParameterPiontrack)) {
       if (isOmega) {
-        registry.fill(HIST("h_ntrackdcavspt_Omega"), impactParameterNtrack.getY(), pionTrack.pt());
+        registry.fill(HIST("h_ntrackdcavspt_Omega"), impactParameterPiontrack.getY(), pionTrack.pt());
       }
-      registry.fill(HIST("h_ntrackdcavspt_Xi"), impactParameterNtrack.getY(), pionTrack.pt());
+      registry.fill(HIST("h_ntrackdcavspt_Xi"), impactParameterPiontrack.getY(), pionTrack.pt());
     }
 
     auto trackCovPtrack = getTrackParCov(protonTrack);
-    o2::dataformats::DCA impactParameterPtrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, bz, 2.f, matCorr, &impactParameterPtrack)) {
+    o2::dataformats::DCA impactParameterProtontrack;
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, bz, 2.f, matCorr, &impactParameterProtontrack)) {
       if (isOmega) {
-        registry.fill(HIST("h_ptrackdcavspt_Omega"), impactParameterPtrack.getY(), protonTrack.pt());
+        registry.fill(HIST("h_ptrackdcavspt_Omega"), impactParameterProtontrack.getY(), protonTrack.pt());
       }
-      registry.fill(HIST("h_ptrackdcavspt_Xi"), impactParameterPtrack.getY(), protonTrack.pt());
+      registry.fill(HIST("h_ptrackdcavspt_Xi"), impactParameterProtontrack.getY(), protonTrack.pt());
     }
+
+    dDCA.bachDCAxy = impactParameterBach.getY();
+    dDCA.bachDCAz = impactParameterBach.getZ();
+    dDCA.protonDCAxy = impactParameterProtontrack.getY();
+    dDCA.protonDCAz = impactParameterProtontrack.getZ();
+    dDCA.pionDCAxy = impactParameterPiontrack.getY();
+    dDCA.pionDCAz = impactParameterPiontrack.getZ();
   }
 
   void processTrackedCascadesMC(CollisionCandidatesRun3 const& collision,
@@ -277,6 +356,7 @@ struct NonPromptCascadeTask {
                                 soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata,
                                 aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
+    candidates.clear();
     bool isOmega{false};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -376,7 +456,8 @@ struct NonPromptCascadeTask {
       invMassACXi->Fill(trackedCascade.xiMass());
       registry.fill(HIST("h_massvspt_Xi"), trackedCascade.xiMass(), track.pt());
 
-      fillCascadeDCA(trackedCascade, track, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
+      motherDCA mDCA;
+      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, mDCA);
 
       LOGF(debug, "protonTrack (id: %d, pdg: %d) has mother %d", protonTrack.mcParticleId(),
            protonTrack.mcParticle().pdgCode(), protonTrack.mcParticle().has_mothers() ? protonTrack.mcParticle().mothersIds()[0] : -1);
@@ -407,8 +488,39 @@ struct NonPromptCascadeTask {
           continue;
         }
       }
-      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
+      daughtersDCA dDCA;
+      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
     }
+    // for (auto &c: candidates){
+    //   NPCTableMC(c.pt, c.eta, c.phi, 
+    //             c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachelDCAxy, c.bachelDCAz,
+    //             c.casccosPA, c.v0cosPA, c.bachcosPA,
+    //             c.massXi, c.massOmega, c.massV0,
+    //             c.cascRadius, c.v0radius, c.cascLength, c.v0length,
+    //             c.cascNClusITS, c.cascNClusTPC, c.protonNClusTPC, c.pionNClusTPC, c.bachKaonNClusTPC, c.bachPionNClusTPC,
+    //             c.protonTPCSignal, c.pionTPCSignal, c.bachKaonTPCSignal, c.bachPionTPCSignal,
+    //             c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
+    //             c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
+    //             c.protonTOFSignal, c.pionTOFSignal, c.bachKaonTOFSignal, c.bachPionTOFSignal,
+    //             c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
+    //             //// TODO: add MC info
+    //             );
+    // }
+
+        // NPCTableMC(999.,999.,999.,
+    //           999.,999.,999.,999.,999.,999.,999.,999.,
+    //           999,999,999,
+    //           999.,999.,999.,
+    //           999.,999.,999.,999.,
+    //           -1,-1,-1,-1,-1,-1,
+    //           999.,999.,999.,999.,
+    //           999.,999.,999.,999.,
+    //           0,0,0,0,
+    //           999.,999.,999.,999.,
+    //           999.,999.,999.,999.,
+    //           999.,999.,999.,-1);
+
+
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
 
@@ -417,7 +529,7 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& v0s, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
-
+    candidates.clear();
     bool isOmega{false};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -438,7 +550,7 @@ struct NonPromptCascadeTask {
 
       isOmega = false;
 
-      const auto track = trackedCascade.track_as<TracksExtData>();
+      const auto& track = trackedCascade.track_as<TracksExtData>();
       const auto& casc = trackedCascade.cascade();
       const auto& bachelor = casc.bachelor_as<TracksExtData>();
       const auto& v0 = casc.v0();
@@ -454,6 +566,7 @@ struct NonPromptCascadeTask {
       o2::track::TrackParCov trackParCovV0;
       o2::track::TrackPar trackParV0;
       o2::track::TrackPar trackParBachelor;
+      float cascCpa = -1;
       if (df2.process(getTrackParCov(pionTrack), getTrackParCov(protonTrack))) {
         trackParCovV0 = df2.createParentTrackParCov(0);
         if (df2.process(trackParCovV0, getTrackParCov(bachelor))) {
@@ -461,12 +574,20 @@ struct NonPromptCascadeTask {
           trackParBachelor = df2.getTrackParamAtPCA(1);
           trackParV0.getPxPyPzGlo(momenta[0]);    // getting the V0 momentum
           trackParBachelor.getPxPyPzGlo(momenta[1]);   // getting the bachelor momentum 
+          std::array<float, 3> pVec;
+          df2.createParentTrackParCov().getPxPyPzGlo(pVec);
+          std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
+          cascCpa = RecoDecay::cpa(pvPos, df2.getPCACandidate(), pVec);
         } else {
           continue;
         }
       } else {
         continue;
       }
+
+      float v0CPA = -1;
+      float bachCPA = -1;
+
 
       // Omega
       masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassKPlus};
@@ -493,6 +614,37 @@ struct NonPromptCascadeTask {
 
       registry.fill(HIST("h_PIDcutsXi"), 0, massXi);
       registry.fill(HIST("h_PIDcutsOmega"), 0, massOmega);
+
+
+
+      int bachKaonNClusTPC = -1;
+      int bachPionNClusTPC = -1;
+      if (isOmega){
+        bachKaonNClusTPC = bachelor.tpcNClsFound();
+      }
+      bachPionNClusTPC = bachelor.tpcNClsFound();  /// by default cascade = Xi
+
+      float bachKaonTPCSignal = 999.;
+      float bachPionTPCSignal = 999.;
+      if (isOmega){
+        bachKaonTPCSignal = bachelor.tpcSignal();
+      }
+      bachPionTPCSignal = bachelor.tpcSignal();
+
+      bool bachKaonHasTOF = 0;
+      bool bachPionHasTOF = 0;
+      if (isOmega){
+        bachKaonHasTOF = bachelor.hasTOF();
+      }
+      bachPionHasTOF = bachelor.hasTOF();
+
+      // float bachKaonTOFSignal = 999.;
+      // float bachPionTOFSignal = 999.;
+      // if (isOmega){
+      //   bachKaonTOFSignal = bachelor.tofsignal();
+      // }
+      // bachPionTOFSignal = bachelor.tofSignal();
+      
 
       // if (!bachelor.hasTOF() && !ptrack.hasTOF() && !ntrack.hasTOF() ) {
       //   LOG(debug)<< "no TOF: "<<bachelor.hasTOF()<<"/"<<ptrack.hasTOF()<<"/"<<ntrack.hasTOF();
@@ -530,6 +682,7 @@ struct NonPromptCascadeTask {
       }
       registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
 
+
       LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
       if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
         continue;
@@ -557,9 +710,44 @@ struct NonPromptCascadeTask {
       invMassACV0->Fill(v0mass);
       registry.fill(HIST("h_massvspt_V0"), v0mass, track.pt());
 
-      fillCascadeDCA(trackedCascade, track, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
-      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega);
-    }
+      motherDCA mDCA;
+      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, mDCA);
+      daughtersDCA dDCA;
+      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
+
+      candidates.emplace_back(NPCascCandidate{track.pt(), track.eta(), track.phi(),
+                                              mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
+                                              cascCpa, v0CPA, bachCPA,
+                                              massXi, massOmega, v0mass,
+                                              std::hypot(track.x(), track.y()), std::hypot(trackedCascade.decayX(), trackedCascade.decayY()), std::hypot(track.x(), track.y(), track.z()), std::hypot(trackedCascade.decayX(), trackedCascade.decayY(),trackedCascade.decayZ()), 
+                                              track.itsNCls(), track.tpcNClsFound(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachKaonNClusTPC, bachPionNClusTPC,
+                                              protonTrack.tpcSignal(), pionTrack.tpcSignal(), bachKaonTPCSignal, bachPionTPCSignal,
+                                              protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa() , bachelor.tpcNSigmaPi(),
+                                              protonTrack.hasTOF(), pionTrack.hasTOF(), bachKaonHasTOF, bachPionHasTOF,
+                                              999.,999.,999.,999., // protonTrack.tofSignal(), pionTrack.tofSignal(), bachKaonTOFSignal, bachPionTOFSignal,    
+                                              999.,999.,999.,999., // protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(),                          
+                                              });
+
+
+
+
+    } // end loop over tracked cascades
+
+
+    // for (auto &c: candidates){
+    //   NPCTableMC(c.pt, c.eta, c.phi, 
+    //             c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachelDCAxy, c.bachelDCAz,
+    //             c.casccosPA, c.v0cosPA, c.bachcosPA,
+    //             c.massXi, c.massOmega, c.massV0,
+    //             c.cascRadius, c.v0radius, c.cascLength, c.v0length,
+    //             c.cascNClusITS, c.cascNClusTPC, c.protonNClusTPC, c.pionNClusTPC, c.bachKaonNClusTPC, c.bachPionNClusTPC,
+    //             c.protonTPCSignal, c.pionTPCSignal, c.bachKaonTPCSignal, c.bachPionTPCSignal,
+    //             c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
+    //             c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
+    //             c.protonTOFSignal, c.pionTOFSignal, c.bachKaonTOFSignal, c.bachPionTOFSignal,
+    //             c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
+    //             );
+    // }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
 };
