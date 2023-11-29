@@ -16,8 +16,6 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEDSTOKKPI_H_
 #define PWGHF_CORE_HFMLRESPONSEDSTOKKPI_H_
 
-#include <map>
-#include <string>
 #include <vector>
 
 #include "CommonConstants/PhysicsConstants.h"

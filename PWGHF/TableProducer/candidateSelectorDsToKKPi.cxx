@@ -31,7 +31,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 
 /// Struct to extend TracksPid tables
-struct HfCandidateSelectorDplusToPiKPiExpressions {
+struct HfCandidateSelectorDsToKKPiExpressions {
   Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
   Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
 };
@@ -125,8 +125,8 @@ struct HfCandidateSelectorDsToKKPi {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
-      outputMlDsToKKPi.assign(static_cast<std::vector<int>>(cutDirMl).size(), -1.f); // dummy value for ML output
-      outputMlDsToPiKK.assign(static_cast<std::vector<int>>(cutDirMl).size(), -1.f); // dummy value for ML output
+      outputMlDsToKKPi.assign(cutDirMl.value.size(), -1.f); // dummy value for ML output
+      outputMlDsToPiKK.assign(cutDirMl.value.size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -364,5 +364,7 @@ struct HfCandidateSelectorDsToKKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorDsToKKPiExpressions>(cfgc),
+    adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
 }
