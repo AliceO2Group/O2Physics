@@ -14,6 +14,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -71,9 +72,9 @@ struct HfCandidateCreatorB0Reduced {
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
 
     // invariant-mass window cut
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massD = o2::analysis::pdg::MassDMinus;
-    massB0 = o2::analysis::pdg::MassB0;
+    massPi = o2::constants::physics::MassPiPlus;
+    massD = o2::constants::physics::MassDMinus;
+    massB0 = o2::constants::physics::MassB0;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);

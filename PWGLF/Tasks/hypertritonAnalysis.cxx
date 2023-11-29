@@ -254,7 +254,7 @@ struct hypertritonAnalysis {
                     v0.posTrack_as<TracksCompleteIU>().tpcNSigmaPi());
       if (v0.v0radius() > v0radius) {
         stats[kHypRadius]++;
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        if (v0.v0cosPA() > v0cospa) {
           stats[kHypCosPA]++;
           if (v0.dcaV0daughters() < dcav0dau) {
             stats[kHypDCADaughters]++;
@@ -375,7 +375,7 @@ struct hypertritonAnalysis {
                       TMath::Sqrt(v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos()),
                       v0.posTrack_as<TracksCompleteIUMC>().tpcNSigmaPi());
         stats[kHypRadius]++;
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        if (v0.v0cosPA() > v0cospa) {
           stats[kHypCosPA]++;
           if (v0.dcaV0daughters() < dcav0dau) {
             stats[kHypDCADaughters]++;

@@ -16,6 +16,7 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -83,7 +84,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - o2::analysis::pdg::MassX3872) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - o2::constants::physics::MassX3872) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }

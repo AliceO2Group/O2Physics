@@ -834,7 +834,7 @@ struct MultiplicityCounter {
         auto nTrack = v0.template negTrack_as<FiTracks>();
 
         if (v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau && fabs(z) < 10 && fabs(v0.eta()) < 0.5) {
 
@@ -879,7 +879,7 @@ struct MultiplicityCounter {
         auto nTrack = v0.template negTrack_as<DaughterTracks>();
 
         if (0 && v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {
 

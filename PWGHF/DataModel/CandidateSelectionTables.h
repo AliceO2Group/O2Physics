@@ -43,6 +43,7 @@ DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);     //!
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, int);
 DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbD0bar, mlProbD0bar, std::vector<float>); //!
 } // namespace hf_sel_candidate_d0
 
 DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
@@ -54,7 +55,8 @@ DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsRecoPid);
 
 DECLARE_SOA_TABLE(HfMlD0, "AOD", "HFMLD0", //!
-                  hf_sel_candidate_d0::MlProbD0);
+                  hf_sel_candidate_d0::MlProbD0,
+                  hf_sel_candidate_d0::MlProbD0bar);
 
 namespace hf_sel_candidate_d0_parametrized_pid
 {
@@ -285,16 +287,16 @@ namespace hf_sel_toxipi
 {
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
 DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
-DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, bool);
+DECLARE_SOA_COLUMN(StatusPidCharmBaryon, statusPidCharmBaryon, bool);
 DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
 DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
-DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
+DECLARE_SOA_COLUMN(StatusInvMassCharmBaryon, statusInvMassCharmBaryon, bool);
 DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
-DECLARE_SOA_COLUMN(TpcNSigmaPiFromOmega, tpcNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
-DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCharmBaryon, tofNSigmaPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
@@ -303,11 +305,11 @@ DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 } // namespace hf_sel_toxipi
 
 DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
-                  hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
-                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
+                  hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidCharmBaryon,
+                  hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassCharmBaryon,
                   hf_sel_toxipi::ResultSelections, hf_sel_toxipi::PidTpcInfoStored, hf_sel_toxipi::PidTofInfoStored,
-                  hf_sel_toxipi::TpcNSigmaPiFromOmega, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
-                  hf_sel_toxipi::TofNSigmaPiFromOmega, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
+                  hf_sel_toxipi::TpcNSigmaPiFromCharmBaryon, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
+                  hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 
 } // namespace o2::aod
 

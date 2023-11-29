@@ -48,9 +48,10 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision h
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
-DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
-DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);             //! Index to the collision
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
@@ -76,9 +77,10 @@ DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
                   collision::PosZ,
                   jetspectra::Sel8,
                   jetspectra::MultNTracksPV,
-                  jetspectra::MultTracklets,
-                  jetspectra::MultFT0M,
-                  jetspectra::CentFT0M,
+                  jetspectra::MultFT0A,
+                  jetspectra::MultFT0C,
+                  jetspectra::CentFT0A,
+                  jetspectra::CentFT0C,
                   jetspectra::RunNumber);
 using JeColl = JeColls::iterator;
 

@@ -66,7 +66,7 @@ struct skimmerGammaConversion {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<float> kfMassConstrain{"KFParticleMassConstrain", 0.f, "mass constrain for the KFParticle mother particle"};
+  Configurable<float> kfMassConstrain{"KFParticleMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
 
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
@@ -258,8 +258,9 @@ struct skimmerGammaConversion {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters, 2);
-    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
-
+    if (kfMassConstrain > -0.1) {
+      gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+    }
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 
@@ -293,9 +294,9 @@ struct skimmerGammaConversion {
     // LOGF(info, "ele px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", ele.px(), kfp_ele.GetPx(), kfp_ele_PV.GetPx(), kfp_ele_DecayVtx.GetPx());
     // LOGF(info, "pos px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", pos.px(), kfp_pos.GetPx(), kfp_pos_PV.GetPx(), kfp_pos_DecayVtx.GetPx());
 
-    // ROOT::Math::PxPyPzMVector vpos_pv(kfp_pos_PV.GetPx(), kfp_pos_PV.GetPy(), kfp_pos_PV.GetPz(), o2::constants::physics::MassElectron);
-    // ROOT::Math::PxPyPzMVector vele_pv(kfp_ele_PV.GetPx(), kfp_ele_PV.GetPy(), kfp_ele_PV.GetPz(), o2::constants::physics::MassElectron);
-    // ROOT::Math::PxPyPzMVector v0_pv = vpos_pv + vele_pv;
+    ROOT::Math::PxPyPzMVector vpos_pv(kfp_pos_PV.GetPx(), kfp_pos_PV.GetPy(), kfp_pos_PV.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector vele_pv(kfp_ele_PV.GetPx(), kfp_ele_PV.GetPy(), kfp_ele_PV.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector v0_pv = vpos_pv + vele_pv;
 
     ROOT::Math::PxPyPzMVector vpos_sv(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
     ROOT::Math::PxPyPzMVector vele_sv(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
@@ -324,7 +325,7 @@ struct skimmerGammaConversion {
     v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                v0_sv.M(), v0_pv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                 cospa_kf, pca_kf, alpha, qt, chi2kf);
 
     fillTrackTable(pos, kfp_pos_DecayVtx);

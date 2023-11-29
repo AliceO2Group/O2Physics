@@ -16,6 +16,7 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "CCDB/BasicCCDBManager.h"             // for dca recalculation
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
 #include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
 #include "DetectorsBase/GeometryManager.h"     // for dca recalculation
@@ -35,6 +36,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -46,8 +48,8 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
-  Configurable<double> mPKPiCandLcMax{"mPKPiCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(pKpi)"};
-  Configurable<double> mPiKPCandLcMax{"mPiKPCandLcMax", 0.03, "max. spread (abs. value) between PDG(Lc) and Minv(piKp)"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::cuts[0], hf_cuts_sigmac_to_p_k_pi::nBinsPt, hf_cuts_sigmac_to_p_k_pi::nCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   /// Selections on candidate soft π-,+
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -168,10 +170,20 @@ struct HfCandidateCreatorSigmac0plusplus {
       /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
       auto statusSpreadMinvPKPiFromPDG = 0;
       auto statusSpreadMinvPiKPFromPDG = 0;
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPKPiCandLcMax) {
+
+      // define mass window for Lc
+      float mPKPiCandLcMax = -1;
+      float mPiKPCandLcMax = -1;
+      int pTBin = findBin(binsPt, candLc.pt());
+      if (pTBin != -1) {
+        mPKPiCandLcMax = cutsMassLcMax->get(pTBin, "max pKpi mass Lc");
+        mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
+      }
+
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - o2::analysis::pdg::MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {
@@ -371,11 +383,12 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
   {
 
     // Match reconstructed candidates.
     candidatesSigmac->bindExternalIndices(&tracks);
+    candidatesSigmac->bindExternalIndices(&candsLc);
 
     int indexRec = -1;
     int8_t sign = 0;
@@ -411,7 +424,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kSigmaC0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaC0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
@@ -421,7 +434,7 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kSigmaCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
@@ -447,29 +460,29 @@ struct HfCandidateSigmac0plusplusMc {
       ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
       ///   3. in case of (ii): resonant channel to pK-π+
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kSigmaC0, std::array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaC0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0
         // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
-          if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
+          if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
             break;
           }
         }
-      } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kSigmaCPlusPlus, std::array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
+      } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++
         // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
-          if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
+          if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
             break;

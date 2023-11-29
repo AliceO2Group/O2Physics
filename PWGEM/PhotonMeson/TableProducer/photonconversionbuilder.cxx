@@ -29,7 +29,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -76,8 +75,6 @@ struct PhotonConversionBuilder {
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
@@ -109,9 +106,6 @@ struct PhotonConversionBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  //// Define o2 fitter, 2-prong, active memory (no need to redefine per event)
-  // o2::vertexing::DCAFitterN<2> fitter;
-
   HistogramRegistry registry{
     "registry",
     {
@@ -126,6 +120,7 @@ struct PhotonConversionBuilder {
       {"V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}}},
       {"V0/hMee_SVPV", "mee at PV and SV;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{100, 0.0f, 0.1f}, {100, 0, 0.1f}}}},
       {"V0/hMeeSV_Rxy", "mee at SV vs. R_{xy};R_{xy} (cm);m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
+      {"V0/hMeePV_Rxy", "mee at PV vs. R_{xy};R_{xy} (cm);m_{ee} at PV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
       {"V0/hPtDiff", "V0 KF pt leg sum vs. gamma pt;p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.f}, {1000, 0, 10}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
@@ -157,21 +152,10 @@ struct PhotonConversionBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    //// initialize O2 2-prong fitter (only once)
-    // fitter.setPropagateToPCA(true);
-    // fitter.setMaxR(200.);
-    // fitter.setMinParamChange(1e-3);
-    // fitter.setMinRelChi2Change(0.9);
-    // fitter.setMaxDZIni(1e9);
-    // fitter.setMaxChi2(1e9);
-    // fitter.setUseAbsDCA(d_UseAbsDCA);
-    // fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    // fitter.setMatCorrType(matCorr);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -183,7 +167,6 @@ struct PhotonConversionBuilder {
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
-      // fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
       if (fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
@@ -214,8 +197,6 @@ struct PhotonConversionBuilder {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
-    // Set magnetic field value once known
-    // fitter.setBz(d_bz);
 
     if (useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
@@ -461,11 +442,12 @@ struct PhotonConversionBuilder {
       ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
       registry.fill(HIST("V0/hMee_SVPV"), v0_pv.M(), v0_sv.M());
       registry.fill(HIST("V0/hMeeSV_Rxy"), rxy, v0_sv.M());
+      registry.fill(HIST("V0/hMeePV_Rxy"), rxy, v0_pv.M());
 
       v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                  v0_sv.M(), v0_pv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
       fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);

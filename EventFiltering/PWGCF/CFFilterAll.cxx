@@ -96,6 +96,7 @@ static const std::vector<std::string> TPCTOFAvgName{"TPC Avg", "TOF Avg"};
 static const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TOF min", "TOF max", "TPCTOF max"};
 static const std::vector<std::string> PtCutsName{"Pt min (particle)", "Pt max (particle)", "Pt min (antiparticle)", "Pt max (antiparticle)", "P thres"};
 static const std::vector<std::string> MomCorCutsName{"Momemtum Correlation min", "Momemtum Correlation max"};
+static const std::vector<std::string> PIDForTrackingName{"Switch", "Momemtum Threshold"};
 static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL"};
 static const std::vector<std::string> TwoBodyFilterNames{"PD", "LD"};
 static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PD", "aPaD", "LD", "aLaD"};
@@ -133,8 +134,11 @@ static const float ptcutsTable[kNParticleRejection][nPtCuts]{
 static const float NClustersMin[1][nTracks]{
   {60.0f, 60.0f}};
 static const float MomCorLimits[2][nMomCorCuts] =
-  {{-0.1, 0.1},
-   {-0.1, 0.1}};
+  {{-99, 99},
+   {-99, 99}};
+static const float PIDForTrackingTable[2][nTracks]{
+  {-1, 0.75},
+  {-1, 1.2}};
 
 static const float triggerSwitches[1][nAllTriggers]{
   {1, 1, 1, 1, 1, 1}};
@@ -363,14 +367,31 @@ struct CFFilter {
     "Average expected nSigma of TPC and TOF, which is substracted in calculation of combined TPC and TOF nSigma"};
 
   // Momentum selections
-  Configurable<LabeledArray<float>> ConfMomCorCut{
-    "ConfMomCorCuts",
+  Configurable<LabeledArray<float>> ConfMomCorDifCut{
+    "ConfMomCorDifCuts",
     {CFTrigger::MomCorLimits[0], CFTrigger::nTracks, CFTrigger::nMomCorCuts, CFTrigger::SpeciesName, CFTrigger::MomCorCutsName},
-    "Momentum correlation selections (particle)"};
-  Configurable<LabeledArray<float>> ConfMomCorCutAnti{
-    "ConfMomCorCutsAnti",
+    "ratio on momentum correlation difference (particle)"};
+  Configurable<LabeledArray<float>> ConfMomCorDifCutAnti{
+    "ConfMomCorDifCutsAnti",
     {CFTrigger::MomCorLimits[0], CFTrigger::nTracks, CFTrigger::nMomCorCuts, CFTrigger::SpeciesNameAnti, CFTrigger::MomCorCutsName},
-    "Momentum correlation selections (antipartilce)"};
+    "Cut on momentum correlation difference (antipartilce)"};
+  Configurable<bool> ConfMomCorDifCutFlag{"ConfMomCorDifFlag", false, "Flag for cut on momentum correlation difference"};
+
+  Configurable<LabeledArray<float>> ConfMomCorRatioCut{
+    "ConfMomCorRatioCuts",
+    {CFTrigger::MomCorLimits[0], CFTrigger::nTracks, CFTrigger::nMomCorCuts, CFTrigger::SpeciesName, CFTrigger::MomCorCutsName},
+    "Cut on momentum correlation ratio (particle)"};
+  Configurable<LabeledArray<float>> ConfMomCorRatioCutAnti{
+    "ConfMomCorRatioCutsAnti",
+    {CFTrigger::MomCorLimits[0], CFTrigger::nTracks, CFTrigger::nMomCorCuts, CFTrigger::SpeciesNameAnti, CFTrigger::MomCorCutsName},
+    "Cut on momentum correlation ratio (antipartilce)"};
+  Configurable<bool> ConfMomCorRatioCutFlag{"ConfMomCorRatioFlag", false, "Flag for cut on momentum correlation ratio"};
+
+  Configurable<LabeledArray<float>> ConfPIDForTracking{
+    "ConfPIDForTracking",
+    {CFTrigger::PIDForTrackingTable[0], CFTrigger::nTracks, 2, CFTrigger::SpeciesName, CFTrigger::PIDForTrackingName},
+    "Use PID used in tracking up to momentum threshold"};
+
   Configurable<LabeledArray<float>> ConfPtCuts{
     "ConfPtCuts",
     {CFTrigger::ptcutsTable[0], CFTrigger::kNParticleSpecies, CFTrigger::nPtCuts, CFTrigger::SpeciesNameAll, CFTrigger::PtCutsName},
@@ -567,7 +588,8 @@ struct CFFilter {
     registry.add("TrackCuts/Proton/fPProton", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Proton/fPTPCProton", "Momentum of protons at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Proton/fPtProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/Proton/fMomCorProton", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Proton/fMomCorProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Proton/fMomCorProtonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/Proton/fEtaProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Proton/fPhiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/Proton/fNsigmaTPCvsPProton", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -587,7 +609,8 @@ struct CFFilter {
 
     // antiproton
     registry.add("TrackCuts/AntiProton/fPtAntiProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/AntiProton/fMomCorAntiProton", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiProton/fMomCorAntiProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiProton/fMomCorAntiProtonRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/AntiProton/fEtaAntiProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiProton/fPhiAntiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton", "NSigmaTPC AntiProton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -607,7 +630,8 @@ struct CFFilter {
 
     // deuteron
     registry.add("TrackCuts/Deuteron/fPtDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/Deuteron/fMomCorDeuteron", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Deuteron/fMomCorDeuteronDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Deuteron/fMomCorDeuteronRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/Deuteron/fEtaDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Deuteron/fPhiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteron", "NSigmaTPC Deuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -627,7 +651,8 @@ struct CFFilter {
 
     // antideuteron
     registry.add("TrackCuts/AntiDeuteron/fPtAntiDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    registry.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteron", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{1000, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronRatio", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/AntiDeuteron/fEtaAntiDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiDeuteron/fPhiAntiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteron", "NSigmaTPC AntiDeuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -805,7 +830,8 @@ struct CFFilter {
   {
     const auto charge = track.sign();
     const auto pT = track.pt();
-    float momCor = track.tpcInnerParam() - track.p();
+    float momCorDif = track.tpcInnerParam() - track.p();
+    float momCorRatio = momCorDif / track.p();
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
     const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
@@ -823,10 +849,16 @@ struct CFFilter {
       if (pT > ConfPtCuts->get(partSpecies, "Pt max (particle)")) {
         return false;
       }
-      if (momCor < ConfMomCorCut->get(partSpecies, "Momemtum Correlation min")) {
+      if (ConfMomCorDifCutFlag.value && momCorDif < ConfMomCorDifCut->get(partSpecies, "Momemtum Correlation min")) {
         return false;
       }
-      if (momCor > ConfMomCorCut->get(partSpecies, "Momemtum Correlation max")) {
+      if (ConfMomCorDifCutFlag.value && momCorDif > ConfMomCorDifCut->get(partSpecies, "Momemtum Correlation max")) {
+        return false;
+      }
+      if (ConfMomCorRatioCutFlag.value && momCorRatio < ConfMomCorRatioCut->get(partSpecies, "Momemtum Correlation min")) {
+        return false;
+      }
+      if (ConfMomCorRatioCutFlag.value && momCorRatio > ConfMomCorRatioCut->get(partSpecies, "Momemtum Correlation max")) {
         return false;
       }
     }
@@ -837,10 +869,16 @@ struct CFFilter {
       if (pT > ConfPtCuts->get(partSpecies, "Pt max (antiparticle)")) {
         return false;
       }
-      if (momCor < ConfMomCorCutAnti->get(partSpecies, "Momemtum Correlation min")) {
+      if (ConfMomCorDifCutFlag.value && momCorDif < ConfMomCorDifCutAnti->get(partSpecies, "Momemtum Correlation min")) {
         return false;
       }
-      if (momCor > ConfMomCorCutAnti->get(partSpecies, "Momemtum Correlation max")) {
+      if (ConfMomCorDifCutFlag.value && momCorDif > ConfMomCorDifCutAnti->get(partSpecies, "Momemtum Correlation max")) {
+        return false;
+      }
+      if (ConfMomCorRatioCutFlag.value && momCorRatio < ConfMomCorRatioCutAnti->get(partSpecies, "Momemtum Correlation min")) {
+        return false;
+      }
+      if (ConfMomCorRatioCutFlag.value && momCorRatio > ConfMomCorRatioCutAnti->get(partSpecies, "Momemtum Correlation max")) {
         return false;
       }
     }
@@ -941,6 +979,22 @@ struct CFFilter {
     bool isSelected = false;
     bool pThres = true;
     float nSigma = -999.;
+
+    // check tracking PID
+    uint8_t SpeciesForTracking = 0;
+    if (partSpecies == CFTrigger::kProton) {
+      SpeciesForTracking = o2::track::PID::Proton;
+    } else if (partSpecies == CFTrigger::kDeuteron) {
+      SpeciesForTracking = o2::track::PID::Deuteron;
+    } else {
+      LOG(warn) << "Unknown PID for tracking encountered";
+    }
+
+    if (ConfPIDForTracking->get(partSpecies, "Switch") > 0 && track.tpcInnerParam() < ConfPIDForTracking->get(partSpecies, "Momemtum Threshold")) {
+      if (track.pidForTracking() != SpeciesForTracking) {
+        return false;
+      }
+    }
 
     // check momentum threshold
     if (track.tpcInnerParam() <= ConfPtCuts->get(partSpecies, "P thres")) {
@@ -1051,7 +1105,7 @@ struct CFFilter {
     const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
     const float tranRad = v0.v0radius();
     const float dcaDaughv0 = v0.dcaV0daughters();
-    const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+    const float cpav0 = v0.v0cosPA();
 
     const float invMassLambda = v0.mLambda();
     const float invMassAntiLambda = v0.mAntiLambda();
@@ -1340,7 +1394,8 @@ struct CFFilter {
             registry.fill(HIST("TrackCuts/Proton/fPProton"), track.p());
             registry.fill(HIST("TrackCuts/Proton/fPTPCProton"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/Proton/fPtProton"), track.pt());
-            registry.fill(HIST("TrackCuts/Proton/fMomCorProton"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Proton/fMomCorProtonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Proton/fMomCorProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/Proton/fEtaProton"), track.eta());
             registry.fill(HIST("TrackCuts/Proton/fPhiProton"), track.phi());
             registry.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsPProton"), track.tpcInnerParam(), nTPCSigmaP[0]);
@@ -1366,7 +1421,8 @@ struct CFFilter {
 
             registry.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiProton"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/AntiProton/fPtAntiProton"), track.pt());
-            registry.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProton"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/AntiProton/fEtaAntiProton"), track.eta());
             registry.fill(HIST("TrackCuts/AntiProton/fPhiAntiProton"), track.phi());
             registry.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton"), track.tpcInnerParam(), nTPCSigmaN[0]);
@@ -1395,7 +1451,8 @@ struct CFFilter {
 
             registry.fill(HIST("TrackCuts/TPCSignal/fTPCSignalDeuteron"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/Deuteron/fPtDeuteron"), track.pt());
-            registry.fill(HIST("TrackCuts/Deuteron/fMomCorDeuteron"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Deuteron/fMomCorDeuteronDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Deuteron/fMomCorDeuteronRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/Deuteron/fEtaDeuteron"), track.eta());
             registry.fill(HIST("TrackCuts/Deuteron/fPhiDeuteron"), track.phi());
             registry.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteron"), track.tpcInnerParam(), nTPCSigmaP[1]);
@@ -1420,7 +1477,8 @@ struct CFFilter {
 
             registry.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiDeuteron"), track.tpcInnerParam(), track.tpcSignal());
             registry.fill(HIST("TrackCuts/AntiDeuteron/fPtAntiDeuteron"), track.pt());
-            registry.fill(HIST("TrackCuts/AntiDeuteron/fMomCorAntiDeuteron"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/AntiDeuteron/fEtaAntiDeuteron"), track.eta());
             registry.fill(HIST("TrackCuts/AntiDeuteron/fPhiAntiDeuteron"), track.phi());
             registry.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteron"), track.tpcInnerParam(), nTPCSigmaN[1]);
@@ -1473,7 +1531,7 @@ struct CFFilter {
         registry.fill(HIST("TrackCuts/V0Before/fInvMassLambdavsAntiLambda"), v0.mLambda(), v0.mAntiLambda());
         registry.fill(HIST("TrackCuts/V0Before/fInvMassV0BeforeKaonvsV0Before"), v0.mK0Short(), v0.mLambda());
         registry.fill(HIST("TrackCuts/V0Before/fV0DCADaugh"), v0.dcaV0daughters());
-        registry.fill(HIST("TrackCuts/V0Before/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+        registry.fill(HIST("TrackCuts/V0Before/fV0CPA"), v0.v0cosPA());
         registry.fill(HIST("TrackCuts/V0Before/fV0TranRad"), v0.v0radius());
         registry.fill(HIST("TrackCuts/V0Before/f0DecVtxX"), v0.x());
         registry.fill(HIST("TrackCuts/V0Before/f0DecVtxY"), v0.y());
@@ -1507,7 +1565,7 @@ struct CFFilter {
           registry.fill(HIST("TrackCuts/Lambda/fInvMassLambda"), v0.mLambda());
           registry.fill(HIST("TrackCuts/Lambda/fInvMassLambdaKaonvsLambda"), v0.mK0Short(), v0.mLambda());
           registry.fill(HIST("TrackCuts/Lambda/fV0DCADaugh"), v0.dcaV0daughters());
-          registry.fill(HIST("TrackCuts/Lambda/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+          registry.fill(HIST("TrackCuts/Lambda/fV0CPA"), v0.v0cosPA());
           registry.fill(HIST("TrackCuts/Lambda/fV0TranRad"), v0.v0radius());
           registry.fill(HIST("TrackCuts/Lambda/f0DecVtxX"), v0.x());
           registry.fill(HIST("TrackCuts/Lambda/f0DecVtxY"), v0.y());
@@ -1533,7 +1591,7 @@ struct CFFilter {
           registry.fill(HIST("TrackCuts/AntiLambda/fInvMassAntiLambda"), v0.mAntiLambda());
           registry.fill(HIST("TrackCuts/AntiLambda/fInvMassAntiLambdaKaonvsAntiLambda"), v0.mK0Short(), v0.mAntiLambda());
           registry.fill(HIST("TrackCuts/AntiLambda/fV0DCADaugh"), v0.dcaV0daughters());
-          registry.fill(HIST("TrackCuts/AntiLambda/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+          registry.fill(HIST("TrackCuts/AntiLambda/fV0CPA"), v0.v0cosPA());
           registry.fill(HIST("TrackCuts/AntiLambda/fV0TranRad"), v0.v0radius());
           registry.fill(HIST("TrackCuts/AntiLambda/f0DecVtxX"), v0.x());
           registry.fill(HIST("TrackCuts/AntiLambda/f0DecVtxY"), v0.y());
