@@ -140,9 +140,9 @@ struct strangederivedbuilder {
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         if (currentCollIdx != collIdx) {
-          strangeColl(collision.posX(), collision.posY(), collision.posZ(),
-                      collision.centFT0M(), collision.centFT0A(),
-                      collision.centFT0C(), collision.centFV0A());
+          strangeColl(collision.posX(), collision.posY(), collision.posZ());
+          strangeCents(collision.centFT0M(), collision.centFT0A(),
+                       collision.centFT0C(), collision.centFV0A());
           currentCollIdx = collIdx;
         }
       }
