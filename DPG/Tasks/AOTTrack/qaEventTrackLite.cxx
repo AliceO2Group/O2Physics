@@ -301,13 +301,13 @@ struct qaEventTrackLite {
       histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
       histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
       histos.add("Tracks/MC/ptRecoVsptGen", "", kTH2D, {{axisPt, axisPt}});
-      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetXaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetXaxis()->GetTitle()));
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetYaxis()->GetTitle()));
       histos.add("Tracks/MC/ptRecoVsptGen_wTOF", "", kTH2D, {{axisPt, axisPt}});
-      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetXaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetXaxis()->GetTitle()));
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetYaxis()->GetTitle()));
       histos.add("Tracks/MC/ptRecoVsptGen_wTRD", "", kTH2D, {{axisPt, axisPt}});
-      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetXaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetXaxis()->GetTitle()));
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetYaxis()->GetTitle()));
       histos.add("Tracks/MC/ptRecoVsptGen_woTRD", "", kTH2D, {{axisPt, axisPt}});
-      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetXaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetXaxis()->GetTitle()));
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetYaxis()->GetTitle()));
     }
   }
 
