@@ -301,6 +301,9 @@ struct qaEventTrackLite {
       histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
       histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
       histos.add("Tracks/MC/ptRecoVsptGen", "", kTH2D, {{axisPt, axisPt}});
+      histos.add("Tracks/MC/ptRecoVsptGen_wTOF", "", kTH2D, {{axisPt, axisPt}});
+      histos.add("Tracks/MC/ptRecoVsptGen_wTRD", "", kTH2D, {{axisPt, axisPt}});
+      histos.add("Tracks/MC/ptRecoVsptGen_woTRD", "", kTH2D, {{axisPt, axisPt}});
     }
   }
 
@@ -437,6 +440,14 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/ITS/itsNClstvsEtavsPt"), track.eta(), track.pt(), track.itsNCls());
     if constexpr (isMC) {
       histos.fill(HIST("Tracks/MC/ptRecoVsptGen"), track.pt(), track.ptMC());
+      if (track.hasTOF()) {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_wTOF"), track.pt(), track.ptMC());
+      }
+      if (track.hasTRD()) {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_wTRD"), track.pt(), track.ptMC());
+      } else {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_woTRD"), track.pt(), track.ptMC());
+      }
       histos.fill(HIST("Tracks/MC/resoPhivsPtvsEta"), track.pt(), track.eta(), track.phi() - track.phiMC());
       histos.fill(HIST("Tracks/MC/phiRecovsphiGen"), track.phi(), track.phiMC());
     }
