@@ -262,8 +262,14 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
+    // Track Index Initialization
+    int i = -1;
+
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
+
+      // Track Index
+      i++;
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -274,7 +280,7 @@ struct nuclei_in_jets {
         continue;
 
       // Track Index
-      int i = track.globalIndex();
+      // int i = track.globalIndex();
 
       // Trigger: Particle of Interest
       if (isParticleOfInterest(track))
