@@ -32,11 +32,11 @@ DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
-}
+} // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackTPCPIDs, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)
-                  dautrack::TPCSignal, dautrack::TPCNSigmaEl, 
-                  dautrack::TPCNSigmaPi, dautrack::TPCNSigmaKa, 
+                  dautrack::TPCSignal, dautrack::TPCNSigmaEl,
+                  dautrack::TPCNSigmaPi, dautrack::TPCNSigmaKa,
                   dautrack::TPCNSigmaPr, dautrack::TPCNSigmaHe);
 
 namespace v0data

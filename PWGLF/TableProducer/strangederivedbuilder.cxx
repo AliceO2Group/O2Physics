@@ -70,7 +70,7 @@ struct strangederivedbuilder {
   //__________________________________________________
   // track extra references
   Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
-  Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID 
+  Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
   Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
   Produces<aod::KFCascExtras> kfcascExtras;       // references DauTracks from KF cascades
@@ -78,11 +78,10 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // cascade interlinks
-  Produces<aod::CascToTraRefs> cascToTraRefs;   // cascades -> tracked
-  Produces<aod::CascToKFRefs> cascToKFRefs;     // cascades -> KF
-  Produces<aod::TraToCascRefs> traToCascRefs;   // tracked -> cascades
+  Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
+  Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
+  Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
   Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
-  
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -343,10 +342,10 @@ struct strangederivedbuilder {
 
   void processCascadeInterlink(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades, aod::TraCascIndices const& TraCascades)
   {
-    //Standard to tracked
+    // Standard to tracked
     for (auto const& c : Cascades) {
       int indexTracked = -1, indexKF = -1;
-      if(c.has_cascade()){
+      if (c.has_cascade()) {
         auto cascade = c.cascade_as<interlinkedCascades>();
         indexTracked = cascade.traCascDataId();
         indexKF = cascade.kfCascDataId();
@@ -354,19 +353,19 @@ struct strangederivedbuilder {
       cascToTraRefs(indexTracked);
       cascToKFRefs(indexKF);
     }
-    //Tracked to standard
+    // Tracked to standard
     for (auto const& c : TraCascades) {
       int index = -1;
-      if(c.has_cascade()){
+      if (c.has_cascade()) {
         auto cascade = c.cascade_as<interlinkedCascades>();
         index = cascade.cascDataId();
       }
       traToCascRefs(index);
     }
-    //Tracked to KF
+    // Tracked to KF
     for (auto const& c : KFCascades) {
       int index = -1;
-      if(c.has_cascade()){
+      if (c.has_cascade()) {
         auto cascade = c.cascade_as<interlinkedCascades>();
         index = cascade.cascDataId();
       }

@@ -784,11 +784,11 @@ DECLARE_SOA_EXTENDED_TABLE_USER(TraCascCores, StoredTraCascCores, "TraCascDATAEX
 
 namespace cascdata
 {
-  // For cross-linking all cascade kinds 
+// For cross-linking all cascade kinds
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackedCascade, trackedCascade, int, TraCascCores, "_Refs"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(KFCascade, kfCascade, int, KFCascCores, "_Refs");            //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StandardCascade, standardCascade, int, CascCores, "_Refs");  //!
-}
+} // namespace cascdata
 
 // interlink different cascade types
 DECLARE_SOA_TABLE(CascToTraRefs, "AOD", "CASCTOTRAREFS", //! standard -> tracked
