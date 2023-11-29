@@ -282,6 +282,7 @@ struct k1analysis {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    auto multiplicity = collision.cent();
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonanceK892, lDecayDaughter_bach, lResonanceK1;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks2, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -341,14 +342,14 @@ struct k1analysis {
         histos.fill(HIST("k892invmass"), lResonanceK892.M()); // quick check
         if (trk1.sign() > 0) {                                // Positive pion
           if (trk2.sign() > 0)                                // Positive kaon
-            histos.fill(HIST("hK892invmass_PP"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+            histos.fill(HIST("hK892invmass_PP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
           else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_PN"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
+            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // Anti-K(892)0
         } else {                                                                                                // Negative pion
           if (trk2.sign() > 0)                                                                                  // Positive kaon
-            histos.fill(HIST("hK892invmass_NP"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // K(892)0
+            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // K(892)0
           else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_NN"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+            histos.fill(HIST("hK892invmass_NN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
         }
       }
       // Like-sign rejection for K(892)0 - disabled for further LS bkg study
@@ -427,32 +428,32 @@ struct k1analysis {
             if (bTrack.sign() > 0) {                              // bachelor pi+
               if (trk2.sign() > 0) {                              // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                                                 // bachelor pi-
               if (trk2.sign() > 0) {                                 // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           } else {                   // K892-LS (false)
             if (bTrack.sign() > 0) { // bachelor pi+
               if (trk2.sign() > 0) { // Kaon+
-                histos.fill(HIST("hK1invmass_PPP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PPP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_PPN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PPN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                 // bachelor pi-
               if (trk2.sign() > 0) { // Kaon_
-                histos.fill(HIST("hK1invmass_NNN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NNN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_NNP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NNP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           }
@@ -466,11 +467,11 @@ struct k1analysis {
               histos.fill(HIST("QAMC/K1PairAsymm"), lPairAsym);
 
               if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
-                histos.fill(HIST("hK1invmass_NPP_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP_MC"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
               if ((bTrack.sign() < 0) && (trk2.sign() < 0)) { // Anti-matter
-                histos.fill(HIST("hK1invmass_PNN_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN_MC"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
               histos.fill(HIST("hTrueK1pt"), lResonanceK1.Pt());
@@ -484,16 +485,16 @@ struct k1analysis {
             if (bTrack.sign() > 0) {                                  // bachelor pi+
               if (trk2.sign() > 0) {                                  // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPP_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_PNP_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNP_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                 // bachelor pi-
               if (trk2.sign() > 0) { // kaon + means K(892)0 is matter.
-                histos.fill(HIST("hK1invmass_NPN_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPN_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNN_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           }
@@ -540,7 +541,7 @@ struct k1analysis {
   PROCESS_SWITCH(k1analysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

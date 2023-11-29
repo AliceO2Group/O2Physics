@@ -17,6 +17,7 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
+#include <cstdint>
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
@@ -462,7 +463,7 @@ class VarManager : public TObject
   };
 
   enum EventFilters {
-    kDoubleGap = 1,
+    kDoubleGap = 0,
     kSingleGapA,
     kSingleGapC
   };
@@ -790,7 +791,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
                            muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
-    o2::dataformats::GlobalFwdTrack track{fwdtrack};
+    o2::dataformats::GlobalFwdTrack track(fwdtrack);
     auto mchTrack = mMatching.FwdtoMCH(track);
     o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
     auto propmuon = mMatching.MCHtoFwd(mchTrack);
@@ -915,9 +916,16 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
-
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = (event.tag() & (uint64_t(1) << o2::aod::evsel::kIsTriggerTVX)) > 0;
+    }
+    if (fgUsedVars[kIsDoubleGap]) {
+      values[kIsDoubleGap] = (event.tag() & (uint64_t(1) << (56 + kDoubleGap))) > 0;
+    }
+    if (fgUsedVars[kIsSingleGap] || fgUsedVars[kIsSingleGapA] || fgUsedVars[kIsSingleGapC]) {
+      values[kIsSingleGapA] = (event.tag() & (uint64_t(1) << (56 + kSingleGapA))) > 0;
+      values[kIsSingleGapC] = (event.tag() & (uint64_t(1) << (56 + kSingleGapC))) > 0;
+      values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
     }
   }
 
