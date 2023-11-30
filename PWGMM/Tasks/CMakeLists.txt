@@ -13,4 +13,9 @@ o2physics_add_dpl_workflow(multiplicity-pb-pb
                   SOURCES multiplicityPbPb.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
+                  
+o2physics_add_dpl_workflow(rofs-histos
+                  SOURCES RoFs_histos.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
 
