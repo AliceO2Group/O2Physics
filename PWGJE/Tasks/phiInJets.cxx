@@ -221,9 +221,9 @@ struct phiInJets {
       if (std::abs(candidate.tofNSigmaKa()) < cfgnTOFPID) {
         tofPIDPassed = true;
       }
-    }else
+    }else{
       tofPIDPassed = true;
-
+    }
     if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
