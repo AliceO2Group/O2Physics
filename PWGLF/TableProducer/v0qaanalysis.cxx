@@ -209,10 +209,10 @@ struct LfV0qaanalysis {
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
-                 aod::McCollisions const& mcCollisions,
-                 soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
-                 aod::McParticles const& mcParticles, DauTracksMC const& tracks)
+  void processMCReco(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
+                     aod::McCollisions const& mcCollisions,
+                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                     aod::McParticles const& mcParticles, DauTracksMC const& tracks)
   {
     for (const auto& collision : collisions) {
       // Apply event selection
@@ -316,7 +316,11 @@ struct LfV0qaanalysis {
           registry.fill(HIST("Generated_MCRecoColl_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
       }
     }
+  }
+  PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", true);
 
+  void processMCGen(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
     for (const auto& mccollision : mcCollisions) {
 
       registry.fill(HIST("hNEventsMCGen"), 0.5);
@@ -361,7 +365,7 @@ struct LfV0qaanalysis {
       }
     }
   }
-  PROCESS_SWITCH(LfV0qaanalysis, processMC, "Process MC", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processMCGen, "Process MC Gen", true);
 };
 
 struct LfMyV0s {
