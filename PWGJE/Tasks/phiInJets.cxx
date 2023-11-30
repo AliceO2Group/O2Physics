@@ -37,7 +37,7 @@
 
 //#include "PWGHF/Core/PDG.h"
 #include <TDatabasePDG.h>
-#include <TPDGCode.h>     
+#include <TPDGCode.h>
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -166,7 +166,7 @@ struct phiInJets {
   } // end of init
 
   //double massKa = o2::analysis::pdg::MassKPlus;
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); 
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -222,7 +222,6 @@ struct phiInJets {
         tofPIDPassed = true;
       }
     }
-
     else
       tofPIDPassed = true;
 
@@ -318,10 +317,6 @@ struct phiInJets {
   void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::FullJets> const& fulljets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
     JEhistos.fill(HIST("nEvents"), 0.5);
-
-    // nEvents++;
-    // if((nEvents+1)%10000==0)
-    //   std::cout<<nEvents<<std::endl;
 
     if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection))
       return;
