@@ -113,6 +113,7 @@ struct vertexQA {
     histos.add<TH2>("zDistVsTDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{z}_{vtx} (cm)", HistType::kTH2F, {tDiffVtxAxisExtend, zDiffVtxAxis2});
     histos.add<TH2>("nContribTwoVtxTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
     histos.add<TH2>("nContribVsTDistTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{N}_{contrib}", HistType::kTH2F, {tDiffVtxAxisExtendSigned, nContribDiffAxis});
+    histos.add<TH3>("tDiffNcontribTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH3F, {tDiffVtxAxisExtend, nContribAxis, nContribAxis});
   }
 
   std::deque<BCcoll> colls;
@@ -206,6 +207,7 @@ struct vertexQA {
         histos.fill(HIST("nContribTwoVtxTimeSeriesHistogram"), coll1.numContrib(), coll2.numContrib());
         histos.fill(HIST("nContribVsTDistTimeSeriesHistogram"), -deltaT, coll2.numContrib() - coll1.numContrib());
         histos.fill(HIST("nVtxTimeSeriesHistogram"), 2);
+        histos.fill(HIST("tDiffNcontribTimeSeriesHistogram"), std::abs(deltaT), coll1.numContrib(), coll2.numContrib());
         colls.erase(id);
         colls.pop_front();
       }
