@@ -50,6 +50,10 @@ struct v0cascadesQA {
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> doextraanalysis{"doextraanalysis", 0, "Add extra histograms"};
 
+  // configurable selections
+  Configurable<float> d_etaMin{"d_etaMin", 0, "minimum V0 eta"};
+  Configurable<float> d_etaMax{"d_etaMax", 0.8, "maximum V0 eta"};
+
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
@@ -80,6 +84,8 @@ struct v0cascadesQA {
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
   ConfigurableAxis binInvMassCasc{"binInvMassCasc", {1000, 0.f, 1.0f}, ""};
+
+  Filter V0FilterEta = (o2::aod::v0data::eta < d_etaMax && o2::aod::v0data::eta >= d_etaMin);
 
   OutputObj<TH1F> V0SelectionSummary{TH1F("V0SelectionSummary", "V0SelectionSummary; Selections; Cut", 10, 0., 10.)};
 
@@ -332,7 +338,7 @@ struct v0cascadesQA {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   int ncoll = 0;
 
-  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, DaughterTracks& dtracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
