@@ -135,17 +135,6 @@ struct multiplicityPbPb {
     }
     histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
-
-  void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    histos.fill(HIST("MCGENeventCounter"), 0.5);
-
-    for (auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary()) {
-        histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
-      }
-    }
-  }
   PROCESS_SWITCH(multiplicityPbPb, processMCGEN, "process for GEN MC data", true);
 };
 
