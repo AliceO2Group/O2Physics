@@ -35,7 +35,9 @@
 //#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 
-#include "PWGHF/Core/PDG.h"
+//#include "PWGHF/Core/PDG.h"
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>     
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -163,7 +165,8 @@ struct phiInJets {
 
   } // end of init
 
-  double massKa = o2::analysis::pdg::MassKPlus;
+  //double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); 
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
