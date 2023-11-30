@@ -134,25 +134,25 @@ static const std::tuple pdgCharmDaughters{
   std::array{2212, -321, 211},  // Lc
   std::array{2212, -321, 211}}; // Xic
 
-constexpr float massPi = o2::analysis::pdg::MassPiPlus;
-constexpr float massKa = o2::analysis::pdg::MassKPlus;
-constexpr float massProton = o2::analysis::pdg::MassProton;
-constexpr float massGamma = o2::analysis::pdg::MassGamma;
-constexpr float massK0S = o2::analysis::pdg::MassK0Short;
-constexpr float massLambda = o2::analysis::pdg::MassLambda0;
-constexpr float massXi = o2::analysis::pdg::MassXiMinus;
-constexpr float massPhi = o2::analysis::pdg::MassPhi;
-constexpr float massD0 = o2::analysis::pdg::MassD0;
-constexpr float massDPlus = o2::analysis::pdg::MassDPlus;
-constexpr float massDs = o2::analysis::pdg::MassDS;
-constexpr float massLc = o2::analysis::pdg::MassLambdaCPlus;
-constexpr float massXic = o2::analysis::pdg::MassXiCPlus;
-constexpr float massDStar = o2::analysis::pdg::MassDStar;
-constexpr float massBPlus = o2::analysis::pdg::MassBPlus;
-constexpr float massB0 = o2::analysis::pdg::MassB0;
-constexpr float massBs = o2::analysis::pdg::MassBS;
-constexpr float massLb = o2::analysis::pdg::MassLambdaB0;
-constexpr float massXib = o2::analysis::pdg::MassXiB0;
+constexpr float massPi = o2::constants::physics::MassPiPlus;
+constexpr float massKa = o2::constants::physics::MassKPlus;
+constexpr float massProton = o2::constants::physics::MassProton;
+constexpr float massGamma = o2::constants::physics::MassGamma;
+constexpr float massK0S = o2::constants::physics::MassK0Short;
+constexpr float massLambda = o2::constants::physics::MassLambda0;
+constexpr float massXi = o2::constants::physics::MassXiMinus;
+constexpr float massPhi = o2::constants::physics::MassPhi;
+constexpr float massD0 = o2::constants::physics::MassD0;
+constexpr float massDPlus = o2::constants::physics::MassDPlus;
+constexpr float massDs = o2::constants::physics::MassDS;
+constexpr float massLc = o2::constants::physics::MassLambdaCPlus;
+constexpr float massXic = o2::constants::physics::MassXiCPlus;
+constexpr float massDStar = o2::constants::physics::MassDStar;
+constexpr float massBPlus = o2::constants::physics::MassBPlus;
+constexpr float massB0 = o2::constants::physics::MassB0;
+constexpr float massBs = o2::constants::physics::MassBS;
+constexpr float massLb = o2::constants::physics::MassLambdaB0;
+constexpr float massXib = o2::constants::physics::MassXiB0;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
@@ -400,7 +400,7 @@ class HfFilterHelper
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
-  std::array<TH3F*, 4> mHistMapPiPr{};                    // Map for TPC PID postcalibrations for pions and protons
+  std::array<TH3F*, 6> mHistMapPiPrKa{};                  // Map for TPC PID postcalibrations for pions, kaon and protons
   std::array<std::vector<double>, 6> mBetheBlochPiKaPr{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons in TPC
 };
 
@@ -845,7 +845,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
     }
   }
 
-  auto v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+  auto v0CosinePa = v0.v0cosPA();
   // cosine of pointing angle
   if (TESTBIT(isSelected, kPhoton) && v0CosinePa < mMinGammaCosinePa) {
     CLRBIT(isSelected, kPhoton);
@@ -890,7 +890,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 
   // DCA V0 and V0 daughters
   for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > 0.1f) { // we want only primary V0s
+    if (TESTBIT(isSelected, iV0) && v0.dcav0topv() > 0.1f) { // we want only primary V0s
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(5., iV0);
@@ -1336,18 +1336,19 @@ inline void HfFilterHelper::setTpcRecalibMaps(o2::framework::Service<o2::ccdb::B
   if (!calibList) {
     LOG(fatal) << "Can not find the TPC Post Calibration object!";
   }
-  mHistMapPiPr[0] = nullptr;
-  mHistMapPiPr[1] = nullptr;
-  mHistMapPiPr[2] = nullptr;
-  mHistMapPiPr[3] = nullptr;
+  std::array<std::string, 6> mapNames = {"mean_map_pion", "sigma_map_pion", "mean_map_kaon", "sigma_map_kaon", "mean_map_proton", "sigma_map_proton"};
 
-  mHistMapPiPr[0] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_pion"));
-  mHistMapPiPr[1] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_pion"));
-  mHistMapPiPr[2] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_proton"));
-  mHistMapPiPr[3] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_proton"));
+  for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
+    mHistMapPiPrKa[iMap] = nullptr;
+  }
 
-  if (!mHistMapPiPr[0] || !mHistMapPiPr[1] || !mHistMapPiPr[0] || !mHistMapPiPr[1]) {
-    LOG(fatal) << "Can not find histograms!";
+  for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
+
+    mHistMapPiPrKa[iMap] = reinterpret_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
+    if (!mHistMapPiPrKa[iMap]) {
+      LOG(fatal) << "Cannot find histogram: " << mapNames[iMap].data();
+      return;
+    }
   }
 }
 
@@ -1453,34 +1454,34 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   float tpcNSigma{0.};
   int iHist{0};
 
-  if (pidSpecies == kKa) {
-    tpcNSigma = track.tpcNSigmaKa();
-    iHist = 0; // same as pions
-  } else if (pidSpecies == kPi) {
+  if (pidSpecies == kPi) {
     tpcNSigma = track.tpcNSigmaPi();
     iHist = 0;
+  } else if (pidSpecies == kKa) {
+    tpcNSigma = track.tpcNSigmaKa();
+    iHist = 2;
   } else if (pidSpecies == kPr) {
     tpcNSigma = track.tpcNSigmaPr();
-    iHist = 2;
+    iHist = 4;
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
-  if (!mHistMapPiPr[iHist] || !mHistMapPiPr[iHist + 1]) {
+  if (!mHistMapPiPrKa[iHist] || !mHistMapPiPrKa[iHist + 1]) {
     LOGP(warn, "Postcalibration TPC PID histograms not set. Use default Nsigma values.");
   }
 
-  auto binTPCNCls = mHistMapPiPr[iHist]->GetXaxis()->FindBin(tpcNCls);
+  auto binTPCNCls = mHistMapPiPrKa[iHist]->GetXaxis()->FindBin(tpcNCls);
   binTPCNCls = (binTPCNCls == 0 ? 1 : binTPCNCls);
-  binTPCNCls = std::min(mHistMapPiPr[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
-  auto binPin = mHistMapPiPr[iHist]->GetYaxis()->FindBin(tpcPin);
+  binTPCNCls = std::min(mHistMapPiPrKa[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
+  auto binPin = mHistMapPiPrKa[iHist]->GetYaxis()->FindBin(tpcPin);
   binPin = (binPin == 0 ? 1 : binPin);
-  binPin = std::min(mHistMapPiPr[iHist]->GetYaxis()->GetNbins(), binPin);
-  auto binEta = mHistMapPiPr[iHist]->GetZaxis()->FindBin(eta);
+  binPin = std::min(mHistMapPiPrKa[iHist]->GetYaxis()->GetNbins(), binPin);
+  auto binEta = mHistMapPiPrKa[iHist]->GetZaxis()->FindBin(eta);
   binEta = (binEta == 0 ? 1 : binEta);
-  binEta = std::min(mHistMapPiPr[iHist]->GetZaxis()->GetNbins(), binEta);
+  binEta = std::min(mHistMapPiPrKa[iHist]->GetZaxis()->GetNbins(), binEta);
 
-  auto mean = mHistMapPiPr[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
-  auto width = mHistMapPiPr[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto mean = mHistMapPiPrKa[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto width = mHistMapPiPrKa[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
 
   return (tpcNSigma - mean) / width;
 }

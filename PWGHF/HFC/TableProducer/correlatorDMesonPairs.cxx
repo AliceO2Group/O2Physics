@@ -15,6 +15,7 @@
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -29,6 +30,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -190,14 +192,14 @@ struct HfCorrelatorDMesonPairs {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassD0)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(MassD0)) > yCandMax) {
         return false;
       }
     } else {
       if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
         return false;
       }
-      if (yCandMax >= 0. && std::abs(candidate.y(o2::analysis::pdg::MassDPlus)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(candidate.y(MassDPlus)) > yCandMax) {
         return false;
       }
     }
@@ -212,7 +214,7 @@ struct HfCorrelatorDMesonPairs {
   bool kinematicCutsGen(const T& particle)
   {
     // check if the particle is D or Dbar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-    if (std::abs(particle.pdgCode()) != pdg::Code::kDPlus && std::abs(particle.pdgCode()) != pdg::Code::kD0) {
+    if (std::abs(particle.pdgCode()) != Pdg::kDPlus && std::abs(particle.pdgCode()) != Pdg::kD0) {
       return false;
     }
     if (yCandMax >= 0. && std::abs(particle.y()) > yCandMax) {
@@ -235,9 +237,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEtaMcRec"), candidate.eta());
       registry.fill(HIST("hPhiMcRec"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassD0));
+        registry.fill(HIST("hYMcRec"), candidate.y(MassD0));
       } else {
-        registry.fill(HIST("hYMcRec"), candidate.y(o2::analysis::pdg::MassDPlus));
+        registry.fill(HIST("hYMcRec"), candidate.y(MassDPlus));
       }
     } else {
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -246,9 +248,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
       if (isD0) {
-        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassD0));
+        registry.fill(HIST("hY"), candidate.y(MassD0));
       } else {
-        registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassDPlus));
+        registry.fill(HIST("hY"), candidate.y(MassDPlus));
       }
     }
   }
@@ -313,10 +315,10 @@ struct HfCorrelatorDMesonPairs {
   uint8_t assignCandidateTypeGen(const T& candidate)
   {
     uint8_t candidateType(0);
-    if (candidate.pdgCode() == pdg::Code::kDPlus || candidate.pdgCode() == pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+    if (candidate.pdgCode() == Pdg::kDPlus || candidate.pdgCode() == Pdg::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
       SETBIT(candidateType, SelectedD);
       SETBIT(candidateType, TrueD);
-    } else if (candidate.pdgCode() == -pdg::Code::kDPlus || candidate.pdgCode() == -pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+    } else if (candidate.pdgCode() == -Pdg::kDPlus || candidate.pdgCode() == -Pdg::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
       SETBIT(candidateType, SelectedDbar);
       SETBIT(candidateType, TrueDbar);
     }
@@ -331,10 +333,10 @@ struct HfCorrelatorDMesonPairs {
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       auto pdgCode = std::abs(particle1.pdgCode());
-      if (pdgCode != pdg::Code::kD0 && pdgCode != pdg::Code::kDPlus) {
+      if (pdgCode != Pdg::kD0 && pdgCode != Pdg::kDPlus) {
         continue;
       }
-      auto massD = pdgCode == pdg::Code::kD0 ? o2::analysis::pdg::MassD0 : o2::analysis::pdg::MassDPlus;
+      auto massD = pdgCode == Pdg::kD0 ? MassD0 : MassDPlus;
       double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, massD);
       if (!kinematicCutsGen(particle1)) {
         continue;
@@ -367,15 +369,15 @@ struct HfCorrelatorDMesonPairs {
         int8_t matchedGen2 = particle2.flagMcMatchGen();
 
         // If both particles are D0's, fill D0Pair table
-        if (std::abs(particle1.pdgCode()) == pdg::Code::kD0 && std::abs(particle2.pdgCode()) == pdg::Code::kD0) {
+        if (std::abs(particle1.pdgCode()) == Pdg::kD0 && std::abs(particle2.pdgCode()) == Pdg::kD0) {
           entryD0Pair(getDeltaPhi(particle2.phi(), particle1.phi()),
                       particle2.eta() - particle1.eta(),
                       particle1.pt(),
                       particle2.pt(),
                       particle1.y(),
                       particle2.y(),
-                      o2::analysis::pdg::MassD0,
-                      o2::analysis::pdg::MassD0,
+                      MassD0,
+                      MassD0,
                       candidateType1,
                       candidateType2,
                       2);
@@ -384,15 +386,15 @@ struct HfCorrelatorDMesonPairs {
                               matchedGen1,
                               matchedGen2);
           // If both particles are DPlus, fill DplusPair table
-        } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
+        } else if (std::abs(particle1.pdgCode()) == Pdg::kDPlus && std::abs(particle2.pdgCode()) == Pdg::kDPlus) {
           entryDplusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
                          particle1.pt(),
                          particle2.pt(),
                          particle1.y(),
                          particle2.y(),
-                         o2::analysis::pdg::MassDPlus,
-                         o2::analysis::pdg::MassDPlus,
+                         MassDPlus,
+                         MassDPlus,
                          candidateType1,
                          candidateType2,
                          2);

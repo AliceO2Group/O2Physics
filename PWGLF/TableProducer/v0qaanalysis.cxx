@@ -13,7 +13,6 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -22,16 +21,24 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<ConfigParamSpec> options{{"add-fill", VariantType::Int, 1, {"Add histogram filling"}}};
+  std::swap(workflowOptions, options);
+}
+
+#include "Framework/runDataProcessing.h"
+
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 
-struct v0qaanalysis {
+struct LfV0qaanalysis {
 
   // Produces
   Produces<aod::MyV0Candidates> myv0s;
@@ -40,7 +47,12 @@ struct v0qaanalysis {
 
   void init(InitContext const&)
   {
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "zvertex");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Selected");
+
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
@@ -64,38 +76,55 @@ struct v0qaanalysis {
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
-  Configurable<float> dcav0dau{"dcav0dau", 1.5, "DCA V0 Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", 0.06, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 0.06, "DCA Pos To PV"};
-  Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
+  Configurable<float> dcav0dau{"dcav0dau", 10, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.0, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
+  Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
   Configurable<float> rapidity{"rapidity", 0.5, "Rapidity"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
   Configurable<bool> isMC{"isMC", 0, "Is MC"};
 
+  // Event selection
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    if (sel8 && !collision.sel8()) {
+      return false;
+      registry.fill(HIST("hNEvents"), 1.5);
+    }
+
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+      registry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    return true;
+  }
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
   {
-    // Event selection
-    if (sel8 && !collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      return;
-    }
 
+    // Apply event selection
     registry.fill(HIST("hNEvents"), 0.5);
+    if (!AcceptEvent(collision)) {
+      return;
+    }
+    registry.fill(HIST("hNEvents"), 3.5);
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
     registry.fill(HIST("hCentFV0A"), collision.centFV0A());
 
     for (auto& v0 : V0s) { // loop over V0s
 
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+      // c tau
+      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
+      // ITS clusters
       int posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
         if (v0.posTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
@@ -106,18 +135,24 @@ struct v0qaanalysis {
         }
       }
 
+      // Event flags
+      int evFlag = 0;
+      if (collision.isInelGt0()) {
+        evFlag = 1;
+      }
+
       int lPDG = 0;
       bool isPhysicalPrimary = isMC;
 
       if (v0.v0radius() > v0radius &&
-          v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+          v0.v0cosPA() > v0cospa &&
           TMath::Abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
           TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
         myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
-              v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+              v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
               v0.posTrack_as<DauTracks>().eta(), v0.negTrack_as<DauTracks>().eta(),
               v0.posTrack_as<DauTracks>().phi(), v0.negTrack_as<DauTracks>().phi(),
@@ -127,11 +162,11 @@ struct v0qaanalysis {
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
               v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A());
+              collision.centFT0M(), collision.centFV0A(), evFlag);
       }
     }
   }
-  PROCESS_SWITCH(v0qaanalysis, processData, "Process data", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processData, "Process data", true);
 
   Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
@@ -139,22 +174,21 @@ struct v0qaanalysis {
   SliceCache cache1;
   SliceCache cache2;
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
                  aod::McCollisions const& mcCollisions,
                  soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                  aod::McParticles const& mcParticles, DauTracksMC const& tracks)
   {
     for (const auto& collision : collisions) {
-      // Event selection
-      if (sel8 && !collision.sel8()) {
-        continue;
-      }
-      if (TMath::Abs(collision.posZ()) > cutzvertex) {
-        continue;
+      // Apply event selection
+      registry.fill(HIST("hNEvents"), 0.5);
+      if (!AcceptEvent(collision)) {
+        return;
       }
       if (!collision.has_mcCollision()) {
         continue;
       }
+      registry.fill(HIST("hNEvents"), 3.5);
 
       registry.fill(HIST("hNEventsMC_RecoColl"), 0.5);
 
@@ -196,12 +230,18 @@ struct v0qaanalysis {
           }
         }
 
-        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+        // Event flags
+        int evFlag = 0;
+        if (collision.isInelGt0()) {
+          evFlag = 1;
+        }
+
+        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
         if (v0.v0radius() > v0radius &&
-            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            v0.v0cosPA() > v0cospa &&
             TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
             TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
         ) {
@@ -211,7 +251,7 @@ struct v0qaanalysis {
           // Fill table
           myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
-                v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
                 v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
                 v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),
@@ -221,7 +261,7 @@ struct v0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-                cent, cent);
+                cent, cent, evFlag);
         }
       }
 
@@ -287,10 +327,10 @@ struct v0qaanalysis {
       }
     }
   }
-  PROCESS_SWITCH(v0qaanalysis, processMC, "Process MC", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processMC, "Process MC", true);
 };
 
-struct myV0s {
+struct LfMyV0s {
 
   HistogramRegistry registry{"registry"};
 
@@ -350,7 +390,9 @@ struct myV0s {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<v0qaanalysis>(cfgc, TaskName{"lf-v0qaanalysis"}),
-    adaptAnalysisTask<myV0s>(cfgc, TaskName{"lf-myv0s"})};
+  auto w = WorkflowSpec{adaptAnalysisTask<LfV0qaanalysis>(cfgc)};
+  if (cfgc.options().get<int>("add-fill")) {
+    w.push_back(adaptAnalysisTask<LfMyV0s>(cfgc));
+  }
+  return w;
 }

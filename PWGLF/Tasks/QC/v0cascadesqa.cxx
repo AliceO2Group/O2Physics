@@ -21,7 +21,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -380,7 +380,7 @@ struct v0cascadesQA {
         }
       }
 
-      histos_V0.fill(HIST("CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      histos_V0.fill(HIST("CosPA"), v0.v0cosPA());
       histos_V0.fill(HIST("V0Radius"), v0.v0radius());
       histos_V0.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
       histos_V0.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
@@ -389,10 +389,10 @@ struct v0cascadesQA {
       float decayLength = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(v0.px(), v0.py(), v0.pz());
       histos_V0.fill(HIST("DecayLength"), decayLength);
 
-      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA &&
+      if (v0.v0cosPA() > V0_cosPA &&
           v0.v0radius() > V0_radius &&
           v0.dcaV0daughters() < V0_dcav0dau &&
           TMath::Abs(v0.dcapostopv()) > V0_dcapostopv && TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
@@ -405,8 +405,8 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("CtauK0s"), CtauK0s);
           histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
           histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short());
-          histos_V0.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mK0Short());
-          histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+          histos_V0.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mK0Short());
+          histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv());
           if (doextraanalysis) {
             histos_V0.fill(HIST("InvMassK0S_Radius"), v0.v0radius(), v0.mK0Short());
             histos_V0.fill(HIST("InvMassK0S_PtRadius"), v0.pt(), v0.v0radius(), v0.mK0Short());
@@ -425,9 +425,9 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("CtauLambda"), CtauLambda);
           histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda());
           if (doextraanalysis)
-            histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mLambda());
-          histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-          if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - o2::analysis::pdg::MassK0Short) > 0.012 && TMath::Abs(v0.mAntiLambda() - o2::analysis::pdg::MassLambda0) > 0.08 && TMath::Abs(v0.mLambda() - o2::analysis::pdg::MassLambda0) < 0.002) {
+            histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mLambda());
+          histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv());
+          if (v0.v0cosPA() > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > 0.012 && TMath::Abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > 0.08 && TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) < 0.002) {
             histos_V0.fill(HIST("ResponsePionFromLambda"), v0.pt(), negdau.tpcNSigmaPi());
             histos_V0.fill(HIST("ResponseProtonFromLambda"), v0.pt(), posdau.tpcNSigmaPr());
           }
@@ -450,8 +450,8 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
           histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda());
           if (doextraanalysis)
-            histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())), v0.mAntiLambda());
-          histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+            histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mAntiLambda());
+          histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv());
           if (doextraanalysis) {
             histos_V0.fill(HIST("InvMassAntiLambda_Radius"), v0.v0radius(), v0.mAntiLambda());
             histos_V0.fill(HIST("InvMassAntiLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
@@ -487,10 +487,10 @@ struct v0cascadesQA {
         lPDG = v0mcparticle.pdgCode();
       }
 
-      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+      float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+      float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA &&
+      if (v0.v0cosPA() > V0_cosPA &&
           v0.v0radius() > V0_radius &&
           v0.dcaV0daughters() < V0_dcav0dau &&
           TMath::Abs(v0.dcapostopv()) > V0_dcapostopv &&
@@ -588,12 +588,12 @@ struct v0cascadesQA {
       histos_Casc.fill(HIST("CascDecayLengthOmega"), cascDecayLength, casc.sign());
 
       float cascTotalMomentum = RecoDecay::sqrtSumOfSquares(casc.px(), casc.py(), casc.pz());
-      float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::analysis::pdg::MassXi0; // see O2Physics/Common/Core/MC.h for codes and names accepted
-      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::analysis::pdg::MassOmegaMinus;
+      float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::constants::physics::MassXi0; // see O2Physics/Common/Core/MC.h for codes and names accepted
+      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * o2::constants::physics::MassOmegaMinus;
 
       float v0TotalMomentum = RecoDecay::sqrtSumOfSquares(casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg());
       float v0DecayLength = std::sqrt(std::pow(casc.xlambda() - casc.x(), 2) + std::pow(casc.ylambda() - casc.y(), 2) + std::pow(casc.zlambda() - casc.z(), 2));
-      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * o2::analysis::pdg::MassLambda0;
+      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * o2::constants::physics::MassLambda0;
 
       histos_Casc.fill(HIST("CascCtauXi"), CtauXi, casc.sign());
       histos_Casc.fill(HIST("CascCtauOmega"), CtauOmega, casc.sign());

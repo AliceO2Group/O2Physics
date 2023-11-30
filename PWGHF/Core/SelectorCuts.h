@@ -63,6 +63,16 @@ static const std::vector<std::string> labelsPtTrack{};
 static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
+namespace hf_presel_proton_pid
+{
+// default values for the PID cuts for protons in the track-index-skim-creator
+constexpr float cutsProtonPid[3][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
+static const std::vector<std::string> labelsCutsProtonPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
+static const std::vector<std::string> labelsRowsProtonPid = {"LcToPKPi", "XicToPKPi", "LcToPK0S"};
+} // namespace hf_presel_proton_pid
+
 namespace hf_cuts_bdt_multiclass
 {
 static constexpr int nBinsPt = 1;
@@ -185,6 +195,29 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
+
+namespace hf_cuts_presel_ds
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 5;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.,
+  5.,
+  1000.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.02},  /* 1 < pt < 5 */
+                                            {1.70, 2.15, 0.5, 0.02, 0.02}}; /* 5 < pt < 1000 */
+
+// row labels
+static const std::vector<std::string> labelsPt{};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "deltaMassKK"};
+} // namespace hf_cuts_presel_ds
 
 namespace hf_cuts_presel_dstar
 {

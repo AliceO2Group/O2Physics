@@ -60,8 +60,8 @@ struct perfK0sResolution {
   Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
-  Configurable<int> requireTRDneg{"requireTRDneg", 0, "requireTRDneg"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
-  Configurable<int> requireTRDpos{"requireTRDpos", 0, "requireTRDpos"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
+  Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
@@ -69,24 +69,54 @@ struct perfK0sResolution {
   {
     // Apply selections on V0
     if (TMath::Abs(v0.yK0Short()) > rapidity)
-      return kFALSE;
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0setting_cospa)
-      return kFALSE;
+      return false;
+    if (v0.v0cosPA() < v0setting_cospa)
+      return false;
     if (v0.v0radius() < v0setting_radius)
-      return kFALSE;
+      return false;
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime)
-      return kFALSE;
+      return false;
 
     // Apply selections on V0 daughters
     if (!ntrack.hasTPC() || !ptrack.hasTPC())
-      return kFALSE;
+      return false;
     if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
-      return kFALSE;
-    if ((requireTRDneg > 0 && !ntrack.hasTRD()) || (requireTRDneg < 0 && ntrack.hasTRD()))
-      return kFALSE;
-    if ((requireTRDpos > 0 && !ptrack.hasTRD()) || (requireTRDpos < 0 && ptrack.hasTRD()))
-      return kFALSE;
-    return kTRUE;
+      return false;
+    switch (trdSelectionPos) {
+      case -1:
+        if (ptrack.hasTRD()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ptrack.hasTRD()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for positive daughter";
+        break;
+    }
+    switch (trdSelectionNeg) {
+      case -1:
+        if (ntrack.hasTRD()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ntrack.hasTRD()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for negative daughter";
+        break;
+    }
+    return true;
   }
 
   Filter v0Filter = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;

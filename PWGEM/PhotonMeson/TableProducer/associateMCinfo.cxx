@@ -99,7 +99,7 @@ struct AssociateMCInfo {
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (auto& mctrack : groupedMcTracks) {
-        if (mctrack.pt() < 1e-2 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
@@ -142,9 +142,6 @@ struct AssociateMCInfo {
         for (auto& v0 : groupedV0s) {
           auto ele = v0.template negTrack_as<aod::V0Legs>();
           auto pos = v0.template posTrack_as<aod::V0Legs>();
-
-          // auto o2track_ele = ele.template track_as<TracksMC>();
-          // auto o2track_pos = pos.template track_as<TracksMC>();
 
           auto o2track_ele = o2tracks.iteratorAt(pos.trackId());
           auto o2track_pos = o2tracks.iteratorAt(ele.trackId());
@@ -192,7 +189,7 @@ struct AssociateMCInfo {
         } // end of em primary track loop
       }
       if constexpr (static_cast<bool>(system & kDalitzMuMu)) {
-        // for dalitz ee
+        // for dalitz mumu
         auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
         for (auto& emprimarymuon : emprimarymuons_coll) {
           auto o2track = o2tracks.iteratorAt(emprimarymuon.trackId());

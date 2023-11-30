@@ -236,7 +236,7 @@ struct cascadeCorrelations {
 
   Filter Selector = aod::cascadeflags::isSelected > 0;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     if (!collision.sel8()) {
       return;

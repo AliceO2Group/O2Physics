@@ -211,7 +211,17 @@ o2physics_add_dpl_workflow(delta-analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(rsn-analysis-thnsparse
-                    SOURCES rsnanalysisTHnSparse.cxx
+o2physics_add_dpl_workflow(phi-analysis-thnsparse
+                    SOURCES phianalysisTHnSparse.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-in-jets
+                    SOURCES nuclei_in_jets.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(helium-flow
+                    SOURCES helium_flow.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

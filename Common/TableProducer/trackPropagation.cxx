@@ -29,6 +29,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "TableHelper.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -60,7 +61,7 @@ struct TrackPropagation {
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-  const o2::dataformats::MeanVertexObject* mVtx = nullptr;
+  const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
 
@@ -73,22 +74,29 @@ struct TrackPropagation {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessCovariance == true && doprocessStandard == true) {
-      LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
+    int nEnabledProcesses = 0;
+    if (doprocessStandard == true) {
+      LOG(info) << "Enabling processStandard";
+      nEnabledProcesses++;
     }
-
+    if (doprocessCovariance == true) {
+      LOG(info) << "Enabling processCovariance";
+      nEnabledProcesses++;
+    }
+    if (doprocessStandardWithPID == true) {
+      LOG(info) << "Enabling processStandardWithPID";
+      nEnabledProcesses++;
+    }
+    if (doprocessCovarianceWithPID == true) {
+      LOG(info) << "Enabling processCovarianceWithPID";
+      nEnabledProcesses++;
+    }
+    if (nEnabledProcesses != 1) {
+      LOG(fatal) << "Exactly one process flag must be set to true. Please choose one.";
+    }
     // Checking if the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "TracksDCA") {
-          fillTracksDCA = true;
-        }
-        if (input.matcher.binding == "TracksDCACov") {
-          fillTracksDCACov = true;
-        }
-      }
-    }
+    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
+    fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -106,99 +114,132 @@ struct TrackPropagation {
     LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
     o2::base::Propagator::Instance()->setMatLUT(lut);
-    mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+    mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     runNumber = bc.runNumber();
   }
 
-  template <typename TTrack, typename TTrackPar>
-  void FillTracksPar(TTrack& track, aod::track::TrackTypeEnum trackType, TTrackPar& trackPar)
-  {
-    tracksParPropagated(track.collisionId(), trackType, trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-    tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
-  }
+  // Running variables
+  gpu::gpustd::array<float, 2> mDcaInfo;
+  o2::dataformats::DCA mDcaInfoCov;
+  o2::dataformats::VertexBase mVtx;
+  o2::track::TrackParametrization<float> mTrackPar;
+  o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
-  void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
+  template <typename TTrack, bool fillCovMat = false, bool useTrkPid = false>
+  void fillTrackTables(TTrack const& tracks,
+                       aod::Collisions const&,
+                       aod::BCsWithTimestamps const& bcs)
   {
     if (bcs.size() == 0) {
       return;
     }
     initCCDB(bcs.begin());
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    if constexpr (fillCovMat) {
+      tracksParCovPropagated.reserve(tracks.size());
+      tracksParCovExtensionPropagated.reserve(tracks.size());
+      if (fillTracksDCACov) {
+        tracksDCACov.reserve(tracks.size());
+      }
+    } else {
+      tracksParPropagated.reserve(tracks.size());
+      tracksParExtensionPropagated.reserve(tracks.size());
+      if (fillTracksDCA) {
+        tracksDCA.reserve(tracks.size());
+      }
+    }
 
     for (auto& track : tracks) {
-      dcaInfo[0] = 999;
-      dcaInfo[1] = 999;
+      if constexpr (fillCovMat) {
+        if (fillTracksDCACov) {
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+        }
+        setTrackParCov(track, mTrackParCov);
+        if constexpr (useTrkPid) {
+          mTrackParCov.setPID(track.pidForTracking());
+        }
+      } else {
+        if (fillTracksDCA) {
+          mDcaInfo[0] = 999;
+          mDcaInfo[1] = 999;
+        }
+        setTrackPar(track, mTrackPar);
+        if constexpr (useTrkPid) {
+          mTrackPar.setPID(track.pidForTracking());
+        }
+      }
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
-      auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+          if constexpr (fillCovMat) {
+            mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+            mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+          } else {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+          }
         } else {
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+          if constexpr (fillCovMat) {
+            mVtx.setPos({mMeanVtx->getX(), mMeanVtx->getY(), mMeanVtx->getZ()});
+            mVtx.setCov(mMeanVtx->getSigmaX() * mMeanVtx->getSigmaX(), 0.0f, mMeanVtx->getSigmaY() * mMeanVtx->getSigmaY(), 0.0f, 0.0f, mMeanVtx->getSigmaZ() * mMeanVtx->getSigmaZ());
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+          } else {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({mMeanVtx->getX(), mMeanVtx->getY(), mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+          }
         }
         trackType = aod::track::Track;
       }
-      FillTracksPar(track, trackType, trackPar);
-      if (fillTracksDCA) {
-        tracksDCA(dcaInfo[0], dcaInfo[1]);
+      if constexpr (fillCovMat) {
+        tracksParPropagated(track.collisionId(), trackType, mTrackParCov.getX(), mTrackParCov.getAlpha(), mTrackParCov.getY(), mTrackParCov.getZ(), mTrackParCov.getSnp(), mTrackParCov.getTgl(), mTrackParCov.getQ2Pt());
+        tracksParExtensionPropagated(mTrackParCov.getPt(), mTrackParCov.getP(), mTrackParCov.getEta(), mTrackParCov.getPhi());
+        // TODO do we keep the rho as 0? Also the sigma's are duplicated information
+        tracksParCovPropagated(std::sqrt(mTrackParCov.getSigmaY2()), std::sqrt(mTrackParCov.getSigmaZ2()), std::sqrt(mTrackParCov.getSigmaSnp2()),
+                               std::sqrt(mTrackParCov.getSigmaTgl2()), std::sqrt(mTrackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        tracksParCovExtensionPropagated(mTrackParCov.getSigmaY2(), mTrackParCov.getSigmaZY(), mTrackParCov.getSigmaZ2(), mTrackParCov.getSigmaSnpY(),
+                                        mTrackParCov.getSigmaSnpZ(), mTrackParCov.getSigmaSnp2(), mTrackParCov.getSigmaTglY(), mTrackParCov.getSigmaTglZ(), mTrackParCov.getSigmaTglSnp(),
+                                        mTrackParCov.getSigmaTgl2(), mTrackParCov.getSigma1PtY(), mTrackParCov.getSigma1PtZ(), mTrackParCov.getSigma1PtSnp(), mTrackParCov.getSigma1PtTgl(),
+                                        mTrackParCov.getSigma1Pt2());
+        if (fillTracksDCA) {
+          tracksDCA(mDcaInfoCov.getY(), mDcaInfoCov.getZ());
+        }
+        if (fillTracksDCACov) {
+          tracksDCACov(mDcaInfoCov.getSigmaY2(), mDcaInfoCov.getSigmaZ2());
+        }
+      } else {
+        tracksParPropagated(track.collisionId(), trackType, mTrackPar.getX(), mTrackPar.getAlpha(), mTrackPar.getY(), mTrackPar.getZ(), mTrackPar.getSnp(), mTrackPar.getTgl(), mTrackPar.getQ2Pt());
+        tracksParExtensionPropagated(mTrackPar.getPt(), mTrackPar.getP(), mTrackPar.getEta(), mTrackPar.getPhi());
+        if (fillTracksDCA) {
+          tracksDCA(mDcaInfo[0], mDcaInfo[1]);
+        }
       }
     }
+  }
+
+  void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  {
+    fillTrackTables<aod::StoredTracksIU, /*fillCovMat =*/false, /*useTrkPid =*/false>(tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
 
-  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
+  void processStandardWithPID(soa::Join<aod::StoredTracksIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    if (bcs.size() == 0) {
-      return;
-    }
-    initCCDB(bcs.begin());
+    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksExtra>, /*fillCovMat =*/false, /*useTrkPid =*/true>(tracks, collisions, bcs);
+  }
+  PROCESS_SWITCH(TrackPropagation, processStandardWithPID, "Process without covariance and with PID in tracking", false);
 
-    o2::dataformats::DCA dcaInfoCov;
-    o2::dataformats::VertexBase vtx;
-
-    tracksParPropagated.reserve(tracks.size());
-    tracksParExtensionPropagated.reserve(tracks.size());
-    tracksParCovPropagated.reserve(tracks.size());
-    tracksParCovExtensionPropagated.reserve(tracks.size());
-
-    for (auto& track : tracks) {
-      dcaInfoCov.set(999, 999, 999, 999, 999);
-      auto trackParCov = getTrackParCov(track);
-      aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
-      // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
-        if (track.has_collision()) {
-          auto const& collision = track.collision();
-          vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-          vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
-        } else {
-          vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-          vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
-        }
-        trackType = aod::track::Track;
-      }
-      FillTracksPar(track, trackType, trackParCov);
-      if (fillTracksDCA) {
-        tracksDCA(dcaInfoCov.getY(), dcaInfoCov.getZ());
-      }
-      if (fillTracksDCACov) {
-        tracksDCACov(dcaInfoCov.getSigmaY2(), dcaInfoCov.getSigmaZ2());
-      }
-      // TODO do we keep the rho as 0? Also the sigma's are duplicated information
-      tracksParCovPropagated(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
-                             std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      tracksParCovExtensionPropagated(trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
-                                      trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
-                                      trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
-                                      trackParCov.getSigma1Pt2());
-    }
+  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  {
+    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
+
+  void processCovarianceWithPID(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  {
+    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra>, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, collisions, bcs);
+  }
+  PROCESS_SWITCH(TrackPropagation, processCovarianceWithPID, "Process with covariance and with PID in tracking", false);
 };
 
 //****************************************************************************************

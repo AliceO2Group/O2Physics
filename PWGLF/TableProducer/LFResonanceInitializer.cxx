@@ -168,7 +168,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
@@ -233,7 +233,7 @@ struct reso2initializer {
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
+    if (v0.v0cosPA() < cMinV0CosPA)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
@@ -471,7 +471,7 @@ struct reso2initializer {
                v0.eta(),
                v0.phi(),
                childIDs,
-               v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+               v0.v0cosPA(),
                v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {
