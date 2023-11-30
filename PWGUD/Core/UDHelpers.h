@@ -430,7 +430,7 @@ bool cleanFV0(T& bc, float maxFITtime, float limitA)
 template <typename T>
 bool cleanFT0(T& bc, float maxFITtime, float limitA, float limitC)
 {
-  return cleanFT0A(bc, maxFITtime, limitA) && 
+  return cleanFT0A(bc, maxFITtime, limitA) &&
          cleanFT0C(bc, maxFITtime, limitC);
 }
 
