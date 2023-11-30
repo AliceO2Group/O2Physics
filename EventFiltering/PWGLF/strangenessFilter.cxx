@@ -48,10 +48,10 @@ namespace stfilter
 enum species { Xi = 0,
                Omega = 1 };
 constexpr double massSigmaParameters[4][2]{
-  {1., 0.006815},
-  {1., -2.257},
-  {1., 0.00138},
-  {1., 0.1898}};
+  {4.9736e-3, 0.006815},
+  {-2.39594, -2.257},
+  {1.8064e-3, 0.00138},
+  {1.03468e-1, 0.1898}};
 static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", "p3"};
 static const std::vector<std::string> speciesNames{"Xi", "Omega"};
 } // namespace stfilter
