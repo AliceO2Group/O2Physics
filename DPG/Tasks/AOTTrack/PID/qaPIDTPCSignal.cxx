@@ -76,7 +76,7 @@ struct tpcPidQaSignal {
     h = histos.add<TH1>("trksel", "", kTH1D, {{10, 0.5, 10.5, "Trk. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, Form("Has > %i ITS clusters", minITSCls.value));
-    h->GetXaxis()->SetBinLabel(3, Form("Has > %f TPC clusters findable", minTPCClsFindable.value));
+    h->GetXaxis()->SetBinLabel(3, Form("Has > %i TPC clusters findable", minTPCClsFindable.value));
     h->GetXaxis()->SetBinLabel(4, Form("Has > %f TPC clusters found", minTPCNcls.value));
     h->GetXaxis()->SetBinLabel(5, Form("Has > %f Found/Findable Ratio", minCrossedRowsOverFindableCls.value));
     h->GetXaxis()->SetBinLabel(6, Form("Has > %f Xrows", minNClsCrossedRows.value));
@@ -126,7 +126,7 @@ struct tpcPidQaSignal {
       return false;
     }
     histos.fill(HIST("trksel"), 6);
-    if (pidInTracking != -1 && track.pidForTracking() != pidInTracking) {
+    if (pidInTracking != -1 && (track.pidForTracking() != std::abs(pidInTracking))) {
       return false;
     }
     histos.fill(HIST("trksel"), 7);
