@@ -57,17 +57,22 @@ struct LfV0qaanalysis {
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
-      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{2, 0.f, 2.f}}});
+      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(4, "sel8_true");
+      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
       registry.add("hNEventsMC_RecoColl", "hNEventsMC_RecoColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
-      registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}}, {{100, 1.f, -1.f}}});
-      registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Reconstructed_MCRecoColl_AntiLambda", "Reconstructed_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCRecoColl_K0Short", "Generated_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCRecoColl_Lambda", "Generated_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCRecoColl_AntiLambda", "Generated_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCAllColl_K0Short", "Generated_MCAllColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCAllColl_Lambda", "Generated_MCAllColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
-      registry.add("Generated_MCAllColl_AntiLambda", "Generated_MCAllColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {{100, 1.f, -1.f}}}});
+      registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Reconstructed_MCRecoColl_AntiLambda", "Reconstructed_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_K0Short", "Generated_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_Lambda", "Generated_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_AntiLambda", "Generated_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_K0Short", "Generated_MCAllColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_Lambda", "Generated_MCAllColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_AntiLambda", "Generated_MCAllColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
     }
   }
 
@@ -90,13 +95,13 @@ struct LfV0qaanalysis {
   {
     if (sel8 && !collision.sel8()) {
       return false;
-      registry.fill(HIST("hNEvents"), 1.5);
     }
+    registry.fill(HIST("hNEvents"), 1.5);
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
-      registry.fill(HIST("hNEvents"), 2.5);
     }
+    registry.fill(HIST("hNEvents"), 2.5);
 
     return true;
   }
@@ -212,6 +217,7 @@ struct LfV0qaanalysis {
     for (const auto& collision : collisions) {
       // Apply event selection
       registry.fill(HIST("hNEvents"), 0.5);
+
       if (!AcceptEvent(collision)) {
         return;
       }
@@ -313,17 +319,23 @@ struct LfV0qaanalysis {
 
     for (const auto& mccollision : mcCollisions) {
 
+      registry.fill(HIST("hNEventsMCGen"), 0.5);
+
       if (TMath::Abs(mccollision.posZ()) > cutzvertex) {
         continue;
       }
+      registry.fill(HIST("hNEventsMCGen"), 1.5);
 
       bool isFT0A = false;
       bool isFT0C = false;
 
       const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache2);
 
-      if (!isTrueINELgt0(particlesInMCCollision))
+      if (!isTrueINELgt0(particlesInMCCollision)) {
         continue;
+      }
+      registry.fill(HIST("hNEventsMCGen"), 2.5);
+      registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
 
       for (auto& mcParticle : particlesInMCCollision) {
 
@@ -344,9 +356,8 @@ struct LfV0qaanalysis {
           registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
       }
 
-      registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
       if (isFT0A && isFT0C) {
-      registry.fill(HIST("hNEventsMC_AllColl"), 1.5);
+        registry.fill(HIST("hNEventsMCGen"), 3.5);
       }
     }
   }
