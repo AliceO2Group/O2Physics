@@ -495,7 +495,8 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method
+DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method (Cascade)
+DECLARE_SOA_COLUMN(KFTrackMatV0, kfTrackCovMatV0, float[15]);     //! covariance matrix elements for KF method (V0)
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -800,7 +801,7 @@ DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
 DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackMat);
+                       cascdata::KFTrackMat, cascdata::KFTrackMatV0);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!
