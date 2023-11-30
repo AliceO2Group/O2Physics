@@ -13,6 +13,7 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -25,7 +26,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/PDG.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"

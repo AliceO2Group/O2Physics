@@ -262,8 +262,14 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
+    // Track Index Initialization
+    int i = -1;
+
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
+
+      // Track Index
+      i++;
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -274,7 +280,7 @@ struct nuclei_in_jets {
         continue;
 
       // Track Index
-      int i = track.globalIndex();
+      // int i = track.globalIndex();
 
       // Trigger: Particle of Interest
       if (isParticleOfInterest(track))
@@ -313,7 +319,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Momentum of the Leading Particle
-    auto leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Instruction to be removed

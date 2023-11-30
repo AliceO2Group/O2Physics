@@ -25,6 +25,7 @@
 #include <string>    // std::string
 #include <vector>    // std::vector
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"             // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "DataFormatsParameters/GRPObject.h"   // for PV refit
@@ -1324,13 +1325,13 @@ struct HfTrackIndexSkimCreator {
       return;
     }
 
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
-    massProton = o2::analysis::pdg::MassProton;
-    massElectron = o2::analysis::pdg::MassElectron;
-    massMuon = o2::analysis::pdg::MassMuonPlus;
-    massDzero = o2::analysis::pdg::MassD0;
-    massPhi = o2::analysis::pdg::MassPhi;
+    massPi = o2::constants::physics::MassPiPlus;
+    massK = o2::constants::physics::MassKPlus;
+    massProton = o2::constants::physics::MassProton;
+    massElectron = o2::constants::physics::MassElectron;
+    massMuon = o2::constants::physics::MassMuonPlus;
+    massDzero = o2::constants::physics::MassD0;
+    massPhi = o2::constants::physics::MassPhi;
 
     arrMass2Prong[hf_cand_2prong::DecayType::D0ToPiK] = std::array{std::array{massPi, massK},
                                                                    std::array{massK, massPi}};
@@ -2924,10 +2925,10 @@ struct HfTrackIndexSkimCreatorCascades {
       etaMinV0Daugh.value = -etaMaxV0Daugh;
     }
 
-    massP = o2::analysis::pdg::MassProton;
-    massK0s = o2::analysis::pdg::MassK0Short;
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massLc = o2::analysis::pdg::MassLambdaCPlus;
+    massP = o2::constants::physics::MassProton;
+    massK0s = o2::constants::physics::MassK0Short;
+    massPi = o2::constants::physics::MassPiPlus;
+    massLc = o2::constants::physics::MassLambdaCPlus;
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -3200,13 +3201,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
       return;
     }
 
-    massP = o2::analysis::pdg::MassProton;
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massXi = o2::analysis::pdg::MassXiMinus;
-    massOmega = o2::analysis::pdg::MassOmegaMinus;
-    massLambda = o2::analysis::pdg::MassLambda0;
-    massXiczero = o2::analysis::pdg::MassXiCZero;
-    massXicplus = o2::analysis::pdg::MassXiCPlus;
+    massP = o2::constants::physics::MassProton;
+    massPi = o2::constants::physics::MassPiPlus;
+    massXi = o2::constants::physics::MassXiMinus;
+    massOmega = o2::constants::physics::MassOmegaMinus;
+    massLambda = o2::constants::physics::MassLambda0;
+    massXiczero = o2::constants::physics::MassXiCZero;
+    massXicplus = o2::constants::physics::MassXiCPlus;
 
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi] = std::array{massOmega, massPi};
