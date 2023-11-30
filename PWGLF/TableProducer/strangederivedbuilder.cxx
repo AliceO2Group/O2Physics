@@ -73,7 +73,7 @@ struct strangederivedbuilder {
   Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
   Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
-  Produces<aod::StraTrackExtras> straTrackExtras;     // references DauTracks from tracked cascades
+  Produces<aod::StraTrackExtras> straTrackExtras; // references DauTracks from tracked cascades
 
   //__________________________________________________
   // cascade interlinks
