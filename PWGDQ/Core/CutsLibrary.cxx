@@ -326,6 +326,21 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiO2MCdebugCuts14")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed"));
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiO2MCdebugCuts14andDCA")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiKineAndQuality")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -452,6 +467,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID3")) {
+    cut->AddCut(GetAnalysisCut("AssocKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
     return cut;
   }
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
@@ -2764,6 +2786,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PrimaryTrack_DCAz")) {
+    cut->AddCut(VarManager::kTrackDCAz, -0.3, 0.3);
+    return cut;
+  }
+
   // -----------------------------------------------------
   // V0 and Dalitz legs selections
 
@@ -3280,6 +3307,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronPIDnsigmaSkewed")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 3000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("electronPIDPrKaPiRej")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0, true);
@@ -3321,6 +3355,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID_TPCnTOF")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    cut->AddCut(VarManager::kTOFnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("AssocKine")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
 
