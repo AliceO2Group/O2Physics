@@ -72,14 +72,13 @@
 
 namespace o2::analysis
 {
-enum class InputFeaturesDsToKKPi : uint8_t { // controllare le varie input features
+enum class InputFeaturesDsToKKPi : uint8_t {
   chi2PCA = 0,
   decayLength,
   decayLengthXY,
   decayLengthNormalised,
   decayLengthXYNormalised,
   maxNormalisedDeltaIP,
-  impactParameterNormalised0,
   cpa,
   cpaXY,
   ptProng0,
@@ -114,6 +113,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
   /// \param prong0 is the candidate's prong0
   /// \param prong1 is the candidate's prong1
   /// \param prong2 is the candidate's prong2
+  /// \param caseDsToKKPi used to divide the case DsToKKPi from DsToPiKK
   /// \return inputFeatures vector
   template <typename T1, typename T2>
   std::vector<float> getInputFeatures(T1 const& candidate,
@@ -145,6 +145,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofKa1, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofKa2, tpcTofNSigmaKa);
 
+        // Ds specific variables
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, cos3PiK, cos3PiKDsToKKPi, cos3PiKDsToPiKK);
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, deltaMassPhi, deltaMassPhiDsToKKPi, deltaMassPhiDsToPiKK);
       }
@@ -180,6 +181,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(nSigTpcTofKa1),
       FILL_MAP_DS(nSigTpcTofKa2),
 
+      // Ds specific variables
       FILL_MAP_DS(cos3PiK),
       FILL_MAP_DS(deltaMassPhi)};
   }
