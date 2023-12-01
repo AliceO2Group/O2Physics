@@ -107,7 +107,8 @@ struct jetspectraDerivedMaker {
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
-    histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
+    histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event (sel8) selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
+    histos.add("EventProp/NumContrib", "Number of contributors to vertex of collision; number of contributors to vtx; number of entries", HistType::kTH1F, {{nBins, 0, 600}});
 
     const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
     const AxisSpec axisPercentileFT0C{binsPercentile, "Centrality FT0C"};
@@ -139,6 +140,7 @@ struct jetspectraDerivedMaker {
       return false;
     }
     histos.fill(HIST("EventProp/sampledvertexz"), collision.posZ());
+    histos.fill(HIST("EventProp/NumContrib"), collision.numContrib());
     return true;
 
     if (fillMultiplicity) {
@@ -153,59 +155,54 @@ struct jetspectraDerivedMaker {
   Produces<o2::aod::JeTracks> tableTrack;
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
-  Preslice<TrackCandidates> trackPerColl = aod::track::collisionId;
-  SliceCache cacheTrk;
   unsigned int randomSeed = 0;
-  void processData(CollisionCandidate const& collisions,
+  void processData(CollisionCandidate::iterator const& collision,
                    TrackCandidates const& tracks,
                    aod::BCs const&)
   {
-    for (const auto& collision : collisions){
-      if (!isEventSelected(collision)) {
+    if (!isEventSelected(collision)) {
+      return;
+    }
+    for (const auto& trk : tracks) {
+      if (!trk.has_collision() || !(collision.globalIndex() == trk.collisionId())){
         return;
       }
-      auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
-      for (const auto& trk : tracks) {
-        if (!trk.has_collision()){
-          return;
-        }
-        if (!customTrackCuts.IsSelected(trk)) {
-          return;
-        }
-
-        tableTrack(trk.collisionId(),
-                  trk.trackTime(),
-                  trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
-                  trk.sigma1Pt(),
-                  trk.alpha(),
-                  trk.x(), trk.y(), trk.z(),
-                  trk.snp(),
-                  trk.tgl(),
-                  trk.isPVContributor(),
-                  trk.hasTRD(),
-                  trk.hasITS(),
-                  trk.hasTPC(),
-                  trk.isGlobalTrack(),
-                  trk.isGlobalTrackWoDCA(),
-                  trk.isGlobalTrackWoPtEta(),
-                  trk.flags(),
-                  trk.trackType(),
-                  trk.length(),
-                  trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
-                  trk.tpcNClsShared(),
-                  trk.tpcNClsFindable(),
-                  trk.tpcNClsFindableMinusFound(),
-                  trk.tpcNClsFindableMinusCrossedRows(),
-                  trk.itsClusterMap(),
-                  trk.itsNCls(),
-                  trk.tpcFractionSharedCls(),
-                  trk.tpcNClsFound(),
-                  trk.tpcNClsCrossedRows(),
-                  trk.tpcCrossedRowsOverFindableCls(),
-                  trk.tpcFoundOverFindableCls(),
-                  trk.dcaXY(),
-                  trk.dcaZ());
+      if (!customTrackCuts.IsSelected(trk)) {
+        return;
       }
+      tableTrack(trk.collisionId(),
+                trk.trackTime(),
+                trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
+                trk.sigma1Pt(),
+                trk.alpha(),
+                trk.x(), trk.y(), trk.z(),
+                trk.snp(),
+                trk.tgl(),
+                trk.isPVContributor(),
+                trk.hasTRD(),
+                trk.hasITS(),
+                trk.hasTPC(),
+                trk.isGlobalTrack(),
+                trk.isGlobalTrackWoDCA(),
+                trk.isGlobalTrackWoPtEta(),
+                trk.flags(),
+                trk.trackType(),
+                trk.length(),
+                trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
+                trk.tpcNClsShared(),
+                trk.tpcNClsFindable(),
+                trk.tpcNClsFindableMinusFound(),
+                trk.tpcNClsFindableMinusCrossedRows(),
+                trk.itsClusterMap(),
+                trk.itsNCls(),
+                trk.tpcFractionSharedCls(),
+                trk.tpcNClsFound(),
+                trk.tpcNClsCrossedRows(),
+                trk.tpcCrossedRowsOverFindableCls(),
+                trk.tpcFoundOverFindableCls(),
+                trk.dcaXY(),
+                trk.dcaZ());
+    
     }
   }
   

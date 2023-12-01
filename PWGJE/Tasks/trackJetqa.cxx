@@ -40,8 +40,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackJetQa {
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.f, "Downsampling factor for the events for derived data"};
-
   Configurable<double> ValVtx{"ValVtx", 10, "Value of the vertex position"};
   Configurable<float> ValCutEta{"ValCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> minPt{"minPt", 0.15f, "minimum pT for tracks"};
