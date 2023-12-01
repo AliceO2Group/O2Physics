@@ -363,6 +363,33 @@ struct MultiplicityCounter {
   // PV contributors for INEL>0 (PV) collision sample definition
   Partition<FiTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
+  template <bool hasCent = false, bool fillHistos = true, typename T>
+  int countTracks(T const& tracks, float c)
+  {
+    auto Ntrks = 0;
+    for (auto& track : tracks) {
+      if (std::abs(track.eta()) < estimatorEta) {
+        ++Ntrks;
+      }
+      if constexpr (fillHistos) {
+        if constexpr (hasCent) {
+          binnedRegistry.fill(HIST(EtaZvtx), track.eta(), z, c);
+          binnedRegistry.fill(HIST(PhiEta), track.phi(), track.eta(), c);
+          binnedRegistry.fill(HIST(PtEta), track.pt(), track.eta(), c);
+          binnedRegistry.fill(HIST(DCAXYPt), track.pt(), track.dcaXY(), c);
+          binnedRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ(), c);
+        } else {
+          inclusiveRegistry.fill(HIST(EtaZvtx), track.eta(), z);
+          inclusiveRegistry.fill(HIST(PhiEta), track.phi(), track.eta());
+          inclusiveRegistry.fill(HIST(PtEta), track.pt(), track.eta());
+          inclusiveRegistry.fill(HIST(DCAXYPt), track.pt(), track.dcaXY());
+          inclusiveRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ());
+        }
+      }
+    }
+    return Ntrks;
+  }
+
   template <typename C>
   void processCountingGeneral(
     typename C::iterator const& collision,
@@ -390,12 +417,117 @@ struct MultiplicityCounter {
       usedTracksIds.clear();
 
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto INELgt0PV = groupPVContrib.size() > 0;
 
-      auto Ntrks = 0;
-      for (auto& track : tracks) {
-        if (std::abs(track.eta()) < estimatorEta) {
-          ++Ntrks;
+      auto Ntrks = countTracks<hasRecoCent<C>()>(tracks, c);
+      if constexpr (hasRecoCent<C>()) {
+        binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
+      } else {
+        if (Ntrks > 0 || INELgt0PV) {
+          if (INELgt0PV) {
+            inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedPVgt0));
+          }
+          if (Ntrks > 0) {
+            inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedgt0));
+          }
+          for (auto& track : tracks) {
+            if (Ntrks > 0) {
+              inclusiveRegistry.fill(HIST(EtaZvtx_gt0), track.eta(), z);
+            }
+            if (INELgt0PV) {
+              inclusiveRegistry.fill(HIST(EtaZvtx_PVgt0), track.eta(), z);
+            }
+          }
         }
+        inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
+      }
+    } else {
+      if constexpr (hasRecoCent<C>()) {
+        binnedRegistry.fill(HIST(EventSelection), 3., c);
+      } else {
+        inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected));
+      }
+    }
+  }
+
+  template <bool hasCent = false, bool fillHistos = true, typename C, typename T, typename AT>
+  int countTracksAmbiguous(T const& tracks, AT const& atracks, float c)
+  {
+    auto Ntrks = 0;
+    for (auto& track : atracks) {
+      auto otrack = track.template track_as<T>();
+      // same filtering for ambiguous as for general
+      if (!otrack.hasITS()) {
+        continue;
+      }
+      if ((otrack.trackCutFlag() & trackSelectionITS) == 0) {
+        continue;
+      }
+      if (otrack.hasTPC()) {
+        if ((otrack.trackCutFlag() & trackSelectionTPC) == 0) {
+          continue;
+        }
+      }
+      usedTracksIds.emplace_back(track.trackId());
+      if (std::abs(otrack.eta()) < estimatorEta) {
+        ++Ntrks;
+      }
+      if (fillHistos) {
+        if constexpr (hasCent) {
+          binnedRegistry.fill(HIST(EtaZvtx), otrack.eta(), z, c);
+          binnedRegistry.fill(HIST(PhiEta), otrack.phi(), otrack.eta(), c);
+          binnedRegistry.fill(HIST(PtEta), otrack.pt(), otrack.eta(), c);
+          binnedRegistry.fill(HIST(DCAXYPt), otrack.pt(), track.bestDCAXY(), c);
+          binnedRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ(), c);
+        } else {
+          inclusiveRegistry.fill(HIST(EtaZvtx), otrack.eta(), z);
+          inclusiveRegistry.fill(HIST(PhiEta), otrack.phi(), otrack.eta());
+          inclusiveRegistry.fill(HIST(PtEta), otrack.pt(), otrack.eta());
+          inclusiveRegistry.fill(HIST(DCAXYPt), otrack.pt(), track.bestDCAXY());
+          inclusiveRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ());
+        }
+        if (!otrack.has_collision()) {
+          if constexpr (hasCent) {
+            binnedRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z, c);
+            binnedRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta(), c);
+            binnedRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
+            binnedRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ(), c);
+          } else {
+            inclusiveRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z);
+            inclusiveRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta());
+            inclusiveRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY());
+            inclusiveRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ());
+          }
+        } else if (otrack.collisionId() != track.bestCollisionId()) {
+          usedTracksIdsDF.emplace_back(track.trackId());
+          if constexpr (hasCent) {
+            binnedRegistry.fill(HIST(ReassignedEtaZvtx), otrack.eta(), z, c);
+            binnedRegistry.fill(HIST(ReassignedPhiEta), otrack.phi(), otrack.eta(), c);
+            binnedRegistry.fill(HIST(ReassignedZvtxCorr), otrack.template collision_as<C>().posZ(), z, c);
+            binnedRegistry.fill(HIST(ReassignedDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
+            binnedRegistry.fill(HIST(ReassignedDCAZPt), otrack.pt(), track.bestDCAZ(), c);
+          } else {
+            inclusiveRegistry.fill(HIST(ReassignedEtaZvtx), otrack.eta(), z);
+            inclusiveRegistry.fill(HIST(ReassignedPhiEta), otrack.phi(), otrack.eta());
+            inclusiveRegistry.fill(HIST(ReassignedZvtxCorr), otrack.template collision_as<C>().posZ(), z);
+            inclusiveRegistry.fill(HIST(ReassignedDCAXYPt), otrack.pt(), track.bestDCAXY());
+            inclusiveRegistry.fill(HIST(ReassignedDCAZPt), otrack.pt(), track.bestDCAZ());
+          }
+        }
+      }
+    }
+
+    for (auto& track : tracks) {
+      if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+        continue;
+      }
+      if (std::find(usedTracksIdsDF.begin(), usedTracksIdsDF.end(), track.globalIndex()) != usedTracksIdsDF.end()) {
+        continue;
+      }
+      if (std::abs(track.eta()) < estimatorEta) {
+        ++Ntrks;
+      }
+      if constexpr (fillHistos) {
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(EtaZvtx), track.eta(), z, c);
           binnedRegistry.fill(HIST(PhiEta), track.phi(), track.eta(), c);
@@ -410,34 +542,8 @@ struct MultiplicityCounter {
           inclusiveRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ());
         }
       }
-      if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
-      } else {
-        if (Ntrks > 0 || groupPVContrib.size() > 0) {
-          if (groupPVContrib.size() > 0) {
-            inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedPVgt0));
-          }
-          if (Ntrks > 0) {
-            inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedgt0));
-          }
-          for (auto& track : tracks) {
-            if (Ntrks > 0) {
-              inclusiveRegistry.fill(HIST(EtaZvtx_gt0), track.eta(), z);
-            }
-            if (groupPVContrib.size() > 0) {
-              inclusiveRegistry.fill(HIST(EtaZvtx_PVgt0), track.eta(), z);
-            }
-          }
-        }
-        inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
-      }
-    } else {
-      if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(EventSelection), 3., c);
-      } else {
-        inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected));
-      }
     }
+    return Ntrks;
   }
 
   template <typename C>
@@ -468,99 +574,14 @@ struct MultiplicityCounter {
       usedTracksIds.clear();
 
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto INELgt0PV = groupPVContrib.size() > 0;
 
-      auto Ntrks = 0;
-
-      for (auto& track : atracks) {
-        auto otrack = track.track_as<FiTracks>();
-        // same filtering for ambiguous as for general
-        if (!otrack.hasITS()) {
-          continue;
-        }
-        if ((otrack.trackCutFlag() & trackSelectionITS) == 0) {
-          continue;
-        }
-        if (otrack.hasTPC()) {
-          if ((otrack.trackCutFlag() & trackSelectionTPC) == 0) {
-            continue;
-          }
-        }
-        usedTracksIds.emplace_back(track.trackId());
-        if (std::abs(otrack.eta()) < estimatorEta) {
-          ++Ntrks;
-        }
-        if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EtaZvtx), otrack.eta(), z, c);
-          binnedRegistry.fill(HIST(PhiEta), otrack.phi(), otrack.eta(), c);
-          binnedRegistry.fill(HIST(PtEta), otrack.pt(), otrack.eta(), c);
-          binnedRegistry.fill(HIST(DCAXYPt), otrack.pt(), track.bestDCAXY(), c);
-          binnedRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ(), c);
-        } else {
-          inclusiveRegistry.fill(HIST(EtaZvtx), otrack.eta(), z);
-          inclusiveRegistry.fill(HIST(PhiEta), otrack.phi(), otrack.eta());
-          inclusiveRegistry.fill(HIST(PtEta), otrack.pt(), otrack.eta());
-          inclusiveRegistry.fill(HIST(DCAXYPt), otrack.pt(), track.bestDCAXY());
-          inclusiveRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ());
-        }
-        if (!otrack.has_collision()) {
-          if constexpr (hasRecoCent<C>()) {
-            binnedRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z, c);
-            binnedRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta(), c);
-            binnedRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
-            binnedRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ(), c);
-          } else {
-            inclusiveRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z);
-            inclusiveRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta());
-            inclusiveRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY());
-            inclusiveRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ());
-          }
-        } else if (otrack.collisionId() != track.bestCollisionId()) {
-          usedTracksIdsDF.emplace_back(track.trackId());
-          if constexpr (hasRecoCent<C>()) {
-            binnedRegistry.fill(HIST(ReassignedEtaZvtx), otrack.eta(), z, c);
-            binnedRegistry.fill(HIST(ReassignedPhiEta), otrack.phi(), otrack.eta(), c);
-            binnedRegistry.fill(HIST(ReassignedZvtxCorr), otrack.collision_as<C>().posZ(), z, c);
-            binnedRegistry.fill(HIST(ReassignedDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
-            binnedRegistry.fill(HIST(ReassignedDCAZPt), otrack.pt(), track.bestDCAZ(), c);
-          } else {
-            inclusiveRegistry.fill(HIST(ReassignedEtaZvtx), otrack.eta(), z);
-            inclusiveRegistry.fill(HIST(ReassignedPhiEta), otrack.phi(), otrack.eta());
-            inclusiveRegistry.fill(HIST(ReassignedZvtxCorr), otrack.collision_as<C>().posZ(), z);
-            inclusiveRegistry.fill(HIST(ReassignedDCAXYPt), otrack.pt(), track.bestDCAXY());
-            inclusiveRegistry.fill(HIST(ReassignedDCAZPt), otrack.pt(), track.bestDCAZ());
-          }
-        }
-      }
-
-      for (auto& track : tracks) {
-        if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-          continue;
-        }
-        if (std::find(usedTracksIdsDF.begin(), usedTracksIdsDF.end(), track.globalIndex()) != usedTracksIdsDF.end()) {
-          continue;
-        }
-        if (std::abs(track.eta()) < estimatorEta) {
-          ++Ntrks;
-        }
-        if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EtaZvtx), track.eta(), z, c);
-          binnedRegistry.fill(HIST(PhiEta), track.phi(), track.eta(), c);
-          binnedRegistry.fill(HIST(PtEta), track.pt(), track.eta(), c);
-          binnedRegistry.fill(HIST(DCAXYPt), track.pt(), track.dcaXY(), c);
-          binnedRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ(), c);
-        } else {
-          inclusiveRegistry.fill(HIST(EtaZvtx), track.eta(), z);
-          inclusiveRegistry.fill(HIST(PhiEta), track.phi(), track.eta());
-          inclusiveRegistry.fill(HIST(PtEta), track.pt(), track.eta());
-          inclusiveRegistry.fill(HIST(DCAXYPt), track.pt(), track.dcaXY());
-          inclusiveRegistry.fill(HIST(DCAZPt), track.pt(), track.dcaZ());
-        }
-      }
+      auto Ntrks = countTracksAmbiguous<hasRecoCent<C>(), true, C>(tracks, atracks, c);
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
-        if (Ntrks > 0 || groupPVContrib.size() > 0) {
-          if (groupPVContrib.size() > 0) {
+        if (Ntrks > 0 || INELgt0PV) {
+          if (INELgt0PV) {
             inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedPVgt0));
           }
           if (Ntrks > 0) {
@@ -570,7 +591,7 @@ struct MultiplicityCounter {
             if (Ntrks > 0) {
               inclusiveRegistry.fill(HIST(EtaZvtx_gt0), track.track_as<FiTracks>().eta(), z);
             }
-            if (groupPVContrib.size() > 0) {
+            if (INELgt0PV) {
               inclusiveRegistry.fill(HIST(EtaZvtx_PVgt0), track.track_as<FiTracks>().eta(), z);
             }
           }
@@ -584,7 +605,7 @@ struct MultiplicityCounter {
             if (Ntrks > 0) {
               inclusiveRegistry.fill(HIST(EtaZvtx_gt0), track.eta(), z);
             }
-            if (groupPVContrib.size() > 0) {
+            if (INELgt0PV) {
               inclusiveRegistry.fill(HIST(EtaZvtx_PVgt0), track.eta(), z);
             }
           }
@@ -1015,11 +1036,10 @@ struct MultiplicityCounter {
     }
   }
 
-  template <bool hasRecoCent, typename Ps, typename MCIT>
-  void countParticles(Ps const& particles, MCIT const& mcCollision, int const nCharged, HistogramRegistry& binnedRegistry, HistogramRegistry& inclusiveRegistry, float c_gen,
-                      bool const atLeastOne,
-                      bool const atLeastOne_gt0,
-                      bool const atLeastOne_PVgt0)
+  template <bool hasCent, typename Ps, typename MCIT>
+  void countParticles(Ps const& particles, MCIT const& mcCollision,
+                      int const nCharged, float c_gen,
+                      bool const atLeastOne, bool const atLeastOne_gt0, bool const atLeastOne_PVgt0)
   {
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
@@ -1030,7 +1050,7 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      if constexpr (hasRecoCent) {
+      if constexpr (hasCent) {
         binnedRegistry.fill(HIST(EtaZvtxGen_t), particle.eta(), mcCollision.posZ(), c_gen);
         binnedRegistry.fill(HIST(PtEtaGen), particle.pt(), particle.eta(), c_gen);
       } else {
@@ -1038,14 +1058,14 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(PtEtaGen), particle.pt(), particle.eta());
       }
       if (nCharged > 0) {
-        if constexpr (hasRecoCent) {
+        if constexpr (hasCent) {
           binnedRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), mcCollision.posZ(), c_gen);
         } else {
           inclusiveRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), mcCollision.posZ());
         }
       }
       if (atLeastOne) {
-        if constexpr (hasRecoCent) {
+        if constexpr (hasCent) {
           binnedRegistry.fill(HIST(EtaZvtxGen), particle.eta(), mcCollision.posZ(), c_gen);
           if (atLeastOne_gt0) {
             binnedRegistry.fill(HIST(EtaZvtxGen_gt0), particle.eta(), mcCollision.posZ(), c_gen);
@@ -1116,7 +1136,6 @@ struct MultiplicityCounter {
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    auto Nrec = 0;
     std::vector<int> NrecPerCol;
     std::vector<float> c_recPerCol;
     std::vector<int> NPVPerCol;
@@ -1140,8 +1159,13 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        Nrec = 0;
+        auto Nrec = 0;
         ++moreThanOne;
+        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+          if (!atLeastOne) {
+            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
+          }
+        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1239,7 +1263,7 @@ struct MultiplicityCounter {
       }
     }
 
-    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, binnedRegistry, inclusiveRegistry, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
+    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
   }
 
   template <typename MC, typename C>
@@ -1316,6 +1340,11 @@ struct MultiplicityCounter {
       if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         Nrec = 0;
         ++moreThanOne;
+        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+          if (!atLeastOne) {
+            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
+          }
+        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1396,7 +1425,7 @@ struct MultiplicityCounter {
       }
     }
 
-    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, binnedRegistry, inclusiveRegistry, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
+    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
   }
 
   using MC = aod::McCollisions; // soa::Join<aod::McCollisions, aod::HepMCXSections>;
