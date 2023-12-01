@@ -132,6 +132,13 @@ struct femtoUniversePairTaskTrackTrackMultKt {
   int vPIDPartOne, vPIDPartTwo;
   std::vector<float> kNsigma;
 
+  /// Event part
+  Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
+  Configurable<float> ConfV0MHigh{"ConfV0MHigh", 1000.0, "Upper limit for V0M multiplicity"};
+
+  Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
+  // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
+
   /// Particle part
   ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
@@ -514,7 +521,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(o2::aod::FDCollision& col,
+  void processSameEvent(soa::Filtered<o2::aod::FDCollisions>::iterator& col,
                         FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
@@ -625,7 +632,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(o2::aod::FDCollisions& cols,
+  void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
                          FilteredFemtoFullParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
