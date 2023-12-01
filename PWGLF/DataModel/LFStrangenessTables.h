@@ -663,12 +663,8 @@ DECLARE_SOA_TABLE(TraCascCollRefs, "AOD", "TRACASCCOLLREF", //! optional table t
 DECLARE_SOA_TABLE(CascExtras, "AOD", "CASCEXTRA", //! optional table to refer to custom track extras
                   o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
                   cascdata::BachTrackExtraId, o2::soa::Marker<1>);
-DECLARE_SOA_TABLE(KFCascExtras, "AOD", "KFCASCEXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
-                  cascdata::BachTrackExtraId, o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(TraCascExtras, "AOD", "TRACASCEXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
-                  cascdata::BachTrackExtraId, cascdata::StrangeTrackExtraId);
+DECLARE_SOA_TABLE(StraTrackExtras, "AOD", "STRATRACKEXTRAS", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, cascdata::StrangeTrackExtraId);
 
 DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about decay, viable with AO2Ds or derived
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
