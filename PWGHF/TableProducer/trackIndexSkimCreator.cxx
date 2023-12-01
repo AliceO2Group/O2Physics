@@ -3270,7 +3270,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     massXi = o2::constants::physics::MassXiMinus;
     massOmega = o2::constants::physics::MassOmegaMinus;
     massLambda = o2::constants::physics::MassLambda0;
-    massXiczero = o2::constants::physics::MassXiCZero;
+    massXiczero = o2::constants::physics::MassXiC0;
     massXicplus = o2::constants::physics::MassXiCPlus;
 
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};
