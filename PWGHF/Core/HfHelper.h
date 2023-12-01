@@ -243,17 +243,27 @@ class HfHelper
   }
 
   template <typename T>
+  auto massKKPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto massKKPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   auto deltaMassPhiDsToKKPi(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    return std::abs(invMassKKpair - o2::constants::physics::MassPhi);
+    return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);
   }
 
   template <typename T>
   auto deltaMassPhiDsToPiKK(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    return std::abs(invMassKKpair - o2::constants::physics::MassPhi);
+    return std::abs(massKKPairDsToPiKK(candidate) - o2::constants::physics::MassPhi);
   }
 
   /// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
