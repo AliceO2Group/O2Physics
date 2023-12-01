@@ -79,10 +79,6 @@ struct HfCandidateSelectorDsToKKPi {
 
   using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
-  // Define histograms
-  AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
-  AxisSpec axisBdtScore{100, 0.f, 1.f};
-  AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
