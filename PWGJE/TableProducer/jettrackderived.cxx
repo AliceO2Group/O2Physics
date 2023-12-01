@@ -60,7 +60,7 @@ struct jetspectraDerivedMaker {
   Configurable<float> maxDcaXY{"maxDcaXY", 3.f, "Additional cut on the maximum value of the DCA xy"};
   Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-  
+
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBins{"nBins", 200, "N bins in histos"};
@@ -164,51 +164,51 @@ struct jetspectraDerivedMaker {
       return;
     }
     for (const auto& trk : tracks) {
-      if (!trk.has_collision() || !(collision.globalIndex() == trk.collisionId())){
+      if (!trk.has_collision() || !(collision.globalIndex() == trk.collisionId())) {
         return;
       }
       if (!customTrackCuts.IsSelected(trk)) {
         return;
       }
       tableTrack(trk.collisionId(),
-                trk.trackTime(),
-                trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
-                trk.sigma1Pt(),
-                trk.alpha(),
-                trk.x(), trk.y(), trk.z(),
-                trk.snp(),
-                trk.tgl(),
-                trk.isPVContributor(),
-                trk.hasTRD(),
-                trk.hasITS(),
-                trk.hasTPC(),
-                trk.isGlobalTrack(),
-                trk.isGlobalTrackWoDCA(),
-                trk.isGlobalTrackWoPtEta(),
-                trk.flags(),
-                trk.trackType(),
-                trk.length(),
-                trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
-                trk.tpcNClsShared(),
-                trk.tpcNClsFindable(),
-                trk.tpcNClsFindableMinusFound(),
-                trk.tpcNClsFindableMinusCrossedRows(),
-                trk.itsClusterMap(),
-                trk.itsNCls(),
-                trk.tpcFractionSharedCls(),
-                trk.tpcNClsFound(),
-                trk.tpcNClsCrossedRows(),
-                trk.tpcCrossedRowsOverFindableCls(),
-                trk.tpcFoundOverFindableCls(),
-                trk.dcaXY(),
-                trk.dcaZ());
-    
+                 trk.trackTime(),
+                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
+                 trk.sigma1Pt(),
+                 trk.alpha(),
+                 trk.x(), trk.y(), trk.z(),
+                 trk.snp(),
+                 trk.tgl(),
+                 trk.isPVContributor(),
+                 trk.hasTRD(),
+                 trk.hasITS(),
+                 trk.hasTPC(),
+                 trk.isGlobalTrack(),
+                 trk.isGlobalTrackWoDCA(),
+                 trk.isGlobalTrackWoPtEta(),
+                 trk.flags(),
+                 trk.trackType(),
+                 trk.length(),
+                 trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
+                 trk.tpcNClsShared(),
+                 trk.tpcNClsFindable(),
+                 trk.tpcNClsFindableMinusFound(),
+                 trk.tpcNClsFindableMinusCrossedRows(),
+                 trk.itsClusterMap(),
+                 trk.itsNCls(),
+                 trk.tpcFractionSharedCls(),
+                 trk.tpcNClsFound(),
+                 trk.tpcNClsCrossedRows(),
+                 trk.tpcCrossedRowsOverFindableCls(),
+                 trk.tpcFoundOverFindableCls(),
+                 trk.dcaXY(),
+                 trk.dcaZ());
     }
   }
-  
+
   PROCESS_SWITCH(jetspectraDerivedMaker, processData, "Process collision data for derived dataset production", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { 
-  return WorkflowSpec{adaptAnalysisTask<jetspectraDerivedMaker>(cfgc)}; 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<jetspectraDerivedMaker>(cfgc)};
 }

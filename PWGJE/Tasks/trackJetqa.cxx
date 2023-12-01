@@ -220,7 +220,7 @@ struct TrackJetQa {
       return;
     }
     if ((customTrack == true) && (!customTrackCuts.IsSelected(track))) {
-        return;
+      return;
     }
     // fill kinematic variables
     histos.fill(HIST("Kine/pt"), track.pt());
@@ -302,9 +302,9 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
   }
 
-  //Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
+  // Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
   Preslice<aod::Track> trackPerColl = aod::track::collisionId;
-  //SliceCache cacheTrk;
+  // SliceCache cacheTrk;
   void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs> const& collisions,
                    soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
   {

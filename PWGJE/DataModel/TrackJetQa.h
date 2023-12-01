@@ -51,9 +51,10 @@ DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
-}// jetcollisions
+} // namespace jetcollisions
 
-namespace jettrack{
+namespace jettrack
+{
 // Track info
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);          //! Id of collision
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
@@ -88,7 +89,7 @@ DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
                   jetcollisions::CentFT0C,
                   jetcollisions::RunNumber);
 
-//using JeColl = JeColls::iterator;
+// using JeColl = JeColls::iterator;
 
 DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   o2::soa::Index<>,
