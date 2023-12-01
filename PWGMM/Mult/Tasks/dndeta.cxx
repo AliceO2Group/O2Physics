@@ -1082,6 +1082,22 @@ struct MultiplicityCounter {
     }
   }
 
+  template <typename Ps>
+  int countParticles(Ps const& particles)
+  {
+    auto nCharged = 0;
+    for (auto& particle : particles) {
+      if (!isChargedParticle(particle.pdgCode())) {
+        continue;
+      }
+      if (std::abs(particle.eta()) >= estimatorEta) {
+        continue;
+      }
+      nCharged++;
+    }
+    return nCharged;
+  }
+
   template <typename MC, typename C>
   void processGenGeneralAmbiguous(
     typename MC::iterator const& mcCollision,
@@ -1094,16 +1110,7 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto nCharged = 0;
-    for (auto& particle : particles) {
-      if (!isChargedParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (std::abs(particle.eta()) >= estimatorEta) {
-        continue;
-      }
-      nCharged++;
-    }
+    auto nCharged = countParticles(particles);
     if constexpr (hasRecoCent<C>()) {
       binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
       binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
@@ -1248,16 +1255,7 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto nCharged = 0;
-    for (auto& particle : particles) {
-      if (!isChargedParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (std::abs(particle.eta()) >= estimatorEta) {
-        continue;
-      }
-      nCharged++;
-    }
+    auto nCharged = countParticles(particles);
     if constexpr (hasRecoCent<C>()) {
       binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
       binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
