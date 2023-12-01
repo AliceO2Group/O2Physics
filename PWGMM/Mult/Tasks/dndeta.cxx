@@ -363,8 +363,8 @@ struct MultiplicityCounter {
   // PV contributors for INEL>0 (PV) collision sample definition
   Partition<FiTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
-  template <bool hasCent = false, bool fillHistos = true, typename T>
-  int countTracks(T const& tracks, float c)
+  template <typename C, bool fillHistos = true, typename T>
+  int countTracks(T const& tracks, float z, float c)
   {
     auto Ntrks = 0;
     for (auto& track : tracks) {
@@ -372,7 +372,7 @@ struct MultiplicityCounter {
         ++Ntrks;
       }
       if constexpr (fillHistos) {
-        if constexpr (hasCent) {
+        if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(EtaZvtx), track.eta(), z, c);
           binnedRegistry.fill(HIST(PhiEta), track.phi(), track.eta(), c);
           binnedRegistry.fill(HIST(PtEta), track.pt(), track.eta(), c);
@@ -419,7 +419,7 @@ struct MultiplicityCounter {
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto INELgt0PV = groupPVContrib.size() > 0;
 
-      auto Ntrks = countTracks<hasRecoCent<C>()>(tracks, c);
+      auto Ntrks = countTracks<C>(tracks, z, c);
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
@@ -450,8 +450,8 @@ struct MultiplicityCounter {
     }
   }
 
-  template <bool hasCent = false, bool fillHistos = true, typename C, typename T, typename AT>
-  int countTracksAmbiguous(T const& tracks, AT const& atracks, float c)
+  template <typename C, bool fillHistos = true, typename T, typename AT>
+  int countTracksAmbiguous(T const& tracks, AT const& atracks, float z, float c)
   {
     auto Ntrks = 0;
     for (auto& track : atracks) {
@@ -473,7 +473,7 @@ struct MultiplicityCounter {
         ++Ntrks;
       }
       if (fillHistos) {
-        if constexpr (hasCent) {
+        if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(EtaZvtx), otrack.eta(), z, c);
           binnedRegistry.fill(HIST(PhiEta), otrack.phi(), otrack.eta(), c);
           binnedRegistry.fill(HIST(PtEta), otrack.pt(), otrack.eta(), c);
@@ -486,21 +486,11 @@ struct MultiplicityCounter {
           inclusiveRegistry.fill(HIST(DCAXYPt), otrack.pt(), track.bestDCAXY());
           inclusiveRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ());
         }
-        if (!otrack.has_collision()) {
-          if constexpr (hasCent) {
-            binnedRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z, c);
-            binnedRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta(), c);
-            binnedRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
-            binnedRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ(), c);
-          } else {
-            inclusiveRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z);
-            inclusiveRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta());
-            inclusiveRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY());
-            inclusiveRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ());
-          }
-        } else if (otrack.collisionId() != track.bestCollisionId()) {
-          usedTracksIdsDF.emplace_back(track.trackId());
-          if constexpr (hasCent) {
+      }
+      if (otrack.collisionId() != track.bestCollisionId()) {
+        usedTracksIdsDF.emplace_back(track.trackId());
+        if constexpr (fillHistos) {
+          if constexpr (hasRecoCent<C>()) {
             binnedRegistry.fill(HIST(ReassignedEtaZvtx), otrack.eta(), z, c);
             binnedRegistry.fill(HIST(ReassignedPhiEta), otrack.phi(), otrack.eta(), c);
             binnedRegistry.fill(HIST(ReassignedZvtxCorr), otrack.template collision_as<C>().posZ(), z, c);
@@ -512,6 +502,20 @@ struct MultiplicityCounter {
             inclusiveRegistry.fill(HIST(ReassignedZvtxCorr), otrack.template collision_as<C>().posZ(), z);
             inclusiveRegistry.fill(HIST(ReassignedDCAXYPt), otrack.pt(), track.bestDCAXY());
             inclusiveRegistry.fill(HIST(ReassignedDCAZPt), otrack.pt(), track.bestDCAZ());
+          }
+        }
+      } else if (!otrack.has_collision()) {
+        if constexpr (fillHistos) {
+          if constexpr (hasRecoCent<C>()) {
+            binnedRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z, c);
+            binnedRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta(), c);
+            binnedRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY(), c);
+            binnedRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ(), c);
+          } else {
+            inclusiveRegistry.fill(HIST(ExtraEtaZvtx), otrack.eta(), z);
+            inclusiveRegistry.fill(HIST(ExtraPhiEta), otrack.phi(), otrack.eta());
+            inclusiveRegistry.fill(HIST(ExtraDCAXYPt), otrack.pt(), track.bestDCAXY());
+            inclusiveRegistry.fill(HIST(ExtraDCAZPt), otrack.pt(), track.bestDCAZ());
           }
         }
       }
@@ -576,7 +580,7 @@ struct MultiplicityCounter {
       auto groupPVContrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto INELgt0PV = groupPVContrib.size() > 0;
 
-      auto Ntrks = countTracksAmbiguous<hasRecoCent<C>(), true, C>(tracks, atracks, c);
+      auto Ntrks = countTracksAmbiguous<C>(tracks, atracks, z, c);
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
@@ -686,6 +690,16 @@ struct MultiplicityCounter {
   using ParticlesI = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
   expressions::Filter primaries = ncheckbit(aod::mcparticle::flags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
+  bool isChargedParticle(int code)
+  {
+    auto p = pdg->GetParticle(code);
+    auto charge = 0.;
+    if (p != nullptr) {
+      charge = p->Charge();
+    }
+    return std::abs(charge) >= 3.;
+  }
+
   template <typename C, typename MC>
   void processTrackEfficiencyIndexedGeneral(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
@@ -702,12 +716,7 @@ struct MultiplicityCounter {
     auto sample = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     for (auto& particle : sample) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       inclusiveRegistry.fill(HIST(PtGenIdxNoEtaCut), particle.pt());
@@ -879,12 +888,7 @@ struct MultiplicityCounter {
     }
 
     for (auto& particle : particlesPerCol) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       inclusiveRegistry.fill(HIST(PtGenNoEtaCut), particle.pt());
@@ -954,12 +958,7 @@ struct MultiplicityCounter {
     }
 
     for (auto& particle : particlesPerCol) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       inclusiveRegistry.fill(HIST(PtGenNoEtaCut), particle.pt());
@@ -1036,51 +1035,46 @@ struct MultiplicityCounter {
     }
   }
 
-  template <bool hasCent, typename Ps, typename MCIT>
-  void countParticles(Ps const& particles, MCIT const& mcCollision,
-                      int const nCharged, float c_gen,
-                      bool const atLeastOne, bool const atLeastOne_gt0, bool const atLeastOne_PVgt0)
+  template <bool hasCent, typename Ps>
+  void fillParticleHistos(Ps const& particles, float z,
+                          int const nCharged, float c,
+                          bool const atLeastOne, bool const atLeastOne_gt0, bool const atLeastOne_PVgt0)
   {
     for (auto& particle : particles) {
-      auto p = pdg->GetParticle(particle.pdgCode());
-      auto charge = 0.;
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       if constexpr (hasCent) {
-        binnedRegistry.fill(HIST(EtaZvtxGen_t), particle.eta(), mcCollision.posZ(), c_gen);
-        binnedRegistry.fill(HIST(PtEtaGen), particle.pt(), particle.eta(), c_gen);
+        binnedRegistry.fill(HIST(EtaZvtxGen_t), particle.eta(), z, c);
+        binnedRegistry.fill(HIST(PtEtaGen), particle.pt(), particle.eta(), c);
       } else {
-        inclusiveRegistry.fill(HIST(EtaZvtxGen_t), particle.eta(), mcCollision.posZ());
+        inclusiveRegistry.fill(HIST(EtaZvtxGen_t), particle.eta(), z);
         inclusiveRegistry.fill(HIST(PtEtaGen), particle.pt(), particle.eta());
       }
       if (nCharged > 0) {
         if constexpr (hasCent) {
-          binnedRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), mcCollision.posZ(), c_gen);
+          binnedRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), z, c);
         } else {
-          inclusiveRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), mcCollision.posZ());
+          inclusiveRegistry.fill(HIST(EtaZvtxGen_gt0t), particle.eta(), z);
         }
       }
       if (atLeastOne) {
         if constexpr (hasCent) {
-          binnedRegistry.fill(HIST(EtaZvtxGen), particle.eta(), mcCollision.posZ(), c_gen);
+          binnedRegistry.fill(HIST(EtaZvtxGen), particle.eta(), z, c);
           if (atLeastOne_gt0) {
-            binnedRegistry.fill(HIST(EtaZvtxGen_gt0), particle.eta(), mcCollision.posZ(), c_gen);
+            binnedRegistry.fill(HIST(EtaZvtxGen_gt0), particle.eta(), z, c);
           }
           if (atLeastOne_PVgt0) {
-            binnedRegistry.fill(HIST(EtaZvtxGen_PVgt0), particle.eta(), mcCollision.posZ(), c_gen);
+            binnedRegistry.fill(HIST(EtaZvtxGen_PVgt0), particle.eta(), z, c);
           }
-          binnedRegistry.fill(HIST(PhiEtaGen), particle.phi(), particle.eta(), c_gen);
+          binnedRegistry.fill(HIST(PhiEtaGen), particle.phi(), particle.eta(), c);
         } else {
-          inclusiveRegistry.fill(HIST(EtaZvtxGen), particle.eta(), mcCollision.posZ());
+          inclusiveRegistry.fill(HIST(EtaZvtxGen), particle.eta(), z);
           if (atLeastOne_gt0) {
-            inclusiveRegistry.fill(HIST(EtaZvtxGen_gt0), particle.eta(), mcCollision.posZ());
+            inclusiveRegistry.fill(HIST(EtaZvtxGen_gt0), particle.eta(), z);
           }
           if (atLeastOne_PVgt0) {
-            inclusiveRegistry.fill(HIST(EtaZvtxGen_PVgt0), particle.eta(), mcCollision.posZ());
+            inclusiveRegistry.fill(HIST(EtaZvtxGen_PVgt0), particle.eta(), z);
           }
           inclusiveRegistry.fill(HIST(PhiEtaGen), particle.phi(), particle.eta());
         }
@@ -1102,12 +1096,7 @@ struct MultiplicityCounter {
 
     auto nCharged = 0;
     for (auto& particle : particles) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       if (std::abs(particle.eta()) >= estimatorEta) {
@@ -1159,7 +1148,7 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        auto Nrec = 0;
+        auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
           if (!atLeastOne) {
@@ -1179,28 +1168,8 @@ struct MultiplicityCounter {
         }
 
         auto perCollisionASample = atracks.sliceBy(perColU, collision.globalIndex());
-        for (auto const& track : perCollisionASample) {
-          auto otrack = track.template track_as<FiTracks>();
-          usedTracksIds.emplace_back(track.trackId());
-          if (otrack.collisionId() != track.bestCollisionId()) {
-            usedTracksIdsDFMC.emplace_back(track.trackId());
-          }
-          if (std::abs(otrack.eta()) < estimatorEta) {
-            ++Nrec;
-          }
-        }
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
-        for (auto const& track : perCollisionSample) {
-          if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
-            continue;
-          }
-          if (std::find(usedTracksIdsDFMC.begin(), usedTracksIdsDFMC.end(), track.globalIndex()) != usedTracksIdsDFMC.end()) {
-            continue;
-          }
-          if (std::abs(track.eta()) < estimatorEta) {
-            ++Nrec;
-          }
-        }
+        auto Nrec = countTracksAmbiguous<C, false>(perCollisionSample, perCollisionASample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
         NPVPerCol.emplace_back(collision.numContrib());
         if (responseStudy) {
@@ -1263,7 +1232,8 @@ struct MultiplicityCounter {
       }
     }
 
-    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
+    auto zmc = mcCollision.posZ();
+    fillParticleHistos<hasRecoCent<C>()>(particles, zmc, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
   }
 
   template <typename MC, typename C>
@@ -1280,12 +1250,7 @@ struct MultiplicityCounter {
 
     auto nCharged = 0;
     for (auto& particle : particles) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
       if (std::abs(particle.eta()) >= estimatorEta) {
@@ -1314,7 +1279,6 @@ struct MultiplicityCounter {
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    auto Nrec = 0;
     std::vector<int> NrecPerCol;
     std::vector<float> c_recPerCol;
     std::vector<int> NPVPerCol;
@@ -1338,7 +1302,7 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        Nrec = 0;
+        auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
           if (!atLeastOne) {
@@ -1358,11 +1322,7 @@ struct MultiplicityCounter {
         }
 
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
-        for (auto const& track : perCollisionSample) {
-          if (std::abs(track.eta()) < estimatorEta) {
-            ++Nrec;
-          }
-        }
+        auto Nrec = countTracks<C, false>(perCollisionSample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
         NPVPerCol.emplace_back(collision.numContrib());
         if (responseStudy) {
@@ -1424,8 +1384,8 @@ struct MultiplicityCounter {
         inclusiveRegistry.fill(HIST(NotFoundZvtx), mcCollision.posZ());
       }
     }
-
-    countParticles<hasRecoCent<C>()>(particles, mcCollision, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
+    auto zmc = mcCollision.posZ();
+    fillParticleHistos<hasRecoCent<C>()>(particles, zmc, nCharged, c_gen, atLeastOne, atLeastOne_gt0, atLeastOne_PVgt0);
   }
 
   using MC = aod::McCollisions; // soa::Join<aod::McCollisions, aod::HepMCXSections>;
