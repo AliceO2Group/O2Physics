@@ -43,6 +43,19 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+namespace stfilter
+{
+enum species { Xi = 0,
+               Omega = 1 };
+constexpr double massSigmaParameters[4][2]{
+  {4.9736e-3, 0.006815},
+  {-2.39594, -2.257},
+  {1.8064e-3, 0.00138},
+  {1.03468e-1, 0.1898}};
+static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", "p3"};
+static const std::vector<std::string> speciesNames{"Xi", "Omega"};
+} // namespace stfilter
+
 struct strangenessFilter {
 
   // Recall the output table
@@ -115,9 +128,13 @@ struct strangenessFilter {
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
   Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
-  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
+  Configurable<bool> useNsigmaCutTrackedXi{"useNsigmaCutTrackedXi", false, "Mass window based on n*sigma instead of fixed"};
+  Configurable<bool> useNsigmaCutTrackedOmega{"useNsigmaCutTrackedOmega", true, "Mass window based on n*sigma instead of fixed"};
+  Configurable<float> massWindowTrackedOmegaNsigma{"massWindowTrackedOmegaNsigma", 6, "Inv. mass window for tracked Omega"};
+  Configurable<float> massWindowTrackedXiNsigma{"massWindowTrackedXiNsigma", 6, "Inv. mass window for tracked Xi"};
+  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
-  Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi-"};
+  Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi"};
   Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda (ST)"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
   Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
@@ -129,6 +146,11 @@ struct strangenessFilter {
   Configurable<float> maxCpaTrackedXi{"maxCpaTrackedXi", 1., "Maximum CPA for tracked cascades"};
   Configurable<float> minDcaTrackedOmega{"minDcaTrackedOmega", 0., "Minimum DCA for tracked cascades"};
   Configurable<float> maxCpaTrackedOmega{"maxCpaTrackedOmega", 1., "Maximum CPA for tracked cascades"};
+  Configurable<LabeledArray<double>> parSigmaMass{
+    "parSigmaMass",
+    {stfilter::massSigmaParameters[0], 4, 2,
+     stfilter::massSigmaParameterNames, stfilter::speciesNames},
+    "Mass resolution parameters: [0]*exp([1]*x)+[2]*exp([3]*x)"};
   float bz = 0.;
 
   void init(o2::framework::InitContext&)
@@ -358,6 +380,12 @@ struct strangenessFilter {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNumber;
+
+  float getMassWindow(const stfilter::species s, const float pt, const float nsigma = 6)
+  {
+    const auto sigma = parSigmaMass->get(0u, s) * exp(parSigmaMass->get(1, s) * pt) + parSigmaMass->get(2, s) * exp(parSigmaMass->get(3, s) * pt);
+    return nsigma * sigma;
+  }
 
   ////////////////////////////////////////////////////////
   ////////// Strangeness Filter - Run 2 conv /////////////
@@ -1169,7 +1197,8 @@ struct strangenessFilter {
           (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) &&
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
         // Xi
-        if ((std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi) &&
+        const auto deltaMassTrackedXi = useNsigmaCutTrackedXi ? getMassWindow(stfilter::species::Xi, trackCasc.pt(), massWindowTrackedXiNsigma) : massWindowTrackedXi;
+        if ((std::abs(massXi - o2::constants::physics::MassXiMinus) < deltaMassTrackedXi) &&
             (impactParameterTrk.getY() >= minDcaTrackedXi) &&
             (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
@@ -1188,7 +1217,8 @@ struct strangenessFilter {
           QAHistosStrangenessTracking.fill(HIST("hDcaZVsPtSelectedXi"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
         }
         // Omega
-        if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega) &&
+        const auto deltaMassTrackedOmega = useNsigmaCutTrackedOmega ? getMassWindow(stfilter::species::Omega, trackCasc.pt(), massWindowTrackedOmegaNsigma) : massWindowTrackedOmega;
+        if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < deltaMassTrackedOmega) &&
             (std::abs(massXi - o2::constants::physics::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
             (impactParameterTrk.getY() >= minDcaTrackedOmega) &&
             (cpa <= maxCpaTrackedOmega) &&
