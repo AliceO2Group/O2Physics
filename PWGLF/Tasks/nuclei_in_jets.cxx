@@ -403,7 +403,7 @@ struct nuclei_in_jets {
     int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
 
     // Fill Jet Multiplicity
-    registryQC.fill(HIST("jet_plus_ue_multiplicity"), nParticlesJetUE);
+    registryQC.fill(HIST("jet_plus_ue_multiplicity"), static_cast<float>(jet_particle_ID.size()));
 
     // Perpendicular Cones for UE Estimate
     TVector3 z_positive(0.0, 0.0, 1.0);
@@ -450,10 +450,10 @@ struct nuclei_in_jets {
     // UE Multiplicity
     int nParticlesUE = static_cast<int>(ue_particle_ID.size());
 
-    registryQC.fill(HIST("ue_multiplicity"), nParticlesUE / 4);
+    registryQC.fill(HIST("ue_multiplicity"), static_cast<float>(ue_particle_ID.size()) / 4.0);
 
     // Jet Multiplicity
-    int jet_Nch = nParticlesJetUE - nParticlesUE / 4;
+    float jet_Nch = static_cast<float>(jet_particle_ID.size()) - static_cast<float>(ue_particle_ID.size()) / 4.0;
     registryQC.fill(HIST("jet_multiplicity"), jet_Nch);
 
     // Loop over particles inside Jet
