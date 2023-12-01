@@ -202,6 +202,10 @@ struct hypertriton3bodyAnalysisMc {
       {"hProtonTPCVsPt", "hProtonTPCVsPt", {HistType::kTH2F, {{50, 0.0f, 5.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hPionTPCVsPt", "hPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDeuteronTPCVsPt", "hDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
 
       {"hDalitz", "hDalitz", {HistType::kTH2F, {{120, 7.85, 8.45, "M^{2}(dp) (GeV^{2}/c^{4})"}, {60, 1.1, 1.4, "M^{2}(p#pi) (GeV^{2}/c^{4})"}}}},
       {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -324,10 +328,18 @@ struct hypertriton3bodyAnalysisMc {
         continue;
       }
       FillCandCounter(kCandDcaDau, isFromHypertriton);
+      registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), track2.sign() * track2.p(), track2.tofNSigmaDe());
+      if (isFromHypertriton){
+        registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), track2.sign() * track2.p(), track2.tofNSigmaDe());
+      }
       if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
       FillCandCounter(kCandTOFPID, isFromHypertriton);
+      registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), track2.sign() * track2.p(), track2.tofNSigmaDe());
+      if (isFromHypertriton){
+        registry.fill(HIST("hDeuteronTOFVsPAtferTOFCutSig"), track2.sign() * track2.p(), track2.tofNSigmaDe());
+      }
 
       // 3sigma region for Dalitz plot
       double lowerlimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
