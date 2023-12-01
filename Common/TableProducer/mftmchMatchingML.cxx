@@ -207,7 +207,7 @@ struct mftmchMatchingML {
       if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
         double bestscore = 0;
         int bestmfttrackid = -1;
-        for (auto& mfttrack : mfttracks) { 
+        for (auto& mfttrack : mfttracks) {
           if (fwdtrack.has_collision() && mfttrack.has_collision()) {
             if (0 <= fwdtrack.collisionId() - mfttrack.collisionId() && fwdtrack.collisionId() - mfttrack.collisionId() < cfgColWindow) {
               double result = matchONNX(fwdtrack, mfttrack);
