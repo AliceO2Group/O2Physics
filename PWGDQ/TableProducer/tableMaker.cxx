@@ -177,8 +177,8 @@ struct TableMaker {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
-  o2::parameters::GRPObject* grpmagrun2 = nullptr; //for run 2, we access the GRPObject from GLO/GRP/GRP
-  o2::parameters::GRPMagField* grpmag = nullptr;  //for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  o2::parameters::GRPObject* grpmagrun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
+  o2::parameters::GRPMagField* grpmag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
@@ -357,19 +357,16 @@ struct TableMaker {
           VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
         }
       }
-      if(fIsRun2 == true) 
-      {
+      if (fIsRun2 == true) {
         grpmagrun2 = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
         if (grpmagrun2 != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpmagrun2);
+          o2::base::Propagator::initFieldFromGRP(grpmagrun2);
         }
-      } 
-      else 
-      {
+      } else {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (grpmag != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-      }
+          o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
       }
 
       fCurrentRun = bc.runNumber();
