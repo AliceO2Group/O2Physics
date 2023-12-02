@@ -23,6 +23,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
 // O2Physics includes
@@ -33,20 +34,14 @@
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 
+// ROOT includes
+#include <TGraph.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}},
-                                       {"evtime", VariantType::Int, 1, {"Produce the table for the Event Time"}}};
-  std::swap(workflowOptions, options);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// Selection criteria for tracks used for TOF event time
 float trackDistanceForGoodMatch = 999.f;
@@ -78,6 +73,7 @@ struct tofSignal {
   Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
   Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
   Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
+  Configurable<bool> enableTOFSignalTable{"enableTOFSignalTable", false, "Flag to enable the TOF signal table (auto enabled if requested in the workflow)"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -101,10 +97,11 @@ struct tofSignal {
     trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
     multiplicityThreshold = multThreshold;
     LOG(info) << "Configuring selections for good match: " << trackDistanceForGoodMatch << " low mult " << trackDistanceForGoodMatchLowMult << " mult. threshold " << multiplicityThreshold;
+    enableFlagIfTableRequired(initContext, "TOFSignal", enableTOFSignalTable);
   }
   void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
-    if (!enableTable) {
+    if (!enableTOFSignalTable) {
       return;
     }
     table.reserve(tracks.size());
@@ -124,7 +121,7 @@ struct tofSignal {
   using TrksRun2 = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
   void processRun2(TrksRun2 const& tracks)
   {
-    if (!enableTable) {
+    if (!enableTOFSignalTable) {
       return;
     }
     table.reserve(tracks.size());
@@ -143,13 +140,75 @@ struct tofSignal {
 };
 
 /// Selection criteria for tracks used for TOF event time
-float trackSampleMinMomentum = 0.5f;
-float trackSampleMaxMomentum = 2.f;
-template <typename trackType>
-bool filterForTOFEventTime(const trackType& tr)
-{
-  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
-} // accept all
+struct tofEvTimeSelectionCriteria {
+  static float mTrackSampleMinMomentum;      /// Minimum momentum to select track sample for TOF event time
+  static float mTrackSampleMaxMomentum;      /// Maximum momentum to select track sample for TOF event time
+  static bool mRequireITS;                   /// Requires ITS to select track sample for TOF event time
+  static float mTrackSampleMaxITSChi2;       /// Maximum ITS Chi2 to select track sample for TOF event time
+  static bool mRequireTPC;                   /// Requires ITS to select track sample for TOF event time
+  static int16_t mTrackSampleMinCrossedRows; /// Minimum number of TPC crossed rows to select track sample for TOF event time
+  static float mTrackSampleMaxTPCChi2;       /// Maximum TPC Chi2 to select track sample for TOF event time
+
+  static void printConfig()
+  {
+    LOG(info) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+    LOG(info) << " Track selection criteria for TOF event time:";
+    LOG(info) << "       mTrackSampleMinMomentum:    " << mTrackSampleMinMomentum;
+    LOG(info) << "       mTrackSampleMaxMomentum:    " << mTrackSampleMaxMomentum;
+    LOG(info) << "       mRequireITS:                " << mRequireITS;
+    LOG(info) << "       mTrackSampleMaxITSChi2:     " << mTrackSampleMaxITSChi2;
+    LOG(info) << "       mRequireTPC:                " << mRequireTPC;
+    LOG(info) << "       mTrackSampleMinCrossedRows: " << static_cast<int>(mTrackSampleMinCrossedRows);
+    LOG(info) << "       mTrackSampleMaxTPCChi2:     " << mTrackSampleMaxTPCChi2;
+    LOG(info) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+  }
+
+  template <typename trackType>
+  static bool filterForTOFEventTime(const trackType& tr)
+  {
+    if (!tr.hasTOF()) {
+      LOG(debug) << "Track does not have TOF";
+      return false;
+    }
+    if (mRequireITS && !tr.hasITS()) {
+      LOG(debug) << "Track does not have ITS";
+      return false;
+    }
+    if (mRequireTPC && !tr.hasTPC()) {
+      LOG(debug) << "Track does not have TPC";
+      return false;
+    }
+    if (tr.trackType() != o2::aod::track::TrackTypeEnum::Track && tr.trackType() != o2::aod::track::TrackTypeEnum::TrackIU) {
+      LOG(debug) << "Track is not a track TrackTypeEnum::Track (" << static_cast<int>(o2::aod::track::TrackTypeEnum::Track) << ") or TrackTypeEnum::TrackIU (" << static_cast<int>(o2::aod::track::TrackTypeEnum::TrackIU) << ") but " << static_cast<int>(tr.trackType());
+      return false;
+    }
+    if (tr.p() < mTrackSampleMinMomentum || tr.p() > mTrackSampleMaxMomentum) {
+      LOG(debug) << "Track is outside momentum range [" << mTrackSampleMinMomentum << ", " << mTrackSampleMaxMomentum << "]";
+      return false;
+    }
+    if (tr.tpcNClsCrossedRows() < mTrackSampleMinCrossedRows) {
+      LOG(debug) << "Track has TPC crossed rows = " << static_cast<int>(tr.tpcNClsCrossedRows()) << " < " << static_cast<int>(mTrackSampleMinCrossedRows);
+      return false;
+    }
+    if (tr.tpcChi2NCl() > mTrackSampleMaxTPCChi2) {
+      LOG(debug) << "Track has TPC chi2/ndf = " << tr.tpcChi2NCl() << " > " << mTrackSampleMaxTPCChi2;
+      return false;
+    }
+    if (tr.itsChi2NCl() > mTrackSampleMaxITSChi2) {
+      LOG(debug) << "Track has ITS chi2/ndf = " << tr.itsChi2NCl() << " > " << mTrackSampleMaxITSChi2;
+      return false;
+    }
+    return true;
+  }
+};
+
+float tofEvTimeSelectionCriteria::mTrackSampleMinMomentum = 0.5f;
+float tofEvTimeSelectionCriteria::mTrackSampleMaxMomentum = 2.f;
+int16_t tofEvTimeSelectionCriteria::mTrackSampleMinCrossedRows = 70.f;
+float tofEvTimeSelectionCriteria::mTrackSampleMaxTPCChi2 = 10.f;
+float tofEvTimeSelectionCriteria::mTrackSampleMaxITSChi2 = 10.f;
+bool tofEvTimeSelectionCriteria::mRequireITS = true;
+bool tofEvTimeSelectionCriteria::mRequireTPC = true;
 
 /// Specialization of TOF event time maker
 template <typename trackType,
@@ -175,8 +234,6 @@ struct tofEventTime {
   static constexpr float errDiamond = diamond * 33.356409f;
   static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
 
-  bool enableTable = false;
-  bool enableTableTOFOnly = false;
   // Detector response and input parameters
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -184,9 +241,15 @@ struct tofEventTime {
   // CCDB configuration (inherited from TOF signal task)
   Configurable<std::string> url{"ccdb-url", "", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  // Selection criteria for tracks used for TOF event time
+  Configurable<float> trackSampleMinMomentum{"trackSampleMinMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
+  Configurable<float> trackSampleMaxMomentum{"trackSampleMaxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
+  Configurable<bool> requireITS{"requireITS", false, "Requires ITS to select track sample for TOF event time"};
+  Configurable<float> trackSampleMaxITSChi2{"trackSampleMaxITSChi2", 10000.f, "Maximum ITS Chi2 to select track sample for TOF event time"};
+  Configurable<bool> requireTPC{"requireTPC", false, "Requires ITS to select track sample for TOF event time"};
+  Configurable<int16_t> trackSampleMinCrossedRows{"trackSampleMinCrossedRows", -1, "Minimum number of TPC crossed rows to select track sample for TOF event time"};
+  Configurable<float> trackSampleMaxTPCChi2{"trackSampleMaxTPCChi2", 10000.f, "Maximum TPC Chi2 to select track sample for TOF event time"};
   // Event time configurations
-  Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
-  Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
   Configurable<float> maxEvTimeTOF{"maxEvTimeTOF", 100000.0f, "Maximum value of the TOF event time"};
   Configurable<bool> sel8TOFEvTime{"sel8TOFEvTime", false, "Flag to compute the ev. time only for events that pass the sel8 ev. selection"};
   Configurable<int> maxNtracksInSet{"maxNtracksInSet", 10, "Size of the set to consider for the TOF ev. time computation"};
@@ -197,6 +260,11 @@ struct tofEventTime {
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+  Configurable<bool> enableEvTimeTable{"enableEvTimeTable", false, "Flag to enable the event time table (auto enabled if requested in the workflow)"};
+  Configurable<bool> enableEvTimeTOFOnlyTable{"enableEvTimeTOFOnlyTable", false, "Flag to enable the TOF event time table (auto enabled if requested in the workflow)"};
+  Configurable<bool> enableTimeMonitoring{"enableTimeMonitoring", false, "Flag to enable the time monitoring"};
+  TGraph mGraphPrepTimeMonitoring;
+  TGraph mGraphTimeMonitoring;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -209,9 +277,15 @@ struct tofEventTime {
       }
     }
 
-    trackSampleMinMomentum = minMomentum;
-    trackSampleMaxMomentum = maxMomentum;
-    LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
+    // Set selection criteria for tracks used in the TOF event time
+    tofEvTimeSelectionCriteria::mTrackSampleMinMomentum = trackSampleMinMomentum.value;
+    tofEvTimeSelectionCriteria::mTrackSampleMaxMomentum = trackSampleMaxMomentum.value;
+    tofEvTimeSelectionCriteria::mTrackSampleMinCrossedRows = trackSampleMinCrossedRows.value;
+    tofEvTimeSelectionCriteria::mTrackSampleMaxTPCChi2 = trackSampleMaxTPCChi2.value;
+    tofEvTimeSelectionCriteria::mTrackSampleMaxITSChi2 = trackSampleMaxITSChi2.value;
+    tofEvTimeSelectionCriteria::mRequireITS = requireITS.value;
+    tofEvTimeSelectionCriteria::printConfig();
+
     // Check that both processes are not enabled
     int nEnabled = 0;
     if (doprocessRun2 == true) {
@@ -234,17 +308,13 @@ struct tofEventTime {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
-    if (!enableTable) {
-      LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
+    enableFlagIfTableRequired(initContext, "TOFEvTime", enableEvTimeTable);
+    if (!enableEvTimeTable) {
       return;
     }
     LOG(info) << "Table TOFEvTime enabled!";
 
-    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
-    if (enableTableTOFOnly) {
-      LOG(info) << "Table EvTimeTOFOnly enabled!";
-    }
+    enableFlagIfTableRequired(initContext, "EvTimeTOFOnly", enableEvTimeTOFOnlyTable);
 
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
@@ -304,6 +374,19 @@ struct tofEventTime {
     mRespParamsV2.print();
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
+
+    if (!enableTimeMonitoring) {
+      return;
+    }
+    mGraphTimeMonitoring.SetName("timeMonitoring");
+    mGraphTimeMonitoring.SetTitle("Time monitoring");
+    mGraphTimeMonitoring.GetXaxis()->SetTitle("Number of tracks");
+    mGraphTimeMonitoring.GetYaxis()->SetTitle("Time [us]");
+
+    mGraphPrepTimeMonitoring.SetName("timeMonitoring");
+    mGraphPrepTimeMonitoring.SetTitle("Time monitoring");
+    mGraphPrepTimeMonitoring.GetXaxis()->SetTitle("Number of tracks");
+    mGraphPrepTimeMonitoring.GetYaxis()->SetTitle("Time [us]");
   }
 
   ///
@@ -311,7 +394,7 @@ struct tofEventTime {
   void processRun2(aod::Tracks const& tracks,
                    aod::Collisions const&)
   {
-    if (!enableTable) {
+    if (!enableEvTimeTable) {
       return;
     }
 
@@ -341,13 +424,13 @@ struct tofEventTime {
   void processNoFT0(TrksEvTime const& tracks,
                     EvTimeCollisions const&)
   {
-    if (!enableTable) {
+    if (!enableEvTimeTable) {
       return;
     }
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
-    if (enableTableTOFOnly) {
+    if (enableEvTimeTOFOnlyTable) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
@@ -356,7 +439,7 @@ struct tofEventTime {
       if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
-        if (enableTableTOFOnly) {
+        if (enableEvTimeTOFOnlyTable) {
           tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
         }
         continue;
@@ -367,17 +450,27 @@ struct tofEventTime {
       /// Create new table for the tracks in a collision
       lastCollisionId = t.collisionId(); /// Cache last collision ID
 
+      auto start = std::chrono::high_resolution_clock::now();
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
+      auto stop = std::chrono::high_resolution_clock::now();
+      if (enableTimeMonitoring) {
+        mGraphPrepTimeMonitoring.AddPoint(tracksInCollision.size(), std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+      }
 
       // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      start = std::chrono::high_resolution_clock::now();
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, tofEvTimeSelectionCriteria::filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      stop = std::chrono::high_resolution_clock::now();
+      if (enableTimeMonitoring) {
+        mGraphTimeMonitoring.AddPoint(tracksInCollision.size(), std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+      }
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
 
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         if constexpr (removeTOFEvTimeBias) {
-          evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
+          evTimeTOF.removeBias<TrksEvTime::iterator, tofEvTimeSelectionCriteria::filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
         }
         uint8_t flags = 0;
         if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
@@ -388,10 +481,14 @@ struct tofEventTime {
         }
         tableFlags(flags);
         tableEvTime(et, erret);
-        if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeTOF.mEventTimeMultiplicity);
+        if (enableEvTimeTOFOnlyTable) {
+          tableEvTimeTOFOnly((uint8_t)tofEvTimeSelectionCriteria::filterForTOFEventTime(trk), et, erret, evTimeTOF.mEventTimeMultiplicity);
         }
       }
+    }
+    if (enableTimeMonitoring) {
+      mGraphPrepTimeMonitoring.SaveAs("/tmp/timeMonitoringPrep.root");
+      mGraphTimeMonitoring.SaveAs("/tmp/timeMonitoring.root");
     }
   }
   PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", true);
@@ -403,13 +500,13 @@ struct tofEventTime {
                   aod::FT0s const&,
                   EvTimeCollisionsFT0 const&)
   {
-    if (!enableTable) {
+    if (!enableEvTimeTable) {
       return;
     }
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
-    if (enableTableTOFOnly) {
+    if (enableEvTimeTOFOnlyTable) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
@@ -418,7 +515,7 @@ struct tofEventTime {
       if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
-        if (enableTableTOFOnly) {
+        if (enableEvTimeTOFOnlyTable) {
           tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
         }
         continue;
@@ -433,7 +530,7 @@ struct tofEventTime {
       const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
       // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, tofEvTimeSelectionCriteria::filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
 
       float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
@@ -453,7 +550,7 @@ struct tofEventTime {
         weight = 0.f;
         // Remove the bias on TOF ev. time
         if constexpr (removeTOFEvTimeBias) {
-          evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
+          evTimeTOF.removeBias<TrksEvTime::iterator, tofEvTimeSelectionCriteria::filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         }
         if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
@@ -484,8 +581,8 @@ struct tofEventTime {
           tableFlags(flags);
         }
         tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
-        if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
+        if (enableEvTimeTOFOnlyTable) {
+          tableEvTimeTOFOnly((uint8_t)tofEvTimeSelectionCriteria::filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
         }
       }
     }
@@ -498,18 +595,18 @@ struct tofEventTime {
                       aod::FT0s const&,
                       EvTimeCollisionsFT0 const&)
   {
-    if (!enableTable) {
+    if (!enableEvTimeTable) {
       return;
     }
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
-    if (!enableTableTOFOnly) {
+    if (!enableEvTimeTOFOnlyTable) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
     for (auto const& t : tracks) { // Loop on collisions
-      if (enableTableTOFOnly) {
+      if (enableEvTimeTOFOnlyTable) {
         tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
       }
       if (!t.has_collision()) { // Track was not assigned, cannot compute event time
@@ -537,9 +634,6 @@ struct tofEventTime {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
-  if (!cfgc.options().get<int>("evtime")) {
-    return workflow;
-  }
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   return workflow;
 }
