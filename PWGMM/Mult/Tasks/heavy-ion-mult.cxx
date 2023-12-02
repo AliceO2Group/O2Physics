@@ -281,7 +281,7 @@ struct HeavyIonMultiplicity {
             if (NchRecTracks > 0) {
               Inelgt0Rec = true;
               histos.fill(HIST("EventHist"), 4);
-            }  
+            }
             if (Inelgt0Rec) {
               histos.fill(HIST("MCRecMultHist_Inelgt0"), NchRecTracks);
             }
