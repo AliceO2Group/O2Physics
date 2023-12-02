@@ -104,16 +104,22 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
-static constexpr int nBinsPt = 6;
+static constexpr int nBinsPt = 12;
 static constexpr int nCutScores = 3;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
   1.,
   2.,
+  3.,
   4.,
+  5.,
   6.,
+  8.,
   10.,
+  12.,
+  16.,
+  24.,
   50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
@@ -132,6 +138,12 @@ constexpr double cuts[nBinsPt][nCutScores] = {
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5}};
 
 // row labels
@@ -142,7 +154,12 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 3",
   "pT bin 4",
   "pT bin 5",
-};
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};

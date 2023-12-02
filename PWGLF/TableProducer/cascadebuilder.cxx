@@ -110,8 +110,6 @@ struct cascadeBuilder {
   Produces<aod::StoredKFCascCores> kfcascdata;
   Produces<aod::StoredTraCascCores> trackedcascdata;
   Produces<aod::CascBBs> cascbb;
-  Produces<aod::KFCascBBs> kfcascbb;
-  Produces<aod::TraCascBBs> trackedcascbb;
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -1331,7 +1329,6 @@ struct cascadeBuilder {
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
                  cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
-      kfcascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       if (createCascCovMats) {
         gpu::gpustd::array<float, 15> covmatrix;
@@ -1526,7 +1523,6 @@ struct cascadeBuilder {
                         cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                         cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
-        trackedcascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
       }
     }
     // En masse filling at end of process call
