@@ -215,7 +215,6 @@ struct skimmerPrimaryMuon {
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
         if (abs(mctrack.pdgCode()) == 13 && mctrack.has_mothers()) {
           auto mp = mctrack.template mothers_first_as<aod::McParticles>();
-          // if (mctrack.isPhysicalPrimary()) {
           if (abs(mp.pdgCode()) == 221 || abs(mp.pdgCode()) == 223 || abs(mp.pdgCode()) == 333 || abs(mp.pdgCode()) == 113 || abs(mp.pdgCode()) == 331) {
             fRegistry.fill(HIST("MC/Primary/hP_Pin"), track.p(), track.tpcInnerParam());
             fRegistry.fill(HIST("MC/Primary/hRelDiffP"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
@@ -237,7 +236,6 @@ struct skimmerPrimaryMuon {
             fRegistry.fill(HIST("MC/Primary/hDCA3D_sigma"), sqrt(pow(track.dcaXY() / sqrt(track.cYY()), 2) + pow(track.dcaZ() / sqrt(track.cZZ()), 2)));
             fRegistry.fill(HIST("MC/Primary/hProdVtx"), mctrack.vx(), mctrack.vy());
           } else if (abs(mp.pdgCode()) == 211 || abs(mp.pdgCode()) == 321) {
-            //} else {
             fRegistry.fill(HIST("MC/Secondary/hP_Pin"), track.p(), track.tpcInnerParam());
             fRegistry.fill(HIST("MC/Secondary/hRelDiffP"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             fRegistry.fill(HIST("MC/Secondary/hTPCdEdx_Pin"), track.tpcInnerParam(), track.tpcSignal());
