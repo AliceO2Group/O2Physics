@@ -661,7 +661,7 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      if( TMath::Abs(RecoDecay::eta(std::array{px, py, pz}))<0.5 ) {
+      if (TMath::Abs(RecoDecay::eta(std::array{px, py, pz})) < 0.5) {
         if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
           registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
         if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))

@@ -84,9 +84,9 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // mother information
-  Produces<aod::V0MCMothers> v0mothers; // V0 mother references
-  Produces<aod::CascMCMothers> cascmothers; // casc mother references
-  Produces<aod::MotherMCParticles> motherMCParticles; //mc particles for mothers
+  Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
+  Produces<aod::CascMCMothers> cascmothers;           // casc mother references
+  Produces<aod::MotherMCParticles> motherMCParticles; // mc particles for mothers
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -332,9 +332,9 @@ struct strangederivedbuilder {
     //__________________________________________________
     // mark mcParticles for referencing
     for (auto const& v0 : V0s)
-      motherReference[v0.mcParticleId()] = 0; 
+      motherReference[v0.mcParticleId()] = 0;
     for (auto const& ca : Cascades)
-      motherReference[ca.mcParticleId()] = 0; 
+      motherReference[ca.mcParticleId()] = 0;
     //__________________________________________________
     // Figure out the numbering of the new mcMother table
     // assume filling per order

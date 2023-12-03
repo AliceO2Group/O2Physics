@@ -804,7 +804,7 @@ struct straRecoStudy {
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.eta()) < 0.5) {    
+      if (TMath::Abs(mcp.eta()) < 0.5) {
         if (mcp.pdgCode() == 22)
           histos.fill(HIST("hGenGamma"), mcp.pt());
         if (mcp.pdgCode() == 310)

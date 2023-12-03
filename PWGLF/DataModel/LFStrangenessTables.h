@@ -101,10 +101,10 @@ DECLARE_SOA_COLUMN(Py, py, float);                              //! py
 DECLARE_SOA_COLUMN(Pz, pz, float);                              //! pz
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! pdg code
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! primary criterion
-}
+} // namespace motherParticle
 
 DECLARE_SOA_TABLE(MotherMCParticles, "AOD", "MOTHERMCPART", //! mother MC information
-                  motherParticle::Px, motherParticle::Py, motherParticle::Pz, 
+                  motherParticle::Px, motherParticle::Py, motherParticle::Pz,
                   motherParticle::PDGCode, motherParticle::IsPhysicalPrimary);
 
 using MotherMCParticle = MotherMCParticles::iterator;
