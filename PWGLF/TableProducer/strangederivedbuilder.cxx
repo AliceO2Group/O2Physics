@@ -332,9 +332,11 @@ struct strangederivedbuilder {
     //__________________________________________________
     // mark mcParticles for referencing
     for (auto const& v0 : V0s)
-      motherReference[v0.mcParticleId()] = 0;
+      if(v0.has_mcParticle())
+        motherReference[v0.mcParticleId()] = 0;
     for (auto const& ca : Cascades)
-      motherReference[ca.mcParticleId()] = 0;
+      if(ca.has_mcParticle())
+        motherReference[ca.mcParticleId()] = 0;
     //__________________________________________________
     // Figure out the numbering of the new mcMother table
     // assume filling per order
