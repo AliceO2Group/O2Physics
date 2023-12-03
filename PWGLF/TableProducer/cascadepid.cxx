@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//     Lambdakzero TOF PID
+//     Cascade PID tables
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
 /// \author Nicolò Jacazio
 /// \author David Dobrigkeit Chinellato
-/// \since  11/05/2023
-/// \brief  Table producer for V0 daughter TOF info
+/// \since  22/11/2023
+/// \brief  Table producer for Casc daughter PID info
 //
 // This task produces daughter PID information for strange daughters
 // taking into account the (candidate-by-candidate) time spent as a heavier
@@ -64,31 +64,33 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
+using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
 
 // For MC and dE/dx association
 using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
 
 // Pre-selected V0s
-using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
+using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
-struct lambdakzerotofpid {
-  Produces<aod::LaDeltaTimeTOF> laDeltaTimeTOF;
-  Produces<aod::K0DeltaTimeTOF> k0DeltaTimeTOF;
+struct cascadepid {
+  // TOF pid for strangeness (recalculated with topology)
+  Produces<aod::CascTOF> casctof;       // raw table for checks
+  Produces<aod::CascTOFPID> casctofpid; // table with Nsigmas
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<aod::CascDatas> perCollision = o2::aod::cascdata::collisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<float> tofPosition{"tofPosition", 370, "TOF position for tests"};
-  Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx"};
+  Configurable<bool> fillRawPID{"fillRawPID", true, "fill raw PID tables for debug/x-check"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -96,11 +98,6 @@ struct lambdakzerotofpid {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-
-  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-  ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
-  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
 
   int mRunNumber;
   float d_bz;
@@ -183,13 +180,6 @@ struct lambdakzerotofpid {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
-    histos.add("h3dMassK0ShortPositive", "h3dMassK0ShortPositive", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaPositive", "h3dMassLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaPositive", "h3dMassAntiLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassK0ShortNegative", "h3dMassK0ShortNegative", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaNegative", "h3dMassLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaNegative", "h3dMassAntiLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -239,79 +229,29 @@ struct lambdakzerotofpid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
+  void process(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      // Do analysis with collision-grouped V0s, retain full collision information
+      // Do analysis with collision-grouped cascades, retain full collision information
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      // V0 table sliced
-      for (auto const& v0 : V0Table_thisCollision) {
-        // time of V0 segment
-        float lengthV0 = std::hypot(v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ());
-        float velocityK0Short = velocity(v0.p(), o2::constants::physics::MassKaonNeutral);
-        float velocityLambda = velocity(v0.p(), o2::constants::physics::MassLambda);
-        float timeK0Short = lengthV0 / velocityK0Short; // in picoseconds
-        float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
+      auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
+      // cascade table sliced
+      for (auto const& cascade : CascTable_thisCollision) {
+        // Track casting
+        auto bachTrack = cascade.bachelor_as<FullTracksExtIU>();
+        auto v0 = cascade.v0();
+        auto posTrack = v0.posTrack_as<FullTracksExtIU>();
+        auto negTrack = v0.negTrack_as<FullTracksExtIU>();
 
-        auto const& posTrackRow = v0.posTrack_as<FullTracksExtIU>();
-        auto const& negTrackRow = v0.negTrack_as<FullTracksExtIU>();
+        // FIXME: TOF calculation: under construction, to follow
 
-        auto posTrack = getTrackParCov(posTrackRow);
-        auto negTrack = getTrackParCov(negTrackRow);
-
-        float deltaTimePositiveLambdaPi = -1e+6;
-        float deltaTimeNegativeLambdaPi = -1e+6;
-        float deltaTimePositiveLambdaPr = -1e+6;
-        float deltaTimeNegativeLambdaPr = -1e+6;
-        float deltaTimePositiveK0ShortPi = -1e+6;
-        float deltaTimeNegativeK0ShortPi = -1e+6;
-
-        float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-        float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-        float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-        float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-
-        // propagate to V0 decay vertex
-        posTrack.propagateTo(v0.posX(), d_bz);
-        negTrack.propagateTo(v0.negX(), d_bz);
-
-        float lengthPositive = trackLength(posTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
-        float lengthNegative = trackLength(negTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
-        float timePositivePr = lengthPositive / velocityPositivePr;
-        float timePositivePi = lengthPositive / velocityPositivePi;
-        float timeNegativePr = lengthNegative / velocityNegativePr;
-        float timeNegativePi = lengthNegative / velocityNegativePi;
-
-        deltaTimePositiveLambdaPr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePr);
-        deltaTimePositiveLambdaPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePi);
-        deltaTimeNegativeLambdaPr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePr);
-        deltaTimeNegativeLambdaPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePi);
-        deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
-        deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
-
-        laDeltaTimeTOF(deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-                       deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr);
-        k0DeltaTimeTOF(deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
-
-        auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
-        // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
-        // the v0 (stored indices) contain the tags of the lambdakzero preselector
-
-        if (originalV0.isdEdxK0Short() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-        }
-        if (originalV0.isdEdxLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositiveLambdaPr, v0.mLambda());
-          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativeLambdaPi, v0.mLambda());
-        }
-        if (originalV0.isdEdxAntiLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mAntiLambda());
-          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativeK0ShortPi, v0.mAntiLambda());
+        if (fillRawPID) {
+          casctof(posTrack.length(), negTrack.length(), bachTrack.length(),
+                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }
       }
     }
@@ -321,5 +261,5 @@ struct lambdakzerotofpid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzerotofpid>(cfgc)};
+    adaptAnalysisTask<cascadepid>(cfgc)};
 }

@@ -450,7 +450,7 @@ struct lambdakzeromcfinder {
           if (!negParticle.has_mothers())
             continue;
           for (auto& negMotherParticle : negParticle.mothers_as<aod::McParticles>()) {
-            if (negMotherParticle.globalIndex() == posMotherParticle.globalIndex() && negMotherParticle.pdgCode() == searchedV0NegativePDG[v0pdgIndex]) {
+            if (negMotherParticle.globalIndex() == posMotherParticle.globalIndex() && negParticle.pdgCode() == searchedV0NegativePDG[v0pdgIndex]) {
               // de-reference best collision
               int bestCollisionIndex = -1;
               auto mcCollision = posParticle.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();

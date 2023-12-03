@@ -22,6 +22,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -79,6 +80,9 @@ struct hyperCandidate {
   std::array<float, 3> momHe3;
   std::array<float, 3> momPi;
   std::array<float, 3> primVtx;
+  float centralityFT0A = -1;
+  float centralityFT0C = -1;
+  float centralityFT0M = -1;
   std::array<float, 3> decVtx;
   std::array<float, 3> gMom;
   std::array<float, 3> gMomHe3;
@@ -246,7 +250,7 @@ struct hyperRecoTask {
   }
 
   template <class T>
-  void fillCandidateData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
+  void fillCandidateData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>::iterator const& collision, aod::V0s const& V0s)
   {
     if (mBBparamsHe[5] < 0) {
       LOG(fatal) << "Bethe-Bloch parameters for He3 not set, please check your CCDB and configuration";
@@ -330,6 +334,9 @@ struct hyperRecoTask {
       float h4lE = he4E + piE;
 
       hypCand.primVtx = array{collision.posX(), collision.posY(), collision.posZ()};
+      hypCand.centralityFT0A = collision.centFT0A();
+      hypCand.centralityFT0C = collision.centFT0C();
+      hypCand.centralityFT0M = collision.centFT0M();
       std::array<float, 3> hypMom;
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
@@ -469,7 +476,7 @@ struct hyperRecoTask {
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
     hyperCandidates.clear();
 
@@ -499,6 +506,9 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       outputDataTable(hypCand.isMatter,
+                      hypCand.centralityFT0A,
+                      hypCand.centralityFT0C,
+                      hypCand.centralityFT0M,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                       hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                       hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],
@@ -511,7 +521,7 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     hyperCandidates.clear();
 
@@ -542,6 +552,9 @@ struct hyperRecoTask {
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       outputMCTable(hypCand.isMatter,
+                    hypCand.centralityFT0A,
+                    hypCand.centralityFT0C,
+                    hypCand.centralityFT0M,
                     hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                     hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],

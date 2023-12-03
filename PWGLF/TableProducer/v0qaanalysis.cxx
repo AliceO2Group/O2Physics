@@ -13,7 +13,6 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -22,16 +21,25 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<ConfigParamSpec> options{{"add-fill", VariantType::Int, 1, {"Add histogram filling"}}};
+  std::swap(workflowOptions, options);
+}
+
+#include "Framework/runDataProcessing.h"
+
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 
-struct v0qaanalysis {
+struct LfV0qaanalysis {
 
   // Produces
   Produces<aod::MyV0Candidates> myv0s;
@@ -40,21 +48,31 @@ struct v0qaanalysis {
 
   void init(InitContext const&)
   {
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "zvertex");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Selected");
+
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
+      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
+      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(4, "sel8_true");
       registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
       registry.add("hNEventsMC_RecoColl", "hNEventsMC_RecoColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
-      registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Reconstructed_MCRecoColl_AntiLambda", "Reconstructed_MCRecoColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCRecoColl_K0Short", "Generated_MCRecoColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCRecoColl_Lambda", "Generated_MCRecoColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCRecoColl_AntiLambda", "Generated_MCRecoColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCAllColl_K0Short", "Generated_MCAllColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCAllColl_Lambda", "Generated_MCAllColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("Generated_MCAllColl_AntiLambda", "Generated_MCAllColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Reconstructed_MCRecoColl_AntiLambda", "Reconstructed_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_K0Short", "Generated_MCRecoColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_Lambda", "Generated_MCRecoColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCRecoColl_AntiLambda", "Generated_MCRecoColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_K0Short", "Generated_MCAllColl_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_Lambda", "Generated_MCAllColl_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("Generated_MCAllColl_AntiLambda", "Generated_MCAllColl_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
     }
   }
 
@@ -64,38 +82,82 @@ struct v0qaanalysis {
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
-  Configurable<float> dcav0dau{"dcav0dau", 1.5, "DCA V0 Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", 0.06, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 0.06, "DCA Pos To PV"};
-  Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
-  Configurable<float> rapidity{"rapidity", 0.5, "Rapidity"};
+  Configurable<float> dcav0dau{"dcav0dau", 10, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.0, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
+  Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
   Configurable<bool> isMC{"isMC", 0, "Is MC"};
+
+  // Event selection
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    if (sel8 && !collision.sel8()) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 1.5);
+
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 2.5);
+
+    return true;
+  }
+
+  // Event selection
+  template <typename TMcParticles>
+  bool isTrueINELgt0(TMcParticles particles)
+  {
+    int nPart = 0;
+    for (const auto& particle : particles) {
+      if (particle.isPhysicalPrimary() == 0)
+        continue; // consider only primaries
+
+      const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (TMath::Abs(pdgInfo->Charge()) < 0.001) {
+        continue; // consider only charged particles
+      }
+
+      if (particle.eta() < -1.0 || particle.eta() > 1.0)
+        continue; // consider only particles in |eta| < 1
+
+      nPart++;
+    }
+    if (nPart > 0)
+      return true;
+    else
+      return false;
+  }
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
   {
-    // Event selection
-    if (sel8 && !collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      return;
-    }
 
+    // Apply event selection
     registry.fill(HIST("hNEvents"), 0.5);
+    if (!AcceptEvent(collision)) {
+      return;
+    }
+    registry.fill(HIST("hNEvents"), 3.5);
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
     registry.fill(HIST("hCentFV0A"), collision.centFV0A());
 
     for (auto& v0 : V0s) { // loop over V0s
 
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+      // c tau
+      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
+      // ITS clusters
       int posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
         if (v0.posTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
@@ -104,6 +166,12 @@ struct v0qaanalysis {
         if (v0.negTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
           negITSNhits++;
         }
+      }
+
+      // Event flags
+      int evFlag = 0;
+      if (collision.isInelGt0()) {
+        evFlag = 1;
       }
 
       int lPDG = 0;
@@ -127,11 +195,11 @@ struct v0qaanalysis {
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
               v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A());
+              collision.centFT0M(), collision.centFV0A(), evFlag);
       }
     }
   }
-  PROCESS_SWITCH(v0qaanalysis, processData, "Process data", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processData, "Process data", true);
 
   Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
@@ -139,22 +207,24 @@ struct v0qaanalysis {
   SliceCache cache1;
   SliceCache cache2;
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                 aod::McCollisions const& mcCollisions,
-                 soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
-                 aod::McParticles const& mcParticles, DauTracksMC const& tracks)
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  void processMCReco(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
+                     aod::McCollisions const& mcCollisions,
+                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                     aod::McParticles const& mcParticles, DauTracksMC const& tracks)
   {
     for (const auto& collision : collisions) {
-      // Event selection
-      if (sel8 && !collision.sel8()) {
-        continue;
-      }
-      if (TMath::Abs(collision.posZ()) > cutzvertex) {
-        continue;
+      // Apply event selection
+      registry.fill(HIST("hNEvents"), 0.5);
+
+      if (!AcceptEvent(collision)) {
+        return;
       }
       if (!collision.has_mcCollision()) {
         continue;
       }
+      registry.fill(HIST("hNEvents"), 3.5);
 
       registry.fill(HIST("hNEventsMC_RecoColl"), 0.5);
 
@@ -167,15 +237,15 @@ struct v0qaanalysis {
         auto v0mcparticle = v0.mcParticle();
 
         // Highest numerator of efficiency
-        if (v0mcparticle.isPhysicalPrimary() && TMath::Abs(v0mcparticle.y()) <= rapidity) {
+        if (v0mcparticle.isPhysicalPrimary()) {
           if (v0mcparticle.pdgCode() == 310) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_K0Short"), v0mcparticle.pt()); // K0s
+            registry.fill(HIST("Reconstructed_MCRecoColl_K0Short"), v0mcparticle.pt(), v0mcparticle.y()); // K0s
           }
           if (v0mcparticle.pdgCode() == 3122) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_Lambda"), v0mcparticle.pt()); // Lambda
+            registry.fill(HIST("Reconstructed_MCRecoColl_Lambda"), v0mcparticle.pt(), v0mcparticle.y()); // Lambda
           }
           if (v0mcparticle.pdgCode() == -3122) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_AntiLambda"), v0mcparticle.pt()); // AntiLambda
+            registry.fill(HIST("Reconstructed_MCRecoColl_AntiLambda"), v0mcparticle.pt(), v0mcparticle.y()); // AntiLambda
           }
         }
 
@@ -196,9 +266,15 @@ struct v0qaanalysis {
           }
         }
 
-        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0;
-        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassLambda0Bar;
-        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+        // Event flags
+        int evFlag = 0;
+        if (collision.isInelGt0()) {
+          evFlag = 1;
+        }
+
+        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
         if (v0.v0radius() > v0radius &&
             v0.v0cosPA() > v0cospa &&
@@ -221,7 +297,7 @@ struct v0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-                cent, cent);
+                cent, cent, evFlag);
         }
       }
 
@@ -229,39 +305,45 @@ struct v0qaanalysis {
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache1);
 
       for (auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > rapidity) {
-          continue;
-        }
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
         if (mcParticle.pdgCode() == 310)
-          registry.fill(HIST("Generated_MCRecoColl_K0Short"), mcParticle.pt()); // K0s
+          registry.fill(HIST("Generated_MCRecoColl_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
         if (mcParticle.pdgCode() == 3122)
-          registry.fill(HIST("Generated_MCRecoColl_Lambda"), mcParticle.pt()); // Lambda
+          registry.fill(HIST("Generated_MCRecoColl_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
         if (mcParticle.pdgCode() == -3122)
-          registry.fill(HIST("Generated_MCRecoColl_AntiLambda"), mcParticle.pt()); // AntiLambda
+          registry.fill(HIST("Generated_MCRecoColl_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
       }
     }
+  }
+  PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", true);
 
+  void processMCGen(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
     for (const auto& mccollision : mcCollisions) {
+
+      registry.fill(HIST("hNEventsMCGen"), 0.5);
 
       if (TMath::Abs(mccollision.posZ()) > cutzvertex) {
         continue;
       }
+      registry.fill(HIST("hNEventsMCGen"), 1.5);
 
       bool isFT0A = false;
       bool isFT0C = false;
 
       const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache2);
 
+      if (!isTrueINELgt0(particlesInMCCollision)) {
+        continue;
+      }
+      registry.fill(HIST("hNEventsMCGen"), 2.5);
+      registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
+
       for (auto& mcParticle : particlesInMCCollision) {
 
-        if (!mcParticle.isPhysicalPrimary()) {
-          continue;
-        }
-
-        if (std::abs(mcParticle.pdgCode()) == 211) {
+        if (std::abs(mcParticle.pdgCode()) == 211) { // simulated sel8
           if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
             isFT0C = true;
           }
@@ -270,27 +352,23 @@ struct v0qaanalysis {
           }
         }
 
-        if (std::abs(mcParticle.y()) > rapidity) {
-          continue;
-        }
-
         if (mcParticle.pdgCode() == 310)
-          registry.fill(HIST("Generated_MCAllColl_K0Short"), mcParticle.pt()); // K0s
+          registry.fill(HIST("Generated_MCAllColl_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
         if (mcParticle.pdgCode() == 3122)
-          registry.fill(HIST("Generated_MCAllColl_Lambda"), mcParticle.pt()); // Lambda
+          registry.fill(HIST("Generated_MCAllColl_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
         if (mcParticle.pdgCode() == -3122)
-          registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt()); // AntiLambda
+          registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
       }
 
       if (isFT0A && isFT0C) {
-        registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
+        registry.fill(HIST("hNEventsMCGen"), 3.5);
       }
     }
   }
-  PROCESS_SWITCH(v0qaanalysis, processMC, "Process MC", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processMCGen, "Process MC Gen", true);
 };
 
-struct myV0s {
+struct LfMyV0s {
 
   HistogramRegistry registry{"registry"};
 
@@ -350,7 +428,9 @@ struct myV0s {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<v0qaanalysis>(cfgc, TaskName{"lf-v0qaanalysis"}),
-    adaptAnalysisTask<myV0s>(cfgc, TaskName{"lf-myv0s"})};
+  auto w = WorkflowSpec{adaptAnalysisTask<LfV0qaanalysis>(cfgc)};
+  if (cfgc.options().get<int>("add-fill")) {
+    w.push_back(adaptAnalysisTask<LfMyV0s>(cfgc));
+  }
+  return w;
 }

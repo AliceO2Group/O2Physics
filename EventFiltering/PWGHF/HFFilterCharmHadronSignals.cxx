@@ -75,6 +75,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  int currentRun{0}; // needed to get proper magnetic field
 
   // ONNX
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
@@ -90,23 +91,21 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   std::array<std::string, kNCharmParticles> onnxFiles;
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
-  AxisSpec pvContributorsAxis{250, 0.f, 250.f, "PV contributors"};
-  AxisSpec multiplicityAxis{100, 0.f, 100.f, "MultFT0M"};
-  AxisSpec zVtxAxis{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"};
-  AxisSpec invMassDmesAxis = {300, 1.65f, 2.25f, "inv. mass (GeV/#it{c}^{2})"};
-  AxisSpec invMassDstarAxis = {180, 0.f, 0.18f, "inv. mass difference (GeV/#it{c}^{2})"};
-  AxisSpec invMassCbaryonAxis = {300, 2.05f, 2.65f, "inv. mass (GeV/#it{c}^{2})"};
-  AxisSpec ptAxis = {100, 0.f, 50.f, "#it{p}_{T} (GeV/#it{c})"};
-  AxisSpec yAxis = {10, -1.f, 1.f, "#it{y}"};
-  AxisSpec phiAxis = {90, -constants::math::PI, constants::math::PI, "#varphi (rad)"};
-  AxisSpec bdtPromptAxis{100, 0.f, 1.f, "BDT prompt"};
-  AxisSpec bdtNonPromptAxis{100, 0.f, 1.f, "BDT nonprompt"};
+  ConfigurableAxis pvContributorsAxis{"pvContributorsAxis", {250, 0.f, 250.f}, "PV contributors"};
+  ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0.f, 100.f}, "MultFT0M"};
+  ConfigurableAxis zVtxAxis{"zVtxAxis", {150, -15.f, 15.f}, "#it{z}_{vtx} (cm)"};
+  ConfigurableAxis invMassDmesAxis = {"invMassDmesAxis", {300, 1.65f, 2.25f}, "inv. mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis invMassDstarAxis = {"invMassDstarAxis", {180, 0.f, 0.18f}, "inv. mass difference (GeV/#it{c}^{2})"};
+  ConfigurableAxis invMassCbaryonAxis = {"invMassCbaryonAxis", {300, 2.05f, 2.65f}, "inv. mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis ptAxis = {"ptAxis", {100, 0.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis yAxis = {"yAxis", {10, -1.f, 1.f}, "#it{y}"};
+  ConfigurableAxis phiAxis = {"phiAxis", {90, -constants::math::PI, constants::math::PI}, "#varphi (rad)"};
+  ConfigurableAxis bdtPromptAxis{"bdtPromptAxis", {100, 0.f, 1.f}, "BDT prompt"};
+  ConfigurableAxis bdtNonPromptAxis{"bdtNonPromptAxis", {100, 0.f, 1.f}, "BDT nonprompt"};
 
   HistogramRegistry registry{"registry", {{"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}}, {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
 
-  // material correction for track propagation
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // no material correction for track propagation
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // helper object
@@ -115,6 +114,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setPtLimitsDstarSoftPion(minPtSoftPion, maxPtSoftPion);
+    helper.setPtBinsSingleTracks(std::vector<double>{hf_cuts_single_track::vecBinsPtTrack});
     helper.setCutsSingleTrackBeauty(cutsSingleTrackDummy, cutsSingleTrackDummy);
     helper.setDeltaMassCharmHadForBeauty(maxDeltaMassDzeroFromDstar);
 
@@ -177,6 +177,13 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             sessionML[iCharmPart].reset(helper.initONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, bc.timestamp()));
           }
         }
+      }
+
+      // needed for track propagation
+      if (currentRun != bc.runNumber()) {
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        currentRun = bc.runNumber();
       }
 
       // loop over 2-prong candidates
