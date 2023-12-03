@@ -50,6 +50,7 @@
 #include "DataFormatsGlobalTracking/RecoContainer.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
@@ -172,10 +173,12 @@ struct TableMaker {
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
-  o2::parameters::GRPMagField* grpmag = nullptr;
+  o2::parameters::GRPObject* grpmagrun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
+  o2::parameters::GRPMagField* grpmag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
@@ -354,10 +357,18 @@ struct TableMaker {
           VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
         }
       }
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-      if (grpmag != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
+      if (fIsRun2 == true) {
+        grpmagrun2 = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+        if (grpmagrun2 != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmagrun2);
+        }
+      } else {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (grpmag != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
       }
+
       fCurrentRun = bc.runNumber();
     }
 
