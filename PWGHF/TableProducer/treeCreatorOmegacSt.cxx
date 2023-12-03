@@ -46,20 +46,23 @@ namespace o2::aod
 {
 namespace st_omegac
 {
-DECLARE_SOA_COLUMN(MassOmegac, massOmegac, float);
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
-DECLARE_SOA_COLUMN(NSigmaTpcPion, nSigmaTpcPion, float); // TODO: better name?
-DECLARE_SOA_COLUMN(NSigmaTofPion, nSigmaTofPion, float); // TODO: better name?
-DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float);
-DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float);
-DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);
-DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float);
-DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);
-DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);
-DECLARE_SOA_COLUMN(PxOmega, pxOmega, float);
-DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
-DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(IsPositiveOmega, isPositiveOmega, bool);
+DECLARE_SOA_COLUMN(MassXi, massXi, float);
+DECLARE_SOA_COLUMN(MassLambda, massLambda, float);
+DECLARE_SOA_COLUMN(NSigmaTpcPion, nSigmaTpcPion, float);
+DECLARE_SOA_COLUMN(NSigmaTofPion, nSigmaTofPion, float);
+DECLARE_SOA_COLUMN(NSigmaTpcV0Pr, nSigmaTpcV0Pr, float);
+DECLARE_SOA_COLUMN(NSigmaTofV0Pr, nSigmaTofV0Pr, float);
+DECLARE_SOA_COLUMN(NSigmaTpcV0Pi, nSigmaTpcV0Pi, float);
+DECLARE_SOA_COLUMN(NSigmaTofV0Pi, nSigmaTofV0Pi, float);
+DECLARE_SOA_COLUMN(NSigmaTpcBachPi, nSigmaTpcBachPi, float);
+DECLARE_SOA_COLUMN(NSigmaTofBachPi, nSigmaTofBachPi, float);
+DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float);
+DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float);
+DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
+DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
+DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
+DECLARE_SOA_COLUMN(IsPositiveCasc, isPositiveCasc, bool);
 DECLARE_SOA_COLUMN(PxPion, pxPion, float);
 DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
@@ -101,20 +104,23 @@ DECLARE_SOA_COLUMN(DecayLengthXYOmega, decayLengthXYOmega, float);
 } // namespace st_omegac_gen
 
 DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
-                  st_omegac::MassOmegac,
                   st_omegac::MassOmega,
+                  st_omegac::MassXi,
+                  st_omegac::MassLambda,
                   st_omegac::NSigmaTpcPion,
                   st_omegac::NSigmaTofPion,
-                  st_omegac::NSigmaTpcPr,
-                  st_omegac::NSigmaTofPr,
-                  st_omegac::NSigmaTpcKa,
-                  st_omegac::NSigmaTofKa,
-                  st_omegac::NSigmaTpcPi,
-                  st_omegac::NSigmaTofPi,
-                  st_omegac::PxOmega,
-                  st_omegac::PyOmega,
-                  st_omegac::PzOmega,
-                  st_omegac::IsPositiveOmega,
+                  st_omegac::NSigmaTpcV0Pr,
+                  st_omegac::NSigmaTofV0Pr,
+                  st_omegac::NSigmaTpcV0Pi,
+                  st_omegac::NSigmaTofV0Pi,
+                  st_omegac::NSigmaTpcBachPi,
+                  st_omegac::NSigmaTofBachPi,
+                  st_omegac::NSigmaTpcBachKa,
+                  st_omegac::NSigmaTofBachKa,
+                  st_omegac::PxCasc,
+                  st_omegac::PyCasc,
+                  st_omegac::PzCasc,
+                  st_omegac::IsPositiveCasc,
                   st_omegac::PxPion,
                   st_omegac::PyPion,
                   st_omegac::PzPion,
@@ -166,8 +172,11 @@ struct HfTreeCreatorOmegacSt {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
-  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
+  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
+  Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
+  Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0., "Inv. mass window for tracked Xi"};
   Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda"};
+  Configurable<float> massWindowXiC{"massWindowXiC", 0.1, "Inv. mass window for Xic"};
   Configurable<float> massWindowOmegaC{"massWindowOmegaC", 0.1, "Inv. mass window for Omegac"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
   Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
@@ -309,9 +318,17 @@ struct HfTreeCreatorOmegacSt {
       const auto& v0TrackPi = trackCasc.sign() < 0 ? v0TrackNeg : v0TrackPos;
 
       // track propagation
-      if (!df2.process(getTrackParCov(v0TrackNeg), getTrackParCov(v0TrackPos))) {
+      if (!df2.process(getTrackParCov(v0TrackPr), getTrackParCov(v0TrackPi))) {
         continue;
       }
+      std::array<double, 2> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
+      std::array<std::array<float, 3>, 2> momentaV0Daughters;
+      o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
+      trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
+      o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
+      trackParV0Pi.getPxPyPzGlo(momentaV0Daughters[1]);
+      const auto massV0 = RecoDecay::m(momentaV0Daughters, massesV0Daughters);
+
       o2::track::TrackParCov trackParCovV0 = df2.createParentTrackParCov(0);
       if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
         continue;
@@ -325,11 +342,14 @@ struct HfTreeCreatorOmegacSt {
       trackParV0.getPxPyPzGlo(momentaOmegaDaughters[0]);
       trackParBachelor.getPxPyPzGlo(momentaOmegaDaughters[1]);
       std::array<float, 3> pOmega;
-      df2.createParentTrackParCov().getPxPyPzGlo(pOmega);
+      const auto trackParCovOmega = df2.createParentTrackParCov();
+      trackParCovOmega.getPxPyPzGlo(pOmega);
       const auto cpaOmega = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pOmega);
 
-      std::array<double, 2> masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
-      const auto massOmega = RecoDecay::m(momentaOmegaDaughters, masses);
+      std::array<double, 2> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
+      const auto massXi = RecoDecay::m(momentaOmegaDaughters, massesXiDaughters);
+      std::array<double, 2> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
+      const auto massOmega = RecoDecay::m(momentaOmegaDaughters, massesOmegaDaughters);
 
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
       registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
@@ -340,13 +360,13 @@ struct HfTreeCreatorOmegacSt {
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       registry.fill(HIST("hPtVsMassOmega"), trackCasc.pt(), massOmega);
 
-      if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega)) {
-        LOGF(debug, "found candidate in mass range");
-        if ((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) &&
+      if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega) ||
+          (std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi)) {
+        if (((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor)) &&
             (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
             (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
-          LOGF(debug, ".. species compatible with Omega");
           std::array<double, 2> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+          std::array<double, 2> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
           std::array<std::array<float, 3>, 2> momenta;
 
           auto trackParCovPr = getTrackParCov(v0TrackPr);
@@ -376,12 +396,6 @@ struct HfTreeCreatorOmegacSt {
                 o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
               }
 
-              trackParCovTrk.getPxPyPzGlo(momenta[0]); // or better use momentum from DCA fitter?
-              trackParCovPion.getPxPyPzGlo(momenta[1]);
-              const auto massOmegaC = RecoDecay::m(momenta, masses);
-              registry.fill(HIST("hMassOmegac"), massOmegaC);
-              registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
-
               if (df2.process(trackParCovTrk, trackParCovPion)) {
                 const auto& secondaryVertex = df2.getPCACandidate();
                 const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
@@ -391,20 +405,31 @@ struct HfTreeCreatorOmegacSt {
                 df2.createParentTrackParCov().getPxPyPzGlo(pOmegac);
                 const auto cpaOmegaC = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pOmegac);
 
-                if (std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) {
+                df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
+                df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
+                const auto massOmegaC = RecoDecay::m(momenta, masses);
+                const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
+                registry.fill(HIST("hMassOmegac"), massOmegaC);
+                registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
+
+                if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
+                    (std::abs(massXiC - o2::constants::physics::MassXiCZero) < massWindowXiC)) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                   registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                  outputTable(massOmegaC,
-                              massOmega,
+                  outputTable(massOmega,
+                              massXi,
+                              massV0,
                               track.tpcNSigmaPi(),
                               track.tofNSigmaPi(),
                               v0TrackPr.tpcNSigmaPr(),
-                              v0TrackPi.tofNSigmaPr(),
+                              v0TrackPr.tofNSigmaPr(),
+                              v0TrackPi.tpcNSigmaPi(),
+                              v0TrackPi.tofNSigmaPi(),
+                              bachelor.tpcNSigmaPi(),
+                              bachelor.tofNSigmaPi(),
                               bachelor.tpcNSigmaKa(),
                               bachelor.tofNSigmaKa(),
-                              v0TrackNeg.tpcNSigmaPi(),
-                              v0TrackNeg.tofNSigmaPi(),
-                              momenta[0][0], // omega momentum
+                              momenta[0][0], // cascade momentum
                               momenta[0][1],
                               momenta[0][2],
                               trackCasc.sign() > 0 ? true : false,
