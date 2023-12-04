@@ -36,13 +36,14 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 // pT differential BDT cuts
-namespace bdtcuts {
-  static constexpr int nBinsPt = 14;
-  constexpr float binsPt[nBinsPt + 1] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 16.0f, 24.0f, 36.0f, 1000.0f};
-  constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
-  static const std::vector<std::string> labelsPt{};
-  static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT prompt", "BDT nonprompt"};
-}
+namespace bdtcuts
+{
+static constexpr int nBinsPt = 14;
+constexpr float binsPt[nBinsPt + 1] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 16.0f, 24.0f, 36.0f, 1000.0f};
+constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
+static const std::vector<std::string> labelsPt{};
+static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT prompt", "BDT nonprompt"};
+} // namespace bdtcuts
 
 // Declarations of various short names
 using MyRedEvents = aod::RedJpDmColls;
