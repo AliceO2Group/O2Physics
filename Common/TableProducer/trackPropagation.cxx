@@ -59,6 +59,8 @@ struct TrackPropagation {
   bool fillTracksDCACov = false;
   int runNumber = -1;
 
+  HistogramRegistry histograms;
+
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
@@ -70,10 +72,56 @@ struct TrackPropagation {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
+  Configurable<int> autoSetUpProcessFunctions{"autoSetUpProcessFunctions", 0, "Autosetup the process functions based on the workflow. 0 = no, 1 = yes, 2 = yes and prefer PID in tracking"};
+  Configurable<bool> fillPropagationHistograms{"fillPropagationHistograms", true, "Fill the histograms of the propagated tracks"};
+  // Histogram binning
+  ConfigurableAxis binsX{"binsX", {200, 0., o2::constants::geom::XTPCInnerRef * 2.f}, "X binning"};
+  ConfigurableAxis binsEta{"binsEta", {200, -2., 2.}, "Eta binning"};
+
+  // Cuts for the propagation of tracks
+  Configurable<float> minPropagationDistance{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
+  Configurable<float> maxPropagationEta{"maxPropagationEta", 999.f, "Only tracks which are at a smaller eta will be propagated, defaults no cut"};
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking that the enabled process functions reflect the actual needs
+    const bool needTracks = isTableRequiredInWorkflow(initContext, "Tracks");
+    if (needTracks) {
+      LOG(info) << "Track table is needed in the workflow";
+    }
+    const bool needTracksCov = isTableRequiredInWorkflow(initContext, "TracksCov");
+    if (needTracksCov) {
+      LOG(info) << "Track table covariance is needed in the workflow";
+    }
+    switch (autoSetUpProcessFunctions) {
+      case 0:
+        LOG(info) << "No autoSetUpProcessFunctions";
+        break;
+      case 1:
+        if (needTracksCov) {
+          LOG(info) << "Enabling processCovariance";
+          doprocessCovariance.value = true;
+        } else if (needTracks) {
+          LOG(info) << "Enabling processStandard";
+          doprocessStandard.value = true;
+        } else {
+          LOG(fatal) << "No tracks table is required in the workflow. Please add one.";
+        }
+        break;
+      case 2:
+        if (needTracksCov) {
+          LOG(info) << "Enabling processCovarianceWithPID";
+          doprocessCovarianceWithPID.value = true;
+        } else if (needTracks) {
+          LOG(info) << "Enabling processStandardWithPID";
+          doprocessStandardWithPID.value = true;
+        } else {
+          LOG(fatal) << "No tracks table is required in the workflow. Please add one.";
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid value for autoSetUpProcessFunctions. Please choose 0, 1 or 2.";
+    }
     int nEnabledProcesses = 0;
     if (doprocessStandard == true) {
       LOG(info) << "Enabling processStandard";
@@ -94,6 +142,7 @@ struct TrackPropagation {
     if (nEnabledProcesses != 1) {
       LOG(fatal) << "Exactly one process flag must be set to true. Please choose one.";
     }
+
     // Checking if the tables are requested in the workflow and enabling them
     fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
     fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
@@ -103,6 +152,16 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+
+    if (!fillPropagationHistograms) {
+      return;
+    }
+    const AxisSpec axisX{binsX, "#it{x}"};
+    const AxisSpec axisEta{binsEta, "#it{#eta}"};
+    histograms.add("Propagated/x", "", kTH1D, {axisX});
+    histograms.add("NotPropagated/x", "", kTH1D, {axisX});
+    histograms.add("Propagated/eta", "", kTH1D, {axisEta});
+    histograms.add("NotPropagated/eta", "", kTH1D, {axisEta});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -149,6 +208,7 @@ struct TrackPropagation {
       }
     }
 
+    float trkEta = 0.f;
     for (auto& track : tracks) {
       if constexpr (fillCovMat) {
         if (fillTracksDCA || fillTracksDCACov) {
@@ -158,6 +218,7 @@ struct TrackPropagation {
         if constexpr (useTrkPid) {
           mTrackParCov.setPID(track.pidForTracking());
         }
+        trkEta = mTrackParCov.getEta();
       } else {
         if (fillTracksDCA) {
           mDcaInfo[0] = 999;
@@ -167,10 +228,12 @@ struct TrackPropagation {
         if constexpr (useTrkPid) {
           mTrackPar.setPID(track.pidForTracking());
         }
+        trkEta = mTrackPar.getEta();
       }
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
+
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationDistance && std::abs(trkEta) < maxPropagationEta) {
         if (track.has_collision()) {
           auto const& collision = track.collision();
           if constexpr (fillCovMat) {
@@ -212,6 +275,15 @@ struct TrackPropagation {
         tracksParExtensionPropagated(mTrackPar.getPt(), mTrackPar.getP(), mTrackPar.getEta(), mTrackPar.getPhi());
         if (fillTracksDCA) {
           tracksDCA(mDcaInfo[0], mDcaInfo[1]);
+        }
+      }
+      if (fillPropagationHistograms) {
+        if (trackType == aod::track::Track) {
+          histograms.fill(HIST("Propagated/x"), track.x());
+          histograms.fill(HIST("Propagated/eta"), trkEta);
+        } else {
+          histograms.fill(HIST("NotPropagated/x"), track.x());
+          histograms.fill(HIST("NotPropagated/eta"), trkEta);
         }
       }
     }
