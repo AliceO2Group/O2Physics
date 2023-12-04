@@ -2140,6 +2140,36 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("paird_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("paird_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("paire_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("paire_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairf_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairf_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairg_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairg_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairh_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairh_prefilter1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairi_prefilter1")) {
+    cut->AddCut(GetAnalysisCut("pairi_prefilter1"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairJpsi")) {
     cut->AddCut(GetAnalysisCut("pairJpsi"));
     return cut;
@@ -3938,6 +3968,36 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairc_prefilter7")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.04);
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
+    return cut;
+  }
+
+  if (!nameStr.compare("paird_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.025);
+    return cut;
+  }
+
+  if (!nameStr.compare("paire_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairf_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.075);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairg_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairh_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.125);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairi_prefilter1")) {
     cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
     return cut;
   }
