@@ -118,6 +118,8 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<float> d_maxDZIni{"d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
+  Configurable<float> d_maxDXYIni{"d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
@@ -156,6 +158,8 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
   ConfigurableAxis axisDeltaDistanceRadii{"axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisDCAXY{"axisDCAXY", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisDCACHI2{"axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
   ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
 
   int mRunNumber;
@@ -303,6 +307,10 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
 
       // QA for PCM
+      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisPtQA, axisDCAXY});
+      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisPtQA, axisDCAXY});
+      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisPtQA, axisDCACHI2});
+      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisPtQA, axisDCACHI2});
       registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
       registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
       registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisPositionGuess});
@@ -440,7 +448,8 @@ struct lambdakzeroBuilder {
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDZIni(d_maxDZIni);
+    fitter.setMaxDXYIni(d_maxDXYIni);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
@@ -652,18 +661,20 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
-        registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
-        registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
-        registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
-        registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      if (TMath::Abs(RecoDecay::eta(std::array{px, py, pz})) < 0.5) {
+        if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
+          registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
+        if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
+          registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
+        if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
+          registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
+        if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
+          registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
+        if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
+        if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      }
 
       // Fill ITS cluster maps with specific mass cuts
       if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
@@ -721,11 +732,15 @@ struct lambdakzeroBuilder {
       // let's just use tagged, cause we can
       if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
         if (V0.isTrueGamma()) {
+          registry.fill(HIST("h2d_pcm_DCAXY_True"), lPt, std::hypot(dcaInfo[0], dcaInfo[1]));
+          registry.fill(HIST("h2d_pcm_DCACHI2_True"), lPt, fitter.getChi2AtPCACandidate());
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
         } else {
+          registry.fill(HIST("h2d_pcm_DCAXY_Bg"), lPt, std::hypot(dcaInfo[0], dcaInfo[1]));
+          registry.fill(HIST("h2d_pcm_DCACHI2_Bg"), lPt, fitter.getChi2AtPCACandidate());
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);

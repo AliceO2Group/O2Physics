@@ -96,6 +96,7 @@ static const std::vector<std::string> TPCTOFAvgName{"TPC Avg", "TOF Avg"};
 static const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TOF min", "TOF max", "TPCTOF max"};
 static const std::vector<std::string> PtCutsName{"Pt min (particle)", "Pt max (particle)", "Pt min (antiparticle)", "Pt max (antiparticle)", "P thres"};
 static const std::vector<std::string> MomCorCutsName{"Momemtum Correlation min", "Momemtum Correlation max"};
+static const std::vector<std::string> PIDForTrackingName{"Switch", "Momemtum Threshold"};
 static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL"};
 static const std::vector<std::string> TwoBodyFilterNames{"PD", "LD"};
 static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PD", "aPaD", "LD", "aLaD"};
@@ -135,6 +136,9 @@ static const float NClustersMin[1][nTracks]{
 static const float MomCorLimits[2][nMomCorCuts] =
   {{-99, 99},
    {-99, 99}};
+static const float PIDForTrackingTable[2][nTracks]{
+  {-1, 0.75},
+  {-1, 1.2}};
 
 static const float triggerSwitches[1][nAllTriggers]{
   {1, 1, 1, 1, 1, 1}};
@@ -382,6 +386,11 @@ struct CFFilter {
     {CFTrigger::MomCorLimits[0], CFTrigger::nTracks, CFTrigger::nMomCorCuts, CFTrigger::SpeciesNameAnti, CFTrigger::MomCorCutsName},
     "Cut on momentum correlation ratio (antipartilce)"};
   Configurable<bool> ConfMomCorRatioCutFlag{"ConfMomCorRatioFlag", false, "Flag for cut on momentum correlation ratio"};
+
+  Configurable<LabeledArray<float>> ConfPIDForTracking{
+    "ConfPIDForTracking",
+    {CFTrigger::PIDForTrackingTable[0], CFTrigger::nTracks, 2, CFTrigger::SpeciesName, CFTrigger::PIDForTrackingName},
+    "Use PID used in tracking up to momentum threshold"};
 
   Configurable<LabeledArray<float>> ConfPtCuts{
     "ConfPtCuts",
@@ -970,6 +979,22 @@ struct CFFilter {
     bool isSelected = false;
     bool pThres = true;
     float nSigma = -999.;
+
+    // check tracking PID
+    uint8_t SpeciesForTracking = 0;
+    if (partSpecies == CFTrigger::kProton) {
+      SpeciesForTracking = o2::track::PID::Proton;
+    } else if (partSpecies == CFTrigger::kDeuteron) {
+      SpeciesForTracking = o2::track::PID::Deuteron;
+    } else {
+      LOG(warn) << "Unknown PID for tracking encountered";
+    }
+
+    if (ConfPIDForTracking->get(partSpecies, "Switch") > 0 && track.tpcInnerParam() < ConfPIDForTracking->get(partSpecies, "Momemtum Threshold")) {
+      if (track.pidForTracking() != SpeciesForTracking) {
+        return false;
+      }
+    }
 
     // check momentum threshold
     if (track.tpcInnerParam() <= ConfPtCuts->get(partSpecies, "P thres")) {

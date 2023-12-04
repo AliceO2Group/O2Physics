@@ -274,10 +274,10 @@ struct qaEventTrackLite {
     histos.add("Tracks/relativeResoPtMeanvsEtavsPt", "mean relative #it{p}_{T} resolution;", kTProfile2D, {axisPt, axisEta});
     histos.add("Tracks/reso1overPtMeanvsEtavs1overPt", "mean 1/#it{p}_{T} resolution;", kTProfile2D, {axis1overPt, axisEta});
     // track cuts map
-    histos.add("TrackCuts/selPtEtaPhiNoSel", "pt eta phi map no sel; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-    histos.add("TrackCuts/selPtEtaPhiSel1", "pt eta phi map sel 1; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-    histos.add("TrackCuts/selPtEtaPhiSel2", "pt eta phi map sel 2; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-    histos.add("TrackCuts/selPtEtaPhiSel3", "pt eta phi map sel 3; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiNoSel", "pt eta phi map no sel; pt,eta,phi", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("TrackCuts/selPtEtaPhiSel1", "pt eta phi map sel 1; pt,eta,phi", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("TrackCuts/selPtEtaPhiSel2", "pt eta phi map sel 2; pt,eta,phi", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("TrackCuts/selPtEtaPhiSel3", "pt eta phi map sel 3; pt,eta,phi", kTH3D, {axisPt, axisEta, axisPhi});
 
     // MC histograms
     if (doprocessMCLite) {
@@ -285,21 +285,29 @@ struct qaEventTrackLite {
       histos.add("Particles/Kine/pt", "Particle #it{p}_{T}", kTH1D, {axisPt});
       histos.add("Particles/Kine/eta", "Particle #eta", kTH1D, {axisEta});
       histos.add("Particles/Kine/phi", "Particle #phi", kTH1D, {axisPhi});
-      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC reco Primary sel0", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC reco Primary sel1", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC reco Primary sel2", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC reco Primary sel3", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary", kTH3D, {axisPt, axisEta, axisPhi});
+      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC reco Primary sel0", kTH3D, {axisPt, axisEta, axisPhi});
+      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC reco Primary sel1", kTH3D, {axisPt, axisEta, axisPhi});
+      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC reco Primary sel2", kTH3D, {axisPt, axisEta, axisPhi});
+      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC reco Primary sel3", kTH3D, {axisPt, axisEta, axisPhi});
 
       histos.add("Particle/selPtEtaVtxzMCGenPrimary", "pt eta VtxZ map MC gen Primary", kTH3F, {axisPt, axisEta, axisVtxZ});
       histos.add("Particle/selPtEtaVtxzMCRecoNoSelPrimary", "pt eta VtxZ map MC reco Primary sel0", kTH3F, {axisPt, axisEta, axisVtxZ});
       histos.add("Particle/selPtEtaVtxzMCRecoSel1Primary", "pt eta VtxZ map MC reco Primary sel1", kTH3F, {axisPt, axisEta, axisVtxZ});
       histos.add("Particle/selPtEtaVtxzMCRecoSel2Primary", "pt eta VtxZ map MC reco Primary sel2", kTH3F, {axisPt, axisEta, axisVtxZ});
       histos.add("Particle/selPtEtaVtxzMCRecoSel3Primary", "pt eta VtxZ map MC reco Primary sel3", kTH3F, {axisPt, axisEta, axisVtxZ});
-      histos.add("Tracks/resoPhivsPtvsEta", "#varphi(reco)-#varphi(gen);", kTH3D, {axisPt, axisEta, {180, -M_PI, M_PI, "#varphi(reco)-#varphi(gen)"}});
-      histos.add("Tracks/phiRecovsphiGen", "#varphi(reco) vs. #varphi(gen);", kTH2D, {axisPhi, axisPhi});
-      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
-      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
+      histos.add("Tracks/MC/resoPhivsPtvsEta", "#varphi(reco)-#varphi(gen);", kTH3D, {axisPt, axisEta, {180, -M_PI, M_PI, "#varphi(reco)-#varphi(gen)"}});
+      histos.add("Tracks/MC/phiRecovsphiGen", "#varphi(reco) vs. #varphi(gen);", kTH2D, {axisPhi, axisPhi});
+      histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
+      histos.get<TH2>(HIST("Tracks/MC/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
+      histos.add("Tracks/MC/ptRecoVsptGen", "", kTH2D, {{axisPt, axisPt}});
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen"))->GetYaxis()->GetTitle()));
+      histos.add("Tracks/MC/ptRecoVsptGen_wTOF", "", kTH2D, {{axisPt, axisPt}});
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTOF"))->GetYaxis()->GetTitle()));
+      histos.add("Tracks/MC/ptRecoVsptGen_wTRD", "", kTH2D, {{axisPt, axisPt}});
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_wTRD"))->GetYaxis()->GetTitle()));
+      histos.add("Tracks/MC/ptRecoVsptGen_woTRD", "", kTH2D, {{axisPt, axisPt}});
+      histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetYaxis()->SetTitle(Form("%s_{Gen}", histos.get<TH2>(HIST("Tracks/MC/ptRecoVsptGen_woTRD"))->GetYaxis()->GetTitle()));
     }
   }
 
@@ -435,8 +443,17 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/TPCnClstvsEtavsPt"), track.eta(), track.pt(), track.tpcNClsFound());
     histos.fill(HIST("Tracks/ITS/itsNClstvsEtavsPt"), track.eta(), track.pt(), track.itsNCls());
     if constexpr (isMC) {
-      histos.fill(HIST("Tracks/resoPhivsPtvsEta"), track.pt(), track.eta(), track.phi() - track.phiMC());
-      histos.fill(HIST("Tracks/phiRecovsphiGen"), track.phi(), track.phiMC());
+      histos.fill(HIST("Tracks/MC/ptRecoVsptGen"), track.pt(), track.ptMC());
+      if (track.hasTOF()) {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_wTOF"), track.pt(), track.ptMC());
+      }
+      if (track.hasTRD()) {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_wTRD"), track.pt(), track.ptMC());
+      } else {
+        histos.fill(HIST("Tracks/MC/ptRecoVsptGen_woTRD"), track.pt(), track.ptMC());
+      }
+      histos.fill(HIST("Tracks/MC/resoPhivsPtvsEta"), track.pt(), track.eta(), track.phi() - track.phiMC());
+      histos.fill(HIST("Tracks/MC/phiRecovsphiGen"), track.phi(), track.phiMC());
     }
 
     if constexpr (isMC) {
