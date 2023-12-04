@@ -45,9 +45,10 @@ void packInTable(const float& valueToBin, T& table)
     table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) - 0.5f));
   }
 }
+
 // Function to unpack a binned value into a float
 template <typename binningType>
-void unPackInTable(const typename binningType::binned_t& valueToUnpack)
+float unPackInTable(const typename binningType::binned_t& valueToUnpack)
 {
   return binningType::bin_width * static_cast<float>(valueToUnpack);
 }
@@ -487,7 +488,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with 
 // Macro to convert the stored Nsigmas to floats
 #define DEFINE_UNWRAP_NSIGMA_COLUMN(COLUMN, COLUMN_NAME) \
   DECLARE_SOA_DYNAMIC_COLUMN(COLUMN, COLUMN_NAME,        \
-                             [](binning::binned_t nsigma_binned) -> float { return unPackInTable<binning>(nsigma_binned); });
+                             [](binning::binned_t nsigma_binned) -> float { return o2::aod::pidutils::unPackInTable<binning>(nsigma_binned); });
 
 namespace pidtof_tiny
 {
