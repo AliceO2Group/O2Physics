@@ -714,6 +714,7 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
+    float ptCharmBaryonGen = -999.;
     int indexRec = -1;
     int indexRecCharmBaryon = -1;
     int8_t sign = -9;
@@ -821,6 +822,7 @@ struct HfCandidateCreatorToXiPiMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
+      ptCharmBaryonGen = -999.;
       flag = 0;
       sign = -9;
       debugGenCharmBar = 0;
@@ -831,6 +833,7 @@ struct HfCandidateCreatorToXiPiMc {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBaryonGen = particle.pt();
           // Xi -> Lambda pi
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
@@ -852,6 +855,7 @@ struct HfCandidateCreatorToXiPiMc {
         //  Xic → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBaryonGen = particle.pt();
           // Xi- -> Lambda pi
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
@@ -870,7 +874,7 @@ struct HfCandidateCreatorToXiPiMc {
         }
       }
 
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, origin);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, origin);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
