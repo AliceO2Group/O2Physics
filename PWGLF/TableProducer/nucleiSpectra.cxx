@@ -137,6 +137,7 @@ std::shared_ptr<TH3> hTOFmassEta[5][2];
 std::shared_ptr<TH3> hDCAxy[2][5][2];
 std::shared_ptr<TH3> hDCAz[2][5][2];
 std::shared_ptr<TH2> hGloTOFtracks[2];
+std::shared_ptr<TH2> hDeltaP[2][5];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -287,6 +288,7 @@ struct nucleiSpectra {
         for (int iPID{0}; iPID < 2; ++iPID) {
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaxyAxes[iS]});
           nuclei::hDCAz[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAz{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAz {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcazAxes[iS]});
+          nuclei::hDeltaP[iPID][iS] = spectra.add<TH2>(fmt::format("hDeltaP{}_{}", nuclei::pidName[iPID], nuclei::names[iS]).data(), fmt::format("#Delta#it{{p}}/#it{{p}} {} {}", nuclei::pidName[iPID], nuclei::names[iS]).data(), HistType::kTH2D, {{232, 0.2, 6., "#it{{p}} (GeV/#it{{c}})"}, {200, -1, 1, "(#it{{p}}_{{IU}} - #it{{p}}_{{TPC}}) / #it{{p}}"}});
         }
         nuclei::hTOFmass[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], tofMassAxis});
         nuclei::hTOFmassEta[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmassEta{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], tofMassAxis});
@@ -355,6 +357,9 @@ struct nucleiSpectra {
         nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         selectedTPC[iS] = (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]);
         goodToAnalyse = goodToAnalyse || selectedTPC[iS];
+        if (selectedTPC[iS] && track.p() > 0.2) {
+          nuclei::hDeltaP[iC][iS]->Fill(track.p(), 1 - track.tpcInnerParam() / track.p());
+        }
       }
       if (!goodToAnalyse) {
         continue;

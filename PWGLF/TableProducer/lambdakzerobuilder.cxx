@@ -90,7 +90,9 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeroBuilder {
-  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0Indices> v0indices;
+  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs; // covariances
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -116,6 +118,8 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<float> d_maxDZIni{"d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
+  Configurable<float> d_maxDXYIni{"d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
@@ -154,6 +158,8 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
   ConfigurableAxis axisDeltaDistanceRadii{"axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisDCAXY{"axisDCAXY", {500, -50, 50}, "(cm)"};
+  ConfigurableAxis axisDCACHI2{"axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
   ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
 
   int mRunNumber;
@@ -210,8 +216,7 @@ struct lambdakzeroBuilder {
     {{"hEventCounter", "hEventCounter", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
      {"hCaughtExceptions", "hCaughtExceptions", {HistType::kTH1D, {{1, 0.0f, 1.0f}}}},
      {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
-     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
-     {"hV0Criteria", "hV0Criteria", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
+     {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
 
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
@@ -250,6 +255,14 @@ struct lambdakzeroBuilder {
   void init(InitContext& context)
   {
     resetHistos();
+
+    auto h = registry.add<TH1>("hV0Criteria", "hV0Criteria", kTH1D, {{10, -0.5f, 9.5f}});
+    h->GetXaxis()->SetBinLabel(1, "All sel");
+    h->GetXaxis()->SetBinLabel(2, "TPC requirement");
+    h->GetXaxis()->SetBinLabel(3, "DCAxy Dau to PV");
+    h->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
+    h->GetXaxis()->SetBinLabel(5, "CosPA");
+    h->GetXaxis()->SetBinLabel(6, "Radius");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -294,6 +307,10 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
 
       // QA for PCM
+      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisPtQA, axisDCAXY});
+      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisPtQA, axisDCAXY});
+      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisPtQA, axisDCACHI2});
+      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisPtQA, axisDCACHI2});
       registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
       registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
       registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisPositionGuess});
@@ -431,7 +448,8 @@ struct lambdakzeroBuilder {
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDZIni(d_maxDZIni);
+    fitter.setMaxDXYIni(d_maxDXYIni);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
@@ -615,6 +633,7 @@ struct lambdakzeroBuilder {
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
+
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
@@ -642,18 +661,20 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
-        registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
-        registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
-        registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
-        registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      if (TMath::Abs(RecoDecay::eta(std::array{px, py, pz})) < 0.5) {
+        if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
+          registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
+        if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
+          registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
+        if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
+          registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
+        if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
+          registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
+        if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
+        if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      }
 
       // Fill ITS cluster maps with specific mass cuts
       if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
@@ -711,11 +732,15 @@ struct lambdakzeroBuilder {
       // let's just use tagged, cause we can
       if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
         if (V0.isTrueGamma()) {
+          registry.fill(HIST("h2d_pcm_DCAXY_True"), lPt, std::hypot(dcaInfo[0], dcaInfo[1]));
+          registry.fill(HIST("h2d_pcm_DCACHI2_True"), lPt, fitter.getChi2AtPCACandidate());
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_True"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_True"), lPt, delta3_track1);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius2_True"), lPt, delta3_track2);
         } else {
+          registry.fill(HIST("h2d_pcm_DCAXY_Bg"), lPt, std::hypot(dcaInfo[0], dcaInfo[1]));
+          registry.fill(HIST("h2d_pcm_DCACHI2_Bg"), lPt, fitter.getChi2AtPCACandidate());
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_Bg"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
           registry.fill(HIST("h2d_pcm_PositionGuess_Bg"), lPt, delta2);
           registry.fill(HIST("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg"), lPt, delta3_track1);
@@ -730,8 +755,6 @@ struct lambdakzeroBuilder {
   template <class TTrackTo, typename TV0Table>
   void buildStrangenessTables(TV0Table const& V0s)
   {
-    statisticsRegistry.eventCounter++;
-
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
       // downscale some V0s if requested to do so
@@ -746,20 +769,18 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
-      // populates table for V0 analysis
-      v0data(V0.posTrackId(),
-             V0.negTrackId(),
-             V0.collisionId(),
-             V0.globalIndex(),
-             v0candidate.posTrackX, v0candidate.negTrackX,
-             v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
-             v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
-             v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
-             v0candidate.dcaV0dau,
-             v0candidate.posDCAxy,
-             v0candidate.negDCAxy,
-             v0candidate.cosPA,
-             v0candidate.dcav0topv);
+      // populates the various tables for analysis
+      v0indices(V0.posTrackId(), V0.negTrackId(),
+                V0.collisionId(), V0.globalIndex());
+      v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
+      v0cores(v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
+              v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
+              v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
+              v0candidate.dcaV0dau,
+              v0candidate.posDCAxy,
+              v0candidate.negDCAxy,
+              v0candidate.cosPA,
+              v0candidate.dcav0topv);
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
@@ -794,6 +815,7 @@ struct lambdakzeroBuilder {
 
   void processRun2(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
+    statisticsRegistry.eventCounter += collisions.size();
     // Fire up CCDB
     auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -804,6 +826,7 @@ struct lambdakzeroBuilder {
 
   void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
+    statisticsRegistry.eventCounter += collisions.size();
     // Fire up CCDB
     auto bc = collisions.size() ? collisions.begin().bc_as<aod::BCsWithTimestamps>() : bcs.begin();
     if (!bcs.size()) {
@@ -1146,7 +1169,7 @@ struct lambdakzeroV0DataLinkBuilder {
 
 // Extends the v0data table with expression columns
 struct lambdakzeroInitializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::V0Cores> v0cores;
   void init(InitContext const&) {}
 };
 

@@ -91,17 +91,17 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   std::array<std::string, kNCharmParticles> onnxFiles;
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
-  AxisSpec pvContributorsAxis{250, 0.f, 250.f, "PV contributors"};
-  AxisSpec multiplicityAxis{100, 0.f, 100.f, "MultFT0M"};
-  AxisSpec zVtxAxis{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"};
-  AxisSpec invMassDmesAxis = {300, 1.65f, 2.25f, "inv. mass (GeV/#it{c}^{2})"};
-  AxisSpec invMassDstarAxis = {180, 0.f, 0.18f, "inv. mass difference (GeV/#it{c}^{2})"};
-  AxisSpec invMassCbaryonAxis = {300, 2.05f, 2.65f, "inv. mass (GeV/#it{c}^{2})"};
-  AxisSpec ptAxis = {100, 0.f, 50.f, "#it{p}_{T} (GeV/#it{c})"};
-  AxisSpec yAxis = {10, -1.f, 1.f, "#it{y}"};
-  AxisSpec phiAxis = {90, -constants::math::PI, constants::math::PI, "#varphi (rad)"};
-  AxisSpec bdtPromptAxis{100, 0.f, 1.f, "BDT prompt"};
-  AxisSpec bdtNonPromptAxis{100, 0.f, 1.f, "BDT nonprompt"};
+  ConfigurableAxis pvContributorsAxis{"pvContributorsAxis", {250, 0.f, 250.f}, "PV contributors"};
+  ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0.f, 100.f}, "MultFT0M"};
+  ConfigurableAxis zVtxAxis{"zVtxAxis", {150, -15.f, 15.f}, "#it{z}_{vtx} (cm)"};
+  ConfigurableAxis invMassDmesAxis = {"invMassDmesAxis", {300, 1.65f, 2.25f}, "inv. mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis invMassDstarAxis = {"invMassDstarAxis", {180, 0.f, 0.18f}, "inv. mass difference (GeV/#it{c}^{2})"};
+  ConfigurableAxis invMassCbaryonAxis = {"invMassCbaryonAxis", {300, 2.05f, 2.65f}, "inv. mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis ptAxis = {"ptAxis", {100, 0.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis yAxis = {"yAxis", {10, -1.f, 1.f}, "#it{y}"};
+  ConfigurableAxis phiAxis = {"phiAxis", {90, -constants::math::PI, constants::math::PI}, "#varphi (rad)"};
+  ConfigurableAxis bdtPromptAxis{"bdtPromptAxis", {100, 0.f, 1.f}, "BDT prompt"};
+  ConfigurableAxis bdtNonPromptAxis{"bdtNonPromptAxis", {100, 0.f, 1.f}, "BDT nonprompt"};
 
   HistogramRegistry registry{"registry", {{"hCollisions", "", {HistType::kTH3F, {zVtxAxis, pvContributorsAxis, multiplicityAxis}}}, {"hDzeroToKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDplusToKPiPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDsToKKPi", "", {HistType::kTHnSparseF, {invMassDmesAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPi", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hDstarToDzeroPiForBeauty", "", {HistType::kTHnSparseF, {invMassDstarAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hLcToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}, {"hXicPlusToPKPi", "", {HistType::kTHnSparseF, {invMassCbaryonAxis, ptAxis, yAxis, phiAxis, zVtxAxis, pvContributorsAxis, multiplicityAxis, bdtPromptAxis, bdtNonPromptAxis}}}}};
 

@@ -108,7 +108,7 @@ struct JetMatching {
     }
   }
 
-  // function that does the HF matching of jets from jetsBasePerColl and jets from jetsTagPerColl
+  // function that does the HF matching of jets from jetsBasePerColl and jets from jetsTagPerColl; assumes both jetsBasePerColl and jetsTagPerColl have access to MC information
   template <typename T, typename U>
   void MatchHF(T const& jetsBasePerColl, U const& jetsTagPerColl, std::vector<int>& baseToTagHF, std::vector<int>& tagToBaseHF)
   {
@@ -137,13 +137,13 @@ struct JetMatching {
   }
 
   template <typename T, typename U>
-  float getPtSum_FirstArgIsMC(T const& btracks, U const& ttracks)
+  float getPtSum_FirstArgIsMC(T const& mcParts_IdCheck, U const& recoTracks_Summed)
   {
     float ptSum = 0;
-    for (const auto& btrack : btracks) {
-      for (const auto& ttrack : ttracks) {
-        if (ttrack.has_mcParticle() && btrack.globalIndex() == ttrack.template mcParticle_as<McParticles>().globalIndex()) {
-          ptSum += ttrack.pt();
+    for (const auto& mcPart_IdCheck : mcParts_IdCheck) {
+      for (const auto& recoTrack_Summed : recoTracks_Summed) {
+        if (recoTrack_Summed.has_mcParticle() && mcPart_IdCheck.globalIndex() == recoTrack_Summed.template mcParticle_as<McParticles>().globalIndex()) {
+          ptSum += recoTrack_Summed.pt();
           break;
         }
       }
@@ -151,13 +151,13 @@ struct JetMatching {
     return ptSum;
   }
   template <typename T, typename U>
-  float getPtSum_SecondArgIsMC(T const& btracks, U const& ttracks)
+  float getPtSum_SecondArgIsMC(T const& recoTracks_IdCheck, U const& mcParts_Summed)
   {
     float ptSum = 0;
-    for (const auto& btrack : btracks) {
-      for (const auto& ttrack : ttracks) {
-        if (btrack.has_mcParticle() && ttrack.globalIndex() == btrack.template mcParticle_as<McParticles>().globalIndex()) {
-          ptSum += ttrack.pt();
+    for (const auto& recoTrack_IdCheck : recoTracks_IdCheck) {
+      for (const auto& mcPart_Summed : mcParts_Summed) {
+        if (recoTrack_IdCheck.has_mcParticle() && mcPart_Summed.globalIndex() == recoTrack_IdCheck.template mcParticle_as<McParticles>().globalIndex()) {
+          ptSum += mcPart_Summed.pt();
           break;
         }
       }
@@ -165,7 +165,7 @@ struct JetMatching {
     return ptSum;
   }
 
-  // function that does the pT matching of jets from jetsBasePerColl and jets from jetsTagPerColl
+  // function that does the pT matching of jets from jetsBasePerColl and jets from jetsTagPerColl ; assumes either one of jetsBasePerColl or jetsTagPerColl have access to MC information
   template <typename T, typename U>
   void MatchPt(T const& jetsBasePerColl, U const& jetsTagPerColl, std::vector<int>& baseToTagPt, std::vector<int>& tagToBasePt)
   {
@@ -318,7 +318,10 @@ struct JetMatching {
   PROCESS_SWITCH(JetMatching, processDummy, "Dummy process", true);
 
   // for now:
-  // BaseJetCollection and TagJetCollection must have MC info
+  // the input file must have MC information to check collision<->mcCollision
+  // for HF tagging: both BaseJetCollection and TagJetCollection must have MC info
+  // for pT tagging: at least either one of BaseJetCollection or TagJetCollection must have MC info
+  // for geo tagging: no need to access MC info of either BaseJetCollection or TagJetCollection
   void processJets(aod::JMcCollisions const& mcCollisions, JetCollisions const& collisions,
                    BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag, McParticles const& particlesMC,
                    JetTracks const& tracks, HfCandidates const& hfcandidates)

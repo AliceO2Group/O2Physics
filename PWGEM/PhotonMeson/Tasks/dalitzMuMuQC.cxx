@@ -42,7 +42,7 @@ using MyCollision = MyCollisions::iterator;
 using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzMuMuQC {

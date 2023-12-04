@@ -28,6 +28,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -36,13 +37,13 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNee>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz, aod::EMReducedEventsNee>;
 using MyCollision = MyCollisions::iterator;
 
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
@@ -236,6 +237,7 @@ struct DalitzEEQC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     double values[4] = {0, 0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
+    float phiv = 0;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
       auto dileptons_coll1 = dileptons.sliceBy(perCollision, collision1.globalIndex());
@@ -268,11 +270,12 @@ struct DalitzEEQC {
           v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
           v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
+          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), ele2.px(), ele2.py(), ele2.pz(), pos1.sign(), ele2.sign(), collision1.bz());
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = 0.f;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), 0.f)) {
+          values[3] = phiv;
+          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
           }
 
@@ -280,11 +283,12 @@ struct DalitzEEQC {
           v1 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
           v2 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
+          phiv = getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele1.px(), ele1.py(), ele1.pz(), pos2.sign(), ele1.sign(), collision1.bz());
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = sqrt((pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2) + pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = 0.f;
-          if (cut.IsSelectedTrack(pos2) && cut.IsSelectedTrack(ele1) && cut.IsSelectedPair(v12.M(), 0.f)) {
+          values[3] = phiv;
+          if (cut.IsSelectedTrack(pos2) && cut.IsSelectedTrack(ele1) && cut.IsSelectedPair(v12.M(), phiv)) {
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
           }
 
@@ -292,11 +296,12 @@ struct DalitzEEQC {
           v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
           v2 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
+          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), pos2.px(), pos2.py(), pos2.pz(), pos1.sign(), pos2.sign(), collision1.bz());
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = 0.f;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(pos2) && cut.IsSelectedPair(v12.M(), 0.f)) {
+          values[3] = phiv;
+          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(pos2) && cut.IsSelectedPair(v12.M(), phiv)) {
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
           }
 
@@ -304,11 +309,12 @@ struct DalitzEEQC {
           v1 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
           v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
+          phiv = getPhivPair(ele1.px(), ele1.py(), ele1.pz(), ele2.px(), ele2.py(), ele2.pz(), ele1.sign(), ele2.sign(), collision1.bz());
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = sqrt((pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = 0.f;
-          if (cut.IsSelectedTrack(ele1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), 0.f)) {
+          values[3] = phiv;
+          if (cut.IsSelectedTrack(ele1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
           }
 

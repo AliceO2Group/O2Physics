@@ -16,6 +16,7 @@
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -97,6 +98,7 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  hf_cand::NProngsContributorsPV,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -254,6 +256,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
+            candidate.nProngsContributorsPV(),
             candidate.xSecondaryVertex(),
             candidate.ySecondaryVertex(),
             candidate.zSecondaryVertex(),
@@ -338,7 +341,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());
@@ -390,6 +393,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
+            candidate.nProngsContributorsPV(),
             candidate.xSecondaryVertex(),
             candidate.ySecondaryVertex(),
             candidate.zSecondaryVertex(),

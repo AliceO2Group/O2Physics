@@ -15,6 +15,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politano <stefano.politano@cern.ch>, Politecnico and INFN Torino
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -57,8 +58,8 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTDs"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_DsToKKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -100,7 +101,7 @@ struct HfCandidateSelectorDsToKKPi {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
@@ -159,7 +160,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToKKPi(candidate) - o2::analysis::pdg::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDsToKKPi(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (hfHelper.deltaMassPhiDsToKKPi(candidate) > cuts->get(pTBin, "deltaM Phi")) {
@@ -188,7 +189,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToPiKK(candidate) - o2::analysis::pdg::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(hfHelper.invMassDsToPiKK(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
     if (hfHelper.deltaMassPhiDsToPiKK(candidate) > cuts->get(pTBin, "deltaM Phi")) {

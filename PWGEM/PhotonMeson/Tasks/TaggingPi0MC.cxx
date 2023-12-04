@@ -55,7 +55,7 @@ using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct TaggingPi0MC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-  using MyMCTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronMCLabels>;
+  using MyMCTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};

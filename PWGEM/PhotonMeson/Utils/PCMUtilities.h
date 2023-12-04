@@ -48,8 +48,8 @@ float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, flo
   return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qt of v0
 }
 //_______________________________________________________________________
-template <typename TrackPrecision = float, typename T>
-void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+template <typename TrackPrecision = float, typename T1, typename T2>
+void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 

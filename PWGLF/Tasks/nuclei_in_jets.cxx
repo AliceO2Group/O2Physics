@@ -12,9 +12,9 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
 /// \since November 22, 2023
 
+#include <vector>
 #include <TMath.h>
 #include <TPDGCode.h>
-#include <TObjArray.h>
 #include <TRandom.h>
 #include <TVector2.h>
 #include <TVector3.h>
@@ -22,8 +22,14 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/DataTypes.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -31,11 +37,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 
+using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-using namespace std;
+using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
@@ -97,12 +104,15 @@ struct nuclei_in_jets {
   void init(InitContext const&)
   {
     // Global Properties and QC
-    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{4, 0, 4, "1 = all events, 2 = selected events, 3 = events with pt>pt_threshold, 4 = events with pt>pt_threshold and particle of interest"}});
+    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "1 = all events, 2 = selected events, 3 = events with pt>pt_threshold, 4 = events with pt>pt_threshold and particle of interest"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{300, 0, 300, "#it{N}_{ch}"}});
     registryQC.add("pt_leading", "pt leading", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0.0, TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{500, -0.5, 0.5, "#Delta#eta"}, {500, 0.0, TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("eta_phi_ue", "DeltaEta DeltaPhi UE", HistType::kTH2F, {{500, -0.5, 0.5, "#Delta#eta"}, {500, 0.0, TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("r_jet", "R jet", HistType::kTH1F, {{400, 0.0, 0.8, "#it{R}"}});
+    registryQC.add("r_ue", "R ue", HistType::kTH1F, {{400, 0.0, 0.8, "#it{R}"}});
 
     // Antiprotons
     registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
@@ -250,13 +260,19 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 1.5);
 
     // Reduced Event
-    vector<int> particle_ID;
+    std::vector<int> particle_ID;
     int leading_ID;
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
+    // Track Index Initialization
+    int i = -1;
+
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
+
+      // Track Index
+      i++;
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -265,9 +281,6 @@ struct nuclei_in_jets {
         continue;
       if (!track.passedTPCRefit())
         continue;
-
-      // Track Index
-      int i = track.globalIndex();
 
       // Trigger: Particle of Interest
       if (isParticleOfInterest(track))
@@ -283,11 +296,18 @@ struct nuclei_in_jets {
       particle_ID.push_back(i);
     }
 
+    // Skip Events with no trigger Particle
+    if (pt_max == 0)
+      return;
+
     // Histogram with pt_leading
     registryQC.fill(HIST("pt_leading"), pt_max);
 
+    // Number of Stored Particles
+    int nParticles = static_cast<int>(particle_ID.size());
+
     // Selection of Events with pt > pt_leading
-    if (particle_ID.size() < 2)
+    if (nParticles < 2)
       return;
     if (pt_max < min_pt_leading)
       return;
@@ -303,11 +323,14 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Momentum of the Leading Particle
-    auto leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
+    // Instruction to be removed
+    registryQC.fill(HIST("number_of_events_data"), 4.5);
+
     // Array of Particles inside Jet
-    vector<int> jet_particle_ID;
+    std::vector<int> jet_particle_ID;
     jet_particle_ID.push_back(leading_ID);
 
     // Labels
@@ -322,7 +345,7 @@ struct nuclei_in_jets {
       int label_jet_particle(0);
       int i_jet_particle(0);
 
-      for (int i = 0; i < particle_ID.size(); i++) {
+      for (int i = 0; i < nParticles; i++) {
 
         // Skip Leading Particle & Elements already associated to the Jet
         if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -372,35 +395,38 @@ struct nuclei_in_jets {
         nPartAssociated++;
       }
 
-      if (nPartAssociated >= (particle_ID.size() - 1))
+      if (nPartAssociated >= (nParticles - 1))
         exit = 1;
       if (distance_jet_min > distance_bkg_min)
         exit = 2;
 
     } while (exit == 0);
 
+    // Multiplicity inside Jet + UE
+    int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
+
     // Fill Jet Multiplicity
-    registryQC.fill(HIST("jet_plus_ue_multiplicity"), jet_particle_ID.size());
+    registryQC.fill(HIST("jet_plus_ue_multiplicity"), static_cast<float>(jet_particle_ID.size()));
 
     // Perpendicular Cones for UE Estimate
-    TVector3 z_positive(0, 0, 1);
-    TVector3 z_negative(0, 0, -1);
+    TVector3 z_positive(0.0, 0.0, 1.0);
+    TVector3 z_negative(0.0, 0.0, -1.0);
     TVector3 v1 = (z_positive.Cross(p_leading)).Unit();
     TVector3 v2 = (z_negative.Cross(p_leading)).Unit();
     TVector3 v3 = (p_leading.Cross(v1)).Unit();
     TVector3 v4 = (p_leading.Cross(v2)).Unit();
 
     // Store UE
-    vector<int> ue_particle_ID;
+    std::vector<int> ue_particle_ID;
 
-    for (int i = 0; i < particle_ID.size(); i++) {
+    for (int i = 0; i < nParticles; i++) {
 
       // Skip Leading Particle & Elements already associated to the Jet
       if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
         continue;
 
       // Get UE Track
-      auto ue_track = tracks.iteratorAt(particle_ID[i]);
+      const auto& ue_track = tracks.iteratorAt(particle_ID[i]);
 
       // Variables
       float deltaEta1 = ue_track.eta() - v1.Eta();
@@ -418,26 +444,40 @@ struct nuclei_in_jets {
       float dr3 = TMath::Sqrt(deltaEta3 * deltaEta3 + deltaPhi3 * deltaPhi3);
       float dr4 = TMath::Sqrt(deltaEta4 * deltaEta4 + deltaPhi4 * deltaPhi4);
 
+      registryQC.fill(HIST("eta_phi_ue"), deltaEta1, deltaPhi1);
+      registryQC.fill(HIST("eta_phi_ue"), deltaEta2, deltaPhi2);
+      registryQC.fill(HIST("eta_phi_ue"), deltaEta3, deltaPhi3);
+      registryQC.fill(HIST("eta_phi_ue"), deltaEta4, deltaPhi4);
+      registryQC.fill(HIST("r_ue"), TMath::Sqrt(deltaEta1 * deltaEta1 + deltaPhi1 * deltaPhi1));
+      registryQC.fill(HIST("r_ue"), TMath::Sqrt(deltaEta2 * deltaEta2 + deltaPhi2 * deltaPhi2));
+      registryQC.fill(HIST("r_ue"), TMath::Sqrt(deltaEta3 * deltaEta3 + deltaPhi3 * deltaPhi3));
+      registryQC.fill(HIST("r_ue"), TMath::Sqrt(deltaEta4 * deltaEta4 + deltaPhi4 * deltaPhi4));
+
       // Store Particles in the UE
       if (dr1 < max_jet_radius || dr2 < max_jet_radius || dr3 < max_jet_radius || dr4 < max_jet_radius) {
         ue_particle_ID.push_back(particle_ID[i]);
       }
     }
-    registryQC.fill(HIST("ue_multiplicity"), ue_particle_ID.size() / 4);
+
+    // UE Multiplicity
+    int nParticlesUE = static_cast<int>(ue_particle_ID.size());
+
+    registryQC.fill(HIST("ue_multiplicity"), static_cast<float>(ue_particle_ID.size()) / 4.0);
 
     // Jet Multiplicity
-    int jet_Nch = jet_particle_ID.size() - ue_particle_ID.size() / 4;
+    float jet_Nch = static_cast<float>(jet_particle_ID.size()) - static_cast<float>(ue_particle_ID.size()) / 4.0;
     registryQC.fill(HIST("jet_multiplicity"), jet_Nch);
 
     // Loop over particles inside Jet
-    for (int i = 0; i < jet_particle_ID.size(); i++) {
+    for (int i = 0; i < nParticlesJetUE; i++) {
 
-      auto jet_track = tracks.iteratorAt(jet_particle_ID[i]);
+      const auto& jet_track = tracks.iteratorAt(jet_particle_ID[i]);
       TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
 
       float deltaEta = p_i.Eta() - p_leading.Eta();
       float deltaPhi = TVector2::Phi_0_2pi(p_i.Phi() - p_leading.Phi());
       registryQC.fill(HIST("eta_phi_jet"), deltaEta, deltaPhi);
+      registryQC.fill(HIST("r_jet"), TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi));
 
       // Track Selection
       if (!passedTrackSelection(jet_track))
@@ -476,9 +516,9 @@ struct nuclei_in_jets {
     }
 
     // Loop over particles inside UE
-    for (int i = 0; i < ue_particle_ID.size(); i++) {
+    for (int i = 0; i < nParticlesUE; i++) {
 
-      auto ue_track = tracks.iteratorAt(ue_particle_ID[i]);
+      const auto& ue_track = tracks.iteratorAt(ue_particle_ID[i]);
 
       // Track Selection
       if (!passedTrackSelection(ue_track))
