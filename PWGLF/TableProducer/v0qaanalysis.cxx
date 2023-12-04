@@ -219,7 +219,7 @@ struct LfV0qaanalysis {
       registry.fill(HIST("hNEvents"), 0.5);
 
       if (!AcceptEvent(collision)) {
-        return;
+        continue;
       }
       if (!collision.has_mcCollision()) {
         continue;
