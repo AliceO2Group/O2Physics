@@ -67,6 +67,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   Configurable<float> maxPtSoftPion{"maxPtSoftPion", static_cast<float>(cutsPt[1][1]), "maximum pT for soft pion tracks in D*+ -> D0pi decay"};
   Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
   Configurable<float> maxDeltaMassDzeroFromDstar{"maxDeltaMassDzeroFromDstar", static_cast<float>(cutsDeltaMassB[0][kNBeautyParticles]), "maximum invariant-mass delta for D0 in D*+ -> D0pi decay"};
+  Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut (D* from beauty)"};
+  Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -92,14 +94,14 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
   ConfigurableAxis pvContributorsAxis{"pvContributorsAxis", {250, 0.f, 250.f}, "PV contributors"};
-  ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0.f, 100.f}, "MultFT0M"};
+  ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0.f, 1000.f}, "MultFT0M"};
   ConfigurableAxis zVtxAxis{"zVtxAxis", {150, -15.f, 15.f}, "#it{z}_{vtx} (cm)"};
   ConfigurableAxis invMassDmesAxis = {"invMassDmesAxis", {300, 1.65f, 2.25f}, "inv. mass (GeV/#it{c}^{2})"};
   ConfigurableAxis invMassDstarAxis = {"invMassDstarAxis", {180, 0.f, 0.18f}, "inv. mass difference (GeV/#it{c}^{2})"};
   ConfigurableAxis invMassCbaryonAxis = {"invMassCbaryonAxis", {300, 2.05f, 2.65f}, "inv. mass (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis = {"ptAxis", {100, 0.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis yAxis = {"yAxis", {10, -1.f, 1.f}, "#it{y}"};
-  ConfigurableAxis phiAxis = {"phiAxis", {90, -constants::math::PI, constants::math::PI}, "#varphi (rad)"};
+  ConfigurableAxis phiAxis = {"phiAxis", {90, 0., constants::math::TwoPI}, "#varphi (rad)"};
   ConfigurableAxis bdtPromptAxis{"bdtPromptAxis", {100, 0.f, 1.f}, "BDT prompt"};
   ConfigurableAxis bdtNonPromptAxis{"bdtNonPromptAxis", {100, 0.f, 1.f}, "BDT nonprompt"};
 
@@ -114,8 +116,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setPtLimitsDstarSoftPion(minPtSoftPion, maxPtSoftPion);
-    helper.setPtBinsSingleTracks(std::vector<double>{hf_cuts_single_track::vecBinsPtTrack});
-    helper.setCutsSingleTrackBeauty(cutsSingleTrackDummy, cutsSingleTrackDummy);
+    helper.setPtBinsSingleTracks(pTBinsTrack);
+    helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty3Prong);
     helper.setDeltaMassCharmHadForBeauty(maxDeltaMassDzeroFromDstar);
 
     ccdb->setURL(url.value);
@@ -279,7 +281,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
           }
-          auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, 2);
+          auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
           if (TESTBIT(isTrackSelected, kSoftPion)) {
             std::array<float, 2> massDausD0{massPi, massKa};
             auto invMassD0dau = invMassD0;
