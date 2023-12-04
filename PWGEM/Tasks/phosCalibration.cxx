@@ -67,7 +67,8 @@ struct phosCalibration {
     bool fBad;
   };
 
-  Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0.3, "Minimum cell amplitude for histograms."};
+  Configurable<int> flagCCDB{"flagCCDB", 1, "Flag for choosing PATH to L1Phase data"};
+  Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0.3, "Minimum cell amplitude for histograms"};
   Configurable<double> mCellTimeMinE{"minCellTimeAmp", 100, "Minimum cell amplitude for time histograms (ADC)"};
   Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50.e-9, "Min. cell time of main bunch selection"};
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
@@ -75,6 +76,7 @@ struct phosCalibration {
   Configurable<bool> mSkipL1phase{"skipL1phase", false, "do not correct L1 phase from CCDB"};
   Configurable<std::string> mBadMapPath{"badmapPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/BadMap/snapshot.root", "path to BadMap snapshot"};
   Configurable<std::string> mCalibPath{"calibPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/CalibParams/snapshot.root", "path to Calibration snapshot"};
+  Configurable<std::string> mL1PhasePath{"L1PhasePath", "alien:///alice/cern.ch/user/d/daveryan/Calib/L1Phase/", "path to L1Phase snapshot"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -183,7 +185,16 @@ struct phosCalibration {
       LOG(info) << "Read calibration";
     }
     if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      const std::vector<int>* vec(0);
+      if (flagCCDB == 0) // take automaticly applied L1Phase from CCDB
+        vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      else // take manualy corrected L1Phase from dir
+      {
+        // TString fullL1PhasePath = mL1PhasePath.value.data() + bcs.begin().runNumber() + ".root";
+        LOG(info) << "Reading Calibration from: " << mL1PhasePath.value;
+        TFile* fL1Phase = TFile::Open(Form("%s%d.root", mL1PhasePath.value.data(), bcs.begin().runNumber()));
+        fL1Phase->GetObject("ccdb_object", vec);
+      }
       if (vec) {
         clusterizer->setL1phase((*vec)[0]);
         mL1 = (*vec)[0];
