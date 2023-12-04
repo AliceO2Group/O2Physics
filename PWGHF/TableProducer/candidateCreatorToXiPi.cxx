@@ -90,10 +90,9 @@ struct HfCandidateCreatorToXiPi {
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using MySkimIdx = soa::Filtered<HfCascLf2Prongs>;
+  using MySkimIdx = HfCascLf2Prongs;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  Filter filterSelectIndexes = (aod::hf_track_index::hfflag == static_cast<uint8_t>(1));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
 
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
@@ -101,7 +100,8 @@ struct HfCandidateCreatorToXiPi {
   Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-  OutputObj<TH1F> hFitterExceptions{TH1F("hFitterExceptions", "Charm DCAFitter exceptions;status;entries", 3, 0.0, 3.0)};
+  OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, 0.0, 3.0)}; // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
+  OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, 0.0, 4.0)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
 
   void init(InitContext const&)
   {
@@ -272,13 +272,14 @@ struct HfCandidateCreatorToXiPi {
             nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
           } catch (...) {
             LOG(error) << "Exception caught in charm DCA fitter process call!";
-            hFitterExceptions->Fill(1);
+            hFitterStatus->Fill(1);
             continue;
           }
           if (nVtxFromFitterCharmBaryon == 0) {
+            hFitterStatus->Fill(2);
             continue;
           }
-          hFitterExceptions->Fill(0);
+          hFitterStatus->Fill(0);
           auto vertexCharmBaryonFromFitter = df.getPCACandidate();
           auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
           std::array<float, 3> pVecCascAsD;
@@ -466,6 +467,14 @@ struct HfCandidateCreatorToXiPi {
 
       for (const auto& cand : groupedCandidates) {
 
+        hCandidateCounter->Fill(0);
+
+        if(!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)){
+          continue;
+        }
+
+        hCandidateCounter->Fill(1);
+
         auto casc = cand.cascade_as<MyCascTable>();
         auto trackPion = cand.prong0_as<MyTracks>();           // pi <-- charm baryon
         auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track
@@ -527,13 +536,15 @@ struct HfCandidateCreatorToXiPi {
           nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
         } catch (...) {
           LOG(error) << "Exception caught in charm DCA fitter process call!";
-          hFitterExceptions->Fill(1);
+          hFitterStatus->Fill(1);
           continue;
         }
         if (nVtxFromFitterCharmBaryon == 0) {
+          hFitterStatus->Fill(2);
           continue;
         }
-        hFitterExceptions->Fill(0);
+        hFitterStatus->Fill(0);
+        whCandidateCounter->Fill(2);
         auto vertexCharmBaryonFromFitter = df.getPCACandidate();
         auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
         std::array<float, 3> pVecCascAsD;
@@ -643,6 +654,7 @@ struct HfCandidateCreatorToXiPi {
 
         // fill test histograms
         hInvMassCharmBaryon->Fill(mCharmBaryon);
+        hCandidateCounter->Fill(3);
 
         // fill the table
         rowCandidate(collision.globalIndex(),
