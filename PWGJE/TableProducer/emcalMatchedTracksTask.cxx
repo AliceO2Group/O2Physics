@@ -55,7 +55,7 @@ using myCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using myCollision = myCollisions::iterator;
 using myBCs = o2::soa::Join<o2::aod::BCsWithTimestamps, o2::aod::BcSels>;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-using myTracksPID = o2::soa::Filtered<o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TracksCov, o2::aod::TrackSelection>>;
+using myTracksPID = o2::soa::Filtered<o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::FullTracks, o2::aod::TracksCov, o2::aod::TrackSelection>>;
 
 struct EmcalMatchedTracksTask {
   Produces<o2::aod::EmcalMTs> clustersmatchedtracks;
@@ -151,18 +151,20 @@ struct EmcalMatchedTracksTask {
           continue;
         }
         clustersmatchedtracks(eventIR.orbit, theCollision.bc_as<myBCs>().timestamp(), theCollision.bc_as<myBCs>().runNumber(),
-                              tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
+                              tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().alpha(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
                               tracksofcluster.iteratorAt(0).track_as<myTracksPID>().y(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().z(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().snp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().pt(),
                               tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaY(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaZ(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaSnp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaTgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigma1Pt(),
                               tracksofcluster.iteratorAt(0).track_as<myTracksPID>().eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().phi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal(),
                               tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal() - cluster.eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal() - cluster.phi(),
-                              tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(),
-                              0.f, 0.f, 0.f,
+                              tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(),
+                              tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaPi(),
+                              0.f, 0.f, 0.f, 0.f,
                               0.f, 0.f, 0.f, 0.f, 0.f,
                               0.f, 0.f, 0.f, 0.f, 0.f,
                               0.f, 0.f, 0.f, 0.f,
                               0.f, 0.f,
-                              0, 0.f, 0.f, 0.f,
+                              0, 0.f,
+                              0.f, 0.f, 0.f, 0.f,
                               cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.nCells(), cluster.time());
 
       } else if (tracksofcluster.size() >= 2) { // do at least two cluster pre matched
@@ -172,35 +174,38 @@ struct EmcalMatchedTracksTask {
         } else if (fabs(tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackEtaEmcal() - cluster.eta()) >= minDEta || fabs(tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackPhiEmcal() - cluster.phi()) >= minDPhi) {
           // if only the first track is within tighter matching window, just write that one to table
           clustersmatchedtracks(eventIR.orbit, theCollision.bc_as<myBCs>().timestamp(), theCollision.bc_as<myBCs>().runNumber(),
-                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().alpha(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().y(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().z(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().snp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaY(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaZ(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaSnp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaTgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigma1Pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().phi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal() - cluster.eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal() - cluster.phi(),
-                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(),
-                                0.f, 0.f, 0.f,
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(),
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaPi(),
+                                0.f, 0.f, 0.f, 0.f,
                                 0.f, 0.f, 0.f, 0.f, 0.f,
                                 0.f, 0.f, 0.f, 0.f, 0.f,
                                 0.f, 0.f, 0.f, 0.f,
                                 0.f, 0.f,
-                                0, 0.f, 0.f, 0.f,
+                                0, 0.f,
+                                0.f, 0.f, 0.f, 0.f,
                                 cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.nCells(), cluster.time());
         } else {
           // if both the first and second track are within tighter matching window, write both down
           clustersmatchedtracks(eventIR.orbit, theCollision.bc_as<myBCs>().timestamp(), theCollision.bc_as<myBCs>().runNumber(),
-                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().alpha(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().signed1Pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().y(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().z(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().snp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaY(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaZ(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaSnp(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigmaTgl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().sigma1Pt(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().phi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal(),
                                 tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackEtaEmcal() - cluster.eta(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().trackPhiEmcal() - cluster.phi(),
-                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(),
-                                tracksofcluster.iteratorAt(1).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().signed1Pt(),
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofExpMom(),
+                                tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tpcNSigmaPi(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaEl(), tracksofcluster.iteratorAt(0).track_as<myTracksPID>().tofNSigmaPi(),
+                                tracksofcluster.iteratorAt(1).track_as<myTracksPID>().x(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().alpha(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().p(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().signed1Pt(),
                                 tracksofcluster.iteratorAt(1).track_as<myTracksPID>().y(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().z(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().snp(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tgl(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().pt(),
                                 tracksofcluster.iteratorAt(1).track_as<myTracksPID>().sigmaY(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().sigmaZ(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().sigmaSnp(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().sigmaTgl(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().sigma1Pt(),
                                 tracksofcluster.iteratorAt(1).track_as<myTracksPID>().eta(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().phi(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackEtaEmcal(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackPhiEmcal(),
                                 tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackEtaEmcal() - cluster.eta(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().trackPhiEmcal() - cluster.phi(),
-                                tracksofcluster.iteratorAt(1).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tofExpMom(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tpcNSigmaPi(),
-                                cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.nCells(), cluster.time());
+                                tracksofcluster.iteratorAt(1).track_as<myTracksPID>().itsNCls(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tofExpMom(),
+                                tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tpcNSigmaEl(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tpcNSigmaPi(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tofNSigmaEl(), tracksofcluster.iteratorAt(1).track_as<myTracksPID>().tofNSigmaPi(), cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.nCells(), cluster.time());
         }
       }
     } // end of loop over clusters

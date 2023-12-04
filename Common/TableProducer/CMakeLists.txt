@@ -76,6 +76,11 @@ o2physics_add_dpl_workflow(tracks-extra-converter
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(mft-tracks-converter
+                    SOURCES mftTracksConverter.cxx
+                    PUBLIC_LINK_LIBRARIES
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fdd-converter
                     SOURCES fddConverter.cxx
                     PUBLIC_LINK_LIBRARIES

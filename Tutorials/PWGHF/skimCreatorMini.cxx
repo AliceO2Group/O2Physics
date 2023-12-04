@@ -15,6 +15,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -27,7 +28,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 // PWGHF
-#include "PWGHF/Core/PDG.h"
 #include "Tutorials/PWGHF/DataModelMini.h"
 
 using namespace o2;
@@ -186,7 +186,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
         std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
-        auto mass2Prong = RecoDecay::m(arrMom, std::array{o2::analysis::pdg::MassPiPlus, o2::analysis::pdg::MassKPlus});
+        auto mass2Prong = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
         registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
       }
     }

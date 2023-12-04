@@ -33,7 +33,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -181,7 +181,7 @@ struct f1protoninitializer {
     if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
     if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
@@ -191,9 +191,9 @@ struct f1protoninitializer {
   }
 
   /////////////////////////////////////////////////////////////
-  double massPi = o2::analysis::pdg::MassPiPlus;
-  double massKa = o2::analysis::pdg::MassKPlus;
-  double massK0s = o2::analysis::pdg::MassK0Short;
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
+  double massK0s = o2::constants::physics::MassK0Short;
   double massF1{0.};
   double masskKs0{0.};
   double pT{0.};

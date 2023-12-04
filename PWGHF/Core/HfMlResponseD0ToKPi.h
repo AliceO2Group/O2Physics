@@ -21,9 +21,10 @@
 #include <string>
 #include <vector>
 
+#include "CommonConstants/PhysicsConstants.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
-#include "PWGHF/Core/PDG.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -64,7 +65,7 @@
 // is filled depending on whether it is a D0 or a D0bar
 #define CHECK_AND_FILL_VEC_D0_HFHELPER_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                    \
-    if (pdgCode == o2::analysis::pdg::kD0) {                                     \
+    if (pdgCode == o2::constants::physics::kD0) {                                \
       inputFeatures.emplace_back(hfHelper.GETTER1(OBJECT));                      \
     } else {                                                                     \
       inputFeatures.emplace_back(hfHelper.GETTER2(OBJECT));                      \

@@ -16,6 +16,7 @@
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -32,7 +33,6 @@ namespace o2::aod
 namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, int8_t);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -341,7 +341,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());

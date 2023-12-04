@@ -16,6 +16,7 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -152,11 +153,11 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(hfHelper.invMassXicToPKPi(candidate) - o2::analysis::pdg::MassXiCPlus) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassXicToPKPi(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassXicToPiKP(candidate) - o2::analysis::pdg::MassXiCPlus) > cuts->get(pTBin, "m")) {
+      if (std::abs(hfHelper.invMassXicToPiKP(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
