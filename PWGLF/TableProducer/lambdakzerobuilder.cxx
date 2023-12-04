@@ -661,18 +661,20 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
-        registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
-        registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
-        registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
-        registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
-        registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      if (TMath::Abs(RecoDecay::eta(std::array{px, py, pz})) < 0.5) {
+        if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
+          registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
+        if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
+          registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
+        if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
+          registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
+        if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
+          registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
+        if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
+        if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
+          registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+      }
 
       // Fill ITS cluster maps with specific mass cuts
       if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
