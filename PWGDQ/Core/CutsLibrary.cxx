@@ -3942,6 +3942,36 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("paird_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.025);
+    return cut;
+  }
+
+  if (!nameStr.compare("paire_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.05);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairf_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.075);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairg_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.1);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairh_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.125);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairi_prefilter1")) {
+    cut->AddCut(VarManager::kOpeningAngle, 0.0, 0.15);
+    return cut;
+  }
+
   if (!nameStr.compare("pairNoCut")) {
     cut->AddCut(VarManager::kMass, 0.0, 1000.0);
     return cut;
