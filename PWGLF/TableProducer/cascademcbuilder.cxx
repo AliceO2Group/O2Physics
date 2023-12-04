@@ -132,7 +132,7 @@ struct cascademcbuilder {
                       if (lV0Mother.has_mothers()) {
                         for (auto& lV0GrandMother : lV0Mother.mothers_as<aod::McParticles>()) {
                           pdgCodeMother = lV0GrandMother.pdgCode();
-                          lMotherLabel = lV0GrandMother.globalIndex(); 
+                          lMotherLabel = lV0GrandMother.globalIndex();
                         }
                       }
                     }

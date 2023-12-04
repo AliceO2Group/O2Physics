@@ -91,7 +91,7 @@ struct lambdakzeromcbuilder {
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     pdgCodeMother = lNegGrandMother.pdgCode();
-                    lMotherLabel = lNegGrandMother.globalIndex(); 
+                    lMotherLabel = lNegGrandMother.globalIndex();
                   }
                 }
               }
