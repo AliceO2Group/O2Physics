@@ -544,7 +544,7 @@ struct HfCandidateCreatorToXiPi {
           continue;
         }
         hFitterStatus->Fill(0);
-        whCandidateCounter->Fill(2);
+        hCandidateCounter->Fill(2);
         auto vertexCharmBaryonFromFitter = df.getPCACandidate();
         auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
         std::array<float, 3> pVecCascAsD;
