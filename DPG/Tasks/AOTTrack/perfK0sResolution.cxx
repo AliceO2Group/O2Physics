@@ -62,26 +62,70 @@ struct perfK0sResolution {
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
   Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
   {
     // Apply selections on V0
-    if (TMath::Abs(v0.yK0Short()) > rapidity)
+    if (TMath::Abs(v0.yK0Short()) > rapidity) {
       return false;
-    if (v0.v0cosPA() < v0setting_cospa)
+    }
+    if (v0.v0cosPA() < v0setting_cospa) {
       return false;
-    if (v0.v0radius() < v0setting_radius)
+    }
+    if (v0.v0radius() < v0setting_radius) {
       return false;
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime)
+    }
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime) {
       return false;
+    }
 
     // Apply selections on V0 daughters
-    if (!ntrack.hasTPC() || !ptrack.hasTPC())
+    if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
-    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
+    }
+    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC) {
       return false;
+    }
+    // TOF selection
+    switch (tofSelectionPos) {
+      case -1:
+        if (ptrack.hasTOF()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ptrack.hasTOF()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for positive daughter";
+        break;
+    }
+    switch (tofSelectionNeg) {
+      case -1:
+        if (ntrack.hasTOF()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ntrack.hasTOF()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for negative daughter";
+        break;
+    }
+    // TRD selection
     switch (trdSelectionPos) {
       case -1:
         if (ptrack.hasTRD()) {
