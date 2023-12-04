@@ -100,7 +100,7 @@ struct HfCandidateCreatorToXiPi {
   Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-  OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, 0.0, 3.0)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
+  OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
   OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, 0.0, 4.0)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
 
   void init(InitContext const&)
