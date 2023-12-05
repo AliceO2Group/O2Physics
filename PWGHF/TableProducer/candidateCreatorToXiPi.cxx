@@ -111,7 +111,7 @@ struct HfCandidateCreatorToXiPi {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    if (doprocessIdxCombinatorics == true && doprocessDerivedData == true) {
+    if (doprocessIdxCombinatorics && doprocessDerivedData) {
       LOGF(fatal, "Cannot enable processIdxCombinatorics and processDerivedData at the same time. Please choose one.");
     }
   }
