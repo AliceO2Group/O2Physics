@@ -110,6 +110,11 @@ struct HfCandidateCreatorToXiPi {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    if (doprocessIdxCombinatorics == true && doprocessDerivedData == true) {
+      LOGF(fatal, "Cannot enable processIdxCombinatorics and processDerivedData at the same time. Please choose one.");
+    }
+    
   }
 
   void processIdxCombinatorics(SelectedCollisions const& collisions,
