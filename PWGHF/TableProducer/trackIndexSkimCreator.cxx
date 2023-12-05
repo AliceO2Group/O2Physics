@@ -63,6 +63,7 @@ enum CandidateType {
   Cand3Prong,
   CandV0bachelor,
   CandDstar,
+  CandCascadeBachelor,
   NCandidateTypes
 };
 
@@ -364,11 +365,19 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
   Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", -99999., "min. pseudorapidity for 3 prong candidate"};
   Configurable<double> etaMaxTrack3Prong{"etaMaxTrack3Prong", 4., "max. pseudorapidity for 3 prong candidate"};
-  // bachelor cuts (when using cascades)
+  // bachelor cuts (V0 + bachelor decays)
   Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
   Configurable<double> etaMinTrackBach{"etaMinTrackBach", -99999., "min. pseudorapidity for bachelor in cascade candidate"};
   Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
+  // bachelor cuts (cascade + bachelor decays)
+  Configurable<double> ptMinTrackBachLfCasc{"ptMinTrackBachLfCasc", 0.1, "min. track pT for bachelor in cascade + bachelor decays"}; // 0.5 for PbPb 2015?
+  Configurable<LabeledArray<double>> cutsTrackBachLfCasc{"cutsTrackBachLfCasc", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor in cascade + bachelor decays"};
+  Configurable<double> etaMinTrackBachLfCasc{"etaMinTrackBachLfCasc", -99999., "min. pseudorapidity for bachelor in cascade + bachelor decays"};
+  Configurable<double> etaMaxTrackBachLfCasc{"etaMaxTrackBachLfCasc", 1.1, "max. pseudorapidity for bachelor in cascade + bachelor decays"};
+  Configurable<bool> useIsGlobalTrackForBachLfCasc{"useIsGlobalTrackForBachLfCasc", false, "check isGlobalTrack status for bachelor in cascade + bachelor decays"};
+  Configurable<bool> useIsGlobalTrackWoDCAForBachLfCasc{"useIsGlobalTrackWoDCAForBachLfCasc", false, "check isGlobalTrackWoDCA status for bachelor in cascade + bachelor decays"};
+  Configurable<bool> useIsQualityTrackITSForBachLfCasc{"useIsQualityTrackITSForBachLfCasc", true, "check isQualityTrackITS status for bachelor in cascade + bachelor decays"};
   // soft pion cuts for D*
   Configurable<double> ptMinSoftPionForDstar{"ptMinSoftPionForDstar", 0.05, "min. track pT for soft pion in D* candidate"};
   Configurable<double> ptMaxSoftPionForDstar{"ptMaxSoftPionForDstar", 2., "max. track pT for soft pion in D* candidate"};
@@ -413,7 +422,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       LOGP(fatal, "One and only one process function for the different PID selection strategies can be enabled at a time!");
     }
 
-    cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach, cutsTrackDstar};
+    cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach, cutsTrackDstar, cutsTrackBachLfCasc};
 
     if (etaMinTrack2Prong == -99999.) {
       etaMinTrack2Prong.value = -etaMaxTrack2Prong;
@@ -426,6 +435,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
     if (etaMinSoftPionForDstar == -99999.) {
       etaMinSoftPionForDstar.value = -etaMaxSoftPionForDstar;
+    }
+    if (etaMinTrackBachLfCasc == -99999.) {
+      etaMinTrackBachLfCasc.value = -etaMaxTrackBachLfCasc;
     }
 
     if (fillHistograms) {
@@ -441,7 +453,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       registry.add("hPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCuts3Prong", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrack3Prong - etaMinTrack3Prong) * 100), -1.2 * etaMinTrack3Prong, 1.2 * etaMaxTrack3Prong}}});
-      // bachelor (for cascades) histograms
+      // bachelor (for V0 + bachelor decays) histograms
       registry.add("hPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrackBach - etaMinTrackBach) * 100), -1.2 * etaMinTrackBach, 1.2 * etaMaxTrackBach}}});
@@ -449,9 +461,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       registry.add("hPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("hDCAToPrimXYVsPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxSoftPionForDstar - etaMinSoftPionForDstar) * 100), -1.2 * etaMinSoftPionForDstar, 1.2 * etaMaxSoftPionForDstar}}});
+      // bachelor (for cascade + bachelor decays) histograms
+      registry.add("hPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      registry.add("hDCAToPrimXYVsPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hEtaCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrackBachLfCasc - etaMinTrackBachLfCasc) * 100), -1.2 * etaMinTrackBachLfCasc, 1.2 * etaMaxTrackBachLfCasc}}});
 
       std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
-      std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor", "dstar"};
+      std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor", "dstar", "lfCascBachelor"};
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
         for (int iCut = 0; iCut < nCuts + 1; iCut++) {
           registry.get<TH1>(HIST("hRejTracks"))->GetXaxis()->SetBinLabel((nCuts + 1) * iCandType + iCut + 1, Form("%s %s", candNames[iCandType].data(), cutNames[iCut].data()));
@@ -548,10 +564,10 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     return flag;
   }
 
-  /// Single-track cuts for 2-prongs, 3-prongs, or cascades
+  /// Single-track cuts for 2-prongs, 3-prongs, bachelor+V0, bachelor+cascade decays
   /// \param trackPt is the track pt
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
-  /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, or cascade decays)
+  /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, bachelor+V0 or bachelor+cascade decays)
   /// \return true if track passes all cuts
   bool isSelectedTrackDCA(const float& trackPt, const std::array<float, 2>& dca, const int candType)
   {
@@ -609,6 +625,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iCut);
       }
     }
+    if (trackPt < ptMinTrackBachLfCasc) {
+      CLRBIT(statusProng, CandidateType::CandCascadeBachelor);
+      if (fillHistograms) {
+        registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandCascadeBachelor + iCut);
+      }
+    }
 
     iCut = 3;
     // eta cut
@@ -636,6 +658,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       CLRBIT(statusProng, CandidateType::CandDstar);
       if (fillHistograms) {
         registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iCut);
+      }
+    }
+
+    if (TESTBIT(statusProng, CandidateType::CandCascadeBachelor) && (trackEta > etaMaxTrackBachLfCasc || trackEta < etaMinTrackBachLfCasc)) {
+      CLRBIT(statusProng, CandidateType::CandCascadeBachelor);
+      if (fillHistograms) {
+        registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandCascadeBachelor + iCut);
       }
     }
 
@@ -701,6 +730,35 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       }
     }
 
+    // quality cut for bachelor in cascade + bachelor decays
+    hasGoodQuality = true;
+    if (doCutQuality.value && TESTBIT(statusProng, CandidateType::CandCascadeBachelor)) {
+      if (useIsGlobalTrackForBachLfCasc) {
+        if (!hfTrack.isGlobalTrack()) {
+          hasGoodQuality = false;
+        }
+      } else if (useIsGlobalTrackWoDCAForBachLfCasc) {
+        if (!hfTrack.isGlobalTrackWoDCA()) {
+          hasGoodQuality = false;
+        }
+      } else if (useIsQualityTrackITSForBachLfCasc) {
+        if (!hfTrack.isQualityTrackITS()) {
+          hasGoodQuality = false;
+        }
+      } else { // selections for Run2 converted data
+        UChar_t clustermap = hfTrack.itsClusterMap();
+        if (!(TESTBIT(hfTrack.flags(), o2::aod::track::ITSrefit) && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+          hasGoodQuality = false;
+        }
+      }
+      if (!hasGoodQuality) {
+        CLRBIT(statusProng, CandidateType::CandCascadeBachelor);
+        if (fillHistograms) {
+          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandCascadeBachelor + iCut);
+        }
+      }
+    }
+
     // DCA cut
     iCut = 5;
     if (statusProng > 0) {
@@ -740,6 +798,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.fill(HIST("hEtaCutsSoftPionForDstar"), trackEta);
         registry.fill(HIST("hDCAToPrimXYVsPtCutsSoftPionForDstar"), trackPt, dca[0]);
         registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iCut);
+      }
+      if (TESTBIT(statusProng, CandidateType::CandCascadeBachelor)) {
+        registry.fill(HIST("hPtCutsCascadeBachelor"), trackPt);
+        registry.fill(HIST("hEtaCutsCascadeBachelor"), trackEta);
+        registry.fill(HIST("hDCAToPrimXYVsPtCutsCascadeBachelor"), trackPt, dca[0]);
+        registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandCascadeBachelor + iCut);
       }
     }
   }
@@ -3433,7 +3497,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           hfFlag = 0;
 
-          if (!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandV0bachelor)) {
+          if (!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandCascadeBachelor)) {
             continue;
           }
 
@@ -3529,7 +3593,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
               hfFlag = 0;
 
-              if (!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandV0bachelor)) {
+              if (!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandCascadeBachelor)) {
                 continue;
               }
 

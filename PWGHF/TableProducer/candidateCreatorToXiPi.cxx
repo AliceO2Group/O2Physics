@@ -240,7 +240,7 @@ struct HfCandidateCreatorToXiPi {
         for (const auto& trackIndexPion : groupedTrackIndices) {
 
           // use bachelor selections from HfTrackIndexSkimCreatorTagSelTracks --> bit =2 is CandidateType::CandV0bachelor
-          if (!TESTBIT(trackIndexPion.isSelProng(), 2)) {
+          if (!TESTBIT(trackIndexPion.isSelProng(), 4)) {
             continue;
           }
 
