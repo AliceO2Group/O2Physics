@@ -241,7 +241,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
           }
 
-          if (!TESTBIT(tagBDT, RecoDecay::OriginType::Prompt) && !TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt)) { // if not tagged neither as prompt nor nonprompt, we skip
+          if (!TESTBIT(tagBDT, RecoDecay::OriginType::None)) { // if not signal, we skip
             continue;
           }
         }
@@ -360,6 +360,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
           }
         }
 
+        std::array<int8_t, kNCharmParticles - 1> isSignalTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
         float scoresToFill[kNCharmParticles - 1][3];
@@ -367,6 +368,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
           std::fill_n(scoresToFill[i], 3, -1);
         } // initialize BDT scores array outside ML loop
         if (applyML) {
+          isSignalTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
 
@@ -394,12 +396,13 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
               LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
             }
 
+            isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
           }
         }
 
-        if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0) && !std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+        if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
         }
 
