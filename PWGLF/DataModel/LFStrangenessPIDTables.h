@@ -67,14 +67,14 @@ DECLARE_SOA_COLUMN(PosNSigmaK0Pi, posNSigmaK0Pi, float); //! positive track NSig
 DECLARE_SOA_COLUMN(NegNSigmaK0Pi, negNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
 } // namespace v0data
 
-DECLARE_SOA_TABLE(V0TOF, "AOD", "V0TOF", // raw information table (for debug, etc)
+DECLARE_SOA_TABLE(V0TOFs, "AOD", "V0TOF", // raw information table (for debug, etc)
                   v0data::PosTOFLength, v0data::NegTOFLength,
                   v0data::PosTOFSignal, v0data::NegTOFSignal,
                   v0data::PosTOFEventTime, v0data::NegTOFEventTime,
                   v0data::PosTOFDeltaTLaPi, v0data::PosTOFDeltaTLaPr,
                   v0data::NegTOFDeltaTLaPi, v0data::NegTOFDeltaTLaPr,
                   v0data::PosTOFDeltaTK0Pi, v0data::NegTOFDeltaTK0Pi);
-DECLARE_SOA_TABLE(V0TOFPID, "AOD", "V0TOFPID", // nsigma table (for analysis)
+DECLARE_SOA_TABLE(V0TOFPIDs, "AOD", "V0TOFPID", // nsigma table (for analysis)
                   v0data::PosNSigmaLaPi, v0data::PosNSigmaLaPr,
                   v0data::NegNSigmaLaPi, v0data::NegNSigmaLaPr,
                   v0data::PosNSigmaK0Pi, v0data::NegNSigmaK0Pi);
@@ -118,7 +118,7 @@ DECLARE_SOA_COLUMN(NegNSigmaOmPr, negNSigmaOmPr, float);         //! negative tr
 DECLARE_SOA_COLUMN(BachNSigmaOmKa, bachNSigmaOmKa, float);       //! bachelor track NSigma from kaon <- omega expectation
 } // namespace cascdata
 
-DECLARE_SOA_TABLE(CascTOF, "AOD", "CascTOF", // raw information table (for debug, etc)
+DECLARE_SOA_TABLE(CascTOFs, "AOD", "CascTOF", // raw information table (for debug, etc)
                   cascdata::PosTOFLength, cascdata::NegTOFLength, cascdata::BachTOFLength,
                   cascdata::PosTOFSignal, cascdata::NegTOFSignal, cascdata::BachTOFSignal,
                   cascdata::PosTOFEventTime, cascdata::NegTOFEventTime, cascdata::BachTOFEventTime,
@@ -128,7 +128,7 @@ DECLARE_SOA_TABLE(CascTOF, "AOD", "CascTOF", // raw information table (for debug
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
                   cascdata::BachTOFDeltaTOmPi);
-DECLARE_SOA_TABLE(CascTOFPID, "AOD", "CASCTOFPID", // nsigma table (for analysis)
+DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // nsigma table (for analysis)
                   cascdata::PosNSigmaXiPi, cascdata::PosNSigmaXiPr,
                   cascdata::NegNSigmaXiPi, cascdata::NegNSigmaXiPr,
                   cascdata::BachNSigmaXiPi,
