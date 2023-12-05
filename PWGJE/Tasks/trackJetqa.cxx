@@ -230,7 +230,7 @@ struct TrackJetQa {
       histos.fill(HIST("Kine/pt_TRD"), track.pt());
       histos.fill(HIST("TrackPar/Sigma1Pt_hasTRD"), track.pt(), track.sigma1Pt() * track.pt());
     }
-    if (!track.hasTRD()){
+    if (!track.hasTRD()) {
       histos.fill(HIST("TrackPar/Sigma1Pt_hasNoTRD"), track.pt(), track.sigma1Pt() * track.pt());
     }
     histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
