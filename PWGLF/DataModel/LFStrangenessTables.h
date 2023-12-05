@@ -500,6 +500,9 @@ DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
+DECLARE_SOA_COLUMN(PxV0, pxv0, float);   //!
+DECLARE_SOA_COLUMN(PyV0, pyv0, float);   //!
+DECLARE_SOA_COLUMN(PzV0, pzv0, float);   //!
 DECLARE_SOA_COLUMN(Px, px, float);           //! cascade momentum X
 DECLARE_SOA_COLUMN(Py, py, float);           //! cascade momentum Y
 DECLARE_SOA_COLUMN(Pz, pz, float);           //! cascade momentum Z
@@ -524,7 +527,8 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method
+DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method (Cascade)
+DECLARE_SOA_COLUMN(KFTrackMatV0, kfTrackCovMatV0, float[15]);     //! covariance matrix elements for KF method (V0)
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -718,6 +722,7 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::PxV0, cascdata::PyV0, cascdata::PzV0,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
@@ -787,7 +792,7 @@ DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
 DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackMat);
+                       cascdata::KFTrackMat, cascdata::KFTrackMatV0);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!
@@ -927,13 +932,13 @@ DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with Ca
 using McCascLabel = McCascLabels::iterator;
 using McCascBBTag = McCascBBTags::iterator;
 
-// Definition of labels for kf cascades
+// Definition of labels for KF cascades
 namespace mckfcasclabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for KF Cascade
 } // namespace mckfcasclabel
 
-DECLARE_SOA_TABLE(McKFCascLabels, "AOD", "MCKFCASCLABEL", //! Table joinable to cascdata containing the MC labels
+DECLARE_SOA_TABLE(McKFCascLabels, "AOD", "MCKFCASCLABEL", //! Table joinable with KFCascData containing the MC labels
                   mckfcasclabel::McParticleId);
 using McKFCascLabel = McKFCascLabels::iterator;
 
