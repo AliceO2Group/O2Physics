@@ -250,8 +250,8 @@ struct cascadepid {
 
         if (fillRawPID) {
           casctof(posTrack.length(), negTrack.length(), bachTrack.length(),
-                  posTrack.tofSignal(), negTrack.tofSignal(), bachTrack.tofSignal(), 
-                  posTrack.tofEvTime(), negTrack.tofEvTime(), bachTrack.tofEvTime(), 
+                  posTrack.tofSignal(), negTrack.tofSignal(), bachTrack.tofSignal(),
+                  posTrack.tofEvTime(), negTrack.tofEvTime(), bachTrack.tofEvTime(),
                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }

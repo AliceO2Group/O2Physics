@@ -298,8 +298,8 @@ struct lambdakzeropid {
 
         if (fillRawPID) {
           v0tof(posTrackRow.length(), negTrackRow.length(),
-                posTrackRow.tofSignal(), negTrackRow.tofSignal(), 
-                posTrackRow.tofEvTime(), negTrackRow.tofEvTime(), 
+                posTrackRow.tofSignal(), negTrackRow.tofSignal(),
+                posTrackRow.tofEvTime(), negTrackRow.tofEvTime(),
                 deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
                 deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                 deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);

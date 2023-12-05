@@ -47,8 +47,8 @@ DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length
 DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float); //! positive track signal
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float); //! negative track signal
-DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
-DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
+DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float); //! positive track event time
+DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float); //! negative track event time
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation
@@ -92,7 +92,6 @@ DECLARE_SOA_COLUMN(BachTOFSignal, bachTOFSignal, float); //! bachelor track sign
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
 DECLARE_SOA_COLUMN(BachTOFEventTime, bachTOFEventTime, float); //! bachelor track event time
-
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTXiPi, posTOFDeltaTXiPi, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
