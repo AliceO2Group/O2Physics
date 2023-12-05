@@ -104,7 +104,7 @@ struct MultiplicityCounter {
       binnedRegistry.add({EventTimeRes.data(), " ; t (ms); centrality", {HistType::kTH2F, {{1001, -0.1, 100.1}, CentAxis}}});
     }
 
-    if (doprocessCounting || doprocessCountingNoAmb) {
+    if (doprocessCountingAmbiguous || doprocessCounting) {
       inclusiveRegistry.add({EventSelection.data(), ";status;events", {HistType::kTH1F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}}}});
       auto hstat = inclusiveRegistry.get<TH1>(HIST(EventSelection));
       auto* x = hstat->GetXaxis();
@@ -122,7 +122,7 @@ struct MultiplicityCounter {
       inclusiveRegistry.add({PtEta.data(), " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
       inclusiveRegistry.add({DCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
       inclusiveRegistry.add({DCAZPt.data(), " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
-      if (doprocessCounting) {
+      if (doprocessCountingAmbiguous) {
         inclusiveRegistry.add({ReassignedDCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
         inclusiveRegistry.add({ReassignedDCAZPt.data(), " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
         inclusiveRegistry.add({ExtraDCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}});
@@ -135,7 +135,7 @@ struct MultiplicityCounter {
       }
     }
 
-    if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M || doprocessCountingCentralityFT0CNoAmb || doprocessCountingCentralityFT0MNoAmb) {
+    if (doprocessCountingAmbiguousCentralityFT0C || doprocessCountingAmbiguousCentralityFT0M || doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M) {
       binnedRegistry.add({EventSelection.data(), ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
       auto hstat = binnedRegistry.get<TH2>(HIST(EventSelection));
       auto* x = hstat->GetXaxis();
@@ -149,7 +149,7 @@ struct MultiplicityCounter {
       binnedRegistry.add({PtEta.data(), " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
       binnedRegistry.add({DCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
       binnedRegistry.add({DCAZPt.data(), " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
-      if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M) {
+      if (doprocessCountingAmbiguousCentralityFT0C || doprocessCountingAmbiguousCentralityFT0M) {
         binnedRegistry.add({ReassignedDCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
         binnedRegistry.add({ReassignedDCAZPt.data(), " ; p_{T} (GeV/c) ; DCA_{Z} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
         binnedRegistry.add({ExtraDCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
@@ -162,7 +162,7 @@ struct MultiplicityCounter {
       }
     }
 
-    if (doprocessGen || doprocessGenNoAmb) {
+    if (doprocessGenAmbiguous || doprocessGen) {
       inclusiveRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({NtrkZvtxGen_t.data(), "; N_{part}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -196,8 +196,8 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), EvEffBinLabels[static_cast<int>(EvEffBins::kSelectedPVgt0)].data());
     }
 
-    if (doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi ||
-        doprocessGenFT0CNoAmb || doprocessGenFT0MNoAmb || doprocessGenFT0ChiNoAmb || doprocessGenFT0MhiNoAmb) {
+    if (doprocessGenAmbiguousFT0C || doprocessAmbiguousGenFT0M || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
+        doprocessGenFT0CNoAmb || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi) {
       binnedRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({NtrkZvtxGen_t.data(), "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -232,7 +232,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), EvEffBinLabels[static_cast<int>(EvEffBins::kSelectedPVgt0)].data());
     }
 
-    if (doprocessTrackEfficiency || doprocessTrackEfficiencyNoAmb) {
+    if (doprocessTrackEfficiencyAmbiguous || doprocessTrackEfficiency) {
       inclusiveRegistry.add({PtGen.data(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       inclusiveRegistry.add({PtGenNoEtaCut.data(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       inclusiveRegistry.add({PtEfficiency.data(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
@@ -625,7 +625,7 @@ struct MultiplicityCounter {
     }
   }
 
-  void processCounting(
+  void processCountingAmbiguous(
     ExCols::iterator const& collision,
     FiTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
@@ -633,19 +633,19 @@ struct MultiplicityCounter {
     processCountingGeneralwAmbiguous<ExCols>(collision, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCounting, "Count tracks", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCountingAmbiguous, "Count tracks", false);
 
-  void processCountingNoAmb(
+  void processCounting(
     ExCols::iterator const& collision,
     FiTracks const& tracks)
   {
     processCountingGeneral<ExCols>(collision, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCountingNoAmb, "Count tracks w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCounting, "Count tracks w/o ambiguous", false);
 
   using ExColsCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
-  void processCountingCentralityFT0C(
+  void processCountingAmbiguousCentralityFT0C(
     ExColsCentFT0C::iterator const& collision,
     FiTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
@@ -653,19 +653,19 @@ struct MultiplicityCounter {
     processCountingGeneralwAmbiguous<ExColsCentFT0C>(collision, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0C, "Count tracks in FT0C centrality bins", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCountingAmbiguousCentralityFT0C, "Count tracks in FT0C centrality bins", false);
 
-  void processCountingCentralityFT0CNoAmb(
+  void processCountingCentralityFT0C(
     ExColsCentFT0C::iterator const& collision,
     FiTracks const& tracks)
   {
     processCountingGeneral<ExColsCentFT0C>(collision, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0CNoAmb, "Count tracks in FT0C centrality bins w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0C, "Count tracks in FT0C centrality bins w/o ambiguous", false);
 
   using ExColsCentFT0M = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::EvSels>;
-  void processCountingCentralityFT0M(
+  void processCountingAmbiguousCentralityFT0M(
     ExColsCentFT0M::iterator const& collision,
     FiTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
@@ -673,16 +673,16 @@ struct MultiplicityCounter {
     processCountingGeneralwAmbiguous<ExColsCentFT0M>(collision, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0M, "Count tracks in FT0M centrality bins", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCountingAmbiguousCentralityFT0M, "Count tracks in FT0M centrality bins", false);
 
-  void processCountingCentralityFT0MNoAmb(
+  void processCountingCentralityFT0M(
     ExColsCentFT0M::iterator const& collision,
     FiTracks const& tracks)
   {
     processCountingGeneral<ExColsCentFT0M>(collision, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0MNoAmb, "Count tracks in FT0M centrality bins w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processCountingCentralityFT0M, "Count tracks in FT0M centrality bins w/o ambiguous", false);
 
   using Particles = soa::Filtered<aod::McParticles>;
   using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
@@ -977,7 +977,7 @@ struct MultiplicityCounter {
     }
   }
 
-  void processTrackEfficiency(
+  void processTrackEfficiencyAmbiguous(
     soa::Join<ExCols, aod::McCollisionLabels>::iterator const& collision,
     aod::McCollisions const& mccollisions, Particles const& mcParticles,
     FiLTracks const& filtracks,
@@ -986,9 +986,9 @@ struct MultiplicityCounter {
     processTrackEfficiencyGeneralAmbiguous<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
+  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyAmbiguous, "Calculate tracking efficiency vs pt", false);
 
-  void processTrackEfficiencyNoAmb(
+  void processTrackEfficiency(
     soa::Join<ExCols, aod::McCollisionLabels>::iterator const& collision,
     aod::McCollisions const& mccollisions, Particles const& mcParticles,
     FiLTracks const& filtracks)
@@ -996,7 +996,7 @@ struct MultiplicityCounter {
     processTrackEfficiencyGeneral<ExCols, aod::McCollisions>(collision, mccollisions, mcParticles, filtracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyNoAmb, "Calculate tracking efficiency vs pt w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt w/o ambiguous", false);
 
   template <typename CIT>
   void fillFIT(CIT const& collision, std::vector<float>& ft0as, std::vector<float>& ft0cs, std::vector<float>& fddas, std::vector<float>& fddcs)
@@ -1387,7 +1387,7 @@ struct MultiplicityCounter {
   }
 
   using MC = aod::McCollisions; // soa::Join<aod::McCollisions, aod::HepMCXSections>;
-  void processGen(
+  void processGenAmbiguous(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
@@ -1395,9 +1395,9 @@ struct MultiplicityCounter {
     processGenGeneralAmbiguous<MC, ExCols>(mcCollision, collisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguous, "Process generator-level info", false);
 
-  void processGenNoAmb(
+  void processGen(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
@@ -1405,9 +1405,9 @@ struct MultiplicityCounter {
     processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenNoAmb, "Process generator-level info w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info w/o ambiguous", false);
 
-  void processGenFT0C(
+  void processGenAmbiguousFT0C(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
@@ -1415,7 +1415,7 @@ struct MultiplicityCounter {
     processGenGeneralAmbiguous<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality)", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0C, "Process generator-level info (FT0C centrality)", false);
 
   void processGenFT0CNoAmb(
     MC::iterator const& mcCollision,
@@ -1427,7 +1427,7 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0CNoAmb, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
 
-  void processGenFT0M(
+  void processAmbiguousGenFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
@@ -1435,9 +1435,9 @@ struct MultiplicityCounter {
     processGenGeneralAmbiguous<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality)", false);
+  PROCESS_SWITCH(MultiplicityCounter, processAmbiguousGenFT0M, "Process generator-level info (FT0M centrality)", false);
 
-  void processGenFT0MNoAmb(
+  void processGenFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
@@ -1445,11 +1445,11 @@ struct MultiplicityCounter {
     processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0MNoAmb, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
 
   using MChi = soa::Join<aod::McCollisions, aod::HepMCHeavyIons>;
 
-  void processGenFT0Chi(
+  void processGenAmbiguousFT0Chi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
@@ -1457,9 +1457,9 @@ struct MultiplicityCounter {
     processGenGeneralAmbiguous<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Chi, "Process generator-level info (FT0C centrality, HI)", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Chi, "Process generator-level info (FT0C centrality, HI)", false);
 
-  void processGenFT0ChiNoAmb(
+  void processGenFT0Chi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
@@ -1467,9 +1467,9 @@ struct MultiplicityCounter {
     processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0ChiNoAmb, "Process generator-level info (FT0C centrality, HI) w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Chi, "Process generator-level info (FT0C centrality, HI) w/o ambiguous", false);
 
-  void processGenFT0Mhi(
+  void processGenAmbiguousFT0Mhi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
@@ -1477,9 +1477,9 @@ struct MultiplicityCounter {
     processGenGeneralAmbiguous<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mhi, "Process generator-level info (FT0M centrality, HI)", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Mhi, "Process generator-level info (FT0M centrality, HI)", false);
 
-  void processGenFT0MhiNoAmb(
+  void processGenFT0Mhi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
@@ -1487,7 +1487,7 @@ struct MultiplicityCounter {
     processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
   }
 
-  PROCESS_SWITCH(MultiplicityCounter, processGenFT0MhiNoAmb, "Process generator-level info (FT0M centrality, HI) w/o ambiguous", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mhi, "Process generator-level info (FT0M centrality, HI) w/o ambiguous", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
