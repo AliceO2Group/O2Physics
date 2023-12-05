@@ -36,7 +36,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -306,7 +306,7 @@ struct filterf1proton {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > cMaxV0DCA) {
+    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
 
@@ -314,9 +314,9 @@ struct filterf1proton {
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
     const float dcaDaughv0 = candidate.dcaV0daughters();
-    const float cpav0 = candidate.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float cpav0 = candidate.v0cosPA();
 
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::analysis::pdg::MassK0Short;
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
 
@@ -390,10 +390,10 @@ struct filterf1proton {
 
   std::vector<double> BBProton, BBAntiproton, BBPion, BBAntipion, BBKaon, BBAntikaon;
   ROOT::Math::PtEtaPhiMVector F1Vector, KKs0Vector;
-  double massPi = o2::analysis::pdg::MassPiPlus;
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
   double massPr = o2::constants::physics::MassProton;
-  double massK0s = o2::analysis::pdg::MassK0Short;
+  double massK0s = o2::constants::physics::MassK0Short;
   double massF1{0.};
   double masskKs0{0.};
   double pT{0.};

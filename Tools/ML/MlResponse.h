@@ -73,22 +73,23 @@ class MlResponse
   /// \param ccdbApi is the CCDB API
   /// \param pathCCDB is the model path in CCDB
   /// \param timestampCCDB is the CCDB timestamp
-  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
+    if (pathsCCDB.size() != mNModels) {
+      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of paths (" << onnxFiles.size() << ")! Please check your configurables.";
+    }
 
-    uint8_t counterModel{0};
-    for (const auto& onnxFile : onnxFiles) {
+    for (auto iFile{0}; iFile < mNModels; ++iFile) {
       std::map<std::string, std::string> metadata;
-      bool retrieveSuccess = ccdbApi.retrieveBlob(pathCCDB, ".", metadata, timestampCCDB, false, onnxFile);
+      bool retrieveSuccess = ccdbApi.retrieveBlob(pathsCCDB[iFile], ".", metadata, timestampCCDB, false, onnxFiles[iFile]);
       if (retrieveSuccess) {
-        mPaths[counterModel] = onnxFile;
+        mPaths[iFile] = onnxFiles[iFile];
       } else {
         LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
       }
-      ++counterModel;
     }
   }
 

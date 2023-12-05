@@ -163,6 +163,7 @@ struct hypertriton3bodyFinder {
   // Configurables
   Configurable<bool> UseCFFilter{"UseCFFilter", true, "Reject event without CF LD trigger"};
   Configurable<bool> RejectBkgInMC{"RejectBkgInMC", false, "Reject fake 3-body pairs in MC check"};
+  Configurable<bool> KeepSignalInMC{"KeepSignalInMC", false, "Reject fake 3-body pairs in MC check"};
 
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -186,10 +187,9 @@ struct hypertriton3bodyFinder {
 
   // for DCA
   Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
-
-  // for track cut in SVertexer, Can we use it in the production of goodtrack table?
-  // float maxDCAXY3Body = 0.3; // max DCA of 3 body decay to PV in XY?
-  // float maxDCAZ3Body = 0.3;  // max DCA of 3 body decay to PV in Z
+  Configurable<bool> d_UseH3LDCACut{"d_UseH3LDCACut", true, "Use Cuts for H3L DCA to PV"};
+  Configurable<float> maxDCAXY3Body{"maxDCAXY3Body", 0.5, "DCAXY H3L to PV"}; // max DCA of 3 body decay to PV in XY
+  Configurable<float> maxDCAZ3Body{"maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};    // max DCA of 3 body decay to PV in Z
 
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -213,10 +213,10 @@ struct hypertriton3bodyFinder {
       {"hDauTrackCounter", "hDauTrackCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hV0Counter", "hV0Counter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
       {"hTrueV0Counter", "hTrueV0Counter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
-      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
-      {"hTrueVtx3BodyCounter", "hTrueVtx3BodyCounter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
+      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{9, -0.5f, 8.5f}}}},
+      {"hTrueVtx3BodyCounter", "hTrueVtx3BodyCounter", {HistType::kTH1F, {{9, -0.5f, 8.5f}}}},
       {"hVirtLambaCounter", "hVirtualLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
-      {"hCFFilteredVirtLambaCounter", "hCFFilteredVirtLambaCounter", {HistType::kTH1F, {{3, -0.5f, 2.5f}}}},
+      {"hCFFilteredVirtLambaCounter", "hCFFilteredVirtLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
     },
   };
 
@@ -226,7 +226,7 @@ struct hypertriton3bodyFinder {
                 kV0hasSV,
                 kV0Radius,
                 kV0Pt,
-                kV0tgLamda,
+                kV0TgLamda,
                 kV0InvMass,
                 kV0DcaXY,
                 kV0CosPA,
@@ -239,6 +239,7 @@ struct hypertriton3bodyFinder {
                  kVtxTgLamda,
                  kVtxCosPA,
                  kVtxDcaDau,
+                 kVtxDcaH3L,
                  kNVtxSteps };
 
   // Helper struct to do bookkeeping of building parameters
@@ -247,7 +248,7 @@ struct hypertriton3bodyFinder {
     std::array<int32_t, kNV0Steps> truev0stats;
     std::array<int32_t, kNVtxSteps> vtxstats;
     std::array<int32_t, kNVtxSteps> truevtxstats;
-    std::array<int32_t, 9> virtLambdastats;
+    std::array<int32_t, 12> virtLambdastats;
   } statisticsRegistry;
 
   void resetHistos()
@@ -260,7 +261,7 @@ struct hypertriton3bodyFinder {
       statisticsRegistry.vtxstats[ii] = 0;
       statisticsRegistry.truevtxstats[ii] = 0;
     }
-    for (Int_t ii = 0; ii < 9; ii++) {
+    for (Int_t ii = 0; ii < 12; ii++) {
       statisticsRegistry.virtLambdastats[ii] = 0;
     }
   }
@@ -279,6 +280,7 @@ struct hypertriton3bodyFinder {
       registry.fill(HIST("hVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii]);
       registry.fill(HIST("hVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 3]);
       registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii + 6]);
+      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 9]);
     }
   }
 
@@ -317,7 +319,7 @@ struct hypertriton3bodyFinder {
 
     TString DauCounterbinLabel[3] = {"Proton", "Pion", "Deuteron"};
     TString V0CounterbinLabel[8] = {"Total", "hasSV", "V0R", "V0Pt", "TgLambda", "V0Mass", "DcaXY", "CosPA"};
-    TString VtxCounterbinLabel[8] = {"Total", "bachPt", "hasSV", "VtxR", "VtxPt", "TgLambda", "CosPA", "DcaDau"};
+    TString VtxCounterbinLabel[9] = {"Total", "bachPt", "hasSV", "VtxR", "VtxPt", "TgLambda", "CosPA", "DcaDau", "DcaH3L"};
     for (int i{0}; i < 3; i++) {
       registry.get<TH1>(HIST("hDauTrackCounter"))->GetXaxis()->SetBinLabel(i + 1, DauCounterbinLabel[i]);
     }
@@ -326,8 +328,8 @@ struct hypertriton3bodyFinder {
       registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(i + 1, V0CounterbinLabel[i]);
     }
     for (int i{0}; i < kNVtxSteps; i++) {
-      registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, V0CounterbinLabel[i]);
-      registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, V0CounterbinLabel[i]);
+      registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, VtxCounterbinLabel[i]);
+      registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, VtxCounterbinLabel[i]);
     }
 
     ccdb->setURL(ccdburl);
@@ -511,7 +513,7 @@ struct hypertriton3bodyFinder {
         if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
           continue;
         }
-        FillV0Counter(kV0tgLamda);
+        FillV0Counter(kV0TgLamda);
 
         // apply mass selections
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
@@ -609,13 +611,28 @@ struct hypertriton3bodyFinder {
           }
           FillVtxCounter(kVtxDcaDau);
 
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
+
           //  Not involved: H3L DCA Check
           vtx3bodydata(
             t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), dCollision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
-            t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
         }
       }
     }
@@ -705,7 +722,7 @@ struct hypertriton3bodyFinder {
         if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
           continue;
         }
-        FillV0Counter(kV0tgLamda, isTrue3bodyV0);
+        FillV0Counter(kV0TgLamda, isTrue3bodyV0);
 
         // apply mass selections
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
@@ -827,13 +844,37 @@ struct hypertriton3bodyFinder {
           }
           FillVtxCounter(kVtxDcaDau, isTrue3bodyVtx);
 
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
+
           //  Not involved: H3L DCA Check
+          // auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), t2.sign());
+          auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, t2.sign());
+          o2::dataformats::DCA dca;
+          if (d_UseH3LDCACut && (!track3B.propagateToDCA({{dCollision.posX(), dCollision.posY(), dCollision.posZ()}, {dCollision.covXX(), dCollision.covXY(), dCollision.covYY(), dCollision.covXZ(), dCollision.covYZ(), dCollision.covZZ()}}, fitter3body.getBz(), &dca, 5.) ||
+                                 std::abs(dca.getY()) > maxDCAXY3Body || std::abs(dca.getZ()) > maxDCAZ3Body)) {
+            continue;
+          }
+          FillVtxCounter(kVtxDcaH3L, isTrue3bodyVtx);
+
           vtx3bodydata(
             t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), dCollision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
-            t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
         }
       }
     }
@@ -881,7 +922,6 @@ struct hypertriton3bodyFinder {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
-    registry.fill(HIST("hEventCounter"), 1.5);
 
     DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
   }
@@ -910,13 +950,13 @@ struct hypertriton3bodyFinder {
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", true);
 
-  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
-    registry.fill(HIST("hEventCounter"), 1.5);
 
+    CheckGoodTracks<FullTracksExtMCIU>(goodtracks, mcparticles);
     DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC", false);
@@ -945,7 +985,8 @@ struct hypertriton3bodyFinder {
       auto ptracks = Ptracks.sliceBy(perCollisionGoodPosTracks, collision.globalIndex());
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
 
-      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 6);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, v0s, 6);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 9);
       DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
@@ -996,7 +1037,7 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());

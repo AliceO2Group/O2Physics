@@ -60,6 +60,7 @@ class DalitzEECut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
+    kPrefilter,
     kNCuts
   };
   static const char* mCutNames[static_cast<int>(DalitzEECuts::kNCuts)];
@@ -83,6 +84,35 @@ class DalitzEECut : public TNamed
   template <class TLeg, typename TPair>
   bool IsSelected(TPair const& pair) const
   {
+    if (!IsSelectedPair(pair)) {
+      return false;
+    }
+
+    auto pos = pair.template posTrack_as<TLeg>();
+    auto ele = pair.template negTrack_as<TLeg>();
+
+    for (auto& track : {pos, ele}) {
+      if (!IsSelectedTrack(track)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool IsSelectedPair(const float mass, const float phiv) const
+  {
+    if (mass < mMinMee || mMaxMee < mass) {
+      return false;
+    }
+    if (phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool IsSelectedPair(T const& pair) const
+  {
     if (!IsSelectedPair(pair, DalitzEECuts::kPairPtRange)) {
       return false;
     }
@@ -95,59 +125,64 @@ class DalitzEECut : public TNamed
     if (!IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
       return false;
     }
+    return true;
+  }
 
-    auto pos = pair.template posTrack_as<TLeg>();
-    auto ele = pair.template negTrack_as<TLeg>();
-
-    for (auto& track : {pos, ele}) {
-      if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
-        return false;
-      }
-
-      if (!IsSelectedTrack(track, DalitzEECuts::kTrackPtRange)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kDCAz)) {
-        return false;
-      }
-
-      // ITS cuts
-      if (!IsSelectedTrack(track, DalitzEECuts::kITSNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kITSChi2NDF)) {
-        return false;
-      }
-
-      // TPC cuts
-      if (!IsSelectedTrack(track, DalitzEECuts::kTPCNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kTPCCrossedRows)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kTPCCrossedRowsOverNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DalitzEECuts::kTPCChi2NDF)) {
-        return false;
-      }
-
-      // PID cuts here.
-      if (!PassPID(track)) {
-        return false;
-      }
-
-      if (mApplyTOFbeta && (mMinTOFbeta < track.beta() && track.beta() < mMaxTOFbeta)) {
-        return false;
-      }
+  template <typename T>
+  bool IsSelectedTrack(T const& track) const
+  {
+    if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
+      return false;
     }
+
+    if (!IsSelectedTrack(track, DalitzEECuts::kTrackPtRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kDCAz)) {
+      return false;
+    }
+
+    // ITS cuts
+    if (!IsSelectedTrack(track, DalitzEECuts::kITSNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kITSChi2NDF)) {
+      return false;
+    }
+
+    // TPC cuts
+    if (!IsSelectedTrack(track, DalitzEECuts::kTPCNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kTPCCrossedRows)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kTPCChi2NDF)) {
+      return false;
+    }
+
+    if (mApplyPF && !IsSelectedTrack(track, DalitzEECuts::kPrefilter)) {
+      return false;
+    }
+
+    // PID cuts here.
+    if (!PassPID(track)) {
+      return false;
+    }
+
+    if (mApplyTOFbeta && (mMinTOFbeta < track.beta() && track.beta() < mMaxTOFbeta)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -258,7 +293,7 @@ class DalitzEECut : public TNamed
       bool is_mu_included_TOF = mMinTOFNsigmaMu < track.tofNSigmaMu() && track.tofNSigmaMu() < mMaxTOFNsigmaMu;
       bool is_pi_excluded_TOF = track.tofNSigmaPi() < mMinTOFNsigmaPi;
       return is_mu_included_TPC && is_mu_included_TOF && is_pi_excluded_TOF;
-    } else if (track.tpcInnerParam() < 0.3) {
+    } else if (track.tpcInnerParam() < mMaxPinMuonTPConly) {
       bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
       bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi;
       return is_mu_included_TPC && is_pi_excluded_TPC;
@@ -322,6 +357,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
+      case DalitzEECuts::kPrefilter:
+        return track.pfb() <= 0;
+
       default:
         return false;
     }
@@ -356,10 +394,12 @@ class DalitzEECut : public TNamed
   void SetTOFNsigmaPiRange(float min = -1e+10, float max = 1e+10);
   void SetTOFNsigmaKaRange(float min = -1e+10, float max = 1e+10);
   void SetTOFNsigmaPrRange(float min = -1e+10, float max = 1e+10);
+  void SetMaxPinMuonTPConly(float max);
 
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void ApplyPrefilter(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -383,10 +423,12 @@ class DalitzEECut : public TNamed
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
+  float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
 
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  bool mApplyPF{false};
 
   // pid cuts
   PIDSchemes mPIDScheme{PIDSchemes::kUnDef};

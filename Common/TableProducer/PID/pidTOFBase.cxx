@@ -51,6 +51,10 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct tofSignal {
   o2::framework::Produces<o2::aod::TOFSignal> table;
   bool enableTable = false;
+  // CCDB configuration
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -132,21 +136,35 @@ struct tofEventTime {
   // Detector response and input parameters
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
+  // CCDB configuration (inherited from TOF signal task)
+  Configurable<std::string> url{"ccdb-url", "", "url of the ccdb repository"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  // Event time configurations
   Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
   Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
   Configurable<float> maxEvTimeTOF{"maxEvTimeTOF", 100000.0f, "Maximum value of the TOF event time"};
-  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
-  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
-  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-  Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   Configurable<bool> sel8TOFEvTime{"sel8TOFEvTime", false, "Flag to compute the ev. time only for events that pass the sel8 ev. selection"};
   Configurable<int> maxNtracksInSet{"maxNtracksInSet", 10, "Size of the set to consider for the TOF ev. time computation"};
+  // TOF Calib configuration
+  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
+  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
+  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
 
   void init(o2::framework::InitContext& initContext)
   {
+    if (inheritFromBaseTask.value) {
+      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
+        LOG(fatal) << "Could not get ccdb-url from tof-signal task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
+        LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
+      }
+    }
+
     trackSampleMinMomentum = minMomentum;
     trackSampleMaxMomentum = maxMomentum;
     LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;

@@ -62,6 +62,7 @@ struct correlateStrangeness {
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
   Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
   Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
+  Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
 
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
@@ -159,11 +160,16 @@ struct correlateStrangeness {
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
         auto negtrack = assoc.negTrack_as<TracksComplete>();
-        if (trigg.globalIndex() == postrack.globalIndex())
-          continue;
-        if (trigg.globalIndex() == negtrack.globalIndex())
-          continue;
-        // TODO: add histogram checking how many pairs are rejected (should be small!)
+        if (doAutocorrelationRejection) {
+          if (trigg.globalIndex() == postrack.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsV0"), 0.5);
+            continue;
+          }
+          if (trigg.globalIndex() == negtrack.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsV0"), 0.5);
+            continue;
+          }
+        }
 
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
@@ -224,13 +230,20 @@ struct correlateStrangeness {
         auto postrack = assocV0.posTrack_as<TracksComplete>();
         auto negtrack = assocV0.negTrack_as<TracksComplete>();
         auto bachtrack = assoc.bachelor_as<TracksComplete>();
-        if (trigg.globalIndex() == postrack.globalIndex())
-          continue;
-        if (trigg.globalIndex() == negtrack.globalIndex())
-          continue;
-        if (trigg.globalIndex() == bachtrack.globalIndex())
-          continue;
-        // TODO: add histogram checking how many pairs are rejected (should be small!)
+        if (doAutocorrelationRejection) {
+          if (trigg.globalIndex() == postrack.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsCascades"), 0.5);
+            continue;
+          }
+          if (trigg.globalIndex() == negtrack.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsCascades"), 0.5);
+            continue;
+          }
+          if (trigg.globalIndex() == bachtrack.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsCascades"), 0.5);
+            continue;
+          }
+        }
 
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
@@ -286,9 +299,12 @@ struct correlateStrangeness {
         auto assoc = assocTrack.track_as<TracksComplete>();
 
         //---] removing autocorrelations [---
-        if (trigg.globalIndex() == assoc.globalIndex())
-          continue;
-        // TODO: add histogram checking how many pairs are rejected (should be small!)
+        if (doAutocorrelationRejection) {
+          if (trigg.globalIndex() == assoc.globalIndex()) {
+            histos.fill(HIST("hNumberOfRejectedPairsPions"), 0.5);
+            continue;
+          }
+        }
 
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
@@ -561,6 +577,10 @@ struct correlateStrangeness {
 
     // Some QA plots
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+
+    histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
+    histos.add("hNumberOfRejectedPairsCascades", "hNumberOfRejectedPairsCascades", kTH1F, {{1, 0, 1}});
+    histos.add("hNumberOfRejectedPairsPions", "hNumberOfRejectedPairsPions", kTH1F, {{1, 0, 1}});
 
     histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH2F, {axisPtQA, axisMult});
     histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH2F, {axisPtQA, axisMult});

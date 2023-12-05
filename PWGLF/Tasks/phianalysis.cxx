@@ -235,12 +235,12 @@ struct phianalysis {
         if constexpr (!IsMix) {
           if (trk1.sign() > 0) {
             histos.fill(HIST("phiinvmassDS"), lResonance.M());
-            histos.fill(HIST("h3phiinvmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3phiinvmassDS"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
           }
         } else {
           histos.fill(HIST("phiinvmassME"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
 
         // MC
@@ -259,14 +259,14 @@ struct phianalysis {
           // MC histograms
           histos.fill(HIST("phiRec"), lResonance.Pt());
           histos.fill(HIST("phiRecinvmass"), lResonance.M());
-          histos.fill(HIST("h3Recphiinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3Recphiinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
       } else {
         if constexpr (!IsMix)
           continue;
         if (trk1.sign() > 0) {
           histos.fill(HIST("phiinvmassLS"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassLS"), collision.cent(), lResonance.Pt(), lResonance.M());
         } else {
         }
       }
@@ -305,7 +305,7 @@ struct phianalysis {
   PROCESS_SWITCH(phianalysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

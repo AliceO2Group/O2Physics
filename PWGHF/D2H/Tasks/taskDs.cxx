@@ -16,6 +16,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -80,6 +81,7 @@ struct HfTaskDs {
     registry.add("hCos3PiK", "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hAbsCos3PiK", "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassKK", "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpactParameterProngSqSum", "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthError", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthXYError", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -150,6 +152,7 @@ struct HfTaskDs {
     registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToKKPi(candidate), pt);
     registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToKKPi(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
+    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToKKPi(candidate), pt);
     return;
   }
 
@@ -163,6 +166,7 @@ struct HfTaskDs {
     registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToPiKK(candidate), pt);
     registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToPiKK(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
+    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToPiKK(candidate), pt);
     return;
   }
 
@@ -243,7 +247,7 @@ struct HfTaskDs {
       }
 
       auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
-      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, pdg::Code::kDS, true);
+      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, o2::constants::physics::Pdg::kDS, true);
       auto particleMother = mcParticles.iteratorAt(indexMother);
       registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
 
@@ -276,7 +280,7 @@ struct HfTaskDs {
           continue;
         }
         auto pt = particle.pt();
-        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS);
+        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
         if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
           continue;
         }

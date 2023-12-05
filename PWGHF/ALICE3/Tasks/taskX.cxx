@@ -16,6 +16,7 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -209,7 +210,7 @@ struct HfTaskXMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassX3872)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassX3872)) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
