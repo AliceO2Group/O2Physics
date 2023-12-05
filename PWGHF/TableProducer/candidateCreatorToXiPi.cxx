@@ -114,6 +114,9 @@ struct HfCandidateCreatorToXiPi {
     if (doprocessIdxCombinatorics && doprocessDerivedData) {
       LOGF(fatal, "Cannot enable processIdxCombinatorics and processDerivedData at the same time. Please choose one.");
     }
+    if (!doprocessIdxCombinatorics && !doprocessDerivedData) {
+      LOGF(fatal, "Please enable at least one process, now both processIdxCombinatorics and processDerivedData are false.");
+    }
   }
 
   void processIdxCombinatorics(SelectedCollisions const& collisions,
