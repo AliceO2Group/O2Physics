@@ -40,7 +40,7 @@ namespace bdtcuts
 {
 static constexpr int nBinsPt = 14;
 constexpr float binsPt[nBinsPt + 1] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 16.0f, 24.0f, 36.0f, 1000.0f};
-constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
+constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
 static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT prompt", "BDT nonprompt"};
 } // namespace bdtcuts
@@ -74,7 +74,7 @@ struct taskJPsiHf {
 
   void init(o2::framework::InitContext& context)
   {
-    hCollisions = registry.add<TH1>("hCollisions", ";;entries", HistType::kTH2F, {{2, -0.5, 1.5}});
+    hCollisions = registry.add<TH1>("hCollisions", ";;entries", HistType::kTH1F, {{2, -0.5, 1.5}});
     hCollisions->GetXaxis()->SetBinLabel(1, "all collisions");
     hCollisions->GetXaxis()->SetBinLabel(2, "collisions with pairs");
   }
