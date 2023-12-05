@@ -327,19 +327,19 @@ struct LfV0qaanalysis {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        if (mcParticle.pdgCode() == 310){
+        if (mcParticle.pdgCode() == 310) {
           registry.fill(HIST("Generated_MCRecoColl_INEL_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
           if (evFlag == 1) {
             registry.fill(HIST("Generated_MCRecoColl_INELgt0_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
           }
         }
-        if (mcParticle.pdgCode() == 3122){
+        if (mcParticle.pdgCode() == 3122) {
           registry.fill(HIST("Generated_MCRecoColl_INEL_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
           if (evFlag == 1) {
             registry.fill(HIST("Generated_MCRecoColl_INELgt0_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
           }
         }
-        if (mcParticle.pdgCode() == -3122){
+        if (mcParticle.pdgCode() == -3122) {
           registry.fill(HIST("Generated_MCRecoColl_INEL_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
           if (evFlag == 1) {
             registry.fill(HIST("Generated_MCRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
@@ -389,19 +389,19 @@ struct LfV0qaanalysis {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
-        if (mcParticle.pdgCode() == 310){
+        if (mcParticle.pdgCode() == 310) {
           registry.fill(HIST("Generated_MCAllColl_INEL_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
           if (isINELgt0true) {
             registry.fill(HIST("Generated_MCAllColl_INELgt0_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
           }
         }
-        if (mcParticle.pdgCode() == 3122){
+        if (mcParticle.pdgCode() == 3122) {
           registry.fill(HIST("Generated_MCAllColl_INEL_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
           if (isINELgt0true) {
             registry.fill(HIST("Generated_MCAllColl_INELgt0_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
           }
         }
-        if (mcParticle.pdgCode() == -3122){
+        if (mcParticle.pdgCode() == -3122) {
           registry.fill(HIST("Generated_MCAllColl_INEL_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
           if (isINELgt0true) {
             registry.fill(HIST("Generated_MCAllColl_INELgt0_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
