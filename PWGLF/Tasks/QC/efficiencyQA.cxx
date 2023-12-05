@@ -440,8 +440,7 @@ struct efficiencyQA {
           if (propToTPCinnerWall) {
             o2::base::Propagator::Instance()->PropagateToXBxByBz(probeTrackCov, 70.f, 1.f, 2.f, fitter.getMatCorrType());
             o2::base::Propagator::Instance()->PropagateToXBxByBz(tpcTrackCov, 70.f, 1.f, 2.f, fitter.getMatCorrType());
-          }
-          else {
+          } else {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({static_cast<float>(vtx[0]), static_cast<float>(vtx[1]), static_cast<float>(vtx[2])}, tpcTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
           }
           // tpcTrackCov.update({probeTrack.y(), probeTrack.z()}, {std::pow(probeTrack.sigmaY(), 2), probeTrack.rhoZY() * probeTrack.sigmaY() * probeTrack.sigmaZ(), std::pow(probeTrack.sigmaZ(), 2)});
@@ -570,8 +569,7 @@ struct efficiencyQA {
             gpu::gpustd::array<float, 2> dcaInfo;
             if (propToTPCinnerWall) {
               o2::base::Propagator::Instance()->PropagateToXBxByBz(trackCov, 70.f, 1.f, 2.f, fitter.getMatCorrType());
-            }
-            else {
+            } else {
               o2::base::Propagator::Instance()->propagateToDCABxByBz({probeTrack.vtx0, probeTrack.vtx1, probeTrack.vtx2}, trackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
             }
 
