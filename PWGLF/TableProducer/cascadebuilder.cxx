@@ -229,6 +229,7 @@ struct cascadeBuilder {
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
     std::array<float, 3> cascademom;
+    std::array<float, 3> v0mom;
     float v0dcadau;
     float v0dcapostopv;
     float v0dcanegtopv;
@@ -241,6 +242,8 @@ struct cascadeBuilder {
     float kfMLambda;
     float kfV0Chi2;
     float kfCascadeChi2;
+    std::array<float, 15> kfCascadeCov;
+    std::array<float, 15> kfV0Cov;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -1106,6 +1109,13 @@ struct cascadeBuilder {
       LOG(debug) << "Failed to construct cascade V0 from daughter tracks: " << e.what();
       return false;
     }
+
+    // mass window cut on lambda before mass constraint
+    float massLam, sigLam;
+    KFV0.GetMass(massLam, sigLam);
+    if (TMath::Abs(massLam - 1.116) > lambdaMassWindow)
+      return false;
+    
     if (kfUseV0MassConstraint) {
       KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
     }
@@ -1129,7 +1139,9 @@ struct cascadeBuilder {
         return false;
 
       // save classical DCA daughters
-      cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+      // cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+      // if (cascadecandidate.dcacascdau > dcacascdau)
+      //   return false;
 
       v0TrackParCov = fitter.getTrack(0);
       lBachelorTrack = fitter.getTrack(1);
@@ -1171,6 +1183,15 @@ struct cascadeBuilder {
     KFXi.TransportToDecayVertex();
     KFOmega.TransportToDecayVertex();
 
+    // get DCA of updated daughters at vertex
+    KFParticle kfpBachPionUpd = kfpBachPion;
+    KFParticle kfpV0Upd = kfpV0;
+    kfpBachPionUpd.SetProductionVertex(KFXi);
+    kfpV0Upd.SetProductionVertex(KFXi);
+    cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    if (cascadecandidate.dcacascdau > dcacascdau)
+        return false;
+
     //__________________________________________
     //*>~<* step 5 : propagate cascade to primary vertex with material corrections if asked
     if (!kfTuneForOmega) {
@@ -1207,6 +1228,11 @@ struct cascadeBuilder {
     cascadecandidate.v0pos[1] = KFV0.GetY();
     cascadecandidate.v0pos[2] = KFV0.GetZ();
 
+    // mother momentumm information from KF
+    cascadecandidate.v0mom[0] = KFV0.GetPx();
+    cascadecandidate.v0mom[1] = KFV0.GetPy();
+    cascadecandidate.v0mom[2] = KFV0.GetPz();
+
     // Mother position + momentum is KF updated
     if (!kfTuneForOmega) {
       cascadecandidate.pos[0] = KFXi.GetX();
@@ -1239,11 +1265,30 @@ struct cascadeBuilder {
       return false;
 
     // Calculate masses a priori
-    cascadecandidate.kfMLambda = KFV0.GetMass();
-    cascadecandidate.mXi = KFXi.GetMass();
-    cascadecandidate.mOmega = KFOmega.GetMass();
+    float MLambda, SigmaLambda, MXi, SigmaXi, MOmega, SigmaOmega;
+    KFV0.GetMass(MLambda, SigmaLambda);
+    KFXi.GetMass(MXi, SigmaXi);
+    KFOmega.GetMass(MOmega, SigmaOmega);
+    cascadecandidate.kfMLambda = MLambda;
+    cascadecandidate.mXi = MXi;
+    cascadecandidate.mOmega = MOmega;
     cascadecandidate.yXi = KFXi.GetRapidity();
     cascadecandidate.yOmega = KFOmega.GetRapidity();
+
+    // KF Cascade covariance matrix
+    o2::gpu::gpustd::array<float, 15> covCascKF;
+    for (int i = 0; i < 15; i++) { // get covariance matrix elements (lower triangle)
+      covCascKF[i] = KFXi.GetCovariance(i);
+      cascadecandidate.kfCascadeCov[i] = covCascKF[i];
+    }
+
+    // KF V0 covariance matrix
+    o2::gpu::gpustd::array<float, 15> covV0KF;
+    for (int i = 0; i < 15; i++) { // get covariance matrix elements (lower triangle)
+      covV0KF[i] = KFV0.GetCovariance(i);
+      cascadecandidate.kfV0Cov[i] = covV0KF[i];
+    }
+
     registry.fill(HIST("hKFParticleStatistics"), 1.0f);
     return true;
   }
@@ -1325,18 +1370,25 @@ struct cascadeBuilder {
                  cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
                  cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
                  cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+                 cascadecandidate.v0mom[0], cascadecandidate.v0mom[1], cascadecandidate.v0mom[2],
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
                  cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
 
       if (createCascCovMats) {
-        gpu::gpustd::array<float, 15> covmatrix;
+        // gpu::gpustd::array<float, 15> covmatrix;
         float trackCovariance[15];
-        covmatrix = lCascadeTrack.getCov();
-        for (int i = 0; i < 15; i++)
-          trackCovariance[i] = covmatrix[i];
-        kfcasccovs(trackCovariance);
+        float trackCovarianceV0[15];
+        // covmatrix = lCascadeTrack.getCov();
+        // for (int i = 0; i < 15; i++)
+        //   trackCovariance[i] = covmatrix[i];
+
+        for (int i =0; i < 15; i++) {
+          trackCovariance[i] = cascadecandidate.kfCascadeCov[i];
+          trackCovarianceV0[i] = cascadecandidate.kfV0Cov[i];
+        }
+        kfcasccovs(trackCovariance, trackCovarianceV0);
       }
     }
   }
