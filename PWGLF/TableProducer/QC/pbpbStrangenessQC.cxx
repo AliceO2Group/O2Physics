@@ -28,56 +28,56 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pbpbStrangenessQC {
-	// Tables to produce
+  // Tables to produce
   Produces<aod::CascadesQC> cascadesQC;
   Produces<aod::VZerosQC> vZerosQC;
 
-	// Histogram registries
-	HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rGeneral{"generalInfo", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+  // Histogram registries
+  HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rGeneral{"generalInfo", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-	// Configurable for event selection
-	Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-	Configurable<bool> sel8{"sel8", true, "Apply sel8 event selection"};
+  // Configurable for event selection
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> sel8{"sel8", true, "Apply sel8 event selection"};
 
-	// Configurable parameters for V0 selection
-	Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
-	Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
-	Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
-	Configurable<float> v0setting_cospa{"v0setting_cospa", 0.97, "V0 CosPA"}; // should be double!
-	Configurable<float> v0setting_radius{"v0setting_radius", 1, "v0radius"};
-	Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
+  // Configurable parameters for V0 selection
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
+  Configurable<float> v0setting_cospa{"v0setting_cospa", 0.97, "V0 CosPA"}; // should be double!
+  Configurable<float> v0setting_radius{"v0setting_radius", 1, "v0radius"};
+  Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
 
-	// Configurable parameters for cascade selection
-	Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"}; // should be double!
-	Configurable<double> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.98, "Casc V0 CosPA"};               // should be double!
-	Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
-	Configurable<float> cascadesetting_dcav0dau{"cascadesetting_dcav0dau", 1.0, "DCA Cascade's V0 Daughters"}; 
-	Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "DCA bachelor to PV"};
-	Configurable<float> cascadesetting_dcapostopv{"cascadesetting_dcapostopv", 0.2, "DCA Casc. V0's pos to PV"};       
-	Configurable<float> cascadesetting_dcanegtopv{"cascadesetting_dcanegtopv", 0.2, "DCA Casc V0's neg to PV"}; 
-	Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "minimum V0 DCA to PV"};
-	Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 1.0, "cascradius"};
-	Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "v0 mass window"};
-	Configurable<float> cascadesetting_v0radius{"cascadesetting_v0radius", 0.9, "v0 radius"};              
-	Configurable<float> cascadesetting_rapidity{"cascadesetting_rapidity", 0.5, "rapidity"};
+  // Configurable parameters for cascade selection
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"};        // should be double!
+  Configurable<double> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.98, "Casc V0 CosPA"}; // should be double!
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
+  Configurable<float> cascadesetting_dcav0dau{"cascadesetting_dcav0dau", 1.0, "DCA Cascade's V0 Daughters"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "DCA bachelor to PV"};
+  Configurable<float> cascadesetting_dcapostopv{"cascadesetting_dcapostopv", 0.2, "DCA Casc. V0's pos to PV"};
+  Configurable<float> cascadesetting_dcanegtopv{"cascadesetting_dcanegtopv", 0.2, "DCA Casc V0's neg to PV"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "minimum V0 DCA to PV"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 1.0, "cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "v0 mass window"};
+  Configurable<float> cascadesetting_v0radius{"cascadesetting_v0radius", 0.9, "v0 radius"};
+  Configurable<float> cascadesetting_rapidity{"cascadesetting_rapidity", 0.5, "rapidity"};
 
-	// PDG data base
-	Service<o2::framework::O2DatabasePDG> pdgDB;
+  // PDG data base
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
-	void init(InitContext const&)
-	{
-		// Axes
-		AxisSpec vertexZAxis = {100, -15., 15., "vrtx_{Z} [cm]"};
+  void init(InitContext const&)
+  {
+    // Axes
+    AxisSpec vertexZAxis = {100, -15., 15., "vrtx_{Z} [cm]"};
 
-		// Histograms
-		// Event selection
-		rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+    // Histograms
+    // Event selection
+    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
-		// Cut summary
-		rGeneral.add("selectionSummary", "selectionSummary", HistType::kTH1F, {{19, -0.5, 18.5}});
-		TString CutLabelSummary[19] = {"cutzvertex", "v0_dcav0dau", "v0_dcapostopv", "v0_dcanegtopv", "v0_cospa", "v0_radius", "v0_rapidity",
-																			"casc_cospa", "casc_v0cospa", "casc_dcacascdau", "casc_dcav0dau", "casc_dcabachtopv", "casc_dcapostopv", "casc_dcanegtopv", "casc_mindcav0topv", "casc_cascradius", "casc_v0masswindow", "casc_v0radius", "casc_rapidity"};
+    // Cut summary
+    rGeneral.add("selectionSummary", "selectionSummary", HistType::kTH1F, {{19, -0.5, 18.5}});
+    TString CutLabelSummary[19] = {"cutzvertex", "v0_dcav0dau", "v0_dcapostopv", "v0_dcanegtopv", "v0_cospa", "v0_radius", "v0_rapidity",
+                                   "casc_cospa", "casc_v0cospa", "casc_dcacascdau", "casc_dcav0dau", "casc_dcabachtopv", "casc_dcapostopv", "casc_dcanegtopv", "casc_mindcav0topv", "casc_cascradius", "casc_v0masswindow", "casc_v0radius", "casc_rapidity"};
     for (Int_t n = 1; n <= rGeneral.get<TH1>(HIST("selectionSummary"))->GetNbinsX(); n++) {
       rGeneral.get<TH1>(HIST("selectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n - 1]);
     }
@@ -100,52 +100,52 @@ struct pbpbStrangenessQC {
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(17, cascadesetting_v0masswindow);
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(18, cascadesetting_v0radius);
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(19, cascadesetting_rapidity);
-	}
+  }
 
-	// Event selection
-	Filter eventFilter = (sel8 && o2::aod::evsel::sel8 == true);
-	Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+  // Event selection
+  Filter eventFilter = (sel8 && o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
-	// Filters on V0s
-	Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
-												nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
-												aod::v0data::dcaV0daughters < v0setting_dcav0dau &&
-												aod::v0data::v0cosPA > v0setting_cospa);
+  // Filters on V0s
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
+                        aod::v0data::dcaV0daughters < v0setting_dcav0dau &&
+                        aod::v0data::v0cosPA > v0setting_cospa);
 
-	// Filters on Cascades
-	Filter preFilterCascades = (nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
-								aod::cascdata::dcaV0daughters < cascadesetting_dcav0dau &&
-								nabs(aod::cascdata::dcapostopv) > cascadesetting_dcapostopv &&
-								nabs(aod::cascdata::dcanegtopv) > cascadesetting_dcanegtopv &&
-								aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
+  // Filters on Cascades
+  Filter preFilterCascades = (nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
+                              aod::cascdata::dcaV0daughters < cascadesetting_dcav0dau &&
+                              nabs(aod::cascdata::dcapostopv) > cascadesetting_dcapostopv &&
+                              nabs(aod::cascdata::dcanegtopv) > cascadesetting_dcanegtopv &&
+                              aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
 
-	// Defining the type of the daughter tracks
-	using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+  // Defining the type of the daughter tracks
+  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 
-	void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-	                soa::Filtered<aod::CascDatas> const& Cascades,
-	                soa::Filtered<aod::V0Datas> const& V0s,
-	                aod::V0Datas const&, // it's needed to access the full table of V0s (not the filtered one) to make sure all the V0s related to cascades are present
-	                aod::V0sLinked const&,
-	                DaughterTracks const&)
-	{
-		// Fill the event counter
-		rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+                   soa::Filtered<aod::CascDatas> const& Cascades,
+                   soa::Filtered<aod::V0Datas> const& V0s,
+                   aod::V0Datas const&, // it's needed to access the full table of V0s (not the filtered one) to make sure all the V0s related to cascades are present
+                   aod::V0sLinked const&,
+                   DaughterTracks const&)
+  {
+    // Fill the event counter
+    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
-		// v0-s loop
-		for (const auto& v0 : V0s) {
-			// Decay radius check
-			if (v0.v0radius() < v0setting_radius) {
-				continue;
-			}
-			// Rapidity check
-			if (TMath::Abs(v0.yK0Short()) > v0setting_rapidity && 
-				  TMath::Abs(v0.yLambda()) > v0setting_rapidity) {
-				continue;
-			}
+    // v0-s loop
+    for (const auto& v0 : V0s) {
+      // Decay radius check
+      if (v0.v0radius() < v0setting_radius) {
+        continue;
+      }
+      // Rapidity check
+      if (TMath::Abs(v0.yK0Short()) > v0setting_rapidity &&
+          TMath::Abs(v0.yLambda()) > v0setting_rapidity) {
+        continue;
+      }
 
-			const auto& posDau = v0.posTrack_as<DaughterTracks>();
-			const auto& negDau = v0.negTrack_as<DaughterTracks>();
+      const auto& posDau = v0.posTrack_as<DaughterTracks>();
+      const auto& negDau = v0.negTrack_as<DaughterTracks>();
 
       int posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
@@ -157,59 +157,59 @@ struct pbpbStrangenessQC {
         }
       }
 
-			float decayLength = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(v0.px(), v0.py(), v0.pz());
-			float cTauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pdgDB->Mass(3122);
-			float cTauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pdgDB->Mass(310);
+      float decayLength = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(v0.px(), v0.py(), v0.pz());
+      float cTauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pdgDB->Mass(3122);
+      float cTauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pdgDB->Mass(310);
 
-			vZerosQC(v0.yK0Short(), v0.yLambda(),
-			 				v0.dcaV0daughters(), v0.dcav0topv(),
-			 				v0.dcapostopv(), v0.dcanegtopv(),
-			 				v0.v0radius(), v0.v0cosPA(),
-			 				posDau.tpcNSigmaPi(), posDau.tpcNSigmaPr(),
-			 				negDau.tpcNSigmaPi(), negDau.tpcNSigmaPr(),
-			 				decayLength, cTauLambda, cTauK0s,
-			 				posITSNhits, negITSNhits,
-			 				v0.pt(), v0.eta(),
-			 				v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(),
-			 				posDau.eta(), negDau.eta(),
-			 				posDau.phi(), negDau.phi());
-		}
+      vZerosQC(v0.yK0Short(), v0.yLambda(),
+               v0.dcaV0daughters(), v0.dcav0topv(),
+               v0.dcapostopv(), v0.dcanegtopv(),
+               v0.v0radius(), v0.v0cosPA(),
+               posDau.tpcNSigmaPi(), posDau.tpcNSigmaPr(),
+               negDau.tpcNSigmaPi(), negDau.tpcNSigmaPr(),
+               decayLength, cTauLambda, cTauK0s,
+               posITSNhits, negITSNhits,
+               v0.pt(), v0.eta(),
+               v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(),
+               posDau.eta(), negDau.eta(),
+               posDau.phi(), negDau.phi());
+    }
 
-		// cascades loop
-		for (const auto& casc : Cascades) {
-			const auto& v0index = casc.v0_as<aod::V0sLinked>();
-			if (!(v0index.has_v0Data()))
-				continue; // skip those cascades for which V0 doesn't exist
+    // cascades loop
+    for (const auto& casc : Cascades) {
+      const auto& v0index = casc.v0_as<aod::V0sLinked>();
+      if (!(v0index.has_v0Data()))
+        continue; // skip those cascades for which V0 doesn't exist
 
-			// Rapidity check
-			if (TMath::Abs(casc.yXi()) > cascadesetting_rapidity && 
-				  TMath::Abs(casc.yOmega()) > cascadesetting_rapidity) {
-				continue;
-			}
+      // Rapidity check
+      if (TMath::Abs(casc.yXi()) > cascadesetting_rapidity &&
+          TMath::Abs(casc.yOmega()) > cascadesetting_rapidity) {
+        continue;
+      }
 
-			float casc_v0cospa = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-			float casc_cospa = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-			float casc_mindcav0topv = casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ());
+      float casc_v0cospa = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float casc_cospa = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      float casc_mindcav0topv = casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ());
 
-			// Cut on dynamic columns
-			if (casc.v0radius() < cascadesetting_v0radius ||
-					casc.cascradius() < cascadesetting_cascradius ||
-					casc_v0cospa < cascadesetting_v0cospa ||
-					casc_cospa < cascadesetting_cospa ||
-					TMath::Abs(casc_mindcav0topv) < cascadesetting_mindcav0topv) {
-				continue;
-			}
+      // Cut on dynamic columns
+      if (casc.v0radius() < cascadesetting_v0radius ||
+          casc.cascradius() < cascadesetting_cascradius ||
+          casc_v0cospa < cascadesetting_v0cospa ||
+          casc_cospa < cascadesetting_cospa ||
+          TMath::Abs(casc_mindcav0topv) < cascadesetting_mindcav0topv) {
+        continue;
+      }
 
-			// Cut on v0 invariant mass 
-			if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
-				continue;
+      // Cut on v0 invariant mass
+      if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
+        continue;
 
-			const auto& v0Casc = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-			const auto& bachDau = casc.bachelor_as<DaughterTracks>();
-			const auto& posDau = v0Casc.posTrack_as<DaughterTracks>();
-			const auto& negDau = v0Casc.negTrack_as<DaughterTracks>();
+      const auto& v0Casc = v0index.v0Data(); // de-reference index to correct v0data in case it exists
+      const auto& bachDau = casc.bachelor_as<DaughterTracks>();
+      const auto& posDau = v0Casc.posTrack_as<DaughterTracks>();
+      const auto& negDau = v0Casc.negTrack_as<DaughterTracks>();
 
-			float cascDecayLength = std::sqrt(std::pow(casc.x() - collision.posX(), 2) + std::pow(casc.y() - collision.posY(), 2) + std::pow(casc.z() - collision.posZ(), 2));
+      float cascDecayLength = std::sqrt(std::pow(casc.x() - collision.posX(), 2) + std::pow(casc.y() - collision.posY(), 2) + std::pow(casc.z() - collision.posZ(), 2));
       float cascTotalMomentum = RecoDecay::sqrtSumOfSquares(casc.px(), casc.py(), casc.pz());
       float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * pdgDB->Mass(3312);
       float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * pdgDB->Mass(3334);
@@ -218,20 +218,20 @@ struct pbpbStrangenessQC {
       float v0DecayLength = std::sqrt(std::pow(casc.xlambda() - casc.x(), 2) + std::pow(casc.ylambda() - casc.y(), 2) + std::pow(casc.zlambda() - casc.z(), 2));
       float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * pdgDB->Mass(3122);
 
-			cascadesQC(casc.sign(), casc.yXi(), casc.yOmega(),
-								casc_cospa, casc_v0cospa,
-								casc.cascradius(), casc.v0radius(),
-								cascDecayLength, CtauXi, CtauOmega, CtauV0,
-								casc.dcaV0daughters(), casc.dcacascdaughters(), casc_mindcav0topv,
-								casc.dcabachtopv(), casc.dcapostopv(), casc.dcanegtopv(),
-								posDau.tpcNSigmaPi(), posDau.tpcNSigmaPr(),
-								negDau.tpcNSigmaPi(), negDau.tpcNSigmaPr(),
-								bachDau.tpcNSigmaPi(), bachDau.tpcNSigmaKa(),
-								casc.pt(), casc.eta(),
-								casc.mLambda(), casc.mOmega(), casc.mXi());
-		}
-	}
-	PROCESS_SWITCH(pbpbStrangenessQC, processData, "Process Run 3 data", true);
+      cascadesQC(casc.sign(), casc.yXi(), casc.yOmega(),
+                 casc_cospa, casc_v0cospa,
+                 casc.cascradius(), casc.v0radius(),
+                 cascDecayLength, CtauXi, CtauOmega, CtauV0,
+                 casc.dcaV0daughters(), casc.dcacascdaughters(), casc_mindcav0topv,
+                 casc.dcabachtopv(), casc.dcapostopv(), casc.dcanegtopv(),
+                 posDau.tpcNSigmaPi(), posDau.tpcNSigmaPr(),
+                 negDau.tpcNSigmaPi(), negDau.tpcNSigmaPr(),
+                 bachDau.tpcNSigmaPi(), bachDau.tpcNSigmaKa(),
+                 casc.pt(), casc.eta(),
+                 casc.mLambda(), casc.mOmega(), casc.mXi());
+    }
+  }
+  PROCESS_SWITCH(pbpbStrangenessQC, processData, "Process Run 3 data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -27,53 +27,53 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pbpbStrangenessQCPP {
-	// Histogram registries
-	HistogramRegistry rGeneral{"generalInfo", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-	HistogramRegistry rVzero{"vzero", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rCascade{"cascade", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rK0S{"k0S", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rLambda{"lambda", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rAntiLambda{"antiLambda", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rOmega{"omega", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rAntiOmega{"antiomega", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rXi{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-	HistogramRegistry rAntiXi{"antixi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // Histogram registries
+  HistogramRegistry rGeneral{"generalInfo", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+  HistogramRegistry rVzero{"vzero", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rCascade{"cascade", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rK0S{"k0S", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda{"lambda", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda{"antiLambda", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rOmega{"omega", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiOmega{"antiomega", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rXi{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiXi{"antixi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-	// Configurable parameters for V0 selection
-	Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
-	Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
-	Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
-	Configurable<float> v0setting_cospa{"v0setting_cospa", 0.97, "V0 CosPA"}; // should be double!
-	Configurable<float> v0setting_radius{"v0setting_radius", 1, "v0radius"};
-	Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
+  // Configurable parameters for V0 selection
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
+  Configurable<float> v0setting_cospa{"v0setting_cospa", 0.97, "V0 CosPA"}; // should be double!
+  Configurable<float> v0setting_radius{"v0setting_radius", 1, "v0radius"};
+  Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
-	// V0 PID configurables
+  // V0 PID configurables
   Configurable<float> NSigmaV0Pion{"NSigmaV0Pion", 6, "NSigmaV0Pion"};
   Configurable<float> NSigmaV0Proton{"NSigmaV0Proton", 6, "NSigmaV0Proton"};
 
-	// Configurable parameters for cascade selection
-	Configurable<float> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"}; // should be double!
-	Configurable<float> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.98, "Casc V0 CosPA"};               // should be double!
-	Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
-	Configurable<float> cascadesetting_dcav0dau{"cascadesetting_dcav0dau", 1.0, "DCA Cascade's V0 Daughters"}; 
-	Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "DCA bachelor to PV"};
-	Configurable<float> cascadesetting_dcapostopv{"cascadesetting_dcapostopv", 0.2, "DCA Casc. V0's pos to PV"};       
-	Configurable<float> cascadesetting_dcanegtopv{"cascadesetting_dcanegtopv", 0.2, "DCA Casc V0's neg to PV"}; 
-	Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "minimum V0 DCA to PV"};
-	Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 1.0, "cascradius"};
-	Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "v0 mass window"};
-	Configurable<float> cascadesetting_v0radius{"cascadesetting_v0radius", 0.9, "v0 radius"};              
-	Configurable<float> cascadesetting_rapidity{"cascadesetting_rapidity", 0.5, "rapidity"};
+  // Configurable parameters for cascade selection
+  Configurable<float> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"};        // should be double!
+  Configurable<float> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.98, "Casc V0 CosPA"}; // should be double!
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
+  Configurable<float> cascadesetting_dcav0dau{"cascadesetting_dcav0dau", 1.0, "DCA Cascade's V0 Daughters"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "DCA bachelor to PV"};
+  Configurable<float> cascadesetting_dcapostopv{"cascadesetting_dcapostopv", 0.2, "DCA Casc. V0's pos to PV"};
+  Configurable<float> cascadesetting_dcanegtopv{"cascadesetting_dcanegtopv", 0.2, "DCA Casc V0's neg to PV"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "minimum V0 DCA to PV"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 1.0, "cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "v0 mass window"};
+  Configurable<float> cascadesetting_v0radius{"cascadesetting_v0radius", 0.9, "v0 radius"};
+  Configurable<float> cascadesetting_rapidity{"cascadesetting_rapidity", 0.5, "rapidity"};
 
   // Cascade PID configurables
   Configurable<float> NSigmaCascPion{"NSigmaCascPion", 6, "NSigmaCascPion"};
   Configurable<float> NSigmaCascProton{"NSigmaCascProton", 6, "NSigmaCascProton"};
   Configurable<float> NSigmaCascKaon{"NSigmaCascKaon", 6, "NSigmaCascKaon"};
 
-	// General axes configurables
+  // General axes configurables
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
   ConfigurableAxis binCosPA{"binCosPA", {200, 0.8f, 1.0f}, ""};
@@ -119,12 +119,12 @@ struct pbpbStrangenessQCPP {
   ConfigurableAxis binInvMassXi{"binInvMassXi", {80, 1.28f, 1.36f}, ""};
   ConfigurableAxis binInvMassOmega{"binInvMassOmega", {80, 1.63f, 1.71f}, ""};
 
-	// PDG data base
-	Service<o2::framework::O2DatabasePDG> pdgDB;
+  // PDG data base
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
-	void init(InitContext const&)
-	{
-		// General axes
+  void init(InitContext const&)
+  {
+    // General axes
     const AxisSpec axisPt{binPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtsmall{binPtsmall, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisCosPA{binCosPA, "Cos(PA)"};
@@ -170,12 +170,12 @@ struct pbpbStrangenessQCPP {
     const AxisSpec axisInvMassXi{binInvMassXi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     const AxisSpec axisInvMassOmega{binInvMassOmega, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-		// Histograms
-		// Candidate counter
-		rGeneral.add("nCandidates", "nCandidates", {HistType::kTH1F, {{1, -0.5f, 1.5f}}});
+    // Histograms
+    // Candidate counter
+    rGeneral.add("nCandidates", "nCandidates", {HistType::kTH1F, {{1, -0.5f, 1.5f}}});
 
-		// V0 general histograms
-		rVzero.add("CosPA", "CosPA", kTH1F, {axisCosPA});
+    // V0 general histograms
+    rVzero.add("CosPA", "CosPA", kTH1F, {axisCosPA});
     rVzero.add("V0Radius", "V0Radius", kTH1D, {axisV0Radius});
     rVzero.add("DecayLength", "DecayLength", kTH1F, {axisV0DecayLength});
     rVzero.add("V0DCANegToPV", "V0DCANegToPV", kTH1F, {axisV0DCANegToPV});
@@ -241,7 +241,7 @@ struct pbpbStrangenessQCPP {
     rCascade.add("DcaPosToPV", "DcaPosToPV", {HistType::kTH2F, {axisV0DCAPosToPV, axisSign}});
     rCascade.add("DcaNegToPV", "DcaNegToPV", {HistType::kTH2F, {axisV0DCANegToPV, axisSign}});
     rCascade.add("InvMassLambdaDaughter", "InvMassLambdaDaughter", {HistType::kTH2F, {axisInvMassLambda, axisSign}});
-    //rCascade.add("V0CosPAToXi", "V0CosPAToXi", {HistType::kTH2F, {{100, 0.9f, 1.0f}, axisSign}});
+    // rCascade.add("V0CosPAToXi", "V0CosPAToXi", {HistType::kTH2F, {{100, 0.9f, 1.0f}, axisSign}});
 
     // Xi histograms
     rXi.add("InvMassXiMinus", "InvMassXiMinus", {HistType::kTH3F, {axisPt, axisInvMassXi, axisEta}});
@@ -257,10 +257,10 @@ struct pbpbStrangenessQCPP {
     // Anti-Omega histograms
     rAntiOmega.add("InvMassOmegaPlus", "InvMassOmegaPlus", {HistType::kTH3F, {axisPt, axisInvMassOmega, axisEta}});
 
-		// Cut summary
-		rGeneral.add("selectionSummary", "selectionSummary", HistType::kTH1F, {{18, -0.5, 17.5}});
-		TString CutLabelSummary[18] = {"v0_dcav0dau", "v0_dcapostopv", "v0_dcanegtopv", "v0_cospa", "v0_radius", "v0_rapidity",
-																			"casc_cospa", "casc_v0cospa", "casc_dcacascdau", "casc_dcav0dau", "casc_dcabachtopv", "casc_dcapostopv", "casc_dcanegtopv", "casc_mindcav0topv", "casc_cascradius", "casc_v0masswindow", "casc_v0radius", "casc_rapidity"};
+    // Cut summary
+    rGeneral.add("selectionSummary", "selectionSummary", HistType::kTH1F, {{18, -0.5, 17.5}});
+    TString CutLabelSummary[18] = {"v0_dcav0dau", "v0_dcapostopv", "v0_dcanegtopv", "v0_cospa", "v0_radius", "v0_rapidity",
+                                   "casc_cospa", "casc_v0cospa", "casc_dcacascdau", "casc_dcav0dau", "casc_dcabachtopv", "casc_dcapostopv", "casc_dcanegtopv", "casc_mindcav0topv", "casc_cascradius", "casc_v0masswindow", "casc_v0radius", "casc_rapidity"};
     for (Int_t n = 1; n <= rGeneral.get<TH1>(HIST("selectionSummary"))->GetNbinsX(); n++) {
       rGeneral.get<TH1>(HIST("selectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n - 1]);
     }
@@ -282,71 +282,70 @@ struct pbpbStrangenessQCPP {
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(16, cascadesetting_v0masswindow);
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(17, cascadesetting_v0radius);
     rGeneral.get<TH1>(HIST("selectionSummary"))->SetBinContent(18, cascadesetting_rapidity);
-	}
+  }
 
-	template <typename TV0>
-	void fillV0Histograms(TV0 const& v0)
-	{
+  template <typename TV0>
+  void fillV0Histograms(TV0 const& v0)
+  {
     rVzero.fill(HIST("CosPA"), v0.v0cosPA());
     rVzero.fill(HIST("V0Radius"), v0.v0radius());
     rVzero.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
     rVzero.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
     rVzero.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
     rVzero.fill(HIST("DecayLength"), v0.decayLength());
-	}
+  }
 
-	template <typename TCascade>
-	void fillCascadeHistograms(TCascade const& casc)
-	{
-		rCascade.fill(HIST("V0Radius"), casc.v0radius(), casc.sign());
-		rCascade.fill(HIST("CascCosPA"), casc.casccosPA(), casc.sign());
-		rCascade.fill(HIST("V0CosPA"), casc.v0cosPA(), casc.sign());
-		rCascade.fill(HIST("CascRadius"), casc.cascradius(), casc.sign());
-		rCascade.fill(HIST("CascDecayLength"), casc.decayLength(), casc.sign());
-		rCascade.fill(HIST("CascPt"), casc.pt(), casc.sign());
-		rCascade.fill(HIST("DcaV0Daughters"), casc.dcaV0daughters(), casc.sign());
-		rCascade.fill(HIST("DcaCascDaughters"), casc.dcacascdaughters(), casc.sign());
-		rCascade.fill(HIST("DcaV0ToPV"), casc.dcav0topv(), casc.sign());
-		rCascade.fill(HIST("DcaBachToPV"), casc.dcabachtopv(), casc.sign());
-		rCascade.fill(HIST("DcaPosToPV"), casc.dcapostopv(), casc.sign());
-		rCascade.fill(HIST("DcaNegToPV"), casc.dcanegtopv(), casc.sign());
-		rCascade.fill(HIST("InvMassLambdaDaughter"), casc.mLambda(), casc.sign());
-		rCascade.fill(HIST("V0Ctau"), casc.lifetimeV0(), casc.sign());
-	}
+  template <typename TCascade>
+  void fillCascadeHistograms(TCascade const& casc)
+  {
+    rCascade.fill(HIST("V0Radius"), casc.v0radius(), casc.sign());
+    rCascade.fill(HIST("CascCosPA"), casc.casccosPA(), casc.sign());
+    rCascade.fill(HIST("V0CosPA"), casc.v0cosPA(), casc.sign());
+    rCascade.fill(HIST("CascRadius"), casc.cascradius(), casc.sign());
+    rCascade.fill(HIST("CascDecayLength"), casc.decayLength(), casc.sign());
+    rCascade.fill(HIST("CascPt"), casc.pt(), casc.sign());
+    rCascade.fill(HIST("DcaV0Daughters"), casc.dcaV0daughters(), casc.sign());
+    rCascade.fill(HIST("DcaCascDaughters"), casc.dcacascdaughters(), casc.sign());
+    rCascade.fill(HIST("DcaV0ToPV"), casc.dcav0topv(), casc.sign());
+    rCascade.fill(HIST("DcaBachToPV"), casc.dcabachtopv(), casc.sign());
+    rCascade.fill(HIST("DcaPosToPV"), casc.dcapostopv(), casc.sign());
+    rCascade.fill(HIST("DcaNegToPV"), casc.dcanegtopv(), casc.sign());
+    rCascade.fill(HIST("InvMassLambdaDaughter"), casc.mLambda(), casc.sign());
+    rCascade.fill(HIST("V0Ctau"), casc.lifetimeV0(), casc.sign());
+  }
 
-	// Filters on V0s
-	Filter preFilterV0 = (nabs(aod::vZerosQC::dcapostopv) > v0setting_dcapostopv &&
-												nabs(aod::vZerosQC::dcanegtopv) > v0setting_dcanegtopv &&
-												aod::vZerosQC::dcaV0daughters < v0setting_dcav0dau &&
-												aod::vZerosQC::v0cosPA > v0setting_cospa &&
-												aod::vZerosQC::v0radius > v0setting_radius);
+  // Filters on V0s
+  Filter preFilterV0 = (nabs(aod::vZerosQC::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::vZerosQC::dcanegtopv) > v0setting_dcanegtopv &&
+                        aod::vZerosQC::dcaV0daughters < v0setting_dcav0dau &&
+                        aod::vZerosQC::v0cosPA > v0setting_cospa &&
+                        aod::vZerosQC::v0radius > v0setting_radius);
 
-	// Filters on Cascades
-	Filter preFilterCascades = (nabs(aod::cascadesQC::dcabachtopv) > cascadesetting_dcabachtopv &&
-								aod::cascadesQC::dcaV0daughters < cascadesetting_dcav0dau &&
-								nabs(aod::cascadesQC::dcapostopv) > cascadesetting_dcapostopv &&
-								nabs(aod::cascadesQC::dcanegtopv) > cascadesetting_dcanegtopv &&
-								aod::cascadesQC::dcacascdaughters < cascadesetting_dcacascdau &&
-								aod::cascadesQC::dcaV0daughters < cascadesetting_dcav0dau &&
-								aod::cascadesQC::v0radius > cascadesetting_v0radius &&
-								aod::cascadesQC::cascradius > cascadesetting_cascradius &&
-								nabs(aod::cascadesQC::dcav0topv) > cascadesetting_mindcav0topv &&
-								aod::cascadesQC::v0cosPA > cascadesetting_v0cospa &&
-								aod::cascadesQC::casccosPA > cascadesetting_cospa);
+  // Filters on Cascades
+  Filter preFilterCascades = (nabs(aod::cascadesQC::dcabachtopv) > cascadesetting_dcabachtopv &&
+                              aod::cascadesQC::dcaV0daughters < cascadesetting_dcav0dau &&
+                              nabs(aod::cascadesQC::dcapostopv) > cascadesetting_dcapostopv &&
+                              nabs(aod::cascadesQC::dcanegtopv) > cascadesetting_dcanegtopv &&
+                              aod::cascadesQC::dcacascdaughters < cascadesetting_dcacascdau &&
+                              aod::cascadesQC::dcaV0daughters < cascadesetting_dcav0dau &&
+                              aod::cascadesQC::v0radius > cascadesetting_v0radius &&
+                              aod::cascadesQC::cascradius > cascadesetting_cascradius &&
+                              nabs(aod::cascadesQC::dcav0topv) > cascadesetting_mindcav0topv &&
+                              aod::cascadesQC::v0cosPA > cascadesetting_v0cospa &&
+                              aod::cascadesQC::casccosPA > cascadesetting_cospa);
 
-	void processV0(soa::Filtered<aod::VZerosQC> const& v0s)
-	{
-		for (const auto& v0 : v0s) {
-			// Fill the candidate counter
-			rGeneral.fill(HIST("nCandidates"), 0);
+  void processV0(soa::Filtered<aod::VZerosQC> const& v0s)
+  {
+    for (const auto& v0 : v0s) {
+      // Fill the candidate counter
+      rGeneral.fill(HIST("nCandidates"), 0);
 
       // K0Short
       if (TMath::Abs(v0.yK0Short()) < v0setting_rapidity &&
           v0.lifetimeK0s() < lifetimecut->get("lifetimecutK0S") &&
-          TMath::Abs(v0.posNSigmaV0Pion()) < NSigmaV0Pion && TMath::Abs(v0.negNSigmaV0Pion()) < NSigmaV0Pion) 
-      {
-      	fillV0Histograms(v0);
-      	rK0S.fill(HIST("DecayLengthK0s"), v0.decayLength());
+          TMath::Abs(v0.posNSigmaV0Pion()) < NSigmaV0Pion && TMath::Abs(v0.negNSigmaV0Pion()) < NSigmaV0Pion) {
+        fillV0Histograms(v0);
+        rK0S.fill(HIST("DecayLengthK0s"), v0.decayLength());
         rK0S.fill(HIST("CtauK0s"), v0.lifetimeK0s());
         rK0S.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short(), v0.eta());
         rK0S.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mK0Short());
@@ -361,20 +360,19 @@ struct pbpbStrangenessQCPP {
       // Lambda
       if (TMath::Abs(v0.yLambda()) < v0setting_rapidity &&
           v0.lifetimeLambda() < lifetimecut->get("lifetimecutLambda") &&
-          TMath::Abs(v0.posNSigmaV0Proton()) < NSigmaV0Proton && TMath::Abs(v0.negNSigmaV0Pion()) < NSigmaV0Pion) 
-      {
-      	fillV0Histograms(v0);
+          TMath::Abs(v0.posNSigmaV0Proton()) < NSigmaV0Proton && TMath::Abs(v0.negNSigmaV0Pion()) < NSigmaV0Pion) {
+        fillV0Histograms(v0);
         rLambda.fill(HIST("DecayLengthLambda"), v0.decayLength());
         rLambda.fill(HIST("CtauLambda"), v0.lifetimeLambda());
         rLambda.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta());
         rLambda.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mLambda());
         rLambda.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv());
-	      rLambda.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
-	      rLambda.fill(HIST("InvMassLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mLambda());
-	      rLambda.fill(HIST("InvMassLambda_EtaDaughters"), v0.poseta(), v0.negeta(), v0.mLambda());
-	      rLambda.fill(HIST("InvMassLambda_PhiDaughters"), v0.posphi(), v0.negphi(), v0.mLambda());
-	      rLambda.fill(HIST("InvMassLambda_Ctau"), v0.lifetimeLambda(), v0.mLambda());
-	      rLambda.fill(HIST("InvMassLambda_ITSMapDaughters"), v0.posITSNhits(), v0.negITSNhits(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_Radius"), v0.v0radius(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_PtRadius"), v0.pt(), v0.v0radius(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_EtaDaughters"), v0.poseta(), v0.negeta(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_PhiDaughters"), v0.posphi(), v0.negphi(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_Ctau"), v0.lifetimeLambda(), v0.mLambda());
+        rLambda.fill(HIST("InvMassLambda_ITSMapDaughters"), v0.posITSNhits(), v0.negITSNhits(), v0.mLambda());
         if (v0.v0cosPA() > 0.999 && v0.dcaV0daughters() < 1 && TMath::Abs(v0.mK0Short() - pdgDB->Mass(310)) > 0.012 && TMath::Abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > 0.08 && TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) < 0.002) {
           rLambda.fill(HIST("ResponsePionFromLambda"), v0.pt(), v0.negNSigmaV0Pion());
           rLambda.fill(HIST("ResponseProtonFromLambda"), v0.pt(), v0.posNSigmaV0Proton());
@@ -384,9 +382,8 @@ struct pbpbStrangenessQCPP {
       // AntiLambda
       if (TMath::Abs(v0.yLambda()) < v0setting_rapidity &&
           v0.lifetimeLambda() < lifetimecut->get("lifetimecutLambda") &&
-          TMath::Abs(v0.posNSigmaV0Pion()) < NSigmaV0Pion && TMath::Abs(v0.negNSigmaV0Proton()) < NSigmaV0Proton) 
-      {
-      	fillV0Histograms(v0);
+          TMath::Abs(v0.posNSigmaV0Pion()) < NSigmaV0Pion && TMath::Abs(v0.negNSigmaV0Proton()) < NSigmaV0Proton) {
+        fillV0Histograms(v0);
         rAntiLambda.fill(HIST("DecayLengthAntiLambda"), v0.decayLength());
         rAntiLambda.fill(HIST("CtauAntiLambda"), v0.lifetimeLambda());
         rAntiLambda.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda(), v0.eta());
@@ -399,58 +396,58 @@ struct pbpbStrangenessQCPP {
         rAntiLambda.fill(HIST("InvMassAntiLambda_Ctau"), v0.lifetimeLambda(), v0.mAntiLambda());
         rAntiLambda.fill(HIST("InvMassAntiLambda_ITSMapDaughters"), v0.posITSNhits(), v0.negITSNhits(), v0.mAntiLambda());
       }
-		}
-	}
-	PROCESS_SWITCH(pbpbStrangenessQCPP, processV0, "Process V0 candidates", true);
+    }
+  }
+  PROCESS_SWITCH(pbpbStrangenessQCPP, processV0, "Process V0 candidates", true);
 
-	void processCascade(soa::Filtered<aod::CascadesQC> const& cascades)
-	{
-		for (const auto& casc : cascades) {
-			// Fill the candidate counter
-			rGeneral.fill(HIST("nCandidates"), 1);
+  void processCascade(soa::Filtered<aod::CascadesQC> const& cascades)
+  {
+    for (const auto& casc : cascades) {
+      // Fill the candidate counter
+      rGeneral.fill(HIST("nCandidates"), 1);
 
       if (casc.sign() < 0) {
-      	// Check lambda daughters` PID
-      	if(TMath::Abs(casc.posNSigmaV0Proton()) < NSigmaCascProton && TMath::Abs(casc.negNSigmaV0Pion()) < NSigmaCascPion) {
-      		// Xi
-      		if (TMath::Abs(casc.yXi()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Pion()) < NSigmaCascPion) {
-      			fillCascadeHistograms(casc);
+        // Check lambda daughters` PID
+        if (TMath::Abs(casc.posNSigmaV0Proton()) < NSigmaCascProton && TMath::Abs(casc.negNSigmaV0Pion()) < NSigmaCascPion) {
+          // Xi
+          if (TMath::Abs(casc.yXi()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Pion()) < NSigmaCascPion) {
+            fillCascadeHistograms(casc);
             rXi.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta());
             rXi.fill(HIST("InvMassXiMinus_Radius"), casc.cascradius(), casc.mXi());
-			      rCascade.fill(HIST("CascyXi"), casc.yXi(), casc.sign());
-			      rCascade.fill(HIST("CascCtauXi"), casc.lifetimeXi(), casc.sign());
-      		}
-      		// Omega
-          if (TMath::Abs(casc.yOmega()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Kaon()) < NSigmaCascKaon) {
-          	fillCascadeHistograms(casc);
-            rOmega.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta());
-			      rCascade.fill(HIST("CascCtauOmega"), casc.lifetimeOmega(), casc.sign());
-			      rCascade.fill(HIST("CascyOmega"), casc.yOmega(), casc.sign());
+            rCascade.fill(HIST("CascyXi"), casc.yXi(), casc.sign());
+            rCascade.fill(HIST("CascCtauXi"), casc.lifetimeXi(), casc.sign());
           }
-      	}
+          // Omega
+          if (TMath::Abs(casc.yOmega()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Kaon()) < NSigmaCascKaon) {
+            fillCascadeHistograms(casc);
+            rOmega.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta());
+            rCascade.fill(HIST("CascCtauOmega"), casc.lifetimeOmega(), casc.sign());
+            rCascade.fill(HIST("CascyOmega"), casc.yOmega(), casc.sign());
+          }
+        }
       } else {
-      	// Check anti-lambda daughters` PID
-        if (TMath::Abs(casc.posNSigmaV0Pion()) < NSigmaCascPion && TMath::Abs(casc.negNSigmaV0Proton()) < NSigmaCascProton) {      	
-        	// Anti-Xi
+        // Check anti-lambda daughters` PID
+        if (TMath::Abs(casc.posNSigmaV0Pion()) < NSigmaCascPion && TMath::Abs(casc.negNSigmaV0Proton()) < NSigmaCascProton) {
+          // Anti-Xi
           if (TMath::Abs(casc.yXi()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Pion()) < NSigmaCascPion) {
-          	fillCascadeHistograms(casc);
+            fillCascadeHistograms(casc);
             rAntiXi.fill(HIST("InvMassXiPlus"), casc.pt(), casc.mXi(), casc.eta());
             rAntiXi.fill(HIST("InvMassXiPlus_Radius"), casc.cascradius(), casc.mXi());
-			      rCascade.fill(HIST("CascyXi"), casc.yXi(), casc.sign());
-			      rCascade.fill(HIST("CascCtauXi"), casc.lifetimeXi(), casc.sign());
+            rCascade.fill(HIST("CascyXi"), casc.yXi(), casc.sign());
+            rCascade.fill(HIST("CascCtauXi"), casc.lifetimeXi(), casc.sign());
           }
           // Anti-Omega
           if (TMath::Abs(casc.yOmega()) < cascadesetting_rapidity && TMath::Abs(casc.bachNSigmaV0Kaon()) < NSigmaCascKaon) {
-          	fillCascadeHistograms(casc);
+            fillCascadeHistograms(casc);
             rAntiOmega.fill(HIST("InvMassOmegaPlus"), casc.pt(), casc.mOmega(), casc.eta());
-			      rCascade.fill(HIST("CascCtauOmega"), casc.lifetimeOmega(), casc.sign());
-			      rCascade.fill(HIST("CascyOmega"), casc.yOmega(), casc.sign());
+            rCascade.fill(HIST("CascCtauOmega"), casc.lifetimeOmega(), casc.sign());
+            rCascade.fill(HIST("CascyOmega"), casc.yOmega(), casc.sign());
           }
         }
       }
-		}
-	}
-	PROCESS_SWITCH(pbpbStrangenessQCPP, processCascade, "Process cascade candidates", true);
+    }
+  }
+  PROCESS_SWITCH(pbpbStrangenessQCPP, processCascade, "Process cascade candidates", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
