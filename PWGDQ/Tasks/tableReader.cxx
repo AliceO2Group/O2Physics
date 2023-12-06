@@ -1037,9 +1037,9 @@ struct AnalysisSameEventPairing {
                         -999., -999., -999., -999.,
                         -999., -999., -999., -999.,
                         -999., -999., -999., -999.,
-                        t1.isAmbiguous(), t2.isAmbiguous(), 
-			VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], 
-			VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+                        t1.isAmbiguous(), t2.isAmbiguous(),
+                        VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
+                        VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
         }
       }
 

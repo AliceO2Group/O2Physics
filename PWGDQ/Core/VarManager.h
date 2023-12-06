@@ -811,23 +811,23 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack propmuon;
-  if (static_cast<int>(muon.trackType()) > 2){
-    o2::mch::TrackExtrap::setField();
-    o2::dataformats::GlobalFwdTrack track(fwdtrack);
-    auto mchTrack = mMatching.FwdtoMCH(track);
-    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-    auto proptrack = mMatching.MCHtoFwd(mchTrack);
-    propmuon = proptrack;
+    if (static_cast<int>(muon.trackType()) > 2) {
+      o2::mch::TrackExtrap::setField();
+      o2::dataformats::GlobalFwdTrack track(fwdtrack);
+      auto mchTrack = mMatching.FwdtoMCH(track);
+      o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+      auto proptrack = mMatching.MCHtoFwd(mchTrack);
+      propmuon = proptrack;
 
-  }else if (static_cast<int>(muon.trackType()) < 2){
-	  double centerMFT[3] = {0, 0, -61.4};
-	  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-          auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
-	  auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
-          auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-          fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
-	  propmuon = fwdtrack;
-  }
+    } else if (static_cast<int>(muon.trackType()) < 2) {
+      double centerMFT[3] = {0, 0, -61.4};
+      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+      auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
+      auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+      propmuon = fwdtrack;
+    }
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
