@@ -250,9 +250,12 @@ struct HfCandidateSelectorXicToPKPi {
         }
         continue;
       }
-      SETBIT(statusXicToPKPi, aod::SelectionStep::RecoTopol);
+      if(topolXicToPKPi){
+          SETBIT(statusXicToPKPi, aod::SelectionStep::RecoTopol);
+      }
+      if(topolXicToPiKP){
       SETBIT(statusXicToPiKP, aod::SelectionStep::RecoTopol);
-
+      }
 
       auto pidXicToPKPi = -1;
       auto pidXicToPiKP = -1;
@@ -296,44 +299,46 @@ struct HfCandidateSelectorXicToPKPi {
         }
         continue;
       }
-      if ((pidXicToPKPi == -1 || pidXicToPKPi == 1) && topolXicToPKPi) {
-        statusXicToPKPi = 1; // identified as Xic->pKpi
+
+      if ((pidXicToPKPi == -1 || pidXicToPKPi == 1) && topolXicToPKPi){
+          SETBIT(statusXicToPKPi, aod::SelectionStep::RecoPID); 
       }
       if ((pidXicToPiKP == -1 || pidXicToPiKP == 1) && topolXicToPiKP) {
-        statusXicToPiKP = 1; // identified as Xic->piKp
-      }
-      SETBIT(statusXicToPKPi, aod::SelectionStep::RecoPID); 
       SETBIT(statusXicToPiKP, aod::SelectionStep::RecoPID); 
+      }
 
       if (applyMl) {
         // ML selections
         bool isSelectedMlXicToPKPi = false;
         bool isSelectedMlXicToPiKP = false;
 
-        if(statusXicToPKPi > 0) {
+        if(topolXicToPKPi && pidXicToPKPi) {
         std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
         isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
         }
-        if (statusXicToPiKP > 0) {
+        if (topolXicToPiKP && pidXicToPiKP) {
         std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
         isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
         }
 
-        if (!isSelectedMlXicToPKPi) {
-            statusXicToPKPi = 0;
-        }
-        if(!isSelectedMlXicToPiKP)  {
-            statusXicToPiKP = 0;
-        }
-          hfMlXicToPKPiCandidate(outputMlXicToPKPi,outputMlXicToPiKP);
+        hfMlXicToPKPiCandidate(outputMlXicToPKPi,outputMlXicToPiKP);
 
+        if(!isSelectedMlXicToPKPi && !isSelectedMlXicToPiKP){
+            hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
+            continue;
+        }
+
+        if(isSelectedMlXicToPKPi){
         SETBIT(statusXicToPKPi, aod::SelectionStep::RecoMl); 
+        }
+        if(isSelectedMlXicToPiKP){
         SETBIT(statusXicToPKPi, aod::SelectionStep::RecoMl); 
       }
+   }
 
       hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
-     }
    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
