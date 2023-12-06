@@ -872,20 +872,20 @@ struct femtoUniverseProducerTask {
     // fill the tables
     fillCollisionsAndTracksAndV0AndPhi<false>(col, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processFullData,"Provide experimental data", false);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processFullData, "Provide experimental data", false);
 
   void
     processTrackV0(aod::FemtoFullCollision const& col,
-                    aod::BCsWithTimestamps const&,
-                    soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                    o2::aod::V0Datas const& fullV0s)
+                   aod::BCsWithTimestamps const&,
+                   soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                   o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0AndPhi<false>(col, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0,"Provide experimental data for track v0", true);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0, "Provide experimental data for track v0", true);
 
   void
     processFullMC(aod::FemtoFullCollisionMC const& col,
