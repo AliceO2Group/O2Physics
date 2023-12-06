@@ -11,7 +11,7 @@
 
 /// \file HfMlResponseXicToPKPi.h
 /// \brief Class to compute the ML response for Xic+ → p K- π+ (based on task for  D± → π± K∓ π±) analysis selections
-/// \author Cristina Terrevoli 
+/// \author Cristina Terrevoli
 
 #ifndef PWGHF_CORE_HFMLRESPONSEXICTOPKPI_H_
 #define PWGHF_CORE_HFMLRESPONSEXICTOPKPI_H_
@@ -25,8 +25,8 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XIC(FEATURE)                                          \
-  {                                                                      \
+#define FILL_MAP_XIC(FEATURE)                                         \
+  {                                                                   \
 #FEATURE, static_cast < uint8_t>(InputFeaturesXicToPKPi::FEATURE) \
   }
 
@@ -34,18 +34,18 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_XIC_FULL(OBJECT, FEATURE, GETTER)     \
+#define CHECK_AND_FILL_VEC_XIC_FULL(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesXicToPKPi::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());                   \
-    break;                                                         \
+    inputFeatures.emplace_back(OBJECT.GETTER());                \
+    break;                                                      \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_XIC_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_XIC(GETTER)                          \
+#define CHECK_AND_FILL_VEC_XIC(GETTER)                         \
   case static_cast<uint8_t>(InputFeaturesXicToPKPi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());               \
-    break;                                                        \
+    inputFeatures.emplace_back(candidate.GETTER());            \
+    break;                                                     \
   }
 
 namespace o2::analysis
@@ -61,18 +61,18 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
-  tpcNSigmaP0,//0
-  tpcNSigmaKa0,//0
-  tpcNSigmaPi0,//0
-  tpcNSigmaP1,//1
-  tpcNSigmaKa1,//1
-  tpcNSigmaPi1,//1
-  tpcNSigmaP2,//2
-  tpcNSigmaKa2,//2
-  tpcNSigmaPi2,//2
-  tofNSigmaP0,//
-  tofNSigmaKa0,//
-  tofNSigmaPi0,//
+  tpcNSigmaP0,  // 0
+  tpcNSigmaKa0, // 0
+  tpcNSigmaPi0, // 0
+  tpcNSigmaP1,  // 1
+  tpcNSigmaKa1, // 1
+  tpcNSigmaPi1, // 1
+  tpcNSigmaP2,  // 2
+  tpcNSigmaKa2, // 2
+  tpcNSigmaPi2, // 2
+  tofNSigmaP0,  //
+  tofNSigmaKa0, //
+  tofNSigmaPi0, //
   tofNSigmaP1,
   tofNSigmaKa1,
   tofNSigmaPi1,
