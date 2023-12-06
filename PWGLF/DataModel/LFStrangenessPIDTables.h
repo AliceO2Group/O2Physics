@@ -22,21 +22,33 @@
 
 namespace o2::aod
 {
-namespace v0data
+namespace dautrack
 {
 // ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float); //! positive track signal
-DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float); //! negative track signal
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float); //! track signal
 
-DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float); //! positive track Nsigma proton
-DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float); //! positive track Nsigma pion
-DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float); //! negative track Nsigma proton
-DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float); //! negative track Nsigma pion
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma proton
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma proton
+DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
+} // namespace dautrack
 
+DECLARE_SOA_TABLE(DauTrackTPCPIDs, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)
+                  dautrack::TPCSignal, dautrack::TPCNSigmaEl,
+                  dautrack::TPCNSigmaPi, dautrack::TPCNSigmaKa,
+                  dautrack::TPCNSigmaPr, dautrack::TPCNSigmaHe);
+
+namespace v0data
+{
 // ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length
+DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float); //! positive track signal
+DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float); //! negative track signal
+DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float); //! positive track event time
+DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float); //! negative track event time
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation
@@ -55,41 +67,31 @@ DECLARE_SOA_COLUMN(PosNSigmaK0Pi, posNSigmaK0Pi, float); //! positive track NSig
 DECLARE_SOA_COLUMN(NegNSigmaK0Pi, negNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
 } // namespace v0data
 
-DECLARE_SOA_TABLE(V0TPC, "AOD", "V0TPC", // raw information table (for debug, etc)
-                  v0data::PosTPCSignal, v0data::NegTPCSignal);
-DECLARE_SOA_TABLE(V0TPCPID, "AOD", "V0TPCPID", // raw information table (for debug, etc)
-                  v0data::PosTPCNSigmaPr, v0data::PosTPCNSigmaPi,
-                  v0data::NegTPCNSigmaPr, v0data::NegTPCNSigmaPi);
-
-DECLARE_SOA_TABLE(V0TOF, "AOD", "V0TOF", // raw information table (for debug, etc)
+DECLARE_SOA_TABLE(V0TOFs, "AOD", "V0TOF", // raw information table (for debug, etc)
                   v0data::PosTOFLength, v0data::NegTOFLength,
+                  v0data::PosTOFSignal, v0data::NegTOFSignal,
+                  v0data::PosTOFEventTime, v0data::NegTOFEventTime,
                   v0data::PosTOFDeltaTLaPi, v0data::PosTOFDeltaTLaPr,
                   v0data::NegTOFDeltaTLaPi, v0data::NegTOFDeltaTLaPr,
                   v0data::PosTOFDeltaTK0Pi, v0data::NegTOFDeltaTK0Pi);
-DECLARE_SOA_TABLE(V0TOFPID, "AOD", "V0TOFPID", // nsigma table (for analysis)
+DECLARE_SOA_TABLE(V0TOFPIDs, "AOD", "V0TOFPID", // nsigma table (for analysis)
                   v0data::PosNSigmaLaPi, v0data::PosNSigmaLaPr,
                   v0data::NegNSigmaLaPi, v0data::NegNSigmaLaPr,
                   v0data::PosNSigmaK0Pi, v0data::NegNSigmaK0Pi);
 
 namespace cascdata
 {
-// ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float);   //! positive track signal
-DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float);   //! negative track signal
-DECLARE_SOA_COLUMN(BachTPCSignal, bachTPCSignal, float); //! negative track signal
-
-DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);   //! positive track Nsigma proton
-DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);   //! positive track Nsigma pion
-DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);   //! negative track Nsigma proton
-DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);   //! negative track Nsigma pion
-DECLARE_SOA_COLUMN(BachTPCNSigmaKa, bachTPCNSigmaKa, float); //! negative track Nsigma proton
-DECLARE_SOA_COLUMN(BachTPCNSigmaPi, bachTPCNSigmaPi, float); //! negative track Nsigma pion
-
 // ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);   //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);   //! negative track length
 DECLARE_SOA_COLUMN(BachTOFLength, bachTOFLength, float); //! bachelor track length
+DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);   //! positive track signal
+DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);   //! negative track signal
+DECLARE_SOA_COLUMN(BachTOFSignal, bachTOFSignal, float); //! bachelor track signal
+DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
+DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
+DECLARE_SOA_COLUMN(BachTOFEventTime, bachTOFEventTime, float); //! bachelor track event time
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTXiPi, posTOFDeltaTXiPi, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
@@ -116,22 +118,17 @@ DECLARE_SOA_COLUMN(NegNSigmaOmPr, negNSigmaOmPr, float);         //! negative tr
 DECLARE_SOA_COLUMN(BachNSigmaOmKa, bachNSigmaOmKa, float);       //! bachelor track NSigma from kaon <- omega expectation
 } // namespace cascdata
 
-DECLARE_SOA_TABLE(CascTPC, "AOD", "CASCTPC", // raw information table (for debug, etc)
-                  cascdata::PosTPCSignal, cascdata::NegTPCSignal, cascdata::BachTPCSignal);
-DECLARE_SOA_TABLE(CascTPCPID, "AOD", "CASCTPCPID", // raw information table (for debug, etc)
-                  cascdata::PosTPCNSigmaPr, cascdata::PosTPCNSigmaPi,
-                  cascdata::NegTPCNSigmaPr, cascdata::NegTPCNSigmaPi,
-                  cascdata::BachTPCNSigmaKa, cascdata::BachTPCNSigmaPi);
-
-DECLARE_SOA_TABLE(CascTOF, "AOD", "CascTOF", // raw information table (for debug, etc)
+DECLARE_SOA_TABLE(CascTOFs, "AOD", "CascTOF", // raw information table (for debug, etc)
                   cascdata::PosTOFLength, cascdata::NegTOFLength, cascdata::BachTOFLength,
+                  cascdata::PosTOFSignal, cascdata::NegTOFSignal, cascdata::BachTOFSignal,
+                  cascdata::PosTOFEventTime, cascdata::NegTOFEventTime, cascdata::BachTOFEventTime,
                   cascdata::PosTOFDeltaTXiPi, cascdata::PosTOFDeltaTXiPr,
                   cascdata::NegTOFDeltaTXiPi, cascdata::NegTOFDeltaTXiPr,
                   cascdata::BachTOFDeltaTXiPi,
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
                   cascdata::BachTOFDeltaTOmPi);
-DECLARE_SOA_TABLE(CascTOFPID, "AOD", "CASCTOFPID", // nsigma table (for analysis)
+DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // nsigma table (for analysis)
                   cascdata::PosNSigmaXiPi, cascdata::PosNSigmaXiPr,
                   cascdata::NegNSigmaXiPi, cascdata::NegNSigmaXiPr,
                   cascdata::BachNSigmaXiPi,

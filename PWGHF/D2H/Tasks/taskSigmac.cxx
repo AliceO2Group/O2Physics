@@ -15,6 +15,7 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -454,7 +455,7 @@ struct HfTaskSigmac {
          OR
          consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
       */
-      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassSigmaC0)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassSigmaC0)) > yCandMax) {
         continue;
       }
 
@@ -473,7 +474,7 @@ struct HfTaskSigmac {
       double phiGenLc(-1.), phiGenSoftPi(-1.);
       int origin = -1;
       int8_t channel = -1;
-      if (std::abs(arrayDaughtersIds[0]) == pdg::Code::kLambdaCPlus) {
+      if (std::abs(arrayDaughtersIds[0]) == o2::constants::physics::Pdg::kLambdaCPlus) {
         /// daughter 0 is the Λc+, daughter 1 the soft π
         auto daugLc = mcParticlesLc.rawIteratorAt(arrayDaughtersIds[0]);
         auto daugSoftPi = mcParticles.rawIteratorAt(arrayDaughtersIds[1]);
@@ -571,12 +572,12 @@ struct HfTaskSigmac {
       /// Reconstructed Σc0 signal
       if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi && (chargeSc == 0)) {
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaC0, true);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaC0, true);
         auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
@@ -722,12 +723,12 @@ struct HfTaskSigmac {
       } else if (std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi && (std::abs(chargeSc) == 2)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
-        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), pdg::Code::kSigmaCPlusPlus, true);
+        auto indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCPlusPlus, true);
         auto particleSc = mcParticles.rawIteratorAt(indexMcScRec);
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.prong0_as<aod::TracksWMc>(), candidateLc.prong1_as<aod::TracksWMc>(), candidateLc.prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();

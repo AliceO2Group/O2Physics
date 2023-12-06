@@ -21,6 +21,7 @@
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -375,12 +376,13 @@ struct HfFilter { // Main struct for HF triggers
           getPxPyPz(trackParNeg, pVecNeg);
         }
 
-        bool isCharmTagged{true}, isBeautyTagged{true};
+        bool isSignalTagged{true}, isCharmTagged{true}, isBeautyTagged{true};
 
         // apply ML models
         int tagBDT = 0;
         float scoresToFill[3] = {-1., -1., -1.};
         if (applyML && onnxFiles[kD0] != "") {
+          isSignalTagged = false;
           isCharmTagged = false;
           isBeautyTagged = false;
 
@@ -410,11 +412,12 @@ struct HfFilter { // Main struct for HF triggers
             hBDTScoreNonPrompt[kD0]->Fill(scoresToFill[2]);
           }
 
+          isSignalTagged = TESTBIT(tagBDT, RecoDecay::OriginType::None);
           isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
           isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
         }
 
-        if (!isCharmTagged && !isBeautyTagged) {
+        if (!isSignalTagged) {
           continue;
         }
 
@@ -422,7 +425,7 @@ struct HfFilter { // Main struct for HF triggers
         auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
         if (applyOptimisation) {
-          optimisationTreeCharm(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2]);
+          optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2]);
         }
 
         auto selD0 = helper.isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong, preselD0, activateQA, hMassVsPtC[kD0]);
@@ -468,7 +471,7 @@ struct HfFilter { // Main struct for HF triggers
                 keepEvent[kBeauty3P] = true;
                 // fill optimisation tree for D0
                 if (applyOptimisation) {
-                  optimisationTreeBeauty(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], dcaThird[0]);
+                  optimisationTreeBeauty(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], dcaThird[0]);
                 }
                 if (activateQA) {
                   hMassVsPtB[kBplus]->Fill(ptCand, massCand);
@@ -529,7 +532,7 @@ struct HfFilter { // Main struct for HF triggers
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
-                optimisationTreeFemto(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
               }
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto2P] = true;
@@ -545,7 +548,7 @@ struct HfFilter { // Main struct for HF triggers
         // 2-prong with Gamma (conversion photon)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
         for (const auto& v0 : v0sThisCollision) {
-          if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+          if (!keepEvent[kV0Charm2P] && (isSignalTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
@@ -693,6 +696,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
+        std::array<int8_t, kNCharmParticles - 1> isSignalTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
@@ -702,6 +706,7 @@ struct HfFilter { // Main struct for HF triggers
         } // initialize BDT scores array outside ML loop
         // apply ML models
         if (applyML) {
+          isSignalTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
 
@@ -730,6 +735,7 @@ struct HfFilter { // Main struct for HF triggers
               LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
             }
 
+            isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
 
@@ -741,7 +747,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
-        if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0) && !std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+        if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
         }
 
@@ -757,25 +763,25 @@ struct HfFilter { // Main struct for HF triggers
         if (is3Prong[0]) {
           is3ProngInMass[0] = helper.isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, activateQA, hMassVsPtC[kDplus]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kDPlus, pt3Prong, scoresToFill[0][0], scoresToFill[0][1], scoresToFill[0][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kDPlus, pt3Prong, scoresToFill[0][0], scoresToFill[0][1], scoresToFill[0][2]);
           }
         }
         if (is3Prong[1]) {
           is3ProngInMass[1] = helper.isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1], activateQA, hMassVsPtC[kDs]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kDS, pt3Prong, scoresToFill[1][0], scoresToFill[1][1], scoresToFill[1][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kDS, pt3Prong, scoresToFill[1][0], scoresToFill[1][1], scoresToFill[1][2]);
           }
         }
         if (is3Prong[2]) {
           is3ProngInMass[2] = helper.isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[2], activateQA, hMassVsPtC[kLc]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kLambdaCPlus, pt3Prong, scoresToFill[2][0], scoresToFill[2][1], scoresToFill[2][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kLambdaCPlus, pt3Prong, scoresToFill[2][0], scoresToFill[2][1], scoresToFill[2][2]);
           }
         }
         if (is3Prong[3]) {
           is3ProngInMass[3] = helper.isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[3], activateQA, hMassVsPtC[kXic]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kXiCPlus, pt3Prong, scoresToFill[3][0], scoresToFill[3][1], scoresToFill[3][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kXiCPlus, pt3Prong, scoresToFill[3][0], scoresToFill[3][1], scoresToFill[3][2]);
           }
         }
 
@@ -783,7 +789,7 @@ struct HfFilter { // Main struct for HF triggers
           keepEvent[kHighPt3P] = true;
           if (activateQA) {
             for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-              if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
+              if (is3Prong[iCharmPart - 1] && (isSignalTagged[iCharmPart - 1])) {
                 hCharmHighPt[iCharmPart]->Fill(pt3Prong);
               }
             }
@@ -806,7 +812,7 @@ struct HfFilter { // Main struct for HF triggers
             getPxPyPz(trackParFourth, pVecFourth);
           }
 
-          int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
+          int charmParticleID[kNBeautyParticles - 2] = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
 
           float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
           float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
@@ -854,9 +860,9 @@ struct HfFilter { // Main struct for HF triggers
 
         // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
-        bool isGoodDsToKKPi = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
-        bool isGoodDsToPiKK = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
-        bool isGoodDPlus = (isCharmTagged[kDplus - 1] || isBeautyTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
+        bool isGoodDsToKKPi = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
+        bool isGoodDsToPiKK = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
+        bool isGoodDPlus = (isSignalTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
         auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
         auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});

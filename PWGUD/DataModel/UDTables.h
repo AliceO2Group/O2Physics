@@ -134,6 +134,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(BBFV0A, bbFV0A,
 DECLARE_SOA_DYNAMIC_COLUMN(BGFV0A, bgFV0A,
                            [](int32_t bgFV0Apf) -> bool { return TESTBIT(bgFV0Apf, 16); });
 
+DECLARE_SOA_COLUMN(DBcTOR, dBcTOR, int32_t); //! distance to closest TOR
+DECLARE_SOA_COLUMN(DBcTSC, dBcTSC, int32_t); //! distance to closest TVX & (TSC | TCE)
+DECLARE_SOA_COLUMN(DBcTVX, dBcTVX, int32_t); //! distance to closest TVX
+DECLARE_SOA_COLUMN(DBcV0A, dBcV0A, int32_t); //! distance to closest V0A
+DECLARE_SOA_COLUMN(DBcT0A, dBcT0A, int32_t); //! distance to closest T0A
+
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 
 DECLARE_SOA_INDEX_COLUMN(UDMcCollision, udMcCollision);
@@ -175,6 +181,13 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
+DECLARE_SOA_TABLE(UDCollisionsSelsExtra, "AOD", "UDCOLSELEXTRA",
+                  udcollision::DBcTOR,
+                  udcollision::DBcTSC,
+                  udcollision::DBcTVX,
+                  udcollision::DBcV0A,
+                  udcollision::DBcT0A);
+
 DECLARE_SOA_TABLE(UDCollsLabels, "AOD", "UDCOLLSLABEL",
                   udcollision::CollisionId);
 
@@ -184,6 +197,7 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
+using UDCollisionsSelExtra = UDCollisionsSelsExtra::iterator;
 using UDCollsLabel = UDCollsLabels::iterator;
 using UDMcCollsLabel = UDMcCollsLabels::iterator;
 

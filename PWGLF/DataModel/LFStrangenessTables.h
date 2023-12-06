@@ -16,6 +16,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Qvectors.h"
 
 namespace o2::aod
 {
@@ -23,12 +24,20 @@ namespace o2::aod
 // Collision declarations for derived data analysis
 // this is optional but will ensure full flexibility
 // if required (for 2pc, etc)
-DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! track X positions at minima when using AO2Ds
-                  collision::PosX, collision::PosY, collision::PosZ,
+DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
+                  collision::PosX, collision::PosY, collision::PosZ);
+DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
-                  cent::CentFT0C, cent::CentFV0A, o2::soa::Marker<2>);
+                  cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE(StraEPs, "AOD", "STRAEPS", //! centrality percentiles
+                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A,
+                  qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C,
+                  qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M,
+                  qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
 
 using StraCollision = StraCollisions::iterator;
+using StraCent = StraCents::iterator;
+using StraEP = StraEPs::iterator;
 
 namespace dautrack
 {
@@ -85,6 +94,21 @@ DECLARE_SOA_TABLE(DauTrackExtras, "AOD", "DAUTRACKEXTRA", //! detector propertie
 
 using DauTrackExtra = DauTrackExtras::iterator;
 
+namespace motherParticle
+{
+DECLARE_SOA_COLUMN(Px, px, float);                              //! px
+DECLARE_SOA_COLUMN(Py, py, float);                              //! py
+DECLARE_SOA_COLUMN(Pz, pz, float);                              //! pz
+DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! pdg code
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! primary criterion
+} // namespace motherParticle
+
+DECLARE_SOA_TABLE(MotherMCParticles, "AOD", "MOTHERMCPART", //! mother MC information
+                  motherParticle::Px, motherParticle::Py, motherParticle::Pz,
+                  motherParticle::PDGCode, motherParticle::IsPhysicalPrimary);
+
+using MotherMCParticle = MotherMCParticles::iterator;
+
 namespace v0data
 {
 //______________________________________________________
@@ -97,6 +121,7 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCParticle, motherMCParticle);                                  //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0CORES
@@ -368,11 +393,16 @@ DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for 
                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
+DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
+                  o2::soa::Index<>, v0data::MotherMCParticleId);
+
 using V0Index = V0Indices::iterator;
 using V0Core = V0Cores::iterator;
 using V0TrackX = V0TrackXs::iterator;
 using V0Datas = soa::Join<V0Indices, V0TrackXs, V0Cores>;
 using V0Data = V0Datas::iterator;
+using V0MCDatas = soa::Join<V0MCCores, V0MCMothers>;
+using V0MCData = V0MCDatas::iterator;
 
 // definitions of indices for interlink tables
 namespace v0data
@@ -450,8 +480,10 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
 // FOR DERIVED
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra");   //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra");   //!
-DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrackExtra, strangeTrackExtra, int, DauTrackExtras, "_StrangeExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                          //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCParticle, motherMCParticle);                                    //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCORES
@@ -518,21 +550,6 @@ DECLARE_SOA_COLUMN(KFCascadeChi2, kfCascadeChi2, float); //!
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
 DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
-
-//______________________________________________________
-// REGULAR COLUMNS FOR CASCEXTRAS
-DECLARE_SOA_COLUMN(PosTrackDetectorMap, posTrackDetectorMap, uint8_t);            //! detector map for reference
-DECLARE_SOA_COLUMN(NegTrackDetectorMap, negTrackDetectorMap, uint8_t);            //! detector map for reference
-DECLARE_SOA_COLUMN(BachTrackDetectorMap, bachTrackDetectorMap, uint8_t);          //! detector map for reference
-DECLARE_SOA_COLUMN(PosTrackITSClusterSizes, posTrackITSClusterSizes, uint32_t);   //! ITS cluster sizes per layer
-DECLARE_SOA_COLUMN(NegTrackITSClusterSizes, negTrackITSClusterSizes, uint32_t);   //! ITS cluster sizes per layer
-DECLARE_SOA_COLUMN(BachTrackITSClusterSizes, bachTrackITSClusterSizes, uint32_t); //! ITS cluster sizes per layer
-DECLARE_SOA_COLUMN(PosTrackTPCClusters, posTrackTPCClusters, uint8_t);            //! N TPC clusters
-DECLARE_SOA_COLUMN(NegTrackTPCClusters, negTrackTPCClusters, uint8_t);            //! N TPC clusters
-DECLARE_SOA_COLUMN(BachTrackTPCClusters, bachTrackTPCClusters, uint8_t);          //! N TPC clusters
-DECLARE_SOA_COLUMN(PosTrackTPCCrossedRows, posTrackTPCCrossedRows, uint8_t);      //! N TPC clusters
-DECLARE_SOA_COLUMN(NegTrackTPCCrossedRows, negTrackTPCCrossedRows, uint8_t);      //! N TPC clusters
-DECLARE_SOA_COLUMN(BachTrackTPCCrossedRows, bachTrackTPCCrossedRows, uint8_t);    //! N TPC clusters
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCMCCORES
@@ -664,12 +681,8 @@ DECLARE_SOA_TABLE(TraCascCollRefs, "AOD", "TRACASCCOLLREF", //! optional table t
 DECLARE_SOA_TABLE(CascExtras, "AOD", "CASCEXTRA", //! optional table to refer to custom track extras
                   o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
                   cascdata::BachTrackExtraId, o2::soa::Marker<1>);
-DECLARE_SOA_TABLE(KFCascExtras, "AOD", "KFCASCEXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
-                  cascdata::BachTrackExtraId, o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(TraCascExtras, "AOD", "TRACASCEXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, cascdata::PosTrackExtraId, cascdata::NegTrackExtraId,
-                  cascdata::BachTrackExtraId, o2::soa::Marker<3>);
+DECLARE_SOA_TABLE(StraTrackExtras, "AOD", "STRATRACKEXTRAS", //! optional table to refer to custom track extras
+                  o2::soa::Index<>, cascdata::StrangeTrackExtraId);
 
 DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about decay, viable with AO2Ds or derived
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
@@ -762,35 +775,13 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
                   cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
                   cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
-                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
-                  o2::soa::Marker<1>);
-DECLARE_SOA_TABLE(KFCascMCCores, "AOD", "KFCASCMCCORE", //! bachelor-baryon correlation variables
-                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
-                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor,
-                  cascdata::XMC, cascdata::YMC, cascdata::ZMC,
-                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC,
-                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
-                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
-                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
-                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
-                  o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(TraCascMCCores, "AOD", "TRACASCMCCORE", //! bachelor-baryon correlation variables
-                  cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
-                  cascdata::PDGCodePositive, cascdata::PDGCodeNegative, cascdata::PDGCodeBachelor,
-                  cascdata::XMC, cascdata::YMC, cascdata::ZMC,
-                  cascdata::XlambdaMC, cascdata::YlambdaMC, cascdata::ZlambdaMC,
-                  cascdata::PxPosMC, cascdata::PyPosMC, cascdata::PzPosMC,
-                  cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
-                  cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
-                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC,
-                  o2::soa::Marker<3>);
+                  cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
+
+DECLARE_SOA_TABLE(CascMCMothers, "AOD", "CASCMCMOTHER", //! optional table for MC mothers
+                  o2::soa::Index<>, cascdata::MotherMCParticleId);
 
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, o2::soa::Marker<1>)
-DECLARE_SOA_TABLE(KFCascBBs, "AOD", "KFCASCBB", //! bachelor-baryon correlation variables, KF
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, o2::soa::Marker<2>)
-DECLARE_SOA_TABLE(TraCascBBs, "AOD", "TRACASCBB", //! bachelor-baryon correlation variables, tracked
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, o2::soa::Marker<3>)
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV)
 
 DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
@@ -812,6 +803,24 @@ DECLARE_SOA_EXTENDED_TABLE_USER(TraCascCores, StoredTraCascCores, "TraCascDATAEX
                                 cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda,
                                 cascdataext::Pt, cascdataext::P, cascdataext::Eta, cascdataext::Phi);
 
+namespace cascdata
+{
+// For cross-linking all cascade kinds
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackedCascade, trackedCascade, int, TraCascCores, "_Refs"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(KFCascade, kfCascade, int, KFCascCores, "_Refs");            //!
+DECLARE_SOA_INDEX_COLUMN_FULL(StandardCascade, standardCascade, int, CascCores, "_Refs");  //!
+} // namespace cascdata
+
+// interlink different cascade types
+DECLARE_SOA_TABLE(CascToTraRefs, "AOD", "CASCTOTRAREFS", //! standard -> tracked
+                  o2::soa::Index<>, cascdata::TrackedCascadeId);
+DECLARE_SOA_TABLE(CascToKFRefs, "AOD", "CASCTOKFREFS", //! standard -> KF
+                  o2::soa::Index<>, cascdata::KFCascadeId);
+DECLARE_SOA_TABLE(TraToCascRefs, "AOD", "TRATOCASCREFS", //! standard -> KF
+                  o2::soa::Index<>, cascdata::StandardCascadeId, o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(KFToCascRefs, "AOD", "KFTOCASCREFS", //! standard -> KF
+                  o2::soa::Index<>, cascdata::StandardCascadeId, o2::soa::Marker<2>);
+
 using CascIndex = CascIndices::iterator;
 using CascCore = CascCores::iterator;
 using KFCascIndex = KFCascIndices::iterator;
@@ -820,12 +829,17 @@ using TraCascIndex = TraCascIndices::iterator;
 using TraCascCore = TraCascCores::iterator;
 
 using CascDatas = soa::Join<CascIndices, CascBBs, CascCores>;
-using KFCascDatas = soa::Join<KFCascIndices, KFCascBBs, KFCascCores>;
-using TraCascDatas = soa::Join<TraCascIndices, TraCascBBs, TraCascCores>;
+using KFCascDatas = soa::Join<KFCascIndices, KFCascCores>;
+using TraCascDatas = soa::Join<TraCascIndices, TraCascCores>;
 
 using CascData = CascDatas::iterator;
 using KFCascData = KFCascDatas::iterator;
 using TraCascData = TraCascDatas::iterator;
+
+using CascMCCore = CascMCCores::iterator;
+using CascMCMother = CascMCMothers::iterator;
+using CascMCDatas = soa::Join<CascMCCores, CascMCMothers>;
+using CascMCData = CascMCDatas::iterator;
 
 // For compatibility with previous table declarations
 using CascDataFull = CascDatas;
@@ -881,10 +895,11 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
 namespace mcv0label
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 } // namespace mcv0label
 
 DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable with V0Data containing the MC labels
-                  mcv0label::McParticleId);
+                  mcv0label::McParticleId, mcv0label::McMotherParticleId);
 using McV0Label = McV0Labels::iterator;
 
 // Definition of labels for V0s // Full table, joinable with V0 (CAUTION: NOT WITH V0DATA)
@@ -901,11 +916,12 @@ using McFullV0Label = McFullV0Labels::iterator;
 namespace mccasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
-                  mccasclabel::McParticleId);
+                  mccasclabel::McParticleId, mccasclabel::McMotherParticleId);
 DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with CascData containing yes / no for BB correlation
                   mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
@@ -961,11 +977,7 @@ DECLARE_EQUIVALENT_FOR_INDEX(aod::CascIndices, aod::CascCores);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::CascIndices, aod::CascBBs);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::CascCores, aod::CascBBs);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascIndices, aod::KFCascCores);
-DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascIndices, aod::KFCascBBs);
-DECLARE_EQUIVALENT_FOR_INDEX(aod::KFCascCores, aod::KFCascBBs);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascIndices, aod::TraCascCores);
-DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascIndices, aod::TraCascBBs);
-DECLARE_EQUIVALENT_FOR_INDEX(aod::TraCascCores, aod::TraCascBBs);
 } // namespace o2::soa
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_

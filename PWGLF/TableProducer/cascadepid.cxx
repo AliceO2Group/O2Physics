@@ -76,13 +76,9 @@ using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct cascadepid {
-  // TPC pid (copied over from central services for reference)
-  Produces<aod::CascTPC> casctpc;       // raw table for checks
-  Produces<aod::CascTPCPID> casctpcpid; // table with Nsigmas
-
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOF> casctof;       // raw table for checks
-  Produces<aod::CascTOFPID> casctofpid; // table with Nsigmas
+  Produces<aod::CascTOFs> casctof;       // raw table for checks
+  Produces<aod::CascTOFPIDs> casctofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -233,36 +229,7 @@ struct cascadepid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void processTPC(aod::Collisions const& collisions, aod::CascDatas const& Cascades, TracksExtraWithPID const&, aod::BCsWithTimestamps const&, aod::V0s const&)
-  {
-    for (const auto& collision : collisions) {
-      // Fire up CCDB
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      // Do analysis with collision-grouped cascades, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
-      // cascade table sliced
-      for (auto const& cascade : CascTable_thisCollision) {
-        // Track casting
-        auto bachTrack = cascade.bachelor_as<TracksExtraWithPID>();
-        auto v0 = cascade.v0();
-        auto posTrack = v0.posTrack_as<TracksExtraWithPID>();
-        auto negTrack = v0.negTrack_as<TracksExtraWithPID>();
-
-        // Fill raw information if requested
-        if (fillRawPID) {
-          casctpc(posTrack.tpcSignal(), negTrack.tpcSignal(), bachTrack.tpcSignal());
-        }
-        // Fill NSigma (always provided)
-        casctpcpid(posTrack.tpcNSigmaPr(), posTrack.tpcNSigmaPi(),
-                   negTrack.tpcNSigmaPr(), negTrack.tpcNSigmaPi(),
-                   bachTrack.tpcNSigmaKa(), bachTrack.tpcNSigmaPi());
-      }
-    }
-  }
-
-  void processTOF(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
+  void process(aod::Collisions const& collisions, aod::CascDatas const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
@@ -283,18 +250,14 @@ struct cascadepid {
 
         if (fillRawPID) {
           casctof(posTrack.length(), negTrack.length(), bachTrack.length(),
+                  posTrack.tofSignal(), negTrack.tofSignal(), bachTrack.tofSignal(),
+                  posTrack.tofEvTime(), negTrack.tofEvTime(), bachTrack.tofEvTime(),
                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }
       }
     }
   }
-
-  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
-  /// basic building options (one of them must be chosen)
-  PROCESS_SWITCH(cascadepid, processTPC, "process dE/dx information", true); // generate TPC information tables for V0s
-  PROCESS_SWITCH(cascadepid, processTOF, "process TOF information", true);   // generate TOF information tables for V0s
-  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

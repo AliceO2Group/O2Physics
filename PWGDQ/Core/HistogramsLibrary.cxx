@@ -93,6 +93,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MultTPC_MultFT0C", "MultTPC vs MultFT0C", false, 400, 0, 800.0, VarManager::kMultTPC, 100, 0, 1000.0, VarManager::kMultFT0C);
       hm->AddHistogram(histClass, "MultFT0A_MultFT0C", "MultFT0A vs MultFT0C", false, 100, 0, 1000.0, VarManager::kMultFT0A, 100, 0, 1000.0, VarManager::kMultFT0C);
     }
+    if (subGroupStr.Contains("multFTOPbPbRun3")) {
+      hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 100, 0.0, 50000.0, VarManager::kMultTPC);
+      hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 100, 0.0, 60000.0, VarManager::kMultFT0C);
+      hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 100, 0.0, 180000.0, VarManager::kMultFT0A);
+      hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 100, 0.0, 10000.0, VarManager::kVtxNcontribReal);
+      hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 10000.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "MultTPC_VtxNContrib", "MultTPC vs VtxNContrib", false, 100, 0, 50000.0, VarManager::kMultTPC, 100, 0, 10000.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "MultFT0C_VtxNContrib", "MultFT0C vs VtxNContrib", false, 100, 0, 60000.0, VarManager::kMultFT0C, 100, 0, 10000.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "MultFT0A_VtxNContrib", "MultFT0A vs VtxNContrib", false, 100, 0, 180000.0, VarManager::kMultFT0A, 100, 0, 10000.0, VarManager::kVtxNcontrib);
+    }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "MCVtxX_VtxX", "Vtx X (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxX, 100, -0.5, 0.5, VarManager::kMCVtxX);
       hm->AddHistogram(histClass, "MCVtxY_VtxY", "Vtx Y (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxY, 100, -0.5, 0.5, VarManager::kMCVtxY);
@@ -528,9 +538,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("vertexing")) {
         hm->AddHistogram(histClass, "UsedKF", "", false, 2, -0.5, 1.5, VarManager::kUsedKF);
-        hm->AddHistogram(histClass, "Lxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxy);
-        hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);
-        hm->AddHistogram(histClass, "Tauxy", "", false, 200, -0.01, 0.01, VarManager::kVertexingTauxy);
+        hm->AddHistogram(histClass, "Lz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLz);
+        hm->AddHistogram(histClass, "Lxy", "", false, 41000, -2.0, 2.0, VarManager::kVertexingLxy);
+        hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyz);
+        hm->AddHistogram(histClass, "Tauz", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauz);
+        hm->AddHistogram(histClass, "Tauxy", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauxy);
+      }
+
+      if (subGroupStr.Contains("kalman-filter")) {
         hm->AddHistogram(histClass, "LxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyErr);
         hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);
         hm->AddHistogram(histClass, "TauxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingTauxyErr);
@@ -540,6 +555,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "LxyOverDLxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyOverErr);
         hm->AddHistogram(histClass, "LzOverDLz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLzOverErr);
         hm->AddHistogram(histClass, "LxyzOverDLxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzOverErr);
+        hm->AddHistogram(histClass, "KFTauxy", "", false, 1000, -0.2, 0.2, VarManager::kVertexingTauxy);
         hm->AddHistogram(histClass, "KFTrack0DCAxyz", "", false, 400, -2.0, 2.0, VarManager::kKFTrack0DCAxyz);
         hm->AddHistogram(histClass, "KFTrack1DCAxyz", "", false, 400, -2.0, 2.0, VarManager::kKFTrack1DCAxyz);
         hm->AddHistogram(histClass, "KFTracksDCAxyzMax", "", false, 400, -2.0, 2.0, VarManager::kKFTracksDCAxyzMax);
@@ -555,6 +571,42 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_DCAxyTwoProngs", "", false, 500, 0.0, 5.0, VarManager::kMass, 400, -2.0, 2.0, VarManager::kKFDCAxyBetweenProngs);
         hm->AddHistogram(histClass, "Mass_KFChi2OverNDFGeo", "", false, 500, 0.0, 5.0, VarManager::kMass, 150, -5, 10, VarManager::kKFChi2OverNDFGeo);
       }
+      if (subGroupStr.Contains("run2-vertexing-definitions")) {
+        hm->AddHistogram(histClass, "LzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLzProjected);
+        hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyProjected);
+        hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyzProjected);
+        hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
+        hm->AddHistogram(histClass, "TauxyProjNs", "", false, 4000, -0.1, 0.1, VarManager::kVertexingTauxyProjectedNs);
+        hm->AddHistogram(histClass, "TauxyProjCm", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
+      }
+      if (subGroupStr.Contains("multidimentional-vertexing-histograms")) {
+        hm->AddHistogram(histClass, "pT_TauxyProj", "", false, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected, 20, 0.0, 20., VarManager::kPt);
+        hm->AddHistogram(histClass, "InvMass_TauxyProj", "", false, 500, 0.0, 5.0, VarManager::kMass, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
+        hm->AddHistogram(histClass, "Eta_TauxyProj", "", false, 40, -2.0, 2.0, VarManager::kEta, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
+        hm->AddHistogram(histClass, "Rap_TauxyProj", "", false, 200, -1.0, 1.0, VarManager::kRap, 1000, -0.2, 0.2, VarManager::kVertexingTauxyProjected);
+
+        const int kNvarsPair = 4;
+        const int kInvMassNbins = 3;
+        double InvMassBinLims[kInvMassNbins + 1] = {2.2, 2.6, 3.4, 3.6};
+
+        const int kPtNbins = 10;
+        double PtBinLims[kPtNbins + 1] = {1., 2., 3., 4., 5., 6., 7., 8., 9., 12., 20.};
+
+        const int kTauNBins = 500;
+        double TauBinLims[kTauNBins + 1];
+        for (int i = 0; i <= kTauNBins; ++i)
+          TauBinLims[i] = -0.3 + (0.0015 * i);
+
+        TArrayD nCutsBinLimits[kNvarsPair];
+        nCutsBinLimits[0] = TArrayD(kInvMassNbins + 1, InvMassBinLims);
+        nCutsBinLimits[1] = TArrayD(kPtNbins + 1, PtBinLims);
+        nCutsBinLimits[2] = TArrayD(kTauNBins + 1, TauBinLims);
+        nCutsBinLimits[3] = TArrayD(kTauNBins + 1, TauBinLims);
+
+        int varsPair[kNvarsPair] = {VarManager::kMass, VarManager::kPt, VarManager::kVertexingTauzProjected, VarManager::kVertexingTauxyProjected};
+        hm->AddHistogram(histClass, "tau_MultiD", "Invariant mass vs. pT vs. eta vs. rapidity vs. Run2 tau", kNvarsPair, varsPair, nCutsBinLimits);
+      }
+
       if (subGroupStr.Contains("flow")) {
         hm->AddHistogram(histClass, "Mass_u2q2", "u_{2}Q_{2}^{A} vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kU2Q2);
         hm->AddHistogram(histClass, "Mass_u3q3", "u_{3}Q_{3}^{A} vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kU3Q3);
@@ -698,14 +750,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 40, 0.0, 20.0, VarManager::kPairMass, 40, 0.0, 20.0, VarManager::kPairPt);
     hm->AddHistogram(histClass, "Pt_Dilepton__Pt", "", false, 40, 0.0, 20.0, VarManager::kPairPtDau, 40, 0.0, 20.0, VarManager::kPairPt);
     hm->AddHistogram(histClass, "Pt_Track__Pt", "", false, 40, 0.0, 20.0, VarManager::kPt, 40, 0.0, 20.0, VarManager::kPairPt);
-    hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);
-    hm->AddHistogram(histClass, "Lz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLz);
-    hm->AddHistogram(histClass, "Tauz", "", false, 100, -0.01, 0.01, VarManager::kVertexingTauz);
+    hm->AddHistogram(histClass, "UsedKF", "", false, 2, -0.5, 1.5, VarManager::kUsedKF);
+    hm->AddHistogram(histClass, "KFMass", "", false, 750, 0.0, 30.0, VarManager::kKFMass);
+    hm->AddHistogram(histClass, "Lz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLz);
+    hm->AddHistogram(histClass, "Lxy", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxy);
+    hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyz);
+    hm->AddHistogram(histClass, "Tauz", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauz);
+    hm->AddHistogram(histClass, "Tauxy", "", false, 4000, -0.01, 0.01, VarManager::kVertexingTauxy);
     hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);
     hm->AddHistogram(histClass, "LzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLzErr);
     hm->AddHistogram(histClass, "TauzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingTauzErr);
     hm->AddHistogram(histClass, "VtxingProcCode", "", false, 10, 0.0, 10.0, VarManager::kVertexingProcCode);
     hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
+    hm->AddHistogram(histClass, "LzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLzProjected);
+    hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyProjected);
+    hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -2.0, 2.0, VarManager::kVertexingLxyzProjected);
+    hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
+    hm->AddHistogram(histClass, "TauxyProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
+    hm->AddHistogram(histClass, "CosPointingAngle", "", false, 100, 0.0, 1.0, VarManager::kCosPointingAngle);
   }
 
   if (groupStr.Contains("dilepton-hadron-correlation")) {

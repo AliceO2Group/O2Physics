@@ -46,6 +46,16 @@ struct perfK0sResolution {
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec phiAxis{phiBins, "#phi"};
 
+    int nProc = 0;
+    if (doprocessData) {
+      LOG(info) << "processData enabled";
+      nProc++;
+    }
+    if (doprocessMC) {
+      LOG(info) << "processMC enabled";
+      nProc++;
+    }
+
     registry.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     registry.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     registry.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
@@ -60,38 +70,112 @@ struct perfK0sResolution {
   Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
-  Configurable<int> requireTRDneg{"requireTRDneg", 0, "requireTRDneg"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
-  Configurable<int> requireTRDpos{"requireTRDpos", 0, "requireTRDpos"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
+  Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
   {
     // Apply selections on V0
-    if (TMath::Abs(v0.yK0Short()) > rapidity)
-      return kFALSE;
-    if (v0.v0cosPA() < v0setting_cospa)
-      return kFALSE;
-    if (v0.v0radius() < v0setting_radius)
-      return kFALSE;
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime)
-      return kFALSE;
+    if (TMath::Abs(v0.yK0Short()) > rapidity) {
+      return false;
+    }
+    if (v0.v0cosPA() < v0setting_cospa) {
+      return false;
+    }
+    if (v0.v0radius() < v0setting_radius) {
+      return false;
+    }
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime) {
+      return false;
+    }
 
     // Apply selections on V0 daughters
-    if (!ntrack.hasTPC() || !ptrack.hasTPC())
-      return kFALSE;
-    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
-      return kFALSE;
-    if ((requireTRDneg > 0 && !ntrack.hasTRD()) || (requireTRDneg < 0 && ntrack.hasTRD()))
-      return kFALSE;
-    if ((requireTRDpos > 0 && !ptrack.hasTRD()) || (requireTRDpos < 0 && ptrack.hasTRD()))
-      return kFALSE;
-    return kTRUE;
+    if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
+      return false;
+    }
+    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC) {
+      return false;
+    }
+    // TOF selection
+    switch (tofSelectionPos) {
+      case -1:
+        if (ptrack.hasTOF()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ptrack.hasTOF()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for positive daughter";
+        break;
+    }
+    switch (tofSelectionNeg) {
+      case -1:
+        if (ntrack.hasTOF()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ntrack.hasTOF()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for negative daughter";
+        break;
+    }
+    // TRD selection
+    switch (trdSelectionPos) {
+      case -1:
+        if (ptrack.hasTRD()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ptrack.hasTRD()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for positive daughter";
+        break;
+    }
+    switch (trdSelectionNeg) {
+      case -1:
+        if (ntrack.hasTRD()) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ntrack.hasTRD()) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid TRD selection for negative daughter";
+        break;
+    }
+    return true;
   }
 
   Filter v0Filter = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
 
-  void process(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
   {
     if (eventSelection && !collision.sel8())
       return;
@@ -108,10 +192,34 @@ struct perfK0sResolution {
       registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
     }
   }
+  PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
+
+  void processMC(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  {
+    if (eventSelection && !collision.sel8())
+      return;
+
+    for (auto& v0 : fullV0s) {
+
+      const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
+      const auto& negTrack = v0.negTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
+      if (!acceptV0(v0, negTrack, posTrack, collision))
+        continue;
+      if (!posTrack.has_mcParticle()) {
+        continue;
+      }
+      if (!negTrack.has_mcParticle()) {
+        continue;
+      }
+      if (posTrack.mcParticle().pdgCode() != PID::Pion || negTrack.mcParticle().pdgCode() != PID::Pion) {
+        continue;
+      }
+      registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
+      registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
+      registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+    }
+  }
+  PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<perfK0sResolution>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)}; }
