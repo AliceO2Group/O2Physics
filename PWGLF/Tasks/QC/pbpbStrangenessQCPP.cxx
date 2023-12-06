@@ -172,7 +172,7 @@ struct pbpbStrangenessQCPP {
 
     // Histograms
     // Candidate counter
-    rGeneral.add("nCandidates", "nCandidates", {HistType::kTH1F, {{1, -0.5f, 1.5f}}});
+    rGeneral.add("nCandidates", "nCandidates", {HistType::kTH1F, {{2, -0.5f, 1.5f}}});
 
     // V0 general histograms
     rVzero.add("CosPA", "CosPA", kTH1F, {axisCosPA});
