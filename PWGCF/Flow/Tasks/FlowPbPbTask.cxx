@@ -48,7 +48,6 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
 
-
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -133,20 +132,20 @@ struct FlowPbPbTask {
     registry.add("BootstrapContainer00/PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("BootstrapContainer00/PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
 
-    for(int i=1;i<10;i++){
-      registry.addClone("BootstrapContainer00/", Form("BootstrapContainer0%d/",i));
+    for (int i = 1; i < 10; i++) {
+      registry.addClone("BootstrapContainer00/", Form("BootstrapContainer0%d/", i));
     }
 
     o2::framework::AxisSpec axis = axisPt;
-    int nPtBins = axis.binEdges.size()-1;
-    double* PtBins= &(axis.binEdges)[0];
-    fPtAxis = new TAxis(nPtBins,PtBins);
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, PtBins);
 
-    //add in FlowContainer to Get boostrap sample automatically
+    // add in FlowContainer to Get boostrap sample automatically
     TObjArray* oba = new TObjArray();
-    oba->Add(new TNamed("ChGap22", "ChGap22"));  
-    for(Int_t i=0;i<fPtAxis->GetNbins();i++)
-      oba->Add(new TNamed(Form("ChGap22_pt_%i",i+1),"ChGap22_pTDiff"));
+    oba->Add(new TNamed("ChGap22", "ChGap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChGap22_pt_%i", i + 1), "ChGap22_pTDiff"));
     oba->Add(new TNamed("ChFull22", "ChFull22"));
     oba->Add(new TNamed("ChFull32", "ChFull32"));
     oba->Add(new TNamed("ChFull42", "ChFull42"));
@@ -182,19 +181,19 @@ struct FlowPbPbTask {
     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
     delete oba;
 
-    //eta region
+    // eta region
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
-    fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1);//gap4 negative region
-    fGFW->AddRegion("refP04", 0.2, 0.8, 1, 1);//gap4 positve region
-    fGFW->AddRegion("refN06", -0.8, -0.3, 1, 1);//gap6 negative region
-    fGFW->AddRegion("refP06", 0.3, 0.8, 1, 1);//gap6 positve region
+    fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1); // gap4 negative region
+    fGFW->AddRegion("refP04", 0.2, 0.8, 1, 1);   // gap4 positve region
+    fGFW->AddRegion("refN06", -0.8, -0.3, 1, 1); // gap6 negative region
+    fGFW->AddRegion("refP06", 0.3, 0.8, 1, 1);   // gap6 positve region
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
     fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("refN", -0.8, -0.4, 1, 1);
-    fGFW->AddRegion("poiN", -0.8, -0.4, 1+fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", -0.8, -0.4, 1, 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -251,23 +250,23 @@ struct FlowPbPbTask {
   template <char... chars, char... chars2>
   void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
   {
-    double meanPt = sum_pt/WeffEvent;
+    double meanPt = sum_pt / WeffEvent;
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1){
-        registry.fill(vnWeff, cent, val, dnx*WeffEvent);
-        registry.fill(vnpT, cent, val*meanPt, dnx*WeffEvent);
+      if (TMath::Abs(val) < 1) {
+        registry.fill(vnWeff, cent, val, dnx * WeffEvent);
+        registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
       }
       return;
     }
     return;
   }
 
-   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -291,26 +290,27 @@ struct FlowPbPbTask {
   }
 
   template <int SampleIndex>
-  void FillBootstrap(const double& cent, 
-  const double& ptSum_Gap08, 
-  const double& weffEvent_WithinGap08, 
-  const double& sum_pt_wSquare_WithinGap08, 
-  const double& sum_ptSquare_wSquare_WithinGap08, 
-  const double& WeffEvent_diff_WithGap08)
+  void FillBootstrap(const double& cent,
+                     const double& ptSum_Gap08,
+                     const double& weffEvent_WithinGap08,
+                     const double& sum_pt_wSquare_WithinGap08,
+                     const double& sum_ptSquare_wSquare_WithinGap08,
+                     const double& WeffEvent_diff_WithGap08)
   {
-    static constexpr std::string_view subDir[] = {"BootstrapContainer00/","BootstrapContainer01/","BootstrapContainer02/","BootstrapContainer03/","BootstrapContainer04/","BootstrapContainer05/","BootstrapContainer06/","BootstrapContainer07/","BootstrapContainer08/","BootstrapContainer09/"};
+    static constexpr std::string_view subDir[] = {"BootstrapContainer00/", "BootstrapContainer01/", "BootstrapContainer02/", "BootstrapContainer03/", "BootstrapContainer04/", "BootstrapContainer05/", "BootstrapContainer06/", "BootstrapContainer07/", "BootstrapContainer08/", "BootstrapContainer09/"};
 
-    if(weffEvent_WithinGap08>1e-6)registry.fill(HIST(subDir[SampleIndex])+HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08/weffEvent_WithinGap08, weffEvent_WithinGap08);
-    if(weffEvent_WithinGap08>1e-6)FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST(subDir[SampleIndex])+HIST("c22_gap08_Weff"), HIST(subDir[SampleIndex])+HIST("c22_gap08_trackMeanPt"), cent);
-    if(WeffEvent_diff_WithGap08>1e-6){
-      registry.fill(HIST(subDir[SampleIndex])+HIST("PtVariance_partA_WithinGap08"), cent, 
-        (ptSum_Gap08*ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08, 
-        WeffEvent_diff_WithGap08);
-      registry.fill(HIST(subDir[SampleIndex])+HIST("PtVariance_partB_WithinGap08"), cent, 
-        (weffEvent_WithinGap08*ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08, 
-        WeffEvent_diff_WithGap08);
+    if (weffEvent_WithinGap08 > 1e-6)
+      registry.fill(HIST(subDir[SampleIndex]) + HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+    if (weffEvent_WithinGap08 > 1e-6)
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST(subDir[SampleIndex]) + HIST("c22_gap08_Weff"), HIST(subDir[SampleIndex]) + HIST("c22_gap08_trackMeanPt"), cent);
+    if (WeffEvent_diff_WithGap08 > 1e-6) {
+      registry.fill(HIST(subDir[SampleIndex]) + HIST("PtVariance_partA_WithinGap08"), cent,
+                    (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                    WeffEvent_diff_WithGap08);
+      registry.fill(HIST(subDir[SampleIndex]) + HIST("PtVariance_partB_WithinGap08"), cent,
+                    (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                    WeffEvent_diff_WithGap08);
     }
-    
   }
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
@@ -322,75 +322,89 @@ struct FlowPbPbTask {
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), Ntot);
-    registry.fill(HIST("hCent"),collision.centFT0C());
+    registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     float weff = 1, wacc = 1;
-    double weffEvent=0, waccEvent=0;
-    int TrackNum=0;
-    double ptSum=0., ptSum_Gap08=0.;
-    double weffEvent_WithinGap08=0., weffEventSquare_WithinGap08=0.;
-    double sum_ptSquare_wSquare_WithinGap08=0., sum_pt_wSquare_WithinGap08=0.;
+    double weffEvent = 0, waccEvent = 0;
+    int TrackNum = 0;
+    double ptSum = 0., ptSum_Gap08 = 0.;
+    double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
+    double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
 
     for (auto& track : tracks) {
       double pt = track.pt();
       double eta = track.eta();
-      bool WithinPtPOI = (cfgCutPtPOIMin<pt) && (pt<cfgCutPtPOIMax); //within POI pT range
-      bool WithinPtRef  = (cfgCutPtMin<pt) && (pt<cfgCutPtMax);  //within RF pT range
+      bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
       bool WithinEtaGap08 = (eta >= -0.4) && (eta <= 0.4);
-      if(WithinPtRef) {
+      if (WithinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
         registry.fill(HIST("hEta"), track.eta());
         registry.fill(HIST("hPt"), pt);
-        weffEvent+=weff;
-        waccEvent+=wacc;
-        ptSum+=weff*pt;
+        weffEvent += weff;
+        waccEvent += wacc;
+        ptSum += weff * pt;
         TrackNum++;
-        if(WithinEtaGap08){
-          ptSum_Gap08 += weff*pt;
-          sum_pt_wSquare_WithinGap08 += weff*weff*pt;
-          sum_ptSquare_wSquare_WithinGap08 += weff*weff*pt*pt;
+        if (WithinEtaGap08) {
+          ptSum_Gap08 += weff * pt;
+          sum_pt_wSquare_WithinGap08 += weff * weff * pt;
+          sum_ptSquare_wSquare_WithinGap08 += weff * weff * pt * pt;
           weffEvent_WithinGap08 += weff;
-          weffEventSquare_WithinGap08 += weff*weff;
+          weffEventSquare_WithinGap08 += weff * weff;
         }
       }
-      if(WithinPtRef) fGFW->Fill(track.eta(), fPtAxis->FindBin(pt)-1, track.phi(), wacc * weff, 1);
-      if(WithinPtPOI) fGFW->Fill(track.eta(), fPtAxis->FindBin(pt)-1, track.phi(), wacc * weff, 2);
-      if(WithinPtPOI && WithinPtRef) fGFW->Fill(track.eta(), fPtAxis->FindBin(pt)-1, track.phi(), wacc * weff, 4);
+      if (WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
+      if (WithinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 2);
+      if (WithinPtPOI && WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 4);
     }
 
-    double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08*weffEvent_WithinGap08 - weffEventSquare_WithinGap08;
-    //Filling TProfile
-    //MeanPt
-    registry.fill(HIST("hMeanPt"), cent, ptSum/weffEvent, weffEvent);
-    if(weffEvent_WithinGap08>1e-6)registry.fill(HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08/weffEvent_WithinGap08, weffEvent_WithinGap08);
-    //v22-Pt
-    //c22_gap8 * pt_withGap8
-    if(weffEvent_WithinGap08>1e-6)FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), cent);
-    //PtVariance
-    if(WeffEvent_diff_WithGap08>1e-6){
-      registry.fill(HIST("PtVariance_partA_WithinGap08"), cent, 
-        (ptSum_Gap08*ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08, 
-        WeffEvent_diff_WithGap08);
-      registry.fill(HIST("PtVariance_partB_WithinGap08"), cent, 
-        (weffEvent_WithinGap08*ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08, 
-        WeffEvent_diff_WithGap08);
+    double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08 * weffEvent_WithinGap08 - weffEventSquare_WithinGap08;
+    // Filling TProfile
+    // MeanPt
+    registry.fill(HIST("hMeanPt"), cent, ptSum / weffEvent, weffEvent);
+    if (weffEvent_WithinGap08 > 1e-6)
+      registry.fill(HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+    // v22-Pt
+    // c22_gap8 * pt_withGap8
+    if (weffEvent_WithinGap08 > 1e-6)
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), cent);
+    // PtVariance
+    if (WeffEvent_diff_WithGap08 > 1e-6) {
+      registry.fill(HIST("PtVariance_partA_WithinGap08"), cent,
+                    (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                    WeffEvent_diff_WithGap08);
+      registry.fill(HIST("PtVariance_partB_WithinGap08"), cent,
+                    (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                    WeffEvent_diff_WithGap08);
     }
 
-    //Filling Bootstrap samples
-    int SampleIndex = (int)(cfgNbootstrap*l_Random);
-    if(SampleIndex==0)FillBootstrap<0>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==1)FillBootstrap<1>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==2)FillBootstrap<2>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==3)FillBootstrap<3>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==4)FillBootstrap<4>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==5)FillBootstrap<5>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==6)FillBootstrap<6>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==7)FillBootstrap<7>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==8)FillBootstrap<8>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if(SampleIndex==9)FillBootstrap<9>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    
-    
+    // Filling Bootstrap samples
+    int SampleIndex = (int)(cfgNbootstrap * l_Random);
+    if (SampleIndex == 0)
+      FillBootstrap<0>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 1)
+      FillBootstrap<1>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 2)
+      FillBootstrap<2>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 3)
+      FillBootstrap<3>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 4)
+      FillBootstrap<4>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 5)
+      FillBootstrap<5>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 6)
+      FillBootstrap<6>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 7)
+      FillBootstrap<7>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 8)
+      FillBootstrap<8>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    else if (SampleIndex == 9)
+      FillBootstrap<9>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+
     // Filling c22 with ROOT TProfile
     // FillProfile(corrconfigs.at(0), HIST("c22"), cent);
     // FillProfile(corrconfigs.at(1), HIST("c32"), cent);
@@ -406,7 +420,7 @@ struct FlowPbPbTask {
     // FillProfile(corrconfigs.at(13), HIST("c422_gapB04"), cent);
     // FillProfile(corrconfigs.at(kkk), HIST("c24_gap04"), cent);
 
-    //Filling Flow Container
+    // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), cent, l_Random);
     }
