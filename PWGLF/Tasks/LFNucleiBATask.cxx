@@ -368,19 +368,19 @@ struct LFNucleiBATask {
       histos.add<TH1>("tracks/proton/h1ProtonSpectra", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/proton/h1antiProtonSpectra", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
 
-      histos.add<TH2>("tracks/proton/h2ProtonYvsPt", "#it{y} vs #it{p}_{T} (p)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/proton/h2antiProtonYvsPt", "#it{y} vs #it{p}_{T} (#bar{p})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/proton/h2ProtonEtavsPt", "#it{#eta} vs #it{p}_{T} (p)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/proton/h2antiProtonEtavsPt", "#it{#eta} vs #it{p}_{T} (#bar{p})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/proton/h2ProtonYvsPt", "#it{y} vs #it{p}_{T} (p)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/proton/h2antiProtonYvsPt", "#it{y} vs #it{p}_{T} (#bar{p})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/proton/h2ProtonEtavsPt", "#it{#eta} vs #it{p}_{T} (p)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/proton/h2antiProtonEtavsPt", "#it{#eta} vs #it{p}_{T} (#bar{p})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
     }
     if (enableDe) {
       histos.add<TH1>("tracks/deuteron/h1DeuteronSpectra", "#it{p}_{T} (d)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/deuteron/h1antiDeuteronSpectra", "#it{p}_{T} (#bar{d})", HistType::kTH1F, {ptAxis});
 
-      histos.add<TH2>("tracks/deuteron/h2DeuteronYvsPt", "#it{y} vs #it{p}_{T} (d)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/deuteron/h2antiDeuteronYvsPt", "#it{y} vs #it{p}_{T} (#bar{d})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/deuteron/h2DeuteronEtavsPt", "it{#eta} vs #it{p}_{T} (d)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/deuteron/h2antiDeuteronEtavsPt", "it{#eta} vs #it{p}_{T} (#bar{d})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/deuteron/h2DeuteronYvsPt", "#it{y} vs #it{p}_{T} (d)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/deuteron/h2antiDeuteronYvsPt", "#it{y} vs #it{p}_{T} (#bar{d})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/deuteron/h2DeuteronEtavsPt", "it{#eta} vs #it{p}_{T} (d)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/deuteron/h2antiDeuteronEtavsPt", "it{#eta} vs #it{p}_{T} (#bar{d})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
     }
     if (enableTr) {
       histos.add<TH1>("tracks/triton/h1TritonSpectra", "#it{p}_{T} (t)", HistType::kTH1F, {ptAxis});
@@ -390,18 +390,18 @@ struct LFNucleiBATask {
       histos.add<TH1>("tracks/helium/h1HeliumSpectra", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/helium/h1antiHeliumSpectra", "#it{p}_{T} (#bar{He})", HistType::kTH1F, {ptAxis});
 
-      histos.add<TH2>("tracks/helium/h2HeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2HeliumYvsPt_Z2", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2HeliumEtavsPt", "it{#eta} vs #it{p}_{T} (He)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2HeliumEtavsPt_Z2", "it{#eta} vs #it{p}_{T} (He)", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumYvsPt_Z2", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumEtavsPt", "it{#eta} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumEtavsPt_Z2", "it{#eta} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
 
       histos.add<TH1>("tracks/helium/h1HeliumSpectra_Z2", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/helium/h1antiHeliumSpectra_Z2", "#it{p}_{T} (#bar{He})", HistType::kTH1F, {ptAxis});
 
-      histos.add<TH2>("tracks/helium/h2antiHeliumYvsPt", "#it{y} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumYvsPt_Z2", "#it{y} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumEtavsPt", "it{#eta} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumEtavsPt_Z2", "it{#eta} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{48, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumYvsPt", "#it{y} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumYvsPt_Z2", "#it{y} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumEtavsPt", "it{#eta} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumEtavsPt_Z2", "it{#eta} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptAxis}});
     }
     if (enableAl) {
       histos.add<TH1>("tracks/alpha/h1AlphaSpectra", "#it{p}_{T} (#alpha)", HistType::kTH1F, {ptAxis});
