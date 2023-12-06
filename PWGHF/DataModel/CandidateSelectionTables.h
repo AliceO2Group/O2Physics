@@ -280,7 +280,6 @@ DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
 DECLARE_SOA_TABLE(HfMlXicToPKPi, "AOD", "HFMLXIC", //!
                   hf_sel_candidate_xic::MlProbXicToPKPi, hf_sel_candidate_xic::MlProbXicToPiKP);
 
-
 namespace hf_sel_candidate_xicc
 {
 DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
