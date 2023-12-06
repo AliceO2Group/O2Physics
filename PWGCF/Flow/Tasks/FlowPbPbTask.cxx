@@ -383,7 +383,7 @@ struct FlowPbPbTask {
     }
 
     // Filling Bootstrap samples
-    int SampleIndex = (int)(cfgNbootstrap * l_Random);
+    int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     if (SampleIndex == 0)
       FillBootstrap<0>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
     else if (SampleIndex == 1)
