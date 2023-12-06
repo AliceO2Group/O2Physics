@@ -124,19 +124,19 @@ struct TrackPropagation {
     }
     int nEnabledProcesses = 0;
     if (doprocessStandard == true) {
-      LOG(info) << "Enabling processStandard";
+      LOG(info) << "processStandard is enabled";
       nEnabledProcesses++;
     }
     if (doprocessCovariance == true) {
-      LOG(info) << "Enabling processCovariance";
+      LOG(info) << "processCovariance is enabled";
       nEnabledProcesses++;
     }
     if (doprocessStandardWithPID == true) {
-      LOG(info) << "Enabling processStandardWithPID";
+      LOG(info) << "processStandardWithPID is enabled";
       nEnabledProcesses++;
     }
     if (doprocessCovarianceWithPID == true) {
-      LOG(info) << "Enabling processCovarianceWithPID";
+      LOG(info) << "processCovarianceWithPID is enabled";
       nEnabledProcesses++;
     }
     if (nEnabledProcesses != 1) {
@@ -194,17 +194,17 @@ struct TrackPropagation {
     }
     initCCDB(bcs.begin());
 
+    // Reserve tables
+    tracksParPropagated.reserve(tracks.size());
+    tracksParExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      tracksDCA.reserve(tracks.size());
+    }
     if constexpr (fillCovMat) {
       tracksParCovPropagated.reserve(tracks.size());
       tracksParCovExtensionPropagated.reserve(tracks.size());
       if (fillTracksDCACov) {
         tracksDCACov.reserve(tracks.size());
-      }
-    } else {
-      tracksParPropagated.reserve(tracks.size());
-      tracksParExtensionPropagated.reserve(tracks.size());
-      if (fillTracksDCA) {
-        tracksDCA.reserve(tracks.size());
       }
     }
 
@@ -234,26 +234,28 @@ struct TrackPropagation {
 
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationDistance && std::abs(trkEta) < maxPropagationEta) {
-        if (track.has_collision()) {
-          auto const& collision = track.collision();
-          if constexpr (fillCovMat) {
+        if constexpr (fillCovMat) {
+          if (track.has_collision()) {
+            auto const& collision = track.collision();
             mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
             mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
           } else {
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
-          }
-        } else {
-          if constexpr (fillCovMat) {
             mVtx.setPos({mMeanVtx->getX(), mMeanVtx->getY(), mMeanVtx->getZ()});
             mVtx.setCov(mMeanVtx->getSigmaX() * mMeanVtx->getSigmaX(), 0.0f, mMeanVtx->getSigmaY() * mMeanVtx->getSigmaY(), 0.0f, 0.0f, mMeanVtx->getSigmaZ() * mMeanVtx->getSigmaZ());
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+          }
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+        } else {
+          if (track.has_collision()) {
+            auto const& collision = track.collision();
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
           } else {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({mMeanVtx->getX(), mMeanVtx->getY(), mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
           }
         }
         trackType = aod::track::Track;
       }
+
+      // Filling the tables
       if constexpr (fillCovMat) {
         tracksParPropagated(track.collisionId(), trackType, mTrackParCov.getX(), mTrackParCov.getAlpha(), mTrackParCov.getY(), mTrackParCov.getZ(), mTrackParCov.getSnp(), mTrackParCov.getTgl(), mTrackParCov.getQ2Pt());
         tracksParExtensionPropagated(mTrackParCov.getPt(), mTrackParCov.getP(), mTrackParCov.getEta(), mTrackParCov.getPhi());
@@ -277,14 +279,16 @@ struct TrackPropagation {
           tracksDCA(mDcaInfo[0], mDcaInfo[1]);
         }
       }
-      if (fillPropagationHistograms) {
-        if (trackType == aod::track::Track) {
-          histograms.fill(HIST("Propagated/x"), track.x());
-          histograms.fill(HIST("Propagated/eta"), trkEta);
-        } else {
-          histograms.fill(HIST("NotPropagated/x"), track.x());
-          histograms.fill(HIST("NotPropagated/eta"), trkEta);
-        }
+
+      if (!fillPropagationHistograms) { // Fill histograms (if requested)
+        continue;
+      }
+      if (trackType == aod::track::Track) {
+        histograms.fill(HIST("Propagated/x"), track.x());
+        histograms.fill(HIST("Propagated/eta"), trkEta);
+      } else {
+        histograms.fill(HIST("NotPropagated/x"), track.x());
+        histograms.fill(HIST("NotPropagated/eta"), trkEta);
       }
     }
   }
