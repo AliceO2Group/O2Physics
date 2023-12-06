@@ -106,7 +106,8 @@ class VarManager : public TObject
     DalitzBits = BIT(21),
     TrackTPCPID = BIT(22),
     TrackMFT = BIT(23),
-    ReducedTrackCollInfo = BIT(24) // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedMuonCollInfo = BIT(25)   // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
   };
 
   enum PairCandidateType {
