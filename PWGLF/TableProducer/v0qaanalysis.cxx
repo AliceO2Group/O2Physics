@@ -37,7 +37,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
-using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+using DauTracksMC = soa::Join<DauTracks, aod::McTrackLabels>;
+using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>;
 
 struct LfV0qaanalysis {
 
@@ -48,6 +49,21 @@ struct LfV0qaanalysis {
 
   void init(InitContext const&)
   {
+    int nProc = 0;
+    if (doprocessData) {
+      nProc += 1;
+    }
+    if (doprocessMCReco) {
+      nProc += 1;
+    }
+    if (doprocessMCGen) {
+      nProc += 1;
+    }
+    if (nProc == 0) {
+      LOG(fatal) << "Enable at least one process function";
+    }
+    LOG(info) << "Number of process functions enabled: " << nProc;
+
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
@@ -146,8 +162,9 @@ struct LfV0qaanalysis {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-                   soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
+  void processData(V0Collisions::iterator const& collision,
+                   soa::Filtered<aod::V0Datas> const& V0s,
+                   DauTracks const& tracks)
   {
 
     // Apply event selection
