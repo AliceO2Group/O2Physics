@@ -779,7 +779,7 @@ struct lambdakzeroBuilder {
               v0candidate.dcaV0dau,
               v0candidate.posDCAxy,
               v0candidate.negDCAxy,
-              TMath::ACos(v0candidate.cosPA),
+              std::acos(v0candidate.cosPA),
               v0candidate.dcav0topv);
 
       // populate V0 covariance matrices if required by any other task
