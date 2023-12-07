@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(DCAV0toPV, dcav0topv, float);                 //! DCA V0 to P
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);               //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);               //! DCA negative prong to PV
 DECLARE_SOA_COLUMN(V0Radius, v0radius, float);                   //! V0 decay radius (2D, centered at zero)
-DECLARE_SOA_COLUMN(PosNSigmaV0Pion, posNSigmaV0Pion, float);     //! number of TPC sigmas for a pos daughter to be a pion 
+DECLARE_SOA_COLUMN(PosNSigmaV0Pion, posNSigmaV0Pion, float);     //! number of TPC sigmas for a pos daughter to be a pion
 DECLARE_SOA_COLUMN(PosNSigmaV0Proton, posNSigmaV0Proton, float); //! number of TPC sigmas for a pos daughter to be a proton
 DECLARE_SOA_COLUMN(NegNSigmaV0Pion, negNSigmaV0Pion, float);     //! number of TPC sigmas for a neg daughter to be a pion
 DECLARE_SOA_COLUMN(NegNSigmaV0Proton, negNSigmaV0Proton, float); //! number of TPC sigmas for a neg daughter to be a proton
@@ -94,7 +94,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                               //! transverse 
 DECLARE_SOA_COLUMN(Eta, eta, float);                             //! pseudorapidity of V0
 DECLARE_SOA_COLUMN(PosEta, poseta, float);                       //! pseudorapidity of V0 pos daughter
 DECLARE_SOA_COLUMN(NegEta, negeta, float);                       //! pseudorapidity of V0 neg daughter
-DECLARE_SOA_COLUMN(PosPhi, posphi, float);                       //! 
+DECLARE_SOA_COLUMN(PosPhi, posphi, float);                       //!
 DECLARE_SOA_COLUMN(NegPhi, negphi, float);                       //!
 DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);                   //! inv mass with K0s assumption
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                     //! inv mass with lambda assumption
