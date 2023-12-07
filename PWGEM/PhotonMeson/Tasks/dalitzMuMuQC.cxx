@@ -224,7 +224,7 @@ struct DalitzMuMuQC {
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 7.0f, 80.0f, 90.0f, 100.0f, 999.f}, "Mixing bins - centrality"};
+  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 999.f}, "Mixing bins - centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningType colBinning{{ConfVtxBins, ConfCentBins}, true};
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
