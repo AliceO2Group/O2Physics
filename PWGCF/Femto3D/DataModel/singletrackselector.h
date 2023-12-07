@@ -193,16 +193,17 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
 {
   float Nsigma = -1000;
 
-  if (PIDcuts.first == 2212)
+  if (PIDcuts.first == 2212) {
     Nsigma = track.tofNSigmaPr();
-  else if (PIDcuts.first == 1000010020)
+  } else if (PIDcuts.first == 1000010020) {
     Nsigma = track.tofNSigmaDe();
-  else if (PIDcuts.first == 211) {
+  } else if (PIDcuts.first == 211) {
     if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFPi, TrackType>::value)
       Nsigma = track.tofNSigmaPi();
   } else if (PIDcuts.first == 321) {
-    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value)
+    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value) {
       Nsigma = track.tofNSigmaKa();
+    }
   }
 
   if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1])
