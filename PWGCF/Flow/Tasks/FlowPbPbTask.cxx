@@ -91,36 +91,6 @@ struct FlowPbPbTask {
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c22", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c32", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c42", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c24", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c26", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c22_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c22_gap06", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c22_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c32_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c32_gap06", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c32_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c32_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c42_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c42_gap06", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c42_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c42_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c422", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c422_gapA04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c422_gapB04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c422_gapA10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c422_gapB10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c3232", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c4242", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c3232_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c4242_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c24_gap04", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c3232_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c4242_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
-    // registry.add("c24_gap10", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -404,21 +374,6 @@ struct FlowPbPbTask {
       FillBootstrap<8>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
     else if (SampleIndex == 9)
       FillBootstrap<9>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-
-    // Filling c22 with ROOT TProfile
-    // FillProfile(corrconfigs.at(0), HIST("c22"), cent);
-    // FillProfile(corrconfigs.at(1), HIST("c32"), cent);
-    // FillProfile(corrconfigs.at(2), HIST("c42"), cent);
-    // FillProfile(corrconfigs.at(3), HIST("c24"), cent);
-    // FillProfile(corrconfigs.at(4), HIST("c26"), cent);
-    // FillProfile(corrconfigs.at(5), HIST("c22_gap04"), cent);
-    // FillProfile(corrconfigs.at(6), HIST("c22_gap06"), cent);
-    // FillProfile(corrconfigs.at(7), HIST("c22_gap08"), cent);
-    // FillProfile(corrconfigs.at(8), HIST("c22_gap10"), cent);
-    // FillProfile(corrconfigs.at(11), HIST("c422"), cent);
-    // FillProfile(corrconfigs.at(12), HIST("c422_gapA04"), cent);
-    // FillProfile(corrconfigs.at(13), HIST("c422_gapB04"), cent);
-    // FillProfile(corrconfigs.at(kkk), HIST("c24_gap04"), cent);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
