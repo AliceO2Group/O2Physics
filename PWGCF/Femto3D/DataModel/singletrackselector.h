@@ -178,15 +178,21 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
 {
   float Nsigma = -1000;
 
-  if (PIDcuts.first == 2212)
-    Nsigma = track.tpcNSigmaPr();
-  if (PIDcuts.first == 1000010020)
-    Nsigma = track.tpcNSigmaDe();
+  switch (PIDcuts.first) {
+    case 2212:
+      Nsigma = track.tpcNSigmaPr();
+      break;
+    case 1000010020:
+      Nsigma = track.tpcNSigmaDe();
+      break;
+    default:
+      LOG(fatal) << "Cannot interpret PDG for TPC selection: " << PIDcuts.first; 
+  }
 
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1])
+  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
     return true;
-  else
-    return false;
+  }
+  return false;
 }
 
 template <typename TrackType>
@@ -194,23 +200,29 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
 {
   float Nsigma = -1000;
 
-  if (PIDcuts.first == 2212) {
-    Nsigma = track.tofNSigmaPr();
-  } else if (PIDcuts.first == 1000010020) {
-    Nsigma = track.tofNSigmaDe();
-  } else if (PIDcuts.first == 211) {
-    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFPi, TrackType>::value)
-      Nsigma = track.tofNSigmaPi();
-  } else if (PIDcuts.first == 321) {
-    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value) {
-      Nsigma = track.tofNSigmaKa();
-    }
+  switch (PIDcuts.first) {
+    case 2212:
+      Nsigma = track.tofNSigmaPr();
+      break;
+    case 1000010020:
+      Nsigma = track.tofNSigmaDe();
+      break;
+    case 211:
+      if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFPi, TrackType>::value) {
+        Nsigma = track.tofNSigmaPi();
+      }
+    case 321:
+      if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value) {
+        Nsigma = track.tofNSigmaKa();
+      }
+    default:
+      LOG(fatal) << "Cannot interpret PDG for TOF selection: " << PIDcuts.first; 
   }
 
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1])
+  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
     return true;
-  else
-    return false;
+  }
+  return false;
 }
 
 } // namespace o2::aod::singletrackselector
