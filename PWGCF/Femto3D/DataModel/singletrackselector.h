@@ -13,8 +13,8 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 30 May 2023
 
-#ifndef PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
-#define PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
+#ifndef PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
+#define PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -22,6 +22,8 @@
 #include "Framework/Logger.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include <utility>
+#include <vector>
 #include <experimental/type_traits>
 
 namespace o2::aod {
@@ -98,25 +100,30 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float p, float eta) -> float { return p / 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float p, float eta, float phi) -> float { return (p / std::cosh(eta)) * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float p, float eta, float phi) -> float { return (p / std::cosh(eta)) * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float p, float eta) -> float { return p * std::tanh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar, [](float p, float eta, float sign, float phi, float magfield = 0.0, float radius = 1.6) -> float {
-  if (magfield == 0.0)
-    return -1000.0;
-  else
-    return phi + std::asin(-0.3 * magfield * sign * radius / (2.0 * p / std::cosh(eta)));
-});
+DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar,
+                           [](float p, float eta, float sign, float phi, float magfield = 0.0, float radius = 1.6) -> float {
+                             if (magfield == 0.0)
+                               return -1000.0;
+                             else
+                               return phi + std::asin(-0.3 * magfield * sign * radius / (2.0 * p / std::cosh(eta)));
+                           });
 
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr, [](nsigma::binning::binned_t nsigma_binned) -> float {
-  return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
-});
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, [](nsigma::binning::binned_t nsigma_binned) -> float {
-  return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
-});
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaDe, tofNSigmaDe, [](nsigma::binning::binned_t nsigma_binned) -> float {
-  return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
-});
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe, [](nsigma::binning::binned_t nsigma_binned) -> float {
-  return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
-});
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float {
+                             return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float {
+                             return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaDe, tofNSigmaDe,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float {
+                             return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float {
+                             return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
+                           });
 
 }  // namespace singletrackselector
 
@@ -154,7 +161,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL",  /
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
 
 }  // namespace o2::aod
-#endif  // PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
+#endif  // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
 namespace o2::aod::singletrackselector {
 
