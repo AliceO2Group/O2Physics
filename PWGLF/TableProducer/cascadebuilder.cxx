@@ -2018,5 +2018,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<cascadePreselector>(cfgc),
     adaptAnalysisTask<cascadeInitializer>(cfgc),
     adaptAnalysisTask<cascadeLinkBuilder>(cfgc),
-    adaptAnalysisTask<kfcascadeLinkBuilder>(cfgc)};
+    adaptAnalysisTask<kfcascadeLinkBuilder>(cfgc),
+    adaptAnalysisTask<tracascadeLinkBuilder>(cfgc)};
 }
