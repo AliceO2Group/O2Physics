@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(pbpbstrangenessqc
-                    SOURCES pbpbStrangenessQC.cxx
+o2physics_add_dpl_workflow(strangenessqc
+                    SOURCES strangenessQC.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

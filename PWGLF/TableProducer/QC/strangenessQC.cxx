@@ -27,7 +27,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pbpbStrangenessQC {
+struct strangenessQC {
   // Tables to produce
   Produces<aod::CascadesQC> cascadesQC;
   Produces<aod::VZerosQC> vZerosQC;
@@ -189,14 +189,14 @@ struct pbpbStrangenessQC {
 
       float casc_v0cospa = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       float casc_cospa = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-      float casc_mindcav0topv = casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ());
+      float casc_dcav0topv = casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ());
 
       // Cut on dynamic columns
       if (casc.v0radius() < cascadesetting_v0radius ||
           casc.cascradius() < cascadesetting_cascradius ||
           casc_v0cospa < cascadesetting_v0cospa ||
           casc_cospa < cascadesetting_cospa ||
-          TMath::Abs(casc_mindcav0topv) < cascadesetting_mindcav0topv) {
+          TMath::Abs(casc_dcav0topv) < cascadesetting_mindcav0topv) {
         continue;
       }
 
@@ -209,20 +209,20 @@ struct pbpbStrangenessQC {
       const auto& posDau = v0Casc.posTrack_as<DaughterTracks>();
       const auto& negDau = v0Casc.negTrack_as<DaughterTracks>();
 
-      float cascDecayLength = std::sqrt(std::pow(casc.x() - collision.posX(), 2) + std::pow(casc.y() - collision.posY(), 2) + std::pow(casc.z() - collision.posZ(), 2));
-      float cascTotalMomentum = RecoDecay::sqrtSumOfSquares(casc.px(), casc.py(), casc.pz());
-      float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * pdgDB->Mass(3312);
-      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * pdgDB->Mass(3334);
+      float cascDecayLength = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
+      float cascTotalMomentum = std::hypot(casc.px(), casc.py(), casc.pz());
+      float CtauXi = cascDecayLength / (cascTotalMomentum + 1e-13) * pdgDB->Mass(3312);
+      float CtauOmega = cascDecayLength / (cascTotalMomentum + 1e-13) * pdgDB->Mass(3334);
 
-      float v0TotalMomentum = RecoDecay::sqrtSumOfSquares(casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg());
-      float v0DecayLength = std::sqrt(std::pow(casc.xlambda() - casc.x(), 2) + std::pow(casc.ylambda() - casc.y(), 2) + std::pow(casc.zlambda() - casc.z(), 2));
-      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * pdgDB->Mass(3122);
+      float v0DecayLength = std::hypot(casc.xlambda() - casc.x(), casc.ylambda() - casc.y(), casc.zlambda() - casc.z());
+      float v0TotalMomentum = std::hypot(casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg());
+      float CtauV0 = v0DecayLength / (v0TotalMomentum + 1e-13) * pdgDB->Mass(3122);
 
       cascadesQC(casc.sign(), casc.yXi(), casc.yOmega(),
                  casc_cospa, casc_v0cospa,
                  casc.cascradius(), casc.v0radius(),
                  cascDecayLength, CtauXi, CtauOmega, CtauV0,
-                 casc.dcaV0daughters(), casc.dcacascdaughters(), casc_mindcav0topv,
+                 casc.dcaV0daughters(), casc.dcacascdaughters(), casc_dcav0topv,
                  casc.dcabachtopv(), casc.dcapostopv(), casc.dcanegtopv(),
                  posDau.tpcNSigmaPi(), posDau.tpcNSigmaPr(),
                  negDau.tpcNSigmaPi(), negDau.tpcNSigmaPr(),
@@ -231,11 +231,11 @@ struct pbpbStrangenessQC {
                  casc.mLambda(), casc.mOmega(), casc.mXi());
     }
   }
-  PROCESS_SWITCH(pbpbStrangenessQC, processData, "Process Run 3 data", true);
+  PROCESS_SWITCH(strangenessQC, processData, "Process Run 3 data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pbpbStrangenessQC>(cfgc, TaskName{"lf-pbpbstrangenessqc"})};
+    adaptAnalysisTask<strangenessQC>(cfgc, TaskName{"lf-strangenessqc"})};
 }

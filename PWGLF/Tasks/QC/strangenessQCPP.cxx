@@ -26,7 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pbpbStrangenessQCPP {
+struct strangenessQCPP {
   // Histogram registries
   HistogramRegistry rGeneral{"generalInfo", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   HistogramRegistry rVzero{"vzero", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -398,7 +398,7 @@ struct pbpbStrangenessQCPP {
       }
     }
   }
-  PROCESS_SWITCH(pbpbStrangenessQCPP, processV0, "Process V0 candidates", true);
+  PROCESS_SWITCH(strangenessQCPP, processV0, "Process V0 candidates", true);
 
   void processCascade(soa::Filtered<aod::CascadesQC> const& cascades)
   {
@@ -447,11 +447,11 @@ struct pbpbStrangenessQCPP {
       }
     }
   }
-  PROCESS_SWITCH(pbpbStrangenessQCPP, processCascade, "Process cascade candidates", true);
+  PROCESS_SWITCH(strangenessQCPP, processCascade, "Process cascade candidates", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pbpbStrangenessQCPP>(cfgc, TaskName{"lf-pbpbstrangenessqcpp"})};
+    adaptAnalysisTask<strangenessQCPP>(cfgc, TaskName{"lf-strangenessqcpp"})};
 }
