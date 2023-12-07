@@ -13,12 +13,8 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 30 May 2023
 
-#ifndef PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
-#define PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
-
-#include <experimental/type_traits>
-#include <utility>
-#include <vector>
+#ifndef PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
+#define PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,12 +22,16 @@
 #include "Framework/Logger.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include <experimental/type_traits>
+
 namespace o2::aod
 {
 namespace singletrackselector
 {
 template <typename binningType>
-typename binningType::binned_t packInTable(const float& valueToBin)
+inline
+  typename binningType::binned_t
+  packInTable(const float& valueToBin)
 {
   if (valueToBin <= binningType::binned_min) {
     return binningType::underflowBin;
@@ -44,7 +44,7 @@ typename binningType::binned_t packInTable(const float& valueToBin)
 }
 
 template <typename binningType>
-float unPack(const typename binningType::binned_t& b)
+inline float unPack(const typename binningType::binned_t& b)
 {
   return static_cast<float>(binningType::bin_width * b);
 
@@ -66,6 +66,7 @@ struct binning {
 } // namespace nsigma
 
 DECLARE_SOA_COLUMN(Mult, mult, int);           // Multiplicity of the collision
+DECLARE_SOA_COLUMN(MultPercentile, multPerc, float);   // Percentiles of multiplicity of the collision
 DECLARE_SOA_COLUMN(PosZ, posZ, float);         // Vertex of the collision
 DECLARE_SOA_COLUMN(MagField, magField, float); // Magnetic field corresponding to a collision (in T)
 
@@ -74,6 +75,7 @@ DECLARE_SOA_COLUMN(MagField, magField, float); // Magnetic field corresponding t
 DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variables for single track selection.
                   o2::soa::Index<>,
                   singletrackselector::Mult,
+                  singletrackselector::MultPercentile,
                   singletrackselector::PosZ,
                   singletrackselector::MagField);
 
@@ -113,12 +115,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float p, float eta) -> float { return p * std::tanh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar,
                            [](float p, float eta, float sign, float phi, float magfield = 0.0, float radius = 1.6) -> float {
-                             if (magfield == 0.0) {
-                               return -1000.0f;
-                             } else {
-                               return phi + std::asin(-0.3 * magfield * sign * radius / (2.0 * p / std::cosh(eta)));
-                             }
-                           });
+                            if(magfield==0.0) return -1000.0;
+                            else return phi + std::asin( -0.3*magfield*sign*radius/(2.0*p/std::cosh(eta)) ); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
                            [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
@@ -131,7 +129,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
 
 } // namespace singletrackselector
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SingleTrackSels", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,
@@ -165,11 +163,10 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SingleTrackSels", "AOD", "SINGLETRACKSE
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
 
 } // namespace o2::aod
-#endif // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
+#endif // PWGCF_DATAMODEL_SINGLETRACKSELECTOR_H_
 
 namespace o2::aod::singletrackselector
 {
-
 template <typename TrackType>
 inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
 {
@@ -177,18 +174,15 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
 
   float Nsigma = -1000;
 
-  if (PIDcuts.first == 2212) {
+  if (PIDcuts.first == 2212)
     Nsigma = track.tpcNSigmaPr();
-  }
-  if (PIDcuts.first == 1000010020) {
+  if (PIDcuts.first == 1000010020)
     Nsigma = track.tpcNSigmaDe();
-  }
 
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
+  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1])
     return true;
-  } else {
+  else
     return false;
-  }
 }
 
 template <typename TrackType>
@@ -198,23 +192,22 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
 
   float Nsigma = -1000;
 
-  if (PIDcuts.first == 2212) {
+  if (PIDcuts.first == 2212)
     Nsigma = track.tofNSigmaPr();
-  } else if (PIDcuts.first == 1000010020) {
+  else if (PIDcuts.first == 1000010020)
     Nsigma = track.tofNSigmaDe();
-  } else if (PIDcuts.first == 211) {
+
+  else if (PIDcuts.first == 211) {
     if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFPi, TrackType>::value)
       Nsigma = track.tofNSigmaPi();
   } else if (PIDcuts.first == 321) {
-    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value) {
+    if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value)
       Nsigma = track.tofNSigmaKa();
-    }
   }
 
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
+  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1])
     return true;
-  } else {
+  else
     return false;
-  }
 }
 } // namespace o2::aod::singletrackselector
