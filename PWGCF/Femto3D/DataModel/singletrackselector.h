@@ -26,11 +26,14 @@
 #include <vector>
 #include <experimental/type_traits>
 
-namespace o2::aod {
-namespace singletrackselector {
+namespace o2::aod
+{
+namespace singletrackselector
+{
 
 template <typename binningType>
-inline typename binningType::binned_t packInTable(const float& valueToBin) {
+inline typename binningType::binned_t packInTable(const float& valueToBin)
+{
   if (valueToBin <= binningType::binned_min) {
     return binningType::underflowBin;
   } else if (valueToBin >= binningType::binned_max) {
@@ -41,11 +44,13 @@ inline typename binningType::binned_t packInTable(const float& valueToBin) {
 }
 
 template <typename binningType>
-inline float unPack(const typename binningType::binned_t& b) {
+inline float unPack(const typename binningType::binned_t& b)
+{
   return static_cast<float>(binningType::bin_width * b);
 }
 
-namespace nsigma {
+namespace nsigma
+{
 struct binning {
  public:
   typedef int8_t binned_t;
@@ -56,37 +61,38 @@ struct binning {
   static constexpr float binned_min = -10.0;
   static constexpr float bin_width = (binned_max - binned_min) / nbins;
 };
-}  // namespace nsigma
+} // namespace nsigma
 
-DECLARE_SOA_COLUMN(Mult, mult, int);  // Multiplicity of the collision
-DECLARE_SOA_COLUMN(MultPercentile, multPerc, float);  // Percentiles of multiplicity of the collision
-DECLARE_SOA_COLUMN(PosZ, posZ, float);  // Vertex of the collision
-DECLARE_SOA_COLUMN(MagField, magField, float);  // Magnetic field corresponding to a collision (in T)
+DECLARE_SOA_COLUMN(Mult, mult, int);                 // Multiplicity of the collision
+DECLARE_SOA_COLUMN(MultPercentile, multPerc, float); // Percentiles of multiplicity of the collision
+DECLARE_SOA_COLUMN(PosZ, posZ, float);               // Vertex of the collision
+DECLARE_SOA_COLUMN(MagField, magField, float);       // Magnetic field corresponding to a collision (in T)
 
-}  // namespace singletrackselector
+} // namespace singletrackselector
 
-DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL",  // Table of the variables for single track selection.
+DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variables for single track selection.
                   o2::soa::Index<>,
                   singletrackselector::Mult,
                   singletrackselector::MultPercentile,
                   singletrackselector::PosZ,
                   singletrackselector::MagField);
 
-namespace singletrackselector {
+namespace singletrackselector
+{
 
-DECLARE_SOA_INDEX_COLUMN(SingleCollSel, singleCollSel);  // Index to the collision
-DECLARE_SOA_COLUMN(P, p, float);  // Momentum of the track
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);  // impact parameter of the track
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);  // impact parameter of the track
-DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);  // Momentum at inner wall of the TPC
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);  // dE/dx TPC
-DECLARE_SOA_COLUMN(Beta, beta, float);  // TOF beta
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);  // Number of TPC clusters
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);  // TPC chi2
-DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);  // Ratio of found over findable clusters
-DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, uint8_t);  // Number of shared TPC clusters
-DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);  // Number of ITS clusters
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);  // ITS chi2
+DECLARE_SOA_INDEX_COLUMN(SingleCollSel, singleCollSel);                                  // Index to the collision
+DECLARE_SOA_COLUMN(P, p, float);                                                         // Momentum of the track
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                                                 // impact parameter of the track
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                                   // impact parameter of the track
+DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);                                 // Momentum at inner wall of the TPC
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                                         // dE/dx TPC
+DECLARE_SOA_COLUMN(Beta, beta, float);                                                   // TOF beta
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);                                 // Number of TPC clusters
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);                                       // TPC chi2
+DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); // Ratio of found over findable clusters
+DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, uint8_t);                               // Number of shared TPC clusters
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           // Number of ITS clusters
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                                       // ITS chi2
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -125,9 +131,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
                              return singletrackselector::unPack<nsigma::binning>(nsigma_binned);
                            });
 
-}  // namespace singletrackselector
+} // namespace singletrackselector
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL",  // Table of the variables for single track selection.
+DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,
@@ -160,13 +166,15 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL",  /
                        singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
 
-}  // namespace o2::aod
-#endif  // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
+} // namespace o2::aod
+#endif // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
-namespace o2::aod::singletrackselector {
+namespace o2::aod::singletrackselector
+{
 
 template <typename TrackType>
-inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts) {
+inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
+{
   float Nsigma = -1000;
 
   if (PIDcuts.first == 2212)
@@ -181,7 +189,8 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
 }
 
 template <typename TrackType>
-inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts) {
+inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
+{
   float Nsigma = -1000;
 
   if (PIDcuts.first == 2212)
@@ -202,4 +211,4 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
     return false;
 }
 
-}  // namespace o2::aod::singletrackselector
+} // namespace o2::aod::singletrackselector
