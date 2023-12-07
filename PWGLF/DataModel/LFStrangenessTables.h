@@ -142,7 +142,7 @@ DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
-DECLARE_SOA_COLUMN(V0PA, v0PA, float);               //! V0 pointing angle
+DECLARE_SOA_COLUMN(V0PA, v0PA, float);                     //! V0 pointing angle
 DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
 
 // Saved from finding: covariance matrix of parent track (on request)
