@@ -289,7 +289,7 @@ struct lambdakzerofinder {
             pvec0[0], pvec0[1], pvec0[2],
             pvec1[0], pvec1[1], pvec1[2],
             TMath::Sqrt(fitter.getChi2AtPCACandidate()),
-            t1.dcaXY(), t2.dcaXY(), TMath::ACos(cosPA), smallestDCA);
+            t1.dcaXY(), t2.dcaXY(), std::acos(cosPA), smallestDCA);
     v0datalink(v0cores.lastIndex());
     return 1;
   }
