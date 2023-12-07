@@ -310,7 +310,7 @@ struct createPCM {
               pvec0[0], pvec0[1], pvec0[2],
               pvec1[0], pvec1[1], pvec1[2],
               v0dca, pos.dcaXY(), ele.dcaXY(),
-              TMath::ACos(v0CosinePA), dcaV0toPV);
+              std::acos(v0CosinePA), dcaV0toPV);
     } else {
       // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);
       pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0dca;
