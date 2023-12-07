@@ -62,6 +62,7 @@ struct Photon {
   {
     eta = eta_tmp;
     phi = phi_tmp;
+    onDCal = (phi < 6 && phi > 4);
     energy = energy_tmp;
     theta = 2 * std::atan2(std::exp(-eta), 1);
     px = energy * std::sin(theta) * std::cos(phi);
@@ -79,6 +80,7 @@ struct Photon {
   float pz;
   float eta;
   float phi;
+  bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
   float energy;
   float theta;
   int id;
@@ -141,8 +143,12 @@ struct Pi0QCTask {
   Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
   Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<bool> mSplitEMCalDCal{"SplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
+
+  ConfigurableAxis pTBinning{"pTBinning", {500, 0.0f, 50.0f}, "Binning used along pT axis for inv mass histograms"};
+  ConfigurableAxis invmassBinning{"invmassBinning", {400, 0.0f, 0.8f}, "Binning used for inv mass axis in inv mass - pT histograms"};
 
   // define cluster filter. It selects only those clusters which are of the type
   // specified in the string mClusterDefinition,e.g. kV3Default, which is V3 clusterizer with default
@@ -194,9 +200,18 @@ struct Pi0QCTask {
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
 
     // meson related histograms
-    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
-    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
-    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
+    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
+
+    if (mSplitEMCalDCal) {
+      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+    }
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -228,10 +243,10 @@ struct Pi0QCTask {
     mHistManager.fill(HIST("eventsAll"), 1);
     LOG(debug) << "processCollisions";
     // do event selection if mDoEventSel is specified
-    // currently the event selection is hard coded to kINT7
+    // currently the event selection is hard coded to kTVXinEMC
     // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!collision.alias_bit(kINT7))) {
-      LOG(debug) << "Event not selected becaus it is not kINT7, skipping";
+    if (mDoEventSel && (!collision.alias_bit(kTVXinEMC))) {
+      LOG(debug) << "Event not selected becaus it is not kTVXinEMC, skipping";
       return;
     }
     mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
@@ -407,6 +422,14 @@ struct Pi0QCTask {
         Meson meson(mPhotons[ig1], mPhotons[ig2]);
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
           mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
+
+          if (mSplitEMCalDCal) {
+            if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal) {
+              mHistManager.fill(HIST("invMassVsPt_EMCal"), meson.getMass(), meson.getPt());
+            } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal) {
+              mHistManager.fill(HIST("invMassVsPt_DCal"), meson.getMass(), meson.getPt());
+            }
+          }
         }
 
         // calculate background candidates (rotation background)
@@ -457,9 +480,23 @@ struct Pi0QCTask {
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
+        if (mSplitEMCalDCal) {
+          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
+            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
+          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
+            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
+          }
+        }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
+        if (mSplitEMCalDCal) {
+          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
+            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
+          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
+            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
+          }
+        }
       }
     }
   }
@@ -471,6 +508,13 @@ struct Pi0QCTask {
         Meson meson(gamma, evtMix.vecEvtMix[i][ig1]);
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
           mHistManager.fill(HIST("invMassVsPtMixedBackground"), meson.getMass(), meson.getPt());
+          if (mSplitEMCalDCal) {
+            if (!gamma.onDCal && !evtMix.vecEvtMix[i][ig1].onDCal) {
+              mHistManager.fill(HIST("invMassVsPtMixedBackground_EMCal"), meson.getMass(), meson.getPt());
+            } else if (gamma.onDCal && evtMix.vecEvtMix[i][ig1].onDCal) {
+              mHistManager.fill(HIST("invMassVsPtMixedBackground_DCal"), meson.getMass(), meson.getPt());
+            }
+          }
         }
       }
     }

@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(QC)
+
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
@@ -16,6 +18,7 @@ o2physics_add_dpl_workflow(tpcpid
                     COMPONENT_NAME Analysis)
 
 # Strangeness
+
 o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore

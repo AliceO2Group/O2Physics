@@ -1152,6 +1152,7 @@ inline int8_t HfFilterHelper::isBDTSelected(const T& scores, const U& thresholdB
   if (scores[0] > thresholdBDTScores.get(0u, 0u)) {
     return retValue;
   }
+  retValue |= BIT(RecoDecay::OriginType::None); // signal, but not yet tagged as prompt or nonprompt
   if (scores[1] > thresholdBDTScores.get(0u, 1u)) {
     retValue |= BIT(RecoDecay::OriginType::Prompt);
   }

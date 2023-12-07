@@ -386,8 +386,15 @@ struct HfTreeCreatorOmegacSt {
           }
 
           for (const auto& track : tracks) {
+            const auto trackId = track.globalIndex();
+            if (trackId == v0TrackPr.globalIndex() ||
+                trackId == v0TrackPi.globalIndex() ||
+                trackId == bachelor.globalIndex()) {
+              continue;
+            }
             if (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) {
               LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
+              auto trackParCovCasc = getTrackParCov(trackCasc);
               auto trackParCovPion = getTrackParCov(track);
               o2::dataformats::DCA impactParameterPion;
               if (bzOnly) {
@@ -396,7 +403,7 @@ struct HfTreeCreatorOmegacSt {
                 o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
               }
 
-              if (df2.process(trackParCovTrk, trackParCovPion)) {
+              if (df2.process(trackParCovCasc, trackParCovPion)) {
                 const auto& secondaryVertex = df2.getPCACandidate();
                 const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                 const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
