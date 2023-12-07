@@ -213,7 +213,7 @@ struct HfTaskB0Reduced {
   /// \param withDmesMl is the flag to enable the filling of hisgorams with ML scores for the D- daughter
   /// \param candidate is the B0 candidate
   /// \param candidatesD is the table with D- candidates
-  template<bool withDmesMl, typename Cand>
+  template <bool withDmesMl, typename Cand>
   void fillCand(Cand const& candidate,
                 aod::HfRed3Prongs const& candidatesD)
   {
@@ -268,7 +268,7 @@ struct HfTaskB0Reduced {
   /// \param withDmesMl is the flag to enable the filling of hisgorams with ML scores for the D- daughter
   /// \param candidate is the B0 candidate
   /// \param candidatesD is the table with D- candidates
-  template<bool withDmesMl, typename Cand>
+  template <bool withDmesMl, typename Cand>
   void fillCandMcReco(Cand const& candidate,
                       aod::HfRed3Prongs const& candidatesD)
   {
@@ -309,7 +309,7 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hMlScoreBkgDRecSig"), ptD, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptDRecSig"), ptD, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptDRecSig"), ptD, candidate.prong0MlScoreNonprompt());
-        } 
+        }
       } else if (fillBackground) {
         registry.fill(HIST("hMassRecBg"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
         registry.fill(HIST("hPtProng0RecBg"), ptCandB0, candidate.ptProng0());
@@ -333,7 +333,7 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hMlScoreBkgDRecBg"), ptD, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptDRecBg"), ptD, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptDRecBg"), ptD, candidate.prong0MlScoreNonprompt());
-        } 
+        }
       }
     }
     if (fillSparses) {
@@ -347,7 +347,7 @@ struct HfTaskB0Reduced {
         if constexpr (withDmesMl) {
           registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
-          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);          
+          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);
         }
       }
     }

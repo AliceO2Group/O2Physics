@@ -101,7 +101,7 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template<bool withDmesMl, typename Cands, typename Pions>
+  template <bool withDmesMl, typename Cands, typename Pions>
   void runCandidateCreation(aod::HfRedCollisions::iterator const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
@@ -256,7 +256,7 @@ struct HfCandidateCreatorB0Reduced {
   } // processDataWithDmesMl
 
   PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processDataWithDmesMl, "Process data with ML scores of D mesons", false);
-};  // struct
+}; // struct
 
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorB0ReducedExpressions {

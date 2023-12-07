@@ -103,10 +103,10 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   /// Main function to perform B0 candidate creation
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
-  /// \param hfCandsB0 B0 candidates 
+  /// \param hfCandsB0 B0 candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the Dpi data creator
-  template<bool withDmesMl, typename Cands>
+  template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsB0,
                     TracksPion const& pionTracks,
                     HfCandB0Configs const& configs)
@@ -157,7 +157,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
           continue;
         }
       }
-      
+
       SETBIT(statusB0ToDPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusB0ToDPi = 3
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
