@@ -195,7 +195,7 @@ struct lambdakzeroBuilder {
     float dcaV0dau;
     float posDCAxy;
     float negDCAxy;
-    float cosPA;
+    double cosPA;
     float dcav0topv;
     float V0radius;
     float lambdaMass;
@@ -779,7 +779,7 @@ struct lambdakzeroBuilder {
               v0candidate.dcaV0dau,
               v0candidate.posDCAxy,
               v0candidate.negDCAxy,
-              v0candidate.cosPA,
+              TMath::ACos(v0candidate.cosPA),
               v0candidate.dcav0topv);
 
       // populate V0 covariance matrices if required by any other task

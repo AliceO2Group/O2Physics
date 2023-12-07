@@ -283,7 +283,7 @@ struct createPCM {
     std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
     float v0dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
-    float v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
+    double v0CosinePA = RecoDecay::cpa(pVtx, svpos, pvxyz);
     float v0radius = RecoDecay::sqrtSumOfSquares(svpos[0], svpos[1]);
     float dcaV0toPV = calculateDCAStraightToPV(svpos[0], svpos[1], svpos[2], pvxyz[0], pvxyz[1], pvxyz[2], pVtx[0], pVtx[1], pVtx[2]);
 
@@ -310,7 +310,7 @@ struct createPCM {
               pvec0[0], pvec0[1], pvec0[2],
               pvec1[0], pvec1[1], pvec1[2],
               v0dca, pos.dcaXY(), ele.dcaXY(),
-              v0CosinePA, dcaV0toPV);
+              TMath::ACos(v0CosinePA), dcaV0toPV);
     } else {
       // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);
       pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0dca;
