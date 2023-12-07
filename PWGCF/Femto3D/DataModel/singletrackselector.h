@@ -108,10 +108,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float p, float eta, float phi) -> float { 
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float p, float eta) -> float { return p * std::tanh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar,
                            [](float p, float eta, float sign, float phi, float magfield = 0.0, float radius = 1.6) -> float {
-                             if (magfield == 0.0)
+                             if (magfield == 0.0) {
                                return -1000.0;
-                             else
+                             } else {
                                return phi + std::asin(-0.3 * magfield * sign * radius / (2.0 * p / std::cosh(eta)));
+                             }
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
