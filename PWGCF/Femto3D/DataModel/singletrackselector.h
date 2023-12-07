@@ -186,7 +186,7 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
       Nsigma = track.tpcNSigmaDe();
       break;
     default:
-      LOG(fatal) << "Cannot interpret PDG for TPC selection: " << PIDcuts.first; 
+      LOG(fatal) << "Cannot interpret PDG for TPC selection: " << PIDcuts.first;
   }
 
   if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
@@ -216,7 +216,7 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
         Nsigma = track.tofNSigmaKa();
       }
     default:
-      LOG(fatal) << "Cannot interpret PDG for TOF selection: " << PIDcuts.first; 
+      LOG(fatal) << "Cannot interpret PDG for TOF selection: " << PIDcuts.first;
   }
 
   if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
