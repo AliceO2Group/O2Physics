@@ -271,10 +271,14 @@ namespace hf_sel_candidate_xic
 {
 DECLARE_SOA_COLUMN(IsSelXicToPKPi, isSelXicToPKPi, int); //!
 DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int); //!
+DECLARE_SOA_COLUMN(MlProbXicToPKPi, mlProbXicToPKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbXicToPiKP, mlProbXicToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_xic
 
 DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
                   hf_sel_candidate_xic::IsSelXicToPKPi, hf_sel_candidate_xic::IsSelXicToPiKP);
+DECLARE_SOA_TABLE(HfMlXicToPKPi, "AOD", "HFMLXIC", //!
+                  hf_sel_candidate_xic::MlProbXicToPKPi, hf_sel_candidate_xic::MlProbXicToPiKP);
 
 namespace hf_sel_candidate_xicc
 {
