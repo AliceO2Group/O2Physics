@@ -204,7 +204,7 @@ struct Pi0QCTask {
     mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
     mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
 
-    if(mSplitEMCalDCal){
+    if (mSplitEMCalDCal) {
       mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
       mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
       mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
@@ -423,11 +423,10 @@ struct Pi0QCTask {
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
           mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
 
-          if(mSplitEMCalDCal){
-            if(!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal){
+          if (mSplitEMCalDCal) {
+            if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal) {
               mHistManager.fill(HIST("invMassVsPt_EMCal"), meson.getMass(), meson.getPt());
-            }
-            else if(mPhotons[ig1].onDCal && mPhotons[ig2].onDCal){
+            } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal) {
               mHistManager.fill(HIST("invMassVsPt_DCal"), meson.getMass(), meson.getPt());
             }
           }
@@ -481,22 +480,20 @@ struct Pi0QCTask {
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
-        if(mSplitEMCalDCal){
-          if(!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal){
+        if (mSplitEMCalDCal) {
+          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
             mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
-          }
-          else if(mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal){
+          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
             mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
           }
         }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
-        if(mSplitEMCalDCal){
-          if(!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal){
+        if (mSplitEMCalDCal) {
+          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
             mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
-          }
-          else if(mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal){
+          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
             mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
           }
         }
@@ -511,11 +508,10 @@ struct Pi0QCTask {
         Meson meson(gamma, evtMix.vecEvtMix[i][ig1]);
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
           mHistManager.fill(HIST("invMassVsPtMixedBackground"), meson.getMass(), meson.getPt());
-          if(mSplitEMCalDCal){
-            if(!gamma.onDCal && !evtMix.vecEvtMix[i][ig1].onDCal){
+          if (mSplitEMCalDCal) {
+            if (!gamma.onDCal && !evtMix.vecEvtMix[i][ig1].onDCal) {
               mHistManager.fill(HIST("invMassVsPtMixedBackground_EMCal"), meson.getMass(), meson.getPt());
-            }
-            else if(gamma.onDCal && evtMix.vecEvtMix[i][ig1].onDCal){
+            } else if (gamma.onDCal && evtMix.vecEvtMix[i][ig1].onDCal) {
               mHistManager.fill(HIST("invMassVsPtMixedBackground_DCal"), meson.getMass(), meson.getPt());
             }
           }
