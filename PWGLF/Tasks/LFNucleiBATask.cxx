@@ -470,6 +470,14 @@ struct LFNucleiBATask {
         histos.add<TH1>("tracks/helium/h1antiHeliumSpectraTruePrim_Z2", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
         histos.add<TH1>("tracks/helium/h1antiHeliumSpectraTrueSec_Z2", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
         histos.add<TH1>("tracks/helium/h1antiHeliumSpectraTrueTransport_Z2", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
+        if (enablePtSpectra) {
+          histos.add<TH1>("tracks/eff/helium/hPtHeTrue", "Track #it{p}_{T} (He); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+          histos.add<TH1>("tracks/eff/helium/hPtantiHeTrue", "Track #it{p}_{T} (#bar{He}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+          if (doTOFplots) {
+            histos.add<TH1>("tracks/eff/helium/hPtHeTOFTrue", "Track #it{p}_{T} (He); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+            histos.add<TH1>("tracks/eff/helium/hPtantiHeTOFTrue", "Track #it{p}_{T} (#bar{He}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+          }
+        }
       }
       if (enableAl) {
         histos.add<TH1>("tracks/alpha/h1AlphaSpectraTrue", "#it{p}_{T} (#alpha)", HistType::kTH1F, {ptAxis});
@@ -3059,6 +3067,12 @@ struct LFNucleiBATask {
               if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe) {
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueWPID"), hePt);
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueWPID_Z2"), 2 * hePt);
+                if (enablePtSpectra) {
+                  histos.fill(HIST("tracks/eff/helium/hPtHeTrue"), 2 * hePt);
+                  if (track.hasTOF() & doTOFplots) {
+                    histos.fill(HIST("tracks/eff/helium/hPtHeTOFTrue"), 2 * hePt);
+                  }
+                }
               }
               if (isPhysPrim) {
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTruePrim"), hePt);
@@ -3093,6 +3107,12 @@ struct LFNucleiBATask {
               if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe) {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID"), antihePt);
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID_Z2"), 2 * antihePt);
+                if (enablePtSpectra) {
+                  histos.fill(HIST("tracks/eff/helium/hPtantiHeTrue"), 2 * hePt);
+                  if (track.hasTOF() & doTOFplots) {
+                    histos.fill(HIST("tracks/eff/helium/hPtantiHeTOFTrue"), 2 * hePt);
+                  }
+                }
               }
               if (isPhysPrim) {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTruePrim"), antihePt);
