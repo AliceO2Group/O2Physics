@@ -206,7 +206,18 @@ struct BcSelectionTask {
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       int run = bcs.iteratorAt(0).runNumber();
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
+      // Corection for BC shifts in CTP wrt LM
+      if (run >= 516967 && run <= 530305) {
+        // 2022
+        // all runs with CTP readout need to be corrected for L1L0+L0LM delay (294 BCs), runs with replayed readout (LHC22m and part of LHC22o) have the correct BC
+        triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
+      } else if (run >= 530306 && run <= 545563) {
+        // 2023
+        // all runs from periods LHC23zd - LHC23zs have a 2 BC shift in CTP which needs to be corrected
+        triggerBcShift = (run >= 538923 && run <= 539700) ? 3 : 0;
+      } else {
+        triggerBcShift == 0;
+      }
     }
 
     for (auto bc : bcs) {
