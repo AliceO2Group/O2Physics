@@ -16,9 +16,9 @@
 #ifndef PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 #define PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
+#include <experimental/type_traits>
 #include <utility>
 #include <vector>
-#include <experimental/type_traits>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
