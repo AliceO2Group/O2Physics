@@ -93,7 +93,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MultTPC_MultFT0C", "MultTPC vs MultFT0C", false, 400, 0, 800.0, VarManager::kMultTPC, 100, 0, 1000.0, VarManager::kMultFT0C);
       hm->AddHistogram(histClass, "MultFT0A_MultFT0C", "MultFT0A vs MultFT0C", false, 100, 0, 1000.0, VarManager::kMultFT0A, 100, 0, 1000.0, VarManager::kMultFT0C);
     }
-    if (subGroupStr.Contains("multFTOPbPbRun3")) {
+    if (subGroupStr.Contains("ftmulpbpb")) {
       hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 100, 0.0, 50000.0, VarManager::kMultTPC);
       hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 100, 0.0, 60000.0, VarManager::kMultFT0C);
       hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 100, 0.0, 180000.0, VarManager::kMultFT0A);
