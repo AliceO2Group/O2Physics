@@ -422,55 +422,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
-  template <int reconstructionType, typename CandType>
-  void processData(aod::Collisions const& collisions,
-                   CandType const& candidates,
-                   TracksWPid const&,
-                   aod::BCs const&)
-  {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillCollision(collision, 0, collision.bc().runNumber());
-    }
-
-    // Filling candidate properties
-    if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
-    } else {
-      rowCandidateFull.reserve(candidates.size());
-    }
-    for (const auto& candidate : candidates) {
-      if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-          continue;
-        }
-      }
-      auto prong0 = candidate.template prong0_as<TracksWPid>();
-      auto prong1 = candidate.template prong1_as<TracksWPid>();
-      double yD = hfHelper.yD0(candidate);
-      double eD = hfHelper.eD0(candidate);
-      double ctD = hfHelper.ctD0(candidate);
-      float massD0, massD0bar;
-      float topolChi2PerNdf = -999.;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-        massD0 = candidate.kfGeoMassD0();
-        massD0bar = candidate.kfGeoMassD0bar();
-        topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
-      } else {
-        massD0 = hfHelper.invMassD0ToPiK(candidate);
-        massD0bar = hfHelper.invMassD0barToKPi(candidate);
-      }
-      if (candidate.isSelD0()) {
-        fillCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
-      }
-      if (candidate.isSelD0bar()) {
-        fillCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
-      }
-    }
-  }
-
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
   void processCandidates(aod::Collisions const& collisions,
                  CandType const& candidates,
@@ -495,7 +446,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         flagMcRec = candidate.flagMcMatchRec();
         origin = candidate.originMcRec();
         if constexpr (onlyBkg) {
-          if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             continue;
           }
           if (downSampleBkgFactor < 1.) {
@@ -506,7 +457,7 @@ struct HfDerivedDataCreatorD0ToKPi {
           }
         }
         if constexpr (onlySig) {
-          if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             continue;
           }
         }
@@ -562,7 +513,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, false, false>(collisions, candidates, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
@@ -571,7 +522,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, false, false, false>(collisions, candidates, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
