@@ -29,6 +29,7 @@
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,12 +67,14 @@ struct FlowPbPbTask {
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry"};
+  OutputObj<TList> fBootstrapContainer{"fBootstrapContainer", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   // define global variables
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  std::vector<std::vector<TProfile*>> BootstrapArray;
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
@@ -96,14 +99,35 @@ struct FlowPbPbTask {
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
 
-    registry.add("BootstrapContainer00/hMeanPtWithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("BootstrapContainer00/c22_gap08_Weff", "", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("BootstrapContainer00/c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("BootstrapContainer00/PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("BootstrapContainer00/PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
-
-    for (int i = 1; i < 10; i++) {
-      registry.addClone("BootstrapContainer00/", Form("BootstrapContainer0%d/", i));
+    TList* fOutputList = new TList();
+    fOutputList->SetOwner(true);
+    fBootstrapContainer.setObject(fOutputList);
+    // initial array
+    BootstrapArray.resize(cfgNbootstrap);
+    for (int i = 0; i < cfgNbootstrap; i++) {
+      // currently we have 5 TProfiles in each sub dir
+      BootstrapArray[i].resize(5);
+    }
+    // Store pointers of TProfiles
+    o2::framework::AxisSpec axisMulti = axisMultiplicity;
+    std::vector<double> multiBins = axisMulti.binEdges;
+    int nMultiBins = axisMulti.nBins.value_or(0);
+    if (nMultiBins <= 0)
+      nMultiBins = multiBins.size() - 1;
+    if (nMultiBins <= 0) {
+      printf("Multiplicity axis does not exist");
+      return;
+    }
+    for (int i = 0; i < cfgNbootstrap; i++) {
+      BootstrapArray[i][0] = new TProfile(Form("hMeanPtWithinGap08_%d", i), Form("hMeanPtWithinGap08_%d", i), nMultiBins, &multiBins[0]);
+      BootstrapArray[i][1] = new TProfile(Form("c22_gap08_Weff_%d", i), Form("c22_gap08_Weff_%d", i), nMultiBins, &multiBins[0]);
+      BootstrapArray[i][2] = new TProfile(Form("c22_gap08_trackMeanPt_%d", i), Form("c22_gap08_trackMeanPt_%d", i), nMultiBins, &multiBins[0]);
+      BootstrapArray[i][3] = new TProfile(Form("PtVariance_partA_WithinGap08_%d", i), Form("PtVariance_partA_WithinGap08_%d", i), nMultiBins, &multiBins[0]);
+      BootstrapArray[i][4] = new TProfile(Form("PtVariance_partB_WithinGap08_%d", i), Form("PtVariance_partB_WithinGap08_%d", i), nMultiBins, &multiBins[0]);
+      for (int j = 0; j < 5; j++) {
+        BootstrapArray[i][j]->Sumw2();
+        fOutputList->Add(BootstrapArray[i][j]);
+      }
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -236,6 +260,24 @@ struct FlowPbPbTask {
     return;
   }
 
+  void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, TProfile* vnWeff, TProfile* vnpT, const double& cent)
+  {
+    double meanPt = sum_pt / WeffEvent;
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1) {
+        vnWeff->Fill(cent, val, dnx * WeffEvent);
+        vnpT->Fill(cent, val * meanPt, dnx * WeffEvent);
+      }
+      return;
+    }
+    return;
+  }
+
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
@@ -257,30 +299,6 @@ struct FlowPbPbTask {
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
-  }
-
-  template <int SampleIndex>
-  void FillBootstrap(const double& cent,
-                     const double& ptSum_Gap08,
-                     const double& weffEvent_WithinGap08,
-                     const double& sum_pt_wSquare_WithinGap08,
-                     const double& sum_ptSquare_wSquare_WithinGap08,
-                     const double& WeffEvent_diff_WithGap08)
-  {
-    static constexpr std::string_view subDir[] = {"BootstrapContainer00/", "BootstrapContainer01/", "BootstrapContainer02/", "BootstrapContainer03/", "BootstrapContainer04/", "BootstrapContainer05/", "BootstrapContainer06/", "BootstrapContainer07/", "BootstrapContainer08/", "BootstrapContainer09/"};
-
-    if (weffEvent_WithinGap08 > 1e-6)
-      registry.fill(HIST(subDir[SampleIndex]) + HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
-    if (weffEvent_WithinGap08 > 1e-6)
-      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST(subDir[SampleIndex]) + HIST("c22_gap08_Weff"), HIST(subDir[SampleIndex]) + HIST("c22_gap08_trackMeanPt"), cent);
-    if (WeffEvent_diff_WithGap08 > 1e-6) {
-      registry.fill(HIST(subDir[SampleIndex]) + HIST("PtVariance_partA_WithinGap08"), cent,
-                    (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                    WeffEvent_diff_WithGap08);
-      registry.fill(HIST(subDir[SampleIndex]) + HIST("PtVariance_partB_WithinGap08"), cent,
-                    (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                    WeffEvent_diff_WithGap08);
-    }
   }
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
@@ -352,28 +370,20 @@ struct FlowPbPbTask {
                     WeffEvent_diff_WithGap08);
     }
 
-    // Filling Bootstrap samples
+    // Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
-    if (SampleIndex == 0)
-      FillBootstrap<0>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 1)
-      FillBootstrap<1>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 2)
-      FillBootstrap<2>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 3)
-      FillBootstrap<3>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 4)
-      FillBootstrap<4>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 5)
-      FillBootstrap<5>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 6)
-      FillBootstrap<6>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 7)
-      FillBootstrap<7>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 8)
-      FillBootstrap<8>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
-    else if (SampleIndex == 9)
-      FillBootstrap<9>(cent, ptSum_Gap08, weffEvent_WithinGap08, sum_pt_wSquare_WithinGap08, sum_ptSquare_wSquare_WithinGap08, WeffEvent_diff_WithGap08);
+    if (weffEvent_WithinGap08 > 1e-6)
+      BootstrapArray[SampleIndex][0]->Fill(cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+    if (weffEvent_WithinGap08 > 1e-6)
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][1], BootstrapArray[SampleIndex][2], cent);
+    if (WeffEvent_diff_WithGap08 > 1e-6) {
+      BootstrapArray[SampleIndex][3]->Fill(cent,
+                                           (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                                           WeffEvent_diff_WithGap08);
+      BootstrapArray[SampleIndex][4]->Fill(cent,
+                                           (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                                           WeffEvent_diff_WithGap08);
+    }
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
