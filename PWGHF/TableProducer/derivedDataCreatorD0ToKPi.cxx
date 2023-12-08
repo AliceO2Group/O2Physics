@@ -491,7 +491,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
   {
-    // Filling particle properties
+    // Fill MC particle properties
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -508,40 +508,48 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
-  template <int reconstructionType, bool onlyBkg, bool onlySig, typename CandType>
-  void processMc(aod::Collisions const& collisions,
+  template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
+  void processCandidates(aod::Collisions const& collisions,
                  CandType const& candidates,
                  TracksWPid const&,
                  aod::BCs const&)
   {
-    // Filling event properties
+    // Fill collision properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillCollision(collision, 0, collision.bc().runNumber());
     }
 
-    // Filling candidate properties
+    // Fill candidate properties
+    int8_t flagMcRec, origin;
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
-      if constexpr (onlyBkg) {
-        if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          continue;
+      if constexpr (isMc) {
+        flagMcRec = candidate.flagMcMatchRec();
+        origin = candidate.originMcRec();
+        if constexpr (onlyBkg) {
+          if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            continue;
+          }
+          if (downSampleBkgFactor < 1.) {
+            float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+            if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+              continue;
+            }
+          }
         }
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+        if constexpr (onlySig) {
+          if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             continue;
           }
         }
-      }
-      if constexpr (onlySig) {
-        if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          continue;
-        }
+      } else {
+        flagMcRec = 0;
+        origin = 0;
       }
       auto prong0 = candidate.template prong0_as<TracksWPid>();
       auto prong1 = candidate.template prong1_as<TracksWPid>();
@@ -559,10 +567,10 @@ struct HfDerivedDataCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
       }
       if (candidate.isSelD0bar()) {
-        fillCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
       }
     }
   }
@@ -573,7 +581,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false, true>(collisions, reconstructedCandSig, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, true>(collisions, reconstructedCandSig, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
@@ -584,7 +592,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true, false>(collisions, reconstructedCandBkg, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, true, false>(collisions, reconstructedCandBkg, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlyBkg, "Process MC with DCAFitterN only for background", false);
@@ -595,7 +603,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, false>(collisions, candidates, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
@@ -606,7 +614,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false, true>(collisions, reconstructedCandSigKF, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, true, false, true>(collisions, reconstructedCandSigKF, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlySig, "Process MC with KFParticle only for signals", false);
@@ -617,7 +625,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true, false>(collisions, reconstructedCandBkgKF, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, true, true, false>(collisions, reconstructedCandBkgKF, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlyBkg, "Process MC with KFParticle only for background", false);
@@ -628,7 +636,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                   TracksWPid const& tracks,
                                   aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, true, false, false>(collisions, candidates, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
