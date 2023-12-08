@@ -258,7 +258,7 @@ DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorD0ToKPi {
+struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfCandD0Fulls> rowCandidateFull;
   Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandD0FullPs> rowCandidateFullParticles;
@@ -478,7 +478,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processData<aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
                                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
@@ -487,7 +487,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processData<aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
   template <int reconstructionType, bool onlyBkg, bool onlySig, typename CandType>
   void processMc(aod::Collisions const& collisions,
@@ -575,7 +575,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, true>(collisions, mcCollisions, reconstructedCandSig, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
 
   void processMcWithDCAFitterOnlyBkg(aod::Collisions const& collisions,
                                      aod::McCollisions const& mcCollisions,
@@ -586,7 +586,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, true, false>(collisions, mcCollisions, reconstructedCandBkg, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterOnlyBkg, "Process MC with DCAFitterN only for background", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlyBkg, "Process MC with DCAFitterN only for background", false);
 
   void processMcWithDCAFitterAll(aod::Collisions const& collisions,
                                  aod::McCollisions const& mcCollisions,
@@ -597,7 +597,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticleOnlySig(aod::Collisions const& collisions,
                                       aod::McCollisions const& mcCollisions,
@@ -608,7 +608,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, false, true>(collisions, mcCollisions, reconstructedCandSigKF, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleOnlySig, "Process MC with KFParticle only for signals", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlySig, "Process MC with KFParticle only for signals", false);
 
   void processMcWithKFParticleOnlyBkg(aod::Collisions const& collisions,
                                       aod::McCollisions const& mcCollisions,
@@ -619,7 +619,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, true, false>(collisions, mcCollisions, reconstructedCandBkgKF, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleOnlyBkg, "Process MC with KFParticle only for background", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlyBkg, "Process MC with KFParticle only for background", false);
 
   void processMcWithKFParticleAll(aod::Collisions const& collisions,
                                   aod::McCollisions const& mcCollisions,
@@ -630,12 +630,10 @@ struct HfTreeCreatorD0ToKPi {
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorD0ToKPi>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfDerivedDataCreatorD0ToKPi>(cfgc)};
 }
