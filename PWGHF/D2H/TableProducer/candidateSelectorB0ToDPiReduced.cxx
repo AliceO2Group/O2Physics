@@ -287,8 +287,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   }
 
   void processDataSelection(HfRedCandB0 const& hfCandsB0,
-                        TracksPion const& pionTracks,
-                        HfCandB0Configs const& configs)
+                            TracksPion const& pionTracks,
+                            HfCandB0Configs const& configs)
   {
     runSelection<false, false>(hfCandsB0, pionTracks, configs);
   } // processDataSelection
@@ -296,8 +296,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processDataSelection, "Process selection without MC info and without ML scores of D mesons", true);
 
   void processDataSelectionWithDmesMl(soa::Join<HfRedCandB0, HfRedB0DpMls> const& hfCandsB0,
-                                  TracksPion const& pionTracks,
-                                  HfCandB0Configs const& configs)
+                                      TracksPion const& pionTracks,
+                                      HfCandB0Configs const& configs)
   {
     runSelection<false, true>(hfCandsB0, pionTracks, configs);
   } // processDataSelectionWithDmesMl
@@ -305,8 +305,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processDataSelectionWithDmesMl, "Process selection without MC info and with ML scores of D mesons", false);
 
   void processMcSelection(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s> const& hfCandsB0,
-                        TracksPion const& pionTracks,
-                        HfCandB0Configs const& configs)
+                          TracksPion const& pionTracks,
+                          HfCandB0Configs const& configs)
   {
     runSelection<true, false>(hfCandsB0, pionTracks, configs);
   } // processMcSelection
@@ -314,8 +314,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processMcSelection, "Process selection with MC info and without ML scores of D mesons", false);
 
   void processMcSelectionWithDmesMl(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s, HfRedB0DpMls> const& hfCandsB0,
-                                  TracksPion const& pionTracks,
-                                  HfCandB0Configs const& configs)
+                                    TracksPion const& pionTracks,
+                                    HfCandB0Configs const& configs)
   {
     runSelection<true, true>(hfCandsB0, pionTracks, configs);
   } // processMcSelectionWithDmesMl
