@@ -20,8 +20,6 @@
 
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include <Framework/AnalysisDataModel.h>
-#include <fairlogger/Logger.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/PIDResponse.h"
