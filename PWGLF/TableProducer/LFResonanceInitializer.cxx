@@ -472,7 +472,7 @@ struct reso2initializer {
                v0.phi(),
                childIDs,
                v0.v0cosPA(),
-               v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
+               v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {
         fillMCV0(v0);

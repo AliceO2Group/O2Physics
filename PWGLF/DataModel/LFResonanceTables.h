@@ -76,6 +76,7 @@ DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                 //! V0 Cosine of Po
 DECLARE_SOA_COLUMN(CascCosPA, cascCosPA, float);             //! Cascade Cosine of Pointing Angle
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! The invariant mass of V0 candidate, assuming lambda
 DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);         //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);               //! The invariant mass of V0 candidate, assuming k0s
 DECLARE_SOA_COLUMN(MXi, mXi, float);                         //! The invariant mass of Xi candidate
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float);         //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float); //! Transverse radius of the decay vertex from cascade
@@ -143,6 +144,7 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::DaughDCA,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
+                  resodaughter::MK0Short,
                   resodaughter::TransRadius,
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,

@@ -225,3 +225,8 @@ o2physics_add_dpl_workflow(helium-flow
                     SOURCES helium_flow.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f1protoncorrelation
+                    SOURCES f1protoncorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

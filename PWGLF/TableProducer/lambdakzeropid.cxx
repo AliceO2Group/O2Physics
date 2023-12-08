@@ -77,8 +77,8 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOF> v0tof;       // raw table for checks
-  Produces<aod::V0TOFPID> v0tofpid; // table with Nsigmas
+  Produces<aod::V0TOFs> v0tof;       // raw table for checks
+  Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -298,6 +298,8 @@ struct lambdakzeropid {
 
         if (fillRawPID) {
           v0tof(posTrackRow.length(), negTrackRow.length(),
+                posTrackRow.tofSignal(), negTrackRow.tofSignal(),
+                posTrackRow.tofEvTime(), negTrackRow.tofEvTime(),
                 deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
                 deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                 deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);

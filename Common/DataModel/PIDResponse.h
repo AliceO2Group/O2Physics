@@ -46,6 +46,13 @@ void packInTable(const float& valueToBin, T& table)
   }
 }
 
+// Function to unpack a binned value into a float
+template <typename binningType>
+float unPackInTable(const typename binningType::binned_t& valueToUnpack)
+{
+  return binningType::bin_width * static_cast<float>(valueToUnpack);
+}
+
 // Checkers for TOF PID hypothesis availability (runtime)
 template <class T>
 using hasTOFEl = decltype(std::declval<T&>().tofNSigmaEl());
@@ -481,7 +488,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with 
 // Macro to convert the stored Nsigmas to floats
 #define DEFINE_UNWRAP_NSIGMA_COLUMN(COLUMN, COLUMN_NAME) \
   DECLARE_SOA_DYNAMIC_COLUMN(COLUMN, COLUMN_NAME,        \
-                             [](binning::binned_t nsigma_binned) -> float { return binning::bin_width * static_cast<float>(nsigma_binned); });
+                             [](binning::binned_t nsigma_binned) -> float { return o2::aod::pidutils::unPackInTable<binning>(nsigma_binned); });
 
 namespace pidtof_tiny
 {

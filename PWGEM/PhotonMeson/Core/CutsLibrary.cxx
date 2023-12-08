@@ -28,7 +28,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
@@ -45,11 +45,11 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(0.5);
-    cut->SetRxyRange(1, 180);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 90);
     return cut;
   }
   if (!nameStr.compare("qc_ITSTPC")) {
@@ -63,12 +63,12 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
-    cut->SetRxyRange(1, 180);
-    cut->SetAPRange(0.95, 0.02);
+    cut->SetRxyRange(1, 90);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("qc_ITSonly")) {
@@ -78,12 +78,12 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSonly(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
-    cut->SetRxyRange(1, 180);
-    cut->SetAPRange(0.95, 0.02);
+    cut->SetRxyRange(1, 90);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("qc_TPConly")) {
@@ -97,11 +97,12 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireTPConly(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
+    cut->SetRxyRange(1, 90);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("wwire")) { // conversion only on tungstate wire
@@ -115,13 +116,13 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(2, 4);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(true);
-    cut->SetAPRange(0.95, 0.02);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("wwire_ib")) { // conversion only on tungstate wire outside of ITSib
@@ -135,13 +136,13 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(2, 4);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(true);
     cut->SetOnWwireOB(false);
-    cut->SetAPRange(0.95, 0.02);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("wwire_ob")) { // conversion only on tungstate wire outside of ITSob (middle layer)
@@ -155,13 +156,13 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(0, 2);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(0.5);
     cut->SetOnWwireIB(false);
     cut->SetOnWwireOB(true);
-    cut->SetAPRange(0.95, 0.02);
+    cut->SetAPRange(0.95, 0.01);
     return cut;
   }
   if (!nameStr.compare("nopid")) {
@@ -173,7 +174,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
@@ -190,7 +191,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(false);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
@@ -208,7 +209,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
+    cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
