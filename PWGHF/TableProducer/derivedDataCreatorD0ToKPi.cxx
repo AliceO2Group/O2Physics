@@ -471,43 +471,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
-  void processDataWithDCAFitterN(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
-  {
-    processData<aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
-  }
-  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
-
-  void processDataWithKFParticle(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
-  {
-    processData<aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
-  }
-  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
-
-  void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
-  {
-    // Fill MC particle properties
-    rowCandidateFullParticles.reserve(mcParticles.size());
-    for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        rowCandidateFullParticles(
-          particle.mcCollisionId(),
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
-          particle.flagMcMatchGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
-      }
-    }
-  }
-
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
   void processCandidates(aod::Collisions const& collisions,
                  CandType const& candidates,
@@ -574,6 +537,43 @@ struct HfDerivedDataCreatorD0ToKPi {
       }
     }
   }
+
+  void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
+  {
+    // Fill MC particle properties
+    rowCandidateFullParticles.reserve(mcParticles.size());
+    for (const auto& particle : mcParticles) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        rowCandidateFullParticles(
+          particle.mcCollisionId(),
+          particle.pt(),
+          particle.eta(),
+          particle.phi(),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
+          particle.flagMcMatchGen(),
+          particle.originMcGen(),
+          particle.globalIndex());
+      }
+    }
+  }
+
+  void processDataWithDCAFitterN(aod::Collisions const& collisions,
+                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
+  {
+    processData<aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
+
+  void processDataWithKFParticle(aod::Collisions const& collisions,
+                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
+  {
+    processData<aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
   void processMcWithDCAFitterOnlySig(aod::Collisions const& collisions,
                                      SelectedCandidatesMc const&,
