@@ -11,6 +11,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -29,7 +30,6 @@
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
