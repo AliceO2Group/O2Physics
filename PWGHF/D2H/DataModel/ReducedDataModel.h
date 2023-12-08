@@ -210,6 +210,25 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! P
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, uint8_t);                       //! Selection flag of candidate (output of candidateSelector)
+DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                 //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                                   //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                                   //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                               //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                               //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                                   //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                                 //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                                 //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                               //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                           //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);             //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 } // namespace hf_cand_b0_reduced
 
 DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daughter indices
@@ -220,6 +239,33 @@ DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores f
                   hf_cand_b0_reduced::Prong0MlScorePrompt,
                   hf_cand_b0_reduced::Prong0MlScoreNonprompt,
                   o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
+                  hf_cand::Chi2PCA,
+                  hf_cand_b0_reduced::DecayLength,
+                  hf_cand_b0_reduced::DecayLengthXY,
+                  hf_cand_b0_reduced::DecayLengthNormalised,
+                  hf_cand_b0_reduced::DecayLengthXYNormalised,
+                  hf_cand_b0_reduced::PtProng0,
+                  hf_cand_b0_reduced::PtProng1,
+                  hf_cand::ImpactParameter0,
+                  hf_cand::ImpactParameter1,
+                  hf_cand_b0_reduced::NSigTpcPi1,
+                  hf_cand_b0_reduced::NSigTofPi1,
+                  hf_cand_b0_reduced::Prong0MlScoreBkg,
+                  hf_cand_b0_reduced::Prong0MlScorePrompt,
+                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
+                  hf_cand_b0_reduced::CandidateSelFlag,
+                  hf_cand_b0_reduced::M,
+                  hf_cand_b0_reduced::Pt,
+                  hf_cand_b0_reduced::Cpa,
+                  hf_cand_b0_reduced::CpaXY,
+                  hf_cand_b0_reduced::MaxNormalisedDeltaIP,
+                  hf_cand_b0_reduced::Eta,
+                  hf_cand_b0_reduced::Phi,
+                  hf_cand_b0_reduced::Y,
+                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_3prong::OriginMcRec);
 
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
