@@ -813,11 +813,16 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     o2::dataformats::GlobalFwdTrack propmuon;
     if (static_cast<int>(muon.trackType()) > 2) {
       o2::mch::TrackExtrap::setField();
-      o2::dataformats::GlobalFwdTrack track(fwdtrack);
+      o2::dataformats::GlobalFwdTrack track;
+      track.setParameters(tpars);
+      track.setZ(fwdtrack.getZ());
+      track.setCovariances(tcovs);
       auto mchTrack = mMatching.FwdtoMCH(track);
       o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
       auto proptrack = mMatching.MCHtoFwd(mchTrack);
-      propmuon = proptrack;
+      propmuon.setParameters(proptrack.getParameters());
+      propmuon.setZ(proptrack.getZ());
+      propmuon.setCovariances(proptrack.getCovariances());
 
     } else if (static_cast<int>(muon.trackType()) < 2) {
       double centerMFT[3] = {0, 0, -61.4};
@@ -826,7 +831,9 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
       auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
       auto x2x0 = static_cast<float>(geoMan.meanX2X0);
       fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
-      propmuon = fwdtrack;
+      propmuon.setParameters(fwdtrack.getParameters());
+      propmuon.setZ(fwdtrack.getZ());
+      propmuon.setCovariances(fwdtrack.getCovariances());
     }
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
@@ -2035,6 +2042,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
           v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
           v12 = v1 + v2;
+  	  values[kMass] = v12.M();
+	  values[kPt] = v12.Pt();
+	  values[kEta] = v12.Eta();
+	  values[kPhi] = v12.Phi();
+	  values[kRap] = -v12.Rapidity();
+          values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauz] = dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
 
           values[kPt1] = pars1.getPt();
           values[kEta1] = pars1.getEta();
