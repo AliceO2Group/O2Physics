@@ -31,6 +31,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include <cmath>
+#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -89,6 +90,12 @@ struct kfStrangenessStudy {
   float prodVtxXgenV0  = -1.0f, prodVtxYgenV0  = -1.0f, prodVtxZgenV0  = -1.0f;
   int source = 0;
 
+  // counter and checks
+  int counterDCA = 0;
+  int counterKF = 0;
+  int recocase = 0;
+
+
   void init(InitContext const&)
   {
     /// QA histos
@@ -125,7 +132,7 @@ struct kfStrangenessStudy {
     histos.add("hGenDecayVtxZ_firstDau", "hGenDecayVtxZ_firstDau", kTH1F, {{1000, -3.0f, 3.0f}});
 
     histos.add("hGenSource", "hGenSource", kTH1F, {{5, -2, 3}});
-
+    histos.add("hCase", "hCase", kTH1F, {{5, 0, 5}});
   }
 
   template <typename TCollision, typename TCascade, typename TCascDatas, typename TKFCascDatas, typename TV0, typename TV0Datas>
@@ -348,6 +355,7 @@ struct kfStrangenessStudy {
               isTrueCasc,
               source);
     LOG(info) << "CascMCTable filled!";
+    histos.fill(HIST("hCase"), recocase);
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, aod::TracksIU const&)
@@ -403,16 +411,21 @@ struct kfStrangenessStudy {
       // ========== get cascade MC information ===========
       if (cascade.has_kfCascData() && cascade.has_cascData()) {
         LOG(info) << "Both fitters were successful!";
+        recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, V0s, V0Datas, particlesMC);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
         LOG(info) << "Only KF was successful!";
+        recocase = 2;
+        counterKF++;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
         getCascMCdata(collision, cascdata, V0s, V0Datas, particlesMC);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
         LOG(info) << "Only DCA fitter was successful!";
+        recocase = 3;
+        counterDCA++;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, V0s, V0Datas, particlesMC);
       }
