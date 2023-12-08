@@ -136,24 +136,18 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
 hf_cand_index::CollisionId
 );
 
-DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
-                  hf_cand_index::CollisionId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  hf_coll_base::IsEventReject,
-                  hf_coll_base::RunNumber);
-
-DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
-                  hf_cand_index::McCollisionId,
+DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::Y,
                   hf_cand_mc::FlagMc,
-                  hf_cand_mc::OriginMcGen,
-                  hf_cand_index::McParticleId);
+                  hf_cand_mc::OriginMcGen
+);
+DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
+                  hf_cand_index::McCollisionId,
+                  hf_cand_index::McParticleId
+);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -166,9 +160,8 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0Mcs> rowCandidateMc;
   Produces<o2::aod::HfD0CollBases> rowCollBase;
   Produces<o2::aod::HfD0CollIds> rowCollId;
-
-  Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandD0FullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfD0Ps> rowParticle;
+  Produces<o2::aod::HfD0PIds> rowParticleId;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -201,14 +194,6 @@ struct HfDerivedDataCreatorD0ToKPi {
   template <typename T>
   void fillCollision(const T& collision, int isEventReject, int runNumber)
   {
-    rowCandidateFullEvents(
-      collision.globalIndex(),
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ(),
-      isEventReject,
-      runNumber);
     rowCollBase(
       collision.numContrib(),
       collision.posX(),
@@ -235,62 +220,59 @@ struct HfDerivedDataCreatorD0ToKPi {
       e,
       y
     );
-    if (fillCandidateLiteTable) {
-      rowCandidatePar(
-        candidate.chi2PCA(),
-        candidate.decayLength(),
-        candidate.decayLengthXY(),
-        candidate.decayLengthNormalised(),
-        candidate.decayLengthXYNormalised(),
-        candidate.ptProng0(),
-        candidate.ptProng1(),
-        candidate.impactParameter0(),
-        candidate.impactParameter1(),
-        candidate.impactParameterNormalised0(),
-        candidate.impactParameterNormalised1(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
-        candidate.cpa(),
-        candidate.cpaXY(),
-        candidate.maxNormalisedDeltaIP(),
-        candidate.impactParameterProduct()
-        );
-    } else {
-      rowCandidateParE(
-        candidate.posX(),
-        candidate.posY(),
-        candidate.posZ(),
-        candidate.xSecondaryVertex(),
-        candidate.ySecondaryVertex(),
-        candidate.zSecondaryVertex(),
-        candidate.errorDecayLength(),
-        candidate.errorDecayLengthXY(),
-        topoChi2,
-        candidate.rSecondaryVertex(),
-        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-        candidate.pxProng0(),
-        candidate.pyProng0(),
-        candidate.pzProng0(),
-        candidate.pxProng1(),
-        candidate.pyProng1(),
-        candidate.pzProng1(),
-        candidate.errorImpactParameter0(),
-        candidate.errorImpactParameter1(),
-        cosThetaStar,
-        ct
+    rowCandidatePar(
+      candidate.chi2PCA(),
+      candidate.decayLength(),
+      candidate.decayLengthXY(),
+      candidate.decayLengthNormalised(),
+      candidate.decayLengthXYNormalised(),
+      candidate.ptProng0(),
+      candidate.ptProng1(),
+      candidate.impactParameter0(),
+      candidate.impactParameter1(),
+      candidate.impactParameterNormalised0(),
+      candidate.impactParameterNormalised1(),
+      prong0.tpcNSigmaPi(),
+      prong0.tpcNSigmaKa(),
+      prong0.tofNSigmaPi(),
+      prong0.tofNSigmaKa(),
+      prong0.tpcTofNSigmaPi(),
+      prong0.tpcTofNSigmaKa(),
+      prong1.tpcNSigmaPi(),
+      prong1.tpcNSigmaKa(),
+      prong1.tofNSigmaPi(),
+      prong1.tofNSigmaKa(),
+      prong1.tpcTofNSigmaPi(),
+      prong1.tpcTofNSigmaKa(),
+      candidate.cpa(),
+      candidate.cpaXY(),
+      candidate.maxNormalisedDeltaIP(),
+      candidate.impactParameterProduct()
       );
-    }
+    rowCandidateParE(
+      candidate.posX(),
+      candidate.posY(),
+      candidate.posZ(),
+      candidate.xSecondaryVertex(),
+      candidate.ySecondaryVertex(),
+      candidate.zSecondaryVertex(),
+      candidate.errorDecayLength(),
+      candidate.errorDecayLengthXY(),
+      topoChi2,
+      candidate.rSecondaryVertex(),
+      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+      candidate.pxProng0(),
+      candidate.pyProng0(),
+      candidate.pzProng0(),
+      candidate.pxProng1(),
+      candidate.pyProng1(),
+      candidate.pzProng1(),
+      candidate.errorImpactParameter0(),
+      candidate.errorImpactParameter1(),
+      cosThetaStar,
+      ct
+    );
     rowCandidateSel(
       BIT(candFlag)
     );
@@ -313,18 +295,24 @@ struct HfDerivedDataCreatorD0ToKPi {
                  aod::BCs const&)
   {
     // Fill collision properties
-    rowCandidateFullEvents.reserve(collisions.size());
+    auto sizeTableColl = collisions.size();
+    rowCollBase.reserve(sizeTableColl);
+    rowCollId.reserve(sizeTableColl);
     for (const auto& collision : collisions) {
       fillCollision(collision, 0, collision.bc().runNumber());
     }
 
     // Fill candidate properties
-    int8_t flagMcRec, origin;
-    if (fillCandidateLiteTable) {
-      rowCandidatePar.reserve(candidates.size());
-    } else {
-      rowCandidateParE.reserve(candidates.size());
+    auto sizeTableCand = candidates.size();
+    rowCandidateBase.reserve(sizeTableCand);
+    rowCandidatePar.reserve(sizeTableCand);
+    rowCandidateParE.reserve(sizeTableCand);
+    rowCandidateSel.reserve(sizeTableCand);
+    rowCandidateId.reserve(sizeTableCand);
+    if constexpr (isMc) {
+      rowCandidateMc.reserve(sizeTableCand);
     }
+    int8_t flagMcRec, origin;
     for (const auto& candidate : candidates) {
       if constexpr (isMc) {
         flagMcRec = candidate.flagMcMatchRec();
@@ -376,18 +364,23 @@ struct HfDerivedDataCreatorD0ToKPi {
   void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
   {
     // Fill MC particle properties
-    rowCandidateFullParticles.reserve(mcParticles.size());
+    auto sizeTablePart = mcParticles.size();
+    rowParticle.reserve(sizeTablePart);
+    rowParticleId.reserve(sizeTablePart);
     for (const auto& particle : mcParticles) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        rowCandidateFullParticles(
-          particle.mcCollisionId(),
+        rowParticle(
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
           particle.flagMcMatchGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
+          particle.originMcGen()
+        );
+        rowParticleId(
+          particle.mcCollisionId(),
+          particle.globalIndex()
+        );
       }
     }
   }
