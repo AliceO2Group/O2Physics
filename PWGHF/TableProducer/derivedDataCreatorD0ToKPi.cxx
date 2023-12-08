@@ -33,12 +33,12 @@ namespace o2::aod
 // candidates for removal:
 // E
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
-hf_cand_base::E,
+hf_cand_base::Pt,
 hf_cand_base::Eta,
+hf_cand_base::Phi,
 hf_cand_base::M,
 hf_cand_base::P,
-hf_cand_base::Phi,
-hf_cand_base::Pt,
+hf_cand_base::E,
 hf_cand_base::Y
 );
 
@@ -48,95 +48,6 @@ hf_cand_base::Y
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
-// primary vertex
-collision::PosX,
-collision::PosY,
-collision::PosZ,
-// secondary vertex
-hf_cand::XSecondaryVertex,
-hf_cand::YSecondaryVertex,
-hf_cand::ZSecondaryVertex,
-hf_cand_par::RSecondaryVertex,
-hf_cand::ErrorDecayLength,
-hf_cand::ErrorDecayLengthXY,
-hf_cand::Chi2PCA,
-hf_cand::KfTopolChi2OverNdf,
-hf_cand_par::CosThetaStar,
-hf_cand_par::Cpa,
-hf_cand_par::CpaXY,
-hf_cand_par::Ct,
-hf_cand_par::DecayLength,
-hf_cand_par::DecayLengthNormalised,
-hf_cand_par::DecayLengthXY,
-hf_cand_par::DecayLengthXYNormalised,
-hf_cand_par::ImpactParameterProduct,
-hf_cand_par::MaxNormalisedDeltaIP,
-// prong 0
-hf_cand::PxProng0,
-hf_cand::PyProng0,
-hf_cand::PzProng0,
-hf_cand_par::PProng0,
-hf_cand_par::PtProng0,
-hf_cand::ErrorImpactParameter0,
-hf_cand::ImpactParameter0,
-hf_cand_par::ImpactParameterNormalised0,
-hf_cand_par::NSigTofKa0,
-hf_cand_par::NSigTofPi0,
-hf_cand_par::NSigTpcKa0,
-hf_cand_par::NSigTpcPi0,
-hf_cand_par::NSigTpcTofKa0,
-hf_cand_par::NSigTpcTofPi0,
-// prong 1
-hf_cand::PxProng1,
-hf_cand::PyProng1,
-hf_cand::PzProng1,
-hf_cand_par::PProng1,
-hf_cand_par::PtProng1,
-hf_cand::ErrorImpactParameter1,
-hf_cand::ImpactParameter1,
-hf_cand_par::ImpactParameterNormalised1,
-hf_cand_par::NSigTofKa1,
-hf_cand_par::NSigTofPi1,
-hf_cand_par::NSigTpcKa1,
-hf_cand_par::NSigTpcPi1,
-hf_cand_par::NSigTpcTofKa1,
-hf_cand_par::NSigTpcTofPi1
-);
-
-// Table with candidate selection flags
-DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
-hf_cand_sel::CandidateSelFlag
-);
-
-// Table with global indices for candidates
-DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
-hf_track_index::CollisionId,
-hf_track_index::Prong0Id,
-hf_track_index::Prong1Id
-);
-
-// Table with candidate MC info
-DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
-hf_cand_mc::FlagMc,
-hf_cand_mc::OriginMcRec
-);
-
-// Table with basic collision info
-DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
-collision::NumContrib,
-collision::PosX,
-collision::PosY,
-collision::PosZ,
-hf_coll_base::IsEventReject,
-hf_coll_base::RunNumber
-);
-
-// Table with global indices for collisions
-DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
-hf_cand_index::CollisionId
-);
-
-DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand::Chi2PCA,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
@@ -160,21 +71,13 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand_par::NSigTofKa1,
                   hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_sel::CandidateSelFlag,
-                  hf_cand_base::M,
-                  hf_cand_base::Pt,
                   hf_cand_par::Cpa,
                   hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
-                  hf_cand_par::ImpactParameterProduct,
-                  hf_cand_base::Eta,
-                  hf_cand_base::Phi,
-                  hf_cand_base::Y,
-                  hf_cand_mc::FlagMc,
-                  hf_cand_mc::OriginMcRec);
+                  hf_cand_par::ImpactParameterProduct
+                  );
 
-DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
-                  hf_cand_index::CollisionId,
+DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -196,10 +99,42 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand_par::CosThetaStar,
-                  hf_cand_base::P,
-                  hf_cand_par::Ct,
-                  hf_cand_base::E,
-                  hf_cand_index::Candidate2PId);
+                  hf_cand_par::Ct
+                  );
+
+// Table with candidate selection flags
+DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
+hf_cand_sel::CandidateSelFlag
+);
+
+// Table with global indices for candidates
+DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
+hf_track_index::CollisionId,
+hf_track_index::Prong0Id,
+hf_track_index::Prong1Id,
+hf_cand_index::Candidate2PId
+);
+
+// Table with candidate MC info
+DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
+hf_cand_mc::FlagMc,
+hf_cand_mc::OriginMcRec
+);
+
+// Table with basic collision info
+DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
+collision::NumContrib,
+collision::PosX,
+collision::PosY,
+collision::PosZ,
+hf_coll_base::IsEventReject,
+hf_coll_base::RunNumber
+);
+
+// Table with global indices for collisions
+DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
+hf_cand_index::CollisionId
+);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   hf_cand_index::CollisionId,
@@ -223,12 +158,17 @@ DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorD0ToKPi {
-  Produces<o2::aod::HfCandD0Fulls> rowCandidateFull;
+  Produces<o2::aod::HfD0Bases> rowCandidateBase;
+  Produces<o2::aod::HfD0Pars> rowCandidatePar;
+  Produces<o2::aod::HfD0ParEs> rowCandidateParE;
+  Produces<o2::aod::HfD0Sels> rowCandidateSel;
+  Produces<o2::aod::HfD0Ids> rowCandidateId;
+  Produces<o2::aod::HfD0Mcs> rowCandidateMc;
+  Produces<o2::aod::HfD0CollBases> rowCollBase;
+  Produces<o2::aod::HfD0CollIds> rowCollId;
+
   Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandD0FullPs> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandD0Lites> rowCandidateLite;
-
-  Produces<o2::aod::HfD0Bases> rowCandidateBase;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -269,6 +209,17 @@ struct HfDerivedDataCreatorD0ToKPi {
       collision.posZ(),
       isEventReject,
       runNumber);
+    rowCollBase(
+      collision.numContrib(),
+      collision.posX(),
+      collision.posY(),
+      collision.posZ(),
+      isEventReject,
+      runNumber
+    );
+    rowCollId(
+      collision.globalIndex()
+    );
   }
 
   template <typename T, typename U>
@@ -276,16 +227,16 @@ struct HfDerivedDataCreatorD0ToKPi {
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
     rowCandidateBase(
-      e,
+      candidate.pt(),
       candidate.eta(),
+      candidate.phi(),
       invMass,
       candidate.p(),
-      candidate.phi(),
-      candidate.pt(),
+      e,
       y
     );
     if (fillCandidateLiteTable) {
-      rowCandidateLite(
+      rowCandidatePar(
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
@@ -309,21 +260,13 @@ struct HfDerivedDataCreatorD0ToKPi {
         prong1.tofNSigmaKa(),
         prong1.tpcTofNSigmaPi(),
         prong1.tpcTofNSigmaKa(),
-        1 << candFlag,
-        invMass,
-        candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        candidate.impactParameterProduct(),
-        candidate.eta(),
-        candidate.phi(),
-        y,
-        flagMc,
-        origin);
+        candidate.impactParameterProduct()
+        );
     } else {
-      rowCandidateFull(
-        candidate.collisionId(),
+      rowCandidateParE(
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -345,11 +288,22 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
         cosThetaStar,
-        candidate.p(),
-        ct,
-        e,
-        candidate.globalIndex());
+        ct
+      );
     }
+    rowCandidateSel(
+      BIT(candFlag)
+    );
+    rowCandidateId(
+      candidate.collisionId(),
+      candidate.prong0Id(),
+      candidate.prong1Id(),
+      candidate.globalIndex()
+    );
+    rowCandidateMc(
+      flagMc,
+      origin
+    );
   }
 
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
@@ -367,9 +321,9 @@ struct HfDerivedDataCreatorD0ToKPi {
     // Fill candidate properties
     int8_t flagMcRec, origin;
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
+      rowCandidatePar.reserve(candidates.size());
     } else {
-      rowCandidateFull.reserve(candidates.size());
+      rowCandidateParE.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       if constexpr (isMc) {
