@@ -254,14 +254,14 @@ struct nuclei_in_jets {
     // Seed
     gRandom->SetSeed(0);
 
-    // Event Counter (before event selection)
+    // Event Counter: before event selection
     registryQC.fill(HIST("number_of_events_data"), 0.5);
 
     // Event Selection
     if (!collision.sel8())
       return;
 
-    // Event Counter (after event selection)
+    // Event Counter: after event selection
     registryQC.fill(HIST("number_of_events_data"), 1.5);
 
     // Reduced Event
@@ -301,7 +301,7 @@ struct nuclei_in_jets {
       particle_ID.push_back(i);
     }
 
-    // Skip Events with no trigger Particle
+    // Event Counter: Skip Events with no trigger Particle (pmax=0)
     if (pt_max == 0)
       return;
     registryQC.fill(HIST("number_of_events_data"), 2.5);
@@ -312,22 +312,19 @@ struct nuclei_in_jets {
     // Number of Stored Particles
     int nParticles = static_cast<int>(particle_ID.size());
 
-    // Selection of Events with pt > pt_leading
-    if (nParticles < 2)
+    // Event Counter: Skip Events with less than 2 Particles
+    if (nParticles < 3)
       return;
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
+    // Event Counter: Skip Events with pt<pt_leading_min
     if (pt_max < min_pt_leading)
       return;
-
-    // Event Counter (after pt > pt_max selection)
     registryQC.fill(HIST("number_of_events_data"), 4.5);
 
-    // Skip Events with no Particle of Interest
+    // Event Counter: Skip Events with no Particle of Interest
     if (!containsParticleOfInterest)
       return;
-
-    // Event Counter (events with pt > pt_max that contain particle of interest)
     registryQC.fill(HIST("number_of_events_data"), 5.5);
 
     // Momentum of the Leading Particle
@@ -410,6 +407,11 @@ struct nuclei_in_jets {
     // Multiplicity inside Jet + UE
     int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
 
+    // Event Counter: Skip Events with only 1 Particle inside jet cone
+    if (nParticlesJetUE < 2)
+      return;
+    registryQC.fill(HIST("number_of_events_data"), 6.5);
+
     // Find Maximum Distance from Jet Axis
     float Rmax(0);
 
@@ -418,12 +420,6 @@ struct nuclei_in_jets {
       const auto& jet_track = tracks.iteratorAt(jet_particle_ID[i]);
       TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
 
-      // Track Selection
-      if (!passedTrackSelection(jet_track))
-        continue;
-      if (require_primVtx_contributor && !(jet_track.isPVContributor()))
-        continue;
-
       float deltaEta = p_i.Eta() - p_leading.Eta();
       float deltaPhi = TVector2::Phi_0_2pi(p_i.Phi() - p_leading.Phi());
       float R = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
@@ -431,13 +427,18 @@ struct nuclei_in_jets {
         Rmax = R;
     }
 
+    // Event Counter: Skip Events with Rmax=0
+    if (Rmax == 0)
+      return;
+    registryQC.fill(HIST("number_of_events_data"), 7.5);
+
     registryQC.fill(HIST("r_max_jet"), Rmax);
 
-    // Cut on eta jet
+    // Event Counter: Skip Events with jet not fully inside acceptance
     float eta_jet_axis = p_leading.Eta();
     if ((TMath::Abs(eta_jet_axis) + Rmax) > max_eta)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 6.5);
+    registryQC.fill(HIST("number_of_events_data"), 8.5);
 
     // Fill Jet Multiplicity
     registryQC.fill(HIST("jet_plus_ue_multiplicity"), nParticlesJetUE);
@@ -471,18 +472,16 @@ struct nuclei_in_jets {
       float deltaPhi = TVector2::Phi_0_2pi(ue_track.phi() - ue_axis.Phi());
       float dr = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 
-      registryQC.fill(HIST("eta_phi_ue"), deltaEta, deltaPhi);
-      registryQC.fill(HIST("r_ue"), dr);
-
       // Store Particles in the UE
       if (dr < Rmax) {
+        registryQC.fill(HIST("eta_phi_ue"), deltaEta, deltaPhi);
+        registryQC.fill(HIST("r_ue"), dr);
         ue_particle_ID.push_back(particle_ID[i]);
       }
     }
 
     // UE Multiplicity
     int nParticlesUE = static_cast<int>(ue_particle_ID.size());
-
     registryQC.fill(HIST("ue_multiplicity"), nParticlesUE);
 
     // Jet Multiplicity
