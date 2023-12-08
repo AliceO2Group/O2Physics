@@ -29,45 +29,153 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+/// Table with basic candidate properties used in the analyses
+// candidates for removal:
+// E
+DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
+hf_cand_base::E,
+hf_cand_base::Eta,
+hf_cand_base::M,
+hf_cand_base::P,
+hf_cand_base::Phi,
+hf_cand_base::Pt,
+hf_cand_base::Y
+);
+
+/// Table with candidate properties used for selection
+// candidates for removal:
+// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep P, Pt, Phi instead
+// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
+// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
+DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
+// primary vertex
+collision::PosX,
+collision::PosY,
+collision::PosZ,
+// secondary vertex
+hf_cand::XSecondaryVertex,
+hf_cand::YSecondaryVertex,
+hf_cand::ZSecondaryVertex,
+hf_cand_par::RSecondaryVertex,
+hf_cand::ErrorDecayLength,
+hf_cand::ErrorDecayLengthXY,
+hf_cand::Chi2PCA,
+hf_cand::KfTopolChi2OverNdf,
+hf_cand_par::CosThetaStar,
+hf_cand_par::Cpa,
+hf_cand_par::CpaXY,
+hf_cand_par::Ct,
+hf_cand_par::DecayLength,
+hf_cand_par::DecayLengthNormalised,
+hf_cand_par::DecayLengthXY,
+hf_cand_par::DecayLengthXYNormalised,
+hf_cand_par::ImpactParameterProduct,
+hf_cand_par::MaxNormalisedDeltaIP,
+// prong 0
+hf_cand::PxProng0,
+hf_cand::PyProng0,
+hf_cand::PzProng0,
+hf_cand_par::PProng0,
+hf_cand_par::PtProng0,
+hf_cand::ErrorImpactParameter0,
+hf_cand::ImpactParameter0,
+hf_cand_par::ImpactParameterNormalised0,
+hf_cand_par::NSigTofKa0,
+hf_cand_par::NSigTofPi0,
+hf_cand_par::NSigTpcKa0,
+hf_cand_par::NSigTpcPi0,
+hf_cand_par::NSigTpcTofKa0,
+hf_cand_par::NSigTpcTofPi0,
+// prong 1
+hf_cand::PxProng1,
+hf_cand::PyProng1,
+hf_cand::PzProng1,
+hf_cand_par::PProng1,
+hf_cand_par::PtProng1,
+hf_cand::ErrorImpactParameter1,
+hf_cand::ImpactParameter1,
+hf_cand_par::ImpactParameterNormalised1,
+hf_cand_par::NSigTofKa1,
+hf_cand_par::NSigTofPi1,
+hf_cand_par::NSigTpcKa1,
+hf_cand_par::NSigTpcPi1,
+hf_cand_par::NSigTpcTofKa1,
+hf_cand_par::NSigTpcTofPi1
+);
+
+// Table with candidate selection flags
+DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
+hf_cand_sel::CandidateSelFlag
+);
+
+// Table with global indices for candidates
+DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
+hf_track_index::CollisionId,
+hf_track_index::Prong0Id,
+hf_track_index::Prong1Id
+);
+
+// Table with candidate MC info
+DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
+hf_cand_mc::FlagMc,
+hf_cand_mc::IsCandidateSwapped,
+hf_cand_mc::OriginMcRec
+);
+
+// Table with basic collision info
+DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
+collision::NumContrib,
+collision::PosX,
+collision::PosY,
+collision::PosZ,
+hf_coll_base::IsEventReject,
+hf_coll_base::RunNumber
+);
+
+// Table with global indices for collisions
+DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
+hf_cand_index::CollisionId
+);
+
 DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand::Chi2PCA,
-                  hf_cand_param::DecayLength,
-                  hf_cand_param::DecayLengthXY,
-                  hf_cand_param::DecayLengthNormalised,
-                  hf_cand_param::DecayLengthXYNormalised,
-                  hf_cand_param::PtProng0,
-                  hf_cand_param::PtProng1,
+                  hf_cand_par::DecayLength,
+                  hf_cand_par::DecayLengthXY,
+                  hf_cand_par::DecayLengthNormalised,
+                  hf_cand_par::DecayLengthXYNormalised,
+                  hf_cand_par::PtProng0,
+                  hf_cand_par::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  hf_cand_param::ImpactParameterNormalised0,
-                  hf_cand_param::ImpactParameterNormalised1,
-                  hf_cand_param::NSigTpcPi0,
-                  hf_cand_param::NSigTpcKa0,
-                  hf_cand_param::NSigTofPi0,
-                  hf_cand_param::NSigTofKa0,
-                  hf_cand_param::NSigTpcTofPi0,
-                  hf_cand_param::NSigTpcTofKa0,
-                  hf_cand_param::NSigTpcPi1,
-                  hf_cand_param::NSigTpcKa1,
-                  hf_cand_param::NSigTofPi1,
-                  hf_cand_param::NSigTofKa1,
-                  hf_cand_param::NSigTpcTofPi1,
-                  hf_cand_param::NSigTpcTofKa1,
-                  hf_cand_flag::CandidateSelFlag,
-                  hf_cand_analysis::M,
-                  hf_cand_analysis::Pt,
-                  hf_cand_param::Cpa,
-                  hf_cand_param::CpaXY,
-                  hf_cand_param::MaxNormalisedDeltaIP,
-                  hf_cand_param::ImpactParameterProduct,
-                  hf_cand_analysis::Eta,
-                  hf_cand_analysis::Phi,
-                  hf_cand_analysis::Y,
-                  hf_cand_flag::FlagMc,
-                  hf_cand_flag::OriginMcRec)
+                  hf_cand_par::ImpactParameterNormalised0,
+                  hf_cand_par::ImpactParameterNormalised1,
+                  hf_cand_par::NSigTpcPi0,
+                  hf_cand_par::NSigTpcKa0,
+                  hf_cand_par::NSigTofPi0,
+                  hf_cand_par::NSigTofKa0,
+                  hf_cand_par::NSigTpcTofPi0,
+                  hf_cand_par::NSigTpcTofKa0,
+                  hf_cand_par::NSigTpcPi1,
+                  hf_cand_par::NSigTpcKa1,
+                  hf_cand_par::NSigTofPi1,
+                  hf_cand_par::NSigTofKa1,
+                  hf_cand_par::NSigTpcTofPi1,
+                  hf_cand_par::NSigTpcTofKa1,
+                  hf_cand_sel::CandidateSelFlag,
+                  hf_cand_base::M,
+                  hf_cand_base::Pt,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
+                  hf_cand_par::MaxNormalisedDeltaIP,
+                  hf_cand_par::ImpactParameterProduct,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_base::Y,
+                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
-                  hf_index::CollisionId,
+                  hf_cand_index::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -78,17 +186,17 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   hf_cand::ErrorDecayLengthXY,
                   hf_cand::Chi2PCA,
                   hf_cand::KfTopolChi2OverNdf,
-                  hf_cand_param::RSecondaryVertex,
-                  hf_cand_param::DecayLength,
-                  hf_cand_param::DecayLengthXY,
-                  hf_cand_param::DecayLengthNormalised,
-                  hf_cand_param::DecayLengthXYNormalised,
-                  hf_cand_param::ImpactParameterNormalised0,
-                  hf_cand_param::PtProng0,
-                  hf_cand_param::PProng0,
-                  hf_cand_param::ImpactParameterNormalised1,
-                  hf_cand_param::PtProng1,
-                  hf_cand_param::PProng1,
+                  hf_cand_par::RSecondaryVertex,
+                  hf_cand_par::DecayLength,
+                  hf_cand_par::DecayLengthXY,
+                  hf_cand_par::DecayLengthNormalised,
+                  hf_cand_par::DecayLengthXYNormalised,
+                  hf_cand_par::ImpactParameterNormalised0,
+                  hf_cand_par::PtProng0,
+                  hf_cand_par::PProng0,
+                  hf_cand_par::ImpactParameterNormalised1,
+                  hf_cand_par::PtProng1,
+                  hf_cand_par::PProng1,
                   hf_cand::PxProng0,
                   hf_cand::PyProng0,
                   hf_cand::PzProng0,
@@ -99,54 +207,54 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
-                  hf_cand_param::NSigTpcPi0,
-                  hf_cand_param::NSigTpcKa0,
-                  hf_cand_param::NSigTofPi0,
-                  hf_cand_param::NSigTofKa0,
-                  hf_cand_param::NSigTpcTofPi0,
-                  hf_cand_param::NSigTpcTofKa0,
-                  hf_cand_param::NSigTpcPi1,
-                  hf_cand_param::NSigTpcKa1,
-                  hf_cand_param::NSigTofPi1,
-                  hf_cand_param::NSigTofKa1,
-                  hf_cand_param::NSigTpcTofPi1,
-                  hf_cand_param::NSigTpcTofKa1,
-                  hf_cand_flag::CandidateSelFlag,
-                  hf_cand_analysis::M,
-                  hf_cand_param::MaxNormalisedDeltaIP,
-                  hf_cand_param::ImpactParameterProduct,
-                  hf_cand_param::CosThetaStar,
-                  hf_cand_analysis::Pt,
-                  hf_cand_analysis::P,
-                  hf_cand_param::Cpa,
-                  hf_cand_param::CpaXY,
-                  hf_cand_param::Ct,
-                  hf_cand_analysis::Eta,
-                  hf_cand_analysis::Phi,
-                  hf_cand_analysis::Y,
-                  hf_cand_analysis::E,
-                  hf_cand_flag::FlagMc,
-                  hf_cand_flag::OriginMcRec,
-                  hf_index::Candidate2PId);
+                  hf_cand_par::NSigTpcPi0,
+                  hf_cand_par::NSigTpcKa0,
+                  hf_cand_par::NSigTofPi0,
+                  hf_cand_par::NSigTofKa0,
+                  hf_cand_par::NSigTpcTofPi0,
+                  hf_cand_par::NSigTpcTofKa0,
+                  hf_cand_par::NSigTpcPi1,
+                  hf_cand_par::NSigTpcKa1,
+                  hf_cand_par::NSigTofPi1,
+                  hf_cand_par::NSigTofKa1,
+                  hf_cand_par::NSigTpcTofPi1,
+                  hf_cand_par::NSigTpcTofKa1,
+                  hf_cand_sel::CandidateSelFlag,
+                  hf_cand_base::M,
+                  hf_cand_par::MaxNormalisedDeltaIP,
+                  hf_cand_par::ImpactParameterProduct,
+                  hf_cand_par::CosThetaStar,
+                  hf_cand_base::Pt,
+                  hf_cand_base::P,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
+                  hf_cand_par::Ct,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_base::Y,
+                  hf_cand_base::E,
+                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::OriginMcRec,
+                  hf_cand_index::Candidate2PId);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
-                  hf_index::CollisionId,
+                  hf_cand_index::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  hf_collision::IsEventReject,
-                  hf_collision::RunNumber);
+                  hf_coll_base::IsEventReject,
+                  hf_coll_base::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
-                  hf_index::McCollisionId,
-                  hf_cand_analysis::Pt,
-                  hf_cand_analysis::Eta,
-                  hf_cand_analysis::Phi,
-                  hf_cand_analysis::Y,
-                  hf_cand_flag::FlagMc,
-                  hf_cand_flag::OriginMcGen,
-                  hf_index::McParticleId);
+                  hf_cand_index::McCollisionId,
+                  hf_cand_base::Pt,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_base::Y,
+                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::OriginMcGen,
+                  hf_cand_index::McParticleId);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -155,6 +263,8 @@ struct HfTreeCreatorD0ToKPi {
   Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandD0FullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandD0Lites> rowCandidateLite;
+
+  Produces<o2::aod::HfD0Bases> rowCandidateBase;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -201,6 +311,15 @@ struct HfTreeCreatorD0ToKPi {
   auto fillTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
+    rowCandidateBase(
+      e,
+      candidate.eta(),
+      invMass,
+      candidate.p(),
+      candidate.phi(),
+      candidate.pt(),
+      y
+    );
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
