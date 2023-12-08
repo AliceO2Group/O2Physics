@@ -2042,11 +2042,11 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
           v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
           v12 = v1 + v2;
-  	  values[kMass] = v12.M();
-	  values[kPt] = v12.Pt();
-	  values[kEta] = v12.Eta();
-	  values[kPhi] = v12.Phi();
-	  values[kRap] = -v12.Rapidity();
+          values[kMass] = v12.M();
+          values[kPt] = v12.Pt();
+          values[kEta] = v12.Eta();
+          values[kPhi] = v12.Phi();
+          values[kRap] = -v12.Rapidity();
           values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauz] = dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
