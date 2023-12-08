@@ -145,7 +145,7 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/rejectedCollId", "CollisionId of collisions that did not pass the event selection; collisionId; number of entries", HistType::kTH1F, {{10, 0, 5}});
-    
+
     // Common axes
     const AxisSpec axisPercentileFT0M{binsPercentile, "Centrality FT0M"};
     const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
@@ -322,10 +322,10 @@ struct TrackJetQa {
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
 
   void processFull(CollisionCandidate const& collisions,
-                  TrackCandidates const& tracks)
+                   TrackCandidates const& tracks)
   {
     for (const auto& collision : collisions) {
-      if(fillEventQa(collision)){
+      if (fillEventQa(collision)) {
 
         if (fillMultiplicity) {
           histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
@@ -335,8 +335,8 @@ struct TrackJetQa {
         auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
 
         for (const auto& track : tracksInCollision) {
-          if (track.has_collision() && (collision.globalIndex() == track.collisionId())) {//double check
-            if(fillTrackQa(track)){
+          if (track.has_collision() && (collision.globalIndex() == track.collisionId())) { // double check
+            if (fillTrackQa(track)) {
               if (fillMultiplicity) {
                 histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
                 histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
@@ -344,8 +344,7 @@ struct TrackJetQa {
             }
           }
         }
-      }
-      else{
+      } else {
         histos.fill(HIST("EventProp/rejectedCollId"), 1);
       }
     }

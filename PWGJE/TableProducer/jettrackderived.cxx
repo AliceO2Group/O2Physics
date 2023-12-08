@@ -162,48 +162,48 @@ struct jetspectraDerivedMaker {
   void processData(CollisionCandidate const& collisions,
                    TrackCandidates const& tracks)
   {
-    for (const auto& collision : collisions){
-      if(!isEventSelected(collision)){
+    for (const auto& collision : collisions) {
+      if (!isEventSelected(collision)) {
         histos.fill(HIST("EventProp/rejectedCollId"), 1);
       }
     }
     tableTrack.reserve(tracks.size());
     for (const auto& trk : tracks) {
-      if (!customTrackCuts.IsSelected(trk)) {// we fill all tracks that have a collision(rejected or not) and pass this check !
+      if (!customTrackCuts.IsSelected(trk)) { // we fill all tracks that have a collision(rejected or not) and pass this check !
         continue;
-      }else{
-      tableTrack(trk.collisionId(),
-                 trk.trackTime(),
-                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
-                 trk.sigma1Pt(),
-                 trk.alpha(),
-                 trk.x(), trk.y(), trk.z(),
-                 trk.snp(),
-                 trk.tgl(),
-                 trk.isPVContributor(),
-                 trk.hasTRD(),
-                 trk.hasITS(),
-                 trk.hasTPC(),
-                 trk.isGlobalTrack(),
-                 trk.isGlobalTrackWoDCA(),
-                 trk.isGlobalTrackWoPtEta(),
-                 trk.flags(),
-                 trk.trackType(),
-                 trk.length(),
-                 trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
-                 trk.tpcNClsShared(),
-                 trk.tpcNClsFindable(),
-                 trk.tpcNClsFindableMinusFound(),
-                 trk.tpcNClsFindableMinusCrossedRows(),
-                 trk.itsClusterMap(),
-                 trk.itsNCls(),
-                 trk.tpcFractionSharedCls(),
-                 trk.tpcNClsFound(),
-                 trk.tpcNClsCrossedRows(),
-                 trk.tpcCrossedRowsOverFindableCls(),
-                 trk.tpcFoundOverFindableCls(),
-                 trk.dcaXY(),
-                 trk.dcaZ());
+      } else {
+        tableTrack(trk.collisionId(),
+                   trk.trackTime(),
+                   trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
+                   trk.sigma1Pt(),
+                   trk.alpha(),
+                   trk.x(), trk.y(), trk.z(),
+                   trk.snp(),
+                   trk.tgl(),
+                   trk.isPVContributor(),
+                   trk.hasTRD(),
+                   trk.hasITS(),
+                   trk.hasTPC(),
+                   trk.isGlobalTrack(),
+                   trk.isGlobalTrackWoDCA(),
+                   trk.isGlobalTrackWoPtEta(),
+                   trk.flags(),
+                   trk.trackType(),
+                   trk.length(),
+                   trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
+                   trk.tpcNClsShared(),
+                   trk.tpcNClsFindable(),
+                   trk.tpcNClsFindableMinusFound(),
+                   trk.tpcNClsFindableMinusCrossedRows(),
+                   trk.itsClusterMap(),
+                   trk.itsNCls(),
+                   trk.tpcFractionSharedCls(),
+                   trk.tpcNClsFound(),
+                   trk.tpcNClsCrossedRows(),
+                   trk.tpcCrossedRowsOverFindableCls(),
+                   trk.tpcFoundOverFindableCls(),
+                   trk.dcaXY(),
+                   trk.dcaZ());
       }
     }
   }
