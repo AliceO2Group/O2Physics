@@ -489,12 +489,30 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
+  void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
+  {
+    // Filling particle properties
+    rowCandidateFullParticles.reserve(mcParticles.size());
+    for (const auto& particle : mcParticles) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        rowCandidateFullParticles(
+          particle.mcCollisionId(),
+          particle.pt(),
+          particle.eta(),
+          particle.phi(),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
+          particle.flagMcMatchGen(),
+          particle.originMcGen(),
+          particle.globalIndex());
+      }
+    }
+  }
+
   template <int reconstructionType, bool onlyBkg, bool onlySig, typename CandType>
   void processMc(aod::Collisions const& collisions,
                  CandType const& candidates,
                  TracksWPid const&,
-                 aod::BCs const&,
-                 MatchedGenCandidatesMc const& mcParticles)
+                 aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -547,22 +565,6 @@ struct HfDerivedDataCreatorD0ToKPi {
         fillCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
-
-    // Filling particle properties
-    rowCandidateFullParticles.reserve(mcParticles.size());
-    for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        rowCandidateFullParticles(
-          particle.mcCollisionId(),
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
-          particle.flagMcMatchGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
-      }
-    }
   }
 
   void processMcWithDCAFitterOnlySig(aod::Collisions const& collisions,
@@ -571,7 +573,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false, true>(collisions, reconstructedCandSig, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false, true>(collisions, reconstructedCandSig, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
 
@@ -581,7 +584,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                      TracksWPid const& tracks,
                                      aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true, false>(collisions, reconstructedCandBkg, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true, false>(collisions, reconstructedCandBkg, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlyBkg, "Process MC with DCAFitterN only for background", false);
 
@@ -591,7 +595,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false, false>(collisions, candidates, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false, false>(collisions, candidates, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
 
@@ -601,7 +606,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false, true>(collisions, reconstructedCandSigKF, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false, true>(collisions, reconstructedCandSigKF, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlySig, "Process MC with KFParticle only for signals", false);
 
@@ -611,7 +617,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                       TracksWPid const& tracks,
                                       aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true, false>(collisions, reconstructedCandBkgKF, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::KfParticle, true, false>(collisions, reconstructedCandBkgKF, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleOnlyBkg, "Process MC with KFParticle only for background", false);
 
@@ -621,7 +628,8 @@ struct HfDerivedDataCreatorD0ToKPi {
                                   TracksWPid const& tracks,
                                   aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false, false>(collisions, candidates, tracks, bcs, mcParticles);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false, false>(collisions, candidates, tracks, bcs);
+    processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
 };
