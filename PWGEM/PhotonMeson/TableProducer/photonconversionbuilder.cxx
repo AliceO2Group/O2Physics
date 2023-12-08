@@ -274,7 +274,8 @@ struct PhotonConversionBuilder {
       auto track_par_cov = getTrackParCov(track);
       o2::base::Propagator::Instance()->propagateToX(track_par_cov, 83.f, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
       trackiu_x = track_par_cov.getX();
-      trackiu_y = track_par_cov.getY();
+      // trackiu_y = track_par_cov.getY();
+      trackiu_y = track.y();
       trackiu_z = track_par_cov.getZ();
     } else {
       trackiu_x = track.x();
@@ -323,13 +324,13 @@ struct PhotonConversionBuilder {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto pTrack = getTrackPar(pos);
-    pTrack.setPID(o2::track::PID::Electron);
+    // pTrack.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrack, 2.f, matCorr, &dcaInfo);
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
     auto nTrack = getTrackPar(ele);
-    nTrack.setPID(o2::track::PID::Electron);
+    // nTrack.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrack, 2.f, matCorr, &dcaInfo);
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
