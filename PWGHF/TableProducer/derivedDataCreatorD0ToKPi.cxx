@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file derivedDataCreatorD0ToKPi.cxx
-/// \brief Writer of the 2 prong candidates in the form of flat tables to be stored in TTrees.
+/// \brief Producer of derived tables of D0 candidates, collisions and MC particles
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
