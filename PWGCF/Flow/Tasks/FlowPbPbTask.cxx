@@ -67,14 +67,13 @@ struct FlowPbPbTask {
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry"};
-  OutputObj<TList> fBootstrapContainer{"fBootstrapContainer", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   // define global variables
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
-  std::vector<std::vector<TProfile*>> BootstrapArray;
+  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray;
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
@@ -99,35 +98,18 @@ struct FlowPbPbTask {
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
 
-    TList* fOutputList = new TList();
-    fOutputList->SetOwner(true);
-    fBootstrapContainer.setObject(fOutputList);
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
     for (int i = 0; i < cfgNbootstrap; i++) {
       // currently we have 5 TProfiles in each sub dir
       BootstrapArray[i].resize(5);
     }
-    // Store pointers of TProfiles
-    o2::framework::AxisSpec axisMulti = axisMultiplicity;
-    std::vector<double> multiBins = axisMulti.binEdges;
-    int nMultiBins = axisMulti.nBins.value_or(0);
-    if (nMultiBins <= 0)
-      nMultiBins = multiBins.size() - 1;
-    if (nMultiBins <= 0) {
-      printf("Multiplicity axis does not exist");
-      return;
-    }
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i][0] = new TProfile(Form("hMeanPtWithinGap08_%d", i), Form("hMeanPtWithinGap08_%d", i), nMultiBins, &multiBins[0]);
-      BootstrapArray[i][1] = new TProfile(Form("c22_gap08_Weff_%d", i), Form("c22_gap08_Weff_%d", i), nMultiBins, &multiBins[0]);
-      BootstrapArray[i][2] = new TProfile(Form("c22_gap08_trackMeanPt_%d", i), Form("c22_gap08_trackMeanPt_%d", i), nMultiBins, &multiBins[0]);
-      BootstrapArray[i][3] = new TProfile(Form("PtVariance_partA_WithinGap08_%d", i), Form("PtVariance_partA_WithinGap08_%d", i), nMultiBins, &multiBins[0]);
-      BootstrapArray[i][4] = new TProfile(Form("PtVariance_partB_WithinGap08_%d", i), Form("PtVariance_partB_WithinGap08_%d", i), nMultiBins, &multiBins[0]);
-      for (int j = 0; j < 5; j++) {
-        BootstrapArray[i][j]->Sumw2();
-        fOutputList->Add(BootstrapArray[i][j]);
-      }
+      BootstrapArray[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -260,7 +242,7 @@ struct FlowPbPbTask {
     return;
   }
 
-  void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, TProfile* vnWeff, TProfile* vnpT, const double& cent)
+  void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, std::shared_ptr<TProfile> vnWeff, std::shared_ptr<TProfile> vnpT, const double& cent)
   {
     double meanPt = sum_pt / WeffEvent;
     double dnx, val;
