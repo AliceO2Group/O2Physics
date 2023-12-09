@@ -28,7 +28,7 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Y, y, float);
-}
+} // namespace hf_cand_base
 namespace hf_cand_par
 {
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr1, nSigTpcTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
-}
+} // namespace hf_cand_par
 namespace hf_cand_sel
 {
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
@@ -92,7 +92,7 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
-}
+} // namespace hf_cand_mc
 namespace hf_cand_index
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate2P, candidate2p, int, HfCand2Prong, "");
@@ -100,7 +100,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate3P, candidate3p, int, HfCand3Prong, "");
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
-}
+} // namespace hf_cand_index
 namespace hf_coll_base
 {
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t);
@@ -110,7 +110,7 @@ DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);
 DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-}
+} // namespace hf_coll_base
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_

@@ -35,14 +35,13 @@ namespace o2::aod
 // candidates for removal:
 // E
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
-hf_cand_base::Pt,
-hf_cand_base::Eta,
-hf_cand_base::Phi,
-hf_cand_base::M,
-hf_cand_base::P,
-hf_cand_base::E,
-hf_cand_base::Y
-);
+                  hf_cand_base::Pt,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_base::M,
+                  hf_cand_base::P,
+                  hf_cand_base::E,
+                  hf_cand_base::Y);
 
 /// Table with candidate properties used for selection
 // candidates for removal:
@@ -76,8 +75,7 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
                   hf_cand_par::Cpa,
                   hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
-                  hf_cand_par::ImpactParameterProduct
-                  );
+                  hf_cand_par::ImpactParameterProduct);
 
 DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
                   collision::PosX,
@@ -101,42 +99,36 @@ DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand_par::CosThetaStar,
-                  hf_cand_par::Ct
-                  );
+                  hf_cand_par::Ct);
 
 // Table with candidate selection flags
 DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
-hf_cand_sel::CandidateSelFlag
-);
+                  hf_cand_sel::CandidateSelFlag);
 
 // Table with global indices for candidates
 DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
-hf_track_index::CollisionId,
-hf_track_index::Prong0Id,
-hf_track_index::Prong1Id,
-hf_cand_index::Candidate2PId
-);
+                  hf_track_index::CollisionId,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::Prong1Id,
+                  hf_cand_index::Candidate2PId);
 
 // Table with candidate MC info
 DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
-hf_cand_mc::FlagMc,
-hf_cand_mc::OriginMcRec
-);
+                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::OriginMcRec);
 
 // Table with basic collision info
 DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
-collision::NumContrib,
-collision::PosX,
-collision::PosY,
-collision::PosZ,
-hf_coll_base::IsEventReject,
-hf_coll_base::RunNumber
-);
+                  collision::NumContrib,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  hf_coll_base::IsEventReject,
+                  hf_coll_base::RunNumber);
 
 // Table with global indices for collisions
 DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
-hf_cand_index::CollisionId
-);
+                  hf_cand_index::CollisionId);
 
 // Table with MC particle info
 DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
@@ -145,14 +137,12 @@ DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_base::Phi,
                   hf_cand_base::Y,
                   hf_cand_mc::FlagMc,
-                  hf_cand_mc::OriginMcGen
-);
+                  hf_cand_mc::OriginMcGen);
 
 // Table with global indices for MC particles
 DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
                   hf_cand_index::McCollisionId,
-                  hf_cand_index::McParticleId
-);
+                  hf_cand_index::McParticleId);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -207,7 +197,8 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T>
-  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size) {
+  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size)
+  {
     if (enabled.value) {
       table.reserve(size);
     }
@@ -217,112 +208,104 @@ struct HfDerivedDataCreatorD0ToKPi {
   void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
   {
     if (fillCollBase) {
-    rowCollBase(
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ(),
-      isEventReject,
-      runNumber
-    );
+      rowCollBase(
+        collision.numContrib(),
+        collision.posX(),
+        collision.posY(),
+        collision.posZ(),
+        isEventReject,
+        runNumber);
     }
     if (fillCollId) {
-    rowCollId(
-      collision.globalIndex()
-    );
+      rowCollId(
+        collision.globalIndex());
     }
   }
 
   template <typename T, typename U>
   auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t origin)
+                           double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateBase) {
-    rowCandidateBase(
-      candidate.pt(),
-      candidate.eta(),
-      candidate.phi(),
-      invMass,
-      candidate.p(),
-      e,
-      y
-    );
+      rowCandidateBase(
+        candidate.pt(),
+        candidate.eta(),
+        candidate.phi(),
+        invMass,
+        candidate.p(),
+        e,
+        y);
     }
     if (fillCandidatePar) {
-    rowCandidatePar(
-      candidate.chi2PCA(),
-      candidate.decayLength(),
-      candidate.decayLengthXY(),
-      candidate.decayLengthNormalised(),
-      candidate.decayLengthXYNormalised(),
-      candidate.ptProng0(),
-      candidate.ptProng1(),
-      candidate.impactParameter0(),
-      candidate.impactParameter1(),
-      candidate.impactParameterNormalised0(),
-      candidate.impactParameterNormalised1(),
-      prong0.tpcNSigmaPi(),
-      prong0.tpcNSigmaKa(),
-      prong0.tofNSigmaPi(),
-      prong0.tofNSigmaKa(),
-      prong0.tpcTofNSigmaPi(),
-      prong0.tpcTofNSigmaKa(),
-      prong1.tpcNSigmaPi(),
-      prong1.tpcNSigmaKa(),
-      prong1.tofNSigmaPi(),
-      prong1.tofNSigmaKa(),
-      prong1.tpcTofNSigmaPi(),
-      prong1.tpcTofNSigmaKa(),
-      candidate.cpa(),
-      candidate.cpaXY(),
-      candidate.maxNormalisedDeltaIP(),
-      candidate.impactParameterProduct()
-      );
+      rowCandidatePar(
+        candidate.chi2PCA(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.ptProng0(),
+        candidate.ptProng1(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameterNormalised0(),
+        candidate.impactParameterNormalised1(),
+        prong0.tpcNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaPi(),
+        prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tpcNSigmaKa(),
+        prong1.tofNSigmaPi(),
+        prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.maxNormalisedDeltaIP(),
+        candidate.impactParameterProduct());
     }
     if (fillCandidateParE) {
-    rowCandidateParE(
-      candidate.posX(),
-      candidate.posY(),
-      candidate.posZ(),
-      candidate.xSecondaryVertex(),
-      candidate.ySecondaryVertex(),
-      candidate.zSecondaryVertex(),
-      candidate.errorDecayLength(),
-      candidate.errorDecayLengthXY(),
-      topoChi2,
-      candidate.rSecondaryVertex(),
-      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-      candidate.pxProng0(),
-      candidate.pyProng0(),
-      candidate.pzProng0(),
-      candidate.pxProng1(),
-      candidate.pyProng1(),
-      candidate.pzProng1(),
-      candidate.errorImpactParameter0(),
-      candidate.errorImpactParameter1(),
-      cosThetaStar,
-      ct
-    );
+      rowCandidateParE(
+        candidate.posX(),
+        candidate.posY(),
+        candidate.posZ(),
+        candidate.xSecondaryVertex(),
+        candidate.ySecondaryVertex(),
+        candidate.zSecondaryVertex(),
+        candidate.errorDecayLength(),
+        candidate.errorDecayLengthXY(),
+        topoChi2,
+        candidate.rSecondaryVertex(),
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.errorImpactParameter0(),
+        candidate.errorImpactParameter1(),
+        cosThetaStar,
+        ct);
     }
     if (fillCandidateSel) {
-    rowCandidateSel(
-      BIT(candFlag)
-    );
+      rowCandidateSel(
+        BIT(candFlag));
     }
     if (fillCandidateId) {
-    rowCandidateId(
-      candidate.collisionId(),
-      candidate.prong0Id(),
-      candidate.prong1Id(),
-      candidate.globalIndex()
-    );
+      rowCandidateId(
+        candidate.collisionId(),
+        candidate.prong0Id(),
+        candidate.prong1Id(),
+        candidate.globalIndex());
     }
     if (fillCandidateMc) {
-    rowCandidateMc(
-      flagMc,
-      origin
-    );
+      rowCandidateMc(
+        flagMc,
+        origin);
     }
   }
 
@@ -336,22 +319,20 @@ struct HfDerivedDataCreatorD0ToKPi {
         particle.phi(),
         RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mass),
         particle.flagMcMatchGen(),
-        particle.originMcGen()
-      );
+        particle.originMcGen());
     }
     if (fillParticleId) {
       rowParticleId(
         particle.mcCollisionId(),
-        particle.globalIndex()
-      );
+        particle.globalIndex());
     }
   }
 
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
   void processCandidates(aod::Collisions const& collisions,
-                 CandType const& candidates,
-                 TracksWPid const&,
-                 aod::BCs const&)
+                         CandType const& candidates,
+                         TracksWPid const&,
+                         aod::BCs const&)
   {
     // Fill collision properties
     auto sizeTableColl = collisions.size();
