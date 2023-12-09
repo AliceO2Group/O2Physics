@@ -700,10 +700,11 @@ struct nuclei_in_jets {
           registryMC.fill(HIST("antihelium3_rec_tpc"), 2.0 * pt);
       }
     }
-    PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
-  };
-
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{adaptAnalysisTask<nuclei_in_jets>(cfgc)};
   }
+  PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<nuclei_in_jets>(cfgc)};
+}
