@@ -325,6 +325,7 @@ struct lambdaAnalysis {
         histos.fill(HIST("QAafter/Proton/hPt"), trkPr.pt());
         histos.fill(HIST("QAafter/Proton/hDcaZ"), trkPr.pt(), trkPr.dcaZ());
         histos.fill(HIST("QAafter/Proton/hDcaXY"), trkPr.pt(), trkPr.dcaXY());
+        histos.fill(HIST("QAafter/Proton/hTPCNsigmaFull"), trkPr.pt(), trkPr.tpcNSigmaPr());
         if (!cUseTpcOnly && trkPr.hasTOF()) {
           histos.fill(HIST("QAafter/Proton/hTPCNsigmaTOF"), trkPr.pt(), trkPr.tpcNSigmaPr());
           histos.fill(HIST("QAafter/Proton/hTOFNsigma"), trkPr.pt(), trkPr.tofNSigmaPr());
@@ -335,6 +336,7 @@ struct lambdaAnalysis {
         histos.fill(HIST("QAafter/Kaon/hPt"), trkKa.pt());
         histos.fill(HIST("QAafter/Kaon/hDcaZ"), trkKa.pt(), trkKa.dcaZ());
         histos.fill(HIST("QAafter/Kaon/hDcaXY"), trkKa.pt(), trkKa.dcaXY());
+        histos.fill(HIST("QAafter/Kaon/hTPCNsigmaFull"), trkKa.pt(), trkKa.tpcNSigmaKa());
         if (!cUseTpcOnly && trkKa.hasTOF()) {
           histos.fill(HIST("QAafter/Kaon/hTPCNsigmaTOF"), trkKa.pt(), trkKa.tpcNSigmaKa());
           histos.fill(HIST("QAafter/Kaon/hTOFNsigma"), trkKa.pt(), trkKa.tofNSigmaKa());
