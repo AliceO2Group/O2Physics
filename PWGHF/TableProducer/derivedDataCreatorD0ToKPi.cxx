@@ -160,11 +160,21 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0Mcs> rowCandidateMc;
   Produces<o2::aod::HfD0CollBases> rowCollBase;
   Produces<o2::aod::HfD0CollIds> rowCollId;
-  Produces<o2::aod::HfD0Ps> rowParticle;
+  Produces<o2::aod::HfD0Ps> rowParticleBase;
   Produces<o2::aod::HfD0PIds> rowParticleId;
 
-  Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  // parameters for production of training samples
+  // Switches for filling tables
+  Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
+  Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
+  Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
+  Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
+  Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill candidate indices"};
+  Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
+  Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
+  Configurable<bool> fillCollId{"fillCollId", true, "Fill collision indices"};
+  Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill particle properties"};
+  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill particle indices"};
+  // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
@@ -192,8 +202,16 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T>
+  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size) {
+    if (enabled.value) {
+      table.reserve(size);
+    }
+  };
+
+  template <typename T>
   void fillCollision(const T& collision, int isEventReject, int runNumber)
   {
+    if (fillCollBase) {
     rowCollBase(
       collision.numContrib(),
       collision.posX(),
@@ -202,15 +220,19 @@ struct HfDerivedDataCreatorD0ToKPi {
       isEventReject,
       runNumber
     );
+    }
+    if (fillCollId) {
     rowCollId(
       collision.globalIndex()
     );
+    }
   }
 
   template <typename T, typename U>
   auto fillCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
+    if (fillCandidateBase) {
     rowCandidateBase(
       candidate.pt(),
       candidate.eta(),
@@ -220,6 +242,8 @@ struct HfDerivedDataCreatorD0ToKPi {
       e,
       y
     );
+    }
+    if (fillCandidatePar) {
     rowCandidatePar(
       candidate.chi2PCA(),
       candidate.decayLength(),
@@ -249,6 +273,8 @@ struct HfDerivedDataCreatorD0ToKPi {
       candidate.maxNormalisedDeltaIP(),
       candidate.impactParameterProduct()
       );
+    }
+    if (fillCandidateParE) {
     rowCandidateParE(
       candidate.posX(),
       candidate.posY(),
@@ -273,19 +299,26 @@ struct HfDerivedDataCreatorD0ToKPi {
       cosThetaStar,
       ct
     );
+    }
+    if (fillCandidateSel) {
     rowCandidateSel(
       BIT(candFlag)
     );
+    }
+    if (fillCandidateId) {
     rowCandidateId(
       candidate.collisionId(),
       candidate.prong0Id(),
       candidate.prong1Id(),
       candidate.globalIndex()
     );
+    }
+    if (fillCandidateMc) {
     rowCandidateMc(
       flagMc,
       origin
     );
+    }
   }
 
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
@@ -296,21 +329,21 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     // Fill collision properties
     auto sizeTableColl = collisions.size();
-    rowCollBase.reserve(sizeTableColl);
-    rowCollId.reserve(sizeTableColl);
+    reserveTable(rowCollBase, fillCollBase, sizeTableColl);
+    reserveTable(rowCollId, fillCollId, sizeTableColl);
     for (const auto& collision : collisions) {
       fillCollision(collision, 0, collision.bc().runNumber());
     }
 
     // Fill candidate properties
     auto sizeTableCand = candidates.size();
-    rowCandidateBase.reserve(sizeTableCand);
-    rowCandidatePar.reserve(sizeTableCand);
-    rowCandidateParE.reserve(sizeTableCand);
-    rowCandidateSel.reserve(sizeTableCand);
-    rowCandidateId.reserve(sizeTableCand);
+    reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
+    reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+    reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
+    reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+    reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
     if constexpr (isMc) {
-      rowCandidateMc.reserve(sizeTableCand);
+      reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
     }
     int8_t flagMcRec, origin;
     for (const auto& candidate : candidates) {
@@ -365,11 +398,14 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     // Fill MC particle properties
     auto sizeTablePart = mcParticles.size();
-    rowParticle.reserve(sizeTablePart);
-    rowParticleId.reserve(sizeTablePart);
+    reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
+    reserveTable(rowParticleId, fillParticleId, sizeTablePart);
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        rowParticle(
+      if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        continue;
+      }
+      if (fillParticleBase) {
+        rowParticleBase(
           particle.pt(),
           particle.eta(),
           particle.phi(),
@@ -377,6 +413,8 @@ struct HfDerivedDataCreatorD0ToKPi {
           particle.flagMcMatchGen(),
           particle.originMcGen()
         );
+      }
+      if (fillParticleId) {
         rowParticleId(
           particle.mcCollisionId(),
           particle.globalIndex()
