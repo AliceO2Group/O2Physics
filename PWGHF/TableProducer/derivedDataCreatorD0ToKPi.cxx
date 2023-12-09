@@ -18,6 +18,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -136,6 +138,7 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
 hf_cand_index::CollisionId
 );
 
+// Table with MC particle info
 DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
@@ -144,6 +147,8 @@ DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_mc::FlagMc,
                   hf_cand_mc::OriginMcGen
 );
+
+// Table with global indices for MC particles
 DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
                   hf_cand_index::McCollisionId,
                   hf_cand_index::McParticleId
@@ -209,7 +214,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   };
 
   template <typename T>
-  void fillCollision(const T& collision, int isEventReject, int runNumber)
+  void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
   {
     if (fillCollBase) {
     rowCollBase(
@@ -229,7 +234,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T, typename U>
-  auto fillCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
+  auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateBase) {
@@ -321,6 +326,27 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
+  template <typename T, typename U>
+  void fillTablesParticle(const T& particle, U mass)
+  {
+    if (fillParticleBase) {
+      rowParticleBase(
+        particle.pt(),
+        particle.eta(),
+        particle.phi(),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mass),
+        particle.flagMcMatchGen(),
+        particle.originMcGen()
+      );
+    }
+    if (fillParticleId) {
+      rowParticleId(
+        particle.mcCollisionId(),
+        particle.globalIndex()
+      );
+    }
+  }
+
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
   void processCandidates(aod::Collisions const& collisions,
                  CandType const& candidates,
@@ -332,7 +358,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     reserveTable(rowCollBase, fillCollBase, sizeTableColl);
     reserveTable(rowCollId, fillCollId, sizeTableColl);
     for (const auto& collision : collisions) {
-      fillCollision(collision, 0, collision.bc().runNumber());
+      fillTablesCollision(collision, 0, collision.bc().runNumber());
     }
 
     // Fill candidate properties
@@ -386,15 +412,16 @@ struct HfDerivedDataCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
+        fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
       }
       if (candidate.isSelD0bar()) {
-        fillCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
+        fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
       }
     }
   }
 
-  void processMcParticles(MatchedGenCandidatesMc const& mcParticles)
+  template <typename ParticleType>
+  void processMcParticles(ParticleType const& mcParticles)
   {
     // Fill MC particle properties
     auto sizeTablePart = mcParticles.size();
@@ -404,22 +431,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (fillParticleBase) {
-        rowParticleBase(
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
-          particle.flagMcMatchGen(),
-          particle.originMcGen()
-        );
-      }
-      if (fillParticleId) {
-        rowParticleId(
-          particle.mcCollisionId(),
-          particle.globalIndex()
-        );
-      }
+      fillTablesParticle(particle, o2::constants::physics::MassD0);
     }
   }
 
