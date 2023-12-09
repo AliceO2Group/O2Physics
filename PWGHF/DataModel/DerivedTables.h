@@ -95,8 +95,8 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 }
 namespace hf_cand_index
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate2P, candidate2p, int, HfCand2Prong, "_0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate3P, candidate3p, int, HfCand3Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate2P, candidate2p, int, HfCand2Prong, "");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate3P, candidate3p, int, HfCand3Prong, "");
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
