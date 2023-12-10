@@ -301,6 +301,9 @@ struct nuclei_in_jets {
   float Weight(float pt, int event_region, int nucleus_of_interest)
   {
 
+    if (pt >= 20)
+      return 1;
+
     auto par_proton_jet = static_cast<std::vector<float>>(param_proton_jet);
     auto par_deuteron_jet = static_cast<std::vector<float>>(param_deuteron_jet);
     auto par_helium3_jet = static_cast<std::vector<float>>(param_helium3_jet);
@@ -316,17 +319,17 @@ struct nuclei_in_jets {
     TF1* dNdpt_helium3_ue = GetTsallis(par_helium3_ue[0], par_helium3_ue[1], par_helium3_ue[2], par_helium3_ue[3], "dNdpt_helium3_ue");
 
     if (nucleus_of_interest == nucleus::proton && event_region == region::jet)
-      return dNdpt_proton_jet;
+      return dNdpt_proton_jet->Eval(pt);
     if (nucleus_of_interest == nucleus::proton && event_region == region::underlying_event)
-      return dNdpt_proton_ue;
+      return dNdpt_proton_ue->Eval(pt);
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::jet)
-      return dNdpt_deuteron_jet;
+      return dNdpt_deuteron_jet->Eval(pt);
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::underlying_event)
-      return dNdpt_deuteron_ue;
+      return dNdpt_deuteron_ue->Eval(pt);
     if (nucleus_of_interest == nucleus::helium && event_region == region::jet)
-      return dNdpt_helium3_jet;
+      return dNdpt_helium3_jet->Eval(pt);
     if (nucleus_of_interest == nucleus::helium && event_region == region::underlying_event)
-      return dNdpt_helium3_ue;
+      return dNdpt_helium3_ue->Eval(pt);
 
     return 1;
   }
