@@ -301,9 +301,6 @@ struct nuclei_in_jets {
   float Weight(float pt, int event_region, int nucleus_of_interest)
   {
 
-    if (pt >= 20)
-      return 1;
-
     auto par_proton_jet = static_cast<std::vector<float>>(param_proton_jet);
     auto par_deuteron_jet = static_cast<std::vector<float>>(param_deuteron_jet);
     auto par_helium3_jet = static_cast<std::vector<float>>(param_helium3_jet);
@@ -311,46 +308,46 @@ struct nuclei_in_jets {
     auto par_deuteron_ue = static_cast<std::vector<float>>(param_deuteron_ue);
     auto par_helium3_ue = static_cast<std::vector<float>>(param_helium3_ue);
 
-    TF1* dNdpt_proton_jet = GetTsallis(par_proton_jet[0], par_proton_jet[1], par_proton_jet[2], par_proton_jet[3], "dNdpt_proton_jet");
-    TF1* dNdpt_proton_ue = GetTsallis(par_proton_ue[0], par_proton_ue[1], par_proton_ue[2], par_proton_ue[3], "dNdpt_proton_ue");
-    TF1* dNdpt_deuteron_jet = GetTsallis(par_deuteron_jet[0], par_deuteron_jet[1], par_deuteron_jet[2], par_deuteron_jet[3], "dNdpt_deuteron_jet");
-    TF1* dNdpt_deuteron_ue = GetTsallis(par_deuteron_ue[0], par_deuteron_ue[1], par_deuteron_ue[2], par_deuteron_ue[3], "dNdpt_deuteron_ue");
-    TF1* dNdpt_helium3_jet = GetTsallis(par_helium3_jet[0], par_helium3_jet[1], par_helium3_jet[2], par_helium3_jet[3], "dNdpt_helium3_jet");
-    TF1* dNdpt_helium3_ue = GetTsallis(par_helium3_ue[0], par_helium3_ue[1], par_helium3_ue[2], par_helium3_ue[3], "dNdpt_helium3_ue");
+    float dNdpt_proton_jet = GetTsallis(par_proton_jet[0], par_proton_jet[1], par_proton_jet[2], par_proton_jet[3], pt);
+    float dNdpt_proton_ue = GetTsallis(par_proton_ue[0], par_proton_ue[1], par_proton_ue[2], par_proton_ue[3], pt);
+    float dNdpt_deuteron_jet = GetTsallis(par_deuteron_jet[0], par_deuteron_jet[1], par_deuteron_jet[2], par_deuteron_jet[3], pt);
+    float dNdpt_deuteron_ue = GetTsallis(par_deuteron_ue[0], par_deuteron_ue[1], par_deuteron_ue[2], par_deuteron_ue[3], pt);
+    float dNdpt_helium3_jet = GetTsallis(par_helium3_jet[0], par_helium3_jet[1], par_helium3_jet[2], par_helium3_jet[3], pt);
+    float dNdpt_helium3_ue = GetTsallis(par_helium3_ue[0], par_helium3_ue[1], par_helium3_ue[2], par_helium3_ue[3], pt);
 
     if (nucleus_of_interest == nucleus::proton && event_region == region::jet)
-      return dNdpt_proton_jet->Eval(pt);
+      return dNdpt_proton_jet;
     if (nucleus_of_interest == nucleus::proton && event_region == region::underlying_event)
-      return dNdpt_proton_ue->Eval(pt);
+      return dNdpt_proton_ue;
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::jet)
-      return dNdpt_deuteron_jet->Eval(pt);
+      return dNdpt_deuteron_jet;
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::underlying_event)
-      return dNdpt_deuteron_ue->Eval(pt);
+      return dNdpt_deuteron_ue;
     if (nucleus_of_interest == nucleus::helium && event_region == region::jet)
-      return dNdpt_helium3_jet->Eval(pt);
+      return dNdpt_helium3_jet;
     if (nucleus_of_interest == nucleus::helium && event_region == region::underlying_event)
-      return dNdpt_helium3_ue->Eval(pt);
+      return dNdpt_helium3_ue;
 
     return 1;
   }
 
-  TF1* GetLevi(Double_t mass, Double_t temp, Double_t n, Double_t norm, const char* name)
+  float GetLevi(float mass, float temp, float n, float norm, float pt)
   {
 
-    TF1* f = new TF1(name, "(x*[0]*([1]-1)*([1]-2))/([1]*[2]*([1]*[2]+[3]*([1]-2)))*(1+(sqrt([3]*[3]+x*x)-[3])/([1]*[2]))^(-[1])", 0, 20);
-    f->SetParameters(norm, n, temp, mass);
-    f->SetParLimits(2, 0.01, 10);
-    f->SetParNames("norm (dN/dy)", "n", "T", "mass");
-    f->FixParameter(3, mass);
-    f->SetLineWidth(3);
-    f->SetLineColor(4);
-    return f;
+    float p0 = norm;
+    float p1 = n;
+    float p2 = temp;
+    float p3 = mass;
+
+    float dNdpt = (pt * p0 * (p1 - 1) * (p1 - 2)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2))) * TMath::Power((1 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
+
+    return dNdpt;
   }
 
-  TF1* GetTsallis(Double_t mass, Double_t temp, Double_t q, Double_t norm, const char* name)
+  float GetTsallis(float mass, float temp, float q, float norm, float pt)
   {
 
-    return GetLevi(mass, temp, 1 / (q - 1), norm, name);
+    return GetLevi(mass, temp, 1 / (q - 1), norm, pt);
   }
 
   // Process Data
