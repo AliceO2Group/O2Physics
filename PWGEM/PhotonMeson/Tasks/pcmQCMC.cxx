@@ -160,7 +160,7 @@ struct PCMQCMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
-      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
 
       for (const auto& cut : fPCMCuts) {
         THashList* list_v0_cut = static_cast<THashList*>(list_v0->FindObject(cut.GetName()));
