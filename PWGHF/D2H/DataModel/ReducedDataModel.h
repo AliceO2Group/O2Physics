@@ -240,33 +240,6 @@ DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores f
                   hf_cand_b0_reduced::Prong0MlScoreNonprompt,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
-                  hf_cand::Chi2PCA,
-                  hf_cand_b0_reduced::DecayLength,
-                  hf_cand_b0_reduced::DecayLengthXY,
-                  hf_cand_b0_reduced::DecayLengthNormalised,
-                  hf_cand_b0_reduced::DecayLengthXYNormalised,
-                  hf_cand_b0_reduced::PtProng0,
-                  hf_cand_b0_reduced::PtProng1,
-                  hf_cand::ImpactParameter0,
-                  hf_cand::ImpactParameter1,
-                  hf_cand_b0_reduced::NSigTpcPi1,
-                  hf_cand_b0_reduced::NSigTofPi1,
-                  hf_cand_b0_reduced::Prong0MlScoreBkg,
-                  hf_cand_b0_reduced::Prong0MlScorePrompt,
-                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
-                  hf_cand_b0_reduced::CandidateSelFlag,
-                  hf_cand_b0_reduced::M,
-                  hf_cand_b0_reduced::Pt,
-                  hf_cand_b0_reduced::Cpa,
-                  hf_cand_b0_reduced::CpaXY,
-                  hf_cand_b0_reduced::MaxNormalisedDeltaIP,
-                  hf_cand_b0_reduced::Eta,
-                  hf_cand_b0_reduced::Phi,
-                  hf_cand_b0_reduced::Y,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
-
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
 namespace hf_cand_bplus_reduced
