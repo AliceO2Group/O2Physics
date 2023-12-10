@@ -205,12 +205,39 @@ DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");      //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");   //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);               //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);         //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);   //! Nonprompt ML score of the D daughter
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                           //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                           //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 } // namespace hf_cand_b0_reduced
 
-DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
+DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daughter indices
                   hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores for the D+ daughter
+                  hf_cand_b0_reduced::Prong0MlScoreBkg,
+                  hf_cand_b0_reduced::Prong0MlScorePrompt,
+                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
 
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
