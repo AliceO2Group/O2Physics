@@ -49,7 +49,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
                   hf_cand_b0_reduced::Prong0MlScorePrompt,
                   hf_cand_b0_reduced::Prong0MlScoreNonprompt,
-                  hf_cand_b0_reduced::CandidateSelFlag,
+                  hf_sel_candidate_b0::IsSelB0ToDPi,
                   hf_cand_b0_reduced::M,
                   hf_cand_b0_reduced::Pt,
                   hf_cand_b0_reduced::Cpa,
