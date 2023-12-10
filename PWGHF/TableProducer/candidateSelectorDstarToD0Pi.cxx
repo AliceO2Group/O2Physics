@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateSelectorDstar.cxx
-/// \brief Selection on D* decay candidates
+/// \brief Selection on D*± → D0(bar) π±  decay candidates
 ///
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
@@ -32,7 +32,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 
 // Struct to applying Dstar selection cuts
-struct HfCandidateSelectorDstar {
+struct HfCandidateSelectorDstarToD0Pi {
   Produces<aod::HfSelDstarToD0Pi> hfSelDstarCandidate;
 
   // Configurable specific to D0
@@ -44,8 +44,8 @@ struct HfCandidateSelectorDstar {
   // Configurable specific to Dstar
   Configurable<double> ptDstarCandMin{"ptDstarCandMin", 0., "Minimum Dstar candidate pT"};
   Configurable<double> ptDstarCandMax{"ptDstarCandMax", 50., "Maximum Dstar candidate pT"};
-  Configurable<std::vector<double>> binsPtDstar{"binsPtDstar", std::vector<double>{hf_cuts_dstar_to_pi_d0::vecBinsPt}, "pT bin limits for Dstar"};
-  Configurable<LabeledArray<double>> cutsDstar{"cutsDstar", {hf_cuts_dstar_to_pi_d0::cuts[0], hf_cuts_dstar_to_pi_d0::nBinsPt, hf_cuts_dstar_to_pi_d0::nCutVars, hf_cuts_dstar_to_pi_d0::labelsPt, hf_cuts_dstar_to_pi_d0::labelsCutVar}, "Dstar candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPtDstar{"binsPtDstar", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
+  Configurable<LabeledArray<double>> cutsDstar{"cutsDstar", {hf_cuts_dstar_to_d0_pi::cuts[0], hf_cuts_dstar_to_d0_pi::nBinsPt, hf_cuts_dstar_to_d0_pi::nCutVars, hf_cuts_dstar_to_d0_pi::labelsPt, hf_cuts_dstar_to_d0_pi::labelsCutVar}, "Dstar candidate selection per pT bin"};
 
   // common Configurable
   // TPC PID
@@ -65,7 +65,7 @@ struct HfCandidateSelectorDstar {
 
   // selecting only background candidates
   Configurable<bool> keepOnlySidebandCandidates{"keepOnlySidebandCandidates", false, "Select only sideband candidates, for studying background cut variable distributions"};
-  Configurable<double> distanceFromDeltaMinvDstarForSidebands{"distanceFromDeltaMinvDstarForSidebands", 0.05, "Minimum distance from nominal (D*-D0) mass value for sideband region"};
+  Configurable<double> distanceFromDeltaMassForSidebands{"distanceFromDeltaMassForSidebands", 0.05, "Minimum distance from nominal (D*-D0) mass value for sideband region"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -78,7 +78,7 @@ struct HfCandidateSelectorDstar {
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
   // using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
-  using HfFullDstarCandidate = soa::Join<aod::HfD0fromDstar, aod::HfDstarCand>;
+  using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar>;
 
   void init(InitContext& initContext)
   {
@@ -130,7 +130,7 @@ struct HfCandidateSelectorDstar {
       return false;
     }
 
-    // Note: follwoing two cuts are not defined in namespace: hf_cuts_d0_to_pi_k of  SelectionCuts.h, while are defined in namespace: hf_cuts_dstar_to_pi_d0
+    // Note: follwoing two cuts are not defined in namespace: hf_cuts_d0_to_pi_k of  SelectionCuts.h, while are defined in namespace: hf_cuts_dstar_to_d0_pi
     // Chi2PCA of secondary vertex reconstruction
     if (candidate.chi2PCAD0() > cutsDstar->get(binPt, "chi2PCA")) {
       return false;
@@ -268,11 +268,11 @@ struct HfCandidateSelectorDstar {
 
     // in case only sideband candidates have to be stored, additional invariant-mass cut
     if (keepOnlySidebandCandidates && prongSoftPi.sign() > 0.) {
-      if (std::abs((mInvDstar - mInvD0) - massPi) < distanceFromDeltaMinvDstarForSidebands) {
+      if (std::abs((mInvDstar - mInvD0) - massPi) < distanceFromDeltaMassForSidebands) {
         return false;
       }
     } else if (keepOnlySidebandCandidates && prongSoftPi.sign() < 0.) {
-      if (std::abs((mInvAntiDstar - mInvD0Bar) - massPi) < distanceFromDeltaMinvDstarForSidebands) {
+      if (std::abs((mInvAntiDstar - mInvD0Bar) - massPi) < distanceFromDeltaMassForSidebands) {
         return false;
       }
     }
@@ -360,5 +360,5 @@ struct HfCandidateSelectorDstar {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorDstar>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorDstarToD0Pi>(cfgc)};
 }

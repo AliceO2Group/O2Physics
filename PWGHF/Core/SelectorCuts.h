@@ -303,7 +303,7 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "min norm decay length XY", "max decay length", "max decay length XY", "min decay length", "norm dauImpPar XY"};
 } // namespace hf_cuts_d0_to_pi_k
 
-namespace hf_cuts_dstar_to_pi_d0
+namespace hf_cuts_dstar_to_d0_pi
 {
 static constexpr int nBinsPt = 10;
 static constexpr int nCutVars = 8;
@@ -350,7 +350,7 @@ constexpr double cuts[nBinsPt][nCutVars] = {{0.05, 0.3, 0.1, 0.5, 0.2, 300.0, 0.
                                             {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
                                             {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
                                             {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5}};
-} // namespace hf_cuts_dstar_to_pi_d0
+} // namespace hf_cuts_dstar_to_d0_pi
 
 namespace hf_cuts_lc_to_p_k_pi
 {

@@ -110,8 +110,8 @@ o2physics_add_dpl_workflow(candidate-selector-ds-to-k-k-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-selector-dstar
-                    SOURCES candidateSelectorDstar.cxx
+o2physics_add_dpl_workflow(candidate-selector-dstar-to-d0-pi
+                    SOURCES candidateSelectorDstarToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

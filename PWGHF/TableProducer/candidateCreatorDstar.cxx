@@ -35,10 +35,6 @@ using namespace o2::analysis;
 
 namespace o2::aod
 {
-//   using HfDstarsWStatus= soa::Join<aod::HfDstars, aod::HfCutStatusDstar>;
-//   using HfDstarsWStatus_nd_PvRefitInfo =soa::Join<aod::HfDstars, aod::HfCutStatusDstar, aod::HfPvRefitDstar>;
-//   using Hf2ProngsWStatus = soa:: Join<aod::Hf2Prongs, aod::HfCutStatus2Prong>;
-
 using HfDstarsWithPvRefitInfo = soa::Join<aod::HfDstars, aod::HfPvRefitDstar>;
 } // namespace o2::aod
 
@@ -72,7 +68,7 @@ struct HfCandidateCreatorDstar {
   o2::vertexing::DCAFitterN<2> df;
   int runNumber;
   double bz;
-  float cmToMicrometers = 10000.; // from cm to µm
+  static constexpr float CmToMicrometers = 10000.; // from cm to µm
   double massPi, massK, massD0;
 
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
@@ -237,13 +233,13 @@ struct HfCandidateCreatorDstar {
       // Propagating Soft Pi to DCA
       o2::dataformats::DCA impactParameterPi;
       trackPiParVar.propagateToDCA(primaryVertex, bz, &impactParameterPi);
-      registry.fill(HIST("QA/hDcaXYProngsD0"), trackD0Prong0.pt(), impactParameter0.getY() * cmToMicrometers);
-      registry.fill(HIST("QA/hDcaXYProngsD0"), trackD0Prong1.pt(), impactParameter1.getY() * cmToMicrometers);
-      registry.fill(HIST("QA/hDcaZProngsD0"), trackD0Prong0.pt(), impactParameter0.getZ() * cmToMicrometers);
-      registry.fill(HIST("QA/hDcaZProngsD0"), trackD0Prong1.pt(), impactParameter1.getZ() * cmToMicrometers);
+      registry.fill(HIST("QA/hDcaXYProngsD0"), trackD0Prong0.pt(), impactParameter0.getY() * CmToMicrometers);
+      registry.fill(HIST("QA/hDcaXYProngsD0"), trackD0Prong1.pt(), impactParameter1.getY() * CmToMicrometers);
+      registry.fill(HIST("QA/hDcaZProngsD0"), trackD0Prong0.pt(), impactParameter0.getZ() * CmToMicrometers);
+      registry.fill(HIST("QA/hDcaZProngsD0"), trackD0Prong1.pt(), impactParameter1.getZ() * CmToMicrometers);
 
-      registry.fill(HIST("QA/hDCAXYPi"), trackPi.pt(), impactParameterPi.getY() * cmToMicrometers);
-      registry.fill(HIST("QA/hDCAZPi"), trackPi.pt(), impactParameterPi.getZ() * cmToMicrometers);
+      registry.fill(HIST("QA/hDCAXYPi"), trackPi.pt(), impactParameterPi.getY() * CmToMicrometers);
+      registry.fill(HIST("QA/hDCAZPi"), trackPi.pt(), impactParameterPi.getZ() * CmToMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;
@@ -254,25 +250,16 @@ struct HfCandidateCreatorDstar {
 
       // Calculation of kinematics for inv mass
       auto pVecD0 = RecoDecay::pVec(pVecD0Prong0, pVecD0Prong1);
-      // D0 pt vector
-      auto pxD0 = pVecD0.at(0);
-      auto pyD0 = pVecD0.at(1);
-      auto ptVecD0 = std::array{pxD0, pyD0};
+
       // D0 pt magnitude
-      auto ptD0 = RecoDecay::pt(ptVecD0);
+      auto ptD0 = RecoDecay::pt(pVecD0);
 
       // Soft pi momentum vector
       std::array<float, 3> pVecSoftPi;
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
 
-      // Dstar momentum
-      auto pVecDstar = RecoDecay::pVec(pVecD0, pVecSoftPi);
-      auto pxDstar = pVecDstar.at(0);
-      auto pyDstar = pVecDstar.at(1);
-      // Dstar ptVec
-      std::array<float, 2> ptVecDstar{pxDstar, pyDstar};
-      // DStar pt magnitude
-      auto ptDstar = RecoDecay::pt(ptVecDstar);
+      // D* pt magnitude
+      auto ptDstar = RecoDecay::pt(pVecD0, pVecSoftPi);
 
       // Fill candidate Table for DStar
       rowCandDstarBase(collision.globalIndex(),
@@ -297,9 +284,9 @@ struct HfCandidateCreatorDstar {
 
       if (fillHistograms) {
         registry.fill(HIST("QA/hPtD0"), ptD0);
-        registry.fill(HIST("QA/hPtPi"), RecoDecay::pt(trackPi.px(), trackPi.py()));
-        registry.fill(HIST("QA/hPtD0Prong0"), RecoDecay::pt(pVecD0Prong0.at(0), pVecD0Prong0.at(1)));
-        registry.fill(HIST("QA/hPtD0Prong1"), RecoDecay::pt(pVecD0Prong1.at(0), pVecD0Prong1.at(1)));
+        registry.fill(HIST("QA/hPtPi"), RecoDecay::pt(pVecSoftPi));
+        registry.fill(HIST("QA/hPtD0Prong0"), RecoDecay::pt(pVecD0Prong0));
+        registry.fill(HIST("QA/hPtD0Prong1"), RecoDecay::pt(pVecD0Prong1));
         registry.fill(HIST("QA/hPtDstar"), ptDstar);
       }
     }
@@ -332,9 +319,9 @@ struct HfCandidateCreatorDstarExpressions {
   Produces<aod::HfCand2ProngMcRec> rowsMcMatchRecD0;
   Produces<aod::HfCand2ProngMcGen> rowsMcMatchGenD0;
 
-  Spawns<aod::HfDstarExt> rowsCandidateDstar;
-  Produces<aod::HfDstarMcRec> rowsMcMatchRecDstar;
-  Produces<aod::HfDstarMcGen> rowsMcMatchGenDstar;
+  Spawns<aod::HfCandDstarExt> rowsCandidateDstar;
+  Produces<aod::HfCandDstarMcRec> rowsMcMatchRecDstar;
+  Produces<aod::HfCandDstarMcGen> rowsMcMatchGenDstar;
 
   void init(InitContext const&) {}
 
@@ -357,20 +344,20 @@ struct HfCandidateCreatorDstarExpressions {
       originDstar = 0;
       originD0 = 0;
 
-      auto dstarIndex = rowCandidateDstar.globalIndex();
-      auto candD0 = rowsCandidateD0->iteratorAt(dstarIndex);
+      auto indexDstar = rowCandidateDstar.globalIndex();
+      auto candD0 = rowsCandidateD0->iteratorAt(indexDstar);
       auto candSoftPi = rowCandidateDstar.prongPi_as<aod::TracksWMc>();
 
       auto arrayDaughtersDstar = std::array{candSoftPi, candD0.prong0_as<aod::TracksWMc>(), candD0.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersofD0 = std::array{candD0.prong0_as<aod::TracksWMc>(), candD0.prong1_as<aod::TracksWMc>()};
 
-      // D*± --> π±  D0(bar)
+      // D*± → D0(bar) π±
       indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, pdg::Code::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
-      // D0(bar) --> π± K∓
+      // D0(bar) → π± K∓
       indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
 
       if (indexRecDstar > -1) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToPiD0));
+        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
       }
       if (indexRecD0 > -1) {
         flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
@@ -396,11 +383,11 @@ struct HfCandidateCreatorDstarExpressions {
       originDstar = 0;
       originD0 = 0;
 
-      // D*± --> π±  D0(bar)
+      // D*± → D0(bar) π±
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToPiD0));
+        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
       }
-      // D0(bar) --> π± K∓
+      // D0(bar) → π± K∓
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
         flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
       }

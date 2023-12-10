@@ -141,7 +141,7 @@ DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, bool);               //! checking PID s
 
 } // namespace hf_sel_candidate_dstar
 
-DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTART", //! Table stores information about selection flag on Dstar candidate
+DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores information about selection flag on Dstar candidate
                   hf_sel_candidate_dstar::IsSelDstarToD0Pi,
                   hf_sel_candidate_dstar::IsRecoD0Flag,
                   hf_sel_candidate_dstar::IsRecoTopol,

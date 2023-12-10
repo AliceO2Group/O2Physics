@@ -1531,7 +1531,7 @@ DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand_sigmac::FlagMcMatchGen,
                   hf_cand_sigmac::OriginMcGen);
 
-/// D*(+) --> D0 + π(+)
+/// D*± → D0(bar) π±
 namespace hf_cand_dstar
 {
 DECLARE_SOA_EXPRESSION_COLUMN(PxD0, pxD0, float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1);
@@ -1604,8 +1604,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXYD0, impactParameterXYD0,
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 
 // Columns only for D* properties
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngPi, prongPi, int, Tracks, "");                 //! soft-pion index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0Cand, prondD0Cand, int, HfCand2Prong, "_0"); //! D0 Index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngPi, prongPi, int, Tracks, ""); //! soft-pion index
 
 // soft pion prong
 DECLARE_SOA_COLUMN(ImpParamSoftPi, impParamSoftPi, float);
@@ -1619,7 +1618,7 @@ DECLARE_SOA_COLUMN(PzSoftPi, pzSoftPi, float);
 DECLARE_SOA_EXPRESSION_COLUMN(PxDstar, pxDstar, float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1 + 1.f * aod::hf_cand_dstar::pxSoftPi);
 DECLARE_SOA_EXPRESSION_COLUMN(PyDstar, pyDstar, float, 1.f * aod::hf_cand::pyProng0 + 1.f * aod::hf_cand::pyProng1 + 1.f * aod::hf_cand_dstar::pySoftPi);
 DECLARE_SOA_EXPRESSION_COLUMN(PzDstar, pzDstar, float, 1.f * aod::hf_cand::pzProng0 + 1.f * aod::hf_cand::pzProng1 + 1.f * aod::hf_cand_dstar::pzSoftPi);
-// Inv Mass (accpet mass array of size 2 {Mπ , Mπ, Mk})
+// Inv Mass (accept mass array of size 3 {π , π, k})
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDstar, invMassDstar,
                            [](float pxSoftPi, float pySoftPi, float pzSoftPi, float pxProng0, float pyProng0, float pzProng0, float pxProng1, float pyProng1, float pzProng1)
                              -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus}); });
@@ -1638,7 +1637,7 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 
 enum DecayType {
-  DstarToPiD0 = 0,
+  DstarToD0Pi = 0,
   D0ToPiK,
   NDstarDecayType
 };
@@ -1646,7 +1645,7 @@ enum DecayType {
 } // namespace hf_cand_dstar
 
 /// D0 (table) from DStar
-DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FROMDSTAR",
+DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
                   o2::soa::Index<>,
                   // gener columns
                   hf_cand::CollisionId,
@@ -1704,9 +1703,9 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FROMDSTAR",
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfD0FromDstarExt, HfD0FromDstarBase, "HFD0FRMDSTREXT", hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0);
-using HfD0fromDstar = HfD0FromDstarExt;
+using HfD0FromDstar = HfD0FromDstarExt;
 
-DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFDSTARCANDBASE",
+DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   o2::soa::Index<>,
                   hf_cand::CollisionId,
                   // Primary vertex
@@ -1734,16 +1733,16 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFDSTARCANDBASE",
                   hf_cand_dstar::InvMassAntiDstar<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfDstarExt, HfCandDstarBase, "HFDSTAREXT", hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar);
-using HfDstarCand = HfDstarExt;
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandDstarExt, HfCandDstarBase, "HFCANDDSTREXT", hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar);
+using HfCandDstar = HfCandDstarExt;
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfDstarMcRec, "AOD", "HFDSTARMCREC",
+DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
                   hf_cand_dstar::OriginMcRec);
 
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfDstarMcGen, "AOD", "HFDSTARMCGEN",
+DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
                   hf_cand_dstar::OriginMcGen);
 
