@@ -90,7 +90,7 @@ struct HfCandidateCreatorToXiPi {
   using V0sLinked = soa::Join<V0s, V0DataLink>;
   using MySkimIdx = soa::Filtered<aod::HfCascLf2Prongs>;
 
-  Filter filterSelectIndexes = (aod::hf_track_index::hfflag > (uint8_t)0);
+  Filter filterSelectIndexes = (aod::hf_track_index::hfflag > static_cast<uint8_t>(0));
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
