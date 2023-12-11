@@ -9,13 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(flow-pt-efficiency
-                    SOURCES flowPtEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(strangenessqc
+                    SOURCES strangenessQC.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(flow-pbpb-task
-                    SOURCES FlowPbPbTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
-                    COMPONENT_NAME Analysis)
-

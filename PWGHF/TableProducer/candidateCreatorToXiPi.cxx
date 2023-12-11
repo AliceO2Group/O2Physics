@@ -110,6 +110,13 @@ struct HfCandidateCreatorToXiPi {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    if (doprocessIdxCombinatorics && doprocessDerivedData) {
+      LOGF(fatal, "Cannot enable processIdxCombinatorics and processDerivedData at the same time. Please choose one.");
+    }
+    if (!doprocessIdxCombinatorics && !doprocessDerivedData) {
+      LOGF(fatal, "Please enable at least one process, now both processIdxCombinatorics and processDerivedData are false.");
+    }
   }
 
   void processIdxCombinatorics(SelectedCollisions const& collisions,
@@ -239,8 +246,8 @@ struct HfCandidateCreatorToXiPi {
         auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackIndexPion : groupedTrackIndices) {
 
-          // use bachelor selections from HfTrackIndexSkimCreatorTagSelTracks --> bit =2 is CandidateType::CandV0bachelor
-          if (!TESTBIT(trackIndexPion.isSelProng(), 2)) {
+          // use bachelor selections from HfTrackIndexSkimCreatorTagSelTracks --> bit = 4 is CandidateType::CandCascadeBachelor
+          if (!TESTBIT(trackIndexPion.isSelProng(), 4)) {
             continue;
           }
 
