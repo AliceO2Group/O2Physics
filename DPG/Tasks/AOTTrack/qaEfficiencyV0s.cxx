@@ -36,45 +36,53 @@
 #include "THashList.h"
 
 using namespace o2::framework;
+static constexpr int nSpecies = 2; // One per PDG
+// static constexpr const char* particleTitle[nSpecies] = {"K0s", "-K0s"};
+static constexpr int PDGs[nSpecies] = {kK0Short, -kK0Short};
+int pdgToIndex(int pdg)
+{
+  for (int i = 0; i < nSpecies; i++) {
+    if (pdg == PDGs[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+static constexpr int kHistoPtNum = 0;
+static constexpr int kHistoPtDen = 1;
+static constexpr int kHistoTot = 2;
+
+std::shared_ptr<TH1> histograms[nSpecies][kHistoTot] = {{nullptr}};
+std::shared_ptr<TH1> histogramsPrm[nSpecies][kHistoTot] = {{nullptr}};
+std::shared_ptr<TH1> histogramsPrmRap[nSpecies][kHistoTot] = {{nullptr}};
 
 struct QaEfficiencyV0s {
   // Particle information
-  static constexpr int nSpecies = 1; // One per PDG
-  static constexpr const char* particleTitle[nSpecies] = {"K0s"};
-  static constexpr int PDGs[nSpecies] = {kK0Short};
-  // Particle only selection
-  Configurable<bool> doK0s{"do-k0s", false, "Flag to run with the PDG code of k0s"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "Rapidity cut"};
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 5.f}, "Pt binning"};
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
-  // Histograms
-
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
   void init(InitContext&)
   {
     const AxisSpec axisPt{ptBins, "#it{p}_{T} GeV/#it{c}"};
-    auto h = registry.add<TH1>("Pos/PtNum_310", "Pos/Num_310", kTH1F, {axisPt});
-    registry.add("Pos/PtDen_310", "Pos/Den_310", kTH1F, {axisPt});
-    registry.add("Neg/PtNum_310", "Neg/Num_310", kTH1F, {axisPt});
-    registry.add("Neg/PtDen_310", "Neg/Den_310", kTH1F, {axisPt});
-    registry.add("Prm/Pos/PtNum_310", "Prm/Pos/Num_310", kTH1F, {axisPt});
-    registry.add("Prm/Pos/PtDen_310", "Prm/Pos/Den_310", kTH1F, {axisPt});
-    registry.add("Prm/Neg/PtNum_310", "Prm/Neg/Num_310", kTH1F, {axisPt});
-    registry.add("Prm/Neg/PtDen_310", "Prm/Neg/Den_310", kTH1F, {axisPt});
-    registry.add("PrmRap/Pos/PtNum_310", "PrmRap/Pos/Num_310", kTH1F, {axisPt});
-    registry.add("PrmRap/Pos/PtDen_310", "PrmRap/Pos/Den_310", kTH1F, {axisPt});
-    registry.add("PrmRap/Neg/PtNum_310", "PrmRap/Neg/Num_310", kTH1F, {axisPt});
-    registry.add("PrmRap/Neg/PtDen_310", "PrmRap/Neg/Den_310", kTH1F, {axisPt});
-
-    TAxis* axis = h->GetXaxis();
     listEfficiencyMC.setObject(new THashList);
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPt_pdg%d", PDGs[0]), Form("efficiencyPt_pdg%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPt_pdg-%d", PDGs[0]), Form("efficiencyPt_pdg-%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrm_pdg%d", PDGs[0]), Form("efficiencyPtPrm_pdg%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrm_pdg-%d", PDGs[0]), Form("efficiencyPtPrm_pdg-%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrmRap_pdg%d", PDGs[0]), Form("efficiencyPtPrmRap_pdg%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-    listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrmRap_pdg-%d", PDGs[0]), Form("efficiencyPtPrmRap_pdg-%d", PDGs[0]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+
+    for (int i = 0; i < nSpecies; i++) {
+      // MC efficiency (PDG code
+      histograms[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Num_%i", PDGs[i]), Form("Num %i", PDGs[i]), kTH1F, {axisPt});
+      histograms[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Den_%i", PDGs[i]), Form("Den %i", PDGs[i]), kTH1F, {axisPt});
+
+      histogramsPrm[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Num_%i", PDGs[i]), Form("Pt Prm Num %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrm[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Den_%i", PDGs[i]), Form("Pt Prm Den %i", PDGs[i]), kTH1F, {axisPt});
+
+      histogramsPrmRap[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Rap/PtNum_%i", PDGs[i]), Form("Pt Prm Rap Num %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrmRap[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Rap/PtDen_%i", PDGs[i]), Form("Pt Prm Rap Den %i", PDGs[i]), kTH1F, {axisPt});
+
+      TAxis* axis = histograms[i][0]->GetXaxis();
+      listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPt_pdg%d", PDGs[i]), Form("efficiencyPt_pdg%d", PDGs[i]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+      listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrm_pdg%d", PDGs[i]), Form("efficiencyPtPrm_pdg%d", PDGs[i]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+      listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPtPrmRap_pdg%d", PDGs[i]), Form("efficiencyPtPrmRap_pdg%d", PDGs[i]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+    }
   }
 
   // MC process
@@ -83,62 +91,44 @@ struct QaEfficiencyV0s {
   void process(o2::aod::McV0Labels const& V0s,
                o2::aod::McParticles const& mcParticles)
   {
-    for (auto const& v0 : V0s) {
+    for (auto const& v0 : V0s) { // Numerator
       if (v0.has_mcParticle()) {
         auto mcparticle = v0.mcParticle();
-        if (mcparticle.pdgCode() == PDGs[0]) {
-          registry.fill(HIST("Pos/PtNum_310"), mcparticle.pt());
-          if (mcparticle.isPhysicalPrimary()) {
-            registry.fill(HIST("Prm/Pos/PtNum_310"), mcparticle.pt());
-            if (TMath::Abs(mcparticle.y()) < rapidityCut) {
-              registry.fill(HIST("PrmRap/Pos/PtNum_310"), mcparticle.pt());
-            }
-          }
-        } else if (mcparticle.pdgCode() == -PDGs[0]) {
-          registry.fill(HIST("Neg/PtNum_310"), mcparticle.pt());
-          if (mcparticle.isPhysicalPrimary()) {
-            registry.fill(HIST("Prm/Neg/PtNum_310"), mcparticle.pt());
-            if (TMath::Abs(mcparticle.y()) < rapidityCut) {
-              registry.fill(HIST("PrmRap/Neg/PtNum_310"), mcparticle.pt());
-            }
+        const auto index = pdgToIndex(mcparticle.pdgCode());
+        if (index < 0) {
+          continue;
+        }
+        histograms[index][kHistoPtNum]->Fill(mcparticle.pt());
+        if (mcparticle.isPhysicalPrimary()) {
+          histogramsPrm[index][kHistoPtNum]->Fill(mcparticle.pt());
+          if (TMath::Abs(mcparticle.y()) < rapidityCut) {
+            histogramsPrmRap[index][kHistoPtNum]->Fill(mcparticle.pt());
           }
         }
       }
     }
-    for (auto const& mcparticle : mcParticles) {
-      if (mcparticle.pdgCode() == PDGs[0]) {
-        registry.fill(HIST("Pos/PtDen_310"), mcparticle.pt());
-        if (mcparticle.isPhysicalPrimary()) {
-          registry.fill(HIST("Prm/Pos/PtDen_310"), mcparticle.pt());
-          if (TMath::Abs(mcparticle.y()) < rapidityCut) {
-            registry.fill(HIST("PrmRap/Pos/PtDen_310"), mcparticle.pt());
-          }
-        }
-      } else if (mcparticle.pdgCode() == -PDGs[0]) {
-        registry.fill(HIST("Neg/PtDen_310"), mcparticle.pt());
-        if (mcparticle.isPhysicalPrimary()) {
-          registry.fill(HIST("Prm/Neg/PtDen_310"), mcparticle.pt());
-          if (TMath::Abs(mcparticle.y()) < rapidityCut) {
-            registry.fill(HIST("PrmRap/Neg/PtDen_310"), mcparticle.pt());
-          }
+    for (auto const& mcparticle : mcParticles) { // Denominator
+      const auto index = pdgToIndex(mcparticle.pdgCode());
+      if (index < 0) {
+        continue;
+      }
+      histograms[index][kHistoPtDen]->Fill(mcparticle.pt());
+      if (mcparticle.isPhysicalPrimary()) {
+        histogramsPrm[index][kHistoPtDen]->Fill(mcparticle.pt());
+        if (TMath::Abs(mcparticle.y()) < rapidityCut) {
+          histogramsPrmRap[index][kHistoPtDen]->Fill(mcparticle.pt());
         }
       }
     }
 
-    static_cast<TEfficiency*>(listEfficiencyMC->At(0))->SetPassedHistogram(*registry.get<TH1>(HIST("Pos/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(0))->SetTotalHistogram(*registry.get<TH1>(HIST("Pos/PtDen_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(1))->SetPassedHistogram(*registry.get<TH1>(HIST("Neg/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(1))->SetTotalHistogram(*registry.get<TH1>(HIST("Neg/PtDen_310")), "f");
-
-    static_cast<TEfficiency*>(listEfficiencyMC->At(2))->SetPassedHistogram(*registry.get<TH1>(HIST("Prm/Pos/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(2))->SetTotalHistogram(*registry.get<TH1>(HIST("Prm/Pos/PtDen_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(3))->SetPassedHistogram(*registry.get<TH1>(HIST("Prm/Neg/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(3))->SetTotalHistogram(*registry.get<TH1>(HIST("Prm/Neg/PtDen_310")), "f");
-
-    static_cast<TEfficiency*>(listEfficiencyMC->At(4))->SetPassedHistogram(*registry.get<TH1>(HIST("PrmRap/Pos/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(4))->SetTotalHistogram(*registry.get<TH1>(HIST("PrmRap/Pos/PtDen_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(5))->SetPassedHistogram(*registry.get<TH1>(HIST("PrmRap/Neg/PtNum_310")), "f");
-    static_cast<TEfficiency*>(listEfficiencyMC->At(5))->SetTotalHistogram(*registry.get<TH1>(HIST("PrmRap/Neg/PtDen_310")), "f");
+    for (int i = 0; i < nSpecies; i++) {
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetPassedHistogram(*histograms[i][kHistoPtNum].get(), "f");
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetTotalHistogram(*histograms[i][kHistoPtDen].get(), "f");
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetPassedHistogram(*histogramsPrm[i][kHistoPtNum].get(), "f");
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetTotalHistogram(*histogramsPrm[i][kHistoPtDen].get(), "f");
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetPassedHistogram(*histogramsPrmRap[i][kHistoPtNum].get(), "f");
+      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetTotalHistogram(*histogramsPrmRap[i][kHistoPtDen].get(), "f");
+    }
   }
 };
 
