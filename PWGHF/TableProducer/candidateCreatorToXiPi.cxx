@@ -157,17 +157,13 @@ struct HfCandidateCreatorToXiPi {
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto v0Element = casc.v0_as<aod::V0sLinked>();
       auto v0 = v0Element.v0Data_as<MyV0Table>();                // V0 <-- xi
-      auto trackV0Dau0 = v0Element.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
-      auto trackV0Dau1 = v0Element.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
+      auto trackV0Dau0 = v0.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
+      auto trackV0Dau1 = v0.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
       double pseudorapV0Dau0 = trackV0Dau0.eta();
       double pseudorapV0Dau1 = trackV0Dau1.eta();
-
-      // pion & p <- V0 tracks
-      auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
-      auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
       // info from LF table
       std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
@@ -178,8 +174,6 @@ struct HfCandidateCreatorToXiPi {
       //-------------------reconstruct cascade track------------------
       // pseudorapidity
       double pseudorapPiFromCas = trackXiDauCharged.eta();
-
-      auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
 
       // info from LF table
       std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
@@ -326,8 +320,8 @@ struct HfCandidateCreatorToXiPi {
                    impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                    impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                    std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                   v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
-                   casc.cascadeId(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
+                   casc.v0Id(), v0Element.posTrackId(), v0Element.negTrackId(),
+                   casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
                    mLambda, mCasc, mCharmBaryon,
                    cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
                    ctOmegac, ctCascade, ctV0, ctXic,
