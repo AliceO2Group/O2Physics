@@ -201,7 +201,7 @@ void EventPlaneHelper::GetCorrTwistRecale(const std::shared_ptr<TH2> histQ,
 
 float EventPlaneHelper::GetEventPlane(const float qx, const float qy, int nmode)
 {
-  return (1./nmode) * (TMath::ATan2(qy, qx));
+  return (1. / nmode) * (TMath::ATan2(qy, qx));
 }
 
 float EventPlaneHelper::GetResolution(const float RefA, const float RefB, const float sig, int nmode)
