@@ -235,8 +235,8 @@ struct qVectorsCorrection {
       case 7:
         fillHistosQvec<7>(qVec);
         break;
-    }   // End switch(centBin)
-  }     // End void process(...)
+    } // End switch(centBin)
+  }   // End void process(...)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
