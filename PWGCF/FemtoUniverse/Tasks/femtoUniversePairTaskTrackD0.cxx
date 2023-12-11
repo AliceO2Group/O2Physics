@@ -320,10 +320,10 @@ struct femtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-    void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
   {
     auto groupPartsD0D0bar = partsD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    //auto groupPartsD0D0barDaugh = partsD0D0barDaughters->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    // auto groupPartsD0D0barDaugh = partsD0D0barDaughters->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     for (auto& d0d0bar : groupPartsD0D0bar) {
       if (d0d0bar.mLambda() > 0 && d0d0bar.mAntiLambda() < 0) {
