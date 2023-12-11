@@ -320,7 +320,7 @@ struct HfCandidateCreatorToXiPi {
                    impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                    impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                    std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                   casc.v0Id(), v0Element.posTrackId(), v0Element.negTrackId(),
+                   casc.v0Id(), v0.posTrackId(), v0.negTrackId(),
                    casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
                    mLambda, mCasc, mCharmBaryon,
                    cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
