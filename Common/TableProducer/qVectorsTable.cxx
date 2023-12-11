@@ -239,7 +239,7 @@ struct qVectorsTable {
     float qVectBPos[2] = {0.};
     float qVectBNeg[2] = {0.};
 
-    TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
+    TComplex QvecDet(0); // Complex value of the Q-vector for any detector.
     TComplex QvecFT0M(0);
     float sumAmplFT0A = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
     float sumAmplFT0C = 0.;
