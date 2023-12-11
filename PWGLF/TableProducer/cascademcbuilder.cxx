@@ -165,7 +165,7 @@ struct cascademcbuilder {
   {
     for (auto& casc : casctable) {
       // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0();
+      auto v0 = casc.v0_as<aod::V0s>();
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please

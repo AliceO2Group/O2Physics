@@ -34,6 +34,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGHF/Core/SelectorCuts.h"
@@ -172,6 +173,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
+  Configurable<int> minNoClsTrackedPion{"minNoClsTrackedPion", 70, "Minimum number of clusters required for associated pions"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
   Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0., "Inv. mass window for tracked Xi"};
@@ -190,11 +192,13 @@ struct HfTreeCreatorOmegacSt {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
 
+  TrackSelection trackSelector;
+
   bool bzOnly = true;
   float bz = 0.;
   int runNumber{0};
 
-  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
   HistogramRegistry registry{
@@ -234,6 +238,19 @@ struct HfTreeCreatorOmegacSt {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
+
+    trackSelector.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    trackSelector.SetEtaRange(-.9, .9);
+    trackSelector.SetRequireITSRefit(true);
+    trackSelector.SetRequireTPCRefit(true);
+    trackSelector.SetRequireGoldenChi2(false);
+    trackSelector.SetMinNCrossedRowsTPC(minNoClsTrackedPion);
+    trackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+    trackSelector.SetMaxChi2PerClusterTPC(4.f);
+    trackSelector.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any of the first three layers of IB
+    trackSelector.SetMaxChi2PerClusterITS(36.f);
+    trackSelector.SetMaxDcaXY(1.f);
+    trackSelector.SetMaxDcaZ(2.f);
 
     df2.setPropagateToPCA(propToDCA);
     df2.setMaxR(maxR);
@@ -392,7 +409,8 @@ struct HfTreeCreatorOmegacSt {
                 trackId == bachelor.globalIndex()) {
               continue;
             }
-            if (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) {
+            if (trackSelector.IsSelected(track) &&
+                (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
               LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
               auto trackParCovCasc = getTrackParCov(trackCasc);
               auto trackParCovPion = getTrackParCov(track);
