@@ -358,6 +358,46 @@ struct kfStrangenessStudy {
     histos.fill(HIST("hCase"), recocase);
   }
 
+  void resetMCvar()
+  {
+    /// Cascade data
+    isDCAfitter = 0; isKF = 0;
+    ptRec = -1.0f; ptRecKF = -1.0f;
+    ptRecV0 = -1.0f; ptRecKFV0 = -1.0f;
+    massXi = -1.0f; massXiKF = -1.0f;
+    massOmega = -1.0f; massOmegaKF = -1.0f;
+    massLambda = -1.0f; massLambdaKF = -1.0f;
+    cascRad = -1.0f; cascRadKF = -1.0f;
+    vtxXrec = -1.0f; vtxYrec = -1.0f; vtxZrec = -1.0f; vtxXrecKF = -1.0f; vtxYrecKF = -1.0f; vtxZrecKF = -1.0f;
+    vtxXrecErr = -1.0f; vtxYrecErr = -1.0f; vtxZrecErr = -1.0f; vtxXrecErrKF = -1.0f; vtxYrecErrKF = -1.0f; vtxZrecErrKF = -1.0f;
+    vtxXrecV0 = -1.0f; vtxYrecV0 = -1.0f; vtxZrecV0 = -1.0f; vtxXrecKFV0 = -1.0f; vtxYrecKFV0 = -1.0f; vtxZrecKFV0 = -1.0f;
+    vtxXrecErrV0 = -1.0f; vtxYrecErrV0 = -1.0f; vtxZrecErrV0 = -1.0f; vtxXrecErrKFV0 = -1.0f; vtxYrecErrKFV0 = -1.0f; vtxZrecErrKFV0 = -1.0f;
+    dcaXYCascToPV = -1.0f; dcaXYCascToPVKF = -1.0f;
+    dcaZCascToPV = -1.0f; dcaZCascToPVKF = -1.0f;
+    dcaCascDaughters = -1.0f; dcaCascDaughtersKF = -1.0f;
+    dcaV0Daughters = -1.0f; dcaV0DaughtersKF = -1.0f;
+    dcaPosToPV = -1.0f; dcaPosToPVKF = -1.0f;
+    dcaNegToPV = -1.0f; dcaNegToPVKF = -1.0f;
+    dcaBachToPV = -1.0f; dcaBachToPVKF = -1.0f;
+    cascPointingAngle = -1.0f; cascPointingAngleKF = -1.0f;
+    v0PointingAngle = -1.0f; v0PointingAngleKF = -1.0f;
+    V0Rad = -1.0f; V0RadKF = -1.0f;
+    charge = 0;
+
+    /// Additional cascade MC data
+    isTrueCasc = 0;
+    ptGen = -1.0f;
+    ptGenV0 = -1.0f;
+    vtxXgen = -1.0f; vtxYgen = -1.0f; vtxZgen = -1.0f;
+    vtxXgenV0 = -1.0f; vtxYgenV0 = -1.0f; vtxZgenV0 = -1.0f;
+    vtxXgen_firstDau = -1.; vtxYgen_firstDau = -1.; vtxZgen_firstDau = -1;
+    vtxXgen_firstV0Dau = -1.; vtxYgen_firstV0Dau = -1.; vtxZgen_firstV0Dau = -1;
+    prodVtxXgen  = -1.0f; prodVtxYgen  = -1.0f; prodVtxZgen  = -1.0f;
+    prodVtxXgenV0  = -1.0f; prodVtxYgenV0  = -1.0f; prodVtxZgenV0  = -1.0f;
+    source = 0;
+
+  }
+
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, aod::TracksIU const&)
   {
     /// Event selection
@@ -395,6 +435,7 @@ struct kfStrangenessStudy {
     histos.fill(HIST("hEventSelectionFlow"), 2.f);
 
     for (auto& cascade : Cascades) {
+      resetMCvar();
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
