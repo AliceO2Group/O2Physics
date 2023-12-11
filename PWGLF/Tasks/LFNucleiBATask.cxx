@@ -3069,7 +3069,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueWPID_Z2"), 2 * hePt);
                 if (enablePtSpectra) {
                   histos.fill(HIST("tracks/eff/helium/hPtHeTrue"), 2 * hePt);
-                  if (track.hasTOF() & doTOFplots) {
+                  if (track.hasTOF() && doTOFplots) {
                     histos.fill(HIST("tracks/eff/helium/hPtHeTOFTrue"), 2 * hePt);
                   }
                 }
@@ -3109,7 +3109,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID_Z2"), 2 * antihePt);
                 if (enablePtSpectra) {
                   histos.fill(HIST("tracks/eff/helium/hPtantiHeTrue"), 2 * hePt);
-                  if (track.hasTOF() & doTOFplots) {
+                  if (track.hasTOF() && doTOFplots) {
                     histos.fill(HIST("tracks/eff/helium/hPtantiHeTOFTrue"), 2 * hePt);
                   }
                 }
