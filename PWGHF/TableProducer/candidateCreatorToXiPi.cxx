@@ -151,7 +151,7 @@ struct HfCandidateCreatorToXiPi {
       auto casc = cascAodElement.cascData_as<MyCascTable>();
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto v0AodElement = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0AodElement.v0Data_as<MyV0Table>();         // V0 <-- xi
+      auto v0 = v0AodElement.v0Data_as<MyV0Table>();      // V0 <-- xi
       auto trackV0Dau0 = v0.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
       auto trackV0Dau1 = v0.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
 
