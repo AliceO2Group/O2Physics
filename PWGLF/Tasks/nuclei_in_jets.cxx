@@ -146,6 +146,11 @@ struct nuclei_in_jets {
     registryData.add("antihelium3_jet_tpc", "antihelium3_jet_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
     registryData.add("antihelium3_ue_tpc", "antihelium3_ue_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
 
+    // Input Antiproton Distribution
+    registryMC.add("antiproton_input", "antiproton_input", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_weighted_jet", "antiproton_weighted_jet", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_weighted_ue", "antiproton_weighted_ue", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
     // Generated
     registryMC.add("antiproton_jet_gen", "antiproton_jet_gen", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("antideuteron_jet_gen", "antideuteron_jet_gen", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -331,23 +336,17 @@ struct nuclei_in_jets {
     return 1;
   }
 
-  float GetLevi(float mass, float temp, float n, float norm, float pt)
-  {
-
-    float p0 = norm;
-    float p1 = n;
-    float p2 = temp;
-    float p3 = mass;
-
-    float dNdpt = (pt * p0 * (p1 - 1) * (p1 - 2)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2))) * TMath::Power((1 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
-
-    return dNdpt;
-  }
-
   float GetTsallis(float mass, float temp, float q, float norm, float pt)
   {
 
-    return GetLevi(mass, temp, 1 / (q - 1), norm, pt);
+    float p0 = norm;
+    float p1 = 1.0 / (q - 1.0);
+    float p2 = temp;
+    float p3 = mass;
+
+    float dNdpt = (pt * p0 * (p1 - 1.0) * (p1 - 2.0)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0))) * TMath::Power((1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
+
+    return dNdpt;
   }
 
   // Process Data
@@ -717,6 +716,9 @@ struct nuclei_in_jets {
 
       // Fill Histograms
       if (particle.pdgCode() == -2212) {
+        registryMC.fill(HIST("antiproton_input"), particle.pt());
+        registryMC.fill(HIST("antiproton_weighted_jet"), particle.pt(), wpr_jet);
+        registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
         registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
         registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
       }
