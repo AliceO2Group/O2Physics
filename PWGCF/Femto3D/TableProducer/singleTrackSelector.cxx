@@ -67,7 +67,7 @@ struct singleTrackSelector {
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
                          aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::TrackSelection, aod::pidTOFbeta>;
-  using Coll = soa::Join<aod::Collisions, aod::TPCMults, aod::EvSels>;
+  using Coll = soa::Join<aod::Collisions, aod::TPCMults, aod::EvSels, aod::CentFT0Ms>;
 
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
