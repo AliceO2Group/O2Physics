@@ -136,7 +136,7 @@ struct HfCandidateCreatorToXiPi {
       hCandidateCounter->Fill(0);
 
       if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
-          continue;
+        continue;
       }
 
       hCandidateCounter->Fill(1);
@@ -156,39 +156,39 @@ struct HfCandidateCreatorToXiPi {
       auto casc = cascElement.cascData_as<MyCascTable>();
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto v0Element = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0Element.v0Data_as<MyV0Table>();           // V0 <-- xi
+      auto v0 = v0Element.v0Data_as<MyV0Table>();                // V0 <-- xi
       auto trackV0Dau0 = v0Element.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
       auto trackV0Dau1 = v0Element.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
-        double pseudorapV0Dau0 = trackV0Dau0.eta();
-        double pseudorapV0Dau1 = trackV0Dau1.eta();
+      double pseudorapV0Dau0 = trackV0Dau0.eta();
+      double pseudorapV0Dau1 = trackV0Dau1.eta();
 
-        // pion & p <- V0 tracks
-        auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
-        auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
+      // pion & p <- V0 tracks
+      auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
+      auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
-        // info from LF table
-        std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
-        std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-        std::array<float, 3> pVecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
-        std::array<float, 3> pVecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
+      // info from LF table
+      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
+      std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
+      std::array<float, 3> pVecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
+      std::array<float, 3> pVecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
-        //-------------------reconstruct cascade track------------------
-        // pseudorapidity
-        double pseudorapPiFromCas = trackXiDauCharged.eta();
+      //-------------------reconstruct cascade track------------------
+      // pseudorapidity
+      double pseudorapPiFromCas = trackXiDauCharged.eta();
 
-        auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
+      auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
 
-        // info from LF table
-        std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-        std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
-        std::array<float, 21> covCasc = {0.};
-        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
-          covCasc[MomInd[i]] = casc.momentumCovMat()[i];
-          covCasc[i] = casc.positionCovMat()[i];
+      // info from LF table
+      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+      std::array<float, 21> covCasc = {0.};
+      constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+      for (int i = 0; i < 6; i++) {
+        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
+        covCasc[i] = casc.positionCovMat()[i];
         }
         // create cascade track
         o2::track::TrackParCov trackCasc;
@@ -340,7 +340,7 @@ struct HfCandidateCreatorToXiPi {
                      hfFlag);
 
     } // loop over LF Cascade-bachelor candidates
-  }     // end of process
+  }   // end of process
 }; // end of struct
 
 /// Performs MC matching.
