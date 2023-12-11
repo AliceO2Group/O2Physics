@@ -37,7 +37,7 @@
 
 using namespace o2::framework;
 static constexpr int nSpecies = 2; // One per PDG
-static constexpr const char* particleTitle[nSpecies] = {"K0s", "-K0s"};
+// static constexpr const char* particleTitle[nSpecies] = {"K0s", "-K0s"};
 static constexpr int PDGs[nSpecies] = {kK0Short, -kK0Short};
 int pdgToIndex(int pdg)
 {
