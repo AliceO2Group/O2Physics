@@ -418,7 +418,7 @@ struct qVectorsTable {
     qvecAmp.push_back(static_cast<float>(nTrkBPos));
     qvecAmp.push_back(static_cast<float>(nTrkBNeg));
 
-    if (cBin != -1) { 
+    if (cBin != -1) {
       for (int i = 0; i < 6; i++) {
         helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
 
