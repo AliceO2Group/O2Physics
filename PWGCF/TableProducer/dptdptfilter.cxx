@@ -22,6 +22,7 @@
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Framework/runDataProcessing.h"
 #include <TROOT.h>
 #include <TDatabasePDG.h>
@@ -47,10 +48,15 @@ using namespace o2::analysis;
 
 namespace o2::analysis::dptdptfilter
 {
-using DptDptFullTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using DptDptFullTracksPIDDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
+using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
 using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA>;
+using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptFullTracksPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptDptTracksPID>;
+using DptDptFullTracksPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksPID>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
@@ -72,7 +78,8 @@ const char* speciesName[kDptDptNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
 //============================================================================================
-// The DptDptFilter output objects
+// The DptDptFilter histogram objects
+// TODO: consider registering in the histogram registry
 //============================================================================================
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
@@ -103,6 +110,11 @@ TH1F* fhFineDCAxyA = nullptr;
 TH1F* fhDCAzB = nullptr;
 TH1F* fhDCAzA = nullptr;
 TH1F* fhFineDCAzA = nullptr;
+
+TH2D* fhAmbiguousTrackType = nullptr;
+TH2F* fhAmbiguousTrackPt = nullptr;
+TH2F* fhAmbiguityDegree = nullptr;
+TH2F* fhCompatibleCollisionsZVtxRms = nullptr;
 
 TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
@@ -499,6 +511,22 @@ void DptDptFilter::processVertexGenerated(aod::McCollisions const& mccollisions)
   }
 }
 
+/// RMS calculation. Taken from PWGHF/Tasks/taskMcValidation.cxx
+/// \param vec  vector of values to compute RMS
+template <typename T>
+T computeRMS(std::vector<T>& vec)
+{
+  T sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+  T mean = sum / vec.size();
+
+  std::vector<T> diff(vec.size());
+  std::transform(vec.begin(), vec.end(), diff.begin(), [mean](T x) { return x - mean; });
+  T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+  T stdev = std::sqrt(sq_sum / vec.size());
+
+  return stdev;
+}
+
 struct DptDptFilterTracks {
   Produces<aod::ScannedTracks> scannedtracks;
   Produces<aod::DptDptCFTracksInfo> tracksinfo;
@@ -518,6 +546,7 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, ongen: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
+  bool checkAmbiguousTracks = false;
 
   void init(InitContext&)
   {
@@ -577,6 +606,11 @@ struct DptDptFilterTracks {
     fDataType = getDataType(cfgDataType);
     fPDG = TDatabasePDG::Instance();
 
+    /* required ambiguous tracks checks? */
+    if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous) {
+      checkAmbiguousTracks = true;
+    }
+
     /* create the output list which will own the task histograms */
     TList* fOutputList = new TList();
     fOutputList->SetOwner(true);
@@ -603,6 +637,14 @@ struct DptDptFilterTracks {
       fhDCAzB = new TH1F("DCAzB", "DCA_{z} distribution for reconstructed before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
+
+      if (checkAmbiguousTracks) {
+        /* let's allocate the ambigous tracks tracking histograms*/
+        fhAmbiguousTrackType = new TH2D("fHistAmbiguousTracksType", "Ambiguous tracks type vs. multiplicity class;Ambiguous track type;Multiplicity (%);counts", 4, -0.5, 3.5, 101, -0.5, 100.5);
+        fhAmbiguousTrackPt = new TH2F("fHistAmbiguousTracksPt", "Ambiguous tracks #it{p}_{T} vs. multiplicity class;#it{p}_{T} (GeV/#it{c});Multiplicity (%);counts", 100, 0.0, 15.0, 101, -0.5, 100.5);
+        fhAmbiguityDegree = new TH2F("fHistAmbiguityDegree", "Ambiguity degree vs. multiplicity class;Ambiguity degree;Multiplicity (%);counts", 31, -0.5, 30.5, 101, -0.5, 100.5);
+        fhCompatibleCollisionsZVtxRms = new TH2F("fHistCompatibleCollisionsZVtxRms", "Compatible collisions #it{z}_{vtx} RMS;#sigma_{#it{z}_{vtx}};Multiplicity (%);counts", 100, -10.0, 10.0, 101, -0.5, 100.5);
+      }
 
       for (int sp = 0; sp < kDptDptNoOfSpecies; ++sp) {
         fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
@@ -640,6 +682,12 @@ struct DptDptFilterTracks {
       fOutputList->Add(fhDCAzB);
       fOutputList->Add(fhDCAzA);
       fOutputList->Add(fhFineDCAzA);
+      if (checkAmbiguousTracks) {
+        fOutputList->Add(fhAmbiguousTrackType);
+        fOutputList->Add(fhAmbiguousTrackPt);
+        fOutputList->Add(fhAmbiguityDegree);
+        fOutputList->Add(fhCompatibleCollisionsZVtxRms);
+      }
 
       for (int sp = 0; sp < kDptDptNoOfSpecies; ++sp) {
         fOutputList->Add(fhPA[sp]);
@@ -726,6 +774,8 @@ struct DptDptFilterTracks {
   MatchRecoGenSpecies trackIdentification(TrackObject const& track);
   template <typename TrackObject>
   int8_t selectTrack(TrackObject const& track);
+  template <typename CollisionObjects, typename TrackObject>
+  int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
   inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle);
   template <typename TrackObject>
@@ -761,10 +811,11 @@ struct DptDptFilterTracks {
     for (auto track : tracks) {
       int8_t pid = -1;
       if (track.has_collision() && (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).collisionaccepted()) {
-        pid = selectTrack(track);
+        pid = selectTrackAmbiguousCheck(collisions, track);
         if (!(pid < 0)) {
           naccepted++;
           if (fullDerivedData) {
+            LOGF(fatal, "Stored derived data not prepared for saving the proper new collision id");
             scannedtracks((track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).globalIndex(), pid, track.pt(), track.eta(), track.phi());
           } else {
             tracksinfo(pid);
@@ -883,11 +934,47 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPID, "Not stored derived data track filtering", false)
 
+  void filterRecoWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
+
+  void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPID, "Not stored derived data detector level track filtering", false)
+
+  void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
+
   void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracks const& tracks)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPID, "Track filtering without PID information", true)
+
+  void filterRecoWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
+
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPID, "Detector level track filtering without PID information", false)
+
+  void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPIDAmbiguous, "Detector level track filtering without PID information with ambiguous tracks check", false)
 
   void filterGenerated(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
   {
@@ -1056,6 +1143,60 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
     }
   }
   return pid;
+}
+
+template <typename CollisionObjects, typename TrackObject>
+int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track)
+{
+  bool ambiguoustrack = false;
+  int tracktype = 0; /* no ambiguous */
+  std::vector<double> zvertexes{};
+  /* ambiguous tracks checks if required */
+  if constexpr (has_type_v<aod::track_association::CollisionIds, typename TrackObject::all_columns>) {
+    if (track.compatibleCollIds().size() > 0) {
+      if (track.compatibleCollIds().size() == 1) {
+        if (track.collisionId() != track.compatibleCollIds()[0]) {
+          /* ambiguous track! */
+          ambiguoustrack = true;
+          /* in principle we should not be here because the track is associated to two collisions at least */
+          tracktype = 2;
+          zvertexes.push_back(collisions.iteratorAt(track.collisionId()).posZ());
+          zvertexes.push_back(collisions.iteratorAt(track.compatibleCollIds()[0]).posZ());
+        } else {
+          /* we consider the track as no ambiguous */
+          tracktype = 1;
+        }
+      } else {
+        /* ambiguous track! */
+        ambiguoustrack = true;
+        tracktype = 3;
+        /* the track is associated to more than one collision */
+        for (const auto& collIdx : track.compatibleCollIds()) {
+          zvertexes.push_back(collisions.iteratorAt(collIdx).posZ());
+        }
+      }
+    }
+  }
+
+  float multiplicityclass = (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).centmult();
+  if (ambiguoustrack) {
+    /* keep track of ambiguous tracks */
+    fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
+    fhAmbiguousTrackPt->Fill(track.pt(), multiplicityclass);
+    fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityclass);
+    if (tracktype == 2) {
+      fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityclass);
+    } else {
+      fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityclass);
+    }
+    return -1;
+  } else {
+    if (checkAmbiguousTracks) {
+      /* feedback of no ambiguous tracks only if checks required */
+      fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
+    }
+    return selectTrack(track);
+  }
 }
 
 template <typename TrackObject>
