@@ -189,7 +189,7 @@ struct HfCandidateCreatorToXiPi {
       for (int i = 0; i < 6; i++) {
         covCasc[MomInd[i]] = casc.momentumCovMat()[i];
         covCasc[i] = casc.positionCovMat()[i];
-        }
+      }
         // create cascade track
         o2::track::TrackParCov trackCasc;
         if (trackXiDauCharged.sign() > 0) {
