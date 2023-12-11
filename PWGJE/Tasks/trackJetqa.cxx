@@ -127,6 +127,8 @@ struct TrackJetQa {
     histos.add("TrackPar/dcaZ", "distance of closest approach in #it{z};#it{p}_{T} [GeV/c];#it{dcaZ} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/length", "track length in cm;#it{p}_{T} [GeV/c];#it{Length} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, 0, 1000}}});
     histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_hasTRD", "uncertainty over #it{p}_{T} for tracks with TRD;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_hasNoTRD", "uncertainty over #it{p}_{T} for tracks without TRD;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layer1", "uncertainty over #it{p}_{T} with only 1st ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layer2", "uncertainty over #it{p}_{T} with only 2nd ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layers12", "uncertainty over #it{p}_{T} with only 1st and 2nd ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
@@ -142,6 +144,8 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
+    histos.add("EventProp/rejectedCollId", "CollisionId of collisions that did not pass the event selection; collisionId; number of entries", HistType::kTH1F, {{10, 0, 5}});
+
     // Common axes
     const AxisSpec axisPercentileFT0M{binsPercentile, "Centrality FT0M"};
     const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
@@ -185,16 +189,18 @@ struct TrackJetQa {
   }
 
   template <typename eventInfo>
-  void fillEventQa(eventInfo const& collision)
+  bool fillEventQa(eventInfo const& collision)
   {
     // fill event property variables
     histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
     if (!collision.sel8()) {
-      return;
+      histos.fill(HIST("EventProp/rejectedCollId"), 2);
+      return false;
     }
     histos.fill(HIST("EventProp/collisionVtxZSel8"), collision.posZ());
     if (fabs(collision.posZ()) > ValVtx) {
-      return;
+      histos.fill(HIST("EventProp/rejectedCollId"), 3);
+      return false;
     }
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
     if (fillMultiplicity) {
@@ -204,28 +210,33 @@ struct TrackJetQa {
       histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
       histos.fill(HIST("Mult/FT0C"), collision.multFT0C());
     }
+    return true;
   }
 
   template <typename Tracks>
-  void fillTrackQa(Tracks const& track)
+  bool fillTrackQa(Tracks const& track)
   {
     // check track selection
     if ((globalTrack == true) && (!track.isGlobalTrack())) {
-      return;
+      return false;
     }
     if ((globalTrackWoDCA == true) && (!track.isGlobalTrackWoDCA())) {
-      return;
+      return false;
     }
     if ((globalTrackWoPtEta == true) && (!track.isGlobalTrackWoPtEta())) {
-      return;
+      return false;
     }
     if ((customTrack == true) && (!customTrackCuts.IsSelected(track))) {
-      return;
+      return false;
     }
     // fill kinematic variables
     histos.fill(HIST("Kine/pt"), track.pt());
     if (track.hasTRD()) {
       histos.fill(HIST("Kine/pt_TRD"), track.pt());
+      histos.fill(HIST("TrackPar/Sigma1Pt_hasTRD"), track.pt(), track.sigma1Pt() * track.pt());
+    }
+    if (!track.hasTRD()) {
+      histos.fill(HIST("TrackPar/Sigma1Pt_hasNoTRD"), track.pt(), track.sigma1Pt() * track.pt());
     }
     histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
     histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
@@ -300,29 +311,41 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcCrossedRowsOverFindableCls"), track.pt(), track.tpcCrossedRowsOverFindableCls());
     histos.fill(HIST("TPC/tpcFractionSharedCls"), track.pt(), track.tpcFractionSharedCls());
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
+
+    return true;
   }
 
   // Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
   Preslice<aod::Track> trackPerColl = aod::track::collisionId;
   // SliceCache cacheTrk;
-  void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs> const& collisions,
-                   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
+
+  void processFull(CollisionCandidate const& collisions,
+                   TrackCandidates const& tracks)
   {
     for (const auto& collision : collisions) {
-      fillEventQa(collision);
-      if (fillMultiplicity) {
-        histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-        histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
-        histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
-      }
-      auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
+      if (fillEventQa(collision)) {
 
-      for (const auto& track : tracksInCollision) {
-        fillTrackQa(track);
         if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+          histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+          histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+          histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
         }
+        auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
+
+        for (const auto& track : tracksInCollision) {
+          if (track.has_collision() && (collision.globalIndex() == track.collisionId())) { // double check
+            if (fillTrackQa(track)) {
+              if (fillMultiplicity) {
+                histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
+                histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+              }
+            }
+          }
+        }
+      } else {
+        histos.fill(HIST("EventProp/rejectedCollId"), 1);
       }
     }
   }

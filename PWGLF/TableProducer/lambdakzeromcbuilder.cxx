@@ -54,7 +54,7 @@ struct lambdakzeromcbuilder {
   void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
-      int lLabel = -1;
+      int lLabel = -1, lMotherLabel = -1;
       int pdgCode = -1, pdgCodeMother = -1, pdgCodePositive = -1, pdgCodeNegative = -1;
       bool isPhysicalPrimary = false;
       float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
@@ -91,6 +91,7 @@ struct lambdakzeromcbuilder {
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     pdgCodeMother = lNegGrandMother.pdgCode();
+                    lMotherLabel = lNegGrandMother.globalIndex();
                   }
                 }
               }
@@ -100,7 +101,7 @@ struct lambdakzeromcbuilder {
       } // end association check
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
-        lLabel);
+        lLabel, lMotherLabel);
       if (populateV0MCCores) {
         v0mccores(
           pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,

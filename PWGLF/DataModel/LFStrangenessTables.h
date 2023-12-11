@@ -900,10 +900,11 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
 namespace mcv0label
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 } // namespace mcv0label
 
 DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable with V0Data containing the MC labels
-                  mcv0label::McParticleId);
+                  mcv0label::McParticleId, mcv0label::McMotherParticleId);
 using McV0Label = McV0Labels::iterator;
 
 // Definition of labels for V0s // Full table, joinable with V0 (CAUTION: NOT WITH V0DATA)
@@ -920,11 +921,12 @@ using McFullV0Label = McFullV0Labels::iterator;
 namespace mccasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
-                  mccasclabel::McParticleId);
+                  mccasclabel::McParticleId, mccasclabel::McMotherParticleId);
 DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with CascData containing yes / no for BB correlation
                   mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
