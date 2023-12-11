@@ -62,11 +62,12 @@ struct singleTrackSelector {
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
-                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                         aod::pidTPCFullDe, aod::pidTOFFullDe,
+                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe,
+                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::TrackSelection, aod::pidTOFbeta>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms>;
+  using Coll = soa::Join<aod::Collisions, aod::TPCMults, aod::EvSels>;
 
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
@@ -175,6 +176,10 @@ struct singleTrackSelector {
                    track.sign(),
                    track.eta(),
                    track.phi(),
+                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPi()),
+                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPi()),
+                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaKa()),
+                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaKa()),
                    singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
                    singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()),
                    singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
