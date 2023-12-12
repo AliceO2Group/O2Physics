@@ -430,7 +430,7 @@ struct femtoUniverseProducerTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <bool isTrackOrV0, bool isPhi, bool isD0, typename ParticleType>
+  template <bool isTrackOrV0, bool isPhiOrD0, typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
@@ -446,20 +446,13 @@ struct femtoUniverseProducerTask {
                        particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
                        particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
                        -999., -999., -999., -999., -999., -999.);
-    } else if constexpr (isPhi) {
+    } else if constexpr (isPhiOrD0) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999., -999.,
                        -999., -999., -999.,
-                       -999.); // QA for phi
-    } else if constexpr (isD0) {
-      outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999.,
-                       -999., -999.,
-                       -999., -999., -999.,
-                       -999.); // QA for D0/D0bar
+                       -999.); // QA for phi or D0/D0bar
     } else {
       LOGF(info, "isTrack0orV0: %d, isPhi: %d", isTrackOrV0, isPhi);
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
@@ -599,7 +592,7 @@ struct femtoUniverseProducerTask {
                   track.dcaXY(), childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfIsDebug) {
-        fillDebugParticle<true, false, false>(track);
+        fillDebugParticle<true, false>(track);
       }
 
       if constexpr (isMC) {
@@ -689,9 +682,9 @@ struct femtoUniverseProducerTask {
                   v0.mLambda(),
                   v0.mAntiLambda());
       if (ConfIsDebug) {
-        fillDebugParticle<true, false, false>(postrack); // QA for positive daughter
-        fillDebugParticle<true, false, false>(negtrack); // QA for negative daughter
-        fillDebugParticle<false, false, false>(v0);      // QA for v0
+        fillDebugParticle<true, false>(postrack); // QA for positive daughter
+        fillDebugParticle<true, false>(negtrack); // QA for negative daughter
+        fillDebugParticle<false, false>(v0);      // QA for v0
       }
       if constexpr (isMC) {
         fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
@@ -791,9 +784,9 @@ struct femtoUniverseProducerTask {
                   invMassD0bar); // D0bar mass (mAntiLambda)
 
       if (ConfIsDebug) {
-        fillDebugParticle<false, false, true>(postrack); // QA for positive daughter
-        fillDebugParticle<false, false, true>(negtrack); // QA for negative daughter
-        fillDebugParticle<false, false, true>(hfCand);   // QA for D0/D0bar
+        fillDebugParticle<false, true>(postrack); // QA for positive daughter
+        fillDebugParticle<false, true>(negtrack); // QA for negative daughter
+        fillDebugParticle<false, true>(hfCand);   // QA for D0/D0bar
       }
       if constexpr (isMC) {
         fillMCParticle(hfCand, o2::aod::femtouniverseparticle::ParticleType::kD0);
@@ -908,9 +901,9 @@ struct femtoUniverseProducerTask {
                   -999); // v0.mAntiLambda()
 
       if (ConfIsDebug) {
-        fillDebugParticle<true, false, false>(p1); // QA for positive daughter
-        fillDebugParticle<true, false, false>(p2); // QA for negative daughter
-        fillDebugParticle<false, true, false>(p1); // QA for phi
+        fillDebugParticle<true, false>(p1); // QA for positive daughter
+        fillDebugParticle<true, false>(p2); // QA for negative daughter
+        fillDebugParticle<false, true>(p1); // QA for phi
       }
       // if constexpr (isMC) {
       //   fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
