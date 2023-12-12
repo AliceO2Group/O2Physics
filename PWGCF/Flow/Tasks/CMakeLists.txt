@@ -13,3 +13,9 @@ o2physics_add_dpl_workflow(flow-pt-efficiency
                     SOURCES flowPtEfficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-pbpb-task
+                    SOURCES FlowPbPbTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+

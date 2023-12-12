@@ -230,7 +230,7 @@ struct MaterialBudgetMC {
         continue;
       }
 
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
+      auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
       for (auto& cut : cuts) {
         for (auto& photon : photons_coll) {
 
@@ -298,8 +298,8 @@ struct MaterialBudgetMC {
 
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
       double value[9] = {0.f};
       float phi_cp1 = 0.f, eta_cp1 = 0.f;

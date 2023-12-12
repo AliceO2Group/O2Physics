@@ -18,6 +18,7 @@
 #include <TRandom.h>
 #include <TVector2.h>
 #include <TVector3.h>
+#include <TLorentzVector.h>
 #include <TDatabasePDG.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -88,23 +89,37 @@ struct nuclei_in_jets {
   Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4.0f, "maximum TPC chi^2/Ncls"};
   Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36.0f, "maximum ITS chi^2/Ncls"};
   Configurable<float> min_pt{"min_pt", 0.2f, "minimum pt of the tracks"};
-  Configurable<float> min_eta{"min_eta", -0.8f, "minimum_eta"};
-  Configurable<float> max_eta{"max_eta", +0.8f, "maximum_eta"};
+  Configurable<float> min_eta{"min_eta", -0.8f, "minimum eta"};
+  Configurable<float> max_eta{"max_eta", +0.8f, "maximum eta"};
+  Configurable<float> min_y{"min_y", -0.5f, "minimum y"};
+  Configurable<float> max_y{"max_y", +0.5f, "maximum y"};
   Configurable<float> max_dcaxy{"max_dcaxy", 0.1f, "Maximum DCAxy"};
   Configurable<float> max_dcaz{"max_dcaz", 0.1f, "Maximum DCAz"};
   Configurable<float> min_nsigmaTPC{"min_nsigmaTPC", -3.0f, "Minimum nsigma TPC"};
   Configurable<float> max_nsigmaTPC{"max_nsigmaTPC", +3.0f, "Maximum nsigma TPC"};
+  Configurable<float> min_nsigmaTOF{"min_nsigmaTOF", -3.0f, "Minimum nsigma TOF"};
+  Configurable<float> max_nsigmaTOF{"max_nsigmaTOF", +3.5f, "Maximum nsigma TOF"};
   Configurable<bool> require_primVtx_contributor{"require_primVtx_contributor", true, "require that the track is a PV contributor"};
+  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in jets"};
+  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in jets"};
+  Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in jets"};
+  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in ue"};
+  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in ue"};
+  Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in ue"};
 
   // List of Particles
-  enum particle { proton,
-                  deuteron,
-                  helium };
+  enum nucleus { proton,
+                 deuteron,
+                 helium };
+
+  enum region { jet,
+                underlying_event };
 
   void init(InitContext const&)
   {
     // Global Properties and QC
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
+    registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -130,6 +145,33 @@ struct nuclei_in_jets {
     // Antihelium-3
     registryData.add("antihelium3_jet_tpc", "antihelium3_jet_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
     registryData.add("antihelium3_ue_tpc", "antihelium3_ue_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
+
+    // Input Antiproton Distribution
+    registryMC.add("antiproton_input", "antiproton_input", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_weighted_jet", "antiproton_weighted_jet", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_weighted_ue", "antiproton_weighted_ue", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Generated
+    registryMC.add("antiproton_jet_gen", "antiproton_jet_gen", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_jet_gen", "antideuteron_jet_gen", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antihelium3_jet_gen", "antihelium3_jet_gen", HistType::kTH1F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_ue_gen", "antiproton_ue_gen", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_ue_gen", "antideuteron_ue_gen", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antihelium3_ue_gen", "antihelium3_ue_gen", HistType::kTH1F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Reconstructed TPC
+    registryMC.add("antiproton_jet_rec_tpc", "antiproton_jet_rec_tpc", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_jet_rec_tpc", "antideuteron_jet_rec_tpc", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antihelium3_jet_rec_tpc", "antihelium3_jet_rec_tpc", HistType::kTH1F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_ue_rec_tpc", "antiproton_ue_rec_tpc", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_ue_rec_tpc", "antideuteron_ue_rec_tpc", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antihelium3_ue_rec_tpc", "antihelium3_ue_rec_tpc", HistType::kTH1F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Reconstructed TOF
+    registryMC.add("antiproton_jet_rec_tof", "antiproton_jet_rec_tof", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_jet_rec_tof", "antideuteron_jet_rec_tof", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antideuteron_ue_rec_tof", "antideuteron_ue_rec_tof", HistType::kTH1F, {{50, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
   }
 
   // Single-Track Selection for the Particle of Interest
@@ -157,6 +199,20 @@ struct nuclei_in_jets {
     if (TMath::Abs(track.dcaXY()) > max_dcaxy)
       return false;
     if (TMath::Abs(track.dcaZ()) > max_dcaz)
+      return false;
+
+    // Rapidity Cut
+    double mass(0);
+    if (particle_of_interest == nucleus::proton)
+      mass = 0.93827208816; // Proton
+    if (particle_of_interest == nucleus::deuteron)
+      mass = 1.87561294257; // Deuteron
+    if (particle_of_interest == nucleus::helium)
+      mass = 2.80839160743; // Helium-3
+
+    TLorentzVector lorentzVect;
+    lorentzVect.SetXYZM(track.px(), track.py(), track.pz(), mass);
+    if (lorentzVect.Rapidity() < min_y || lorentzVect.Rapidity() > max_y)
       return false;
 
     return true;
@@ -208,7 +264,7 @@ struct nuclei_in_jets {
       return false;
 
     // Proton ID
-    if (particle_of_interest == particle::proton) {
+    if (particle_of_interest == nucleus::proton) {
       if (pt < 1.0 && TMath::Abs(nsigmaTPCPr) < 8.0)
         return true;
       if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 10.0)
@@ -217,7 +273,7 @@ struct nuclei_in_jets {
     }
 
     // Deuteron ID
-    if (particle_of_interest == particle::deuteron) {
+    if (particle_of_interest == nucleus::deuteron) {
       if (pt < 1.0 && TMath::Abs(nsigmaTPCDe) < 8.0)
         return true;
       if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && TMath::Abs(nsigmaTOFDe) < 10.0)
@@ -226,7 +282,7 @@ struct nuclei_in_jets {
     }
 
     // Helium-3 ID
-    if (particle_of_interest == particle::helium) {
+    if (particle_of_interest == nucleus::helium) {
       if ((0.5 * pt) >= 1.0 && TMath::Abs(nsigmaTPCHe) < 8.0)
         return true;
       return false;
@@ -245,6 +301,52 @@ struct nuclei_in_jets {
       x_min = x2;
 
     return x_min;
+  }
+
+  float Weight(float pt, int event_region, int nucleus_of_interest)
+  {
+
+    auto par_proton_jet = static_cast<std::vector<float>>(param_proton_jet);
+    auto par_deuteron_jet = static_cast<std::vector<float>>(param_deuteron_jet);
+    auto par_helium3_jet = static_cast<std::vector<float>>(param_helium3_jet);
+    auto par_proton_ue = static_cast<std::vector<float>>(param_proton_ue);
+    auto par_deuteron_ue = static_cast<std::vector<float>>(param_deuteron_ue);
+    auto par_helium3_ue = static_cast<std::vector<float>>(param_helium3_ue);
+
+    float dNdpt_proton_jet = GetTsallis(par_proton_jet[0], par_proton_jet[1], par_proton_jet[2], par_proton_jet[3], pt);
+    float dNdpt_proton_ue = GetTsallis(par_proton_ue[0], par_proton_ue[1], par_proton_ue[2], par_proton_ue[3], pt);
+    float dNdpt_deuteron_jet = GetTsallis(par_deuteron_jet[0], par_deuteron_jet[1], par_deuteron_jet[2], par_deuteron_jet[3], pt);
+    float dNdpt_deuteron_ue = GetTsallis(par_deuteron_ue[0], par_deuteron_ue[1], par_deuteron_ue[2], par_deuteron_ue[3], pt);
+    float dNdpt_helium3_jet = GetTsallis(par_helium3_jet[0], par_helium3_jet[1], par_helium3_jet[2], par_helium3_jet[3], pt);
+    float dNdpt_helium3_ue = GetTsallis(par_helium3_ue[0], par_helium3_ue[1], par_helium3_ue[2], par_helium3_ue[3], pt);
+
+    if (nucleus_of_interest == nucleus::proton && event_region == region::jet)
+      return dNdpt_proton_jet;
+    if (nucleus_of_interest == nucleus::proton && event_region == region::underlying_event)
+      return dNdpt_proton_ue;
+    if (nucleus_of_interest == nucleus::deuteron && event_region == region::jet)
+      return dNdpt_deuteron_jet;
+    if (nucleus_of_interest == nucleus::deuteron && event_region == region::underlying_event)
+      return dNdpt_deuteron_ue;
+    if (nucleus_of_interest == nucleus::helium && event_region == region::jet)
+      return dNdpt_helium3_jet;
+    if (nucleus_of_interest == nucleus::helium && event_region == region::underlying_event)
+      return dNdpt_helium3_ue;
+
+    return 1;
+  }
+
+  float GetTsallis(float mass, float temp, float q, float norm, float pt)
+  {
+
+    float p0 = norm;
+    float p1 = 1.0 / (q - 1.0);
+    float p2 = temp;
+    float p3 = mass;
+
+    float dNdpt = (pt * p0 * (p1 - 1.0) * (p1 - 2.0)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0))) * TMath::Power((1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
+
+    return dNdpt;
   }
 
   // Process Data
@@ -516,7 +618,7 @@ struct nuclei_in_jets {
       float pt = jet_track.pt();
 
       // Antiproton
-      if (particle_of_interest == particle::proton) {
+      if (particle_of_interest == nucleus::proton) {
         if (pt < 1.0)
           registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr, jet_Nch);
         if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && jet_track.hasTOF())
@@ -524,7 +626,7 @@ struct nuclei_in_jets {
       }
 
       // Antideuteron
-      if (particle_of_interest == particle::deuteron) {
+      if (particle_of_interest == nucleus::deuteron) {
         if (pt < 1.0)
           registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe, jet_Nch);
         if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && jet_track.hasTOF())
@@ -532,7 +634,7 @@ struct nuclei_in_jets {
       }
 
       // Antihelium3
-      if (particle_of_interest == particle::helium) {
+      if (particle_of_interest == nucleus::helium) {
         registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe, jet_Nch);
       }
     }
@@ -557,7 +659,7 @@ struct nuclei_in_jets {
       float pt = ue_track.pt();
 
       // Antiproton
-      if (particle_of_interest == particle::proton) {
+      if (particle_of_interest == nucleus::proton) {
         if (pt < 1.0)
           registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr, jet_Nch);
         if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && ue_track.hasTOF())
@@ -565,7 +667,7 @@ struct nuclei_in_jets {
       }
 
       // Antideuteron
-      if (particle_of_interest == particle::deuteron) {
+      if (particle_of_interest == nucleus::deuteron) {
         if (pt < 1.0)
           registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe, jet_Nch);
         if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && ue_track.hasTOF())
@@ -573,13 +675,136 @@ struct nuclei_in_jets {
       }
 
       // Antihelium3
-      if (particle_of_interest == particle::helium) {
+      if (particle_of_interest == nucleus::helium) {
         registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe, jet_Nch);
       }
     }
 
   } // end processData
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
+
+  // MC
+  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  {
+
+    // Event Counter (before event sel)
+    registryQC.fill(HIST("number_of_events_mc"), 0.5);
+
+    // Event Selection
+    if (!collision.sel8())
+      return;
+
+    // Event Counter (after event sel)
+    registryQC.fill(HIST("number_of_events_mc"), 1.5);
+
+    for (auto& particle : mcParticles) {
+
+      if (!particle.isPhysicalPrimary())
+        continue;
+      if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
+        continue;
+      if (particle.y() < min_y || particle.y() > max_y)
+        continue;
+
+      // Reweighting
+      float wpr_jet = Weight(particle.pt(), region::jet, nucleus::proton);
+      float wpr_ue = Weight(particle.pt(), region::underlying_event, nucleus::proton);
+      float wde_jet = Weight(particle.pt(), region::jet, nucleus::deuteron);
+      float wde_ue = Weight(particle.pt(), region::underlying_event, nucleus::deuteron);
+      float whe_jet = Weight(particle.pt(), region::jet, nucleus::helium);
+      float whe_ue = Weight(particle.pt(), region::underlying_event, nucleus::helium);
+
+      // Fill Histograms
+      if (particle.pdgCode() == -2212) {
+        registryMC.fill(HIST("antiproton_input"), particle.pt());
+        registryMC.fill(HIST("antiproton_weighted_jet"), particle.pt(), wpr_jet);
+        registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
+        registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
+        registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
+      }
+      if (particle.pdgCode() == -1000010020) {
+        registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt(), wde_jet);
+        registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt(), wde_ue);
+      }
+      if (particle.pdgCode() == -1000020030) {
+        registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt(), whe_jet);
+        registryMC.fill(HIST("antihelium3_ue_gen"), particle.pt(), whe_ue);
+      }
+    }
+
+    for (auto track : mcTracks) {
+
+      // Get MC Particle
+      if (!track.has_mcParticle())
+        continue;
+
+      const auto particle = track.mcParticle();
+      if (!particle.isPhysicalPrimary())
+        continue;
+      if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
+        continue;
+
+      if (!track.passedITSRefit())
+        continue;
+      if (!track.passedTPCRefit())
+        continue;
+
+      // Track Selection
+      if (!passedTrackSelection(track))
+        continue;
+      if (require_primVtx_contributor && !(track.isPVContributor()))
+        continue;
+
+      // Reweighting
+      float wpr_jet = Weight(particle.pt(), region::jet, nucleus::proton);
+      float wpr_ue = Weight(particle.pt(), region::underlying_event, nucleus::proton);
+      float wde_jet = Weight(particle.pt(), region::jet, nucleus::deuteron);
+      float wde_ue = Weight(particle.pt(), region::underlying_event, nucleus::deuteron);
+      float whe_jet = Weight(particle.pt(), region::jet, nucleus::helium);
+      float whe_ue = Weight(particle.pt(), region::underlying_event, nucleus::helium);
+
+      // Variables
+      float nsigmaTPCPr = track.tpcNSigmaPr();
+      float nsigmaTOFPr = track.tofNSigmaPr();
+      float nsigmaTPCDe = track.tpcNSigmaDe();
+      float nsigmaTOFDe = track.tofNSigmaDe();
+      float nsigmaTPCHe = track.tpcNSigmaHe();
+      float pt = track.pt();
+
+      // Antiproton
+      if (particle.pdgCode() != -2212) {
+        if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
+          registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, wpr_jet);
+          registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, wpr_ue);
+        }
+        if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
+          registryMC.fill(HIST("antiproton_jet_rec_tof"), pt, wpr_jet);
+          registryMC.fill(HIST("antiproton_ue_rec_tof"), pt, wpr_ue);
+        }
+      }
+
+      // Antideuteron
+      if (particle.pdgCode() != -1000010020) {
+        if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
+          registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt, wde_jet);
+          registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt, wde_ue);
+        }
+        if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
+          registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt, wde_jet);
+          registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt, wde_ue);
+        }
+      }
+
+      // Antihelium-3
+      if (particle.pdgCode() != -1000020030) {
+        if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
+          registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt, whe_jet);
+          registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt, whe_ue);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
