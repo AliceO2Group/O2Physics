@@ -22,5 +22,8 @@
 #pragma link C++ class ProfileSubset + ;
 #pragma link C++ class FlowContainer + ;
 #pragma link C++ class GFWWeights + ;
+#pragma link C++ class o2::analysis::genericframework::GFWBinningCuts + ;
+#pragma link C++ class o2::analysis::genericframework::GFWRegions + ;
+#pragma link C++ class o2::analysis::genericframework::GFWCorrConfigs + ;
 
 #endif // PWGCF_GENERICFRAMEWORK_GENERICFRAMEWORKLINKDEF_H_

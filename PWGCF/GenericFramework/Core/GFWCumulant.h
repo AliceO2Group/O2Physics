@@ -51,10 +51,10 @@ class GFWCumulant
   uint fUsed;
   int fNEntries;
   // Q-vectors. Could be done recursively, but maybe defining each one of them explicitly is easier to read
-  int fN;              //! Harmonics
-  int fPow;            //! Power
+  int fN;                   //! Harmonics
+  int fPow;                 //! Power
   std::vector<int> fPowVec; //! Powers array
-  int fPt;             //! fPt bins
+  int fPt;                  //! fPt bins
   bool* fFilledPts;
   bool fInitialized; // Arrays are initialized
   std::complex<double> fNullQ = 0;
