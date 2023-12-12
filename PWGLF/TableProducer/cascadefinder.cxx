@@ -109,10 +109,10 @@ struct cascadeprefilter {
       cascGoodNegTracks(t0.globalIndex(), t0.collisionId(), -t0.dcaXY());
     }
     for (auto& v0 : goodV0s) {
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cospaV0) {
+      if (v0.v0cosPA() < cospaV0) {
         continue;
       }
-      if (v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < dcav0topv) {
+      if (v0.dcav0topv() < dcav0topv) {
         continue;
       }
       if (v0.dcaV0daughters() > dcav0dau) {
@@ -133,7 +133,8 @@ struct cascadeprefilter {
 };
 
 struct cascadefinder {
-  Produces<aod::StoredCascDatas> cascdata;
+  Produces<aod::CascIndices> cascidx;
+  Produces<aod::StoredCascCores> cascdata;
 
   OutputObj<TH1F> hCandPerEvent{TH1F("hCandPerEvent", "", 100, 0, 100)};
 
@@ -254,8 +255,8 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
-                     -1, lXiMass, lOmegaMass,
+            cascidx(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId());
+            cascdata(-1, lXiMass, lOmegaMass,
                      posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -267,7 +268,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
+                     dcaInfo[0], dcaInfo[1]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -344,8 +345,9 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
-                     +1, lXiMass, lOmegaMass,
+
+            cascidx(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId());
+            cascdata(+1, lXiMass, lOmegaMass,
                      posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -357,7 +359,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
+                     dcaInfo[0], dcaInfo[1]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -430,7 +432,7 @@ struct cascadefinderQA {
 
 /// Extends the cascdata table with expression columns
 struct cascadeinitializer {
-  Spawns<aod::CascData> cascdataext;
+  Spawns<aod::CascCore> cascdataext;
   void init(InitContext const&) {}
 };
 

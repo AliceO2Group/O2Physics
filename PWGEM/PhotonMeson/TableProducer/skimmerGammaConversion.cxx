@@ -66,7 +66,7 @@ struct skimmerGammaConversion {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<float> kfMassConstrain{"KFParticleMassConstrain", 0.f, "mass constrain for the KFParticle mother particle"};
+  Configurable<float> kfMassConstrain{"KFParticleMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
 
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
@@ -258,8 +258,9 @@ struct skimmerGammaConversion {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters, 2);
-    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
-
+    if (kfMassConstrain > -0.1) {
+      gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+    }
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 

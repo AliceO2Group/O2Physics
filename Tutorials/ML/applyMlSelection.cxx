@@ -10,7 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file   applyMlSelection.cxx
-/// \brief  Showcase usage of trained ML model exported to ONNX for candidate selection in analysis
+/// \brief  Showcase usage of trained ML model exported to ONNX format for candidate selection in analysis
+/// \brief  This is only the starting point for the tutorial. The complete task is available at https://github.com/AliceO2Group/analysis-tutorials/tree/master/o2at-3/machineLearning/MlInference
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 

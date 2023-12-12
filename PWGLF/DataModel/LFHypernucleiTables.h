@@ -25,6 +25,9 @@ namespace o2::aod
 namespace hyperrec
 {
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                       // bool: true for matter
+DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float);          // centrality with FT0A estimator
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);          // centrality with FT0C estimator
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);          // centrality with FT0M estimator
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                            // Pt of the He daughter
 DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                          // Phi of the He daughter
 DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);                          // Eta of the He daughter
@@ -46,6 +49,7 @@ DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                // Number of
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                // Number of TPC clusters of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);             // TPC signal of the He daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);             // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                          // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
 DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                      // TPC momentum of the He daughter
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                      // TPC momentum of the Pi daughter
 DECLARE_SOA_COLUMN(ITSclusterSizesHe, itsClusterSizesHe, uint32_t); // ITS cluster size of the He daughter
@@ -66,34 +70,9 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                       // bool: tru
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::IsMatter,
-                  hyperrec::PtHe3,
-                  hyperrec::PhiHe3,
-                  hyperrec::EtaHe3,
-                  hyperrec::PtPi,
-                  hyperrec::PhiPi,
-                  hyperrec::EtaPi,
-                  hyperrec::XPrimVtx,
-                  hyperrec::YPrimVtx,
-                  hyperrec::ZPrimVtx,
-                  hyperrec::XDecVtx,
-                  hyperrec::YDecVtx,
-                  hyperrec::ZDecVtx,
-                  hyperrec::DcaV0Daug,
-                  hyperrec::DcaHe,
-                  hyperrec::DcaPi,
-                  hyperrec::NSigmaHe,
-                  hyperrec::NTPCclusHe,
-                  hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe,
-                  hyperrec::TPCmomPi,
-                  hyperrec::TPCsignalHe,
-                  hyperrec::TPCsignalPi,
-                  hyperrec::ITSclusterSizesHe,
-                  hyperrec::ITSclusterSizesPi);
-
-DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
-                  o2::soa::Index<>,
-                  hyperrec::IsMatter,
+                  hyperrec::CentralityFT0A,
+                  hyperrec::CentralityFT0C,
+                  hyperrec::CentralityFT0M,
                   hyperrec::PtHe3,
                   hyperrec::PhiHe3,
                   hyperrec::EtaHe3,
@@ -118,6 +97,39 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe,
                   hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags);
+
+DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
+                  o2::soa::Index<>,
+                  hyperrec::IsMatter,
+                  hyperrec::CentralityFT0A,
+                  hyperrec::CentralityFT0C,
+                  hyperrec::CentralityFT0M,
+                  hyperrec::PtHe3,
+                  hyperrec::PhiHe3,
+                  hyperrec::EtaHe3,
+                  hyperrec::PtPi,
+                  hyperrec::PhiPi,
+                  hyperrec::EtaPi,
+                  hyperrec::XPrimVtx,
+                  hyperrec::YPrimVtx,
+                  hyperrec::ZPrimVtx,
+                  hyperrec::XDecVtx,
+                  hyperrec::YDecVtx,
+                  hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug,
+                  hyperrec::DcaHe,
+                  hyperrec::DcaPi,
+                  hyperrec::NSigmaHe,
+                  hyperrec::NTPCclusHe,
+                  hyperrec::NTPCclusPi,
+                  hyperrec::TPCmomHe,
+                  hyperrec::TPCmomPi,
+                  hyperrec::TPCsignalHe,
+                  hyperrec::TPCsignalPi,
+                  hyperrec::ITSclusterSizesHe,
+                  hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
                   hyperrec::GenEta,

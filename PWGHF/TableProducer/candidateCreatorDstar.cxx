@@ -30,6 +30,7 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::analysis;
 

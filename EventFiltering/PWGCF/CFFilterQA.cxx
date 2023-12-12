@@ -934,7 +934,7 @@ struct CFFilterQA {
     const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
     const float tranRad = v0.v0radius();
     const float dcaDaughv0 = v0.dcaV0daughters();
-    const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+    const float cpav0 = v0.v0cosPA();
 
     const float invMassLambda = v0.mLambda();
     const float invMassAntiLambda = v0.mAntiLambda();
@@ -1293,7 +1293,7 @@ struct CFFilterQA {
         registry.fill(HIST("TrackCuts/V0Before/fInvMassLambdavsAntiLambda"), v0.mLambda(), v0.mAntiLambda());
         registry.fill(HIST("TrackCuts/V0Before/fInvMassV0BeforeKaonvsV0Before"), v0.mK0Short(), v0.mLambda());
         registry.fill(HIST("TrackCuts/V0Before/fV0DCADaugh"), v0.dcaV0daughters());
-        registry.fill(HIST("TrackCuts/V0Before/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+        registry.fill(HIST("TrackCuts/V0Before/fV0CPA"), v0.v0cosPA());
         registry.fill(HIST("TrackCuts/V0Before/fV0TranRad"), v0.v0radius());
         registry.fill(HIST("TrackCuts/V0Before/f0DecVtxX"), v0.x());
         registry.fill(HIST("TrackCuts/V0Before/f0DecVtxY"), v0.y());
@@ -1327,7 +1327,7 @@ struct CFFilterQA {
           registry.fill(HIST("TrackCuts/Lambda/fInvMassLambda"), v0.mLambda());
           registry.fill(HIST("TrackCuts/Lambda/fInvMassLambdaKaonvsLambda"), v0.mK0Short(), v0.mLambda());
           registry.fill(HIST("TrackCuts/Lambda/fV0DCADaugh"), v0.dcaV0daughters());
-          registry.fill(HIST("TrackCuts/Lambda/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+          registry.fill(HIST("TrackCuts/Lambda/fV0CPA"), v0.v0cosPA());
           registry.fill(HIST("TrackCuts/Lambda/fV0TranRad"), v0.v0radius());
           registry.fill(HIST("TrackCuts/Lambda/f0DecVtxX"), v0.x());
           registry.fill(HIST("TrackCuts/Lambda/f0DecVtxY"), v0.y());
@@ -1354,7 +1354,7 @@ struct CFFilterQA {
           registry.fill(HIST("TrackCuts/AntiLambda/fInvMassAntiLambda"), v0.mAntiLambda());
           registry.fill(HIST("TrackCuts/AntiLambda/fInvMassAntiLambdaKaonvsAntiLambda"), v0.mK0Short(), v0.mAntiLambda());
           registry.fill(HIST("TrackCuts/AntiLambda/fV0DCADaugh"), v0.dcaV0daughters());
-          registry.fill(HIST("TrackCuts/AntiLambda/fV0CPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+          registry.fill(HIST("TrackCuts/AntiLambda/fV0CPA"), v0.v0cosPA());
           registry.fill(HIST("TrackCuts/AntiLambda/fV0TranRad"), v0.v0radius());
           registry.fill(HIST("TrackCuts/AntiLambda/f0DecVtxX"), v0.x());
           registry.fill(HIST("TrackCuts/AntiLambda/f0DecVtxY"), v0.y());

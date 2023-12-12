@@ -15,6 +15,7 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -22,12 +23,19 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
+
+/// Struct to extend TracksPid tables
+struct HfCandidateSelectorD0Expressions {
+  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
+  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
+};
 
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
@@ -61,21 +69,23 @@ struct HfCandidateSelectorD0 {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   Configurable<bool> enableDebugMl{"enableDebugMl", false, "Flag to enable histograms to monitor BDT application"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTD0", "Path on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTD0"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
+  std::vector<float> outputMlD0 = {};
+  std::vector<float> outputMlD0bar = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
   // Define histograms
   AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
@@ -109,12 +119,12 @@ struct HfCandidateSelectorD0 {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -200,11 +210,11 @@ struct HfCandidateSelectorD0 {
       massD0bar = hfHelper.invMassD0barToKPi(candidate);
     }
     if (trackPion.sign() > 0) {
-      if (std::abs(massD0 - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0 - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(massD0bar - o2::analysis::pdg::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(massD0bar - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -233,11 +243,11 @@ struct HfCandidateSelectorD0 {
     // in case only sideband candidates have to be stored, additional invariant-mass cut
     if (keepOnlySidebandCandidates) {
       if (trackPion.sign() > 0) {
-        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       } else {
-        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       }
@@ -260,10 +270,13 @@ struct HfCandidateSelectorD0 {
       int statusCand = 0;
       int statusPID = 0;
 
+      outputMlD0.clear();
+      outputMlD0bar.clear();
+
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -277,7 +290,7 @@ struct HfCandidateSelectorD0 {
       if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -294,7 +307,7 @@ struct HfCandidateSelectorD0 {
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -342,7 +355,7 @@ struct HfCandidateSelectorD0 {
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
-          hfMlD0Candidate(outputMl);
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
         continue;
       }
@@ -357,33 +370,38 @@ struct HfCandidateSelectorD0 {
 
       if (applyMl) {
         // ML selections
+        bool isSelectedMlD0 = false;
+        bool isSelectedMlD0bar = false;
 
-        std::vector<float> inputFeatures{candidate.cpa(),
-                                         candidate.cpaXY(),
-                                         candidate.decayLength(),
-                                         candidate.decayLengthXY(),
-                                         candidate.impactParameter0(),
-                                         candidate.impactParameter1(),
-                                         candidate.impactParameterProduct()};
+        if (statusD0 > 0) {
+          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0);
+          isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
+        }
+        if (statusD0bar > 0) {
+          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0Bar);
+          isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
+        }
 
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
-        hfMlD0Candidate(outputMl);
-
-        if (!isSelectedMl) {
+        if (!isSelectedMlD0) {
           statusD0 = 0;
+        }
+        if (!isSelectedMlD0bar) {
           statusD0bar = 0;
         }
+
+        hfMlD0Candidate(outputMlD0, outputMlD0bar);
+
         if (enableDebugMl) {
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMl[0], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMl[1], statusD0bar);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0);
-          registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMl[2], statusD0bar);
-          if (statusD0 > 0) {
+          if (isSelectedMlD0) {
+            registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0[0], statusD0);
+            registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0[1], statusD0);
+            registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0[2], statusD0);
             registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
           }
-          if (statusD0bar > 0) {
+          if (isSelectedMlD0bar) {
+            registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0bar[0], statusD0bar);
+            registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0bar[1], statusD0bar);
+            registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0bar[2], statusD0bar);
             registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0barToKPi(candidate));
           }
         }
@@ -408,5 +426,6 @@ struct HfCandidateSelectorD0 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorD0Expressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorD0>(cfgc)};
 }

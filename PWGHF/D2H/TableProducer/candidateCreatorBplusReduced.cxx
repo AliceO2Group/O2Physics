@@ -14,6 +14,7 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -81,9 +82,9 @@ struct HfCandidateCreatorBplusReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // invariant-mass window cut
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massD0 = o2::analysis::pdg::MassD0;
-    massBplus = o2::analysis::pdg::MassBPlus;
+    massPi = o2::constants::physics::MassPiPlus;
+    massD0 = o2::constants::physics::MassD0;
+    massBplus = o2::constants::physics::MassBPlus;
   }
 
   void process(aod::HfRedCollisions const& collisions,

@@ -79,7 +79,7 @@ struct taskMuonMchTrkEfficiency {
   Configurable<double> etaMuonMax{"etaMax", 4.0, "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
 
   Configurable<std::vector<double>> binsMuonPt{"binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt}, "pT bin limits"}; /// Pt intervals for the histograms
-  Configurable<int> nEtaBins{"nEtaBins", 8, "Number of Eta bins"};                                                            /// Number of eta bins for output histograms
+  Configurable<int> nEtaBins{"nEtaBins", 12, "Number of Eta bins"};                                                           /// Number of eta bins for output histograms
   Configurable<int> nPhiBins{"nPhiBins", 6, "Number of Phi bins"};                                                            /// Number of phi bins for output histograms
 
   using muonFull = soa::Join<aod::MchTrkEffBase, aod::MchTrkEffGen>;
@@ -98,11 +98,11 @@ struct taskMuonMchTrkEfficiency {
     // define axes to be used
     // and the correspondent histograms
     auto vbins = (std::vector<double>)binsMuonPt;
-    const AxisSpec axisEta{nEtaBins, 2.3, 4.2, "|#eta|"};
+    const AxisSpec axisEta{nEtaBins, etaMuonMin, etaMuonMax, "|#eta|"};
     const AxisSpec axisPt{vbins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPhi{nPhiBins, -3.14, 3.14, "#varphi"};
 
-    const AxisSpec axisEtaGen{nEtaBins, 2.5, 4., "|#eta| Gen"};
+    const AxisSpec axisEtaGen{nEtaBins, etaMuonMin, etaMuonMax, "|#eta| Gen"};
     const AxisSpec axisPtGen{vbins, "#it{p}_{T} (GeV/#it{c}) Gen"};
     const AxisSpec axisPhiGen{nPhiBins, -3.14, 3.14, "#varphi Gen"};
     const AxisSpec axismchBitmap{1031, -0.5, 1030.5, "mchBitmap"};

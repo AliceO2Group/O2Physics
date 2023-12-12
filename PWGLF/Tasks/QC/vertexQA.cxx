@@ -66,6 +66,9 @@ struct vertexQA {
   Configurable<double> nSigmaR{"nSigmaR", 1000., "Number of sigmas for transverse displacement of vertices"};
   Configurable<double> nSigmaT{"nSigmaT", 1000., "Number of sigmas for time of vertices"};
   Configurable<double> maxTime{"maxTime", 100000., "Maximum time difference between split vertices in ns"};
+  Configurable<double> minTimeDiff{"minTimeDiff", 14000., "Minimum time difference (ITS Rof peak)"};
+  Configurable<double> maxTimeDiff{"maxTimeDiff", 15500., "Maximum time difference (ITS Rof peak)"};
+  Configurable<double> minNcontrib{"minNcontrib", 500., "Minimum number of contributors (duplicate vertices)"};
 
   ConfigurableAxis xVtxAxis{"xVtxBins", {100, -0.1f, 0.1f}, "Binning for the vertex x (y) in cm"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -113,6 +116,9 @@ struct vertexQA {
     histos.add<TH2>("zDistVsTDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{z}_{vtx} (cm)", HistType::kTH2F, {tDiffVtxAxisExtend, zDiffVtxAxis2});
     histos.add<TH2>("nContribTwoVtxTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
     histos.add<TH2>("nContribVsTDistTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{N}_{contrib}", HistType::kTH2F, {tDiffVtxAxisExtendSigned, nContribDiffAxis});
+
+    histos.add<TH2>("nContribITSRofTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
+    histos.add<TH1>("tDiffDuplicateTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH1F, {tDiffVtxAxisExtend});
   }
 
   std::deque<BCcoll> colls;
@@ -206,6 +212,12 @@ struct vertexQA {
         histos.fill(HIST("nContribTwoVtxTimeSeriesHistogram"), coll1.numContrib(), coll2.numContrib());
         histos.fill(HIST("nContribVsTDistTimeSeriesHistogram"), -deltaT, coll2.numContrib() - coll1.numContrib());
         histos.fill(HIST("nVtxTimeSeriesHistogram"), 2);
+        if (std::abs(deltaT) > minTimeDiff && std::abs(deltaT) < maxTimeDiff) {
+          histos.fill(HIST("nContribITSRofTimeSeriesHistogram"), coll1.numContrib(), coll2.numContrib());
+        }
+        if (std::abs(coll1.numContrib() - coll2.numContrib()) < 3 * std::sqrt(coll1.numContrib() + coll2.numContrib()) && coll1.numContrib() > minNcontrib && coll2.numContrib() > minNcontrib) {
+          histos.fill(HIST("tDiffDuplicateTimeSeriesHistogram"), std::abs(deltaT));
+        }
         colls.erase(id);
         colls.pop_front();
       }

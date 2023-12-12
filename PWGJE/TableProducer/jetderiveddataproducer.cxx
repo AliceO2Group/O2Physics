@@ -41,13 +41,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerTask {
+  Produces<aod::JDummys> jDummysTable;
   Produces<aod::JBCs> jBCsTable;
   Produces<aod::JBCPIs> jBCParentIndexTable;
   Produces<aod::JCollisions> jCollisionsTable;
   Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
   Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
-  Produces<aod::JChTrigSels> jChargedTriggerSelsTable;
-  Produces<aod::JFullTrigSels> jFullTriggerSelsTable;
   Produces<aod::JMcCollisionLbs> jMcCollisionsLabelTable;
   Produces<aod::JMcCollisions> jMcCollisionsTable;
   Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
@@ -100,48 +99,17 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
-  void processChargedJetTriggers(soa::Join<aod::Collisions, aod::JetFilters>::iterator const& collision)
-  {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::setChargedTriggerSelectionBit(collision));
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processChargedJetTriggers, "produces derived charged trigger table", false);
-
-  void processNoChargedJetTriggers(aod::Collision const& collision)
-  {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::JTrigSelCh::noChargedTigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", true);
-
-  void processFullJetTriggers(soa::Join<aod::Collisions, aod::FullJetFilters>::iterator const& collision)
-  {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::setFullTriggerSelectionBit(collision));
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processFullJetTriggers, "produces derived full trigger table", false);
-
-  void processNoFullJetTriggers(aod::Collision const& collision)
-  {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::JTrigSelFull::noFullTrigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processNoFullJetTriggers, "produces derived full trigger table table when sample is not triggered", true);
-
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
-
-    if (track.collisionId() < 0) {
-      return;
-    }
-    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), JetDerivedDataUtilities::setTrackSelectionBit(track));
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), track.sign(), JetDerivedDataUtilities::setTrackSelectionBit(track));
     jTracksParentIndexTable(track.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
 
   void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
   {
-    if (track.collisionId() < 0) {
-      return;
-    }
     if (track.has_mcParticle()) {
-      jMcTracksLabelTable(track.mcParticleId()); // maybe its already -1 if there is no label? good to check!
+      jMcTracksLabelTable(track.mcParticleId());
     } else {
       jMcTracksLabelTable(-1);
     }
@@ -151,19 +119,20 @@ struct JetDerivedDataProducerTask {
   void processParticles(aod::McParticle const& particle)
   {
     std::vector<int> mothersId;
-    int daughtersId[2];
     if (particle.has_mothers()) {
-      for (auto const& mother : particle.template mothers_as<aod::McParticles>()) {
-        mothersId.push_back(mother.globalIndex());
+      auto mothersIdTemps = particle.mothersIds();
+      for (auto mothersIdTemp : mothersIdTemps) {
+        mothersId.push_back(mothersIdTemp);
       }
     }
+    int daughtersId[2] = {-1, -1};
     auto i = 0;
     if (particle.has_daughters()) {
-      for (auto const& daughter : particle.template daughters_as<aod::McParticles>()) {
+      for (auto daughterId : particle.daughtersIds()) {
         if (i > 1) {
           break;
         }
-        daughtersId[i] = daughter.globalIndex();
+        daughtersId[i] = daughterId;
         i++;
       }
     }

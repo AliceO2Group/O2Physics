@@ -82,8 +82,43 @@ bool eventEMCAL(T const& collision)
 
 enum JTrigSelCh {
   noChargedTigger = 0,
-  charged = 1
+  chargedLow = 1,
+  chargedHigh = 2
 };
+
+template <typename T>
+bool selectChargedTrigger(T const& collision, int triggerSelection)
+{
+  if (triggerSelection == -1) {
+    return true;
+  }
+  return (collision.chargedTriggerSel() >> triggerSelection) & 1;
+}
+
+int initialiseChargedTriggerSelection(std::string triggerSelection)
+{
+  if (triggerSelection == "chargedLow") {
+    return JTrigSelCh::chargedLow;
+  }
+  if (triggerSelection == "chargedHigh") {
+    return JTrigSelCh::chargedHigh;
+  }
+  return -1;
+}
+
+template <typename T>
+uint8_t setChargedTriggerSelectionBit(T const& collision)
+{
+
+  uint8_t bit = 0;
+  if (collision.hasJetChLowPt()) {
+    SETBIT(bit, JTrigSelCh::chargedLow);
+  }
+  if (collision.hasJetChHighPt()) {
+    SETBIT(bit, JTrigSelCh::chargedHigh);
+  }
+  return bit;
+}
 
 enum JTrigSelFull {
   noFullTrigger = 0,
@@ -100,34 +135,6 @@ enum JTrigSelFull {
   gammaLowDCAL = 11,
   gammaVeryLowDCAL = 12
 };
-
-template <typename T>
-bool selectChargedTrigger(T const& collision, int triggerSelection)
-{
-  if (triggerSelection == -1) {
-    return true;
-  }
-  return (collision.chargedTriggerSel() >> triggerSelection) & 1;
-}
-
-int initialiseChargedTriggerSelection(std::string triggerSelection)
-{
-  if (triggerSelection == "charged") {
-    return JTrigSelCh::charged;
-  }
-  return -1;
-}
-
-template <typename T>
-uint8_t setChargedTriggerSelectionBit(T const& collision)
-{
-
-  uint8_t bit = 0;
-  if (collision.hasJetChHighPt()) {
-    SETBIT(bit, JTrigSelCh::charged);
-  }
-  return bit;
-}
 
 template <typename T>
 bool selectFullTrigger(T const& collision, int triggerSelection)

@@ -18,6 +18,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,13 +35,26 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "PWGHF/Core/PDG.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "../filterTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+
+namespace stfilter
+{
+enum species { Xi = 0,
+               Omega = 1 };
+constexpr double massSigmaParameters[4][2]{
+  {4.9736e-3, 0.006815},
+  {-2.39594, -2.257},
+  {1.8064e-3, 0.00138},
+  {1.03468e-1, 0.1898}};
+static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", "p3"};
+static const std::vector<std::string> speciesNames{"Xi", "Omega"};
+} // namespace stfilter
 
 struct strangenessFilter {
 
@@ -54,7 +68,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 14, 0., 14.)};
+  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 12, 0., 12.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -104,21 +118,40 @@ struct strangenessFilter {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<double> bz{"bz", -5., "magnetic field"};
+  Configurable<std::string> matLutPath{"matLutPath", "GLO/Param/MatLUT", "Path of the material LUT"};
+  Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
+  Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
   Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
-  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega-"};
+  Configurable<bool> useNsigmaCutTrackedXi{"useNsigmaCutTrackedXi", false, "Mass window based on n*sigma instead of fixed"};
+  Configurable<bool> useNsigmaCutTrackedOmega{"useNsigmaCutTrackedOmega", true, "Mass window based on n*sigma instead of fixed"};
+  Configurable<float> massWindowTrackedOmegaNsigma{"massWindowTrackedOmegaNsigma", 6, "Inv. mass window for tracked Omega"};
+  Configurable<float> massWindowTrackedXiNsigma{"massWindowTrackedXiNsigma", 6, "Inv. mass window for tracked Xi"};
+  Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
-  Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi-"};
+  Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0.05, "Inv. mass window for tracked Xi"};
   Configurable<float> massWindowLambda{"massWindowLambda", 0.05, "Inv. mass window for Lambda (ST)"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
   Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
-
-  Configurable<float> maxNSigmaBachelorTrackedXi{"maxNSigmaBachelorTrackedXi", 3., "Max Nsigma for bachelor of tracked Xi (pi)"};
-  Configurable<float> maxNSigmaBachelorTrackedOmega{"maxNSigmaBachelorTrackedOmega", 3., "Max Nsigma for bachelor of tracked Xi (Ka)"};
-  Configurable<float> maxNSigmaV0PrTrackedCascade{"maxNSigmaV0PrTrackedCascade", 3., "Max Nsigma for proton from V0 fromtracked Xi"};
-  Configurable<float> maxNSigmaV0PiTrackedCascade{"maxNSigmaV0PiTrackedCascade", 3., "Max Nsigma for pion from V0 fromtracked Xi"};
-  Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
-  Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
+  Configurable<float> maxNSigmaBachelorTrackedXi{"maxNSigmaBachelorTrackedXi", 4., "Max Nsigma for bachelor of tracked Xi (pi)"};
+  Configurable<float> maxNSigmaBachelorTrackedOmega{"maxNSigmaBachelorTrackedOmega", 4., "Max Nsigma for bachelor of tracked Xi (Ka)"};
+  Configurable<float> maxNSigmaV0PrTrackedCascade{"maxNSigmaV0PrTrackedCascade", 4., "Max Nsigma for proton from V0 fromtracked Xi"};
+  Configurable<float> maxNSigmaV0PiTrackedCascade{"maxNSigmaV0PiTrackedCascade", 4., "Max Nsigma for pion from V0 fromtracked Xi"};
+  Configurable<float> minDcaTrackedXi{"minDcaTrackedXi", 0., "Minimum DCA for tracked cascades"};
+  Configurable<float> maxCpaTrackedXi{"maxCpaTrackedXi", 1., "Maximum CPA for tracked cascades"};
+  Configurable<float> minDcaTrackedOmega{"minDcaTrackedOmega", 0., "Minimum DCA for tracked cascades"};
+  Configurable<float> maxCpaTrackedOmega{"maxCpaTrackedOmega", 1., "Maximum CPA for tracked cascades"};
+  Configurable<LabeledArray<double>> parSigmaMass{
+    "parSigmaMass",
+    {stfilter::massSigmaParameters[0], 4, 2,
+     stfilter::massSigmaParameterNames, stfilter::speciesNames},
+    "Mass resolution parameters: [0]*exp([1]*x)+[2]*exp([3]*x)"};
+  float bz = 0.;
 
   void init(o2::framework::InitContext&)
   {
@@ -154,8 +187,6 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Xi");
     hProcessedEvents->GetXaxis()->SetBinLabel(11, "trk. #Xi");
     hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Omega");
-    hProcessedEvents->GetXaxis()->SetBinLabel(13, "trk. V^{0}");
-    hProcessedEvents->GetXaxis()->SetBinLabel(14, "trk. 3body");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -272,11 +303,19 @@ struct strangenessFilter {
       QAHistos.add("hRapXi", "Rap Xi", HistType::kTH1F, {{100, -1, 1}});
       QAHistos.add("hRapOmega", "Rap Omega", HistType::kTH1F, {{100, -1, 1}});
 
+      // strangeness tracking
+      if (static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+        auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+        o2::base::Propagator::Instance(true)->setMatLUT(lut);
+      }
+
       QAHistosStrangenessTracking.add("hStRVsPtTrkCasc", "Tracked cascades;p_{T} (GeV/#it{c});R (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, 0., 50}});
       QAHistosStrangenessTracking.add("hMassOmegaTrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassXiTrkCasc", "Tracked cascades;m_{#Xi} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMassV0TrkCasc", "Tracked cascades;m_{V^{0}} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 1., 3.}});
       QAHistosStrangenessTracking.add("hMatchChi2TrkCasc", "Tracked cascades;#chi^{2}", HistType::kTH1D, {{1000, 0., 2000.}});
+      QAHistosStrangenessTracking.add("hMatchChi2TrkCascSelectedXi", "Tracked cascades;#chi^{2}", HistType::kTH1D, {{1000, 0., 2000.}});
+      QAHistosStrangenessTracking.add("hMatchChi2TrkCascSelectedOmega", "Tracked cascades;#chi^{2}", HistType::kTH1D, {{1000, 0., 2000.}});
       QAHistosStrangenessTracking.add("hMassOmegaVsMatchChi2TrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2});#chi^{2}", HistType::kTH2D, {{1000, 1., 3.}, {1000, 0., 2000.}});
       QAHistosStrangenessTracking.add("hMassXiVsMatchChi2TrkCasc", "Tracked cascades;m_{#Xi} (GeV/#it{c}^{2});#chi^{2}", HistType::kTH2D, {{1000, 1., 3.}, {1000, 0., 2000.}});
       QAHistosStrangenessTracking.add("hMassOmegaVsTopChi2TrkCasc", "Tracked cascades;m_{#Omega} (GeV/#it{c}^{2});#chi^{2}", HistType::kTH2D, {{1000, 1., 3.}, {1000, 0., 2000.}});
@@ -285,18 +324,46 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hNSigmaTpcKaTrkCascBachelor", "Tracked cascades;N_{#sigma, K}", HistType::kTH1D, {{100, -5., 5.}});
       QAHistosStrangenessTracking.add("hNSigmaTpcPrTrkCascV0", "Tracked cascades;N_{#sigma, p}", HistType::kTH1D, {{100, -5., 5.}});
       QAHistosStrangenessTracking.add("hNSigmaTpcPiTrkCascV0", "Tracked cascades;N_{#sigma, #pi}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcPrTrkCascV0SelectedXi", "Tracked cascades;N_{#sigma, p}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcPiTrkCascV0SelectedXi", "Tracked cascades;N_{#sigma, #pi}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcPiTrkCascBachelorSelectedXi", "Tracked cascades;N_{#sigma, #pi}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcPrTrkCascV0SelectedOmega", "Tracked cascades;N_{#sigma, p}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcPiTrkCascV0SelectedOmega", "Tracked cascades;N_{#sigma, #pi}", HistType::kTH1D, {{100, -5., 5.}});
+      QAHistosStrangenessTracking.add("hNSigmaTpcKaTrkCascBachelorSelectedOmega", "Tracked cascades;N_{#sigma, K}", HistType::kTH1D, {{100, -5., 5.}});
       QAHistosStrangenessTracking.add("hMassH3LTrkV0", "Tracked V0;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 2.8, 3.8}});
       QAHistosStrangenessTracking.add("hMassH4LTrkV0", "Tracked V0;m_{H4L} (GeV/#it{c}^{2})", HistType::kTH1D, {{1000, 3.8, 4.8}});
       QAHistosStrangenessTracking.add("hMassH3LTrk3body", "Tracked 3body;m_{H3L} (GeV/#it{c}^{2})", HistType::kTH1D, {{200, 0., 10.}});
       QAHistosStrangenessTracking.add("hMassHe4LTrk3body", "Tracked 3body;m_{He4L} (GeV/#it{c}^{2})", HistType::kTH1D, {{200, 0., 10.}});
       QAHistosStrangenessTracking.add("hDcaXY", "DCA;DCA_{xy} (cm)", HistType::kTH1D, {{200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaXYSelectedXi", "DCA;DCA_{xy} (cm)", HistType::kTH1D, {{200, -.05, .05}});
+      QAHistosStrangenessTracking.add("hDcaXYSelectedOmega", "DCA;DCA_{xy} (cm)", HistType::kTH1D, {{200, -.05, .05}});
       QAHistosStrangenessTracking.add("hDcaXYVsPt", "DCA;p_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaXYVsPtSelectedXi", "DCA;p_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaXYVsPtSelectedOmega", "DCA;p_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
       QAHistosStrangenessTracking.add("hDcaZ", "DCA;DCA_{z} (cm)", HistType::kTH1D, {{200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaZSelectedXi", "DCA;DCA_{z} (cm)", HistType::kTH1D, {{200, -.05, .05}});
+      QAHistosStrangenessTracking.add("hDcaZSelectedOmega", "DCA;DCA_{z} (cm)", HistType::kTH1D, {{200, -.05, .05}});
       QAHistosStrangenessTracking.add("hDcaZVsPt", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaZVsPtSelectedXi", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
+      QAHistosStrangenessTracking.add("hDcaZVsPtSelectedOmega", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}});
       QAHistosStrangenessTracking.add("hDcaVsPt", "DCA;DCA (cm);p_{T} (GeV/#it{c})", HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}});
       QAHistosStrangenessTracking.add("hDcaVsR", "DCA;DCA (cm);R (cm)", HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}});
+      QAHistosStrangenessTracking.add("hDecayRadius", "Decay radius;R (cm)", HistType::kTH1D, {{100, 0., 30.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusSelectedXi", "Decay radius;R (cm)", HistType::kTH1D, {{100, 0., 30.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusSelectedOmega", "Decay radius;R (cm)", HistType::kTH1D, {{100, 0., 30.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusVsXiMass", "Decay radius;R (cm);m (GeV/#it{c}^2)", HistType::kTH2D, {{100, 0., 30.}, {1000, 1., 2.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusVsXiMassSelected", "Decay radius;R (cm);m (GeV/#it{c}^2)", HistType::kTH2D, {{100, 0., 30.}, {1000, 1., 2.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusVsOmegaMass", "Decay radius;R (cm);m (GeV/#it{c}^2)", HistType::kTH2D, {{100, 0., 30.}, {1000, 1., 2.}});
+      QAHistosStrangenessTracking.add("hDecayRadiusVsOmegaMassSelected", "Decay radius;R (cm);m (GeV/#it{c}^2)", HistType::kTH2D, {{100, 0., 30.}, {1000, 1., 2.}});
+      QAHistosStrangenessTracking.add("hCpa", "cpa;cpa", HistType::kTH1D, {{500, .995, 1.}});
+      QAHistosStrangenessTracking.add("hCpaSelectedXi", "cpa;cpa", HistType::kTH1D, {{500, .995, 1.}});
+      QAHistosStrangenessTracking.add("hCpaSelectedOmega", "cpa;cpa", HistType::kTH1D, {{500, .995, 1.}});
       QAHistosStrangenessTracking.add("hPtCascCand", "cascades;p_{T} (GeV/#it{c})", HistType::kTH1D, {{200, 0., 10.}});
       QAHistosStrangenessTracking.add("hPtCascTracked", "tracked cascades;p_{T} (GeV/#it{c})", HistType::kTH1D, {{200, 0., 10.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkXi", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkOmega", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkXiSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
+      QAHistosStrangenessTracking.add("hPtVsMassTrkOmegaSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}});
     }
   }
 
@@ -314,20 +381,26 @@ struct strangenessFilter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNumber;
 
+  float getMassWindow(const stfilter::species s, const float pt, const float nsigma = 6)
+  {
+    const auto sigma = parSigmaMass->get(0u, s) * exp(parSigmaMass->get(1, s) * pt) + parSigmaMass->get(2, s) * exp(parSigmaMass->get(3, s) * pt);
+    return nsigma * sigma;
+  }
+
   ////////////////////////////////////////////////////////
   ////////// Strangeness Filter - Run 2 conv /////////////
   ////////////////////////////////////////////////////////
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
   }
 
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
-    bool keepEvent[11]{}; // explicitly zero-initialised
+    bool keepEvent[9]{}; // explicitly zero-initialised
 
     if (kint7 && !collision.alias_bit(kINT7)) {
       fillTriggerTable(keepEvent);
@@ -390,8 +463,8 @@ struct strangenessFilter {
       // Total momentum
       xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       // Proper lifetime
-      xiproperlifetime = o2::analysis::pdg::MassXiMinus * xipos / (xiptotmom + 1e-13);
-      omegaproperlifetime = o2::analysis::pdg::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
+      xiproperlifetime = o2::constants::physics::MassXiMinus * xipos / (xiptotmom + 1e-13);
+      omegaproperlifetime = o2::constants::physics::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
 
       if (casc.sign() == 1) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
@@ -458,30 +531,30 @@ struct strangenessFilter {
       isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
              (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-             (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
-             (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
+             (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
+             (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
                (casc.cascradius() > lowerradiusXiYN) &&
-               (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
-               (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
+               (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
+               (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
       isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (casc.cascradius() < upperradiusOmega) &&
-                (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
-                (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
+                (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
+                (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
       isOmegalargeR = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                       (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                       (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                       (casc.cascradius() > lowerradiusOmega) &&
-                      (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
-                      (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
+                      (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
                       (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                       (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
 
@@ -492,7 +565,7 @@ struct strangenessFilter {
         // Plot for estimates
         if (tracks.size() > 0)
           triggcounterForEstimates = 1;
-        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < 0.01))
+        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
       }
@@ -589,7 +662,7 @@ struct strangenessFilter {
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
-    bool keepEvent[11]{}; // explicitly zero-initialised
+    bool keepEvent[9]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
@@ -655,8 +728,8 @@ struct strangenessFilter {
       // Total momentum
       xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       // Proper lifetime
-      xiproperlifetime = o2::analysis::pdg::MassXiMinus * xipos / (xiptotmom + 1e-13);
-      omegaproperlifetime = o2::analysis::pdg::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
+      xiproperlifetime = o2::constants::physics::MassXiMinus * xipos / (xiptotmom + 1e-13);
+      omegaproperlifetime = o2::constants::physics::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
 
       if (casc.sign() > 0) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
@@ -760,21 +833,21 @@ struct strangenessFilter {
       isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
              (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-             (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
-             (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
+             (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
+             (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity);
       isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
                (casc.cascradius() > lowerradiusXiYN) &&
-               (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < ximasswindow) &&
-               (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) > omegarej) &&
+               (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
+               (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity);
       isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-                (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
-                (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
+                (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
+                (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
                 (casc.cascradius() < upperradiusOmega) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity);
@@ -782,8 +855,8 @@ struct strangenessFilter {
                       (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                       (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                       (casc.cascradius() > lowerradiusOmega) &&
-                      (TMath::Abs(casc.mOmega() - o2::analysis::pdg::MassOmegaMinus) < omegamasswindow) &&
-                      (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) > xirej) &&
+                      (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
                       (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                       (TMath::Abs(casc.yOmega()) < rapidity);
 
@@ -836,7 +909,7 @@ struct strangenessFilter {
           if (triggcounterForEstimates > 0)
             break;
         }
-        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::analysis::pdg::MassXiMinus) < 0.01))
+        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
       }
@@ -993,8 +1066,10 @@ struct strangenessFilter {
 
       if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
+        bz = grpo->getNominalL3Field();
       } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
+        bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       } else {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
@@ -1007,18 +1082,24 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hPtCascCand"), casc.pt());
     }
 
+    const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
+    o2::vertexing::DCAFitterN<2> df2;
+    df2.setBz(bz);
+    df2.setPropagateToPCA(propToDCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+
     for (const auto& trackedCascade : trackedCascades) {
       const auto trackCasc = trackedCascade.track_as<DaughterTracks>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hStRVsPtTrkCasc"), trackCasc.pt(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCasc"), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.matchingChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsTopChi2TrkCasc"), trackedCascade.omegaMass(), trackedCascade.topologyChi2());
-      QAHistosStrangenessTracking.fill(HIST("hMassXiVsTopChi2TrkCasc"), trackedCascade.xiMass(), trackedCascade.topologyChi2());
 
       auto trackParCovTrk = getTrackParCov(trackCasc);
-      o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &impactParameterTrk);
+      o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, matCorr, &impactParameterTrk);
 
       QAHistosStrangenessTracking.fill(HIST("hDcaXY"), impactParameterTrk.getY());
       QAHistosStrangenessTracking.fill(HIST("hDcaXYVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getY());
@@ -1026,6 +1107,8 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
       QAHistosStrangenessTracking.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
       QAHistosStrangenessTracking.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
+      const auto decayRadius = RecoDecay::sqrtSumOfSquares(trackedCascade.decayX(), trackedCascade.decayY());
+      QAHistosStrangenessTracking.fill(HIST("hDecayRadius"), decayRadius);
 
       // const auto itsTrack = trackedCascade.itsTrack();
       const auto cascade = trackedCascade.cascade();
@@ -1034,7 +1117,14 @@ struct strangenessFilter {
       const auto negTrack = v0.negTrack_as<DaughterTracks>();
       const auto posTrack = v0.posTrack_as<DaughterTracks>();
 
-      std::array<double, 2> masses{o2::analysis::pdg::MassProton, o2::analysis::pdg::MassPiMinus};
+      if (!posTrack.hasTPC() || !negTrack.hasTPC() || !bachelor.hasTPC() ||
+          posTrack.tpcNClsFindable() < minNoClsTrackedCascade ||
+          negTrack.tpcNClsFindable() < minNoClsTrackedCascade ||
+          bachelor.tpcNClsFindable() < minNoClsTrackedCascade) {
+        continue;
+      }
+
+      std::array<double, 2> masses{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
       std::array<std::array<float, 3>, 2> momenta;
       std::array<double, 2> nsigma;
       if (trackCasc.sign() < 0) {
@@ -1058,53 +1148,95 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascBachelor"), bachelor.tpcNSigmaPi());
       QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcKaTrkCascBachelor"), bachelor.tpcNSigmaKa());
 
-      momenta[0] = {posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz()};
-      momenta[1] = {bachelor.px(), bachelor.py(), bachelor.pz()};
-      masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassK0};
-      const auto massOmega = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.omegaMass();
-      if (posTrack.hasTPC() && negTrack.hasTPC()) {
-        QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
-      }
-      masses = {o2::analysis::pdg::MassLambda0, o2::analysis::pdg::MassPi0};
-      const auto massXi = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.xiMass();
-      if (posTrack.hasTPC() && negTrack.hasTPC()) {
-        QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
+      // track propagation
+      o2::track::TrackParCov trackParCovV0;
+      o2::track::TrackPar trackParV0;
+      o2::track::TrackPar trackParBachelor;
+      float cpa = -1;
+      if (df2.process(getTrackParCov(negTrack), getTrackParCov(posTrack))) {
+        trackParCovV0 = df2.createParentTrackParCov(0);
+        if (df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+          trackParV0 = df2.getTrackParamAtPCA(0);
+          trackParBachelor = df2.getTrackParamAtPCA(1);
+          trackParV0.getPxPyPzGlo(momenta[0]);
+          trackParBachelor.getPxPyPzGlo(momenta[1]);
+          std::array<float, 3> pVec;
+          df2.createParentTrackParCov().getPxPyPzGlo(pVec);
+          std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
+          cpa = RecoDecay::cpa(pvPos, df2.getPCACandidate(), pVec);
+          QAHistosStrangenessTracking.fill(HIST("hCpa"), cpa);
+        } else {
+          continue;
+        }
+      } else {
+        continue;
       }
 
+      // Omega hypothesis
+      masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
+      const auto massOmega = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.omegaMass();
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaTrkCasc"), massOmega);
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsMatchChi2TrkCasc"), massOmega, trackedCascade.matchingChi2());
+      QAHistosStrangenessTracking.fill(HIST("hMassOmegaVsTopChi2TrkCasc"), massOmega, trackedCascade.topologyChi2());
+      QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkOmega"), trackCasc.pt(), massOmega);
+
+      // Xi hypothesis
+      masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
+      const auto massXi = recalculateMasses ? RecoDecay::m(momenta, masses) : trackedCascade.xiMass();
+      QAHistosStrangenessTracking.fill(HIST("hMassXiTrkCasc"), massXi);
+      QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkXi"), trackCasc.pt(), massXi);
+      QAHistosStrangenessTracking.fill(HIST("hMassXiVsMatchChi2TrkCasc"), massXi, trackedCascade.matchingChi2());
+      QAHistosStrangenessTracking.fill(HIST("hMassXiVsTopChi2TrkCasc"), massXi, trackedCascade.topologyChi2());
+
+      QAHistosStrangenessTracking.fill(HIST("hDecayRadiusVsXiMass"), decayRadius, massXi);
+      QAHistosStrangenessTracking.fill(HIST("hDecayRadiusVsOmegaMass"), decayRadius, massOmega);
+
       if ((trackCasc.pt() > minPtTrackedCascade) &&
-          (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
-          (std::abs(v0mass - o2::analysis::pdg::MassLambda0) < massWindowLambda) &&
+          // (trackedCascade.matchingChi2() < maxMatchingChi2TrackedCascade) &&
+          (std::abs(v0mass - o2::constants::physics::MassLambda0) < massWindowLambda) &&
           (std::abs(nsigma[0]) < maxNSigmaV0PrTrackedCascade) &&
           (std::abs(nsigma[1]) < maxNSigmaV0PiTrackedCascade)) {
         // Xi
-        if ((std::abs(massXi - o2::analysis::pdg::MassXiMinus) < massWindowTrackedXi) &&
+        const auto deltaMassTrackedXi = useNsigmaCutTrackedXi ? getMassWindow(stfilter::species::Xi, trackCasc.pt(), massWindowTrackedXiNsigma) : massWindowTrackedXi;
+        if ((std::abs(massXi - o2::constants::physics::MassXiMinus) < deltaMassTrackedXi) &&
+            (impactParameterTrk.getY() >= minDcaTrackedXi) &&
+            (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
+          QAHistosStrangenessTracking.fill(HIST("hDcaXYSelectedXi"), impactParameterTrk.getY());
+          QAHistosStrangenessTracking.fill(HIST("hDcaZSelectedXi"), impactParameterTrk.getZ());
+          QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkXiSelected"), trackCasc.pt(), massXi);
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPrTrkCascV0SelectedXi"), nsigma[0]);
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascV0SelectedXi"), nsigma[1]);
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascBachelorSelectedXi"), bachelor.tpcNSigmaPi());
+          QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCascSelectedXi"), trackedCascade.matchingChi2());
+          QAHistosStrangenessTracking.fill(HIST("hCpaSelectedXi"), cpa);
+          QAHistosStrangenessTracking.fill(HIST("hDecayRadiusSelectedXi"), decayRadius);
+          QAHistosStrangenessTracking.fill(HIST("hDecayRadiusVsXiMassSelected"), decayRadius, massXi);
+          QAHistosStrangenessTracking.fill(HIST("hDcaXYVsPtSelectedXi"), trackParCovTrk.getPt(), impactParameterTrk.getY());
+          QAHistosStrangenessTracking.fill(HIST("hDcaZVsPtSelectedXi"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
         }
         // Omega
-        if ((std::abs(massOmega - o2::analysis::pdg::MassOmegaMinus) < massWindowTrackedOmega) &&
-            (std::abs(massXi - o2::analysis::pdg::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
+        const auto deltaMassTrackedOmega = useNsigmaCutTrackedOmega ? getMassWindow(stfilter::species::Omega, trackCasc.pt(), massWindowTrackedOmegaNsigma) : massWindowTrackedOmega;
+        if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < deltaMassTrackedOmega) &&
+            (std::abs(massXi - o2::constants::physics::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
+            (impactParameterTrk.getY() >= minDcaTrackedOmega) &&
+            (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
+          QAHistosStrangenessTracking.fill(HIST("hDcaXYSelectedOmega"), impactParameterTrk.getY());
+          QAHistosStrangenessTracking.fill(HIST("hDcaZSelectedOmega"), impactParameterTrk.getZ());
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPrTrkCascV0SelectedOmega"), nsigma[0]);
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcPiTrkCascV0SelectedOmega"), nsigma[1]);
+          QAHistosStrangenessTracking.fill(HIST("hNSigmaTpcKaTrkCascBachelorSelectedOmega"), bachelor.tpcNSigmaKa());
+          QAHistosStrangenessTracking.fill(HIST("hPtVsMassTrkOmegaSelected"), trackCasc.pt(), massOmega);
+          QAHistosStrangenessTracking.fill(HIST("hMatchChi2TrkCascSelectedOmega"), trackedCascade.matchingChi2());
+          QAHistosStrangenessTracking.fill(HIST("hCpaSelectedOmega"), cpa);
+          QAHistosStrangenessTracking.fill(HIST("hDecayRadiusSelectedOmega"), decayRadius);
+          QAHistosStrangenessTracking.fill(HIST("hDecayRadiusVsOmegaMassSelected"), decayRadius, massOmega);
+          QAHistosStrangenessTracking.fill(HIST("hDcaXYVsPtSelectedOmega"), trackParCovTrk.getPt(), impactParameterTrk.getY());
+          QAHistosStrangenessTracking.fill(HIST("hDcaZVsPtSelectedOmega"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
         }
-      }
-    }
-
-    for (const auto& trackedV0 : trackedV0s) {
-      const auto trackV0 = trackedV0.track_as<DaughterTracks>();
-      QAHistosStrangenessTracking.fill(HIST("hMassH3LTrkV0"), trackedV0.h3Lmass());
-      QAHistosStrangenessTracking.fill(HIST("hMassH4LTrkV0"), trackedV0.h4Lmass());
-      if (trackV0.pt() > minPtTrackedV0) {
-        keepEvent[9] = true;
-      }
-    }
-
-    for (const auto& tracked3Body : tracked3Bodys) {
-      const auto track3Body = tracked3Body.track_as<DaughterTracks>();
-      QAHistosStrangenessTracking.fill(HIST("hMassH3LTrk3body"), tracked3Body.h3Lmass());
-      QAHistosStrangenessTracking.fill(HIST("hMassHe4LTrk3body"), tracked3Body.he4Lmass());
-      if (track3Body.pt() > minPtTracked3Body) {
-        keepEvent[10] = true;
       }
     }
 
@@ -1138,12 +1270,6 @@ struct strangenessFilter {
     }
     if (keepEvent[8]) {
       hProcessedEvents->Fill(11.5);
-    }
-    if (keepEvent[9]) {
-      hProcessedEvents->Fill(12.5);
-    }
-    if (keepEvent[10]) {
-      hProcessedEvents->Fill(13.5);
     }
 
     // Filling the table
