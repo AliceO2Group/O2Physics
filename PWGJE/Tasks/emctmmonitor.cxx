@@ -292,7 +292,15 @@ struct TrackMatchingMonitor {
       // using globTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>;
       // In this example the counter t is just used to only look at the closest match
       double dEta, dPhi, pT, abs_p, trackEta, trackPhi, NSigmaEl;
-      auto supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
+      int supermoduleID;
+      try {
+        supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
+      } catch (o2::emcal::InvalidPositionException& e) {
+        // Imprecision of the position at the sector boundaries, mostly due to
+        // vertex imprecision. Skip these clusters for the now.
+        continue;
+      }
+
       pT = cluster.energy() / cosh(cluster.eta());
       if (M02highPt > 0. && cluster.m02() >= maxM02HighPt && pT >= M02highPt) { // high pT M02 cut
         continue;
