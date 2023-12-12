@@ -2011,6 +2011,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairLMeeIMR")) {
+    cut->AddCut(GetAnalysisCut("pairLMeeIMR"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(GetAnalysisCut("pairDalitz1"));
     return cut;
