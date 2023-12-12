@@ -35,6 +35,7 @@ namespace o2::aod
 // candidates for removal:
 // E
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
+                  o2::soa::Index<>,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
@@ -77,6 +78,7 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct);
 
+/// Table with additional candidate properties used for selection
 DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
                   collision::PosX,
                   collision::PosY,
@@ -119,6 +121,7 @@ DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
 
 // Table with basic collision info
 DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
+                  o2::soa::Index<>,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -132,6 +135,7 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
 
 // Table with MC particle info
 DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
+                  o2::soa::Index<>,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
