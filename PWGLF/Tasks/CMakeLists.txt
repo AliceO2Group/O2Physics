@@ -176,6 +176,11 @@ o2physics_add_dpl_workflow(k892analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(k892pmanalysis
+                    SOURCES k892pmanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambda1520analysis
                     SOURCES lambda1520analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
