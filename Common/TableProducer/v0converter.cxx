@@ -32,6 +32,5 @@ struct V0Converter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<V0Converter>(cfgc)
-  };
+    adaptAnalysisTask<V0Converter>(cfgc)};
 }
