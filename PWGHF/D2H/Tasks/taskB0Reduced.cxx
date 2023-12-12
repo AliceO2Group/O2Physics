@@ -32,8 +32,62 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+namespace hf_cand_b0_lite
+{
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                           //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                           //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+} // namespace hf_cand_b0_lite
+
+DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
+                  hf_cand::Chi2PCA,
+                  hf_cand_b0_lite::DecayLength,
+                  hf_cand_b0_lite::DecayLengthXY,
+                  hf_cand_b0_lite::DecayLengthNormalised,
+                  hf_cand_b0_lite::DecayLengthXYNormalised,
+                  hf_cand_b0_lite::PtProng0,
+                  hf_cand_b0_lite::PtProng1,
+                  hf_cand::ImpactParameter0,
+                  hf_cand::ImpactParameter1,
+                  hf_cand_b0_lite::NSigTpcPi1,
+                  hf_cand_b0_lite::NSigTofPi1,
+                  hf_cand_b0_reduced::Prong0MlScoreBkg,
+                  hf_cand_b0_reduced::Prong0MlScorePrompt,
+                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
+                  hf_sel_candidate_b0::IsSelB0ToDPi,
+                  hf_cand_b0_lite::M,
+                  hf_cand_b0_lite::Pt,
+                  hf_cand_b0_lite::Cpa,
+                  hf_cand_b0_lite::CpaXY,
+                  hf_cand_b0_lite::MaxNormalisedDeltaIP,
+                  hf_cand_b0_lite::Eta,
+                  hf_cand_b0_lite::Phi,
+                  hf_cand_b0_lite::Y,
+                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_3prong::OriginMcRec);
+} // namespace o2::aod
+
 /// B0 analysis task
 struct HfTaskB0Reduced {
+  Produces<aod::HfRedCandB0Lites> hfRedCandB0Lite;
+
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
@@ -41,13 +95,18 @@ struct HfTaskB0Reduced {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "Flag to enable histogram filling"};
   Configurable<bool> fillSparses{"fillSparses", false, "Flag to enable sparse filling"};
-  Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses (only MC)"};
+  Configurable<bool> fillTree{"fillTree", false, "Flag to enable tree filling"};
+  Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
+  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   HistogramRegistry registry{"registry"};
+
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
   void init(InitContext&)
   {
@@ -58,6 +117,11 @@ struct HfTaskB0Reduced {
     std::array<bool, 2> processFuncMc{doprocessMc, doprocessMcWithDmesMl};
     if ((std::accumulate(processFuncMc.begin(), processFuncMc.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
+    }
+
+    if (((doprocessData || doprocessDataWithDmesMl) && fillTree && downSampleBkgFactor >= 1.) ||
+        ((doprocessMc || doprocessMcWithDmesMl) && fillTree && fillBackground && downSampleBkgFactor >= 1.)) {
+      LOGP(fatal, "Set downSampleBkgFactor below unity when filling tree with background.");
     }
 
     const AxisSpec axisMlScore{100, 0.f, 1.f};
@@ -262,6 +326,49 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hMassPtCutVars"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);
       }
     }
+    if (fillTree) {
+      float pseudoRndm = ptD * 1000. - (int64_t)(ptD * 1000);
+      if (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
+        int8_t flag{0};
+        int8_t origin{0};
+        float prong0MlScoreBkg = -1.;
+        float prong0MlScorePrompt = -1.;
+        float prong0MlScoreNonprompt = -1.;
+        if constexpr (withDmesMl) {
+          prong0MlScoreBkg = candidate.prong0MlScoreBkg();
+          prong0MlScorePrompt = candidate.prong0MlScorePrompt();
+          prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
+        }
+        auto prong1 = candidate.template prong1_as<TracksPion>();
+
+        hfRedCandB0Lite(
+          candidate.chi2PCA(),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXYNormalised(),
+          ptD,
+          candidate.ptProng1(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          prong1.tpcNSigmaPi(),
+          prong1.tofNSigmaPi(),
+          prong0MlScoreBkg,
+          prong0MlScorePrompt,
+          prong0MlScoreNonprompt,
+          candidate.isSelB0ToDPi(),
+          invMassB0,
+          ptCandB0,
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.maxNormalisedDeltaIP(),
+          candidate.eta(),
+          candidate.phi(),
+          hfHelper.yB0(candidate),
+          flag,
+          origin);
+      }
+    }
   }
 
   /// Fill candidate histograms (reco MC truth)
@@ -284,7 +391,8 @@ struct HfTaskB0Reduced {
     auto decLenD = RecoDecay::distance(posPv, posSvD);
     auto decLenXyD = RecoDecay::distanceXY(posPv, posSvD);
 
-    bool isSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi);
+    int8_t flagMcMatchRec = candidate.flagMcMatchRec();
+    bool isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
     if (fillHistograms) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
@@ -351,6 +459,46 @@ struct HfTaskB0Reduced {
         }
       }
     }
+    if (fillTree) {
+      float prong0MlScoreBkg = -1.;
+      float prong0MlScorePrompt = -1.;
+      float prong0MlScoreNonprompt = -1.;
+      if constexpr (withDmesMl) {
+        prong0MlScoreBkg = candidate.prong0MlScoreBkg();
+        prong0MlScorePrompt = candidate.prong0MlScorePrompt();
+        prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
+      }
+      auto prong1 = candidate.template prong1_as<TracksPion>();
+      float pseudoRndm = ptD * 1000. - (int64_t)(ptD * 1000);
+      if (isSignal || (fillBackground && (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
+        hfRedCandB0Lite(
+          candidate.chi2PCA(),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXYNormalised(),
+          ptD,
+          candidate.ptProng1(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          prong1.tpcNSigmaPi(),
+          prong1.tofNSigmaPi(),
+          prong0MlScoreBkg,
+          prong0MlScorePrompt,
+          prong0MlScoreNonprompt,
+          candidate.isSelB0ToDPi(),
+          invMassB0,
+          ptCandB0,
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.maxNormalisedDeltaIP(),
+          candidate.eta(),
+          candidate.phi(),
+          hfHelper.yB0(candidate),
+          flagMcMatchRec,
+          isSignal);
+      }
+    }
   }
 
   /// Fill particle histograms (gen MC truth)
@@ -393,7 +541,8 @@ struct HfTaskB0Reduced {
 
   // Process functions
   void processData(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi>> const& candidates,
-                   aod::HfRed3Prongs const& candidatesD)
+                   aod::HfRed3Prongs const& candidatesD,
+                   TracksPion const&)
   {
     for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
@@ -409,7 +558,8 @@ struct HfTaskB0Reduced {
   PROCESS_SWITCH(HfTaskB0Reduced, processData, "Process data without ML scores for D daughter", true);
 
   void processDataWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
-                             aod::HfRed3Prongs const& candidatesD)
+                             aod::HfRed3Prongs const& candidatesD,
+                             TracksPion const&)
   {
     for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
@@ -424,9 +574,10 @@ struct HfTaskB0Reduced {
 
   PROCESS_SWITCH(HfTaskB0Reduced, processDataWithDmesMl, "Process data with ML scores for D daughter", false);
 
-  void processMc(soa::Join<aod::HfRedCandB0, aod::HfMcRecRedB0s> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s> const& candidates,
                  aod::HfMcGenRedB0s const& mcParticles,
-                 aod::HfRed3Prongs const& candidatesD)
+                 aod::HfRed3Prongs const& candidatesD,
+                 TracksPion const&)
   {
     // MC rec
     for (const auto& candidate : candidates) {
@@ -446,9 +597,10 @@ struct HfTaskB0Reduced {
   }   // processMc
   PROCESS_SWITCH(HfTaskB0Reduced, processMc, "Process MC without ML scores for D daughter", false);
 
-  void processMcWithDmesMl(soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfMcRecRedB0s> const& candidates,
+  void processMcWithDmesMl(soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s> const& candidates,
                            aod::HfMcGenRedB0s const& mcParticles,
-                           aod::HfRed3Prongs const& candidatesD)
+                           aod::HfRed3Prongs const& candidatesD,
+                           TracksPion const&)
   {
     // MC rec
     for (const auto& candidate : candidates) {
