@@ -9,13 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorDstar.cxx
+/// \file candidateSelectorDstarToD0Pi.cxx
 /// \brief Selection on D*± → D0(bar) π±  decay candidates
 ///
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Logger.h"
@@ -28,6 +29,7 @@
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
+using namespace o2::constants::physics;
 using namespace o2::analysis;
 using namespace o2::framework;
 
@@ -82,9 +84,9 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   void init(InitContext& initContext)
   {
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
-    massD0 = o2::analysis::pdg::MassD0;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
 
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);

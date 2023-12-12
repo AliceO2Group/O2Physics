@@ -19,6 +19,7 @@
 // ROOT
 #include <TPDGCode.h>
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -32,7 +33,6 @@
 using namespace o2;
 using namespace o2::constants::physics;
 using namespace o2::framework;
-using namespace o2::analysis;
 
 namespace o2::aod
 {
@@ -122,9 +122,9 @@ struct HfCandidateCreatorDstar {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
-    massD0 = o2::analysis::pdg::MassD0;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator
@@ -353,9 +353,9 @@ struct HfCandidateCreatorDstarExpressions {
       auto arrayDaughtersofD0 = std::array{candD0.prong0_as<aod::TracksWMc>(), candD0.prong1_as<aod::TracksWMc>()};
 
       // D*± → D0(bar) π±
-      indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, pdg::Code::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
+      indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
       // D0(bar) → π± K∓
-      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
+      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
 
       if (indexRecDstar > -1) {
         flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
@@ -385,11 +385,11 @@ struct HfCandidateCreatorDstarExpressions {
       originD0 = 0;
 
       // D*± → D0(bar) π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
         flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
       }
       // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
         flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
       }
 

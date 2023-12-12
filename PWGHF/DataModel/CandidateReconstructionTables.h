@@ -1484,18 +1484,18 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductD0, impactParameterProductD0,
                            [](float dca1, float dca2) -> float { return dca1 * dca2; });
 // Dynamic Columns for D0 candidate using PDG masses of daughters
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassD0, invMassD0,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus}); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMass2D0, invMass2D0,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m2(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus}); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m2(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarD0, cosThetaStarD0,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus}, analysis::pdg::MassD0, 1); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus}, constants::physics::MassD0, 1); });
 // Dynamic Columns for D0Bar candidate using PDG masses of daughters
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassD0Bar, invMassD0Bar,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassKPlus, analysis::pdg::MassPiPlus}); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMass2D0Bar, invMass2D0Bar,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m2(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassKPlus, analysis::pdg::MassPiPlus}); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::m2(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarD0Bar, cosThetaStarD0Bar,
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{analysis::pdg::MassKPlus, analysis::pdg::MassPiPlus}, analysis::pdg::MassD0, 0); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{constants::physics::MassKPlus, constants::physics::MassPiPlus}, constants::physics::MassD0, 0); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSumD0, impactParameterProngSqSumD0,
                            [](float impParProng0, float impParProng1) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1); });
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaIPNormalisedMaxD0, deltaIPNormalisedMaxD0,
@@ -1515,11 +1515,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(EtaD0, etaD0,
 DECLARE_SOA_DYNAMIC_COLUMN(PhiD0, phiD0,
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(YD0, yD0,
-                           [](float px, float py, float pz) -> float { return RecoDecay::y(std::array{px, py, pz}, analysis::pdg::MassD0); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::y(std::array{px, py, pz}, constants::physics::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(ED0, eD0,
-                           [](float px, float py, float pz) -> float { return RecoDecay::e(px, py, pz, analysis::pdg::MassD0); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::e(px, py, pz, constants::physics::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(E2D0, e2D0,
-                           [](float px, float py, float pz) -> float { return RecoDecay::e2(px, py, pz, analysis::pdg::MassD0); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::e2(px, py, pz, constants::physics::MassD0); });
 // secondary vertex
 DECLARE_SOA_COLUMN(Chi2PCAD0, chi2PCAD0, float);
 DECLARE_SOA_COLUMN(XSecondaryVertexD0, xSecondaryVertexD0, float);
@@ -1542,7 +1542,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CPAD0, cpaD0,
 DECLARE_SOA_DYNAMIC_COLUMN(CPAXYD0, cpaXYD0,
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px, py}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CtD0, ctD0,
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::ct(std::array{px, py, pz}, RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}), analysis::pdg::MassD0); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::ct(std::array{px, py, pz}, RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}), constants::physics::MassD0); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXYD0, impactParameterXYD0,
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 
@@ -1564,11 +1564,11 @@ DECLARE_SOA_EXPRESSION_COLUMN(PzDstar, pzDstar, float, 1.f * aod::hf_cand::pzPro
 // Inv Mass (accept mass array of size 3 {π , π, k})
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDstar, invMassDstar,
                            [](float pxSoftPi, float pySoftPi, float pzSoftPi, float pxProng0, float pyProng0, float pzProng0, float pxProng1, float pyProng1, float pzProng1)
-                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus}); });
+                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassPiPlus, constants::physics::MassKPlus}); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiDstar, invMassAntiDstar,
                            [](float pxSoftPi, float pySoftPi, float pzSoftPi, float pxProng0, float pyProng0, float pzProng0, float pxProng1, float pyProng1, float pzProng1)
-                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{analysis::pdg::MassPiPlus, analysis::pdg::MassKPlus, analysis::pdg::MassPiPlus}); });
+                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(PtSoftPi, ptSoftPi, [](float pxSoftPi, float pySoftPi) -> float { return RecoDecay::pt(pxSoftPi, pySoftPi); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
@@ -1645,7 +1645,9 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
                   hf_cand_dstar::E2D0<hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfD0FromDstarExt, HfD0FromDstarBase, "HFD0FRMDSTREXT", hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0);
+DECLARE_SOA_EXTENDED_TABLE_USER(HfD0FromDstarExt, HfD0FromDstarBase, "HFD0FRMDSTREXT",
+                                hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0);
+
 using HfD0FromDstar = HfD0FromDstarExt;
 
 DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
@@ -1676,7 +1678,9 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   hf_cand_dstar::InvMassAntiDstar<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfCandDstarExt, HfCandDstarBase, "HFCANDDSTREXT", hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar);
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandDstarExt, HfCandDstarBase, "HFCANDDSTREXT",
+                                hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar);
+
 using HfCandDstar = HfCandDstarExt;
 
 // table with results of reconstruction level MC matching
