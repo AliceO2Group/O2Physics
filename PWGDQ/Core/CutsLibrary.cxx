@@ -1583,6 +1583,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
 
+    if (!nameStr.compare(Form("lmee_skimmingtesta_TOF%s", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+      cut->AddCut(GetAnalysisCut("LooseGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+      AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+      cut_tof_nSigma->AddCut(GetAnalysisCut(Form("lmee_pp_502TeV_TOFloose%s", vecPIDcase.at(icase).Data())));
+
+      cut->AddCut(cut_tof_nSigma);
+      return cut;
+    }
+
     // some older cuts
     if (!nameStr.compare(Form("lmee_pp502TeV_PID%s", vecPIDcase.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
@@ -4023,6 +4035,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairMassLow10")) {
     cut->AddCut(VarManager::kMass, 2.5, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairLMeeIMR")) {
+    cut->AddCut(VarManager::kMass, 1., 2.);
     return cut;
   }
 
