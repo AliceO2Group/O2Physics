@@ -26,6 +26,9 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Tutorials/Skimming/DataModel/DerivedExampleTable.h"
 
+#include <algorithm>
+#include <numeric>
+#include <vector>
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
@@ -34,9 +37,6 @@
 #include "GFWWeights.h"
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -180,12 +180,10 @@ struct GenericFramework {
     ccdb->setCreatedNotAfter(now);
 
     int ptbins = ptbinning.size() - 1;
-    double ptarray[ptbinning.size()];
-    std::copy(ptbinning.begin(), ptbinning.end(), ptarray);
-    fPtAxis = new TAxis(ptbins, ptarray);
+    fPtAxis = new TAxis(ptbins, &ptbinning[0]);
 
     if (cfgFillWeights) {
-      fWeights->SetPtBins(ptbins, ptarray);
+      fWeights->SetPtBins(ptbins, &ptbinning[0]);
       fWeights->Init(true, false);
     }
 

@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef GFW_CONFIG_CLASSES_H
-#define GFW_CONFIG_CLASSES_H
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
 #include <Rtypes.h>
 #include <TObject.h>
@@ -58,55 +58,55 @@ class GFWBinningCuts
     mVtxZbins = vtxbins;
     mVtxZmin = vtxmin;
     mVtxZmax = vtxmax;
-  };
-  const auto& GetVtxZbins() const { return mVtxZbins; };
-  const auto& GetVtxZmin() const { return mVtxZmin; };
-  const auto& GetVtxZmax() const { return mVtxZmax; };
+  }
+  const auto& GetVtxZbins() const { return mVtxZbins; }
+  const auto& GetVtxZmin() const { return mVtxZmin; }
+  const auto& GetVtxZmax() const { return mVtxZmax; }
 
   void SetPtPOI(float ptpoimin, float ptpoimax)
   {
     mPTpoimin = ptpoimin;
     mPTpoimax = ptpoimax;
   }
-  const auto& GetPtPOImin() const { return mPTpoimin; };
-  const auto& GetPtPOImax() const { return mPTpoimax; };
+  const auto& GetPtPOImin() const { return mPTpoimin; }
+  const auto& GetPtPOImax() const { return mPTpoimax; }
 
-  void SetPtBinning(std::vector<double> ptbinning) { mPTbinning = std::move(ptbinning); };
-  const auto& GetPtBinning() const { return mPTbinning; };
+  void SetPtBinning(std::vector<double> ptbinning) { mPTbinning = std::move(ptbinning); }
+  const auto& GetPtBinning() const { return mPTbinning; }
 
   void SetEtaBinning(int etabins, float etamin, float etamax)
   {
     mEtabins = etabins;
     mEtamin = etamin;
     mEtamax = etamax;
-  };
-  const auto& GetEtaBins() const { return mEtabins; };
-  const auto& GetEtaMin() const { return mEtamin; };
-  const auto& GetEtaMax() const { return mEtamax; };
+  }
+  const auto& GetEtaBins() const { return mEtabins; }
+  const auto& GetEtaMin() const { return mEtamin; }
+  const auto& GetEtaMax() const { return mEtamax; }
 
-  void SetPhiBins(int phibins) { mPhibins = phibins; };
-  const auto& GetPhiBins() const { return mPhibins; };
+  void SetPhiBins(int phibins) { mPhibins = phibins; }
+  const auto& GetPhiBins() const { return mPhibins; }
 
   void SetPtRef(float ptrefmin, float ptrefmax)
   {
     mPTrefmin = ptrefmin;
     mPTrefmax = ptrefmax;
   }
-  const auto& GetPtRefMin() const { return mPTrefmin; };
-  const auto& GetPtRefMax() const { return mPTrefmax; };
+  const auto& GetPtRefMin() const { return mPTrefmin; }
+  const auto& GetPtRefMax() const { return mPTrefmax; }
 
   void SetNchBinning(int nchbins, float nchmin, float nchmax)
   {
     mNchbins = nchbins;
     mNchmin = nchmin;
     mNchmax = nchmax;
-  };
-  const auto& GetNchBins() const { return mNchbins; };
-  const auto& GetNchMin() const { return mNchmin; };
-  const auto& GetNchMax() const { return mNchmax; };
+  }
+  const auto& GetNchBins() const { return mNchbins; }
+  const auto& GetNchMin() const { return mNchmin; }
+  const auto& GetNchMax() const { return mNchmax; }
 
-  void SetCentBinning(std::vector<double> centbinning) { mCentbinning = std::move(centbinning); };
-  const auto& GetCentBinning() const { return mCentbinning; };
+  void SetCentBinning(std::vector<double> centbinning) { mCentbinning = std::move(centbinning); }
+  const auto& GetCentBinning() const { return mCentbinning; }
 
  private:
   int mVtxZbins;
@@ -153,20 +153,20 @@ class GFWRegions
 
   auto GetSize() const { return CheckSameSize(names, etaminvals, etamaxvals, pTDifs, bitmasks); }
 
-  void SetNames(std::vector<std::string> names_) { names = std::move(names_); };
-  const auto& GetNames() const { return names; };
+  void SetNames(std::vector<std::string> names_) { names = std::move(names_); }
+  const auto& GetNames() const { return names; }
 
-  void SetEtaMin(std::vector<float> etaminvals_) { etaminvals = std::move(etaminvals_); };
-  const auto& GetEtaMin() const { return etaminvals; };
+  void SetEtaMin(std::vector<float> etaminvals_) { etaminvals = std::move(etaminvals_); }
+  const auto& GetEtaMin() const { return etaminvals; }
 
-  void SetEtaMax(std::vector<float> etamaxvals_) { etamaxvals = std::move(etamaxvals_); };
-  const auto& GetEtaMax() const { return etamaxvals; };
+  void SetEtaMax(std::vector<float> etamaxvals_) { etamaxvals = std::move(etamaxvals_); }
+  const auto& GetEtaMax() const { return etamaxvals; }
 
-  void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); };
-  const auto& GetpTDifs() const { return pTDifs; };
+  void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); }
+  const auto& GetpTDifs() const { return pTDifs; }
 
-  void SetBitmasks(std::vector<int> bitmasks_) { bitmasks = std::move(bitmasks_); };
-  const auto& GetBitmasks() const { return bitmasks; };
+  void SetBitmasks(std::vector<int> bitmasks_) { bitmasks = std::move(bitmasks_); }
+  const auto& GetBitmasks() const { return bitmasks; }
 
  private:
   std::vector<std::string> names;
@@ -202,13 +202,13 @@ class GFWCorrConfigs
   auto GetSize() const { return CheckSameSize(corrs, heads, pTDifs); }
 
   void SetCorrs(std::vector<std::string> corrs_) { corrs = std::move(corrs_); };
-  const auto& GetCorrs() const { return corrs; };
+  const auto& GetCorrs() const { return corrs; }
 
   void SetHeads(std::vector<std::string> heads_) { heads = std::move(heads_); };
-  const auto& GetHeads() const { return heads; };
+  const auto& GetHeads() const { return heads; }
 
   void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); };
-  const auto& GetpTDifs() const { return pTDifs; };
+  const auto& GetpTDifs() const { return pTDifs; }
 
  private:
   std::vector<std::string> corrs;
@@ -219,4 +219,4 @@ class GFWCorrConfigs
 
 } // namespace analysis::genericframework
 } // namespace o2
-#endif // GFW_CONFIG_CLASSES_H
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_

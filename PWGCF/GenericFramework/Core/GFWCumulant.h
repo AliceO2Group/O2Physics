@@ -16,8 +16,8 @@ A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#ifndef PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
-#define PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 
 #include <cmath>
 #include <complex>
@@ -60,4 +60,4 @@ class GFWCumulant
   std::complex<double> fNullQ = 0;
 };
 
-#endif // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
