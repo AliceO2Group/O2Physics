@@ -59,8 +59,8 @@ struct k892pmanalysis {
   // DCAz to PV
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   /// PID Selections
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                // TPC
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                // TOF
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
   Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
@@ -89,11 +89,11 @@ struct k892pmanalysis {
     histos.add("QAbefore/collMult", "Collision multiplicity", HistType::kTH1F, {binsCent});
     histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
-    //histos.add("QAbefore/trkDCAz_k0s", "DCAz distribution of k0short track candidates", HistType::kTH1F, {dcazAxis});
+    // histos.add("QAbefore/trkDCAz_k0s", "DCAz distribution of k0short track candidates", HistType::kTH1F, {dcazAxis});
     histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
-    //histos.add("QAafter/trkDCAz_k0s", "DCAz distribution of k0short track candidates", HistType::kTH1F, {dcazAxis});
-    // pT QA
+    // histos.add("QAafter/trkDCAz_k0s", "DCAz distribution of k0short track candidates", HistType::kTH1F, {dcazAxis});
+    //  pT QA
     histos.add("QAbefore/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
     histos.add("QAbefore/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
@@ -182,7 +182,7 @@ struct k892pmanalysis {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename V0sType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks, const V0sType& dV0s)
   {
-    //auto multiplicity = collision.cent();
+    // auto multiplicity = collision.cent();
     auto multiplicity = collision.cent();
     histos.fill(HIST("QAbefore/collMult"), multiplicity);
     TLorentzVector lDecayDaughter, lDecayV0, lResonance;
@@ -195,7 +195,7 @@ struct k892pmanalysis {
       //// Initialize variables
       // trk: Pion, v0: K0s
 
-      auto trkId   = trk.index();
+      auto trkId = trk.index();
       auto trkptPi = trk.pt();
 
       // DCA QA (before cuts)
@@ -214,7 +214,7 @@ struct k892pmanalysis {
       // pT QA (after cuts)
       histos.fill(HIST("QAafter/trkpT_pi"), trk.pt());
 
-      for (auto& v0: dV0s) {
+      for (auto& v0 : dV0s) {
         // Full index policy is needed to consider all possible combinations
         if (v0.indices()[0] == trkId || v0.indices()[1] == trkId)
           continue; // To avoid comibining secondary and primary pions
@@ -233,17 +233,17 @@ struct k892pmanalysis {
           continue;
 
         if (!IsV0QAFilled) {
-          //pt QA (after cuts)
+          // pt QA (after cuts)
           histos.fill(HIST("QAafter/trkpT_k0s"), v0.pt());
         }
 
         lDecayDaughter.SetXYZM(trk.px(), trk.py(), trk.pz(), massPi);
         lDecayV0.SetXYZM(v0.px(), v0.py(), v0.pz(), massK0);
         lResonance = lDecayDaughter + lDecayV0;
-        //Filling invariant mass histograms
-        //K0s mass QA (after cuts)
+        // Filling invariant mass histograms
+        // K0s mass QA (after cuts)
         histos.fill(HIST("QAafter/k0shortmass"), lDecayV0.M());
-        //K*(892)pm mass
+        // K*(892)pm mass
         histos.fill(HIST("k892pminvmass"), lResonance.M());
         IsV0Processed = true;
       }
@@ -294,7 +294,6 @@ struct k892pmanalysis {
     }
   }
   PROCESS_SWITCH(k892pmanalysis, processMCTrue, "Process Event for MC", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
