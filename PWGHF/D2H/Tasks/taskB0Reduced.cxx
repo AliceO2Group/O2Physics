@@ -34,30 +34,52 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+namespace hf_cand_b0_lite
+{
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                           //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                           //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+} // namespace hf_cand_b0_lite
+
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
                   hf_cand::Chi2PCA,
-                  hf_cand_b0_reduced::DecayLength,
-                  hf_cand_b0_reduced::DecayLengthXY,
-                  hf_cand_b0_reduced::DecayLengthNormalised,
-                  hf_cand_b0_reduced::DecayLengthXYNormalised,
-                  hf_cand_b0_reduced::PtProng0,
-                  hf_cand_b0_reduced::PtProng1,
+                  hf_cand_b0_lite::DecayLength,
+                  hf_cand_b0_lite::DecayLengthXY,
+                  hf_cand_b0_lite::DecayLengthNormalised,
+                  hf_cand_b0_lite::DecayLengthXYNormalised,
+                  hf_cand_b0_lite::PtProng0,
+                  hf_cand_b0_lite::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  hf_cand_b0_reduced::NSigTpcPi1,
-                  hf_cand_b0_reduced::NSigTofPi1,
+                  hf_cand_b0_lite::NSigTpcPi1,
+                  hf_cand_b0_lite::NSigTofPi1,
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
                   hf_cand_b0_reduced::Prong0MlScorePrompt,
                   hf_cand_b0_reduced::Prong0MlScoreNonprompt,
                   hf_sel_candidate_b0::IsSelB0ToDPi,
-                  hf_cand_b0_reduced::M,
-                  hf_cand_b0_reduced::Pt,
-                  hf_cand_b0_reduced::Cpa,
-                  hf_cand_b0_reduced::CpaXY,
-                  hf_cand_b0_reduced::MaxNormalisedDeltaIP,
-                  hf_cand_b0_reduced::Eta,
-                  hf_cand_b0_reduced::Phi,
-                  hf_cand_b0_reduced::Y,
+                  hf_cand_b0_lite::M,
+                  hf_cand_b0_lite::Pt,
+                  hf_cand_b0_lite::Cpa,
+                  hf_cand_b0_lite::CpaXY,
+                  hf_cand_b0_lite::MaxNormalisedDeltaIP,
+                  hf_cand_b0_lite::Eta,
+                  hf_cand_b0_lite::Phi,
+                  hf_cand_b0_lite::Y,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 } // namespace o2::aod
@@ -370,7 +392,7 @@ struct HfTaskB0Reduced {
     auto decLenXyD = RecoDecay::distanceXY(posPv, posSvD);
 
     int8_t flagMcMatchRec = candidate.flagMcMatchRec();
-    bool isSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+    bool isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
     if (fillHistograms) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
@@ -447,8 +469,8 @@ struct HfTaskB0Reduced {
         prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
       }
       auto prong1 = candidate.template prong1_as<TracksPion>();
-
-      if (isSignal) {
+      float pseudoRndm = ptD * 1000. - (int64_t)(ptD * 1000);
+      if (isSignal || (fillBackground && (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         hfRedCandB0Lite(
           candidate.chi2PCA(),
           candidate.decayLength(),
@@ -475,36 +497,6 @@ struct HfTaskB0Reduced {
           hfHelper.yB0(candidate),
           flagMcMatchRec,
           isSignal);
-      } else if (fillBackground) {
-        float pseudoRndm = ptD * 1000. - (int64_t)(ptD * 1000);
-        if (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
-          hfRedCandB0Lite(
-            candidate.chi2PCA(),
-            candidate.decayLength(),
-            candidate.decayLengthXY(),
-            candidate.decayLengthNormalised(),
-            candidate.decayLengthXYNormalised(),
-            ptD,
-            candidate.ptProng1(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            prong1.tpcNSigmaPi(),
-            prong1.tofNSigmaPi(),
-            prong0MlScoreBkg,
-            prong0MlScorePrompt,
-            prong0MlScoreNonprompt,
-            candidate.isSelB0ToDPi(),
-            invMassB0,
-            ptCandB0,
-            candidate.cpa(),
-            candidate.cpaXY(),
-            candidate.maxNormalisedDeltaIP(),
-            candidate.eta(),
-            candidate.phi(),
-            hfHelper.yB0(candidate),
-            flagMcMatchRec,
-            isSignal);
-        }
       }
     }
   }
