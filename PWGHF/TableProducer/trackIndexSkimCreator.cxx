@@ -1345,11 +1345,11 @@ struct HfTrackIndexSkimCreator {
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
-  static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays; // number of 2-prong hadron types
-  static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
+  static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                               // number of 2-prong hadron types
+  static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                               // number of 3-prong hadron types
   static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars};                                      // how many different selections are made on 2-prongs
   static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::nCutVars + 1, hf_cuts_presel_ds::nCutVars, hf_cuts_presel_3prong::nCutVars + 1}; // how many different selections are made on 3-prongs (Lc and Xic have also PID potentially)
-  static constexpr int kNCutsDstar = 3;                                           // how many different selections are made on Dstars
+  static constexpr int kNCutsDstar = 3;                                                                                                                                                         // how many different selections are made on Dstars
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
   // arrays of 2-prong and 3-prong cuts
@@ -2357,9 +2357,9 @@ struct HfTrackIndexSkimCreator {
               // first we build D*+ candidates if enabled
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
-              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 0)) {                       // the 2-prong decay is compatible with a D0
-                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {                            // compatible with a soft pion
-                  if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 0)) { // the 2-prong decay is compatible with a D0
+                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar) && trackPos2.globalIndex() != trackPos1.globalIndex()) {      // compatible with a soft pion
+                  if (thisCollId != trackPos2.collisionId()) {                                                                      // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                     getPxPyPz(trackParVarPos2, pVecTrackPos2);
                     propagatedPos2 = true;
@@ -2614,8 +2614,8 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && TESTBIT(whichHypo2Prong[0], 1)) { // the 2-prong decay is compatible with a D0bar
-                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar) && trackNeg2.globalIndex() != trackNeg1.globalIndex()) { // compatible with a soft pion
-                  if (thisCollId != trackNeg2.collisionId()) {                                                                 // this is not the "default" collision for this track, we have to re-propagate it
+                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar) && trackNeg2.globalIndex() != trackNeg1.globalIndex()) {      // compatible with a soft pion
+                  if (thisCollId != trackNeg2.collisionId()) {                                                                      // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                     getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
                     propagatedNeg2 = true;
@@ -3580,7 +3580,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           // fill table row only if a vertex was found
           if (hfFlag != 0) {
             rowTrackIndexCasc2Prong(thisCollId,
-                                    casc.globalIndex(),
+                                    casc.cascadeId(),
                                     trackPion1.globalIndex(),
                                     hfFlag);
           }
@@ -3650,7 +3650,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               // fill table row only if a vertex was found
               if (hfFlag != 0) {
                 rowTrackIndexCasc3Prong(thisCollId,
-                                        casc.globalIndex(),
+                                        casc.cascadeId(),
                                         trackPion1.globalIndex(),
                                         trackPion2.globalIndex());
               }
