@@ -1009,7 +1009,7 @@ struct femtoUniverseProducerTask {
     // fill the tables
     fillCollisionsAndTracksAndV0AndPhi<false>(col, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0, "Provide experimental data for track v0", true);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0, "Provide experimental data for track v0", false);
 
   void
     processFullMC(aod::FemtoFullCollisionMC const& col,
