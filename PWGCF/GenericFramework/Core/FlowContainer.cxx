@@ -210,7 +210,7 @@ Long64_t FlowContainer::Merge(TCollection* collist)
         fProfRand->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
         reinterpret_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
       } else {
-        reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add((TProfile2D*)tarr->At(i));
+        reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)));
       }
     }
   }
@@ -253,8 +253,9 @@ void FlowContainer::PickAndMerge(TFile* tfi)
   if (!tpro) {
     fProf = reinterpret_cast<TProfile2D*>(spro->Clone(spro->GetName()));
     fProf->SetDirectory(0);
-  } else
+  } else {
     tpro->Add(spro);
+  }
   TObjArray* tarr = lfc->GetSubProfiles();
   if (!tarr) {
     return;
@@ -268,7 +269,7 @@ void FlowContainer::PickAndMerge(TFile* tfi)
       fProfRand->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
       reinterpret_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
     } else {
-      reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add((TProfile2D*)tarr->At(i));
+      reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)));
     }
   }
 };
@@ -520,7 +521,7 @@ TH1D* FlowContainer::GetVN2VsX(int n, bool onPt, double arg1, double arg2)
     rethist->SetTitle(Form("%2.0f - %4.0f;#it{p}_{T} (GeV/#it{c}); v_{%i}{2}", bv1, bv2, n));
   } else {
     rethist->SetTitle(Form(";#it{N}_{tr};v_{%i}{2}", n));
-  };
+  }
   delete nam;
   return rethist;
 };

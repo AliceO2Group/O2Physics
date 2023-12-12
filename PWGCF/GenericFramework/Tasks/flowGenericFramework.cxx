@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -26,9 +30,6 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Tutorials/Skimming/DataModel/DerivedExampleTable.h"
 
-#include <algorithm>
-#include <numeric>
-#include <vector>
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"

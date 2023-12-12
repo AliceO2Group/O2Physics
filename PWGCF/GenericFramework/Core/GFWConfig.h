@@ -12,11 +12,12 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
+#include <utility>
+#include <vector>
+#include <string>
 #include <Rtypes.h>
 #include <TObject.h>
 #include <TMath.h>
-#include <vector>
-#include <string>
 #include "GFW.h"
 
 namespace o2
@@ -201,13 +202,13 @@ class GFWCorrConfigs
 
   auto GetSize() const { return CheckSameSize(corrs, heads, pTDifs); }
 
-  void SetCorrs(std::vector<std::string> corrs_) { corrs = std::move(corrs_); };
+  void SetCorrs(std::vector<std::string> corrs_) { corrs = std::move(corrs_); }
   const auto& GetCorrs() const { return corrs; }
 
-  void SetHeads(std::vector<std::string> heads_) { heads = std::move(heads_); };
+  void SetHeads(std::vector<std::string> heads_) { heads = std::move(heads_); }
   const auto& GetHeads() const { return heads; }
 
-  void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); };
+  void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); }
   const auto& GetpTDifs() const { return pTDifs; }
 
  private:
