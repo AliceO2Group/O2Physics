@@ -3253,8 +3253,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
   double massXi{0.};
   double massOmega{0.};
   double massLambda{0.};
-  double massXiczero{0.};
-  double massXicplus{0.};
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -3270,8 +3268,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     massXi = o2::constants::physics::MassXiMinus;
     massOmega = o2::constants::physics::MassOmegaMinus;
     massLambda = o2::constants::physics::MassLambda0;
-    massXiczero = o2::constants::physics::MassXiC0;
-    massXicplus = o2::constants::physics::MassXiCPlus;
 
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi] = std::array{massOmega, massPi};
