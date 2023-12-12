@@ -124,11 +124,13 @@ struct nuclei_in_jets {
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("pt_leading", "pt leading", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{500, -0.5, 0.5, "#Delta#eta"}, {500, 0.0, TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("eta_phi_ue", "DeltaEta DeltaPhi UE", HistType::kTH2F, {{500, -0.5, 0.5, "#Delta#eta"}, {500, 0.0, TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("r_max_jet", "R Max jet", HistType::kTH1F, {{400, 0.0, 0.8, "#it{R}_{max}"}});
-    registryQC.add("r_jet", "R jet", HistType::kTH1F, {{400, 0.0, 0.8, "#it{R}"}});
-    registryQC.add("r_ue", "R ue", HistType::kTH1F, {{400, 0.0, 0.8, "#it{R}"}});
+    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{100, -0.5, 0.5, "#Delta#eta"}, {100, 0.0, TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("eta_phi_ue", "DeltaEta DeltaPhi UE", HistType::kTH2F, {{100, -0.5, 0.5, "#Delta#eta"}, {100, 0.0, TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("r_max_jet", "R Max jet", HistType::kTH1F, {{100, 0.0, 2.0, "#it{R}_{max}"}});
+    registryQC.add("r_jet", "R jet", HistType::kTH1F, {{100, 0.0, 0.8, "#it{R}"}});
+    registryQC.add("r_ue", "R ue", HistType::kTH1F, {{100, 0.0, 0.8, "#it{R}"}});
+    registryQC.add("eta_leading", "eta_leading", HistType::kTH1F, {{100, -1, 1, "#eta"}});
+    registryQC.add("phi_leading", "phi_leading", HistType::kTH1F, {{100, 0, TMath::Pi(), "#phi"}});
 
     // Antiprotons
     registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
@@ -514,6 +516,10 @@ struct nuclei_in_jets {
       return;
     registryQC.fill(HIST("number_of_events_data"), 6.5);
 
+    // QA Plots
+    registryQC.fill(HIST("eta_leading"), p_leading.Eta());
+    registryQC.fill(HIST("phi_leading"), TVector2::Phi_0_2pi(p_leading.Phi()));
+
     // Find Maximum Distance from Jet Axis
     float Rmax(0);
 
@@ -538,7 +544,7 @@ struct nuclei_in_jets {
 
     // Event Counter: Skip Events with jet not fully inside acceptance
     float eta_jet_axis = p_leading.Eta();
-    if ((TMath::Abs(eta_jet_axis) + Rmax) > max_eta)
+    if ((TMath::Abs(eta_jet_axis) + max_jet_radius) > max_eta)
       return;
     registryQC.fill(HIST("number_of_events_data"), 8.5);
 
@@ -554,7 +560,7 @@ struct nuclei_in_jets {
       double angle = gRandom->Uniform(0.0, TMath::TwoPi());
       ue_axis.Rotate(angle, p_leading);
       double eta_ue_axis = ue_axis.Eta();
-      dEta = (TMath::Abs(eta_ue_axis) + Rmax);
+      dEta = (TMath::Abs(eta_ue_axis) + max_jet_radius);
     } while (dEta > max_eta);
 
     // Store UE
@@ -575,7 +581,7 @@ struct nuclei_in_jets {
       float dr = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 
       // Store Particles in the UE
-      if (dr < Rmax) {
+      if (dr < max_jet_radius) {
         registryQC.fill(HIST("eta_phi_ue"), deltaEta, deltaPhi);
         registryQC.fill(HIST("r_ue"), dr);
         ue_particle_ID.push_back(particle_ID[i]);
