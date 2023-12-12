@@ -23,6 +23,7 @@
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 
@@ -142,6 +143,9 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::Indices,
                   resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
+                  v0data::DCAPosToPV,
+                  v0data::DCANegToPV,
+                  v0data::DCAV0ToPV,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
                   resodaughter::MK0Short,
@@ -165,6 +169,12 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
                   resodaughter::CascDaughDCA,
+                  cascdata::DCAPosToPV,
+                  cascdata::DCANegToPV,
+                  cascdata::DCABachToPV,
+                  v0data::DCAV0ToPV,
+                  cascdata::DCAXYCascToPV,
+                  cascdata::DCAZCascToPV,
                   resodaughter::MXi,
                   resodaughter::TransRadius,
                   resodaughter::CascTransRadius,
