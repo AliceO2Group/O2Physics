@@ -9,26 +9,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <CCDB/BasicCCDBManager.h>
 #include <algorithm>
 #include <numeric>
 #include <vector>
 
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Tutorials/Skimming/DataModel/DerivedExampleTable.h"
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
@@ -48,20 +44,6 @@ using namespace o2::analysis;
 
 namespace o2::analysis::genericframework
 {
-uint64_t collisionmask = 0UL;
-std::vector<uint64_t> collisionmask_opt;
-uint64_t collisionmask_forced = 0UL;
-uint64_t trackmask = 0UL;
-std::vector<uint64_t> trackmask_opt;
-uint64_t trackmask_forced = 0UL;
-uint64_t pidmask = 0UL;
-std::vector<uint64_t> pidmask_opt;
-uint64_t pidmask_forced = 0UL;
-
-PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
-
-int fMultiplicityIndex = -1; //! the index to the multiplicity values array
-
 std::vector<double> ptbinning = {
   0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
   0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
@@ -86,7 +68,6 @@ GFWRegions regions;
 GFWCorrConfigs configs;
 } // namespace o2::analysis::genericframework
 
-using namespace o2::aod::cfskim;
 using namespace o2::analysis::genericframework;
 
 struct GenericFramework {
