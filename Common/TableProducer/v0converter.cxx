@@ -23,7 +23,7 @@ struct V0Converter {
   void process(aod::V0s_001 const& v0s)
   {
     for (auto& v0 : v0s) {
-      uint8_t bitMask = static_cast<uint8_t>(255);
+      uint8_t bitMask = static_cast<uint8_t>(1); // first bit on
       v0s_002(v0.posTrack().collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);
     }
   }
