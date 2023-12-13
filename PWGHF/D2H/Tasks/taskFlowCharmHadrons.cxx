@@ -42,7 +42,7 @@ struct taskFlowCharmHadrons {
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML score"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<int> classMl{"classMl", 0, "Index of the ML class to be stored"};
-  
+
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {10, 0., 10.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {10000, 0., 100.}, ""};
@@ -62,10 +62,11 @@ struct taskFlowCharmHadrons {
 
   HfHelper hfHelper;
   EventPlaneHelper epHelper;
-  
+
   HistogramRegistry registry{"registry", {}};
 
-  void init(InitContext&) {
+  void init(InitContext&)
+  {
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "Inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
@@ -93,7 +94,6 @@ struct taskFlowCharmHadrons {
     }
   }; // end init
 
-
   /// Compute the Q vector for the candidate's tracks
   /// \param cand is the candidate
   /// \param tracksQx is the X component of the Q vector for the tracks
@@ -102,7 +102,7 @@ struct taskFlowCharmHadrons {
   void GetQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      float& ampl) 
+                      float& ampl)
   {
     // TODO: add possibility to consider different weights for the tracks, at the only pT is considered;
     float pXtrack0 = cand.pxProng0();
@@ -117,7 +117,7 @@ struct taskFlowCharmHadrons {
     float pYtrack2 = cand.pyProng2();
     float pTtrack2 = cand.ptProng2();
     float phiTrack2 = TMath::ATan2(pYtrack2, pXtrack2);
-  
+
     tracksQx.push_back(TMath::Cos(harmonic * phiTrack0) * pTtrack0 / ampl);
     tracksQy.push_back(TMath::Sin(harmonic * phiTrack0) * pTtrack0 / ampl);
     tracksQx.push_back(TMath::Cos(harmonic * phiTrack1) * pTtrack1 / ampl);
@@ -125,7 +125,6 @@ struct taskFlowCharmHadrons {
     tracksQx.push_back(TMath::Cos(harmonic * phiTrack2) * pTtrack2 / ampl);
     tracksQy.push_back(TMath::Sin(harmonic * phiTrack2) * pTtrack2 / ampl);
   }
-
 
   /// Compute the delta psi in the range [0, pi/harmonic]
   /// \param psi1 is the first angle
@@ -135,12 +134,13 @@ struct taskFlowCharmHadrons {
   {
     float deltaPsi = psi1 - psi2;
     if (deltaPsi > TMath::Pi() / harmonic) {
-      if (deltaPsi > 0.) deltaPsi -= 2. * TMath::Pi() / harmonic;
-      else deltaPsi += 2. * TMath::Pi() / harmonic;
+      if (deltaPsi > 0.)
+        deltaPsi -= 2. * TMath::Pi() / harmonic;
+      else
+        deltaPsi += 2. * TMath::Pi() / harmonic;
     }
     return deltaPsi;
   }
-
 
   /// Fill THnSparse
   /// \param mass is the invariant mass of the candidate
@@ -161,7 +161,6 @@ struct taskFlowCharmHadrons {
   {
     registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl);
   }
-
 
   /// Get the centrality
   /// \param collision is the collision with the centrality information
@@ -189,7 +188,6 @@ struct taskFlowCharmHadrons {
     return cent;
   }
 
-
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
@@ -201,8 +199,7 @@ struct taskFlowCharmHadrons {
     float QvecY = -999.;
     float amplQvec = -999.;
     float evtPl = -999.;
-    switch (qvecDetector.value)
-    {
+    switch (qvecDetector.value) {
       case 0: // FT0c
         QvecX = collision.qvecFT0CRe();
         QvecY = collision.qvecFT0CIm();
@@ -240,25 +237,25 @@ struct taskFlowCharmHadrons {
       float massCand = 0.;
       float outputMl = -999.;
 
-      if constexpr (std::is_same<T1, CandDsData>::value)
-      {
+      if constexpr (std::is_same<T1, CandDsData>::value) {
         switch (decayChannel) {
-        case decayChannel::DsToKKPi:
-          massCand = hfHelper.invMassDsToKKPi(cand);
-          if (storeMl) outputMl = cand.mlProbDsToPiKK()[classMl.value];
-          break;
-        case decayChannel::DsToPiKK:
-          massCand = hfHelper.invMassDsToPiKK(cand);
-          if (storeMl) outputMl = cand.mlProbDsToKKPi()[classMl.value];
-          break;
-        default:
-          break;
+          case decayChannel::DsToKKPi:
+            massCand = hfHelper.invMassDsToKKPi(cand);
+            if (storeMl)
+              outputMl = cand.mlProbDsToPiKK()[classMl.value];
+            break;
+          case decayChannel::DsToPiKK:
+            massCand = hfHelper.invMassDsToPiKK(cand);
+            if (storeMl)
+              outputMl = cand.mlProbDsToKKPi()[classMl.value];
+            break;
+          default:
+            break;
         }
-      }
-      else if constexpr (std::is_same<T1, CandDplusData>::value)
-      {
+      } else if constexpr (std::is_same<T1, CandDplusData>::value) {
         massCand = hfHelper.invMassDplusToPiKPi(cand);
-        if (storeMl) outputMl = cand.mlProbDplusToPiKPi()[classMl.value];
+        if (storeMl)
+          outputMl = cand.mlProbDplusToPiKPi()[classMl.value];
       }
       float ptCand = cand.pt();
       float phiCand = cand.phi();
@@ -269,13 +266,12 @@ struct taskFlowCharmHadrons {
         std::vector<float> tracksQx = {-999., -999., -999.};
         std::vector<float> tracksQy = {-999., -999., -999.};
         GetQvecDtracks(cand, tracksQx, tracksQy, ampl);
-        for (unsigned int itrack = 0; itrack < 3; itrack++)
-        {
+        for (unsigned int itrack = 0; itrack < 3; itrack++) {
           QvecX -= tracksQx[itrack];
           QvecY -= tracksQy[itrack];
         }
       }
-      
+
       float cosNPhi = TMath::Cos(harmonic * phiCand);
       float sinNPhi = TMath::Sin(harmonic * phiCand);
       float scalprodCand = cosNPhi * QvecX + sinNPhi * QvecY;
@@ -284,7 +280,6 @@ struct taskFlowCharmHadrons {
       fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
     }
   }
-
 
   // Ds
   void processDs(CollsWithQvecs::iterator const& collision,
@@ -295,7 +290,6 @@ struct taskFlowCharmHadrons {
   }
   PROCESS_SWITCH(taskFlowCharmHadrons, processDs, "Process Ds candidates", false);
 
-
   // Dplus
   void processDplus(CollsWithQvecs::iterator const& collision,
                     CandDplusData const& candidatesDplus)
@@ -304,37 +298,36 @@ struct taskFlowCharmHadrons {
   }
   PROCESS_SWITCH(taskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
 
-
   // Event plane
   void processEventPlaneReso(CollsWithQvecs::iterator const& collision)
-  {   
-      if (!saveEpResoHisto) {
-        LOG(fatal) << "Event plane resolution histogram not saved. Please set saveEpResoHisto to true.";
-        return;
-      }
+  {
+    if (!saveEpResoHisto) {
+      LOG(fatal) << "Event plane resolution histogram not saved. Please set saveEpResoHisto to true.";
+      return;
+    }
 
-      float evCent = GetCent(collision, centDetector.value);
-      float epFT0a = epHelper.GetEventPlane(collision.qvecFT0ARe(), collision.qvecFT0AIm());
-      float epFT0c = epHelper.GetEventPlane(collision.qvecFT0CRe(), collision.qvecFT0CIm());
-      float epFT0m = epHelper.GetEventPlane(collision.qvecFT0MRe(), collision.qvecFT0MIm());
-      float epFV0a = epHelper.GetEventPlane(collision.qvecFV0ARe(), collision.qvecFV0AIm());
-      float epBPoss = epHelper.GetEventPlane(collision.qvecBPosRe(), collision.qvecBPosIm());
-      float epBNegs = epHelper.GetEventPlane(collision.qvecBNegRe(), collision.qvecBNegIm());
-    
-      registry.fill(HIST("epReso/hEpResoFT0cFT0a"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0a)));
-      registry.fill(HIST("epReso/hEpResoFT0cFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0m)));
-      registry.fill(HIST("epReso/hEpResoFT0cFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0aFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFT0m)));
-      registry.fill(HIST("epReso/hEpResoFT0aFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0mFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFV0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBNegs)));
+    float evCent = GetCent(collision, centDetector.value);
+    float epFT0a = epHelper.GetEventPlane(collision.qvecFT0ARe(), collision.qvecFT0AIm());
+    float epFT0c = epHelper.GetEventPlane(collision.qvecFT0CRe(), collision.qvecFT0CIm());
+    float epFT0m = epHelper.GetEventPlane(collision.qvecFT0MRe(), collision.qvecFT0MIm());
+    float epFV0a = epHelper.GetEventPlane(collision.qvecFV0ARe(), collision.qvecFV0AIm());
+    float epBPoss = epHelper.GetEventPlane(collision.qvecBPosRe(), collision.qvecBPosIm());
+    float epBNegs = epHelper.GetEventPlane(collision.qvecBNegRe(), collision.qvecBNegIm());
+
+    registry.fill(HIST("epReso/hEpResoFT0cFT0a"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0a)));
+    registry.fill(HIST("epReso/hEpResoFT0cFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0m)));
+    registry.fill(HIST("epReso/hEpResoFT0cFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFT0aFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFT0m)));
+    registry.fill(HIST("epReso/hEpResoFT0aFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFT0mFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFV0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBNegs)));
   }
   PROCESS_SWITCH(taskFlowCharmHadrons, processEventPlaneReso, "Process event plane resolution", false);
 
