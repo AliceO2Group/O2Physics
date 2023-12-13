@@ -1566,7 +1566,7 @@ struct QaEfficiency {
       if constexpr (doFillHisto) {
         histos.fill(countingHisto, trkCutIdxPassedDcaXYMax);
       }
-      if (std::abs(track.dcaXY()) < dcaXYMin) {
+      if (std::abs(track.dcaXY()) < minDcaXY) {
         return false;
       }
       if constexpr (doFillHisto) {
@@ -1578,7 +1578,7 @@ struct QaEfficiency {
       if constexpr (doFillHisto) {
         histos.fill(countingHisto, trkCutIdxPassedDcaZMax);
       }
-      if (std::abs(track.passedDCAz()) < dcaZMin) {
+      if (std::abs(track.passedDCAz()) < minDcaZ) {
         return false;
       }
       if constexpr (doFillHisto) {
