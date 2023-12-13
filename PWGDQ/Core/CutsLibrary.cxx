@@ -2011,6 +2011,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairMass1to2")) {
+    cut->AddCut(GetAnalysisCut("pairMass1to2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMassIMR")) {
+    cut->AddCut(GetAnalysisCut("pairMassIMR"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(GetAnalysisCut("pairDalitz1"));
     return cut;
@@ -4038,8 +4048,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairLMeeIMR")) {
+  if (!nameStr.compare("pairMass1to2")) {
     cut->AddCut(VarManager::kMass, 1., 2.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMassIMR")) {
+    cut->AddCut(VarManager::kMass, 1.1, 2.7);
     return cut;
   }
 
