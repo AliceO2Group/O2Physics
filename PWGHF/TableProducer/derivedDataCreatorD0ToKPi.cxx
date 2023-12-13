@@ -29,126 +29,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-/// Table with basic candidate properties used in the analyses
-// candidates for removal:
-// E
-DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
-                  o2::soa::Index<>,
-                  hf_cand_base::Pt,
-                  hf_cand_base::Eta,
-                  hf_cand_base::Phi,
-                  hf_cand_base::M,
-                  hf_cand_base::P,
-                  hf_cand_base::E,
-                  hf_cand_base::Y);
-
-/// Table with candidate properties used for selection
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep P, Pt, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
-DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
-                  hf_cand::Chi2PCA,
-                  hf_cand_par::DecayLength,
-                  hf_cand_par::DecayLengthXY,
-                  hf_cand_par::DecayLengthNormalised,
-                  hf_cand_par::DecayLengthXYNormalised,
-                  hf_cand_par::PtProng0,
-                  hf_cand_par::PtProng1,
-                  hf_cand::ImpactParameter0,
-                  hf_cand::ImpactParameter1,
-                  hf_cand_par::ImpactParameterNormalised0,
-                  hf_cand_par::ImpactParameterNormalised1,
-                  hf_cand_par::NSigTpcPi0,
-                  hf_cand_par::NSigTpcKa0,
-                  hf_cand_par::NSigTofPi0,
-                  hf_cand_par::NSigTofKa0,
-                  hf_cand_par::NSigTpcTofPi0,
-                  hf_cand_par::NSigTpcTofKa0,
-                  hf_cand_par::NSigTpcPi1,
-                  hf_cand_par::NSigTpcKa1,
-                  hf_cand_par::NSigTofPi1,
-                  hf_cand_par::NSigTofKa1,
-                  hf_cand_par::NSigTpcTofPi1,
-                  hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
-                  hf_cand_par::MaxNormalisedDeltaIP,
-                  hf_cand_par::ImpactParameterProduct);
-
-/// Table with additional candidate properties used for selection
-DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  hf_cand::XSecondaryVertex,
-                  hf_cand::YSecondaryVertex,
-                  hf_cand::ZSecondaryVertex,
-                  hf_cand::ErrorDecayLength,
-                  hf_cand::ErrorDecayLengthXY,
-                  hf_cand::KfTopolChi2OverNdf,
-                  hf_cand_par::RSecondaryVertex,
-                  hf_cand_par::PProng0,
-                  hf_cand_par::PProng1,
-                  hf_cand::PxProng0,
-                  hf_cand::PyProng0,
-                  hf_cand::PzProng0,
-                  hf_cand::PxProng1,
-                  hf_cand::PyProng1,
-                  hf_cand::PzProng1,
-                  hf_cand::ErrorImpactParameter0,
-                  hf_cand::ErrorImpactParameter1,
-                  hf_cand_par::CosThetaStar,
-                  hf_cand_par::Ct);
-
-// Table with candidate selection flags
-DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
-                  hf_cand_sel::CandidateSelFlag);
-
-// Table with global indices for candidates
-DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
-                  hf_track_index::CollisionId,
-                  hf_track_index::Prong0Id,
-                  hf_track_index::Prong1Id,
-                  hf_cand_index::Candidate2PId);
-
-// Table with candidate MC info
-DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
-                  hf_cand_mc::FlagMc,
-                  hf_cand_mc::OriginMcRec);
-
-// Table with basic collision info
-DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
-                  o2::soa::Index<>,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  hf_coll_base::IsEventReject,
-                  hf_coll_base::RunNumber);
-
-// Table with global indices for collisions
-DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
-                  hf_cand_index::CollisionId);
-
-// Table with MC particle info
-DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
-                  o2::soa::Index<>,
-                  hf_cand_base::Pt,
-                  hf_cand_base::Eta,
-                  hf_cand_base::Phi,
-                  hf_cand_base::Y,
-                  hf_cand_mc::FlagMc,
-                  hf_cand_mc::OriginMcGen);
-
-// Table with global indices for MC particles
-DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
-                  hf_cand_index::McCollisionId,
-                  hf_cand_index::McParticleId);
-} // namespace o2::aod
-
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0Bases> rowCandidateBase;
@@ -232,6 +112,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     if (fillCandidateBase) {
       rowCandidateBase(
+        0,
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
