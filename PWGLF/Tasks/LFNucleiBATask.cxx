@@ -1362,7 +1362,7 @@ struct LFNucleiBATask {
     // if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
     //   return;
 
-    float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0. heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f;
+    float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f;
     bool isTriton = kFALSE;
     bool prRapCut = kFALSE;
     bool deRapCut = kFALSE;
