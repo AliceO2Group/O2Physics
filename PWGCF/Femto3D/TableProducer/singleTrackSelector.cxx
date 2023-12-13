@@ -62,14 +62,20 @@ struct singleTrackSelector {
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
-                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                         aod::pidTPCFullDe, aod::pidTOFFullDe,
+                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe,
+                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::TrackSelection, aod::pidTOFbeta>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms>;
+  using Coll = soa::Join<aod::Collisions, aod::TPCMults, aod::EvSels, aod::CentFT0Ms>;
 
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
+  Produces<o2::aod::SingleTrkExtras> tableRowExtra;
+  Produces<o2::aod::SingleTrkSelPis> tableRowPi;
+  Produces<o2::aod::SingleTrkSelKas> tableRowKa;
+  Produces<o2::aod::SingleTrkSelPrs> tableRowPr;
+  Produces<o2::aod::SingleTrkSelDes> tableRowDe;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (aod::evsel::sel7 == true)) ||
@@ -143,7 +149,9 @@ struct singleTrackSelector {
 
     for (auto& track : tracks) {
       skip_track = false;
-
+      if (Configurable<bool>{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"} && track.trackType() != aod::track::Track) {
+        continue;
+      }
       for (auto i : particlesToReject) {
         // if satisfied, want to continue in the upper loop (over tracks) -- skip the current track
         // cannot use simple 'continue' since it will be applied to the current loop, so have to use a flag
@@ -163,9 +171,6 @@ struct singleTrackSelector {
                    track.p(),
                    track.dcaXY(),
                    track.dcaZ(),
-                   track.tpcInnerParam(),
-                   track.tpcSignal(),
-                   track.beta(),
                    track.tpcNClsFound(),
                    track.tpcChi2NCl(),
                    track.tpcCrossedRowsOverFindableCls(),
@@ -174,11 +179,23 @@ struct singleTrackSelector {
                    track.itsChi2NCl(),
                    track.sign(),
                    track.eta(),
-                   track.phi(),
-                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
-                   singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaDe()));
+                   track.phi());
+
+          tableRowExtra(track.tpcInnerParam(),
+                        track.tpcSignal(),
+                        track.beta());
+
+          tableRowPi(singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPi()),
+                     singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPi()));
+
+          tableRowKa(singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaKa()),
+                     singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaKa()));
+
+          tableRowPr(singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaPr()),
+                     singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaPr()));
+
+          tableRowDe(singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tofNSigmaDe()),
+                     singletrackselector::packInTable<singletrackselector::nsigma::binning>(track.tpcNSigmaDe()));
 
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }

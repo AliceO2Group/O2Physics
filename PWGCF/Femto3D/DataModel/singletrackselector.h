@@ -79,7 +79,6 @@ DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variab
 
 namespace singletrackselector
 {
-
 DECLARE_SOA_INDEX_COLUMN(SingleCollSel, singleCollSel);                                  // Index to the collision
 DECLARE_SOA_COLUMN(P, p, float);                                                         // Momentum of the track
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                                                 // impact parameter of the track
@@ -96,6 +95,10 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                              
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(StoredTOFNSigmaPi, storedTofNSigmaPi, nsigma::binning::binned_t);
+DECLARE_SOA_COLUMN(StoredTPCNSigmaPi, storedTpcNSigmaPi, nsigma::binning::binned_t);
+DECLARE_SOA_COLUMN(StoredTOFNSigmaKa, storedTofNSigmaKa, nsigma::binning::binned_t);
+DECLARE_SOA_COLUMN(StoredTPCNSigmaKa, storedTpcNSigmaKa, nsigma::binning::binned_t);
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPr, storedTofNSigmaPr, nsigma::binning::binned_t);
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPr, storedTpcNSigmaPr, nsigma::binning::binned_t);
 DECLARE_SOA_COLUMN(StoredTOFNSigmaDe, storedTofNSigmaDe, nsigma::binning::binned_t);
@@ -114,6 +117,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar,
                                return phi + std::asin(-0.3 * magfield * sign * radius / (2.0 * p / std::cosh(eta)));
                              }
                            });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa,
+                           [](nsigma::binning::binned_t nsigma_binned) -> float { return singletrackselector::unPack<nsigma::binning>(nsigma_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
                            [](nsigma::binning::binned_t nsigma_binned) -> float {
@@ -140,9 +152,6 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", //
                        singletrackselector::P,
                        singletrackselector::DcaXY,
                        singletrackselector::DcaZ,
-                       singletrackselector::TPCInnerParam,
-                       singletrackselector::TPCSignal,
-                       singletrackselector::Beta,
                        singletrackselector::TPCNClsFound,
                        singletrackselector::TPCChi2NCl,
                        singletrackselector::TPCCrossedRowsOverFindableCls,
@@ -152,22 +161,44 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", //
                        singletrackselector::Sign,
                        singletrackselector::Eta,
                        singletrackselector::Phi,
-                       singletrackselector::StoredTOFNSigmaPr,
-                       singletrackselector::StoredTPCNSigmaPr,
-                       singletrackselector::StoredTOFNSigmaDe,
-                       singletrackselector::StoredTPCNSigmaDe,
                        singletrackselector::Energy<singletrackselector::P>,
                        singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
                        singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
                        singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>,
-                       singletrackselector::TOFNSigmaPr<singletrackselector::StoredTOFNSigmaPr>,
-                       singletrackselector::TPCNSigmaPr<singletrackselector::StoredTPCNSigmaPr>,
-                       singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
-                       singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
+                       singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
+
+DECLARE_SOA_TABLE(SingleTrkExtras, "AOD", "SINGLETRKEXTRA",
+                  singletrackselector::TPCInnerParam,
+                  singletrackselector::TPCSignal,
+                  singletrackselector::Beta);
+
+DECLARE_SOA_TABLE(SingleTrkSelPis, "AOD", "SINGLETRKSELPI",
+                  singletrackselector::StoredTOFNSigmaPi,
+                  singletrackselector::StoredTPCNSigmaPi,
+                  singletrackselector::TOFNSigmaPi<singletrackselector::StoredTOFNSigmaPi>,
+                  singletrackselector::TPCNSigmaPi<singletrackselector::StoredTPCNSigmaPi>);
+
+DECLARE_SOA_TABLE(SingleTrkSelKas, "AOD", "SINGLETRKSELKA",
+                  singletrackselector::StoredTOFNSigmaKa,
+                  singletrackselector::StoredTPCNSigmaKa,
+                  singletrackselector::TOFNSigmaKa<singletrackselector::StoredTOFNSigmaKa>,
+                  singletrackselector::TPCNSigmaKa<singletrackselector::StoredTPCNSigmaKa>);
+
+DECLARE_SOA_TABLE(SingleTrkSelPrs, "AOD", "SINGLETRKSELPR",
+                  singletrackselector::StoredTOFNSigmaPr,
+                  singletrackselector::StoredTPCNSigmaPr,
+                  singletrackselector::TOFNSigmaPr<singletrackselector::StoredTOFNSigmaPr>,
+                  singletrackselector::TPCNSigmaPr<singletrackselector::StoredTPCNSigmaPr>);
+
+DECLARE_SOA_TABLE(SingleTrkSelDes, "AOD", "SINGLETRKSELDE",
+                  singletrackselector::StoredTOFNSigmaDe,
+                  singletrackselector::StoredTPCNSigmaDe,
+                  singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
+                  singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
 
 } // namespace o2::aod
+
 #endif // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
 namespace o2::aod::singletrackselector
@@ -177,13 +208,22 @@ template <typename TrackType>
 inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
 {
   float Nsigma = -1000;
-
   switch (PIDcuts.first) {
     case 2212:
       Nsigma = track.tpcNSigmaPr();
       break;
     case 1000010020:
       Nsigma = track.tpcNSigmaDe();
+      break;
+    case 211:
+      if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTPCPi, TrackType>::value) {
+        Nsigma = track.tpcNSigmaPi();
+      }
+      break;
+    case 321:
+      if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTPCKa, TrackType>::value) {
+        Nsigma = track.tpcNSigmaKa();
+      }
       break;
     default:
       LOG(fatal) << "Cannot interpret PDG for TPC selection: " << PIDcuts.first;
@@ -199,7 +239,6 @@ template <typename TrackType>
 inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
 {
   float Nsigma = -1000;
-
   switch (PIDcuts.first) {
     case 2212:
       Nsigma = track.tofNSigmaPr();
@@ -211,10 +250,12 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
       if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFPi, TrackType>::value) {
         Nsigma = track.tofNSigmaPi();
       }
+      break;
     case 321:
       if constexpr (std::experimental::is_detected<o2::aod::pidutils::hasTOFKa, TrackType>::value) {
         Nsigma = track.tofNSigmaKa();
       }
+      break;
     default:
       LOG(fatal) << "Cannot interpret PDG for TOF selection: " << PIDcuts.first;
   }
