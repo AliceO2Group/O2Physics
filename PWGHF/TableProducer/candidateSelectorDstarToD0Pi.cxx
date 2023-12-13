@@ -21,7 +21,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
-// O2Phyics
+// O2Physics
 #include "Common/Core/TrackSelectorPID.h"
 // PWGHF
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
