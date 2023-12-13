@@ -95,7 +95,7 @@ struct multiplicityPbPb {
     if (!collision.sel8()) {
       return;
     }
-    
+
     int trackCounter = 0;
 
     // auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
