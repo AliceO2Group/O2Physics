@@ -24,7 +24,7 @@ struct V0Converter {
   {
     for (auto& v0 : v0s) {
       uint8_t bitMask = static_cast<uint8_t>(1); // first bit on
-      v0s_002(v0.posTrack().collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);
+      v0s_002(v0.collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);
     }
   }
 };
