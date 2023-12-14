@@ -1,12 +1,12 @@
-# Welcome to the FemtoUniverse Tasks directory!
+# Welcome to the FemtoUniverse Tasks directory
 Here you can find a summary of the tasks and information about who is developing it!
 
 
-|     Task name           |What it does?                       |Who is developing it?                         |
-|----------------|-------------------------------|-----------------------------|
-|femtoUniversePairTaskTrackTrack.cxx |             |         |
-|femtoUniversePairTaskTrackTrackExtended.cxx |            |            |
-|femtoUniversePairTaskTrackPhi.cxx       | Angular correlations of h--$\Phi$ |Zuzanna Chochulska|
+| Task name                                   | What it does?                     | Who is developing it? |
+|---------------------------------------------|-----------------------------------|-----------------------|
+| femtoUniversePairTaskTrackTrack.cxx         |                                   |                       |
+| femtoUniversePairTaskTrackTrackExtended.cxx |                                   |                       |
+| femtoUniversePairTaskTrackPhi.cxx           | Angular correlations of h--$\Phi$ | Zuzanna Chochulska    |
 
 
 
