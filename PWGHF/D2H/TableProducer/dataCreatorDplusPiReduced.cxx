@@ -538,7 +538,7 @@ struct HfDataCreatorDplusPiReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, true>(collision, candsD, trackIndices, tracks, particlesMc, bcs);
+      runDataCreation<true, true>(collision, candsDThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     runMcGen(particlesMc);
   }

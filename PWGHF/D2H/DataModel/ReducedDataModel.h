@@ -207,10 +207,19 @@ namespace hf_cand_b0_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_b0_reduced
 
-DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
+DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daughter indices
                   hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores for the D+ daughter
+                  hf_cand_b0_reduced::Prong0MlScoreBkg,
+                  hf_cand_b0_reduced::Prong0MlScorePrompt,
+                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
 
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
@@ -271,7 +280,7 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
 // so we can use them in the B0 part
 namespace hf_cand_b0_config
 {
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t); //! Flag to filter selected D+ mesons
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t);    //! Flag to filter selected D+ mesons
 DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-width of the B0 invariant-mass window in GeV/c2
 } // namespace hf_cand_b0_config
 

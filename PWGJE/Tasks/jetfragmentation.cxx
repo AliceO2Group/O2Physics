@@ -24,11 +24,12 @@
 #include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetFinder.h"
-
-#include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,20 +54,21 @@ struct JetFragmentation {
   ConfigurableAxis binJetPt{"binJetPt", {40, 0.f, 200.f}, ""};
   ConfigurableAxis binEta{"binEta", {20, -1.f, 1.f}, ""};
   ConfigurableAxis binPhi{"binPhi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
-  ConfigurableAxis binZ{"binZ", {40, 0.f, 1.f}, ""};
+  ConfigurableAxis binZ{"binZ", {40, 0.0001f, 1.0001f}, ""};
   ConfigurableAxis binXi{"binXi", {50, 0.f, 10.f}, ""};
-  ConfigurableAxis binTheta{"binTheta", {41, -0.05f, 0.405f}, ""};
+  ConfigurableAxis binTheta{"binTheta", {40, -0.05f, 0.395f}, ""};
   ConfigurableAxis binJetR{"binJetR", {6, 0.05f, 0.65f}, ""};
   ConfigurableAxis binTrackPt{"binTrackPt", {200, 0.f, 100.f}, ""};
   ConfigurableAxis binPDG{"binPDG", {static_cast<double>(pdgVector.size()), -0.5f, static_cast<double>(pdgVector.size()) - 0.5f}, ""};
   ConfigurableAxis binVtxZ{"binVtxZ", {200, -20, 20}, ""};
 
-  ConfigurableAxis binPtDiff{"binPtDiff", {121, -20.5f, 100.5f}, ""};
-  ConfigurableAxis binEtaDiff{"binEtaDiff", {41, -0.205f, 0.205f}, ""};
-  ConfigurableAxis binPhiDiff{"binPhiDiff", {41, -0.205f, 0.205f}, ""};
-  ConfigurableAxis binZDiff{"binZDiff", {21, -1.05f, 1.05f}, ""};
-  ConfigurableAxis binXiDiff{"binXiDiff", {201, -10.5f, 10.5f}, ""};
-  ConfigurableAxis binThetaDiff{"binThetaDiff", {201, -10.5f, 10.5f}, ""};
+  ConfigurableAxis binPtTrackDiff{"binPtTrackDiff", {121, -20.5f, 100.5f}, ""};
+  ConfigurableAxis binPtDiff{"binPtDiff", {600, -299.5f, 300.5f}, ""};
+  ConfigurableAxis binEtaDiff{"binEtaDiff", {40, -0.195f, 0.205f}, ""};
+  ConfigurableAxis binPhiDiff{"binPhiDiff", {40, -0.195f, 0.205f}, ""};
+  ConfigurableAxis binZDiff{"binZDiff", {80, -1.05f, 0.95f}, ""};
+  ConfigurableAxis binXiDiff{"binXiDiff", {100, -9.5f, 10.5f}, ""};
+  ConfigurableAxis binThetaDiff{"binThetaDiff", {80, -0.35f, 0.45f}, ""};
   ConfigurableAxis binPtRatio{"binPtRatio", {100, -0.5f, 9.5f}, ""};  // Ratio of pt, eta, phi
   ConfigurableAxis binMatchDist{"binMatchDist", {50, 0.f, 0.5f}, ""}; // Distance between matched jets
 
@@ -103,6 +105,7 @@ struct JetFragmentation {
 
     AxisSpec pdgAxis = {binPDG, ""};
     AxisSpec trackPtAxis = {binTrackPt, "#it{p}_{T}^{tr}"};
+    AxisSpec ptTrackDiffAxis = {binPtTrackDiff, "#it{p}_{T}^{particle} - #it{p}_{T}^{track}"};
     AxisSpec ptDiffAxis = {binPtDiff, "#it{p}_{T}^{jet, part} - #it{p}_{T}^{jet, det}"};
     AxisSpec etaDiffAxis = {binEtaDiff, "#eta^{jet, part} - #eta^{jet, det}"};
     AxisSpec phiDiffAxis = {binPhiDiff, "#varphi^{jet, part} - #varphi^{jet, det}"};
@@ -196,6 +199,7 @@ struct JetFragmentation {
       registry.add("matching/jets/matchPartJetPtResolutionEta", "#eta^{jet, part} - #eta^{jet, det}", HistType::kTH3F, {partJetPtAxis, partEtaAxis, etaDiffAxis});
       registry.add("matching/jets/matchPartJetPtResolutionPhi", "#phi^{jet, part} - #phi^{jet, det}", HistType::kTH3F, {partJetPtAxis, partPhiAxis, phiDiffAxis});
       registry.add("matching/jets/matchPartJetPtResolutionChargeFrag", "Resolution #it{p}_{T}^{tr} / #it{p}_{T}^{jet}", HistType::kTH3F, {partJetPtAxis, partZAxis, zDiffAxis});
+      registry.add("matching/jets/matchPartJetPtResolutionTrackPt", "Resolution #it{p}_{T}^{track}", HistType::kTH3F, {partJetPtAxis, trackPtAxis, ptTrackDiffAxis});
       registry.add("matching/jets/matchPartJetPtResolutionTrackProj", "Resolution #it{p}^{proj} / #it{p}^{jet}", HistType::kTH3F, {partJetPtAxis, partZAxis, zDiffAxis});
       registry.add("matching/jets/matchPartJetPtResolutionXi", "Resolution ln(1/#it{z})", HistType::kTH3F, {partJetPtAxis, partXiAxis, xiDiffAxis});
       registry.add("matching/jets/matchPartJetPtResolutionTheta", "Resolution #theta", HistType::kTH3F, {partJetPtAxis, partThetaAxis, thetaDiffAxis});
@@ -338,10 +342,10 @@ struct JetFragmentation {
     detTheta = Theta(detJet, track);
     detXi = Xi(detJet, track);
 
-    partChargeFrag = ChargeFrag(partJet, track);
-    partTrackProj = TrackProj(partJet, track);
-    partTheta = Theta(partJet, track);
-    partXi = Xi(partJet, track);
+    partChargeFrag = ChargeFrag(partJet, particle);
+    partTrackProj = TrackProj(partJet, particle);
+    partTheta = Theta(partJet, particle);
+    partXi = Xi(partJet, particle);
 
     // Detector level
     registry.fill(HIST("matching/jets/matchDetJetTrackPtEtaPhi"), track.pt(), track.eta(), track.phi(), weight);
@@ -364,6 +368,7 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/matchPartJetPtZTheta"), partJet.pt(), partTrackProj, partTheta, weight);
 
     // Resolution
+    registry.fill(HIST("matching/jets/matchPartJetPtResolutionTrackPt"), partJet.pt(), particle.pt(), (particle.pt() - track.pt()), weight);
     registry.fill(HIST("matching/jets/matchPartJetPtResolutionChargeFrag"), partJet.pt(), partChargeFrag, (partChargeFrag - detChargeFrag), weight);
     registry.fill(HIST("matching/jets/matchPartJetPtResolutionTrackProj"), partJet.pt(), partTrackProj, (partTrackProj - detTrackProj), weight);
     registry.fill(HIST("matching/jets/matchPartJetPtResolutionXi"), partJet.pt(), partXi, (partXi - detXi), weight);
@@ -519,6 +524,7 @@ struct JetFragmentation {
                         McTracks const& tracks,
                         aod::JMcCollisions const& mcCollisions,
                         McPJets const& mcPartJets,
+                        // soa::Join<McPJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMcDetectorLevelJets> const& mcPartJets
                         aod::JMcParticles const& mcParticles)
   {
     double weight = collision.mcCollision().weight();
@@ -535,7 +541,7 @@ struct JetFragmentation {
           for (const auto& particle : partJet.tracks_as<aod::JMcParticles>()) {
             if (track.has_mcParticle() && particle.globalIndex() == track.template mcParticle_as<aod::JMcParticles>().globalIndex()) {
               isTrackMatched = true;
-              fillMatchingHistogramsConstituent(detJet, partJet, track, particle);
+              fillMatchingHistogramsConstituent(detJet, partJet, track, particle, weight);
               break; // No need to inspect other particles
             }        // if track has mcParticle and particle is in matched jet
           }          // for particle in matched partJet
@@ -553,8 +559,16 @@ struct JetFragmentation {
         }
       } // if detJet does not have a match
     }   // for det jet
-    // TODO: how to deal with misses?
-    //       -> ParticleToDetector table is currently bugged: size does not correspond to ParticleLevelJets (04.06.2023)
+    // for (const auto& partJet : mcPartJets) {
+    //   // We've already treated the matched jets in the previous loop
+    //   if (!partJet.has_matchedJetGeo()) {
+    //     isFake = false;
+    //     registry.fill(HIST("matching/jets/missPartJetPtEtaPhi"), partJet.pt(), partJet.eta(), partJet.phi(), weight);
+    //     for (const auto& particle : partJet.tracks_as<aod::McParticles>()) {
+    //       fillMatchingFakeOrMiss(partJet, particle, isFake, weight);
+    //     }
+    //   }
+    // }
   }
   PROCESS_SWITCH(JetFragmentation, processMcMatched, "Monte Carlo particle and detector level", false);
 };
