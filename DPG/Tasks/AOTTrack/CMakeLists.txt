@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(PID)
+add_subdirectory(V0Cascades)
 
 o2physics_add_dpl_workflow(qa-trackselection
                            SOURCES qaTrackSelection.cxx
@@ -36,11 +37,6 @@ o2physics_add_dpl_workflow(qa-efficiency
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(qa-efficiency-v0s
-                           SOURCES qaEfficiencyV0s.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(qa-match-eff
                            SOURCES qaMatchEff.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -52,21 +48,6 @@ o2physics_add_dpl_workflow(qa-impact-parameter
                                                  O2::ReconstructionDataFormats
                                                  O2::DetectorsCommonDataFormats
                                                  O2::DetectorsVertexing
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(qa-k0s-tracking-efficiency
-                           SOURCES qaK0sTrackingEfficiency.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(perf-k0s-resolution
-                           SOURCES perfK0sResolution.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(qa-cascades
-                           SOURCES qaCascades.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(monitorfilterbit
