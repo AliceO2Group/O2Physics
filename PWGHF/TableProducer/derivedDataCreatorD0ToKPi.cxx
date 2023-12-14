@@ -58,6 +58,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   HfHelper hfHelper;
+  SliceCache cache;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
@@ -69,15 +70,21 @@ struct HfDerivedDataCreatorD0ToKPi {
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
 
+  // trivial partitions for all candidates to allow "->sliceByCached" inside processCandidates
+  Partition<SelectedCandidates> candAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
+  Partition<SelectedCandidatesKf> candAllKF = aod::hf_sel_candidate_d0::isSelD0 >= 0;
+  Partition<SelectedCandidatesMc> reconstructedCandAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
+  Partition<SelectedCandidatesMcKf> reconstructedCandAllKF = aod::hf_sel_candidate_d0::isSelD0 >= 0;
+  // partitions for signal and background
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
 
-  Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand_index::collisionId; // FIXME
-  Preslice<SelectedCandidatesKf> candidatesKfPerCollision = aod::hf_cand_index::collisionId; // FIXME
-  Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand_index::collisionId; // FIXME
-  Preslice<SelectedCandidatesMcKf> candidatesMcKfPerCollision = aod::hf_cand_index::collisionId; // FIXME
+  // Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId; // FIXME
+  // Preslice<SelectedCandidatesKf> candidatesKfPerCollision = aod::hf_cand::collisionId; // FIXME
+  // Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId; // FIXME
+  // Preslice<SelectedCandidatesMcKf> candidatesMcKfPerCollision = aod::hf_cand::collisionId; // FIXME
 
   void init(InitContext const&)
   {
@@ -119,7 +126,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     if (fillCandidateBase) {
       rowCandidateBase(
-        rowCollBase.lastIndex(), // Check if we need + 1
+        rowCollBase.lastIndex(),
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
@@ -222,7 +229,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   template <int reconstructionType, bool isMc, bool onlyBkg, bool onlySig, typename CandType>
   void processCandidates(aod::Collisions const& collisions,
-                         CandType const& candidates,
+                         Partition<CandType>& candidates,
                          TracksWPid const&,
                          aod::BCs const&)
   {
@@ -232,7 +239,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     reserveTable(rowCollId, fillCollId, sizeTableColl);
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candidatesThisColl = candidates.sliceBy(candidatesPerCollision, thisCollId); // FIXME
+      auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
       fillTablesCollision(collision, 0, collision.bc().runNumber());
 
       // Fill candidate properties
@@ -315,20 +322,20 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, false, false>(collisions, candAll, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
-                                 SelectedCandidatesKf const& candidates,
+                                 SelectedCandidatesKf const&,
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processCandidates<aod::hf_cand::VertexerType::KfParticle, false, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, false, false, false>(collisions, candAllKF, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
-/*
+
   void processMcWithDCAFitterOnlySig(aod::Collisions const& collisions,
                                      SelectedCandidatesMc const&,
                                      MatchedGenCandidatesMc const& mcParticles,
@@ -339,7 +346,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterOnlySig, "Process MC with DCAFitterN only for signals", false);
-*/
+
 /*
   void processMcWithDCAFitterOnlyBkg(aod::Collisions const& collisions,
                                      SelectedCandidatesMc const&,
@@ -359,7 +366,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
-    processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, false>(collisions, reconstructedCandAll, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
@@ -395,7 +402,7 @@ struct HfDerivedDataCreatorD0ToKPi {
                                   TracksWPid const& tracks,
                                   aod::BCs const& bcs)
   {
-    processCandidates<aod::hf_cand::VertexerType::KfParticle, true, false, false>(collisions, candidates, tracks, bcs);
+    processCandidates<aod::hf_cand::VertexerType::KfParticle, true, false, false>(collisions, reconstructedCandAllKF, tracks, bcs);
     processMcParticles(mcParticles);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
