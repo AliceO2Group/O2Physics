@@ -34,8 +34,8 @@ o2physics_add_dpl_workflow(femtouniverse-debug-track
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femtouniverse-pair-track-v0
-          SOURCES femtoUniversePairTaskTrackV0.cxx
+o2physics_add_dpl_workflow(femtouniverse-pair-track-v0-extended
+          SOURCES femtoUniversePairTaskTrackV0Extended.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
