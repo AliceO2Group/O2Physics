@@ -46,6 +46,16 @@ struct perfK0sResolution {
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec phiAxis{phiBins, "#phi"};
 
+    int nProc = 0;
+    if (doprocessData) {
+      LOG(info) << "processData enabled";
+      nProc++;
+    }
+    if (doprocessMC) {
+      LOG(info) << "processMC enabled";
+      nProc++;
+    }
+
     registry.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     registry.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     registry.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
@@ -165,7 +175,7 @@ struct perfK0sResolution {
 
   Filter v0Filter = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
 
-  void process(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
   {
     if (eventSelection && !collision.sel8())
       return;
@@ -182,10 +192,34 @@ struct perfK0sResolution {
       registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
     }
   }
+  PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
+
+  void processMC(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  {
+    if (eventSelection && !collision.sel8())
+      return;
+
+    for (auto& v0 : fullV0s) {
+
+      const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
+      const auto& negTrack = v0.negTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
+      if (!acceptV0(v0, negTrack, posTrack, collision))
+        continue;
+      if (!posTrack.has_mcParticle()) {
+        continue;
+      }
+      if (!negTrack.has_mcParticle()) {
+        continue;
+      }
+      if (posTrack.mcParticle().pdgCode() != PID::Pion || negTrack.mcParticle().pdgCode() != PID::Pion) {
+        continue;
+      }
+      registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
+      registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
+      registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+    }
+  }
+  PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<perfK0sResolution>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)}; }

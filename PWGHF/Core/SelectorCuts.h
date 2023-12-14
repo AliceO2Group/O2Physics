@@ -163,6 +163,7 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
+static const std::vector<std::string> labelsDmesCutScore = {"ML score charm bkg", "ML score charm prompt", "ML score charm nonprompt"};
 } // namespace hf_cuts_ml
 
 namespace hf_cuts_presel_2prong

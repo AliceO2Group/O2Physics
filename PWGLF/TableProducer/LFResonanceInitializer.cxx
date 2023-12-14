@@ -472,7 +472,13 @@ struct reso2initializer {
                v0.phi(),
                childIDs,
                v0.v0cosPA(),
-               v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
+               v0.dcaV0daughters(),
+               v0.dcapostopv(),
+               v0.dcanegtopv(),
+               v0.dcav0topv(),
+               v0.mLambda(),
+               v0.mAntiLambda(),
+               v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {
         fillMCV0(v0);
@@ -500,7 +506,15 @@ struct reso2initializer {
                     childIDs,
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    casc.dcaV0daughters(), casc.dcacascdaughters(), casc.mXi(),
+                    casc.dcaV0daughters(),
+                    casc.dcacascdaughters(),
+                    casc.dcapostopv(),
+                    casc.dcanegtopv(),
+                    casc.dcabachtopv(),
+                    casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                    casc.dcaXYCascToPV(),
+                    casc.dcaZCascToPV(),
+                    casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if constexpr (isMC) {
         fillMCCascade(casc);

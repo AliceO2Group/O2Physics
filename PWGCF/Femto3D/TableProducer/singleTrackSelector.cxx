@@ -26,7 +26,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Centrality.h"
 
 #include "DetectorsBase/Propagator.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -55,12 +55,18 @@ struct singleTrackSelector {
   Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{}, "PDG codes of perticles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
 
+  Configurable<int16_t> _tpcNClsFound{"tpcNClsFound", 70, "Minimun number of cluster found in TPC"};
+  Configurable<uint8_t> _itsNCls{"itsNCls", 0, "Minimun number of cluster found in ITS"};
+  Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0.f, "Minimun number of crossed rows over findable clusters"};
+  Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
+  Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
+
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
                          aod::pidTPCFullDe, aod::pidTOFFullDe,
                          aod::TrackSelection, aod::pidTOFbeta>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::FT0sCorrected>;
+  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFT0Ms>;
 
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
@@ -70,6 +76,9 @@ struct singleTrackSelector {
                        ((applyEvSel.node() == 2) && (aod::evsel::sel8 == true));
   Filter vertexFilter = ((o2::aod::collision::posZ < 15.f) && (o2::aod::collision::posZ > -15.f));
   Filter trackFilter = ((o2::aod::track::itsChi2NCl <= 36.f) && (o2::aod::track::itsChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl <= 4.f));
+  Filter tpcFilter = ((o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound) && (o2::aod::singletrackselector::tpcCrossedRowsOverFindableCls >= _tpcCrossedRowsOverFindableCls));
+  Filter itsFilter = (o2::aod::singletrackselector::itsNCls >= _itsNCls);
+  Filter dcaFilter = (o2::aod::track::dcaXY <= _dcaXY) && (o2::aod::track::dcaZ <= _dcaZ);
 
   int mRunNumber = 0;
   float d_bz = 0.f;
@@ -122,13 +131,13 @@ struct singleTrackSelector {
   {
 
     bool skip_track = false; // flag used for track rejection
-
     tableRow.reserve(tracks.size());
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     tableRowColl(collision.multTPC(),
+                 collision.centFT0M(),
                  collision.posZ(),
                  d_bz);
 
