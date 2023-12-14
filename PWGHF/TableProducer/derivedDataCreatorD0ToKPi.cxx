@@ -240,10 +240,14 @@ struct HfDerivedDataCreatorD0ToKPi {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
+      auto sizeTableCand = candidatesThisColl.size();
+      // skip collisions without HF candidates
+      if (sizeTableCand == 0) {
+        continue;
+      }
       fillTablesCollision(collision, 0, collision.bc().runNumber());
 
       // Fill candidate properties
-      auto sizeTableCand = candidatesThisColl.size();
       reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
