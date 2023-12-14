@@ -112,7 +112,7 @@ struct HfCandidateCreatorToXiPi {
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
     double massXiFromPDG = MassXiMinus;     // pdg code 3312
     double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
-    double massXicFromPDG = MassXiCZero;    // pdg code 4132
+    double massXicFromPDG = MassXiC0;       // pdg code 4132
 
     // 2-prong vertex fitter to build the omegac/xic vertex
     o2::vertexing::DCAFitterN<2> df;
@@ -364,7 +364,7 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t debugGenLambda = 0;
 
     int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
-    int pdgCodeXic0 = Pdg::kXiCZero;    // 4132
+    int pdgCodeXic0 = Pdg::kXiC0;       // 4132
     int pdgCodeXiMinus = kXiMinus;      // 3312
     int pdgCodeLambda = kLambda0;       // 3122
     int pdgCodePiPlus = kPiPlus;        // 211

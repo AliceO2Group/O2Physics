@@ -433,7 +433,7 @@ struct HfTreeCreatorOmegacSt {
                 registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
 
                 if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
-                    (std::abs(massXiC - o2::constants::physics::MassXiCZero) < massWindowXiC)) {
+                    (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                   registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   outputTable(massOmega,
