@@ -31,9 +31,12 @@ DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
-DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, uint32_t);    //! Bit for track one
-DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, uint32_t);    //! Bit for track two
-DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, uint32_t);    //! Bit for track three
+
+using BitMaskType = uint64_t; //! Definition of the data type for the collision masks
+
+DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);    //! Bit for track one
+DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);    //! Bit for track two
+DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType);    //! Bit for track three
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -49,7 +52,6 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
                   femtodreamcollision::BitMaskTrackTwo,
                   femtodreamcollision::BitMaskTrackThree);
-using FDColMask = FDColMasks::iterator;
 
 /// FemtoDreamTrack
 namespace femtodreamparticle

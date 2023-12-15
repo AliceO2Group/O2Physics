@@ -62,7 +62,7 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut,ConfCutV0));
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfCutV0));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming
@@ -100,11 +100,11 @@ struct femtoDreamDebugV0 {
       }
       // check cuts on V0 children
       if (posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
-				(posChild.cut() & ConfCutChildPos) == ConfCutChildPos &&
-				(posChild.pidcut() & ConfPIDTPCChildPos) == ConfPIDTPCChildPos &&
+          (posChild.cut() & ConfCutChildPos) == ConfCutChildPos &&
+          (posChild.pidcut() & ConfPIDTPCChildPos) == ConfPIDTPCChildPos &&
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
-				(negChild.cut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg &&
-				(negChild.pidcut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg){
+          (negChild.cut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg &&
+          (negChild.pidcut() & ConfPIDTPCChildNeg) == ConfPIDTPCChildNeg) {
         V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
