@@ -18,37 +18,50 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "Common/DataModel/Qvectors.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Qvectors.h"
+
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum decayChannel { DplusToPiKPi = 0,
+enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
                     DsToPiKK };
 
-struct taskFlowCharmHadrons {
+enum centralityEstimator { V0A = 0,
+                           T0M,
+                           T0A,
+                           T0C };
+
+enum qvecEstimator { FV0A = 0,
+                     FT0M,
+                     FT0A,
+                     FT0C,
+                     TPCPos,
+                     TPCNeg };
+
+struct HfTaskFlowCharmHadrons {
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
-  Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0C: 0, FT0A: 1, FT0M: 2, FV0A: 3, TPC Pos: 4, TPC Neg: 5)"};
+  Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3"};
-  Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for D"};
-  Configurable<bool> storeMl{"storeMl", false, "Flag to store ML score"};
+  Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
+  Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores (e.g. 0 for Bkg, 1 for Prompt, 2 for Feed-down)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
-  Configurable<int> classMl{"classMl", 0, "Index of the ML class to be stored"};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored (e.g. 0 for Bkg, 2 for Feed-down). Two indexes max."};
 
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {10, 0., 10.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {10000, 0., 100.}, ""};
   ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMl{"thnConfigAxisMl", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
@@ -72,9 +85,10 @@ struct taskFlowCharmHadrons {
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
     const AxisSpec thnAxisCosNPhi{thnConfigAxisCosNPhi, Form("cos(%d#varphi)", harmonic.value)};
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
-    const AxisSpec thnAxisMlScore{thnConfigAxisMl, "ML score"};
+    const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
+    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
 
-    registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisScalarProd, thnAxisMlScore});
+    registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisScalarProd, thnAxisMlOne, thnAxisMlTwo});
 
     if (saveEpResoHisto) {
       registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
@@ -99,12 +113,12 @@ struct taskFlowCharmHadrons {
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
   template <typename T1>
-  void GetQvecDtracks(const T1& cand,
+  void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
                       float& ampl)
   {
-    // TODO: add possibility to consider different weights for the tracks, at the only pT is considered;
+    // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXtrack0 = cand.pxProng0();
     float pYtrack0 = cand.pyProng0();
     float pTtrack0 = cand.ptProng0();
@@ -118,26 +132,26 @@ struct taskFlowCharmHadrons {
     float pTtrack2 = cand.ptProng2();
     float phiTrack2 = TMath::ATan2(pYtrack2, pXtrack2);
 
-    tracksQx.push_back(TMath::Cos(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQy.push_back(TMath::Sin(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQx.push_back(TMath::Cos(harmonic * phiTrack1) * pTtrack1 / ampl);
-    tracksQy.push_back(TMath::Sin(harmonic * phiTrack1) * pTtrack1 / ampl);
-    tracksQx.push_back(TMath::Cos(harmonic * phiTrack2) * pTtrack2 / ampl);
-    tracksQy.push_back(TMath::Sin(harmonic * phiTrack2) * pTtrack2 / ampl);
+    tracksQx.push_back(cos(harmonic * phiTrack0) * pTtrack0 / ampl);
+    tracksQy.push_back(sin(harmonic * phiTrack0) * pTtrack0 / ampl);
+    tracksQx.push_back(cos(harmonic * phiTrack1) * pTtrack1 / ampl);
+    tracksQy.push_back(sin(harmonic * phiTrack1) * pTtrack1 / ampl);
+    tracksQx.push_back(cos(harmonic * phiTrack2) * pTtrack2 / ampl);
+    tracksQy.push_back(sin(harmonic * phiTrack2) * pTtrack2 / ampl);
   }
 
   /// Compute the delta psi in the range [0, pi/harmonic]
   /// \param psi1 is the first angle
   /// \param psi2 is the second angle
   /// \note Ported from AliAnalysisTaskSECharmHadronvn::GetDeltaPsiSubInRange
-  float GetDeltaPsiInRange(float psi1, float psi2)
+  float getDeltaPsiInRange(float psi1, float psi2)
   {
     float deltaPsi = psi1 - psi2;
-    if (deltaPsi > TMath::Pi() / harmonic) {
+    if (TMath::Abs(deltaPsi) > TMath::Pi() / harmonic) {
       if (deltaPsi > 0.)
-        deltaPsi -= 2. * TMath::Pi() / harmonic;
+        deltaPsi -= constants::math::TwoPI / harmonic;
       else
-        deltaPsi += 2. * TMath::Pi() / harmonic;
+        deltaPsi += constants::math::TwoPI / harmonic;
     }
     return deltaPsi;
   }
@@ -150,131 +164,150 @@ struct taskFlowCharmHadrons {
   /// \param cosDeltaPhi is the cosine of the n*(phi - evtPl) angle
   /// \param sp is the scalar product
   /// \param evtPlReso is the event plane resolution
-  /// \param outputMl is the ML score
+  /// \param outputMl are the ML scores
   void fillThn(float mass,
                float pt,
                float cent,
                float cosNPhi,
                float cosDeltaPhi,
                float sp,
-               float outputMl)
+               std::vector<float> outputMl)
   {
-    registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl);
+    registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl[0], outputMl[1]);
   }
 
   /// Get the centrality
   /// \param collision is the collision with the centrality information
-  /// \param centDetector is the detector used for the centrality estimation
-  float GetCent(CollsWithQvecs::iterator const& collision, int centDetector)
+  float getCentrality(CollsWithQvecs::iterator const& collision)
   {
     float cent = -999.;
     switch (centDetector) {
-      case 0: // V0M
+      case centralityEstimator::V0A:
         cent = collision.centFV0A();
         break;
-      case 1: // T0M
+      case centralityEstimator::T0M:
         cent = collision.centFT0M();
         break;
-      case 2: // T0A
+      case centralityEstimator::T0A:
         cent = collision.centFT0A();
         break;
-      case 3: // T0C
+      case centralityEstimator::T0C:
         cent = collision.centFT0C();
         break;
       default:
+        LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
+        cent = collision.centFV0A();
         break;
     }
-
     return cent;
+  }
+
+  /// Get the Q vector
+  /// \param collision is the collision with the Q vector information
+  std::vector<float> getQvec(CollsWithQvecs::iterator const& collision)
+  {
+    float xQVec = -999.;
+    float yQVec = -999.;
+    float amplQVec = -999.;
+    switch (qvecDetector) {
+      case qvecEstimator::FV0A:
+        xQVec = collision.qvecFV0ARe();
+        yQVec = collision.qvecFV0AIm();
+        break;
+      case qvecEstimator::FT0M:
+        xQVec = collision.qvecFT0MRe();
+        yQVec = collision.qvecFT0MIm();
+        break;
+      case qvecEstimator::FT0A:
+        xQVec = collision.qvecFT0ARe();
+        yQVec = collision.qvecFT0AIm();
+        break;
+      case qvecEstimator::FT0C:
+        xQVec = collision.qvecFT0CRe();
+        yQVec = collision.qvecFT0CIm();
+      case qvecEstimator::TPCPos:
+        xQVec = collision.qvecBPosRe();
+        yQVec = collision.qvecBPosIm();
+        amplQVec = collision.nTrkBPos();
+        break;
+      case qvecEstimator::TPCNeg:
+        xQVec = collision.qvecBNegRe();
+        yQVec = collision.qvecBNegIm();
+        amplQVec = collision.nTrkBNeg();
+        break;
+      default:
+        LOG(warning) << "Q vector estimator not valid. Please choose between FV0A, FT0M, FT0A, FT0C, TPC Pos, TPC Neg. Fallback to FV0A";
+        xQVec = collision.qvecFV0ARe();
+        yQVec = collision.qvecFV0AIm();
+        break;
+    }
+    return {xQVec, yQVec, amplQVec};
   }
 
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  template <int decayChannel, typename T1>
+  template <int DecayChannel, typename T1>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates)
   {
-    float QvecX = -999.;
-    float QvecY = -999.;
-    float amplQvec = -999.;
-    float evtPl = -999.;
-    switch (qvecDetector.value) {
-      case 0: // FT0c
-        QvecX = collision.qvecFT0CRe();
-        QvecY = collision.qvecFT0CIm();
-        break;
-      case 1: // FT0a
-        QvecX = collision.qvecFT0ARe();
-        QvecY = collision.qvecFT0AIm();
-        break;
-      case 2: // FT0m
-        QvecX = collision.qvecFT0MRe();
-        QvecY = collision.qvecFT0MIm();
-        break;
-      case 3: // FV0a
-        QvecX = collision.qvecFV0ARe();
-        QvecY = collision.qvecFV0AIm();
-        break;
-      case 4: // TPC Positive
-        QvecX = collision.qvecBPosRe();
-        QvecY = collision.qvecBPosIm();
-        amplQvec = collision.nTrkBPos();
-        break;
-      case 5: // TPC Negative
-        QvecX = collision.qvecBNegRe();
-        QvecY = collision.qvecBNegIm();
-        amplQvec = collision.nTrkBNeg();
-        break;
-      default:
-        break;
-    }
-    evtPl = epHelper.GetEventPlane(QvecX, QvecY);
+    std::vector<float> qVecs = getQvec(collision);
+    float xQVec = qVecs[0];
+    float yQVec = qVecs[1];
+    float amplQVec = qVecs[2];
+    float evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
+    float cent = getCentrality(collision);
 
-    float cent = GetCent(collision, centDetector.value);
-
-    for (auto const& cand : candidates) {
+    for (const auto& candidate : candidates) {
       float massCand = 0.;
-      float outputMl = -999.;
+      std::vector<float> outputMl = {-999., -999.};
 
       if constexpr (std::is_same<T1, CandDsData>::value) {
-        switch (decayChannel) {
-          case decayChannel::DsToKKPi:
-            massCand = hfHelper.invMassDsToKKPi(cand);
-            if (storeMl)
-              outputMl = cand.mlProbDsToPiKK()[classMl.value];
+        switch (DecayChannel) {
+          case DecayChannel::DsToKKPi:
+            massCand = hfHelper.invMassDsToKKPi(candidate);
+            if (storeMl) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+            }
             break;
-          case decayChannel::DsToPiKK:
-            massCand = hfHelper.invMassDsToPiKK(cand);
-            if (storeMl)
-              outputMl = cand.mlProbDsToKKPi()[classMl.value];
+          case DecayChannel::DsToPiKK:
+            massCand = hfHelper.invMassDsToPiKK(candidate);
+            if (storeMl) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+            }
             break;
           default:
             break;
         }
       } else if constexpr (std::is_same<T1, CandDplusData>::value) {
-        massCand = hfHelper.invMassDplusToPiKPi(cand);
-        if (storeMl)
-          outputMl = cand.mlProbDplusToPiKPi()[classMl.value];
+        massCand = hfHelper.invMassDplusToPiKPi(candidate);
+        if (storeMl) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+            outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+        }
       }
-      float ptCand = cand.pt();
-      float phiCand = cand.phi();
+      float ptCand = candidate.pt();
+      float phiCand = candidate.phi();
 
       // TPC only
-      if (qvecDetector.value == 4 || qvecDetector.value == 5) {
-        float ampl = amplQvec - 3.;
-        std::vector<float> tracksQx = {-999., -999., -999.};
-        std::vector<float> tracksQy = {-999., -999., -999.};
-        GetQvecDtracks(cand, tracksQx, tracksQy, ampl);
+      // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector
+      // to avoid double counting.
+      if (qvecDetector == 4 || qvecDetector == 5) {
+        float ampl = amplQVec - 3.;
+        std::vector<float> tracksQx = {};
+        std::vector<float> tracksQy = {};
+        getQvecDtracks(candidate, tracksQx, tracksQy, ampl);
         for (unsigned int itrack = 0; itrack < 3; itrack++) {
-          QvecX -= tracksQx[itrack];
-          QvecY -= tracksQy[itrack];
+          xQVec -= tracksQx[itrack];
+          yQVec -= tracksQy[itrack];
         }
       }
 
       float cosNPhi = TMath::Cos(harmonic * phiCand);
       float sinNPhi = TMath::Sin(harmonic * phiCand);
-      float scalprodCand = cosNPhi * QvecX + sinNPhi * QvecY;
+      float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = TMath::Cos(harmonic * (phiCand - evtPl));
 
       fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
@@ -285,55 +318,50 @@ struct taskFlowCharmHadrons {
   void processDs(CollsWithQvecs::iterator const& collision,
                  CandDsData const& candidatesDs)
   {
-    runFlowAnalysis<decayChannel::DsToKKPi, Partition<CandDsData>>(collision, selectedDsToKKPi);
-    runFlowAnalysis<decayChannel::DsToPiKK, Partition<CandDsData>>(collision, selectedDsToPiKK);
+    runFlowAnalysis<DecayChannel::DsToKKPi, Partition<CandDsData>>(collision, selectedDsToKKPi);
+    runFlowAnalysis<DecayChannel::DsToPiKK, Partition<CandDsData>>(collision, selectedDsToPiKK);
   }
-  PROCESS_SWITCH(taskFlowCharmHadrons, processDs, "Process Ds candidates", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDs, "Process Ds candidates", false);
 
   // Dplus
   void processDplus(CollsWithQvecs::iterator const& collision,
                     CandDplusData const& candidatesDplus)
   {
-    runFlowAnalysis<decayChannel::DplusToPiKPi, CandDplusData>(collision, candidatesDplus);
+    runFlowAnalysis<DecayChannel::DplusToPiKPi, CandDplusData>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(taskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
 
   // Event plane
   void processEventPlaneReso(CollsWithQvecs::iterator const& collision)
   {
-    if (!saveEpResoHisto) {
-      LOG(fatal) << "Event plane resolution histogram not saved. Please set saveEpResoHisto to true.";
-      return;
-    }
+    float centrality = getCentrality(collision);
+    float epFT0a = epHelper.GetEventPlane(collision.qvecFT0ARe(), collision.qvecFT0AIm(), harmonic);
+    float epFT0c = epHelper.GetEventPlane(collision.qvecFT0CRe(), collision.qvecFT0CIm(), harmonic);
+    float epFT0m = epHelper.GetEventPlane(collision.qvecFT0MRe(), collision.qvecFT0MIm(), harmonic);
+    float epFV0a = epHelper.GetEventPlane(collision.qvecFV0ARe(), collision.qvecFV0AIm(), harmonic);
+    float epBPoss = epHelper.GetEventPlane(collision.qvecBPosRe(), collision.qvecBPosIm(), harmonic);
+    float epBNegs = epHelper.GetEventPlane(collision.qvecBNegRe(), collision.qvecBNegIm(), harmonic);
 
-    float evCent = GetCent(collision, centDetector.value);
-    float epFT0a = epHelper.GetEventPlane(collision.qvecFT0ARe(), collision.qvecFT0AIm());
-    float epFT0c = epHelper.GetEventPlane(collision.qvecFT0CRe(), collision.qvecFT0CIm());
-    float epFT0m = epHelper.GetEventPlane(collision.qvecFT0MRe(), collision.qvecFT0MIm());
-    float epFV0a = epHelper.GetEventPlane(collision.qvecFV0ARe(), collision.qvecFV0AIm());
-    float epBPoss = epHelper.GetEventPlane(collision.qvecBPosRe(), collision.qvecBPosIm());
-    float epBNegs = epHelper.GetEventPlane(collision.qvecBNegRe(), collision.qvecBNegIm());
-
-    registry.fill(HIST("epReso/hEpResoFT0cFT0a"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0a)));
-    registry.fill(HIST("epReso/hEpResoFT0cFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFT0m)));
-    registry.fill(HIST("epReso/hEpResoFT0cFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epFV0a)));
-    registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBPoss)));
-    registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0c, epBNegs)));
-    registry.fill(HIST("epReso/hEpResoFT0aFT0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFT0m)));
-    registry.fill(HIST("epReso/hEpResoFT0aFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epFV0a)));
-    registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBPoss)));
-    registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0a, epBNegs)));
-    registry.fill(HIST("epReso/hEpResoFT0mFV0m"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epFV0a)));
-    registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBPoss)));
-    registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFT0m, epBNegs)));
-    registry.fill(HIST("epReso/hEpResoFV0mTPCpos"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBPoss)));
-    registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), evCent, TMath::Cos(harmonic * GetDeltaPsiInRange(epFV0a, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
+    registry.fill(HIST("epReso/hEpResoFT0cFT0m"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0m)));
+    registry.fill(HIST("epReso/hEpResoFT0cFV0m"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0c, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFT0aFT0m"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0a, epFT0m)));
+    registry.fill(HIST("epReso/hEpResoFT0aFV0m"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0a, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0a, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0a, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFT0mFV0m"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0m, epFV0a)));
+    registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0m, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs)));
+    registry.fill(HIST("epReso/hEpResoFV0mTPCpos"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFV0a, epBPoss)));
+    registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
   }
-  PROCESS_SWITCH(taskFlowCharmHadrons, processEventPlaneReso, "Process event plane resolution", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processEventPlaneReso, "Process event plane resolution", false);
 
-}; // End struct taskFlowCharmHadrons
+}; // End struct HfTaskFlowCharmHadrons
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<taskFlowCharmHadrons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskFlowCharmHadrons>(cfgc)};
 }
