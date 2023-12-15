@@ -1367,10 +1367,8 @@ struct cascadeBuilder {
                  cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                  cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                  cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-                 cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-                 cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-                 cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
                  cascadecandidate.v0mom[0], cascadecandidate.v0mom[1], cascadecandidate.v0mom[2],
+                 cascadecandidate.cascademom[0], cascadecandidate.cascademom[1], cascadecandidate.cascademom[2],
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
