@@ -29,8 +29,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! Collision rejectio
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float); //! FT0M multiplicity
 } // namespace hf_coll_base
 
-// Table with basic collision info
-DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
+DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic collision info
                   o2::soa::Index<>,
                   collision::NumContrib,
                   hf_coll_base::IsEventReject,
@@ -38,41 +37,42 @@ DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
 
 using HfD0CollBase = HfD0CollBases::iterator;
 
-// Table with global indices for collisions
-DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
+DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indices for collisions
                   track::CollisionId);
 
+// Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived collision table
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_COLUMN(Eta, eta, float); //! pseudorapidity
+DECLARE_SOA_COLUMN(M, m, float); //! invariant mass
+DECLARE_SOA_COLUMN(Phi, phi, float); //! azimuth
+DECLARE_SOA_COLUMN(Pt, pt, float); //! transverse momentum
 } // namespace hf_cand_base
 
+// Candidate properties used for selection
 namespace hf_cand_par
 {
-DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
-DECLARE_SOA_COLUMN(Cpa, cpa, float);
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
-DECLARE_SOA_COLUMN(Ct, ct, float);
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float);
-DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float);
-DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);
-DECLARE_SOA_COLUMN(PProng0, pProng0, float);
-DECLARE_SOA_COLUMN(PProng1, pProng1, float);
-DECLARE_SOA_COLUMN(PProng2, pProng2, float);
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
-DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float); //! cosine of theta star
+DECLARE_SOA_COLUMN(Cpa, cpa, float); //! cosine of pointing angle
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float); //! cosine of pointing angle in the transverse plane
+DECLARE_SOA_COLUMN(Ct, ct, float); //! proper lifetime times c
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! decay length
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float); //! decay length divided by its uncertainty
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float); //! decay length in the transverse plane
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! decay length in the transverse plane divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float); //! impact parameter of prong 0 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! impact parameter of prong 1 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float); //! impact parameter of prong 2 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float); //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float); //! see RecoDecay::maxNormalisedDeltaIP
+DECLARE_SOA_COLUMN(PProng0, pProng0, float); //! momentum magnitude of prong 0
+DECLARE_SOA_COLUMN(PProng1, pProng1, float); //! momentum magnitude of prong 1
+DECLARE_SOA_COLUMN(PProng2, pProng2, float); //! momentum magnitude of prong 2
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float); //! transverse momentum of prong 0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float); //! transverse momentum of prong 1
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float); //! transverse momentum of prong 2
+DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float); //! distance of the secondary vertex from the z axis
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
@@ -105,15 +105,17 @@ DECLARE_SOA_COLUMN(NSigTpcTofPr1, nSigTpcTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
 } // namespace hf_cand_par
 
+// Candidate selection flags
 namespace hf_cand_sel
 {
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! bitmap of the selected candidate type
 }
 
+// MC flags
 namespace hf_cand_mc
 {
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         //! reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         //! flag for reconstruction level matching
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
@@ -124,10 +126,7 @@ DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);       //! ML score for 
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float); //! ML score for non-prompt class
 } // namespace hf_cand_mc
 
-/// Table with basic candidate properties used in the analyses
-// candidates for removal:
-// E
-DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
+DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
                   hf_cand_base::HfD0CollBaseId,
                   hf_cand_base::Pt,
@@ -135,12 +134,11 @@ DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
                   hf_cand_base::Phi,
                   hf_cand_base::M);
 
-/// Table with candidate properties used for selection
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep P, Pt, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
-DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
+DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
@@ -169,8 +167,7 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR",
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct);
 
-/// Table with additional candidate properties used for selection
-DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
+DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE", //! Table with additional candidate properties used for selection
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -194,23 +191,19 @@ DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE",
                   hf_cand_par::CosThetaStar,
                   hf_cand_par::Ct);
 
-// Table with candidate selection flags
-DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
+DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL", //! Table with candidate selection flags
                   hf_cand_sel::CandidateSelFlag);
 
-// Table with global indices for candidates
-DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
+DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID", //! Table with global indices for candidates
                   track::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
-// Table with candidate MC info
-DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
+DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC", //! Table with MC candidate info
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec);
 
-// Table with MC particle info
-DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE",
+DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle info
                   o2::soa::Index<>,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
@@ -218,11 +211,9 @@ DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE",
                   hf_cand_mc::FlagMcMatchGen,
                   hf_cand_mc::OriginMcGen);
 
-// Table with global indices for MC particles
-DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
+DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with global indices for MC particles
                   mcparticle::McCollisionId,
                   mctracklabel::McParticleId);
-
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_
