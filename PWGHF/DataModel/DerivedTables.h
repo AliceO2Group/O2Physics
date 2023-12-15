@@ -220,7 +220,7 @@ DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
                   hf_cand_mc::OriginMcRec);
 
 // Table with MC particle info
-DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
+DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE",
                   o2::soa::Index<>,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,

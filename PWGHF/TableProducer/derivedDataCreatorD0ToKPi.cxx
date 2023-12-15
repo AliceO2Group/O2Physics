@@ -39,7 +39,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0Mcs> rowCandidateMc;
   Produces<o2::aod::HfD0CollBases> rowCollBase;
   Produces<o2::aod::HfD0CollIds> rowCollId;
-  Produces<o2::aod::HfD0Ps> rowParticleBase;
+  Produces<o2::aod::HfD0PBases> rowParticleBase;
   Produces<o2::aod::HfD0PIds> rowParticleId;
 
   // Switches for filling tables
