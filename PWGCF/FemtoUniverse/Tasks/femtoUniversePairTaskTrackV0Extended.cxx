@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniversePairTaskTrackTrack.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
+/// \brief Tasks that build pairs of track particles and v0s
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
@@ -37,7 +36,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoUniverse;
 using namespace o2::aod::pidutils;
 
-struct femtoUniversePairTaskTrackV0 {
+struct femtoUniversePairTaskTrackV0Extended {
 
   SliceCache cache;
   // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FUExtParticles>;
@@ -208,7 +207,7 @@ struct femtoUniversePairTaskTrackV0 {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
   void processMixedEvent(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
@@ -251,13 +250,13 @@ struct femtoUniversePairTaskTrackV0 {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniversePairTaskTrackV0>(cfgc),
+    adaptAnalysisTask<femtoUniversePairTaskTrackV0Extended>(cfgc),
   };
   return workflow;
 }
