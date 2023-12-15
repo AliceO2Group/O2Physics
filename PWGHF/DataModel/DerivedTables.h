@@ -15,13 +15,15 @@
 #ifndef PWGHF_DATAMODEL_DERIVEDTABLES_H_
 #define PWGHF_DATAMODEL_DERIVEDTABLES_H_
 
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace o2::aod
 {
 namespace hf_cand_index
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 } // namespace hf_cand_index
@@ -48,11 +50,11 @@ using HfD0CollBase = HfD0CollBases::iterator;
 
 // Table with global indices for collisions
 DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
-                  hf_cand_index::CollisionId);
+                  hf_cand::CollisionId);
 
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived table
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -205,7 +207,7 @@ DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
 
 // Table with global indices for candidates
 DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
-                  hf_track_index::CollisionId,
+                  hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
