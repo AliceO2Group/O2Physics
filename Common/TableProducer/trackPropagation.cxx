@@ -30,6 +30,7 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 #include "TableHelper.h"
+#include "Common/Tools/trackTuner.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -64,6 +65,7 @@ struct TrackPropagation {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
+  trackTuner trackTunerObj;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -71,6 +73,17 @@ struct TrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
+  Configurable<bool> useImprover{"useImprover", 0, "Apply Improver/DCA corrections to MC"};
+  Configurable<bool> isUpdateTrackCovMat{"isUpdateTrackCovMat", 0, "Update single track covariance matrix"};
+  Configurable<bool> isUpdateCurvature{"isUpdateCurvature", 0, "Update Q/Pt"};
+  Configurable<bool> isUpdatePulls{"isUpdatePulls", 0, "Update cov matrix elements for DCA pulls"};
+  Configurable<std::string> pathDCAxyFileCurr{"filePath-dcaxy-current", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaXY_LHC22l1b3_run529397.root", "Path to file containing current DCAxy graph"};
+  Configurable<std::string> pathDCAxyFileUpgr{"filePath-dcaxy-upgraded", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaXY_LHC22s_pass5_run529397.root", "Path to file containing New DCAxy graph"};
+  Configurable<std::string> pathDCAzFileCurr{"filePath-dcaz-current", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaZ_LHC22l1b3_run529397.root", "Path to file containing current DCAz graph"};
+  Configurable<std::string> pathDCAzFileUpgr{"filePath-dcaz-upgraded", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaZ_LHC22s_pass5_run529397.root", "Path to file containing New DCAz graph"};
+
+  using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
+  using tracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -79,10 +92,16 @@ struct TrackPropagation {
       LOG(info) << "Enabling processStandard";
       nEnabledProcesses++;
     }
-    if (doprocessCovariance == true) {
-      LOG(info) << "Enabling processCovariance";
+    if (doprocessCovarianceMc == true) {
+      LOG(info) << "Enabling processCovarianceMc";
       nEnabledProcesses++;
     }
+
+    if (doprocessCovarianceData == true) {
+      LOG(info) << "Enabling processCovarianceData";
+      nEnabledProcesses++;
+    }
+
     if (doprocessStandardWithPID == true) {
       LOG(info) << "Enabling processStandardWithPID";
       nEnabledProcesses++;
@@ -103,6 +122,7 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    trackTunerObj.getDcaGraphs(pathDCAxyFileCurr, pathDCAzFileCurr, pathDCAxyFileUpgr, pathDCAzFileUpgr);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -125,8 +145,9 @@ struct TrackPropagation {
   o2::track::TrackParametrization<float> mTrackPar;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
-  template <typename TTrack, bool fillCovMat = false, bool useTrkPid = false>
+  template <bool IS_MC, bool fillCovMat = false, bool useTrkPid = false, typename TTrack, typename particle>
   void fillTrackTables(TTrack const& tracks,
+                       particle const& mcParticles,
                        aod::Collisions const&,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -168,9 +189,25 @@ struct TrackPropagation {
           mTrackPar.setPID(track.pidForTracking());
         }
       }
+      // auto trackParCov = getTrackParCov(track);
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+        if constexpr (IS_MC) {
+          if (useImprover) {
+            // call track propagator
+            // this function reads many many things
+            //  - reads track params
+            bool has_MCparticle = track.has_mcParticle();
+            if (has_MCparticle) {
+              // std::cout << " MC particle exists... " << std::endl;
+              // std::cout << "Inside trackPropagation: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY() << std::endl;
+              auto mcparticle = track.mcParticle();
+              trackTunerObj.tuneTrackParams(mcparticle, mTrackParCov, matCorr, &mDcaInfoCov, isUpdateTrackCovMat, isUpdateCurvature, isUpdatePulls);
+              // std::cout << "Inside trackPropagation: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY() << std::endl;
+            }
+          }
+        }
         if (track.has_collision()) {
           auto const& collision = track.collision();
           if constexpr (fillCovMat) {
@@ -219,25 +256,33 @@ struct TrackPropagation {
 
   void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables<aod::StoredTracksIU, /*fillCovMat =*/false, /*useTrkPid =*/false>(tracks, collisions, bcs);
+    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/false, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
 
   void processStandardWithPID(soa::Join<aod::StoredTracksIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksExtra>, /*fillCovMat =*/false, /*useTrkPid =*/true>(tracks, collisions, bcs);
+    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/false, /*useTrkPid =*/true>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processStandardWithPID, "Process without covariance and with PID in tracking", false);
 
-  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  // -----------------------
+  void processCovarianceMc(tracksIUWithMc const& tracks, aod::McParticles const& mcParticles, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, collisions, bcs);
+    fillTrackTables</*IS_MC = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false, tracksIUWithMc, aod::McParticles>(tracks, mcParticles, collisions, bcs);
   }
-  PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
+  PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", true);
+
+  void processCovarianceData(tracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  {
+    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+  }
+  PROCESS_SWITCH(TrackPropagation, processCovarianceData, "Process with covariance on Data", false);
+  // ------------------------
 
   void processCovarianceWithPID(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables<soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra>, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, collisions, bcs);
+    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceWithPID, "Process with covariance and with PID in tracking", false);
 };
