@@ -108,9 +108,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (fillCollBase) {
       rowCollBase(
         collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
         isEventReject,
         runNumber);
     }

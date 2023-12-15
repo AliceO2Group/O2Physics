@@ -41,9 +41,6 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
                   o2::soa::Index<>,
                   collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
                   hf_coll_base::IsEventReject,
                   hf_coll_base::RunNumber);
 
