@@ -99,20 +99,11 @@ struct k892pmanalysis {
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
 
-    /*if (doprocessMCLight) {
+    if (doprocessMCLight) {
       // MC QA
-      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("h3Reck892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("h3Reck892invmassAnti", "Invariant mass of Reconstructed MC Anti-K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("k892pmGen", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
-      histos.add("k892pmGenAnti", "pT distribution of True MC Anti-K(892)0", kTH1F, {ptAxis});
-      histos.add("k892Rec", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
-      histos.add("k892RecAnti", "pT distribution of Reconstructed MC Anti-K(892)0", kTH1F, {ptAxis});
-      histos.add("k892Recinvmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
-    }*/
+      histos.add("k892pmRecPt", "Reconstructed pT of charged K*(892)", kTH1F, {ptAxis});
+      histos.add("k892pmGenPt", "Generated pT of charged K*(892)", kTH1F, {ptAxis});
+    }
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in spectraTOF";
     histos.print();
@@ -226,6 +217,8 @@ struct k892pmanalysis {
         if (!IsV0QAFilled) {
           // pT QA (before cuts)
           histos.fill(HIST("QAbefore/trkpT_k0s"), v0ptK0s);
+          //K0s mass QA (before cuts)
+          histos.fill(HIST("QAbefore/k0shortmass"), v0.mK0Short());
         }
 
         // apply the track cut
@@ -235,17 +228,26 @@ struct k892pmanalysis {
         if (!IsV0QAFilled) {
           //pt QA (after cuts)
           histos.fill(HIST("QAafter/trkpT_k0s"), v0.pt());
+          //K0s mass QA (after cuts)
+          histos.fill(HIST("QAafter/k0shortmass"), v0.mK0Short());
         }
 
+        IsV0Processed = true;
         lDecayDaughter.SetXYZM(trk.px(), trk.py(), trk.pz(), massPi);
         lDecayV0.SetXYZM(v0.px(), v0.py(), v0.pz(), massK0);
         lResonance = lDecayDaughter + lDecayV0;
         //Filling invariant mass histograms
-        //K0s mass QA (after cuts)
-        histos.fill(HIST("QAafter/k0shortmass"), lDecayV0.M());
         //K*(892)pm mass
         histos.fill(HIST("k892pminvmass"), lResonance.M());
-        IsV0Processed = true;
+        if constexpr (IsMC) {
+          if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310)
+            continue;
+          if (trk.motherId() != v0.motherId())
+            continue;
+          if (trk.motherPDG() != 323)
+            continue;
+          histos.fill(HIST("k892pmRecPt"), lResonance.Pt());
+        }
       }
       if (IsV0Processed) {
         IsV0QAFilled = true;
@@ -262,12 +264,13 @@ struct k892pmanalysis {
   }
   PROCESS_SWITCH(k892pmanalysis, processDataLight, "Process Event for data", false);
 
-  /*void processMCLight(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
+  void processMCLight(aod::ResoCollision& collision,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+                      soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resov0s)
   {
-    fillHistograms<true, false>(collision, resotracks, resotracks);
+    fillHistograms<true, false>(collision, resotracks, resov0s);
   }
-  PROCESS_SWITCH(k892pmanalysis, processMCLight, "Process Event for MC", false);*/
+  PROCESS_SWITCH(k892pmanalysis, processMCLight, "Process Event for MC", false);
 
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
@@ -287,10 +290,7 @@ struct k892pmanalysis {
       }
       if (!pass1 || !pass2) // If we have both decay products
         continue;
-      if (part.pdgCode() > 0)
-        histos.fill(HIST("k892pmGen"), part.pt());
-      else
-        histos.fill(HIST("k892pmGenAnti"), part.pt());
+      histos.fill(HIST("k892pmGenPt"), part.pt());
     }
   }
   PROCESS_SWITCH(k892pmanalysis, processMCTrue, "Process Event for MC", false);
