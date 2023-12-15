@@ -122,7 +122,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   template <typename T, typename U>
   auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                           double ct, double y, double e, int8_t flagMc, int8_t origin)
+                           double ct, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -130,10 +130,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        invMass,
-        candidate.p(),
-        e,
-        y);
+        invMass);
     }
     if (fillCandidatePar) {
       rowCandidatePar(
@@ -215,7 +212,6 @@ struct HfDerivedDataCreatorD0ToKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mass),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
@@ -282,8 +278,6 @@ struct HfDerivedDataCreatorD0ToKPi {
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
-        double yD = hfHelper.yD0(candidate);
-        double eD = hfHelper.eD0(candidate);
         double ctD = hfHelper.ctD0(candidate);
         float massD0, massD0bar;
         float topolChi2PerNdf = -999.;
@@ -296,10 +290,10 @@ struct HfDerivedDataCreatorD0ToKPi {
           massD0bar = hfHelper.invMassD0barToKPi(candidate);
         }
         if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
         }
         if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
         }
       }
     }

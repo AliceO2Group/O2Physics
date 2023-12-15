@@ -56,13 +56,10 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
 namespace hf_cand_base
 {
 DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index
-DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Y, y, float);
 } // namespace hf_cand_base
 
 namespace hf_cand_par
@@ -144,10 +141,7 @@ DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE",
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
-                  hf_cand_base::M,
-                  hf_cand_base::P,
-                  hf_cand_base::E,
-                  hf_cand_base::Y);
+                  hf_cand_base::M);
 
 /// Table with candidate properties used for selection
 // candidates for removal:
@@ -229,7 +223,6 @@ DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
-                  hf_cand_base::Y,
                   hf_cand_mc::FlagMc,
                   hf_cand_mc::OriginMcGen);
 
