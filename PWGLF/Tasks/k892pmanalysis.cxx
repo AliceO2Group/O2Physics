@@ -240,11 +240,11 @@ struct k892pmanalysis {
         //K*(892)pm mass
         histos.fill(HIST("k892pminvmass"), lResonance.M());
         if constexpr (IsMC) {
-          if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310)
+          if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310) //Check that the first particle is a charged pion and the V0 is a K0short
             continue;
-          if (trk.motherId() != v0.motherId())
+          if (trk.motherId() != v0.motherId())                       //Check that the pion and K0short are daughters of the same mother
             continue;
-          if (trk.motherPDG() != 323)
+          if (trk.motherPDG() != 323)                                //Check that the pion and K0short's mother is a K*(892)pm
             continue;
           histos.fill(HIST("k892pmRecPt"), lResonance.Pt());
         }
@@ -275,20 +275,20 @@ struct k892pmanalysis {
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
-      if (abs(part.pdgCode()) != 323) // K*892(pm)
+      if (abs(part.pdgCode()) != 323) // Filter out all non K*(892)pm parents
         continue;
-      if (abs(part.y()) > 0.5) { // rapidity cut
+      if (abs(part.y()) > 0.5) {      // rapidity cut
         continue;
       }
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 310) { // At least one decay to K0s
+      if (abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 310) { // Decay daughters: K0short and charged pion (any order)
         pass1 = true;
       }
-      if (abs(part.daughterPDG1()) == 310 || abs(part.daughterPDG2()) == 211) { // At least one decay to K0s
+      if (abs(part.daughterPDG1()) == 310 || abs(part.daughterPDG2()) == 211) { // Decay daughters: K0short and charged pion (any order)
         pass2 = true;
       }
-      if (!pass1 || !pass2) // If we have both decay products
+      if (!pass1 || !pass2) // Skip parent if we don't have both decay products (charged pion + K0short)
         continue;
       histos.fill(HIST("k892pmGenPt"), part.pt());
     }
