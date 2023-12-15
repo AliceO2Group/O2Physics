@@ -330,10 +330,10 @@ struct HfDerivedDataCreatorD0ToKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithKFParticle, "Process data with KFParticle", false);
 
   void processMcWithDCAFitterSig(aod::Collisions const& collisions,
-                                     SelectedCandidatesMc const&,
-                                     MatchedGenCandidatesMc const& mcParticles,
-                                     TracksWPid const& tracks,
-                                     aod::BCs const& bcs)
+                                 SelectedCandidatesMc const&,
+                                 MatchedGenCandidatesMc const& mcParticles,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
   {
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, true>(collisions, candidatesMcSig, tracks, bcs);
     processMcParticles(mcParticles);
@@ -341,10 +341,10 @@ struct HfDerivedDataCreatorD0ToKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterSig, "Process MC with DCAFitterN only for signals", false);
 
   void processMcWithDCAFitterBkg(aod::Collisions const& collisions,
-                                     SelectedCandidatesMc const&,
-                                     MatchedGenCandidatesMc const& mcParticles,
-                                     TracksWPid const& tracks,
-                                     aod::BCs const& bcs)
+                                 SelectedCandidatesMc const&,
+                                 MatchedGenCandidatesMc const& mcParticles,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
   {
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
     processMcParticles(mcParticles);
@@ -363,10 +363,10 @@ struct HfDerivedDataCreatorD0ToKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticleSig(aod::Collisions const& collisions,
-                                      SelectedCandidatesMcKf const&,
-                                      MatchedGenCandidatesMc const& mcParticles,
-                                      TracksWPid const& tracks,
-                                      aod::BCs const& bcs)
+                                  SelectedCandidatesMcKf const&,
+                                  MatchedGenCandidatesMc const& mcParticles,
+                                  TracksWPid const& tracks,
+                                  aod::BCs const& bcs)
   {
     processCandidates<aod::hf_cand::VertexerType::KfParticle, true, false, true>(collisions, candidatesMcKfSig, tracks, bcs);
     processMcParticles(mcParticles);
@@ -374,10 +374,10 @@ struct HfDerivedDataCreatorD0ToKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleSig, "Process MC with KFParticle only for signals", false);
 
   void processMcWithKFParticleBkg(aod::Collisions const& collisions,
-                                      SelectedCandidatesMcKf const&,
-                                      MatchedGenCandidatesMc const& mcParticles,
-                                      TracksWPid const& tracks,
-                                      aod::BCs const& bcs)
+                                  SelectedCandidatesMcKf const&,
+                                  MatchedGenCandidatesMc const& mcParticles,
+                                  TracksWPid const& tracks,
+                                  aod::BCs const& bcs)
   {
     processCandidates<aod::hf_cand::VertexerType::KfParticle, true, true, false>(collisions, candidatesMcKfBkg, tracks, bcs);
     processMcParticles(mcParticles);

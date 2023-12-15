@@ -26,7 +26,7 @@ namespace o2::aod
 namespace hf_coll_base
 {
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! Collision rejection flag
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float); //! FT0M multiplicity
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);            //! FT0M multiplicity
 } // namespace hf_coll_base
 
 DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic collision info
@@ -43,36 +43,36 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indice
 // Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived collision table for D0 candidates
-DECLARE_SOA_COLUMN(Eta, eta, float); //! pseudorapidity
-DECLARE_SOA_COLUMN(M, m, float); //! invariant mass
-DECLARE_SOA_COLUMN(Phi, phi, float); //! azimuth
-DECLARE_SOA_COLUMN(Pt, pt, float); //! transverse momentum
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase); //! Collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //! pseudorapidity
+DECLARE_SOA_COLUMN(M, m, float);                      //! invariant mass
+DECLARE_SOA_COLUMN(Phi, phi, float);                  //! azimuth
+DECLARE_SOA_COLUMN(Pt, pt, float);                    //! transverse momentum
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
 namespace hf_cand_par
 {
-DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float); //! cosine of theta star
-DECLARE_SOA_COLUMN(Cpa, cpa, float); //! cosine of pointing angle
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float); //! cosine of pointing angle in the transverse plane
-DECLARE_SOA_COLUMN(Ct, ct, float); //! proper lifetime times c
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! decay length
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float); //! decay length divided by its uncertainty
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float); //! decay length in the transverse plane
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! decay length in the transverse plane divided by its uncertainty
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);                             //! cosine of theta star
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                               //! cosine of pointing angle
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                           //! cosine of pointing angle in the transverse plane
+DECLARE_SOA_COLUMN(Ct, ct, float);                                                 //! proper lifetime times c
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! decay length
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! decay length divided by its uncertainty
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! decay length in the transverse plane
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! decay length in the transverse plane divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float); //! impact parameter of prong 0 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! impact parameter of prong 1 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float); //! impact parameter of prong 2 divided by its uncertainty
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float); //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float); //! see RecoDecay::maxNormalisedDeltaIP
-DECLARE_SOA_COLUMN(PProng0, pProng0, float); //! momentum magnitude of prong 0
-DECLARE_SOA_COLUMN(PProng1, pProng1, float); //! momentum magnitude of prong 1
-DECLARE_SOA_COLUMN(PProng2, pProng2, float); //! momentum magnitude of prong 2
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float); //! transverse momentum of prong 0
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float); //! transverse momentum of prong 1
-DECLARE_SOA_COLUMN(PtProng2, ptProng2, float); //! transverse momentum of prong 2
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float); //! distance of the secondary vertex from the z axis
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);             //! see RecoDecay::maxNormalisedDeltaIP
+DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! momentum magnitude of prong 0
+DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                       //! momentum magnitude of prong 1
+DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                       //! momentum magnitude of prong 2
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! transverse momentum of prong 0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! transverse momentum of prong 1
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                     //! transverse momentum of prong 2
+DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! distance of the secondary vertex from the z axis
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
@@ -121,9 +121,9 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
-DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);             //! ML score for background class
-DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);       //! ML score for prompt class
-DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float); //! ML score for non-prompt class
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                  //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);            //! ML score for prompt class
+DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score for non-prompt class
 } // namespace hf_cand_mc
 
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses
