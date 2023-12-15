@@ -277,7 +277,7 @@ struct k892pmanalysis {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 323) // Filter out all non K*(892)pm parents
         continue;
-      if (abs(part.y()) > 0.5) {      // rapidity cut
+      if (abs(part.y()) > 0.5) {      // Rapidity cut
         continue;
       }
       bool pass1 = false;
