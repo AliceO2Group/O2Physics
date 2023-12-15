@@ -54,7 +54,7 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
 
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived table
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);  //! Collision index pointing to the derived collision table
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -122,10 +122,13 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 
 namespace hf_cand_mc
 {
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
+DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! resonant decay channel flag, reconstruction level
+DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);             //! ML score for background class
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);       //! ML score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float); //! ML score for non-prompt class
@@ -213,7 +216,7 @@ DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
 
 // Table with candidate MC info
 DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",
-                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec);
 
 // Table with MC particle info
@@ -222,7 +225,7 @@ DECLARE_SOA_TABLE(HfD0Ps, "AOD", "HFD0P",
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
-                  hf_cand_mc::FlagMc,
+                  hf_cand_mc::FlagMcMatchGen,
                   hf_cand_mc::OriginMcGen);
 
 // Table with global indices for MC particles
