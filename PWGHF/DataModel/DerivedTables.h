@@ -21,8 +21,6 @@ namespace o2::aod
 {
 namespace hf_cand_index
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate2P, candidate2p, int, HfCand2Prong, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate3P, candidate3p, int, HfCand3Prong, "");
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
@@ -218,8 +216,7 @@ DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
 DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
                   hf_track_index::CollisionId,
                   hf_track_index::Prong0Id,
-                  hf_track_index::Prong1Id,
-                  hf_cand_index::Candidate2PId);
+                  hf_track_index::Prong1Id);
 
 // Table with candidate MC info
 DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC",

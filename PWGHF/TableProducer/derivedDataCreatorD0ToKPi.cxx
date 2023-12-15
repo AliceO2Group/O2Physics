@@ -198,8 +198,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       rowCandidateId(
         candidate.collisionId(),
         candidate.prong0Id(),
-        candidate.prong1Id(),
-        candidate.globalIndex());
+        candidate.prong1Id());
     }
     if (fillCandidateMc) {
       rowCandidateMc(
