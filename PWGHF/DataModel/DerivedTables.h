@@ -22,21 +22,11 @@
 
 namespace o2::aod
 {
-namespace hf_cand_index
-{
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
-} // namespace hf_cand_index
-
+// Basic collision properties
 namespace hf_coll_base
 {
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t);
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
-DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);
-DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);
-DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);
-DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! Collision rejection flag
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float); //! FT0M multiplicity
 } // namespace hf_coll_base
 
 // Table with basic collision info
@@ -44,13 +34,13 @@ DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE",
                   o2::soa::Index<>,
                   collision::NumContrib,
                   hf_coll_base::IsEventReject,
-                  hf_coll_base::RunNumber);
+                  bc::RunNumber);
 
 using HfD0CollBase = HfD0CollBases::iterator;
 
 // Table with global indices for collisions
 DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID",
-                  hf_cand::CollisionId);
+                  track::CollisionId);
 
 namespace hf_cand_base
 {
@@ -210,7 +200,7 @@ DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL",
 
 // Table with global indices for candidates
 DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID",
-                  hf_cand::CollisionId,
+                  track::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
@@ -230,8 +220,8 @@ DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE",
 
 // Table with global indices for MC particles
 DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID",
-                  hf_cand_index::McCollisionId,
-                  hf_cand_index::McParticleId);
+                  mcparticle::McCollisionId,
+                  mctracklabel::McParticleId);
 
 } // namespace o2::aod
 
