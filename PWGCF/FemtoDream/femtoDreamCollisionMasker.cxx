@@ -175,15 +175,17 @@ struct femoDreamCollisionMasker {
           }
         }
       }
+    }
 
-      LOG(info) << "Configured values";
-      for (int i = 0; i < CollisionMasks::kNParts; i++) {
-        LOG(info) << "Part " << i+1;
-        for (size_t j = 0; j < TrackCutBits.at(i).size(); j++) {
-          LOG(info) << "Index " << j << " ->    CutBit: " << TrackCutBits.at(i).at(j);
-          LOG(info) << "Index " << j << " ->    TPCBit: " << TrackPIDTPCBits.at(i).at(j);
-          LOG(info) << "Index " << j << " -> TPCTOFBit: " << TrackPIDTPCTOFBits.at(i).at(j);
-        }
+    LOG(info) << "Configured values";
+    for (int part = 0; part < CollisionMasks::kNParts; part++) {
+      LOG(info) << "for Part " << part + 1;
+      for (size_t index = 0; index < TrackCutBits.at(part).size(); index++) {
+        LOG(info) << "with Index " << index;
+        LOG(info) << "->    CutBit: " << TrackCutBits.at(part).at(index);
+        LOG(info) << "->    TPCBit: " << TrackPIDTPCBits.at(part).at(index);
+        LOG(info) << "-> TPCTOFBit: " << TrackPIDTPCTOFBits.at(part).at(index);
+        LOG(info) << "->  PIDThres: " << TrackPIDThreshold.at(part).at(index);
       }
     }
 
@@ -214,12 +216,12 @@ struct femoDreamCollisionMasker {
       // check track cuts
       if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {
         // check pid cuts
-        if (track.p() < TrackPIDThreshold.at(P).at(index)) {
-          if ((track.cut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index)) {
+        if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
+          if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index)) {
             BitSet.at(P).set(index);
           }
         } else {
-          if ((track.cut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
+          if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
             BitSet.at(P).set(index);
           }
         }

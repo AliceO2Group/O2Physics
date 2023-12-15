@@ -49,7 +49,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   using MaskedCollisions = soa::Join<FDCollisions, FDColMasks>;
   using MaskedCollision = MaskedCollisions::iterator;
-  femtodreamcollision::BitMaskType MaskBit = 0;
+  femtodreamcollision::BitMaskType MaskBit = -1;
 
   /// Table for both particles
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
@@ -198,17 +198,16 @@ struct femtoDreamPairTaskTrackTrack {
             containsNameValuePair(device.options, "ConfTrk2_maxPt", ConfTrk2_maxPt.value) &&
             containsNameValuePair(device.options, "ConfTrk2_minEta", ConfTrk2_minEta.value) &&
             containsNameValuePair(device.options, "ConfTrk2_maxEta", ConfTrk2_maxEta.value)) {
-          LOG(info) << "Device name match: " << device.name;
           mask.set(index);
-          LOG(info) << "BitMask: " << mask.to_string();
           MaskBit = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
+          LOG(info) << "Device name matched: " << device.name;
+          LOG(info) << "Bitmask for collisions: " << mask.to_string();
           break;
         } else {
           index++;
         }
       }
     }
-
     if ((doprocessSameEvent && doprocessSameEventMasked) ||
         (doprocessMixedEvent && doprocessMixedEventMasked)) {
       LOG(fatal) << "Normal and masked processing cannot be activated simultaneously!";
@@ -291,7 +290,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   void processSameEventMasked(MaskedCollisions& cols, o2::aod::FDParticles& parts)
   {
-    if (ConfIsSame.value) {
+    if (ConfIsSame.value == true) {
       Partition<MaskedCollisions> PartitionMaskedCols = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
       PartitionMaskedCols.bindTable(cols);
       for (auto const& col : PartitionMaskedCols) {
@@ -386,7 +385,7 @@ struct femtoDreamPairTaskTrackTrack {
     PartitionMaskedCol1.bindTable(cols);
     PartitionMaskedCol2.bindTable(cols);
 
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockStrictlyUpperSameIndexPolicy(colBinning, ConfNEventsMix.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockStrictlyUpperSameIndexPolicy(colBinning, ConfNEventsMix.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
       const auto multiplicityCol = collision1.multNtr();
       const auto magFieldTesla1 = collision1.magField();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
