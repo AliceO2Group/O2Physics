@@ -58,6 +58,9 @@ struct JetFinderHFQATask {
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
   Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 0.1666, "exponent of the event weight for the calculation of pTHat"};
 
   HfHelper hfHelper;
   std::vector<bool> filledJetR;
@@ -230,6 +233,12 @@ struct JetFinderHFQATask {
   template <typename T, typename U>
   void fillHistograms(T const& jet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (jet.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
@@ -293,6 +302,12 @@ struct JetFinderHFQATask {
   template <typename T, typename U>
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (jet.pt() > pTHatMaxMCP * pTHat) {
+      return;
+    }
+
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
@@ -328,7 +343,17 @@ struct JetFinderHFQATask {
   template <typename T, typename U, typename M, typename O>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+
     for (auto& mcpjet : mcdjet.template matchedJetCand_as<std::decay_t<U>>()) {
+
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
 
       auto mcdCandPt = 0.0;
       auto mcdCandPhi = 0.0;

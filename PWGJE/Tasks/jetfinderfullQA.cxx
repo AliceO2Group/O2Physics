@@ -61,6 +61,10 @@ struct JetFinderFullQATask {
   Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 0.1666, "exponent of the event weight for the calculation of pTHat"};
+
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
 
@@ -171,6 +175,12 @@ struct JetFinderFullQATask {
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (jet.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
@@ -205,6 +215,12 @@ struct JetFinderFullQATask {
   template <typename T>
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (jet.pt() > pTHatMaxMCP * pTHat) {
+      return;
+    }
+
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
@@ -228,7 +244,17 @@ struct JetFinderFullQATask {
   template <typename T, typename U>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
+
+    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+
     for (auto& mcpjet : mcdjet.template matchedJetGeo_as<std::decay_t<U>>()) {
+
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
 
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_pt"), mcdjet.r() / 100.0, mcpjet.pt(), mcdjet.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_eta_part_jet_eta"), mcdjet.r() / 100.0, mcpjet.eta(), mcdjet.eta(), weight);
