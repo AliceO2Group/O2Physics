@@ -158,11 +158,15 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_track_eta_Triggered_Both", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_track_phi_Triggered_Both", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
     }
-    if (doprocessTracks) {
+
+    if (doprocessTracks || doprocessTracksWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
+      if (doprocessTracksWeighted) {
+        registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      }
     }
 
     if (doprocessMCCollisionsWeighted) {
@@ -262,6 +266,18 @@ struct JetFinderQATask {
         registry.fill(HIST("h3_jet_pt_part_jet_phi_part_jet_phi"), mcpjet.pt(), mcpjet.phi(), mcdjet.phi(), weight);
         registry.fill(HIST("h3_jet_pt_part_jet_ntracks_part_jet_ntracks"), mcpjet.pt(), mcpjet.tracks().size(), mcdjet.tracks().size(), weight);
       }
+    }
+  }
+
+  void fillTrackHistograms(soa::Filtered<JetTracks> const& tracks, float weight = 1.0)
+  {
+    for (auto const& track : tracks) {
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt"), track.pt(), weight);
+      registry.fill(HIST("h_track_eta"), track.eta(), weight);
+      registry.fill(HIST("h_track_phi"), track.phi(), weight);
     }
   }
 
@@ -452,22 +468,30 @@ struct JetFinderQATask {
   void processTracks(aod::JCollision const& collision,
                      soa::Filtered<JetTracks> const& tracks)
   {
-
     registry.fill(HIST("h_collisions"), 0.5);
     if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    for (auto const& track : tracks) {
-      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection)) {
-        continue;
-      }
-      registry.fill(HIST("h_track_pt"), track.pt());
-      registry.fill(HIST("h_track_eta"), track.eta());
-      registry.fill(HIST("h_track_phi"), track.phi());
-    }
+    fillTrackHistograms(tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
+
+  void processTracksWeighted(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                             aod::JMcCollisions const& mcCollisions,
+                             soa::Filtered<JetTracks> const& tracks)
+  {
+    float eventWeight = collision.mcCollision().weight();
+    registry.fill(HIST("h_collisions"), 0.5);
+    registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    registry.fill(HIST("h_collisions"), 1.5);
+    registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
+    fillTrackHistograms(tracks, eventWeight);
+  }
+  PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }
