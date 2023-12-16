@@ -133,5 +133,18 @@ int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int mo
   return partOrigin;
 };
 
+  template <typename T, typename R>
+  bool containsNameValuePair(const std::vector<T>& myVector, const std::string& name, R value)
+  {
+    for (const auto& obj : myVector) {
+      if (obj.name == name) {
+        if (std::abs(static_cast<float>((obj.defaultValue.template get<R>() - value))) < 1e-2) {
+          return true; // Found a match
+        }
+      }
+    }
+    return false; // No match found
+  }
+
 } // namespace o2::analysis::femtoDream
 #endif // PWGCF_FEMTODREAM_FEMTOUTILS_H_

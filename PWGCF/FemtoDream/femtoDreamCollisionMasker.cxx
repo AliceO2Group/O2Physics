@@ -83,6 +83,7 @@ struct femoDreamCollisionMasker {
 
   void init(InitContext& context)
   {
+    std::vector<std::string> MatchedWorkflows;
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
     LOG(info) << " Collision masker self-configuration ";
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
@@ -164,28 +165,16 @@ struct femoDreamCollisionMasker {
             FilterInvMassAntiMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfV02_maxInvMassAnti")) == 0) {
             FilterInvMassAntiMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfChildPos_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("ConfV02_ChildPos_CutBit")) == 0) {
             PosChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfChildPos_TPCBit")) == 0) {
-            PosChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfChildNeg_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("ConfV02_ChildPos_TPCBit")) == 0) {
+            PosChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfV02_ChildNeg_CutBit")) == 0) {
             NegChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfChildNeg_TPCBit")) == 0) {
-            NegChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfV02_ChildNeg_TPCBit")) == 0) {
+            NegChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           }
         }
-      }
-    }
-
-    LOG(info) << "Configured values";
-    for (int part = 0; part < CollisionMasks::kNParts; part++) {
-      LOG(info) << "for Part " << part + 1;
-      for (size_t index = 0; index < TrackCutBits.at(part).size(); index++) {
-        LOG(info) << "with Index " << index;
-        LOG(info) << "->    CutBit: " << TrackCutBits.at(part).at(index);
-        LOG(info) << "->    TPCBit: " << TrackPIDTPCBits.at(part).at(index);
-        LOG(info) << "-> TPCTOFBit: " << TrackPIDTPCTOFBits.at(part).at(index);
-        LOG(info) << "->  PIDThres: " << TrackPIDThreshold.at(part).at(index);
       }
     }
 
@@ -204,7 +193,6 @@ struct femoDreamCollisionMasker {
     if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
       return;
     }
-    // LOG(info) << "cutbits size: " << TrackCutBits.at(P).size();
     for (size_t index = 0; index < TrackCutBits.at(P).size(); index++) {
       // check filter cuts
       if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
@@ -246,9 +234,11 @@ struct femoDreamCollisionMasker {
         continue;
       }
       // check cut bit of v0
-      if ((v0.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {
-        const auto& posChild = tracks.iteratorAt(v0.index() - 2);
-        const auto& negChild = tracks.iteratorAt(v0.index() - 1);
+      if ((v0.cut() & V0CutBits.at(P).at(index)) == V0CutBits.at(P).at(index)) {
+        // const auto& posChild = tracks.iteratorAt(v0.index() - 2);
+        auto posChild = v0.template children_as<FDParticles>().front();
+        // const auto& negChild = tracks.iteratorAt(v0.index() - 1);
+        auto negChild = v0.template children_as<FDParticles>().back();
         // check cut on v0 children
         if ((posChild.cut() & PosChildCutBits.at(P).at(index)) == PosChildCutBits.at(P).at(index) &&
             (posChild.pidcut() & PosChildPIDTPCBits.at(P).at(index)) == PosChildPIDTPCBits.at(P).at(index) &&
@@ -286,8 +276,6 @@ struct femoDreamCollisionMasker {
         LOG(fatal) << "No femtodream pair task found!";
     }
     // fill bitmask for each collision
-    // LOG(info) << Mask.at(CollisionMasks::kPartOne).to_string();
-    // LOG(info) << Mask.at(CollisionMasks::kPartTwo).to_string();
     Masks(static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartOne).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartTwo).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartThree).to_ulong()));

@@ -92,8 +92,13 @@ struct femtoDreamDebugV0 {
       if (!part.has_children()) {
         continue;
       }
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
+        // const auto& posChild = tracks.iteratorAt(v0.index() - 2);
+        auto posChild = part.template children_as<FemtoFullParticles>().front();
+        // const auto& negChild = tracks.iteratorAt(v0.index() - 1);
+        auto negChild = part.template children_as<FemtoFullParticles>().back();
+        // check cut on v0 children
+      // const auto& posChild = parts.iteratorAt(part.index() - 2);
+      // const auto& negChild = parts.iteratorAt(part.index() - 1);
       if (posChild.globalIndex() != part.childrenIds()[0] || negChild.globalIndex() != part.childrenIds()[1]) {
         LOG(warn) << "Indices of V0 children do not match";
         continue;

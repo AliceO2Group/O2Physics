@@ -214,18 +214,6 @@ struct femtoDreamPairTaskTrackTrack {
     }
   };
 
-  template <typename T, typename R>
-  bool containsNameValuePair(const std::vector<T>& myVector, const std::string& name, R value)
-  {
-    for (const auto& obj : myVector) {
-      if (obj.name == name) {
-        if (std::abs(static_cast<float>((obj.defaultValue.template get<R>() - value))) < 1e-2) {
-          return true; // Found a match
-        }
-      }
-    }
-    return false; // No match found
-  }
 
   template <typename CollisionType>
   void fillCollision(CollisionType col)
@@ -385,7 +373,7 @@ struct femtoDreamPairTaskTrackTrack {
     PartitionMaskedCol1.bindTable(cols);
     PartitionMaskedCol2.bindTable(cols);
 
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockStrictlyUpperSameIndexPolicy(colBinning, ConfNEventsMix.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(colBinning, ConfNEventsMix.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
       const auto multiplicityCol = collision1.multNtr();
       const auto magFieldTesla1 = collision1.magField();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));

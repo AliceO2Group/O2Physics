@@ -32,7 +32,7 @@ DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged t
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
 
-using BitMaskType = uint64_t; //! Definition of the data type for the collision masks
+using BitMaskType = uint32_t; //! Definition of the data type for the collision masks
 
 DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);    //! Bit for track one
 DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);    //! Bit for track two
