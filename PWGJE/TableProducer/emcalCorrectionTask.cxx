@@ -220,7 +220,7 @@ struct EmcalCorrectionTask {
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
-    std::unordered_map<uint64_t, int> numberCollsInBC;  // Number of collisions mapped to the global BC index of all BCs
+    std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
