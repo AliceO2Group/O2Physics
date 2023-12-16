@@ -25,7 +25,7 @@ namespace o2::aod
 // Basic collision properties
 namespace hf_coll_base
 {
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! Collision rejection flag
+DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! collision rejection flag
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);            //! FT0M multiplicity
 } // namespace hf_coll_base
 
@@ -43,7 +43,7 @@ DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indice
 // Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase); //! Collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase); //! collision index pointing to the derived collision table for D0 candidates
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //! pseudorapidity
 DECLARE_SOA_COLUMN(M, m, float);                      //! invariant mass
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //! azimuth
@@ -135,7 +135,7 @@ DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate p
                   hf_cand_base::M);
 
 // candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep P, Pt, Phi instead
+// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection

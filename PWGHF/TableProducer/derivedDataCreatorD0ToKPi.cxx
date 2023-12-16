@@ -11,6 +11,7 @@
 
 /// \file derivedDataCreatorD0ToKPi.cxx
 /// \brief Producer of derived tables of D0 candidates, collisions and MC particles
+/// \note Based on treeCreatorD0ToKPi.cxx
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
