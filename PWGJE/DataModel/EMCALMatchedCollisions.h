@@ -15,8 +15,8 @@
 /// \author Nicolas Strangmann <nicolas.strangmann@cern.ch>
 /// \since  2023-12-16
 
-#ifndef PWGJE_DATAMODEL_EMCALMATCHEDCOLLISION_H_
-#define PWGJE_DATAMODEL_EMCALMATCHEDCOLLISION_H_
+#ifndef PWGJE_DATAMODEL_EMCALMATCHEDCOLLISIONS_H_
+#define PWGJE_DATAMODEL_EMCALMATCHEDCOLLISIONS_H_
 
 #include <string>
 #include "Framework/AnalysisDataModel.h"
@@ -37,4 +37,4 @@ using EMCALMatchedCollision = EMCALMatchedCollisions::iterator;
 
 } // namespace o2::aod
 
-#endif // PWGJE_DATAMODEL_EMCALMATCHEDCOLLISION_H_
+#endif // PWGJE_DATAMODEL_EMCALMATCHEDCOLLISIONS_H_
