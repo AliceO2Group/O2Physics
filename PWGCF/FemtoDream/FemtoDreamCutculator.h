@@ -342,8 +342,6 @@ class FemtoDreamCutculator
       for (std::size_t j = 0; j < mPIDValues.size(); j++) {
         std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
         Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
-        // TPCBit = mPIDValues.size()*(mPIDspecies.size()-(i+1)) + 2*(mPIDValues.size()-j);
-        // TPCTOFBit =TPCBit-1;
         std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
         std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
         std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
