@@ -216,6 +216,10 @@ struct femtoWorldEficiencyTask {
     if (ConfIsRun3) {
       if (!collision.sel8())
         return;
+    } 
+    else {
+      if (!collision.sel7())
+        return;
     }
 
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
