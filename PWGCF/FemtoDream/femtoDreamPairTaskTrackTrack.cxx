@@ -126,7 +126,7 @@ struct femtoDreamPairTaskTrackTrack {
   FemtoDreamEventHisto eventHisto;
 
   /// particle part
-  ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarBins{"ConfTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
@@ -214,7 +214,6 @@ struct femtoDreamPairTaskTrackTrack {
     }
   };
 
-
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
@@ -240,24 +239,39 @@ struct femtoDreamPairTaskTrackTrack {
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
     }
 
-    if (!ConfIsSame) {
+    if (!ConfIsSame.value) {
       for (auto& part : SliceTrk2) {
         trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
       }
     }
+
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
-      if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+    if (ConfIsSame.value) {
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
+        if (ConfIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
+        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
       }
-
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
+    } else {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+        if (ConfIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
       }
-      sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D, ConfExtendedPlots);
     }
   }
 
@@ -269,35 +283,28 @@ struct femtoDreamPairTaskTrackTrack {
     fillCollision(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceTrk1.size() == 0 || SliceTrk2.size() == 0) {
-      return;
-    }
     doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
 
-  void processSameEventMasked(MaskedCollisions& cols, o2::aod::FDParticles& parts)
+  void processSameEventMasked(MaskedCollision& col, o2::aod::FDParticles& parts)
   {
-    if (ConfIsSame.value == true) {
-      Partition<MaskedCollisions> PartitionMaskedCols = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
-      PartitionMaskedCols.bindTable(cols);
-      for (auto const& col : PartitionMaskedCols) {
-        fillCollision(col);
-        auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col.magField(), col.multNtr());
+    if (ConfIsSame.value) {
+      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit) {
+        return;
       }
     } else {
-      Partition<MaskedCollisions> PartitionMaskedCols = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit &&
-                                                        (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit;
-      PartitionMaskedCols.bindTable(cols);
-      for (auto const& col : PartitionMaskedCols) {
-        fillCollision(col);
-        auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col.magField(), col.multNtr());
+      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+        return;
       }
     }
+    fillCollision(col);
+    auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceTrk1.size() == 0 || SliceTrk2.size() == 0) {
+      return;
+    }
+    doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMasked, "Enable processing same event with masks", false);
 

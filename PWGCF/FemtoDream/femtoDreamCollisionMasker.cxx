@@ -219,7 +219,7 @@ struct femoDreamCollisionMasker {
 
   // make bit mask for v0
   template <typename T, typename R, typename S>
-  void MaskForV0(T& BitSet, CollisionMasks::Parts P, R& v0, S& tracks)
+  void MaskForV0(T& BitSet, CollisionMasks::Parts P, R& v0, S& parts)
   {
     if (v0.partType() != static_cast<uint8_t>(femtodreamparticle::kV0)) {
       return;
@@ -235,10 +235,12 @@ struct femoDreamCollisionMasker {
       }
       // check cut bit of v0
       if ((v0.cut() & V0CutBits.at(P).at(index)) == V0CutBits.at(P).at(index)) {
-        // const auto& posChild = tracks.iteratorAt(v0.index() - 2);
-        auto posChild = v0.template children_as<FDParticles>().front();
-        // const auto& negChild = tracks.iteratorAt(v0.index() - 1);
-        auto negChild = v0.template children_as<FDParticles>().back();
+        const auto& posChild = parts.iteratorAt(v0.index() - 2);
+        const auto& negChild = parts.iteratorAt(v0.index() - 1);
+        // This is how it is supposed to work but there seems to be an issue
+        // for now, keep in sync with femtodreampairtasktrackv0
+        // auto posChild = v0.template children_as<FDParticles>().front();
+        // auto negChild = v0.template children_as<FDParticles>().back();
         // check cut on v0 children
         if ((posChild.cut() & PosChildCutBits.at(P).at(index)) == PosChildCutBits.at(P).at(index) &&
             (posChild.pidcut() & PosChildPIDTPCBits.at(P).at(index)) == PosChildPIDTPCBits.at(P).at(index) &&
@@ -271,6 +273,7 @@ struct femoDreamCollisionMasker {
           MaskForTrack(Mask, CollisionMasks::kPartOne, part);
           MaskForV0(Mask, CollisionMasks::kPartTwo, part, parts);
         }
+        // TODO: add all supported pair/triplet tasks
         break;
       default:
         LOG(fatal) << "No femtodream pair task found!";
