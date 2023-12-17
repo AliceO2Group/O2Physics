@@ -216,8 +216,7 @@ struct femtoWorldEficiencyTask {
     if (ConfIsRun3) {
       if (!collision.sel8())
         return;
-    } 
-    else {
+    } else {
       if (!collision.sel7())
         return;
     }
