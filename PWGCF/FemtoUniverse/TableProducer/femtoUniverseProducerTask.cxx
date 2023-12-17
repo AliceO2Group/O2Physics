@@ -58,7 +58,7 @@ using FemtoFullCollision =
   soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollisionCentRun2 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
- using FemtoFullCollisionCentRun3 =
+using FemtoFullCollisionCentRun3 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
@@ -570,7 +570,7 @@ struct femtoUniverseProducerTask {
       return;
     }
 
-    //colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
     outputCollision(vtxZ, cent, multNtr, spher, mMagField);
   }
 
@@ -598,7 +598,7 @@ struct femtoUniverseProducerTask {
       return;
     }
 
-    //colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
     outputCollision(vtxZ, cent, multNtr, spher, mMagField);
   }
 
@@ -1125,9 +1125,9 @@ struct femtoUniverseProducerTask {
 
   void
     processTrackMCTruth(aod::McCollision const& mcCol,
-                   soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
-                   aod::McParticles const& mcParticles,
-                   aod::BCsWithTimestamps const&)
+                        soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                        aod::McParticles const& mcParticles,
+                        aod::BCsWithTimestamps const&)
   {
     // magnetic field for run not needed for mc truth
     // fill the tables
@@ -1138,8 +1138,8 @@ struct femtoUniverseProducerTask {
 
   void
     processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
-                        aod::BCsWithTimestamps const&,
-                        aod::FemtoFullTracks const& tracks)
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1151,8 +1151,8 @@ struct femtoUniverseProducerTask {
 
   void
     processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
-                        aod::BCsWithTimestamps const&,
-                        aod::FemtoFullTracks const& tracks)
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
