@@ -34,9 +34,9 @@ DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the eve
 
 using BitMaskType = uint32_t; //! Definition of the data type for the collision masks
 
-DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);    //! Bit for track one
-DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);    //! Bit for track two
-DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType);    //! Bit for track three
+DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit for track one
+DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
+DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
