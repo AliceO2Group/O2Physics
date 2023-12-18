@@ -777,11 +777,11 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
-      // V0 logic reminder 
-      // 0: v0 saved for the only due to the cascade, 1: standalone v0, 3: standard v0 with photon-only test 
+      // V0 logic reminder
+      // 0: v0 saved for the only due to the cascade, 1: standalone v0, 3: standard v0 with photon-only test
 
-      if(V0.v0Type() > 0){
-        if(V0.v0Type() > 1 && !storePhotonCandidates) 
+      if (V0.v0Type() > 0) {
+        if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
         // populates the various tables for analysis
         v0indices(V0.posTrackId(), V0.negTrackId(),
@@ -794,14 +794,14 @@ struct lambdakzeroBuilder {
                 v0candidate.posDCAxy,
                 v0candidate.negDCAxy,
                 v0candidate.cosPA,
-                v0candidate.dcav0topv, 
+                v0candidate.dcav0topv,
                 V0.v0Type());
-      }else{ 
-        // place V0s built exclusively for the sake of cascades 
-        // in a fully independent table (though identical) to make 
-        // sure there's no accidental usage of those candidates 
-        // N.B.: these are obtained with *other selections* in 
-        //       the svertexer! 
+      } else {
+        // place V0s built exclusively for the sake of cascades
+        // in a fully independent table (though identical) to make
+        // sure there's no accidental usage of those candidates
+        // N.B.: these are obtained with *other selections* in
+        //       the svertexer!
         v0fcindices(V0.posTrackId(), V0.negTrackId(),
                     V0.collisionId(), V0.globalIndex());
         v0fctrackXs(v0candidate.posTrackX, v0candidate.negTrackX);
@@ -812,7 +812,7 @@ struct lambdakzeroBuilder {
                   v0candidate.posDCAxy,
                   v0candidate.negDCAxy,
                   v0candidate.cosPA,
-                  v0candidate.dcav0topv, 
+                  v0candidate.dcav0topv,
                   V0.v0Type());
       }
 
@@ -1190,7 +1190,7 @@ struct lambdakzeroV0DataLinkBuilder {
     std::vector<int> lIndices, lfCIndices;
     lIndices.reserve(v0table.size());
     lfCIndices.reserve(v0table.size());
-    for (int ii = 0; ii < v0table.size(); ii++){
+    for (int ii = 0; ii < v0table.size(); ii++) {
       lIndices[ii] = -1;
       lfCIndices[ii] = -1;
     }

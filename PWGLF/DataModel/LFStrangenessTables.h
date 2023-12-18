@@ -146,7 +146,7 @@ DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! V0 CosPA
 DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
 
 // Type of V0 from the svertexer (photon, regular, from cascade)
-DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);           //! DCA V0 to PV
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! DCA V0 to PV
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -352,7 +352,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core infor
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
                        v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type, 
+                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
                        // Dynamic columns
                        v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
@@ -363,7 +363,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core infor
                        v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, //24
+                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
                        // Invariant masses
                        v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -386,9 +386,9 @@ DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core infor
                        v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>, 
+                       v0data::IsStandardV0<v0data::V0Type>,
                        v0data::IsPhotonV0<v0data::V0Type>,
-                       o2::soa::Marker<1>); 
+                       o2::soa::Marker<1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",                                                  //!
@@ -396,7 +396,6 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",            
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);
-
 
 DECLARE_SOA_TABLE(V0fCIndices, "AOD", "V0FCINDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id, o2::soa::Marker<2>);
@@ -409,7 +408,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
                        v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type, 
+                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
                        // Dynamic columns
                        v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
@@ -420,7 +419,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, //24
+                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
                        // Invariant masses
                        v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -443,12 +442,12 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>, 
-                       v0data::IsPhotonV0<v0data::V0Type>, 
-                       o2::soa::Marker<2>); 
+                       v0data::IsStandardV0<v0data::V0Type>,
+                       v0data::IsPhotonV0<v0data::V0Type>,
+                       o2::soa::Marker<2>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",                                                  //!
+DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",                                            //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE_FULL(V0fCCovs, "V0fCCovs", "AOD", "V0FCCOVS", //! V0 covariance matrices
@@ -478,7 +477,7 @@ using V0MCData = V0MCDatas::iterator;
 namespace v0data
 {
 DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data); //! Index to V0Data entry
-DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData); //! Index to V0Data entry
+DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData);                     //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC"); //!
 }
 
@@ -551,7 +550,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "_Bach");        
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrack, strangeTrack, int, Tracks, "_Strange"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                     //!
 // FOR DERIVED
-DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra");             //! 
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra");          //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrackExtra, strangeTrackExtra, int, DauTrackExtras, "_StrangeExtra"); //!
@@ -595,7 +594,7 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: track position at minima
 DECLARE_SOA_COLUMN(PosX, posX, float);   //! positive track X at min
 DECLARE_SOA_COLUMN(NegX, negX, float);   //! negative track X at min
-DECLARE_SOA_COLUMN(BachX, bachX, float);   //! bachelor track X at min
+DECLARE_SOA_COLUMN(BachX, bachX, float); //! bachelor track X at min
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCOVS

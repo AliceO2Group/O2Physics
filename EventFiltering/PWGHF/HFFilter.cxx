@@ -945,7 +945,7 @@ struct HfFilter { // Main struct for HF triggers
           auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
           auto v0DauPos = casc.posTrack_as<BigTracksPID>();
           auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
-          
+
           if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
             continue;
           }

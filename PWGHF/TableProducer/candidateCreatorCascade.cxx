@@ -118,11 +118,11 @@ struct HfCandidateCreatorCascade {
       float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
       float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
       float posTrackX, negTrackX;
-      o2::track::TrackParCov trackParCovV0DaughPos; 
-      o2::track::TrackParCov trackParCovV0DaughNeg; 
+      o2::track::TrackParCov trackParCovV0DaughPos;
+      o2::track::TrackParCov trackParCovV0DaughNeg;
 
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if(v0index.has_v0Data()){
+      if (v0index.has_v0Data()) {
         // this V0 passed both standard V0 and cascade V0 selections
         auto v0row = v0index.v0Data();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
@@ -149,7 +149,7 @@ struct HfCandidateCreatorCascade {
         v0cosPA = v0row.v0cosPA();
         posTrackX = v0row.posX();
         negTrackX = v0row.negX();
-      }else if(v0index.has_v0fCData()){
+      } else if (v0index.has_v0fCData()) {
         // this V0 passes only V0-for-cascade selections, use that instead
         auto v0row = v0index.v0fCData();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
@@ -176,7 +176,7 @@ struct HfCandidateCreatorCascade {
         v0cosPA = v0row.v0cosPA();
         posTrackX = v0row.posX();
         negTrackX = v0row.negX();
-      }else{ 
+      } else {
         LOGF(warning, "V0Data/V0fCData not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         continue; // this was inadequately linked, should not happen
       }
@@ -195,8 +195,8 @@ struct HfCandidateCreatorCascade {
       df.setBz(bz);
 
       auto trackParCovBach = getTrackParCov(bach);
-      trackParCovV0DaughPos.propagateTo(posTrackX, bz);             // propagate the track to the X closest to the V0 vertex
-      trackParCovV0DaughNeg.propagateTo(negTrackX, bz);             // propagate the track to the X closest to the V0 vertex
+      trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
+      trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
       const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
       const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
       // we build the neutral track to then build the cascade
@@ -253,8 +253,8 @@ struct HfCandidateCreatorCascade {
                        v0x, v0y, v0z,
                        // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        posGlobalIndex, negGlobalIndex,
-                       v0PosPx, v0PosPy, v0PosPz, 
-                       v0NegPx, v0NegPy, v0NegPz, 
+                       v0PosPx, v0PosPy, v0PosPz,
+                       v0NegPx, v0NegPy, v0NegPz,
                        dcaV0dau,
                        dcaPosToPV,
                        dcaNegToPV,
