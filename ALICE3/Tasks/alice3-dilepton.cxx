@@ -119,8 +119,6 @@ struct Alice3Dilepton {
 
     registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
 
-
-
     registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
 
     registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
@@ -621,7 +619,7 @@ struct Alice3Dilepton {
 
     } // end of collision loop
   }   // end of processRec
-<<<<<<< HEAD
+
 
   template <typename TTrack>
   bool electronIDTOF(TTrack const& track)
@@ -646,8 +644,6 @@ struct Alice3Dilepton {
     isElectron = isEleRICH && isNotPionRICH;
     return isElectron;
   }
-=======
->>>>>>> 8e999b32 (ALICE3: fix bug)
 
   PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);
