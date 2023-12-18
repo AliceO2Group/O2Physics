@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
-#define PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
 #include "TObjArray.h"
 #include "TNamed.h"
 #include "TH3D.h"
@@ -75,4 +75,4 @@ class GFWWeights : public TNamed
   ClassDef(GFWWeights, 1);
 };
 
-#endif // PWGCF_GENERICFRAMEWORK_GFWWEIGHTS_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
