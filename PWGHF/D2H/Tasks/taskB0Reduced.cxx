@@ -52,6 +52,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //!
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);   //! Impact parameter product of candidate
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
@@ -68,7 +69,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  hf_cand::ImpactParameterProduct,
+                  hf_cand_b0_lite::ImpactParameterProduct,
                   hf_cand_b0_lite::NSigTpcPi1,
                   hf_cand_b0_lite::NSigTofPi1,
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
