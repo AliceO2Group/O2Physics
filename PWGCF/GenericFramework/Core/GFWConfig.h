@@ -12,6 +12,7 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 #include <string>
