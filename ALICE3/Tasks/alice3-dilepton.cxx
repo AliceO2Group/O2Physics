@@ -620,7 +620,6 @@ struct Alice3Dilepton {
     } // end of collision loop
   }   // end of processRec
 
-
   template <typename TTrack>
   bool electronIDTOF(TTrack const& track)
   {
