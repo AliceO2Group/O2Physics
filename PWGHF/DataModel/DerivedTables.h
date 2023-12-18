@@ -68,6 +68,8 @@ DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant 
 DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
 DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
 
+namespace functions
+{
 /// Rapidity as a function of pT, eta, mass
 /// \todo Move to RecoDecay
 template <typename TPt, typename TEta, typename TM>
@@ -75,8 +77,9 @@ auto y(TPt pt, TEta eta, TM m)
 {
   return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
 }
+} // namespace functions
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
-                           [](float pt, float eta) -> float { return y(pt, eta, o2::constants::physics::MassD0); });
+                           [](float pt, float eta) -> float { return functions::y(pt, eta, o2::constants::physics::MassD0); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
