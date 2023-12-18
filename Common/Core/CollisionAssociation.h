@@ -178,7 +178,7 @@ class CollisionAssociation
         float trackTimeRes = track.trackTimeRes();
         if constexpr (isCentralBarrel) {
           if (mUsePvAssociation && track.isPVContributor()) {
-            trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
+            trackTime = track.collision().collisionTime();        // if PV contributor, we assume the time to be the one of the collision
             trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS; // 1 BC
           }
         }
