@@ -98,7 +98,7 @@ struct PCMQCMC {
     for (auto& cut : fPCMCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg", "mc");
     }
 
     // for V0s
@@ -160,7 +160,7 @@ struct PCMQCMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
-      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
 
       for (const auto& cut : fPCMCuts) {
         THashList* list_v0_cut = static_cast<THashList*>(list_v0->FindObject(cut.GetName()));
@@ -172,17 +172,16 @@ struct PCMQCMC {
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
-          int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          // if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-          //   photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
-          // }
-
-          if (photonid < 0) {
-            continue;
-          }
-          auto mcphoton = mcparticles.iteratorAt(photonid);
-
           if (cut.IsSelected<MyMCV0Legs>(v0)) {
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Candidate"))->Fill(v0.pt());
+            reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_Candidate"))->Fill(v0.phi(), v0.eta());
+
+            int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
+            if (photonid < 0) {
+              continue;
+            }
+            auto mcphoton = mcparticles.iteratorAt(photonid);
+
             o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
             if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Primary"))->Fill(v0.pt());
@@ -215,17 +214,14 @@ struct PCMQCMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffX_recalc"))->Fill(elemc.vx(), v0.recalculatedVtxX() - elemc.vx());
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffY_recalc"))->Fill(elemc.vy(), v0.recalculatedVtxY() - elemc.vy());
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffZ_recalc"))->Fill(elemc.vz(), v0.recalculatedVtxZ() - elemc.vz());
-
             nv0++;
-            float ptee = RecoDecay::sqrtSumOfSquares(pos.px() + ele.px(), pos.py() + ele.py());
-            float etaee = RecoDecay::eta(std::array{pos.px() + ele.px(), pos.py() + ele.py(), pos.pz() + ele.pz()});
-            float phiee = RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) > 0.f ? RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) : RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) + TMath::TwoPi();
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPt"))->Fill(v0.pt(), ptee);
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffEta"))->Fill(v0.pt(), etaee - v0.eta());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPhi"))->Fill(v0.pt(), phiee - v0.phi());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hRelDiffPt"))->Fill(v0.pt(), (ptee - v0.pt()) / v0.pt());
+
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
+              auto mcleg = leg.template emmcparticle_as<aod::EMMCParticles>();
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mcleg.pt(), (leg.pt() - mcleg.pt()) / mcleg.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mcleg.pt(), leg.eta() - mcleg.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mcleg.pt(), leg.phi() - mcleg.phi());
             }
           }
         } // end of v0 loop

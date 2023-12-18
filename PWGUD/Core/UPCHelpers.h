@@ -59,6 +59,7 @@ enum BarrelSels {
   kBarrelSelTPCChi2,
   kBarrelSelDCAXY,
   kBarrelSelDCAZ,
+  kAmbiguous,
   kNBarrelSels
 };
 
@@ -87,6 +88,10 @@ struct FITInfo {
   int32_t BGFDDApf = 0;
   int32_t BBFDDCpf = 0;
   int32_t BGFDDCpf = 0;
+  int32_t distClosestBcTOR = 999;
+  int32_t distClosestBcTSC = 999;
+  int32_t distClosestBcTVX = 999;
+  int32_t distClosestBcV0A = 999;
 };
 
 template <typename TSelectorsArray>
@@ -102,6 +107,9 @@ void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track
 template <typename TSelectorsArray>
 void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& track, TSelectorsArray& barrelSelectors)
 {
+  barrelSelectors[kAmbiguous] = true;
+  if (upcCuts.getAmbigSwitch())
+    barrelSelectors[kAmbiguous] = track.isPVContributor();
   barrelSelectors[kBarrelSelHasTOF] = true;
   if (upcCuts.getRequireTOF())
     barrelSelectors[kBarrelSelHasTOF] = track.hasTOF();                                                           // require TOF match if needed
@@ -113,7 +121,7 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& tra
   barrelSelectors[kBarrelSelITSChi2] = track.itsChi2NCl() > upcCuts.getITSChi2Low() && track.itsChi2NCl() < upcCuts.getITSChi2High();
 
   // check TPC cuts
-  barrelSelectors[kBarrelSelTPCNCls] = track.tpcNClsCrossedRows() > static_cast<int16_t>(upcCuts.getTPCNClusCRLow()) && track.tpcNClsCrossedRows() < static_cast<int16_t>(upcCuts.getTPCNClusCRHigh());
+  barrelSelectors[kBarrelSelTPCNCls] = track.tpcNClsFound() > static_cast<int16_t>(upcCuts.getTPCNClsLow()) && track.tpcNClsFound() < static_cast<int16_t>(upcCuts.getTPCNClsHigh());
   barrelSelectors[kBarrelSelTPCChi2] = track.tpcChi2NCl() > upcCuts.getTPCChi2Low() && track.tpcChi2NCl() < upcCuts.getTPCChi2High();
 
   // check DCA

@@ -35,6 +35,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -49,6 +52,8 @@ using std::array;
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
                                 aod::pidTPCFullKa, aod::pidTPCFullPr>;
+
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackTPCPID;
 
 struct v0selector {
   enum { // Reconstructed V0
@@ -218,14 +223,14 @@ struct v0selector {
       //   continue;
       // }
 
-      auto const& collision = V0.collision_as<aod::Collisions>();
+      // auto const& collision = V0.collision_as<aod::Collisions>();
 
       //      if (V0.collisionId() != collision.globalIndex()) {
       //        continue;
       //      }
 
       float V0dca = V0.dcaV0daughters();
-      float V0CosinePA = V0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float V0CosinePA = V0.v0cosPA();
       float V0radius = V0.v0radius();
 
       if (V0dca > dcav0dau) {
@@ -323,8 +328,12 @@ struct trackPIDQA {
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<bool> fillDQHisto{"fillDQHisto", false, "flag to fill dq histograms"};
+  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of dq histograms"};
 
   HistogramRegistry registry{"registry"};
+  OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
+  HistogramManager* fHistMan;
   void init(o2::framework::InitContext& context)
   {
     bool enableBarrelHistos = context.mOptions.get<bool>("processQA");
@@ -359,6 +368,21 @@ struct trackPIDQA {
       registry.add("h2TOFnSigma_Pin_Pi", "TOF n#sigma_{#pi} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
       registry.add("h2TOFnSigma_Pin_Ka", "TOF n#sigma_{K} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
       registry.add("h2TOFnSigma_Pin_Pr", "TOF n#sigma_{p} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+    }
+
+    if (fillDQHisto) {
+      TString histClasses = "";
+      VarManager::SetDefaultVarNames();
+      fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+      fHistMan->SetUseDefaultVariableNames(kTRUE);
+      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+      histClasses += "V0Track_all;";
+      histClasses += "V0Track_electron;";
+      histClasses += "V0Track_pion;";
+      histClasses += "V0Track_proton;";
+      DefineHistograms(histClasses);
+      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
 
@@ -463,8 +487,58 @@ struct trackPIDQA {
         registry.fill(HIST("h2TOFnSigma_Pin_Ka"), track.tpcInnerParam(), track.tofNSigmaKa());
       }
 
+      if (fillDQHisto) {
+        VarManager::FillTrack<gkTrackFillMap>(track);
+        fHistMan->FillHistClass("V0Track_all", VarManager::fgValues);
+        if (static_cast<bool>(track.pidbit() & (1 << v0selector::kGamma))) {
+          fHistMan->FillHistClass("V0Track_electron", VarManager::fgValues);
+        }
+        if (static_cast<bool>(track.pidbit() & (1 << v0selector::kK0S))) {
+          fHistMan->FillHistClass("V0Track_pion", VarManager::fgValues);
+        }
+        if (static_cast<bool>(track.pidbit() & (1 << v0selector::kLambda))) {
+          if (track.sign() > 0) {
+            fHistMan->FillHistClass("V0Track_proton", VarManager::fgValues);
+          } else {
+            fHistMan->FillHistClass("V0Track_pion", VarManager::fgValues);
+          }
+        }
+        if (static_cast<bool>(track.pidbit() & (1 << v0selector::kAntiLambda))) {
+          if (track.sign() > 0) {
+            fHistMan->FillHistClass("V0Track_pion", VarManager::fgValues);
+          } else {
+            fHistMan->FillHistClass("V0Track_proton", VarManager::fgValues);
+          }
+        }
+      }
+
     } // end of track loop
   }   // end of process
+
+  void DefineHistograms(TString histClasses)
+  {
+    std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
+    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+      TString classStr = objArray->At(iclass)->GetName();
+      fHistMan->AddHistClass(classStr.Data());
+
+      // fill the THn histograms
+      if (classStr.Contains("V0Track_electron")) {
+        o2::aod::dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
+      }
+      if (classStr.Contains("V0Track_pion")) {
+        o2::aod::dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
+      }
+      if (classStr.Contains("V0Track_proton")) {
+        o2::aod::dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
+      }
+
+      TString histTrackName = fConfigAddTrackHistogram.value;
+      if (classStr.Contains("Track")) {
+        o2::aod::dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
+      }
+    }
+  }
 
   void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {

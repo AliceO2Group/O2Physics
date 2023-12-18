@@ -20,13 +20,13 @@
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 
-JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float constSubAlpha_out, float constSubRMax_out, float bkgEtaMin_out, float bkgEtaMax_out, float bkgPhiMin_out, float bkgPhiMax_out, fastjet::GhostedAreaSpec ghostAreaSpec_out, int nHardReject) : jetBkgR(jetBkgR_out),
-                                                                                                                                                                                                                                                      constSubAlpha(constSubAlpha_out),
-                                                                                                                                                                                                                                                      constSubRMax(constSubRMax_out),
+JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkgEtaMax_out, float bkgPhiMin_out, float bkgPhiMax_out, float constSubAlpha_out, float constSubRMax_out, fastjet::GhostedAreaSpec ghostAreaSpec_out, int nHardReject) : jetBkgR(jetBkgR_out),
                                                                                                                                                                                                                                                       bkgEtaMin(bkgEtaMin_out),
                                                                                                                                                                                                                                                       bkgEtaMax(bkgEtaMax_out),
                                                                                                                                                                                                                                                       bkgPhiMin(bkgPhiMin_out),
                                                                                                                                                                                                                                                       bkgPhiMax(bkgPhiMax_out),
+                                                                                                                                                                                                                                                      constSubAlpha(constSubAlpha_out),
+                                                                                                                                                                                                                                                      constSubRMax(constSubRMax_out),
                                                                                                                                                                                                                                                       ghostAreaSpec(ghostAreaSpec_out)
 
 {

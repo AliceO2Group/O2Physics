@@ -17,6 +17,7 @@
 /// \author Stefano Politanò <stefano.politano@polito.it>, Politecnico & INFN, Torino
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -508,7 +509,7 @@ struct HfTreeCreatorDsToKKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDS),
+        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

@@ -51,6 +51,11 @@ o2physics_add_dpl_workflow(weak-decay-indices
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(v0converter
+                    SOURCES v0converter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -73,6 +78,11 @@ o2physics_add_dpl_workflow(mc-converter
 
 o2physics_add_dpl_workflow(tracks-extra-converter
                     SOURCES tracksExtraConverter.cxx
+                    PUBLIC_LINK_LIBRARIES
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mft-tracks-converter
+                    SOURCES mftTracksConverter.cxx
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 
@@ -136,15 +146,6 @@ o2physics_add_dpl_workflow(mccollisionextra
 
 o2physics_add_dpl_workflow(qvector-table
                     SOURCES qVectorsTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework
-                                          O2Physics::AnalysisCore
-                                          O2::DetectorsCommonDataFormats
-                                          O2Physics::DataModel
-                                          O2::CCDB
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(evtplane-table
-                    SOURCES evtPlanesTable.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
                                           O2Physics::AnalysisCore
                                           O2::DetectorsCommonDataFormats

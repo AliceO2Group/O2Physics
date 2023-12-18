@@ -53,9 +53,9 @@ struct JetMatching {
   Preslice<BaseJetCollection> baseJetsPerCollision = jetsBaseIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
   Preslice<TagJetCollection> tagJetsPerCollision = jetsTagIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
 
-  using Collisions = soa::Join<aod::JCollisions, aod::JMcCollisionLbs>;
-  PresliceUnsorted<Collisions> CollisionsCollectionPerMcCollision = aod::jmccollisionlb::mcCollisionId;
-  using Tracks = soa::Join<aod::JTracks, aod::JMcTrackLbs>;
+  using JetCollisions = soa::Join<aod::JCollisions, aod::JMcCollisionLbs>;
+  PresliceUnsorted<JetCollisions> CollisionsCollectionPerMcCollision = aod::jmccollisionlb::mcCollisionId;
+  using JetTracks = soa::Join<aod::JTracks, aod::JMcTrackLbs>;
 
   // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
   std::vector<std::vector<int>> geojetidBaseToTag, ptjetidBaseToTag, hfjetidBaseToTag;
@@ -108,7 +108,7 @@ struct JetMatching {
     }
   }
 
-  // function that does the HF matching of jets from jetsBasePerColl and jets from jetsTagPerColl
+  // function that does the HF matching of jets from jetsBasePerColl and jets from jetsTagPerColl; assumes both jetsBasePerColl and jetsTagPerColl have access to MC information
   template <typename T, typename U>
   void MatchHF(T const& jetsBasePerColl, U const& jetsTagPerColl, std::vector<int>& baseToTagHF, std::vector<int>& tagToBaseHF)
   {
@@ -119,7 +119,7 @@ struct JetMatching {
            bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
       const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
       if (hfcand.flagMcMatchRec() & getHfFlag()) {
-        const auto hfCandMC = hfcand.template prong0_as<Tracks>().template mcParticle_as<McParticles>();
+        const auto hfCandMC = hfcand.template prong1_as<JetTracks>().template mcParticle_as<McParticles>();
         const auto hfCandMcId = hfCandMC.template mothers_first_as<McParticles>().globalIndex();
         for (const auto& tjet : jetsTagPerColl) {
           const auto cand = tjet.template hfcandidates_first_as<McParticles>();
@@ -137,13 +137,13 @@ struct JetMatching {
   }
 
   template <typename T, typename U>
-  float getPtSum_FirstArgIsMC(T const& btracks, U const& ttracks)
+  float getPtSum_FirstArgIsMC(T const& mcParts_IdCheck, U const& recoTracks_Summed)
   {
     float ptSum = 0;
-    for (const auto& btrack : btracks) {
-      for (const auto& ttrack : ttracks) {
-        if (ttrack.has_mcParticle() && btrack.globalIndex() == ttrack.template mcParticle_as<McParticles>().globalIndex()) {
-          ptSum += ttrack.pt();
+    for (const auto& mcPart_IdCheck : mcParts_IdCheck) {
+      for (const auto& recoTrack_Summed : recoTracks_Summed) {
+        if (recoTrack_Summed.has_mcParticle() && mcPart_IdCheck.globalIndex() == recoTrack_Summed.template mcParticle_as<McParticles>().globalIndex()) {
+          ptSum += recoTrack_Summed.pt();
           break;
         }
       }
@@ -151,13 +151,13 @@ struct JetMatching {
     return ptSum;
   }
   template <typename T, typename U>
-  float getPtSum_SecondArgIsMC(T const& btracks, U const& ttracks)
+  float getPtSum_SecondArgIsMC(T const& recoTracks_IdCheck, U const& mcParts_Summed)
   {
     float ptSum = 0;
-    for (const auto& btrack : btracks) {
-      for (const auto& ttrack : ttracks) {
-        if (btrack.has_mcParticle() && ttrack.globalIndex() == btrack.template mcParticle_as<McParticles>().globalIndex()) {
-          ptSum += ttrack.pt();
+    for (const auto& recoTrack_IdCheck : recoTracks_IdCheck) {
+      for (const auto& mcPart_Summed : mcParts_Summed) {
+        if (recoTrack_IdCheck.has_mcParticle() && mcPart_Summed.globalIndex() == recoTrack_IdCheck.template mcParticle_as<McParticles>().globalIndex()) {
+          ptSum += mcPart_Summed.pt();
           break;
         }
       }
@@ -165,7 +165,7 @@ struct JetMatching {
     return ptSum;
   }
 
-  // function that does the pT matching of jets from jetsBasePerColl and jets from jetsTagPerColl
+  // function that does the pT matching of jets from jetsBasePerColl and jets from jetsTagPerColl ; assumes either one of jetsBasePerColl or jetsTagPerColl have access to MC information
   template <typename T, typename U>
   void MatchPt(T const& jetsBasePerColl, U const& jetsTagPerColl, std::vector<int>& baseToTagPt, std::vector<int>& tagToBasePt)
   {
@@ -175,10 +175,10 @@ struct JetMatching {
 
     for (const auto& bjet : jetsBasePerColl) {
       for (const auto& tjet : jetsTagPerColl) {
+        auto btracksTracks = bjet.template tracks_as<JetTracks>();
         auto btracksMcParts = bjet.template tracks_as<McParticles>();
-        auto btracksTracks = bjet.template tracks_as<Tracks>();
         auto ttracksMcParts = tjet.template tracks_as<McParticles>();
-        auto ttracksTracks = tjet.template tracks_as<Tracks>();
+        auto ttracksTracks = tjet.template tracks_as<JetTracks>();
 
         jetsBaseIsMC ? ptSum = getPtSum_FirstArgIsMC(btracksMcParts, ttracksTracks) : ptSum = getPtSum_SecondArgIsMC(btracksTracks, ttracksMcParts);
 
@@ -200,9 +200,9 @@ struct JetMatching {
     for (const auto& tjet : jetsTagPerColl) {
       for (const auto& bjet : jetsBasePerColl) {
         auto btracksMcParts = bjet.template tracks_as<McParticles>();
-        auto btracksTracks = bjet.template tracks_as<Tracks>();
+        auto btracksTracks = bjet.template tracks_as<JetTracks>();
         auto ttracksMcParts = tjet.template tracks_as<McParticles>();
-        auto ttracksTracks = tjet.template tracks_as<Tracks>();
+        auto ttracksTracks = tjet.template tracks_as<JetTracks>();
 
         jetsBaseIsMC ? ptSum = getPtSum_SecondArgIsMC(ttracksTracks, btracksMcParts) : ptSum = getPtSum_FirstArgIsMC(ttracksMcParts, btracksTracks);
 
@@ -318,11 +318,15 @@ struct JetMatching {
   PROCESS_SWITCH(JetMatching, processDummy, "Dummy process", true);
 
   // for now:
-  // BaseJetCollection and TagJetCollection must have MC info
-  void processJets(aod::JMcCollisions const& mcCollisions, Collisions const& collisions,
+  // the input file must have MC information to check collision<->mcCollision
+  // for HF tagging: both BaseJetCollection and TagJetCollection must have MC info
+  // for pT tagging: at least either one of BaseJetCollection or TagJetCollection must have MC info
+  // for geo tagging: no need to access MC info of either BaseJetCollection or TagJetCollection
+  void processJets(aod::JMcCollisions const& mcCollisions, JetCollisions const& collisions,
                    BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag, McParticles const& particlesMC,
-                   Tracks const& tracks, HfCandidates const& hfcandidates)
+                   JetTracks const& tracks, HfCandidates const& hfcandidates)
   {
+
     // waiting for framework fix to make sliced collection of same type as original collection:
     geojetidBaseToTag.assign(jetsBase.size(), {});
     ptjetidBaseToTag.assign(jetsBase.size(), {});
@@ -379,7 +383,7 @@ using ChargedJetMatching = JetMatching<soa::Join<aod::ChargedMCDetectorLevelJets
                                        aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
                                        aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
                                        aod::JMcParticles,
-                                       aod::JTracks>;
+                                       aod::JDummys>;
 using D0ChargedJetMatching = JetMatching<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
                                          soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
                                          aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,

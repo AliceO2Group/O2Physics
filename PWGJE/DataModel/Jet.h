@@ -32,6 +32,16 @@
 namespace o2::aod
 {
 
+namespace rho
+{
+DECLARE_SOA_COLUMN(Rho, rho, float);   //!
+DECLARE_SOA_COLUMN(RhoM, rhoM, float); //!
+} // namespace rho
+DECLARE_SOA_TABLE(JCollisionRhos, "AOD", "JCollisionRhos",
+                  o2::soa::Index<>,
+                  rho::Rho,
+                  rho::RhoM);
+
 namespace jet
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);

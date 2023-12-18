@@ -90,8 +90,6 @@ struct GenericFramework {
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
 
-  // #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
-  //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
   struct Config {
@@ -119,7 +117,6 @@ struct GenericFramework {
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
-
   void init(InitContext const&)
   {
     LOGF(info, "flowGenericFramework::init()");
@@ -473,7 +470,7 @@ struct GenericFramework {
     processCollision<kRaw>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processReco, "Process analysis for MC reconstructed events", false);
-
+  
   void processGen(soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::McCollisionLabels>>::iterator const& collision, aod::McParticles const& particles)
   {
     if (collision.has_mcCollision()) {

@@ -48,8 +48,8 @@ float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, flo
   return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qt of v0
 }
 //_______________________________________________________________________
-template <typename TrackPrecision = float, typename T>
-void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+template <typename TrackPrecision = float, typename T1, typename T2>
+void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 
@@ -59,8 +59,8 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
 
-  trackPosInformation.setPID(o2::track::PID::Electron);
-  trackNegInformation.setPID(o2::track::PID::Electron);
+  // trackPosInformation.setPID(o2::track::PID::Electron);
+  // trackNegInformation.setPID(o2::track::PID::Electron);
 
   o2::track::TrackAuxPar helixPos(trackPosInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
   o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -71,8 +71,8 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   // I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
-  trackPosInformationCopy.setPID(o2::track::PID::Electron);
-  trackNegInformationCopy.setPID(o2::track::PID::Electron);
+  // trackPosInformationCopy.setPID(o2::track::PID::Electron);
+  // trackNegInformationCopy.setPID(o2::track::PID::Electron);
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point

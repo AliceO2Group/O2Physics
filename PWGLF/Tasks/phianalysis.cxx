@@ -16,8 +16,6 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include <TLorentzVector.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -27,11 +25,13 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct phianalysis {
   SliceCache cache;
@@ -123,7 +123,7 @@ struct phianalysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass(); // FIXME: Get from the common header
+  double massKa = MassKaonCharged;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -235,17 +235,17 @@ struct phianalysis {
         if constexpr (!IsMix) {
           if (trk1.sign() > 0) {
             histos.fill(HIST("phiinvmassDS"), lResonance.M());
-            histos.fill(HIST("h3phiinvmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3phiinvmassDS"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
           }
         } else {
           histos.fill(HIST("phiinvmassME"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kKPlus || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 321 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -259,14 +259,14 @@ struct phianalysis {
           // MC histograms
           histos.fill(HIST("phiRec"), lResonance.Pt());
           histos.fill(HIST("phiRecinvmass"), lResonance.M());
-          histos.fill(HIST("h3Recphiinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3Recphiinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
         }
       } else {
         if constexpr (!IsMix)
           continue;
         if (trk1.sign() > 0) {
           histos.fill(HIST("phiinvmassLS"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassLS"), collision.cent(), lResonance.Pt(), lResonance.M());
         } else {
         }
       }
@@ -296,7 +296,7 @@ struct phianalysis {
       if (abs(part.y()) > 0.5) { // rapidity cut
         continue;
       }
-      if (abs(part.daughterPDG1()) != kKPlus || abs(part.daughterPDG2()) != kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) != 321 || abs(part.daughterPDG2()) != 321) { // At least one decay to Kaon
         continue;
       }
       histos.fill(HIST("phiGen"), part.pt());
@@ -305,7 +305,7 @@ struct phianalysis {
   PROCESS_SWITCH(phianalysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

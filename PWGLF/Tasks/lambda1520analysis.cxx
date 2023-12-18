@@ -14,15 +14,15 @@
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 #include <TLorentzVector.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct lambda1520analysis {
   // Define slice per Resocollision
@@ -204,8 +204,8 @@ struct lambda1520analysis {
     }
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKMinus)->Mass(); // FIXME: Get from the common header
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass(); // FIXME: Get from the common header
+  double massKa = MassKaonCharged;
+  double massPr = MassProton;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -456,23 +456,23 @@ struct lambda1520analysis {
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
           histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
-          histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         } else {
           histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
-          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
 
@@ -480,7 +480,7 @@ struct lambda1520analysis {
         if constexpr (IsMC) {
           // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << std::endl;
 
-          if (abs(trk1.pdgCode()) != kProton || abs(trk2.pdgCode()) != kKPlus)
+          if (abs(trk1.pdgCode()) != 2212 || abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
@@ -497,29 +497,29 @@ struct lambda1520analysis {
           if (trk1.motherPDG() > 0) {
             histos.fill(HIST("Result/MC/lambda1520Reco"), lResonance.Pt());
             histos.fill(HIST("Result/MC/hlambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("Result/MC/antilambda1520Reco"), lResonance.Pt());
             histos.fill(HIST("Result/MC/hantilambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
       } else {
         if constexpr (!IsMix) {
           if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
           // Like sign pair ++
           if (trk1.sign() > 0) {
             histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.cent(), lResonance.Pt(), lResonance.M());
           } else { // Like sign pair --
             histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         }
       }
@@ -550,10 +550,10 @@ struct lambda1520analysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) { // At least one decay to Kaon
+      if (abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321) { // At least one decay to Kaon
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kProton || abs(part.daughterPDG2()) == kProton) { // At least one decay to Proton
+      if (abs(part.daughterPDG1()) == 2212 || abs(part.daughterPDG2()) == 2212) { // At least one decay to Proton
         pass1 = true;
       }
       if (!pass1 || !pass2) // If we have both decay products
@@ -568,7 +568,7 @@ struct lambda1520analysis {
   PROCESS_SWITCH(lambda1520analysis, processMCTrue, "Process Event for MC only", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

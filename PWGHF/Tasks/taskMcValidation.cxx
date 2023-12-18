@@ -17,6 +17,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -35,7 +36,7 @@ using namespace o2::framework::expressions;
 namespace
 {
 static const int nCharmHadrons = 7;
-static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, pdg::Code::kDStar, pdg::Code::kD0, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJPsi};
+static const std::array<int, nCharmHadrons> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kJPsi};
 static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
 static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
 static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}", "J/#psi"};
@@ -73,6 +74,7 @@ struct HfTaskMcValidationGen {
   Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of generated primary vertex [cm]"};
   Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of generated primary vertex [cm]"};
   Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of generated primary vertex [cm]"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   AxisSpec axisNhadrons{10, -0.5, 9.5};
   AxisSpec axisNquarks{20, -0.5, 19.5};
@@ -152,7 +154,12 @@ struct HfTaskMcValidationGen {
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
+    if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+      collWithHFSignal(false);
+      return;
+    }
     if (!selectVertex(mcCollision)) {
+      collWithHFSignal(false);
       return;
     }
 
@@ -300,6 +307,7 @@ struct HfTaskMcValidationRec {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
@@ -310,7 +318,7 @@ struct HfTaskMcValidationRec {
 
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
-  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::HfSelCollision>;
   using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
   using McCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
@@ -412,10 +420,16 @@ struct HfTaskMcValidationRec {
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+      if (collision.whyRejectColl() != 0) { // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
+        continue;
+      }
       if (!collision.has_mcCollision()) {
         continue;
       }
       auto mcCollision = collision.mcCollision_as<McCollisionWithHFSignalInfo>();
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        continue;
+      }
       if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
       }
@@ -488,11 +502,12 @@ struct HfTaskMcValidationRec {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        if (checkAmbiguousTracksWithHfEventsOnly) {
-          auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
-          if (!mcCollision.hasHFsignal()) {
-            continue;
-          }
+        auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+          continue;
+        }
+        if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
+          continue;
         }
         auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         histTracks->Fill(origin, track.pt());
@@ -545,6 +560,13 @@ struct HfTaskMcValidationRec {
 
     // loop over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
+
+      if (cand2Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
+        auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+          continue;
+        }
+      }
 
       // determine which kind of candidate it is
       bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
@@ -603,6 +625,13 @@ struct HfTaskMcValidationRec {
 
     // loop over 3-prong candidates
     for (const auto& cand3Prong : cand3Prongs) {
+
+      if (cand3Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
+        auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
+        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+          continue;
+        }
+      }
 
       // determine which kind of candidate it is
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);

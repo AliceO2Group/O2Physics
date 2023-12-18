@@ -53,12 +53,16 @@ struct QAHistTask {
   void init(o2::framework::InitContext&)
   {
 
-    if ((process_proton == true && (process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_deuteron == true && (process_triton == true || process_He3 == true || process_He4 == true)) || (process_triton == true && (process_He3 == true || process_He4 == true)) || (process_He3 == true && process_He4 == true)) {
+    if ((process_pion == true && (process_kaon == true || process_proton == true || process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_kaon == true && (process_proton == true || process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_proton == true && (process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_deuteron == true && (process_triton == true || process_He3 == true || process_He4 == true)) || (process_triton == true && (process_He3 == true || process_He4 == true)) || (process_He3 == true && process_He4 == true)) {
       LOG(fatal) << "++++++++ Can't enable more than one species at a time, use subwagons for that purpose. ++++++++";
     }
 
     std::string species;
 
+    if (process_pion)
+      species = "pi";
+    if (process_kaon)
+      species = "ka";
     if (process_proton)
       species = "p";
     if (process_deuteron)
@@ -165,13 +169,14 @@ struct QAHistTask {
     MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_truth_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_truth_reg.add("histRecVtxMC", "MC collision z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
 
     // MC reconstructed
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {500, -10, 10}, PDGBINNING});
-    MC_recon_reg.add("histDCAz", "DCA z", HistType::kTH3F, {ptAxis, {500, -10, 10}, PDGBINNING});
+    MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
+    MC_recon_reg.add("histDCAz", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_recon_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}, PDGBINNING});
     MC_recon_reg.add("histTofSignalData", "TOF signal", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}, PDGBINNING});
     MC_recon_reg.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2"}, PDGBINNING});
@@ -197,6 +202,8 @@ struct QAHistTask {
   }
 
   // Configurables
+  Configurable<bool> process_pion{"process_pion", false, "0: disabled, 1: enabled"};
+  Configurable<bool> process_kaon{"process_kaon", false, "0: disabled, 1: enabled"};
   Configurable<bool> process_proton{"process_proton", false, "0: disabled, 1: enabled"};
   Configurable<bool> process_deuteron{"process_deuteron", false, "0: disabled, 1: enabled"};
   Configurable<bool> process_triton{"process_triton", false, "0: disabled, 1: enabled"};
@@ -254,6 +261,10 @@ struct QAHistTask {
 
       float nSigmaSpecies = 999.0;
 
+      if (process_pion)
+        nSigmaSpecies = track.tpcNSigmaPi();
+      if (process_kaon)
+        nSigmaSpecies = track.tpcNSigmaKa();
       if (process_proton)
         nSigmaSpecies = track.tpcNSigmaPr();
       if (process_deuteron)
@@ -359,7 +370,7 @@ struct QAHistTask {
         QA_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
       }
 
-      // fill QA histograms (proton)
+      // fill QA histograms
       if (TMath::Abs(nSigmaSpecies) < nsigmacut) {
         if (track.sign() > 0) {
           QA_species_pos.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
@@ -482,11 +493,11 @@ struct QAHistTask {
 
   using EventCandidatesDataCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 
-  using TrackCandidatesData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  using TrackCandidatesData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
 
   using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 
-  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
 
   void processData(EventCandidatesData::iterator const& event, TrackCandidatesData const& tracks)
   {
@@ -504,6 +515,9 @@ struct QAHistTask {
   void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                  aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
+
+    MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());

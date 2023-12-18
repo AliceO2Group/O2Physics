@@ -43,7 +43,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
@@ -223,7 +223,7 @@ struct MaterialBudget {
         continue;
       }
 
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
+      auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
       for (auto& cut : cuts) {
         for (auto& photon : photons_coll) {
 
@@ -272,8 +272,8 @@ struct MaterialBudget {
 
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
       double value[9] = {0.f};
       float phi_cp1 = 0.f, eta_cp1 = 0.f;
@@ -337,11 +337,11 @@ struct MaterialBudget {
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
-      // LOGF(info, "Mixed event collisionId: (%d, %d) , ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
-      //     collision1.collisionId(), collision2.collisionId(), collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+      // LOGF(info, "Mixed event globalIndex: (%d, %d) , ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
+      //     collision1.globalIndex(), collision2.globalIndex(), collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
 
-      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.collisionId());
-      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.collisionId());
+      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.globalIndex());
+      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
       // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d",
       //     collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
@@ -361,7 +361,7 @@ struct MaterialBudget {
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
-              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
+              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.globalIndex(), g2.globalIndex());
 
               for (auto& paircut : paircuts) {
 

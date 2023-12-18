@@ -206,7 +206,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -256,7 +256,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -306,7 +306,7 @@ struct vzero_cascade_absorption {
       return false;
 
     // V0 Selections
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
+    if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;

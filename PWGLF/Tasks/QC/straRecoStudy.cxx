@@ -181,7 +181,7 @@ struct preProcessMCcollisions {
     histos.add("h2dNContribSpecialCorr2b", "h2dNContribSpecialCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
-  void processData(TracksCompleteIU const& tracks)
+  void processData(aod::Collisions const& colls)
   {
     // Dummy process
   }
@@ -363,6 +363,7 @@ struct straRecoStudy {
     const AxisSpec axisVsPt{(int)NBinsPt, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisVsPtCoarse{(int)NBinsPtCoarse, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
 
+    const AxisSpec axisGammaMass{400, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisK0ShortMass{400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisLambdaMass{400, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisXiMass{400, 1.22f, 1.42f, "Inv. Mass (GeV/c^{2})"};
@@ -382,17 +383,17 @@ struct straRecoStudy {
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)160, 0.0f, +80.0f, "Radius (cm)"};
 
-    TString lSpecies[] = {"K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
-    const AxisSpec lMassAxis[] = {axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
+    TString lSpecies[] = {"Gamma", "K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
+    const AxisSpec lMassAxis[] = {axisGammaMass, axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
 
     // Creation of histograms: MC generated
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("hGen%s", lSpecies[i].Data()), Form("hGen%s", lSpecies[i].Data()), kTH1F, {axisVsPt});
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("hGenWithPV%s", lSpecies[i].Data()), Form("hGenWithPV%s", lSpecies[i].Data()), kTH1F, {axisVsPt});
 
     // Creation of histograms: mass affairs
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("h2dMass%s", lSpecies[i].Data()), Form("h2dMass%s", lSpecies[i].Data()), kTH2F, {axisVsPt, lMassAxis[i]});
 
     // Topo sel QA
@@ -520,20 +521,20 @@ struct straRecoStudy {
         histos.fill(HIST("h2dK0ShortQADCAV0Dau"), v0.pt(), v0.dcaV0daughters());
         histos.fill(HIST("h2dK0ShortQADCAPosToPV"), v0.pt(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
         histos.fill(HIST("h2dK0ShortQADCANegToPV"), v0.pt(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
-        histos.fill(HIST("h2dK0ShortQADCAToPV"), v0.pt(), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-        histos.fill(HIST("h2dK0ShortQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())));
+        histos.fill(HIST("h2dK0ShortQADCAToPV"), v0.pt(), v0.dcav0topv());
+        histos.fill(HIST("h2dK0ShortQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA()));
       }
       if (v0mc.pdgCode() == 3122) {
         histos.fill(HIST("h2dLambdaQAV0Radius"), v0.pt(), v0.v0radius());
         histos.fill(HIST("h2dLambdaQADCAV0Dau"), v0.pt(), v0.dcaV0daughters());
         histos.fill(HIST("h2dLambdaQADCAPosToPV"), v0.pt(), v0.posTrack_as<TracksCompleteIUMC>().dcaXY());
         histos.fill(HIST("h2dLambdaQADCANegToPV"), v0.pt(), v0.negTrack_as<TracksCompleteIUMC>().dcaXY());
-        histos.fill(HIST("h2dLambdaQADCAToPV"), v0.pt(), v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-        histos.fill(HIST("h2dLambdaQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ())));
+        histos.fill(HIST("h2dLambdaQADCAToPV"), v0.pt(), v0.dcav0topv());
+        histos.fill(HIST("h2dLambdaQAPointingAngle"), v0.pt(), TMath::ACos(v0.v0cosPA()));
       }
 
       if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+        if (v0.v0cosPA() > v0setting_cospa) {
           if (v0.dcaV0daughters() < v0setting_dcav0dau) {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
             // Fill invariant masses
@@ -577,7 +578,7 @@ struct straRecoStudy {
         continue;
 
       if (v0.v0radius() > v0setting_radius && v0.v0radius() < maxV0Radius) {
-        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0setting_cospa) {
+        if (v0.v0cosPA() > v0setting_cospa) {
           if (v0.dcaV0daughters() < v0setting_dcav0dau) {
             //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
             // Fill invariant masses
@@ -779,7 +780,7 @@ struct straRecoStudy {
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+      if (TMath::Abs(mcp.eta()) < 0.5) {
         if (mcp.pdgCode() == 310)
           histos.fill(HIST("hGenWithPVK0Short"), mcp.pt());
         if (mcp.pdgCode() == 3122)
@@ -803,7 +804,9 @@ struct straRecoStudy {
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+      if (TMath::Abs(mcp.eta()) < 0.5) {
+        if (mcp.pdgCode() == 22)
+          histos.fill(HIST("hGenGamma"), mcp.pt());
         if (mcp.pdgCode() == 310)
           histos.fill(HIST("hGenK0Short"), mcp.pt());
         if (mcp.pdgCode() == 3122)

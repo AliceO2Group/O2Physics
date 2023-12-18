@@ -16,11 +16,11 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,7 +53,7 @@ struct resonances_tutorial {
   Configurable<float> nsigmacutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
 
   // variables
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = o2::constants::physics::MassKPlus;
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
@@ -116,7 +116,7 @@ struct resonances_tutorial {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    auto multiplicity = collision.multV0M();
+    auto multiplicity = collision.cent();
     for (auto track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1) || !selectionPID(track1)) {
         continue; // track selection and PID selection
@@ -168,7 +168,7 @@ struct resonances_tutorial {
   {
     // Fill the event counter
     histos.fill(HIST("hVertexZ"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercent"), collision.multV0M());
+    histos.fill(HIST("hMultiplicityPercent"), collision.cent());
 
     fillHistograms<false, false>(collision, resotracks, resotracks); // Fill histograms, no MC, no mixing
   }

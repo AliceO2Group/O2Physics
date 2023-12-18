@@ -15,8 +15,8 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <string>    // std::string
-#include <vector>    // std::vector
+#include <string> // std::string
+#include <vector> // std::vector
 
 namespace o2::analysis
 {
@@ -63,6 +63,16 @@ static const std::vector<std::string> labelsPtTrack{};
 static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
+namespace hf_presel_proton_pid
+{
+// default values for the PID cuts for protons in the track-index-skim-creator
+constexpr float cutsProtonPid[3][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
+static const std::vector<std::string> labelsCutsProtonPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
+static const std::vector<std::string> labelsRowsProtonPid = {"LcToPKPi", "XicToPKPi", "LcToPK0S"};
+} // namespace hf_presel_proton_pid
+
 namespace hf_cuts_bdt_multiclass
 {
 static constexpr int nBinsPt = 1;
@@ -94,16 +104,22 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
-static constexpr int nBinsPt = 6;
+static constexpr int nBinsPt = 12;
 static constexpr int nCutScores = 3;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
   1.,
   2.,
+  3.,
   4.,
+  5.,
   6.,
+  8.,
   10.,
+  12.,
+  16.,
+  24.,
   50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
@@ -122,6 +138,12 @@ constexpr double cuts[nBinsPt][nCutScores] = {
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5}};
 
 // row labels
@@ -132,10 +154,16 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 3",
   "pT bin 4",
   "pT bin 5",
-};
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
+static const std::vector<std::string> labelsDmesCutScore = {"ML score charm bkg", "ML score charm prompt", "ML score charm nonprompt"};
 } // namespace hf_cuts_ml
 
 namespace hf_cuts_presel_2prong
@@ -185,6 +213,29 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
 } // namespace hf_cuts_presel_3prong
+
+namespace hf_cuts_presel_ds
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 5;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.,
+  5.,
+  1000.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.02},  /* 1 < pt < 5 */
+                                            {1.70, 2.15, 0.5, 0.02, 0.02}}; /* 5 < pt < 1000 */
+
+// row labels
+static const std::vector<std::string> labelsPt{};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "deltaMassKK"};
+} // namespace hf_cuts_presel_ds
 
 namespace hf_cuts_presel_dstar
 {
@@ -302,6 +353,55 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "min norm decay length XY", "max decay length", "max decay length XY", "min decay length", "norm dauImpPar XY"};
 } // namespace hf_cuts_d0_to_pi_k
+
+namespace hf_cuts_dstar_to_d0_pi
+{
+static constexpr int nBinsPt = 10;
+static constexpr int nCutVars = 8;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.0,
+  1.5,
+  2.0,
+  2.5,
+  3.0,
+  3.5,
+  4.0,
+  4.5,
+  5.0,
+  5.5,
+  6.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9"};
+
+// column label
+static const std::vector<std::string> labelsCutVar = {"ptSoftPiMin", "ptSoftPiMax", "d0SoftPi", "d0SoftPiNormalised", "deltaMInvDstar", "chi2PCA", "d0Prong0Normalised", "d0Prong1Normalised"};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.05, 0.3, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.3, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.4, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.4, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.6, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.6, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 0.6, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5},
+                                            {0.05, 100, 0.1, 0.5, 0.2, 300.0, 0.5, 0.5}};
+} // namespace hf_cuts_dstar_to_d0_pi
 
 namespace hf_cuts_lc_to_p_k_pi
 {
@@ -926,6 +1026,55 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 Jpsi", "d0 Gamma", "pT Jpsi", "pT Gamma", "chi2PCA"};
 } // namespace hf_cuts_chic_to_jpsi_gamma
+
+namespace hf_cuts_sigmac_to_p_k_pi
+{
+static constexpr int nBinsPt = 10;
+static constexpr int nCutVars = 2;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  0.,
+  1.,
+  2.,
+  3.,
+  4.,
+  5.,
+  6.,
+  8.,
+  12.,
+  24.,
+  36.};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.03, 0.03},  /* 0  < pT < 1  */
+                                            {0.03, 0.03},  /* 1  < pT < 2  */
+                                            {0.03, 0.03},  /* 2  < pT < 3  */
+                                            {0.03, 0.03},  /* 3  < pT < 4  */
+                                            {0.03, 0.03},  /* 4  < pT < 5  */
+                                            {0.03, 0.03},  /* 5  < pT < 6  */
+                                            {0.03, 0.03},  /* 6  < pT < 8  */
+                                            {0.03, 0.03},  /* 8  < pT < 12 */
+                                            {0.03, 0.03},  /* 12 < pT < 24 */
+                                            {0.03, 0.03}}; /* 24 < pT < 36 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0 Lc",
+  "pT bin 1 Lc",
+  "pT bin 2 Lc",
+  "pT bin 3 Lc",
+  "pT bin 4 Lc",
+  "pT bin 5 Lc",
+  "pT bin 6 Lc",
+  "pT bin 7 Lc",
+  "pT bin 8 Lc",
+  "pT bin 9 Lc"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"max pKpi mass Lc", "max piKp mass Lc"};
+} // namespace hf_cuts_sigmac_to_p_k_pi
 
 } // namespace o2::analysis
 
