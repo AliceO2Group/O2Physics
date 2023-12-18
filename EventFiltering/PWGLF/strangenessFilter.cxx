@@ -396,7 +396,7 @@ struct strangenessFilter {
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
   }
 
-  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
+  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& dtracks)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
@@ -444,14 +444,9 @@ struct strangenessFilter {
 
     for (auto& casc : fullCasc) { // loop over cascades
       triggcounterForEstimates = 0;
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
-      auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
 
       bool isXi = false;
       bool isXiYN = false;
@@ -657,8 +652,8 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::BCsWithTimestamps const&)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& dtracks,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
@@ -703,16 +698,10 @@ struct strangenessFilter {
       triggcounterForEstimates = 0;
 
       hCandidate->Fill(0.5); // All candidates
-
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      hCandidate->Fill(1.5);      // V0 exists
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
+      hCandidate->Fill(1.5); // V0 exists - deprecated
       auto bachelor = casc.bachelor_as<DaughterTracks>();
-      auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
 
       bool isXi = false;
       bool isXiYN = false;
@@ -1113,7 +1102,7 @@ struct strangenessFilter {
       // const auto itsTrack = trackedCascade.itsTrack();
       const auto cascade = trackedCascade.cascade();
       const auto bachelor = cascade.bachelor_as<DaughterTracks>();
-      const auto v0 = cascade.v0_as<o2::aod::V0sLinked>();
+      const auto v0 = cascade.v0_as<o2::aod::V0s>();
       const auto negTrack = v0.negTrack_as<DaughterTracks>();
       const auto posTrack = v0.posTrack_as<DaughterTracks>();
 

@@ -3381,7 +3381,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
                          SelectedHfTrackAssoc const& trackIndices,
                          aod::TracksWCovDca const& tracks,
                          aod::BCsWithTimestamps const&,
-                         aod::V0sLinked const&,
                          V0Full const&)
   {
 
@@ -3432,16 +3431,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
         // cascade daughter - charged particle
         auto trackXiDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // pion <- xi track
         // cascade daughter - V0
-        if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check if V0 data are stored
-          continue;
-        }
-        registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
-        auto v0 = casc.v0_as<aod::V0sLinked>();
-        auto v0Element = v0.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
-        // V0 positive daughter
-        auto trackV0PosDau = v0Element.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
+        auto trackV0PosDau = casc.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
         // V0 negative daughter
-        auto trackV0NegDau = v0Element.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
+        auto trackV0NegDau = casc.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
 
         // check that particles come from the same collision
         if (rejDiffCollTrack) {

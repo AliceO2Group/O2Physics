@@ -246,9 +246,8 @@ struct strangederivedbuilder {
     // index tracks that belong to CascDatas
     for (auto const& casc : Cascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto posTrack = casc.posTrack_as<TracksWithExtra>();
+      auto negTrack = casc.negTrack_as<TracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -257,9 +256,8 @@ struct strangederivedbuilder {
     // index tracks that belong to KFCascDatas
     for (auto const& casc : KFCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto posTrack = casc.posTrack_as<TracksWithExtra>();
+      auto negTrack = casc.negTrack_as<TracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -268,9 +266,8 @@ struct strangederivedbuilder {
     // index tracks that belong to TraCascDatas
     for (auto const& casc : TraCascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto posTrack = casc.posTrack_as<TracksWithExtra>();
+      auto negTrack = casc.negTrack_as<TracksWithExtra>();
       auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
@@ -298,9 +295,8 @@ struct strangederivedbuilder {
     // populate track references
     for (auto const& casc : Cascades) {
       auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto posTrack = casc.posTrack_as<TracksWithExtra>();
+      auto negTrack = casc.negTrack_as<TracksWithExtra>();
       cascExtras(trackMap[posTrack.globalIndex()],
                  trackMap[negTrack.globalIndex()],
                  trackMap[bachTrack.globalIndex()]); // joinable with CascDatas
