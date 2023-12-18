@@ -59,19 +59,20 @@ DECLARE_SOA_TABLE(StoredHfD0CollIds, "AOD", "HFD0COLLID", //! Table with global 
 // Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase); //! collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);             //! collision index pointing to the derived collision table for D0 candidates
 DECLARE_SOA_INDEX_COLUMN(StoredHfD0CollBase, storedHfD0CollBase); //! collision index pointing to the derived collision table for D0 candidates
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                                     //! MC collision of this particle
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle
-DECLARE_SOA_COLUMN(Eta, eta, float);                  //! pseudorapidity
-DECLARE_SOA_COLUMN(M, m, float);                      //! invariant mass
-DECLARE_SOA_COLUMN(Phi, phi, float);                  //! azimuth
-DECLARE_SOA_COLUMN(Pt, pt, float);                    //! transverse momentum
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);               //! MC collision of this particle
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                 //! MC particle
+DECLARE_SOA_COLUMN(Eta, eta, float);                              //! pseudorapidity
+DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant mass
+DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
+DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
 
 /// Rapidity as a function of pT, eta, mass
 /// \todo Move to RecoDecay
 template <typename TPt, typename TEta, typename TM>
-auto y(TPt pt, TEta eta, TM m) {
+auto y(TPt pt, TEta eta, TM m)
+{
   return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
 }
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
