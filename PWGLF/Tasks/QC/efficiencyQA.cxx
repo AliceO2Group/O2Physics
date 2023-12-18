@@ -565,6 +565,9 @@ struct efficiencyQA {
           }
           if (mcLabTpc.mcParticleId() == mcLab.mcParticleId()) {
             hTpcSegment->Fill(0., probeTrack.pt);
+            if (probeTrack.globalIndexTpc > 0) {
+              hTpcSegment->Fill(3., probeTrack.pt);
+            }
 
             auto trackCov = getTrackParCov(tpcTrack);
             gpu::gpustd::array<float, 2> dcaInfo;
