@@ -101,7 +101,7 @@ struct femtoUniversePairTaskTrackD0 {
 
   /// Partitions for particle 2
   Partition<FemtoFullParticles> partsD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
-  //Partition<FemtoFullParticles> partsD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
+  // Partition<FemtoFullParticles> partsD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
 
   /// Histogramming for particle 1
@@ -332,7 +332,7 @@ struct femtoUniversePairTaskTrackD0 {
     for (auto& d0d0bar : groupPartsD0D0bar) {
       registry.fill(HIST("hMassVsPt"), d0d0bar.mLambda(), d0d0bar.pt());
       if (d0d0bar.mLambda() > 0.0f && d0d0bar.mAntiLambda() < 0.0f) {
-        if(d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+        if (d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
           registry.fill(HIST("hInvMassD0"), d0d0bar.mLambda());
         }
         registry.fill(HIST("hInvMassVsPt"), d0d0bar.mLambda(), d0d0bar.pt());
@@ -341,7 +341,7 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
       }
       if (d0d0bar.mLambda() < 0.0f && d0d0bar.mAntiLambda() > 0.0f) {
-        if(d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+        if (d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
           registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
         }
         registry.fill(HIST("hInvMassVsPt"), d0d0bar.mLambda(), d0d0bar.pt());
