@@ -112,6 +112,7 @@ struct DQEventSelectionTask {
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Comma separated list of event cuts; multiple cuts are applied with a logical AND"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigFilterLsPairs{"cfgWithLS", false, "If true, also select like sign (--/++) pairs"};
   // TODO: configure the histogram classes to be filled by QA
 
   void init(o2::framework::InitContext&)
@@ -1140,7 +1141,10 @@ struct DQFilterPPTask {
         auto t1 = a1.template track_as<TTracks>();
         auto t2 = a2.template track_as<TTracks>();
         // keep just opposite-sign pairs
-        if (t1.sign() * t2.sign() > 0) {
+        if (!fConfigFilterLsPairs) {
+          continue;
+          if (t1.sign() * t2.sign() > 0) {
+          }
           continue;
         }
 
@@ -1234,7 +1238,8 @@ struct DQFilterPPTask {
     return filter;
   }
 
-  Preslice<DQTrackAssoc> trackIndicesPerCollision = aod::dqppfilter::collisionId;
+  Preslice<DQTrackAssoc>
+    trackIndicesPerCollision = aod::dqppfilter::collisionId;
   Preslice<DQMuonAssoc> muonIndicesPerCollision = aod::dqppfilter::collisionId;
 
   void processFilterPP(MyEventsSelected const& collisions,
