@@ -149,6 +149,7 @@ struct HfDataCreatorDplusPiReduced {
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
+    df3.setMatCorrType(noMatCorr);
 
     // Configure CCDB access
     ccdb->setURL(ccdbUrl);
