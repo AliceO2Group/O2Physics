@@ -34,6 +34,7 @@
 #include "GFWWeights.h"
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,28 +45,28 @@ using namespace o2::analysis;
 
 namespace o2::analysis::genericframework
 {
-std::vector<double> ptbinning = {
-  0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
-  0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
-  1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
-  2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
-float ptpoilow = 0.2, ptpoiup = 10.0;
-float ptreflow = 0.2, ptrefup = 3.0;
-float ptlow = 0.2, ptup = 3.0;
-int etabins = 16;
-float etalow = -0.8, etaup = 0.8;
-int vtxZbins = 40;
-float vtxZlow = -10.0, vtxZup = 10.0;
-int phibins = 72;
-float philow = 0.0;
-float phiup = constants::math::TwoPI;
-int nchbins = 300;
-float nchlow = 0.5;
-float nchup = 3000.5;
-std::vector<double> centbinning(90);
-int nBootstrap = 10;
-GFWRegions regions;
-GFWCorrConfigs configs;
+  std::vector<double> ptbinning = {
+    0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+    0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+    1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+    2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+  float ptpoilow = 0.2, ptpoiup = 10.0;
+  float ptreflow = 0.2, ptrefup = 3.0;
+  float ptlow = 0.2, ptup = 3.0;
+  int etabins = 16;
+  float etalow = -0.8, etaup = 0.8;
+  int vtxZbins = 40;
+  float vtxZlow = -10.0, vtxZup = 10.0;
+  int phibins = 72;
+  float philow = 0.0;
+  float phiup = constants::math::TwoPI;
+  int nchbins = 300;
+  float nchlow = 0;
+  float nchup = 3000;
+  std::vector<double> centbinning(90);
+  int nBootstrap = 10;
+  GFWRegions regions;
+  GFWCorrConfigs configs;
 } // namespace o2::analysis::genericframework
 
 using namespace o2::analysis::genericframework;
@@ -76,18 +77,20 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
+  O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, false, "Use 22s event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction");
 
   Configurable<GFWBinningCuts> cfgBinning{"cfgBinning",
                                           {40, -10.0, 10.0, 0.2, 2.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, 16, -0.8, 0.8, 72, 0.2, 5.0, 300, 0.5, 3000.5, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},
                                           "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
 
-  Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
+    Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
+    Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+  //#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -100,7 +103,6 @@ struct GenericFramework {
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<FlowContainer> fFC_gen{FlowContainer("FlowContainer_gen")};
-  OutputObj<FlowContainer> fFC_reco{FlowContainer("FlowContainer_reco")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
   HistogramRegistry QAregistry{"QAregistry", {}, OutputObjHandlingPolicy::QAObject};
@@ -110,6 +112,14 @@ struct GenericFramework {
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
+
+  //Event selection cuts - Alex
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+
 
   void init(InitContext const&)
   {
@@ -129,8 +139,8 @@ struct GenericFramework {
     ptpoiup = cfgBinning->GetPtPOImax();
     ptreflow = cfgBinning->GetPtRefMin();
     ptrefup = cfgBinning->GetPtRefMax();
-    ptlow = static_cast<float>(std::min(ptpoilow, ptreflow));
-    ptup = static_cast<float>(std::max(ptpoiup, ptrefup));
+    ptlow = cfgBinning->GetPtMin();
+    ptup = cfgBinning->GetPtMax();
     etabins = cfgBinning->GetEtaBins();
     etalow = cfgBinning->GetEtaMin();
     etaup = cfgBinning->GetEtaMax();
@@ -150,7 +160,10 @@ struct GenericFramework {
     AxisSpec vtxAxis = {vtxZbins, vtxZlow, vtxZup, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
     AxisSpec centAxis = {centbinning, "Centrality (%)"};
-    AxisSpec nchAxis = {nchbins, nchlow, nchup};
+    std::vector<double> nchbinning;
+    int nchskip = (nchup-nchlow)/nchbins;
+    for(int i=0;i<=nchbins;++i) { nchbinning.push_back(nchskip*i+nchlow+0.5); }
+    AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec multAxis = (cfgUseNch) ? nchAxis : centAxis;
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
@@ -177,10 +190,11 @@ struct GenericFramework {
         QAregistry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
       }
       if (doprocessReco) {
-        QAregistry.add("pt_reco", "", {HistType::kTH1D, {ptAxis}});
-        QAregistry.add("phi_reco", "", {HistType::kTH1D, {phiAxis}});
-        QAregistry.add("eta_reco", "", {HistType::kTH1D, {etaAxis}});
-        QAregistry.add("vtxZ_reco", "", {HistType::kTH1D, {vtxAxis}});
+        QAregistry.add("pt", "", {HistType::kTH1D, {ptAxis}});
+        QAregistry.add("phi", "", {HistType::kTH1D, {phiAxis}});
+        QAregistry.add("eta", "", {HistType::kTH1D, {etaAxis}});
+        QAregistry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
+        registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       }
     } else {
       QAregistry.add("phi", "", {HistType::kTH1D, {phiAxis}});
@@ -206,22 +220,33 @@ struct GenericFramework {
     fGFW->CreateRegions();
     TObjArray* oba = new TObjArray();
     AddConfigObjectsToObjArray(oba, corrconfigs);
-    if (!doprocessGen && !doprocessReco) {
+    if(doprocessReco || doprocessRawData || doprocessRun2) {
       fFC->SetName("FlowContainer");
       fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
     }
-    if (doprocessGen) {
+    if(doprocessGen) {
       fFC_gen->SetName("FlowContainer_gen");
       fFC_gen->SetXAxis(fPtAxis);
       fFC_gen->Initialize(oba, multAxis, cfgNbootstrap);
     }
-    if (doprocessReco) {
-      fFC_reco->SetName("FlowContainer_reco");
-      fFC_reco->SetXAxis(fPtAxis);
-      fFC_reco->Initialize(oba, multAxis, cfgNbootstrap);
-    }
     delete oba;
+
+    //Event selection - Alex
+    if(cfgUse22sEventCut)
+    {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    }
   }
 
   void AddConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs)
@@ -260,7 +285,24 @@ struct GenericFramework {
     cfg.correctionsLoaded = true;
   }
 
-  void FillFC(OutputObj<FlowContainer> fc, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  {
+    float eff = 1.;
+    if (cfg.mEfficiency)
+      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(pt));
+    else
+      eff = 1.0;
+    if (eff == 0)
+      return false;
+    weight_nue = 1. / eff;
+    if (cfg.mAcceptance)
+      weight_nua = cfg.mAcceptance->GetNUA(phi, eta, vtxz);
+    else
+      weight_nua = 1;
+    return true;
+  }
+
+  void FillFC(OutputObj<FlowContainer> fc, const GFW::CorrConfig& corrconf, const float& centmult, const double& rndm)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -269,7 +311,7 @@ struct GenericFramework {
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
-        fc->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+        fc->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm);
       return;
     }
     for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
@@ -278,163 +320,180 @@ struct GenericFramework {
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
-        fc->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+        fc->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), centmult, val, dnx, rndm);
     }
     return;
   }
 
-  Filter collisionFilter = aod::collision::posZ < vtxZup && aod::collision::posZ > vtxZlow;
-  Filter trackFilter = aod::track::eta < etaup && aod::track::eta > etalow&& aod::track::pt > ptlow&& aod::track::pt < ptup && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < 0.2f;
+  template<typename TCollision>
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality){
+    if (collision.alias_bit(kTVXinTRD)) {
+        // TRD triggered
+        return 0;
+    }
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+        vtxz = collision.posZ();
+        float zRes = TMath::Sqrt(collision.covZZ());
+        if (zRes > 0.25 && collision.numContrib() < 20)
+            vtxz = -999;
+    }
+      //auto multV0A = collision.multFV0A();
+      //auto multT0A = collision.multFT0A();
+      //auto multT0C = collision.multFT0C();
+      auto multNTracksPV = collision.multNTracksPV();
+
+     if (vtxz > vtxZup || vtxz < vtxZlow)
+        return 0;
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+          return 0;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+          return 0;
+      if (multTrk < fMultCutLow->Eval(centrality))
+          return 0;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+          return 0;
+      if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+          return 0;
+
+      return 1;
+  }
+
+  Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
+  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgBinning->GetPtMin() && aod::track::pt < cfgBinning->GetPtMax() && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   enum datatype {
     kRaw,
-    kDerived
+    kDerived,
+    kGen
   };
 
   template <datatype dt, typename TCollision, typename TTracks>
-  void processData(TCollision collision, TTracks tracks, float centrality)
+  void processCollision(TCollision collision, TTracks tracks, const float& centrality)
   {
     if (tracks.size() < 1)
       return;
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
     float vtxz = collision.posZ();
-
-    if (cfgFillQA) {
-      QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
-      QAregistry.fill(HIST("vtxZ"), vtxz);
-    }
+    if (cfgFillQA) QAregistry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
     float l_Random = fRndm->Rndm();
-    float weff = 1, wacc = 1;
-
     for (auto& track : tracks) {
-      if (cfgFillWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-      if (cfg.mEfficiency)
-        weff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
-      else
-        weff = 1.0;
-      if (weff == 0)
-        continue;
-      weff = 1. / weff;
-      if (cfg.mAcceptance)
-        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), vtxz);
-      else
-        wacc = 1;
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
-      bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
-      bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
-      if (WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt() - 1), track.phi(), wacc * weff, 1);
-      if (WithinPtPOI)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
-      if (WithinPtPOI && WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
-
-      if (cfgFillQA) {
-        QAregistry.fill(HIST("phi"), track.phi());
-        QAregistry.fill(HIST("eta"), track.eta());
-        QAregistry.fill(HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
-      }
+      ProcessTrack(track,centrality,vtxz);
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(fFC, corrconfigs.at(l_ind), centrality, l_Random);
+      FillFC((dt==kGen)?fFC_gen:fFC, corrconfigs.at(l_ind), (cfgUseNch)?tracks.size():centrality, l_Random);
     }
   }
 
+  template<typename TrackObject>
+  inline void ProcessTrack(TrackObject const& track, const float& centrality, const float& vtxz)
+  {
+    float weff = 1, wacc = 1;
+    float pt, eta, phi;
+    if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+      if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
+        return;
+      auto mcParticle = track.mcParticle();
+      pt = mcParticle.pt();
+      eta = mcParticle.eta();
+      phi = mcParticle.phi();
+      if (!mcParticle.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
+        return;
+      if(!setCurrentParticleWeights(weff,wacc,phi,eta,pt,vtxz)) return;
+      QAregistry.fill(HIST("phi"), phi);
+      QAregistry.fill(HIST("eta"), eta);
+      QAregistry.fill(HIST("pt"), pt);
+      if (cfgFillWeights)
+          fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
+    } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
+      pt = track.pt();
+      eta = track.eta();
+      phi = track.phi();
+      if (!track.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
+        return;
+      if (cfgFillQA) {
+        QAregistry.fill(HIST("phi_gen"), phi);
+        QAregistry.fill(HIST("eta_gen"), eta);
+        QAregistry.fill(HIST("pt_gen"), pt);
+      }
+    } else {
+      pt = track.pt();
+      eta = track.eta();
+      phi = track.phi();
+      if (cfgFillQA) {
+        QAregistry.fill(HIST("phi"), phi);
+        QAregistry.fill(HIST("eta"), eta);
+        QAregistry.fill(HIST("pt_dcaXY_dcaZ"), pt, track.dcaXY(), track.dcaZ());
+      }
+      if (cfgFillWeights)
+        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
+      if(!setCurrentParticleWeights(weff,wacc,phi,eta,pt,vtxz)) return;
+    }
+    bool WithinPtPOI = (ptpoilow < pt) && (pt < ptpoiup); // within POI pT range
+    bool WithinPtRef = (ptreflow < pt) && (pt < ptrefup); // within RF pT range
+    if (WithinPtRef)
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+    if (WithinPtPOI)
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+    if (WithinPtPOI && WithinPtRef)
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
+    registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
+  }
+
   void processRawData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  {
+    if (!collision.sel8())
+      return;
+    const auto centrality = collision.centFT0C();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if(cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
+      return;
+    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    loadCorrections(bc.timestamp());
+    processCollision<kRaw>(collision, tracks, centrality);
+  }
+  PROCESS_SWITCH(GenericFramework, processRawData, "Process analysis for derived data", true);
+
+  Filter dcaFilter = nabs(aod::track::dcaXY) < cfgDCAxy;
+  void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     const auto centrality = collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (!collision.sel8())
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     loadCorrections(bc.timestamp());
-    processData<kRaw>(collision, tracks, centrality);
+    processCollision<kRaw>(collision, tracks, centrality);
   }
-  PROCESS_SWITCH(GenericFramework, processRawData, "Process analysis for derived data", true);
+  PROCESS_SWITCH(GenericFramework, processReco, "Process analysis for MC reconstructed events", false);
 
   void processGen(soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::McCollisionLabels>>::iterator const& collision, aod::McParticles const& particles)
   {
     if (collision.has_mcCollision()) {
       float centrality = collision.centFT0C();
-      if (particles.size() < 1)
-        return;
-      if (centrality < centbinning.front() || centrality > centbinning.back())
-        return;
-      float vtxz = collision.posZ();
-      if (cfgFillQA) {
-        QAregistry.fill(HIST("vtxZ_gen"), vtxz);
-      }
-      fGFW->Clear();
-      float l_Random = fRndm->Rndm();
-
-      for (auto& particle : particles) {
-        if (!particle.isPhysicalPrimary() || particle.eta() < etalow || particle.eta() > etaup || particle.pt() < ptlow || particle.pt() > ptup)
-          continue;
-        bool WithinPtPOI = (ptpoilow < particle.pt()) && (particle.pt() < ptpoiup); // within POI pT range
-        bool WithinPtRef = (ptreflow < particle.pt()) && (particle.pt() < ptrefup); // within RF pT range
-        if (WithinPtRef)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 1);
-        if (WithinPtPOI)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 2);
-        if (WithinPtPOI && WithinPtRef)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 4);
-        if (cfgFillQA) {
-          QAregistry.fill(HIST("phi_gen"), particle.phi());
-          QAregistry.fill(HIST("eta_gen"), particle.eta());
-          QAregistry.fill(HIST("pt_gen"), particle.pt());
-        }
-      }
-      for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-        FillFC(fFC_gen, corrconfigs.at(l_ind), centrality, l_Random);
-      }
+      processCollision<kGen>(collision,particles,centrality);
     }
   }
   PROCESS_SWITCH(GenericFramework, processGen, "Process analysis for MC generated events", false);
 
-  Filter dcaFilter = nabs(aod::track::dcaXY) < 0.2f;
-  void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
-    float centrality = collision.centFT0C();
-    if (tracks.size() < 1)
+    if (!collision.sel7())
       return;
-    if (centrality < centbinning.front() || centrality > centbinning.back())
+    const auto centrality = collision.centRun2V0M();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if(cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    float vtxz = collision.posZ();
-    if (cfgFillQA) {
-      QAregistry.fill(HIST("vtxZ_reco"), vtxz);
-    }
-    fGFW->Clear();
-    float l_Random = fRndm->Rndm();
-
-    for (auto& track : tracks) {
-      if (track.has_mcParticle()) {
-        auto particle = track.mcParticle();
-        if (!particle.isPhysicalPrimary() || particle.eta() < etalow || particle.eta() > etaup || particle.pt() < ptlow || particle.pt() > ptup)
-          continue;
-        bool WithinPtPOI = (ptpoilow < particle.pt()) && (particle.pt() < ptpoiup); // within POI pT range
-        bool WithinPtRef = (ptreflow < particle.pt()) && (particle.pt() < ptrefup); // within RF pT range
-        if (WithinPtRef)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 1);
-        if (WithinPtPOI)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 2);
-        if (WithinPtPOI && WithinPtRef)
-          fGFW->Fill(particle.eta(), fPtAxis->FindBin(particle.pt()) - 1, particle.phi(), 1, 4);
-        if (cfgFillQA) {
-          QAregistry.fill(HIST("phi_reco"), particle.phi());
-          QAregistry.fill(HIST("eta_reco"), particle.eta());
-          QAregistry.fill(HIST("pt_reco"), particle.pt());
-        }
-      }
-    }
-    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(fFC_reco, corrconfigs.at(l_ind), centrality, l_Random);
-    }
+    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    loadCorrections(bc.timestamp());
+    processCollision<kRaw>(collision, tracks, centrality);
   }
-  PROCESS_SWITCH(GenericFramework, processReco, "Process analysis for MC reconstructed events", false);
+  PROCESS_SWITCH(GenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
