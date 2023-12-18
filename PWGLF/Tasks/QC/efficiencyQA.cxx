@@ -288,7 +288,7 @@ struct efficiencyQA {
   template <class T>
   void fillTagAndProbe(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks)
   {
-    auto tpcTracks = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
+    auto tpcTracks = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
     for (auto& v0 : V0s) {
       auto posTrack = v0.posTrack_as<T>();
       auto negTrack = v0.negTrack_as<T>();
@@ -531,7 +531,7 @@ struct efficiencyQA {
 
   void fillProbeMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    auto tracks_thisEvent = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
+    auto tracks_thisEvent = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
 
     for (const auto& probeTrack : probeTracks) {
       auto mcLab = trackLabelsMC.rawIteratorAt(probeTrack.globalIndex);
