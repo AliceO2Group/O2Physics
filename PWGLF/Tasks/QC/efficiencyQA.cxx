@@ -105,6 +105,7 @@ struct efficiencyQA {
   Configurable<float> v0cosPaMin{"v0cosPaMin", 0.99f, "minimum cosine of pointing angle of V0"};
 
   Configurable<bool> findTpcLeg{"findTpcLeg", false, "toggle search of missing tpc segment"};
+  Configurable<bool> useTpcTracksFromSameColl{"useTpcTracksFromSameColl", true, "toggle post-matching to tpc segment associated to collision"};
   Configurable<bool> propToTPCinnerWall{"propToTPCinnerWall", false, "toggle propagation of tracks to the TPC inner wall"};
   Configurable<bool> refitVertex{"refitVertex", false, "toggle refit of decay vertex using tag and tpc prolongation"};
   Configurable<float> ptWindow{"ptWindow", 0.05f, "pt window to search tpc segment"};
@@ -126,7 +127,7 @@ struct efficiencyQA {
   ConfigurableAxis massResAxis{"massResAxis", {400, -0.1f, 0.1f}, "binning for the invariant-mass resolution"};
   ConfigurableAxis zVtxAxis{"zVtxAxis", {200, -10.f, 10.f}, "binning for the z coordinate of the primary vertex"};
   ConfigurableAxis recAxis{"recAxis", {8, 0.f, 8.f}, "binning for the reconstruction flag"};
-  ConfigurableAxis tpcAxis{"tpcAxis", {3, 0.f, 3.f}, "binning for the matching of tpc segment"};
+  ConfigurableAxis tpcAxis{"tpcAxis", {4, 0.f, 4.f}, "binning for the matching of tpc segment"};
   ConfigurableAxis ptAxis{"ptAxis", {100, -5.f, 5.f}, "binning for the pt of V0 daughter tracks"};
   ConfigurableAxis ptResAxis{"ptResAxis", {200, -1.f, 1.f}, "binning for the pt resolution of V0 daughter tracks"};
   ConfigurableAxis etaAxis{"etaAxis", {900, -.9f, .9f}, "binning for the eta of V0 daughter tracks"};
@@ -153,15 +154,15 @@ struct efficiencyQA {
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     hPiRec = histos.add<TH2>("piRec", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {recAxis, ptAxis});
     std::string binLabels[]{"Decays", "ITS", "ITS only", "TPC", "TPC only", "ITS+TPC", "TPC+TOF", " "};
-    for (int iB{0}; iB < 8; ++iB) {
+    for (int iB{0}; iB < hPiRec->GetNbinsX(); ++iB) {
       hPiRec->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
     }
     if (doprocessMcTracks) {
       hPiRec->GetXaxis()->SetBinLabel(1, "Generated");
       hPtRes = histos.add<TH3>("ptRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#it{p}_{T}^{rec} - #it{p}_{T}^{MC} (GeV/#it{c})", HistType::kTH3F, {recAxis, ptAxis, ptResAxis});
-      hEtaRes = histos.add<TH3>("etaRes", ";;#eta^{rec};#eta^{rec} - #eta^{MC} (rad)", HistType::kTH3F, {recAxis, etaAxis, etaResAxis});
-      hPhiRes = histos.add<TH3>("phiRes", ";;#phi^{rec} (rad);#phi^{rec} - #phi^{MC} (rad)", HistType::kTH3F, {recAxis, phiAxis, phiResAxis});
-      for (int iB{1}; iB < 8; ++iB) {
+      hEtaRes = histos.add<TH3>("etaRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#eta^{rec} - #eta^{MC} (rad)", HistType::kTH3F, {recAxis, ptAxis, etaResAxis});
+      hPhiRes = histos.add<TH3>("phiRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#phi^{rec} - #phi^{MC} (rad)", HistType::kTH3F, {recAxis, ptAxis, phiResAxis});
+      for (int iB{1}; iB < hPtRes->GetNbinsX(); ++iB) {
         hPtRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
         hEtaRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
         hPhiRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
@@ -197,18 +198,18 @@ struct efficiencyQA {
       histos.add<TH2>("phiItsTpcSel", ";#it{p} (GeV/#it{c});#phi^{TPC} - #phi^{ITS} (rad)", HistType::kTH2F, {ptAxis, ptResAxis});
 
       std::string binLabelsTag[]{"hasITS && hasTPC", "tracking", "PID", "v0 mass", "dcaV0dau", "cosPA", "dcaXYZ", "V0radius"};
-      for (int iB{0}; iB < 8; ++iB) {
+      for (int iB{0}; iB < hTagCuts->GetNbinsX(); ++iB) {
         hTagCuts->GetXaxis()->SetBinLabel(iB + 1, binLabelsTag[iB].data());
       }
-      for (int iB{0}; iB < 7; ++iB) {
+      for (int iB{0}; iB < hPiRecMass->GetNbinsX(); ++iB) {
         hPiRecMass->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
       }
       hPiRecMass->GetXaxis()->SetBinLabel(8, "ITS w/ TPC leg");
 
       if (doprocessTagAndProbeMC) {
-        std::string binLabelsTpc[]{"hasTPCsegment", "foundTPCsegment", "allFoundTPCsegment"};
+        std::string binLabelsTpc[]{"hasTPCsegment", "foundTPCsegment", "allFoundTPCsegment", "foundTPCsegment (w/ fake)"};
         hTpcSegment = histos.add<TH2>("tpcSegment", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {tpcAxis, ptAxis});
-        for (int iB{0}; iB < 3; ++iB) {
+        for (int iB{0}; iB < hTpcSegment->GetNbinsX(); ++iB) {
           hTpcSegment->GetXaxis()->SetBinLabel(iB + 1, binLabelsTpc[iB].data());
         }
         histos.add<TH2>("pTpcIts", ";#it{p}^{ITS} (GeV/#it{c});#it{p}^{TPC} - #it{p}^{ITS} (GeV/#it{c});Entries", HistType::kTH2F, {ptAxis, ptResAxis});
@@ -287,7 +288,7 @@ struct efficiencyQA {
   template <class T>
   void fillTagAndProbe(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks)
   {
-    auto tpcTracks = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
+    auto tpcTracks = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
     for (auto& v0 : V0s) {
       auto posTrack = v0.posTrack_as<T>();
       auto negTrack = v0.negTrack_as<T>();
@@ -530,7 +531,7 @@ struct efficiencyQA {
 
   void fillProbeMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    auto tracks_thisEvent = tracks.sliceBy(perCollisionTracks, collision.globalIndex());
+    auto tracks_thisEvent = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
 
     for (const auto& probeTrack : probeTracks) {
       auto mcLab = trackLabelsMC.rawIteratorAt(probeTrack.globalIndex);
@@ -564,6 +565,9 @@ struct efficiencyQA {
           }
           if (mcLabTpc.mcParticleId() == mcLab.mcParticleId()) {
             hTpcSegment->Fill(0., probeTrack.pt);
+            if (probeTrack.globalIndexTpc > 0) {
+              hTpcSegment->Fill(3., probeTrack.pt);
+            }
 
             auto trackCov = getTrackParCov(tpcTrack);
             gpu::gpustd::array<float, 2> dcaInfo;
