@@ -45,28 +45,28 @@ using namespace o2::analysis;
 
 namespace o2::analysis::genericframework
 {
-  std::vector<double> ptbinning = {
-    0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
-    0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
-    1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
-    2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
-  float ptpoilow = 0.2, ptpoiup = 10.0;
-  float ptreflow = 0.2, ptrefup = 3.0;
-  float ptlow = 0.2, ptup = 3.0;
-  int etabins = 16;
-  float etalow = -0.8, etaup = 0.8;
-  int vtxZbins = 40;
-  float vtxZlow = -10.0, vtxZup = 10.0;
-  int phibins = 72;
-  float philow = 0.0;
-  float phiup = constants::math::TwoPI;
-  int nchbins = 300;
-  float nchlow = 0;
-  float nchup = 3000;
-  std::vector<double> centbinning(90);
-  int nBootstrap = 10;
-  GFWRegions regions;
-  GFWCorrConfigs configs;
+std::vector<double> ptbinning = {
+  0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+  0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+  1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+  2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+float ptpoilow = 0.2, ptpoiup = 10.0;
+float ptreflow = 0.2, ptrefup = 3.0;
+float ptlow = 0.2, ptup = 3.0;
+int etabins = 16;
+float etalow = -0.8, etaup = 0.8;
+int vtxZbins = 40;
+float vtxZlow = -10.0, vtxZup = 10.0;
+int phibins = 72;
+float philow = 0.0;
+float phiup = constants::math::TwoPI;
+int nchbins = 300;
+float nchlow = 0;
+float nchup = 3000;
+std::vector<double> centbinning(90);
+int nBootstrap = 10;
+GFWRegions regions;
+GFWCorrConfigs configs;
 } // namespace o2::analysis::genericframework
 
 using namespace o2::analysis::genericframework;
@@ -86,12 +86,12 @@ struct GenericFramework {
                                           {40, -10.0, 10.0, 0.2, 2.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, 16, -0.8, 0.8, 72, 0.2, 5.0, 300, 0.5, 3000.5, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},
                                           "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
 
-    Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
+  Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
-    Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
 
-  //#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
-  // Connect to ccdb
+  // #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+  //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
   struct Config {
@@ -113,13 +113,12 @@ struct GenericFramework {
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
 
-  //Event selection cuts - Alex
+  // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
-
 
   void init(InitContext const&)
   {
@@ -161,8 +160,10 @@ struct GenericFramework {
     AxisSpec ptAxis = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
     AxisSpec centAxis = {centbinning, "Centrality (%)"};
     std::vector<double> nchbinning;
-    int nchskip = (nchup-nchlow)/nchbins;
-    for(int i=0;i<=nchbins;++i) { nchbinning.push_back(nchskip*i+nchlow+0.5); }
+    int nchskip = (nchup - nchlow) / nchbins;
+    for (int i = 0; i <= nchbins; ++i) {
+      nchbinning.push_back(nchskip * i + nchlow + 0.5);
+    }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec multAxis = (cfgUseNch) ? nchAxis : centAxis;
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
@@ -220,21 +221,20 @@ struct GenericFramework {
     fGFW->CreateRegions();
     TObjArray* oba = new TObjArray();
     AddConfigObjectsToObjArray(oba, corrconfigs);
-    if(doprocessReco || doprocessRawData || doprocessRun2) {
+    if (doprocessReco || doprocessRawData || doprocessRun2) {
       fFC->SetName("FlowContainer");
       fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
     }
-    if(doprocessGen) {
+    if (doprocessGen) {
       fFC_gen->SetName("FlowContainer_gen");
       fFC_gen->SetXAxis(fPtAxis);
       fFC_gen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
 
-    //Event selection - Alex
-    if(cfgUse22sEventCut)
-    {
+    // Event selection - Alex
+    if (cfgUse22sEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -325,38 +325,39 @@ struct GenericFramework {
     return;
   }
 
-  template<typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality){
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  {
     if (collision.alias_bit(kTVXinTRD)) {
-        // TRD triggered
-        return 0;
+      // TRD triggered
+      return 0;
     }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
-        vtxz = collision.posZ();
-        float zRes = TMath::Sqrt(collision.covZZ());
-        if (zRes > 0.25 && collision.numContrib() < 20)
-            vtxz = -999;
+      vtxz = collision.posZ();
+      float zRes = TMath::Sqrt(collision.covZZ());
+      if (zRes > 0.25 && collision.numContrib() < 20)
+        vtxz = -999;
     }
-      //auto multV0A = collision.multFV0A();
-      //auto multT0A = collision.multFT0A();
-      //auto multT0C = collision.multFT0C();
-      auto multNTracksPV = collision.multNTracksPV();
+    // auto multV0A = collision.multFV0A();
+    // auto multT0A = collision.multFT0A();
+    // auto multT0C = collision.multFT0C();
+    auto multNTracksPV = collision.multNTracksPV();
 
-     if (vtxz > vtxZup || vtxz < vtxZlow)
-        return 0;
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-          return 0;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-          return 0;
-      if (multTrk < fMultCutLow->Eval(centrality))
-          return 0;
-      if (multTrk > fMultCutHigh->Eval(centrality))
-          return 0;
-      if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-          return 0;
+    if (vtxz > vtxZup || vtxz < vtxZlow)
+      return 0;
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+    if (multTrk < fMultCutLow->Eval(centrality))
+      return 0;
+    if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+      return 0;
 
-      return 1;
+    return 1;
   }
 
   Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
@@ -377,18 +378,19 @@ struct GenericFramework {
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
     float vtxz = collision.posZ();
-    if (cfgFillQA) QAregistry.fill(HIST("vtxZ"), vtxz);
+    if (cfgFillQA)
+      QAregistry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
-      ProcessTrack(track,centrality,vtxz);
+      ProcessTrack(track, centrality, vtxz);
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC((dt==kGen)?fFC_gen:fFC, corrconfigs.at(l_ind), (cfgUseNch)?tracks.size():centrality, l_Random);
+      FillFC((dt == kGen) ? fFC_gen : fFC, corrconfigs.at(l_ind), (cfgUseNch) ? tracks.size() : centrality, l_Random);
     }
   }
 
-  template<typename TrackObject>
+  template <typename TrackObject>
   inline void ProcessTrack(TrackObject const& track, const float& centrality, const float& vtxz)
   {
     float weff = 1, wacc = 1;
@@ -402,12 +404,13 @@ struct GenericFramework {
       phi = mcParticle.phi();
       if (!mcParticle.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
         return;
-      if(!setCurrentParticleWeights(weff,wacc,phi,eta,pt,vtxz)) return;
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        return;
       QAregistry.fill(HIST("phi"), phi);
       QAregistry.fill(HIST("eta"), eta);
       QAregistry.fill(HIST("pt"), pt);
       if (cfgFillWeights)
-          fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
+        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       pt = track.pt();
       eta = track.eta();
@@ -430,7 +433,8 @@ struct GenericFramework {
       }
       if (cfgFillWeights)
         fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
-      if(!setCurrentParticleWeights(weff,wacc,phi,eta,pt,vtxz)) return;
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        return;
     }
     bool WithinPtPOI = (ptpoilow < pt) && (pt < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < pt) && (pt < ptrefup); // within RF pT range
@@ -449,7 +453,7 @@ struct GenericFramework {
       return;
     const auto centrality = collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if(cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
+    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
     QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
@@ -474,7 +478,7 @@ struct GenericFramework {
   {
     if (collision.has_mcCollision()) {
       float centrality = collision.centFT0C();
-      processCollision<kGen>(collision,particles,centrality);
+      processCollision<kGen>(collision, particles, centrality);
     }
   }
   PROCESS_SWITCH(GenericFramework, processGen, "Process analysis for MC generated events", false);
@@ -485,7 +489,7 @@ struct GenericFramework {
       return;
     const auto centrality = collision.centRun2V0M();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if(cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
+    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
     QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
@@ -493,7 +497,6 @@ struct GenericFramework {
     processCollision<kRaw>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

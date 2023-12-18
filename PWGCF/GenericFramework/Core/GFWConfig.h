@@ -96,7 +96,7 @@ class GFWBinningCuts
   const auto& GetPtRefMin() const { return mPTrefmin; }
   const auto& GetPtRefMax() const { return mPTrefmax; }
 
-  const float& GetPtMin() const { return std::min(mPTrefmin,mPTpoimin); }
+  const float& GetPtMin() const { return std::min(mPTrefmin, mPTpoimin); }
   const float& GetPtMax() const { return std::max(mPTrefmax, mPTpoimax); }
 
   void SetNchBinning(int nchbins, float nchmin, float nchmax)
