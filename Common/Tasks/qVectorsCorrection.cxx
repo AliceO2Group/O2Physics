@@ -174,7 +174,7 @@ struct qVectorsCorrection {
     }
 
     if (vec.qvecAmp()[RefAId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefAUncor"), vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId* 4]);
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefAUncor"), vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId * 4]);
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefARectr"), vec.qvecRe()[RefAId * 4 + 1], vec.qvecIm()[RefAId * 4 + 1]);
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefATwist"), vec.qvecRe()[RefAId * 4 + 2], vec.qvecIm()[RefAId * 4 + 2]);
       histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefAFinal"), vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3]);
