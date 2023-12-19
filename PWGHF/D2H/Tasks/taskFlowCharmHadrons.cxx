@@ -374,7 +374,7 @@ struct HfTaskFlowCharmHadrons {
     registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecBNeg + yQVecFT0m * yQVecBNeg);
     registry.fill(HIST("spReso/hSpResoFV0mTPCpos"), centrality, xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
     registry.fill(HIST("spReso/hSpResoFV0mTPCneg"), centrality, xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
-  
+
     if (saveEpResoHisto) {
       float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
       float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic);
