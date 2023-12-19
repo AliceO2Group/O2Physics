@@ -232,8 +232,8 @@ struct TableMaker {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") ||
-                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithMults") ||
+                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCent") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithMults") || context.mOptions.get<bool>("processBarrelOnlyWithCentAndMults") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCentAndMults") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") ||
@@ -1249,11 +1249,25 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
+  // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
+  void processBarrelOnlyWithCovWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithCent, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
   // Produce barrel only tables, with centrality and multiplicity -------------------------------------------------------------------
   void processBarrelOnlyWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
+  // Produce barrel only tables, with centrality and multiplicity -------------------------------------------------------------------
+  void processBarrelOnlyWithCovWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                         soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
@@ -1485,7 +1499,9 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithMultsAndEventFilter, "Build barrel-only DQ skimmed data model, w/ multiplicity, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovAndEventFilter, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCent, "Build barrel-only DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovWithCent, "Build barrel-only DQ skimmed data model, w/ centrality and w/ track covariance", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities and w/ track covariance", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnly, "Build barrel-only DQ skimmed data model, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
