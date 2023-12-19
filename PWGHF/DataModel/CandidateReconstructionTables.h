@@ -1320,7 +1320,7 @@ DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
                   hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<4>);
 
-// specific Xicplus to Xi Pi Pi candidate properties
+// specific XicPlus to Xi Pi Pi candidate properties
 namespace hf_cand_xicplustoxipipi
 {
 // Data processing results:
@@ -1328,9 +1328,9 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
-DECLARE_SOA_COLUMN(XDecayVtxCharmBaryon, xDecayVtxCharmBaryon, float);
-DECLARE_SOA_COLUMN(YDecayVtxCharmBaryon, yDecayVtxCharmBaryon, float);
-DECLARE_SOA_COLUMN(ZDecayVtxCharmBaryon, zDecayVtxCharmBaryon, float);
+DECLARE_SOA_COLUMN(XDecayVtxXicPlus, xDecayVtxXicPlus, float);
+DECLARE_SOA_COLUMN(YDecayVtxXicPlus, yDecayVtxXicPlus, float);
+DECLARE_SOA_COLUMN(ZDecayVtxXicPlus, zDecayVtxXicPlus, float);
 DECLARE_SOA_COLUMN(XDecayVtxCascade, xDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(YDecayVtxCascade, yDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
@@ -1338,25 +1338,25 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(Chi2PCACharmBaryon, chi2PCACharmBaryon, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon0, covVtxCharmBaryon0, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon1, covVtxCharmBaryon1, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon2, covVtxCharmBaryon2, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon3, covVtxCharmBaryon3, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon4, covVtxCharmBaryon4, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryon5, covVtxCharmBaryon5, float);
-DECLARE_SOA_COLUMN(PxCharmBaryon, pxCharmBaryon, float);
-DECLARE_SOA_COLUMN(PyCharmBaryon, pyCharmBaryon, float);
-DECLARE_SOA_COLUMN(PzCharmBaryon, pzCharmBaryon, float);
+DECLARE_SOA_COLUMN(Chi2PCAXicPlus, chi2PCAXicPlus, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus0, covVtxXicPlus0, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus1, covVtxXicPlus1, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus2, covVtxXicPlus2, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus3, covVtxXicPlus3, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus4, covVtxXicPlus4, float);
+DECLARE_SOA_COLUMN(CovVtxXicPlus5, covVtxXicPlus5, float);
+DECLARE_SOA_COLUMN(PxXicPlus, pxXicPlus, float);
+DECLARE_SOA_COLUMN(PyXicPlus, pyXicPlus, float);
+DECLARE_SOA_COLUMN(PzXicPlus, pzXicPlus, float);
 DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
 DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
 DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
-DECLARE_SOA_COLUMN(PxPi1FromCharmBaryon, pxPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PyPi1FromCharmBaryon, pyPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PzPi1FromCharmBaryon, pzPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PxPi2FromCharmBaryon, pxPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PyPi2FromCharmBaryon, pyPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PzPi2FromCharmBaryon, pzPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(PxPi1FromXicPlus, pxPi1FromXicPlus, float);
+DECLARE_SOA_COLUMN(PyPi1FromXicPlus, pyPi1FromXicPlus, float);
+DECLARE_SOA_COLUMN(PzPi1FromXicPlus, pzPi1FromXicPlus, float);
+DECLARE_SOA_COLUMN(PxPi2FromXicPlus, pxPi2FromXicPlus, float);
+DECLARE_SOA_COLUMN(PyPi2FromXicPlus, pyPi2FromXicPlus, float);
+DECLARE_SOA_COLUMN(PzPi2FromXicPlus, pzPi2FromXicPlus, float);
 DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
 DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
 DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
@@ -1370,25 +1370,26 @@ DECLARE_SOA_COLUMN(PxNegV0Dau, pxNegV0Dau, float);
 DECLARE_SOA_COLUMN(PyNegV0Dau, pyNegV0Dau, float);
 DECLARE_SOA_COLUMN(PzNegV0Dau, pzNegV0Dau, float);
 DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
-DECLARE_SOA_COLUMN(ImpactParPi1FromCharmBaryonXY, impactParPiFromCharmBaryonXY, float);
-DECLARE_SOA_COLUMN(ImpactParPi1FromCharmBaryonXY, impactParPiFromCharmBaryonXY, float);
 DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
-DECLARE_SOA_COLUMN(ImpactParPi2FromCharmBaryonZ, impactParPiFromCharmBaryonZ, float);
-DECLARE_SOA_COLUMN(ImpactParPi2FromCharmBaryonZ, impactParPiFromCharmBaryonZ, float);
+DECLARE_SOA_COLUMN(ImpactParPi1FromXicPlusXY, impactParPi1FromXicPlusXY, float);
+DECLARE_SOA_COLUMN(ImpactParPi1FromXicPlusZ, impactParPi1FromXicPlusZ, float);
+DECLARE_SOA_COLUMN(ImpactParPi2FromXicPlusXY, impactParPi2FromXicPlusXY, float);
+DECLARE_SOA_COLUMN(ImpactParPi2FromXicPlusZ, impactParPi2FromXicPlusZ, float);
 DECLARE_SOA_COLUMN(ErrImpactParCascXY, errImpactParCascXY, float);
-DECLARE_SOA_COLUMN(ErrImpactParPiFromCharmBaryonXY, errImpactParPiFromCharmBaryonXY, float);
+DECLARE_SOA_COLUMN(ErrImpactParPi1FromXicPlusXY, errImpactParPi1FromXicPlusXY, float);
+DECLARE_SOA_COLUMN(ErrImpactParPi2FromXicPlusXY, errImpactParPi2FromXicPlusXY, float);
 DECLARE_SOA_INDEX_COLUMN(V0, v0);
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi1FromCharmBaryon, pi1FromCharmBaryon, int, Tracks, "_pi1fromcharmbaryon");
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi2FromCharmBaryon, pi2FromCharmBaryon, int, Tracks, "_pi2fromcharmbaryon");
+DECLARE_SOA_INDEX_COLUMN_FULL(Pi1FromXicPlus, pi1FromXicPlus, int, Tracks, "_pi1fromXicPlus");
+DECLARE_SOA_INDEX_COLUMN_FULL(Pi2FromXicPlus, pi2FromXicPlus, int, Tracks, "_pi2fromXicPlus");
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
-DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, double);
+DECLARE_SOA_COLUMN(InvMassXicPlus, invMassXicPlus, double);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
-DECLARE_SOA_COLUMN(CosPACharmBaryon, cosPACharmBaryon, double);
+DECLARE_SOA_COLUMN(CosPAXicPlus, cosPAXicPlus, double);
 DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, double);
 DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, double);
-DECLARE_SOA_COLUMN(CosPAXYCharmBaryon, cosPAXYCharmBaryon, double);
+DECLARE_SOA_COLUMN(CosPAXYXicPlus, cosPAXYXicPlus, double);
 DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
 DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
 DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
@@ -1396,8 +1397,8 @@ DECLARE_SOA_COLUMN(CTauXicPlus, ctauXicPlus, double);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
-DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, double);
-DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, double);
+DECLARE_SOA_COLUMN(EtaPiFromXicPlus, etaPiFromXicPlus, double);
+DECLARE_SOA_COLUMN(EtaXicPlus, etaXicPlus, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float); // pos dau
@@ -1408,12 +1409,12 @@ DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
 DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
-DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
-DECLARE_SOA_COLUMN(DecLenCharmBaryon, decLenCharmBaryon, double);
+DECLARE_SOA_COLUMN(DcaXicPlusDau, dcaXicPlusDau, float);
+DECLARE_SOA_COLUMN(DecLenXicPlus, decLenXicPlus, double);
 DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
 DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
-DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
-DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthXicPlus, errorDecayLengthXicPlus, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthXYXicPlus, errorDecayLengthXYXicPlus, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1426,24 +1427,25 @@ DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 
 // mapping of decay types
-enum DecayType {XicplusToXiPiPi};
+enum DecayType { XicPlusToXiPiPi=0 };
 
 } // end of namespace hf_cand_xicplustoxipipi
 
-// declare dedicated Omegac and Xic to Xi Pi candidate table
-DECLARE_SOA_TABLE(HfCandXicplusToXiPiPi, "AOD", "HFCANDXICPLUSTOXIPIPI",
+// declare dedicated XicPlus to Xi Pi Pi candidate table
+DECLARE_SOA_TABLE(HfCandXicPlus, "AOD", "HFCANDXICPLUS",
                   o2::soa::Index<>,
                   hf_cand_xicplustoxipipi::CollisionId,
+                  hf_cand_xicplustoxipipi::Pi1FromXicPlusId, hf_cand_xicplustoxipipi::Pi2FromXicPlusId, hf_cand_xicplustoxipipi::CascadeId,
+                  cascdata::BachelorId, hf_cand_xicplustoxipipi::V0Id, v0data::PosTrackId, v0data::NegTrackId,
                   hf_cand_xicplustoxipipi::XPv, hf_cand_xicplustoxipipi::YPv, hf_cand_xicplustoxipipi::ZPv,
-                  hf_cand_xicplustoxipipi::XDecayVtxCharmBaryon, hf_cand_xicplustoxipipi::YDecayVtxCharmBaryon, hf_cand_xicplustoxipipi::ZDecayVtxCharmBaryon,
-                  hf_cand_xicplustoxipipi::ErrorDecayLengthCharmBaryon, hf_cand_xicplustoxipipi::ErrorDecayLengthXYCharmBaryon,
-                  hf_cand_xicplustoxipipi::Chi2PCACharmBaryon,
-                  hf_cand_xicplustoxipipi::PxCharmBaryon, hf_cand_xicplustoxipipi::PyCharmBaryon, hf_cand_xicplustoxipipi::PzCharmBaryon,
-                  hf_cand_xicplustoxipipi::PxPi1FromCharmBaryon, hf_cand_xicplustoxipipi::PyPi1FromCharmBaryon, hf_cand_xicplustoxipipi::PzPi1FromCharmBaryon,
-                  hf_cand_xicplustoxipipi::PxPi2FromCharmBaryon, hf_cand_xicplustoxipipi::PyPi2FromCharmBaryon, hf_cand_xicplustoxipipi::PzPi2FromCharmBaryon,
-                  hf_cand_xicplustoxipipi::ImpactParPiFromCharmBaryonXY,hf_cand_xicplustoxipipi::ImpactParPiFromCharmBaryonXY,hf_cand_xicplustoxipipi::ImpactParCascXY,
-                  hf_cand_xicplustoxipipi::Pi1FromCharmBaryonId,hf_cand_xicplustoxipipi::Pi2FromCharmBaryonId,hf_cand_xicplustoxipipi::CascadeId,
-                  hf_cand_xicplustoxipipi::SignDecay,
+                  hf_cand_xicplustoxipipi::XDecayVtxXicPlus, hf_cand_xicplustoxipipi::YDecayVtxXicPlus, hf_cand_xicplustoxipipi::ZDecayVtxXicPlus,
+                  hf_cand_xicplustoxipipi::ErrorDecayLengthXicPlus, hf_cand_xicplustoxipipi::ErrorDecayLengthXYXicPlus,
+                  hf_cand_xicplustoxipipi::Chi2PCAXicPlus,
+                  hf_cand_xicplustoxipipi::PxPi1FromXicPlus, hf_cand_xicplustoxipipi::PyPi1FromXicPlus, hf_cand_xicplustoxipipi::PzPi1FromXicPlus,
+                  hf_cand_xicplustoxipipi::PxPi2FromXicPlus, hf_cand_xicplustoxipipi::PyPi2FromXicPlus, hf_cand_xicplustoxipipi::PzPi2FromXicPlus,
+                  hf_cand_xicplustoxipipi::PxXicPlus, hf_cand_xicplustoxipipi::PyXicPlus, hf_cand_xicplustoxipipi::PzXicPlus,
+                  hf_cand_xicplustoxipipi::ImpactParPi1FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParPi2FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParCascXY,
+                  hf_cand_xicplustoxipipi::ErrImpactParPi1FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParPi2FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParCascXY,
                   hf_cand_xicplustoxipipi::XDecayVtxCascade, hf_cand_xicplustoxipipi::YDecayVtxCascade, hf_cand_xicplustoxipipi::ZDecayVtxCascade,
                   hf_cand_xicplustoxipipi::XDecayVtxV0, hf_cand_xicplustoxipipi::YDecayVtxV0, hf_cand_xicplustoxipipi::ZDecayVtxV0,
                   hf_cand_xicplustoxipipi::PxPosV0Dau, hf_cand_xicplustoxipipi::PyPosV0Dau, hf_cand_xicplustoxipipi::PzPosV0Dau,
@@ -1453,13 +1455,13 @@ DECLARE_SOA_TABLE(HfCandXicplusToXiPiPi, "AOD", "HFCANDXICPLUSTOXIPIPI",
                   hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfXicplusToXiPiPiMCRec, "AOD", "HFXICPLUSTOXIPIPIMCREC", //!
+DECLARE_SOA_TABLE(HfXicPlusMcRec, "AOD", "HFXICPLUSMCREC", //!
                   hf_cand_xicplustoxipipi::FlagMcMatchRec,
                   hf_cand_xicplustoxipipi::DebugMcRec,
                   hf_cand_xicplustoxipipi::OriginRec);
 
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfXicPlusToXiPiPiMCGen, "AOD", "HFXICPLUSTOXIPIPIMCGEN", //!
+DECLARE_SOA_TABLE(HfXicPlusMcGen, "AOD", "HFXICPLUSMCGEN", //!
                   hf_cand_xicplustoxipipi::FlagMcMatchGen, hf_cand_xicplustoxipipi::DebugGenCharmBar, hf_cand_xicplustoxipipi::DebugGenXi, hf_cand_xicplustoxipipi::DebugGenLambda, hf_cand_xicplustoxipipi::OriginGen);
 
 // specific chic candidate properties
