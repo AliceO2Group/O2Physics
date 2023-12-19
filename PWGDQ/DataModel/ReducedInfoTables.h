@@ -270,12 +270,18 @@ DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint8_t); //!
 DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
+DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
 } // namespace reducedmft
 
 // MFT track kinematics
 DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
                   o2::soa::Index<>, reducedmft::ReducedEventId, reducedmft::FilteringFlags,
                   reducedmft::Pt, reducedmft::Eta, reducedmft::Phi);
+
+// MFT tracks extra info (cluster size, sign)
+DECLARE_SOA_TABLE(ReducedMFTTracksExtra, "AOD", "RMFTTREXTRA", //!
+                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign);
 
 // iterator
 using ReducedMFTTrack = ReducedMFTTracks::iterator;
