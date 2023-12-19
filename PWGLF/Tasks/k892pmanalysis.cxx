@@ -228,7 +228,7 @@ struct k892pmanalysis {
         if (!IsV0QAFilled) {
           // pt QA (after cuts)
           histos.fill(HIST("QAafter/trkpT_k0s"), v0ptK0s);
-          //K0s mass QA (after cuts)
+          // K0s mass QA (after cuts)
           histos.fill(HIST("QAafter/k0shortmass"), v0.mK0Short());
         }
 
