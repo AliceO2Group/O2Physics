@@ -121,7 +121,7 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
-DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                  //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                          //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0CORES
@@ -555,7 +555,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras,
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra");          //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrackExtra, strangeTrackExtra, int, DauTrackExtras, "_StrangeExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                                    //!
-DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                                          //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                                      //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCORES

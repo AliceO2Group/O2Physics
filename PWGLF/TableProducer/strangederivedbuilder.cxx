@@ -86,7 +86,7 @@ struct strangederivedbuilder {
   // mother information
   Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
   Produces<aod::CascMCMothers> cascmothers;           // casc mother references
-  Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
+  Produces<aod::MotherMCParts> motherMCParts;         // mc particles for mothers
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
