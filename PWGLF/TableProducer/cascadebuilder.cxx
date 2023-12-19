@@ -1915,7 +1915,7 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, aod::TracksExtra const&)
+  void processBuildAll(aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, aod::TracksExtra const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -1925,7 +1925,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -1936,7 +1936,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
+  void processBuildValiddEdx(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPID const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -1947,7 +1947,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
