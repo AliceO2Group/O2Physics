@@ -578,7 +578,7 @@ struct efficiencyQA {
               hTpcSegment->Fill(3., probeTrack.pt);
             }
 
-            LOGF(info, "globalID = %lld, probeCollId = %d, tpcCollId = %d", collision.globalIndex(), probeTrack.collIndex, tpcTrack.collisionId());
+            LOGF(debug, "globalID = %lld, probeCollId = %d, tpcCollId = %d", collision.globalIndex(), probeTrack.collIndex, tpcTrack.collisionId());
             histos.fill(HIST("collTpcIts"), tpcTrack.collisionId() - probeTrack.collIndex);
             histos.fill(HIST("collTpcV0"), tpcTrack.collisionId() - collision.globalIndex());
 
