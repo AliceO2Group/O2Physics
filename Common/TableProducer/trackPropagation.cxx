@@ -65,7 +65,7 @@ struct TrackPropagation {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
-  trackTuner trackTunerObj;
+  TrackTuner trackTunerObj;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -73,14 +73,10 @@ struct TrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
-  Configurable<bool> useImprover{"useImprover", 0, "Apply Improver/DCA corrections to MC"};
-  Configurable<bool> isUpdateTrackCovMat{"isUpdateTrackCovMat", 0, "Update single track covariance matrix"};
-  Configurable<bool> isUpdateCurvature{"isUpdateCurvature", 0, "Update Q/Pt"};
-  Configurable<bool> isUpdatePulls{"isUpdatePulls", 0, "Update cov matrix elements for DCA pulls"};
-  Configurable<std::string> pathDCAxyFileCurr{"filePath-dcaxy-current", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaXY_LHC22l1b3_run529397.root", "Path to file containing current DCAxy graph"};
-  Configurable<std::string> pathDCAxyFileUpgr{"filePath-dcaxy-upgraded", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaXY_LHC22s_pass5_run529397.root", "Path to file containing New DCAxy graph"};
-  Configurable<std::string> pathDCAzFileCurr{"filePath-dcaz-current", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaZ_LHC22l1b3_run529397.root", "Path to file containing current DCAz graph"};
-  Configurable<std::string> pathDCAzFileUpgr{"filePath-dcaz-upgraded", "/mnt/dsk01/Users/sharma/improverO2/dcaCorrFilesRun3/results_dcaZ_LHC22s_pass5_run529397.root", "Path to file containing New DCAz graph"};
+  // for TrackTuner only (MC smearing)
+  Configurable<bool> useTrackTuner{"useTrackTuner", 0, "Apply Improver/DCA corrections to MC"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|pathCurrFileDcaXY=|pathUpgrFileDcaXY=|pathCurrFileDcaZ=|pathUpgrFileDcaZ=", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
   using tracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
@@ -122,7 +118,13 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    trackTunerObj.getDcaGraphs(pathDCAxyFileCurr, pathDCAzFileCurr, pathDCAxyFileUpgr, pathDCAzFileUpgr);
+    
+    /// TrackTuner initialization
+    if(useTrackTuner) {
+      std::string outputStringParams = trackTunerObj.configParams(trackTunerParams);
+      trackTunerObj.getDcaGraphs();
+      trackTunedTracks->SetTitle(outputStringParams.c_str());
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -193,18 +195,19 @@ struct TrackPropagation {
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
-        if constexpr (IS_MC) {
-          if (useImprover) {
+        if constexpr (IS_MC && fillCovMat) {  /// track tuner ok only if cov. matrix is used
+          if (useTrackTuner) {
             // call track propagator
             // this function reads many many things
             //  - reads track params
             bool has_MCparticle = track.has_mcParticle();
             if (has_MCparticle) {
-              // std::cout << " MC particle exists... " << std::endl;
-              // std::cout << "Inside trackPropagation: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY() << std::endl;
+              // LOG(info) << " MC particle exists... ";
+              // LOG(info) << "Inside trackPropagation: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
               auto mcparticle = track.mcParticle();
-              trackTunerObj.tuneTrackParams(mcparticle, mTrackParCov, matCorr, &mDcaInfoCov, isUpdateTrackCovMat, isUpdateCurvature, isUpdatePulls);
-              // std::cout << "Inside trackPropagation: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY() << std::endl;
+              trackTunerObj.tuneTrackParams(mcparticle, mTrackParCov, matCorr, &mDcaInfoCov);
+              // LOG(info) << "Inside trackPropagation: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
+              trackTunedTracks->Fill(1);
             }
           }
         }
