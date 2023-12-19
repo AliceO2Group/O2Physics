@@ -103,11 +103,11 @@ DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! pdg code
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! primary criterion
 } // namespace motherParticle
 
-DECLARE_SOA_TABLE(MotherMCParticles, "AOD", "MOTHERMCPART", //! mother MC information
+DECLARE_SOA_TABLE(MotherMCParts, "AOD", "MOTHERMCPARTS", //! mother MC information, abbreviated name due to size limit
                   motherParticle::Px, motherParticle::Py, motherParticle::Pz,
                   motherParticle::PDGCode, motherParticle::IsPhysicalPrimary);
 
-using MotherMCParticle = MotherMCParticles::iterator;
+using MotherMCPart = MotherMCParts::iterator;
 
 namespace v0data
 {
@@ -121,7 +121,7 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
-DECLARE_SOA_INDEX_COLUMN(MotherMCParticle, motherMCParticle);                                  //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                  //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0CORES
@@ -461,7 +461,7 @@ DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for 
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
 DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCParticleId);
+                  o2::soa::Index<>, v0data::MotherMCPartId);
 
 using V0Index = V0Indices::iterator;
 using V0Core = V0Cores::iterator;
@@ -555,7 +555,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras,
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra");          //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrackExtra, strangeTrackExtra, int, DauTrackExtras, "_StrangeExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                                    //!
-DECLARE_SOA_INDEX_COLUMN(MotherMCParticle, motherMCParticle);                                              //!
+DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                                          //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCORES
@@ -859,7 +859,7 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
 
 DECLARE_SOA_TABLE(CascMCMothers, "AOD", "CASCMCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, cascdata::MotherMCParticleId);
+                  o2::soa::Index<>, cascdata::MotherMCPartId);
 
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV)

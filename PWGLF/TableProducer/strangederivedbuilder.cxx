@@ -86,7 +86,7 @@ struct strangederivedbuilder {
   // mother information
   Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
   Produces<aod::CascMCMothers> cascmothers;           // casc mother references
-  Produces<aod::MotherMCParticles> motherMCParticles; // mc particles for mothers
+  Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -352,7 +352,7 @@ struct strangederivedbuilder {
     // populate motherMCParticles
     for (auto const& tr : mcParticles) {
       if (motherReference[tr.globalIndex()] >= 0) {
-        motherMCParticles(tr.px(), tr.py(), tr.pz(), tr.pdgCode(), tr.isPhysicalPrimary());
+        motherMCParts(tr.px(), tr.py(), tr.pz(), tr.pdgCode(), tr.isPhysicalPrimary());
       }
     }
   }
