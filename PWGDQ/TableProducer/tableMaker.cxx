@@ -1251,7 +1251,7 @@ struct TableMaker {
 
   // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
   void processBarrelOnlyWithCovWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+                                        soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
@@ -1265,7 +1265,7 @@ struct TableMaker {
 
   // Produce barrel only tables, with centrality and multiplicity -------------------------------------------------------------------
   void processBarrelOnlyWithCovWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                         soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+                                                soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
