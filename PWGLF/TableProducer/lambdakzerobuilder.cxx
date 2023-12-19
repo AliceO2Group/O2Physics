@@ -191,6 +191,8 @@ struct lambdakzeroBuilder {
                 kV0DCADau,
                 kV0CosPA,
                 kV0Radius,
+                kCountStandardV0,
+                kCountV0forCascade,
                 kNV0Steps };
 
   // Helper struct to pass V0 information
@@ -271,6 +273,8 @@ struct lambdakzeroBuilder {
     h->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
     h->GetXaxis()->SetBinLabel(5, "CosPA");
     h->GetXaxis()->SetBinLabel(6, "Radius");
+    h->GetXaxis()->SetBinLabel(7, "Count: Standard V0");
+    h->GetXaxis()->SetBinLabel(8, "Count: V0 exc. for casc");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -784,6 +788,7 @@ struct lambdakzeroBuilder {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
         // populates the various tables for analysis
+        statisticsRegistry.v0stats[kCountStandardV0]++;
         v0indices(V0.posTrackId(), V0.negTrackId(),
                   V0.collisionId(), V0.globalIndex());
         v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
@@ -802,6 +807,7 @@ struct lambdakzeroBuilder {
         // sure there's no accidental usage of those candidates
         // N.B.: these are obtained with *other selections* in
         //       the svertexer!
+        statisticsRegistry.v0stats[kCountV0forCascade]++;
         v0fcindices(V0.posTrackId(), V0.negTrackId(),
                     V0.collisionId(), V0.globalIndex());
         v0fctrackXs(v0candidate.posTrackX, v0candidate.negTrackX);
