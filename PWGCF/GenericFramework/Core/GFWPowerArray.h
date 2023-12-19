@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
-#define PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
 
 #include <vector>
 #include <cmath>
@@ -31,4 +31,4 @@ class GFWPowerArray
   static void RecursiveFunction(HarSet& masterVector, HarSet hars, int offset, const int& MaxPower);
   static void PrintVector(const HarSet& singleSet);
 };
-#endif // PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_

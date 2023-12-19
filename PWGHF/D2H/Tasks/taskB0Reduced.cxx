@@ -38,6 +38,7 @@ namespace hf_cand_b0_lite
 {
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(MProng0, mProng0, float);                                 //! Invariant mass of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
@@ -51,6 +52,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //!
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);   //! Impact parameter product of candidate
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
@@ -62,10 +64,12 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::DecayLengthXY,
                   hf_cand_b0_lite::DecayLengthNormalised,
                   hf_cand_b0_lite::DecayLengthXYNormalised,
+                  hf_cand_b0_lite::MProng0,
                   hf_cand_b0_lite::PtProng0,
                   hf_cand_b0_lite::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
+                  hf_cand_b0_lite::ImpactParameterProduct,
                   hf_cand_b0_lite::NSigTpcPi1,
                   hf_cand_b0_lite::NSigTofPi1,
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
@@ -285,6 +289,7 @@ struct HfTaskB0Reduced {
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
     auto candD = candidate.template prong0_as<aod::HfRed3Prongs>();
     auto ptD = RecoDecay::pt(candD.px(), candD.py());
+    auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
     std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
@@ -307,7 +312,7 @@ struct HfTaskB0Reduced {
       registry.fill(HIST("hCospXy"), ptCandB0, candidate.cpaXY());
       registry.fill(HIST("hEta"), ptCandB0, candidate.eta());
       registry.fill(HIST("hRapidity"), ptCandB0, hfHelper.yB0(candidate));
-      registry.fill(HIST("hInvMassD"), ptD, candD.invMass());
+      registry.fill(HIST("hInvMassD"), ptD, invMassD);
       registry.fill(HIST("hDecLengthD"), ptD, decLenD);
       registry.fill(HIST("hDecLengthXyD"), ptD, decLenXyD);
       registry.fill(HIST("hCospD"), ptD, cospD);
@@ -321,9 +326,9 @@ struct HfTaskB0Reduced {
     }
     if (fillSparses) {
       if constexpr (withDmesMl) {
-        registry.fill(HIST("hMassPtCutVars"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
+        registry.fill(HIST("hMassPtCutVars"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
       } else {
-        registry.fill(HIST("hMassPtCutVars"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);
+        registry.fill(HIST("hMassPtCutVars"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, decLenD, cospD);
       }
     }
     if (fillTree) {
@@ -347,10 +352,12 @@ struct HfTaskB0Reduced {
           candidate.decayLengthXY(),
           candidate.decayLengthNormalised(),
           candidate.decayLengthXYNormalised(),
+          invMassD,
           ptD,
           candidate.ptProng1(),
           candidate.impactParameter0(),
           candidate.impactParameter1(),
+          candidate.impactParameterProduct(),
           prong1.tpcNSigmaPi(),
           prong1.tofNSigmaPi(),
           prong0MlScoreBkg,
@@ -383,6 +390,7 @@ struct HfTaskB0Reduced {
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
     auto candD = candidate.template prong0_as<aod::HfRed3Prongs>();
     auto ptD = RecoDecay::pt(candD.px(), candD.py());
+    auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
     std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
@@ -408,7 +416,7 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hCospXyRecSig"), ptCandB0, candidate.cpaXY());
         registry.fill(HIST("hEtaRecSig"), ptCandB0, candidate.eta());
         registry.fill(HIST("hRapidityRecSig"), ptCandB0, hfHelper.yB0(candidate));
-        registry.fill(HIST("hInvMassDRecSig"), ptD, candD.invMass());
+        registry.fill(HIST("hInvMassDRecSig"), ptD, invMassD);
         registry.fill(HIST("hDecLengthDRecSig"), ptD, decLenD);
         registry.fill(HIST("hDecLengthXyDRecSig"), ptD, decLenXyD);
         registry.fill(HIST("hCospDRecSig"), ptD, cospD);
@@ -432,7 +440,7 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hCospXyRecBg"), ptCandB0, candidate.cpaXY());
         registry.fill(HIST("hEtaRecBg"), ptCandB0, candidate.eta());
         registry.fill(HIST("hRapidityRecBg"), ptCandB0, hfHelper.yB0(candidate));
-        registry.fill(HIST("hInvMassDRecBg"), ptD, candD.invMass());
+        registry.fill(HIST("hInvMassDRecBg"), ptD, invMassD);
         registry.fill(HIST("hDecLengthDRecBg"), ptD, decLenD);
         registry.fill(HIST("hDecLengthXyDRecBg"), ptD, decLenXyD);
         registry.fill(HIST("hCospDRecBg"), ptD, cospD);
@@ -447,15 +455,15 @@ struct HfTaskB0Reduced {
     if (fillSparses) {
       if (isSignal) {
         if constexpr (withDmesMl) {
-          registry.fill(HIST("hMassPtCutVarsRecSig"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
+          registry.fill(HIST("hMassPtCutVarsRecSig"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
-          registry.fill(HIST("hMassPtCutVarsRecSig"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);
+          registry.fill(HIST("hMassPtCutVarsRecSig"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, decLenD, cospD);
         }
       } else if (fillBackground) {
         if constexpr (withDmesMl) {
-          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
+          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
-          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), candD.invMass(), ptD, decLenD, cospD);
+          registry.fill(HIST("hMassPtCutVarsRecBg"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, decLenD, cospD);
         }
       }
     }
@@ -477,10 +485,12 @@ struct HfTaskB0Reduced {
           candidate.decayLengthXY(),
           candidate.decayLengthNormalised(),
           candidate.decayLengthXYNormalised(),
+          invMassD,
           ptD,
           candidate.ptProng1(),
           candidate.impactParameter0(),
           candidate.impactParameter1(),
+          candidate.impactParameterProduct(),
           prong1.tpcNSigmaPi(),
           prong1.tofNSigmaPi(),
           prong0MlScoreBkg,

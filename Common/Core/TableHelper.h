@@ -35,6 +35,12 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
 /// Function to enable or disable a configurable flag, depending on the fact that a table is needed or not
 /// @param initContext initContext of the init function
 /// @param table name of the table to check for
+/// @param flag bool value of flag to set, if the given value is true it will be kept, disregarding the table usage in the workflow.
+void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, bool& flag);
+
+/// Function to enable or disable a configurable flag, depending on the fact that a table is needed or not
+/// @param initContext initContext of the init function
+/// @param table name of the table to check for
 /// @param flag int value of flag to set, only if initially set to -1. Initial values of 0 or 1 will be kept disregarding the table usage in the workflow.
 void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, int& flag);
 
@@ -48,7 +54,12 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
   enableFlagIfTableRequired(initContext, table, flag.value);
 }
 
-/// Function to check for a specific configurable in the current workflow
+/// Function to check for a specific configurable from another task in the current workflow and fetch its value. Useful for tasks that need to know the value of a configurable in another task.
+/// @param initContext initContext of the init function
+/// @param taskName name of the task to check for
+/// @param optName name of the option to check for
+/// @param value value of the option to set
+/// @param verbose if true, print debug messages
 template <typename ValueType>
 bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, const std::string& optName, ValueType& value, const bool verbose = true)
 {
