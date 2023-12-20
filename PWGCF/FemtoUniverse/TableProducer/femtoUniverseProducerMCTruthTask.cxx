@@ -167,8 +167,8 @@ struct femtoUniverseProducerMCTruthTask {
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-              if (particle.isPhysicalPrimary())
-                pass = true; 
+            if (particle.isPhysicalPrimary())
+              pass = true;
           }
         }
         if (!pass)
