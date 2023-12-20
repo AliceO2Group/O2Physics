@@ -32,7 +32,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
-//#include "Common/DataModel/Centrality.h"
+// #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
 
@@ -311,10 +311,10 @@ struct phiInJets {
   int nEvents = 0;
   void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::ChargedJets> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
-    if(cDebugLevel>0){
+    if (cDebugLevel > 0) {
       nEvents++;
-      if((nEvents+1)%10000==0)
-	std::cout<<nEvents<<std::endl;
+      if ((nEvents + 1) % 10000 == 0)
+        std::cout << nEvents << std::endl;
     }
     JEhistos.fill(HIST("nEvents"), 0.5);
 
