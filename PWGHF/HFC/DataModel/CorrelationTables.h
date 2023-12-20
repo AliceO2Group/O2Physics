@@ -146,7 +146,7 @@ DECLARE_SOA_COLUMN(PtD, ptD, float);        //! Transverse momentum of D+
 DECLARE_SOA_COLUMN(MD, mD, float);          //! Invariant mass of D+
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);  //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(GIndexBc, gIndexBc, long int);  //! Global inx for the bunch crossing
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, long int);  //! Global inx for the bunch crossing
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, long int);  //! Timestamp for the collision
 } // namespace hf_correlation_dplus_hadron
 
 DECLARE_SOA_TABLE(Dplus, "AOD", "DPLUS", //! D+-meson properties
@@ -166,7 +166,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);        //! Eta of hadron
 DECLARE_SOA_COLUMN(PtH, ptH, float);        //! Transverse momentum of hadron
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);  //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(GIndexBc, gIndexBc, long int);  //! Global inx for the bunch crossing
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, long int);  //! Global inx for the bunch crossing
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, long int);  //! Timestamp for the collision
 } // namespace hf_correlation_dplus_hadron
 
 DECLARE_SOA_TABLE(Hadron, "AOD", "HADRON", //! Associated hadron properties
