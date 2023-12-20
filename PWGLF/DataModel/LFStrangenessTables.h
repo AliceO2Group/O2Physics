@@ -387,7 +387,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core infor
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
                        v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonV0<v0data::V0Type>,
+                       v0data::IsPhotonTPConly<v0data::V0Type>,
                        o2::soa::Marker<1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
@@ -443,7 +443,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
                        v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonV0<v0data::V0Type>,
+                       v0data::IsPhotonTPConly<v0data::V0Type>,
                        o2::soa::Marker<2>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
