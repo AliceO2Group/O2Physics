@@ -285,7 +285,7 @@ struct femtoDreamPairTaskTrackTrack {
     fillCollision(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceTrk1.size() == 0 || SliceTrk2.size() == 0) {
+    if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
       return;
     }
     doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col.magField(), col.multNtr());
@@ -299,7 +299,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit || (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
         return;
       }
     }
@@ -320,7 +320,7 @@ struct femtoDreamPairTaskTrackTrack {
     fillCollision(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceMCTrk1.size() == 0 || SliceMCTrk2.size() == 0) {
+    if (SliceMCTrk1.size() == 0 && SliceMCTrk2.size() == 0) {
       return;
     }
     doSameEvent<true>(SliceMCTrk1, SliceMCTrk2, parts, col.magField(), col.multNtr());
@@ -335,7 +335,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit || (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
         return;
       }
     }

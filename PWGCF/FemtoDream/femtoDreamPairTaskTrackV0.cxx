@@ -280,7 +280,7 @@ struct femtoDreamPairTaskTrackV0 {
     eventHisto.fillQA(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceTrk1.size() == 0 || SliceV02.size() == 0) {
+    if (SliceTrk1.size() == 0 && SliceV02.size() == 0) {
       return;
     }
     doSameEvent<false>(SliceTrk1, SliceV02, parts, col.magField(), col.multNtr());
@@ -289,7 +289,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   void processSameEventMasked(MaskedCollision const& col, FilteredFDParticles const& parts)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit || (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
       return;
     }
     eventHisto.fillQA(col);
@@ -304,7 +304,7 @@ struct femtoDreamPairTaskTrackV0 {
     eventHisto.fillQA(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceMCTrk1.size() == 0 || SliceMCV02.size() == 0) {
+    if (SliceMCTrk1.size() == 0 && SliceMCV02.size() == 0) {
       return;
     }
     doSameEvent<true>(SliceMCTrk1, SliceMCV02, parts, col.magField(), col.multNtr());
@@ -313,7 +313,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   void processSameEventMCMasked(MaskedCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit || (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
       return;
     }
     eventHisto.fillQA(col);
@@ -328,7 +328,6 @@ struct femtoDreamPairTaskTrackV0 {
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType SliceTrk1, PartitionType SliceV02, PartType parts, float magFieldTesla, int multCol)
   {
-
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
       const auto& negChild = parts.iteratorAt(p2.index() - 1);
