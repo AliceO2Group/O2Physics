@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateCreatorXicToXiPiPi.cxx
-/// \brief Reconstruction of Ξc± → Ξ∓ π± π± candidates
+/// \brief Reconstruction of Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π± candidates
 ///
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
-/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, CERN
+/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 
 #include <KFParticleBase.h>
 #include <KFParticle.h>
@@ -79,7 +79,6 @@ struct HfCandidateCreatorXicPlus {
   double massPionFromPdg = MassPiPlus;
 
   int runNumber{0};
-  float toMicrometers = 10000.; // from cm to µm
   double massPi{0.};
   double massXi{0.};
   double massXiPiPi{0.};
@@ -111,10 +110,10 @@ struct HfCandidateCreatorXicPlus {
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
-    if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
+    if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) && fillHistograms) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
     }
-    if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) {
+    if ((std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) && fillHistograms) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
   }
@@ -134,7 +133,6 @@ struct HfCandidateCreatorXicPlus {
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
-    // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
     df.setMaxDZIni(maxDZIni);
@@ -186,22 +184,22 @@ struct HfCandidateCreatorXicPlus {
 
       //--------------------------reconstruct V0 track---------------------------
       // pseudorapidity
-      // double pseudorapV0PosDau = trackV0PosDau.eta();
-      // double pseudorapV0NegDau = trackV0NegDau.eta();
+      double pseudorapV0PosDau = trackV0PosDau.eta();
+      double pseudorapV0NegDau = trackV0NegDau.eta();
 
       // pion & p <- V0 tracks
       auto trackParCovV0PosDau = getTrackParCov(trackV0PosDau);
       auto trackParCovV0NegDau = getTrackParCov(trackV0NegDau);
 
       // info from LF table
-      // std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
+      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
       std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
       std::array<float, 3> pVecV0PosDau = {casc.pxpos(), casc.pypos(), casc.pzpos()};
       std::array<float, 3> pVecV0NegDau = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
       //-----------------------------reconstruct cascade track-----------------------------
       // pseudorapidity
-      // double pseudorapPionFromXi = trackPionFromXi.eta();
+      double pseudorapPionFromXi = trackPionFromXi.eta();
 
       // pion <- casc track to be processed with DCAfitter
       auto trackParCovPionFromXi = getTrackParCov(trackPionFromXi);
@@ -244,8 +242,6 @@ struct HfCandidateCreatorXicPlus {
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
         bz = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
-        // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
-        // df.print();
       }
       df.setBz(bz);
 
@@ -257,10 +253,6 @@ struct HfCandidateCreatorXicPlus {
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2SV = df.getChi2AtPCACandidate();
       auto covMatrixSV = df.calcPCACovMatrixFlat();
-      hCovSVXX->Fill(covMatrixSV[0]);
-      hCovSVYY->Fill(covMatrixSV[2]);
-      hCovSVXZ->Fill(covMatrixSV[3]);
-      hCovSVZZ->Fill(covMatrixSV[5]);
       trackParVar0 = df.getTrack(0);
       trackParVar1 = df.getTrack(1);
       trackCasc = df.getTrack(2);
@@ -281,22 +273,18 @@ struct HfCandidateCreatorXicPlus {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
-        //primaryVertex.setX(rowTrackIndexXicPlus.pvRefitX());
-        //primaryVertex.setY(rowTrackIndexXicPlus.pvRefitY());
-        //primaryVertex.setZ(rowTrackIndexXicPlus.pvRefitZ());
+        primaryVertex.setX(rowTrackIndexXicPlus.pvRefitX());
+        primaryVertex.setY(rowTrackIndexXicPlus.pvRefitY());
+        primaryVertex.setZ(rowTrackIndexXicPlus.pvRefitZ());
         // covariance matrix
-        //primaryVertex.setSigmaX2(rowTrackIndexXicPlus.pvRefitSigmaX2());
-        //primaryVertex.setSigmaXY(rowTrackIndexXicPlus.pvRefitSigmaXY());
-        //primaryVertex.setSigmaY2(rowTrackIndexXicPlus.pvRefitSigmaY2());
-        //primaryVertex.setSigmaXZ(rowTrackIndexXicPlus.pvRefitSigmaXZ());
-        //primaryVertex.setSigmaYZ(rowTrackIndexXicPlus.pvRefitSigmaYZ());
-        //primaryVertex.setSigmaZ2(rowTrackIndexXicPlus.pvRefitSigmaZ2());
-        //covMatrixPV = primaryVertex.getCov();
+        primaryVertex.setSigmaX2(rowTrackIndexXicPlus.pvRefitSigmaX2());
+        primaryVertex.setSigmaXY(rowTrackIndexXicPlus.pvRefitSigmaXY());
+        primaryVertex.setSigmaY2(rowTrackIndexXicPlus.pvRefitSigmaY2());
+        primaryVertex.setSigmaXZ(rowTrackIndexXicPlus.pvRefitSigmaXZ());
+        primaryVertex.setSigmaYZ(rowTrackIndexXicPlus.pvRefitSigmaYZ());
+        primaryVertex.setSigmaZ2(rowTrackIndexXicPlus.pvRefitSigmaZ2());
+        covMatrixPV = primaryVertex.getCov();
       }
-      hCovPVXX->Fill(covMatrixPV[0]);
-      hCovPVYY->Fill(covMatrixPV[2]);
-      hCovPVXZ->Fill(covMatrixPV[3]);
-      hCovPVZZ->Fill(covMatrixPV[5]);
 
       // calculate impact parameter
       o2::dataformats::DCA impactParameter0;
@@ -305,21 +293,42 @@ struct HfCandidateCreatorXicPlus {
       trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
       trackCasc.propagateToDCA(primaryVertex, bz, &impactParameterCasc);
-      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY());
-      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY());
-      //hDcaXYProngs->Fill(trackCasc.pt(), impactParameterCasc.getY());
-      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ());
-      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ());
-      //hDcaZProngs->Fill(trackCasc.pt(), impactParameterCasc.getZ());
 
       // set hfFlag
       int hfFlag = 1 << aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi;
+
+      // calculate invariant mass
+      auto arrayMomenta = std::array{pVec0, pVec1, pVec2};
+      massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
 
       // get uncertainty of the decay length
       double phi, theta;
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+
+      // fill histograms
+      if (fillHistograms) {
+        // invariant mass
+        hMass3->Fill(massXiPiPi);
+        // covariance matrix elements of PV
+        hCovPVXX->Fill(covMatrixPV[0]);
+        hCovPVYY->Fill(covMatrixPV[2]);
+        hCovPVXZ->Fill(covMatrixPV[3]);
+        hCovPVZZ->Fill(covMatrixPV[5]);
+        // covariance matrix elements of SV
+        hCovSVXX->Fill(covMatrixSV[0]);
+        hCovSVYY->Fill(covMatrixSV[2]);
+        hCovSVXZ->Fill(covMatrixSV[3]);
+        hCovSVZZ->Fill(covMatrixSV[5]);
+        // DCAs of prongs
+        hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY());
+        hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY());
+        //hDcaXYProngs->Fill(trackCasc.pt(), impactParameterCasc.getY());
+        hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ());
+        hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ());
+        //hDcaZProngs->Fill(trackCasc.pt(), impactParameterCasc.getZ());
+      }
 
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
@@ -329,28 +338,22 @@ struct HfCandidateCreatorXicPlus {
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
                        chi2SV,
+                       vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                       vertexV0[0], vertexV0[1], vertexV0[2],
                        pVec0[0], pVec0[1], pVec0[2],
                        pVec1[0], pVec1[1], pVec1[2],
                        pVec2[0], pVec2[1], pVec2[2],
                        impactParameter0.getY(), impactParameter1.getY(), impactParameterCasc.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameterCasc.getSigmaY2()),
-                       vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                       vertexV0[0], vertexV0[1], vertexV0[2],
+                       pVecPionFromXi[0], pVecPionFromXi[1], pVecPionFromXi[2],
+                       pVecV0[0], pVecV0[1], pVecV0[2],
                        pVecV0PosDau[0], pVecV0PosDau[1], pVecV0PosDau[2],
                        pVecV0NegDau[0], pVecV0NegDau[1], pVecV0NegDau[2],
-                       pVecPionFromXi[0], pVecPionFromXi[1], pVecPionFromXi[2],
-                       trackV0PosDau.dcaXY(), trackV0NegDau.dcaXY(), trackPionFromXi.dcaXY(),
+                       trackPionFromXi.dcaXY(), trackV0PosDau.dcaXY(), trackV0NegDau.dcaXY(),
+                       pseudorapPionFromXi, pseudorapV0PosDau, pseudorapV0NegDau,
                        hfFlag);
-
-      // fill histograms
-      if (fillHistograms) {
-        // calculate invariant mass
-        auto arrayMomenta = std::array{pVec0, pVec1, pVec2};
-        massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
-        hMass3->Fill(massXiPiPi);
-      }
-    }
-  }
+    } // loop over track triplets
+  } // template
 
   template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreatorXicPlusWithKFParticle(aod::Collisions const& collisions,
@@ -461,8 +464,6 @@ struct HfCandidateCreatorXicPlus {
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
         bz = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
-        // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
-        // df.print();
       }
       float covMatrixPV[6];
 
@@ -474,25 +475,41 @@ struct HfCandidateCreatorXicPlus {
       }
       //kfpVertex.GetCovarianceMatrix(covMatrixPV);
       //KFParticle KFPV(kfpVertex);
-      hCovPVXX->Fill(covMatrixPV[0]);
-      hCovPVYY->Fill(covMatrixPV[2]);
-      hCovPVXZ->Fill(covMatrixPV[3]);
-      hCovPVZZ->Fill(covMatrixPV[5]);
+
 
       /*KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
       KFPTrack kfpCasc = createKFPTrackFromTrack(trackCasc);*/
 
+      // fill histograms
+      /*if (fillHistograms) {
+        // invariant mass
+        hMass3->Fill(massXiPiPi);
+        // covariance matrix elements of PV
+        hCovPVXX->Fill(covMatrixPV[0]);
+        hCovPVYY->Fill(covMatrixPV[2]);
+        hCovPVXZ->Fill(covMatrixPV[3]);
+        hCovPVZZ->Fill(covMatrixPV[5]);
+        // covariance matrix elements of SV
+        hCovSVXX->Fill(covMatrixSV[0]);
+        hCovSVYY->Fill(covMatrixSV[2]);
+        hCovSVXZ->Fill(covMatrixSV[3]);
+        hCovSVZZ->Fill(covMatrixSV[5]);
+        // DCAs of prongs
+        hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY());
+        hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY());
+        //hDcaXYProngs->Fill(trackCasc.pt(), impactParameterCasc.getY());
+        hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ());
+        hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ());
+        //hDcaZProngs->Fill(trackCasc.pt(), impactParameterCasc.getZ());
+      }*/
       // fill candidate table rows
       //rowCandidateBase();
-
-      // fill histograms
-      // if (fillHistograms) {}
-    }
-  }
+    } // loop over track triplets
+  } // template
 
   void processPvRefitWithDCAFitterN(aod::Collisions const& collisions,
-                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                    soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
                                     aod::V0sLinked const& v0Linked,
                                     V0Full const& v0s,
                                     CascFull const& cascs,
