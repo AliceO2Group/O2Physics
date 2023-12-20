@@ -80,8 +80,7 @@ struct r2p24ch {
         histos.fill(HIST("h2d_n1_etaPhiP"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particles
-      {
+      } else { //-ve particles
         histos.fill(HIST("h2d_n1_etaPhiM"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -104,14 +103,12 @@ struct r2p24ch {
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -193,8 +190,9 @@ struct r2p24pi {
         if (track1.hasTOF()) {
           if (fabs(track1.tofNSigmaPi()) >= tofcut)
             continue;
-        } else
+        } else {
           continue;
+        }
       }
       histos.fill(HIST("h2d_n1_tof2"), track1.p(), track1.beta());
       histos.fill(HIST("h2d_n1_nsigmatpc2"), track1.p(), track1.tpcNSigmaPi());
@@ -210,8 +208,7 @@ struct r2p24pi {
         histos.fill(HIST("h2d_n1_etaPhiP"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particles
-      {
+      } else { //-ve particles
         histos.fill(HIST("h2d_n1_etaPhiM"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -233,8 +230,9 @@ struct r2p24pi {
           if (track2.hasTOF()) {
             if (fabs(track2.tofNSigmaPi()) >= tofcut)
               continue;
-          } else
+          } else {
             continue;
+          }
         }
         //------------------------------------------------------------------------
         etabin2 = (track2.eta() + 0.8) * 15;
@@ -246,14 +244,12 @@ struct r2p24pi {
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -341,8 +337,9 @@ struct r2p24ka {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaKa()) > tpccut) || (fabs(track1.tofNSigmaKa()) > tofcut))
           continue;
-      } else
+      } else {
         continue;
+      }
 
       histos.fill(HIST("h2d_n1_tof2"), track1.p(), track1.beta());
       histos.fill(HIST("h2d_n1_nsigmatpc2"), track1.pt(), track1.tpcNSigmaKa());
@@ -359,8 +356,7 @@ struct r2p24ka {
         histos.fill(HIST("h2d_n1_etaPhiP"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particle
-      {
+      } else { //-ve particle
         histos.fill(HIST("h2d_n1_etaPhiM"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -389,8 +385,9 @@ struct r2p24ka {
         } else if (track2.hasTOF()) {
           if ((fabs(track2.tpcNSigmaKa()) > tpccut) || (fabs(track2.tofNSigmaKa()) > tofcut))
             continue;
-        } else
+        } else {
           continue;
+        }
         //------------------------------------------------------------------------
 
         etabin2 = (track2.eta() + 0.8) * 15;
@@ -402,14 +399,12 @@ struct r2p24ka {
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -496,8 +491,9 @@ struct r2p24pr {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaPr()) > tpccut) || (fabs(track1.tofNSigmaPr()) > tofcut))
           continue;
-      } else
+      } else {
         continue;
+      }
 
       histos.fill(HIST("h2d_n1_tof2"), track1.p(), track1.beta());
       histos.fill(HIST("h2d_n1_nsigmatpc2"), track1.pt(), track1.tpcNSigmaPr());
@@ -514,8 +510,7 @@ struct r2p24pr {
         histos.fill(HIST("h2d_n1_etaPhiP"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particle
-      {
+      } else { //-ve particle
         histos.fill(HIST("h2d_n1_etaPhiM"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -542,8 +537,9 @@ struct r2p24pr {
         } else if (track2.hasTOF()) {
           if ((fabs(track2.tpcNSigmaPr()) > tpccut) || (fabs(track2.tofNSigmaPr()) > tofcut))
             continue;
-        } else
+        } else {
           continue;
+        }
 
         //------------------------------------------------------------------------
 
@@ -556,14 +552,12 @@ struct r2p24pr {
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -660,8 +654,9 @@ struct crossr2p24pik {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaKa()) > tpccut) || (fabs(track1.tofNSigmaKa()) > tofcut))
           flag = false;
-      } else
+      } else {
         flag = false;
+      }
       //------------------------------------------------------------------------
       if (flag == true) {
         histos.fill(HIST("h2d_n1_tof1"), track1.pt(), track1.beta());
@@ -673,8 +668,7 @@ struct crossr2p24pik {
           histos.fill(HIST("h2d_n1_etaPhiP2"), track1.eta(), track1.phi());
           histos.fill(HIST("h1d_n1_ptP2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
           histos.fill(HIST("h2d_pt_etaPhiP2"), track1.eta(), track1.phi(), track1.pt());
-        } else //-ve particle 2
-        {
+        } else { //-ve particle 2
           histos.fill(HIST("h2d_n1_etaPhiM2"), track1.eta(), track1.phi());
           histos.fill(HIST("h2d_pt_etaPhiM2"), track1.eta(), track1.phi(), track1.pt());
           histos.fill(HIST("h1d_n1_ptM2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -690,8 +684,9 @@ struct crossr2p24pik {
         if (track1.hasTOF()) {
           if (fabs(track1.tofNSigmaPi()) >= tofcut)
             continue;
-        } else
+        } else {
           continue;
+        }
       }
       histos.fill(HIST("h2d_n1_tof2"), track1.pt(), track1.beta());
       histos.fill(HIST("h2d_n1_tpc2"), track1.pt(), track1.tpcSignal());
@@ -702,8 +697,7 @@ struct crossr2p24pik {
         histos.fill(HIST("h2d_n1_etaPhiP1"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP1"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particle1
-      {
+      } else { //-ve particle1
         histos.fill(HIST("h2d_n1_etaPhiM1"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM1"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -747,21 +741,18 @@ struct crossr2p24pik {
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-            } else // Particle2 +ve
-            {
+            } else { // Particle2 +ve
               histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
             }
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -856,8 +847,9 @@ struct crossr2p24pip {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaPr()) > tpccut) || (fabs(track1.tofNSigmaPr()) > tofcut))
           flag = false;
-      } else
+      } else {
         flag = false;
+      }
 
       if (flag == true) {
         histos.fill(HIST("h2d_n1_tof1"), track1.pt(), track1.beta());
@@ -869,8 +861,7 @@ struct crossr2p24pip {
           histos.fill(HIST("h2d_n1_etaPhiP2"), track1.eta(), track1.phi());
           histos.fill(HIST("h1d_n1_ptP2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
           histos.fill(HIST("h2d_pt_etaPhiP2"), track1.eta(), track1.phi(), track1.pt());
-        } else //-ve particle2
-        {
+        } else { //-ve particle2
           histos.fill(HIST("h2d_n1_etaPhiM2"), track1.eta(), track1.phi());
           histos.fill(HIST("h2d_pt_etaPhiM2"), track1.eta(), track1.phi(), track1.pt());
           histos.fill(HIST("h1d_n1_ptM2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -886,8 +877,9 @@ struct crossr2p24pip {
         if (track1.hasTOF()) {
           if (fabs(track1.tofNSigmaPi()) >= tofcut)
             continue;
-        } else
+        } else {
           continue;
+        }
       }
 
       histos.fill(HIST("h2d_n1_tof2"), track1.pt(), track1.beta());
@@ -899,8 +891,7 @@ struct crossr2p24pip {
         histos.fill(HIST("h2d_n1_etaPhiP1"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP1"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve partcile1
-      {
+      } else { //-ve partcile1
         histos.fill(HIST("h2d_n1_etaPhiM1"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM1"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -927,8 +918,9 @@ struct crossr2p24pip {
         } else if (track2.hasTOF()) {
           if ((fabs(track2.tpcNSigmaPr()) > tpccut) || (fabs(track2.tofNSigmaPr()) > tofcut))
             continue;
-        } else
+        } else {
           continue;
+        }
 
         //------------------------------------------------------------------------
 
@@ -943,21 +935,18 @@ struct crossr2p24pip {
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-            } else // Particle2 +ve
-            {
+            } else { // Particle2 +ve
               histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
             }
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
@@ -1054,8 +1043,9 @@ struct crossr2p24pk {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaKa()) > tpccut) || (fabs(track1.tofNSigmaKa()) > tofcut))
           flag = false;
-      } else
+      } else {
         flag = false;
+      }
 
       if (flag == true) {
         histos.fill(HIST("h2d_n1_tof1"), track1.pt(), track1.beta());
@@ -1067,8 +1057,7 @@ struct crossr2p24pk {
           histos.fill(HIST("h2d_n1_etaPhiP2"), track1.eta(), track1.phi());
           histos.fill(HIST("h1d_n1_ptP2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
           histos.fill(HIST("h2d_pt_etaPhiP2"), track1.eta(), track1.phi(), track1.pt());
-        } else //-ve particle1
-        {
+        } else { //-ve particle1
           histos.fill(HIST("h2d_n1_etaPhiM2"), track1.eta(), track1.phi());
           histos.fill(HIST("h2d_pt_etaPhiM2"), track1.eta(), track1.phi(), track1.pt());
           histos.fill(HIST("h1d_n1_ptM2"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -1089,8 +1078,9 @@ struct crossr2p24pk {
       } else if (track1.hasTOF()) {
         if ((fabs(track1.tpcNSigmaPr()) > tpccut) || (fabs(track1.tofNSigmaPr()) > tofcut))
           continue;
-      } else
+      } else {
         continue;
+      }
 
       histos.fill(HIST("h2d_n1_tof2"), track1.pt(), track1.beta());
       histos.fill(HIST("h2d_n1_tpc2"), track1.pt(), track1.tpcSignal());
@@ -1101,8 +1091,7 @@ struct crossr2p24pk {
         histos.fill(HIST("h2d_n1_etaPhiP1"), track1.eta(), track1.phi());
         histos.fill(HIST("h1d_n1_ptP1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
         histos.fill(HIST("h2d_pt_etaPhiP1"), track1.eta(), track1.phi(), track1.pt());
-      } else //-ve particle 2
-      {
+      } else { //-ve particle 2
         histos.fill(HIST("h2d_n1_etaPhiM1"), track1.eta(), track1.phi());
         histos.fill(HIST("h2d_pt_etaPhiM1"), track1.eta(), track1.phi(), track1.pt());
         histos.fill(HIST("h1d_n1_ptM1"), track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
@@ -1131,8 +1120,9 @@ struct crossr2p24pk {
         } else if (track2.hasTOF()) {
           if ((fabs(track2.tpcNSigmaKa()) > tpccut) || (fabs(track2.tofNSigmaKa()) > tofcut))
             continue;
-        } else
+        } else {
           continue;
+        }
         //------------------------------------------------------------------------
         etabin2 = (track2.eta() + 0.8) * 15;
         phibin2 = 36 * track2.phi() / (2 * constants::math::PI);
@@ -1145,21 +1135,18 @@ struct crossr2p24pk {
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM12"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-            } else // Particle2 +ve
-            {
+            } else { // Particle2 +ve
               histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
               histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
               histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
               histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM21"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
             }
-          } else if (track1.sign() == 1) //+ve particle pair
-          {
+          } else if (track1.sign() == 1) { //+ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
             histos.fill(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt());
-          } else //-ve particle pair
-          {
+          } else { //-ve particle pair
             histos.fill(HIST("h2d_n2_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);
             histos.fill(HIST("h2d_npt_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());
             histos.fill(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM"), 36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());
