@@ -146,7 +146,7 @@ DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! V0 CosPA
 DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
 
 // Type of V0 from the svertexer (photon, regular, from cascade)
-DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! DCA V0 to PV
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -331,7 +331,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0
                            [](uint8_t V0Type) -> bool { return V0Type & (1 << 0); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonV0, isPhotonV0, //! is photon V0
+DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is photon V0
                            [](uint8_t V0Type) -> bool { return V0Type & (1 << 1); });
 } // namespace v0data
 
