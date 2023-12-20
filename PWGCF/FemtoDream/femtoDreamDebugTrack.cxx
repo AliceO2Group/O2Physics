@@ -13,6 +13,7 @@
 /// \brief Tasks that reads the particle tables and fills QA histograms for tracks
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
+#include <Framework/Expressions.h>
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -32,24 +33,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-namespace
-{
-static constexpr int nCuts = 5;
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.f, 3.f, 100.f}};
-
-} // namespace
-
 struct femtoDreamDebugTrack {
   SliceCache cache;
 
-  Configurable<LabeledArray<float>> ConfCutTable{"ConfCutTable", {cutsTable[0], nCuts, cutNames}, "Particle selections"};
-  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
-  Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 1, "Particle 1 - Read from cutCulator"};
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+  Configurable<int> ConfTrk1_PDGCode{"ConfTrk1_PDGCode", 2212, "Particle 1 - PDG code"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfTrk1_CutBit{"ConfTrk1_CutBit", 5542474, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfTrk1_TPCBit{"ConfTrk1_TPCBit", 1, "Particle 1 - Read from cutCulator"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfTrk1_TPCTOFBit{"ConfTrk1_TPCTOFBit", 1, "Particle 1 - Read from cutCulator"};
+  Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Particle 1 - Read from cutCulator"};
   ConfigurableAxis ConfTempFitVarBins{"ConfTempFitVarBins", {300, -0.15, 0.15}, "Binning of the TempFitVar"};
   ConfigurableAxis ConfNsigmaTPCBins{"ConfNsigmaTPCBins", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
   ConfigurableAxis ConfNsigmaTOFBins{"ConfNsigmaTOFBins", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
@@ -59,11 +51,14 @@ struct femtoDreamDebugTrack {
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit) &&
+                                           ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit));
+
   Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
 
   using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
-  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit);
   Preslice<FemtoFullParticlesMC> perColGen = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming for Event
@@ -71,19 +66,13 @@ struct femtoDreamDebugTrack {
 
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack> trackHisto;
 
-  /// The configurables need to be passed to an std::vector
-  int vPIDPartOne;
-  std::vector<float> kNsigma;
-
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHisto.init(&qaRegistry, ConfTempFitVarMomentumBins, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfDummy, ConfIsMC, ConfPDGCodePartOne.value, true);
-    vPIDPartOne = ConfPIDPartOne.value;
-    kNsigma = ConfTrkPIDnSigmaMax.value;
+    trackHisto.init(&qaRegistry, ConfTempFitVarMomentumBins, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfDummy, ConfIsMC, ConfTrk1_PDGCode.value, true);
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
@@ -92,12 +81,6 @@ struct femtoDreamDebugTrack {
   {
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
-      if (part.p() > ConfCutTable->get("MaxP") || part.pt() > ConfCutTable->get("MaxPt")) {
-        continue;
-      }
-      if (!isFullPIDSelected(part.pidcut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
-        continue;
-      }
       trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value));
     }
   }

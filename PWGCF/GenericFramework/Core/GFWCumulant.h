@@ -16,8 +16,8 @@ A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#ifndef PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
-#define PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 
 #include <cmath>
 #include <complex>
@@ -51,13 +51,13 @@ class GFWCumulant
   uint fUsed;
   int fNEntries;
   // Q-vectors. Could be done recursively, but maybe defining each one of them explicitly is easier to read
-  int fN;              //! Harmonics
-  int fPow;            //! Power
+  int fN;                   //! Harmonics
+  int fPow;                 //! Power
   std::vector<int> fPowVec; //! Powers array
-  int fPt;             //! fPt bins
+  int fPt;                  //! fPt bins
   bool* fFilledPts;
   bool fInitialized; // Arrays are initialized
   std::complex<double> fNullQ = 0;
 };
 
-#endif // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_

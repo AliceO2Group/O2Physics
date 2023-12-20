@@ -73,8 +73,7 @@ struct strangederivedbuilder {
   Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
   Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
-  Produces<aod::KFCascExtras> kfcascExtras;       // references DauTracks from KF cascades
-  Produces<aod::TraCascExtras> tracascExtras;     // references DauTracks from tracked cascades
+  Produces<aod::StraTrackExtras> straTrackExtras; // references DauTracks from tracked cascades
 
   //__________________________________________________
   // cascade interlinks
@@ -82,6 +81,12 @@ struct strangederivedbuilder {
   Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
   Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
   Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
+
+  //__________________________________________________
+  // mother information
+  Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
+  Produces<aod::CascMCMothers> cascmothers;           // casc mother references
+  Produces<aod::MotherMCParticles> motherMCParticles; // mc particles for mothers
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -302,27 +307,9 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // populate track references
-    for (auto const& casc : KFCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
-      kfcascExtras(trackMap[posTrack.globalIndex()],
-                   trackMap[negTrack.globalIndex()],
-                   trackMap[bachTrack.globalIndex()]); // joinable with KFCascDatas
-    }
-    //__________________________________________________
-    // populate track references
     for (auto const& casc : TraCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto v0 = casc.v0();
-      auto posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto negTrack = v0.negTrack_as<TracksWithExtra>();
       auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
-      tracascExtras(trackMap[posTrack.globalIndex()],
-                    trackMap[negTrack.globalIndex()],
-                    trackMap[bachTrack.globalIndex()],
-                    trackMap[strangeTrack.globalIndex()]); // joinable with TraCascDatas
+      straTrackExtras(trackMap[strangeTrack.globalIndex()]); // joinable with TraCascDatas
     }
     //__________________________________________________
     // circle back and populate actual DauTrackExtra table
@@ -338,20 +325,54 @@ struct strangederivedbuilder {
     // done!
   }
 
+  void processStrangeMothers(soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::McParticles const& mcParticles)
+  {
+    std::vector<int> motherReference(mcParticles.size(), -1); // index -1: not used / no reference
+
+    //__________________________________________________
+    // mark mcParticles for referencing
+    for (auto const& v0 : V0s)
+      if (v0.has_mcMotherParticle())
+        motherReference[v0.mcMotherParticleId()] = 0;
+    for (auto const& ca : Cascades)
+      if (ca.has_mcMotherParticle())
+        motherReference[ca.mcMotherParticleId()] = 0;
+    //__________________________________________________
+    // Figure out the numbering of the new mcMother table
+    // assume filling per order
+    int nParticles = 0;
+    for (int i = 0; i < motherReference.size(); i++) {
+      if (motherReference[i] >= 0) {
+        motherReference[i] = nParticles++; // count particles of interest
+      }
+    }
+    //__________________________________________________
+    // populate track references
+    for (auto const& v0 : V0s)
+      v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
+    for (auto const& ca : Cascades)
+      cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+    //__________________________________________________
+    // populate motherMCParticles
+    for (auto const& tr : mcParticles) {
+      if (motherReference[tr.globalIndex()] >= 0) {
+        motherMCParticles(tr.px(), tr.py(), tr.pz(), tr.pdgCode(), tr.isPhysicalPrimary());
+      }
+    }
+  }
+
   using interlinkedCascades = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink, aod::TraCascDataLink>;
 
-  void processCascadeInterlink(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades, aod::TraCascIndices const& TraCascades)
+  void processCascadeInterlinkTracked(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::TraCascIndices const& TraCascades)
   {
     // Standard to tracked
     for (auto const& c : Cascades) {
-      int indexTracked = -1, indexKF = -1;
+      int indexTracked = -1;
       if (c.has_cascade()) {
         auto cascade = c.cascade_as<interlinkedCascades>();
         indexTracked = cascade.traCascDataId();
-        indexKF = cascade.kfCascDataId();
       }
       cascToTraRefs(indexTracked);
-      cascToKFRefs(indexKF);
     }
     // Tracked to standard
     for (auto const& c : TraCascades) {
@@ -362,7 +383,20 @@ struct strangederivedbuilder {
       }
       traToCascRefs(index);
     }
-    // Tracked to KF
+  }
+
+  void processCascadeInterlinkKF(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades)
+  {
+    // Standard to KF
+    for (auto const& c : Cascades) {
+      int indexKF = -1;
+      if (c.has_cascade()) {
+        auto cascade = c.cascade_as<interlinkedCascades>();
+        indexKF = cascade.kfCascDataId();
+      }
+      cascToKFRefs(indexKF);
+    }
+    // KF to standard
     for (auto const& c : KFCascades) {
       int index = -1;
       if (c.has_cascade()) {
@@ -392,7 +426,9 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
-  PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlink, "Produce tables interconnecting cascades", true);
+  PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
+  PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processSimulation, "Produce simulated information", true);
 };
 

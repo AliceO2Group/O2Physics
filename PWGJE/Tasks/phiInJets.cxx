@@ -70,8 +70,11 @@ struct phiInJets {
   Configurable<int> cfgnTOFPID{"cfgnTOFPID", 4, "nTOF PID"};
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> cfgjetR{"cfgjetR", 0.4, "jet resolution parameter"};
+<<<<<<< HEAD
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
 
+=======
+>>>>>>> 5c74375cd145cd445ee6e635e5a9d4fe300826dc
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
 
@@ -310,6 +313,7 @@ struct phiInJets {
   }   // MinvReconstruction
 
   int nEvents = 0;
+<<<<<<< HEAD
   void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::ChargedJets> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
     if(cDebugLevel>0){
@@ -317,6 +321,10 @@ struct phiInJets {
       if((nEvents+1)%10000==0)
 	std::cout<<nEvents<<std::endl;
     }
+=======
+  void processJetTracks(aod::JCollision const& collision, soa::Filtered<aod::FullJets> const& fulljets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  {
+>>>>>>> 5c74375cd145cd445ee6e635e5a9d4fe300826dc
     JEhistos.fill(HIST("nEvents"), 0.5);
 
     if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection))
@@ -325,12 +333,21 @@ struct phiInJets {
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       auto trk1 = track1.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>();
       auto trk2 = track2.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>();
+<<<<<<< HEAD
       minvReconstruction<false, false>(1.0, trk1, trk2, chargedjets);
     }
     for (auto chargedjet : chargedjets) {
       JEhistos.fill(HIST("FJetaHistogram"), chargedjet.eta());
       JEhistos.fill(HIST("FJphiHistogram"), chargedjet.phi());
       JEhistos.fill(HIST("FJptHistogram"), chargedjet.phi());
+=======
+      minvReconstruction<false, false>(1.0, trk1, trk2, fulljets);
+    }
+    for (auto fulljet : fulljets) {
+      JEhistos.fill(HIST("FJetaHistogram"), fulljet.eta());
+      JEhistos.fill(HIST("FJphiHistogram"), fulljet.phi());
+      JEhistos.fill(HIST("FJptHistogram"), fulljet.phi());
+>>>>>>> 5c74375cd145cd445ee6e635e5a9d4fe300826dc
     }
 
     JEhistos.fill(HIST("nEvents"), 1.5);

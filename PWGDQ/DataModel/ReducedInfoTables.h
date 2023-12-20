@@ -514,7 +514,11 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2, dilepton_track_index::EMC2,
                   dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,
                   dilepton_track_index::Vx2, dilepton_track_index::Vy2, dilepton_track_index::Vz2, dilepton_track_index::Vt2,
-                  dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2);
+                  dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2,
+                  reducedpair::U2Q2,
+                  reducedpair::U3Q3,
+                  reducedpair::Cos2DeltaPhi,
+                  reducedpair::Cos3DeltaPhi);
 
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;

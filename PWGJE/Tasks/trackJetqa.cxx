@@ -40,19 +40,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackJetQa {
-  Configurable<bool> enable{"selectTrack", true, "false = disable track selection, true = enable track selection"};
-  Configurable<int> nBins{"nBins", 200, "N bins in histos"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
-  ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
-  ConfigurableAxis binsPt{"binsPt", {200, 0, 200}, "Binning for the pT axis"};
-  ConfigurableAxis binsSigma1OverPt{"binsSigma1OverPt", {200, 0, 200}, "Binning for the sigma 1 over pT"};
-
   Configurable<double> ValVtx{"ValVtx", 10, "Value of the vertex position"};
   Configurable<float> ValCutEta{"ValCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> minPt{"minPt", 0.15f, "minimum pT for tracks"};
   Configurable<float> maxPt{"maxPt", 10e10, "maximum pT for tracks"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.f, "Downsampling factor for the events for derived data"};
   Configurable<bool> fillMultiplicity{"fillMultiplicity", true, "To fill multiplicity and centrality histograms"};
+
+  Configurable<bool> globalTrack{"globalTrack", false, "to enable the isGlobalTrack() selection"};
+  Configurable<bool> globalTrackWoPtEta{"globalTrackWoPtEta", false, "to enable the isGlobalTrackWoPtEta() selection"};
+  Configurable<bool> globalTrackWoDCA{"globalTrackWoDCA", false, "to enable the isGlobalTrackWoDCA() selection"};
+  Configurable<bool> customTrack{"customTrack", true, "to enable the trackselection based on the customTrack cuts (selected via configurables)"};
 
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
@@ -69,6 +66,12 @@ struct TrackJetQa {
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> nBins{"nBins", 200, "N bins in histos"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
+  ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
+  ConfigurableAxis binsPt{"binsPt", {200, 0, 200}, "Binning for the pT axis"};
+  ConfigurableAxis binsSigma1OverPt{"binsSigma1OverPt", {200, 0, 200}, "Binning for the sigma 1 over pT"};
+
   void init(o2::framework::InitContext&)
   {
     // Custom track cuts
@@ -124,6 +127,8 @@ struct TrackJetQa {
     histos.add("TrackPar/dcaZ", "distance of closest approach in #it{z};#it{p}_{T} [GeV/c];#it{dcaZ} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, -0.15, 0.15}}});
     histos.add("TrackPar/length", "track length in cm;#it{p}_{T} [GeV/c];#it{Length} [cm];", {HistType::kTH2F, {{nBins, 0, 200}, {200, 0, 1000}}});
     histos.add("TrackPar/Sigma1Pt", "uncertainty over #it{p}_{T};#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_hasTRD", "uncertainty over #it{p}_{T} for tracks with TRD;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
+    histos.add("TrackPar/Sigma1Pt_hasNoTRD", "uncertainty over #it{p}_{T} for tracks without TRD;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layer1", "uncertainty over #it{p}_{T} with only 1st ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layer2", "uncertainty over #it{p}_{T} with only 2nd ITS layer active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
     histos.add("TrackPar/Sigma1Pt_Layers12", "uncertainty over #it{p}_{T} with only 1st and 2nd ITS layers active;#it{p}_{T} [GeV/c];#it{p}_{T}*#it{sigma1}{p}_{T};", {HistType::kTH2F, {{nBins, 0, 200}, {100, 0, 1}}});
@@ -139,6 +144,8 @@ struct TrackJetQa {
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
+    histos.add("EventProp/rejectedCollId", "CollisionId of collisions that did not pass the event selection; collisionId; number of entries", HistType::kTH1F, {{10, 0, 5}});
+
     // Common axes
     const AxisSpec axisPercentileFT0M{binsPercentile, "Centrality FT0M"};
     const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
@@ -182,16 +189,18 @@ struct TrackJetQa {
   }
 
   template <typename eventInfo>
-  void fillEventQa(eventInfo const& collision)
+  bool fillEventQa(eventInfo const& collision)
   {
     // fill event property variables
     histos.fill(HIST("EventProp/collisionVtxZnoSel"), collision.posZ());
     if (!collision.sel8()) {
-      return;
+      histos.fill(HIST("EventProp/rejectedCollId"), 2);
+      return false;
     }
     histos.fill(HIST("EventProp/collisionVtxZSel8"), collision.posZ());
     if (fabs(collision.posZ()) > ValVtx) {
-      return;
+      histos.fill(HIST("EventProp/rejectedCollId"), 3);
+      return false;
     }
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());
     if (fillMultiplicity) {
@@ -201,24 +210,33 @@ struct TrackJetQa {
       histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
       histos.fill(HIST("Mult/FT0C"), collision.multFT0C());
     }
+    return true;
   }
 
   template <typename Tracks>
-  void fillTrackQa(Tracks const& track)
+  bool fillTrackQa(Tracks const& track)
   {
+    // check track selection
+    if ((globalTrack == true) && (!track.isGlobalTrack())) {
+      return false;
+    }
+    if ((globalTrackWoDCA == true) && (!track.isGlobalTrackWoDCA())) {
+      return false;
+    }
+    if ((globalTrackWoPtEta == true) && (!track.isGlobalTrackWoPtEta())) {
+      return false;
+    }
+    if ((customTrack == true) && (!customTrackCuts.IsSelected(track))) {
+      return false;
+    }
     // fill kinematic variables
-    if (enable && !track.isGlobalTrackWoPtEta()) {
-      return;
-    }
-    if (fabs(track.eta()) > ValCutEta) {
-      return;
-    }
-    if (track.pt() < minPt || track.pt() > maxPt) {
-      return;
-    }
     histos.fill(HIST("Kine/pt"), track.pt());
     if (track.hasTRD()) {
       histos.fill(HIST("Kine/pt_TRD"), track.pt());
+      histos.fill(HIST("TrackPar/Sigma1Pt_hasTRD"), track.pt(), track.sigma1Pt() * track.pt());
+    }
+    if (!track.hasTRD()) {
+      histos.fill(HIST("TrackPar/Sigma1Pt_hasNoTRD"), track.pt(), track.sigma1Pt() * track.pt());
     }
     histos.fill(HIST("Kine/eta"), track.pt(), track.eta());
     histos.fill(HIST("Kine/phi"), track.pt(), track.phi());
@@ -293,48 +311,49 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcCrossedRowsOverFindableCls"), track.pt(), track.tpcCrossedRowsOverFindableCls());
     histos.fill(HIST("TPC/tpcFractionSharedCls"), track.pt(), track.tpcFractionSharedCls());
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.tpcChi2NCl());
+
+    return true;
   }
 
-  Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
-  SliceCache cacheTrk;
-  void processFull(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs> const& collisions,
-                   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov> const& tracks)
+  // Preslice<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>> trackPerColl = aod::track::collisionId;
+  Preslice<aod::Track> trackPerColl = aod::track::collisionId;
+  // SliceCache cacheTrk;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
+
+  void processFull(CollisionCandidate const& collisions,
+                   TrackCandidates const& tracks)
   {
     for (const auto& collision : collisions) {
-      fillEventQa(collision);
-      if (fillMultiplicity) {
-        histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-        histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
-        histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
-      }
-      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cacheTrk);
+      if (fillEventQa(collision)) {
 
-      for (const auto& track : tracksInCollision) {
-        fillTrackQa(track);
         if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
-          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+          histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+          histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+          histos.fill(HIST("Mult/MultCorrelations"), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
         }
+        auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
+
+        for (const auto& track : tracksInCollision) {
+          if (track.has_collision() && (collision.globalIndex() == track.collisionId())) { // double check
+            if (fillTrackQa(track)) {
+              if (fillMultiplicity) {
+                histos.fill(HIST("TrackEventPar/Sigma1PtFT0Mcent"), collision.centFT0M(), track.pt(), track.sigma1Pt());
+                histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
+              }
+            }
+          }
+        }
+      } else {
+        histos.fill(HIST("EventProp/rejectedCollId"), 1);
       }
     }
   }
   PROCESS_SWITCH(TrackJetQa, processFull, "Standard data processor", true);
 
-  Preslice<aod::JeTracks> jePerCol = aod::jetspectra::collisionId;
-  void processDerived(aod::JeColls const& collisions,
-                      aod::JeTracks const& tracks)
+  void processDerived(aod::JeTracks::iterator const& track)
   {
-    for (const auto& collision : collisions) {
-      fillEventQa(collision);
-      const auto& tracksInCollision = tracks.sliceByCached(aod::jetspectra::collisionId, collision.globalIndex(), cacheTrk);
-
-      for (const auto& track : tracksInCollision) {
-        fillTrackQa(track);
-        if (fillMultiplicity) {
-          histos.fill(HIST("TrackEventPar/MultCorrelations"), track.sigma1Pt(), track.pt(), collision.centFT0A(), collision.centFT0C(), collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV());
-        }
-      }
-    }
+    fillTrackQa(track);
   }
   PROCESS_SWITCH(TrackJetQa, processDerived, "Derived data processor", false);
 };

@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef ProfileSubset__H
-#define ProfileSubset__H
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
 // Helper function to select a subrange of a TProfile
 #include "TProfile.h"
 #include "TProfile2D.h"
@@ -19,8 +19,8 @@
 class ProfileSubset : public TProfile2D
 {
  public:
-  ProfileSubset(TProfile2D& inpf) : TProfile2D(inpf){};
-  ~ProfileSubset(){};
+  explicit ProfileSubset(TProfile2D& inpf) : TProfile2D(inpf) {}
+  ~ProfileSubset() {}
   TProfile* GetSubset(bool onx, const char* name, int fb, int lb, int l_nbins = 0, double* l_binarray = 0);
   void OverrideBinContent(double x, double y, double x2, double y2, double val);
   void OverrideBinContent(double x, double y, double x2, double y2, TProfile2D* sourceProf);
@@ -28,4 +28,4 @@ class ProfileSubset : public TProfile2D
 
   ClassDef(ProfileSubset, 2);
 };
-#endif
+#endif // PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_

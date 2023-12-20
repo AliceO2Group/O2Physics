@@ -33,8 +33,8 @@ void UPCCutparHolder::setITSNClusLow(int ITSNClusLow) { fITSNClusLow = ITSNClusL
 void UPCCutparHolder::setITSNClusHigh(int ITSNClusHigh) { fITSNClusHigh = ITSNClusHigh; }
 void UPCCutparHolder::setITSChi2Low(float ITSChi2Low) { fITSChi2Low = ITSChi2Low; }
 void UPCCutparHolder::setITSChi2High(float ITSChi2High) { fITSChi2High = ITSChi2High; }
-void UPCCutparHolder::setTPCNClusCRLow(int TPCNClusCRLow) { fTPCNClusCRLow = TPCNClusCRLow; }
-void UPCCutparHolder::setTPCNClusCRHigh(int TPCNClusCRHigh) { fTPCNClusCRHigh = TPCNClusCRHigh; }
+void UPCCutparHolder::setTPCNClsLow(int TPCNClsLow) { fTPCNClsLow = TPCNClsLow; }
+void UPCCutparHolder::setTPCNClsHigh(int TPCNClsHigh) { fTPCNClsHigh = TPCNClsHigh; }
 void UPCCutparHolder::setTPCChi2Low(float TPCChi2Low) { fTPCChi2Low = TPCChi2Low; }
 void UPCCutparHolder::setTPCChi2High(float TPCChi2High) { fTPCChi2High = TPCChi2High; }
 void UPCCutparHolder::setCheckMaxDcaXY(bool checkMaxDcaXY) { fCheckMaxDcaXY = checkMaxDcaXY; }
@@ -68,8 +68,8 @@ int UPCCutparHolder::getITSNClusLow() const { return fITSNClusLow; }
 int UPCCutparHolder::getITSNClusHigh() const { return fITSNClusHigh; }
 float UPCCutparHolder::getITSChi2Low() const { return fITSChi2Low; }
 float UPCCutparHolder::getITSChi2High() const { return fITSChi2High; }
-int UPCCutparHolder::getTPCNClusCRLow() const { return fTPCNClusCRLow; }
-int UPCCutparHolder::getTPCNClusCRHigh() const { return fTPCNClusCRHigh; }
+int UPCCutparHolder::getTPCNClsLow() const { return fTPCNClsLow; }
+int UPCCutparHolder::getTPCNClsHigh() const { return fTPCNClsHigh; }
 float UPCCutparHolder::getTPCChi2Low() const { return fTPCChi2Low; }
 float UPCCutparHolder::getTPCChi2High() const { return fTPCChi2High; }
 bool UPCCutparHolder::getCheckMaxDcaXY() const { return fCheckMaxDcaXY; }

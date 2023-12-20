@@ -243,17 +243,27 @@ class HfHelper
   }
 
   template <typename T>
+  auto massKKPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto massKKPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   auto deltaMassPhiDsToKKPi(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    return std::abs(invMassKKpair - o2::constants::physics::MassPhi);
+    return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);
   }
 
   template <typename T>
   auto deltaMassPhiDsToPiKK(const T& candidate)
   {
-    double invMassKKpair = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
-    return std::abs(invMassKKpair - o2::constants::physics::MassPhi);
+    return std::abs(massKKPairDsToPiKK(candidate) - o2::constants::physics::MassPhi);
   }
 
   /// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
@@ -874,6 +884,35 @@ class HfHelper
       return false;
     }
     if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply selection on ML scores for charm-hadron daughter in b-hadron decays (common for all the beauty channels)
+  /// \param candB b-hadron candidates
+  /// \param cuts ML score selection per bin of charm-hadron pT
+  /// \param binsPtC pT bin limits of charm hadron
+  /// \return true if b-hadron candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionDmesMlScoresForB(const T1& candB, const T2& cuts, const T3& binsPtC)
+  {
+    auto ptC = RecoDecay::pt(candB.pxProng0(), candB.pyProng0()); // the first daughter is the charm hadron
+    int pTBin = o2::analysis::findBin(binsPtC, ptC);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    if (candB.prong0MlScoreBkg() > cuts->get(pTBin, "ML score charm bkg")) {
+      return false;
+    }
+
+    if (candB.prong0MlScorePrompt() > cuts->get(pTBin, "ML score charm prompt")) { // we want non-prompt for beauty
+      return false;
+    }
+
+    if (candB.prong0MlScoreNonprompt() < cuts->get(pTBin, "ML score charm nonprompt")) { // we want non-prompt for beauty
       return false;
     }
 

@@ -21,6 +21,8 @@
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
+#include "Common/DataModel/EventSelection.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -75,17 +77,25 @@ struct multiplicityPbPb {
     // do not know how:
     histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
 
-    histos.add("Anton/PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
-    histos.add("Anton/ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
+    histos.add("PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
+    histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
 
-    histos.add("Anton/EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
-    histos.add("Anton/NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
-    histos.add("Anton/PhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
+    histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
+    histos.add("NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
+
+    histos.add("MCGENEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
+    histos.add("MCGENNtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
+
+    histos.add("PhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
-  void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
   {
+    if (!collision.sel8()) {
+      return;
+    }
+
     int trackCounter = 0;
 
     // auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
@@ -94,7 +104,7 @@ struct multiplicityPbPb {
 
     // histos.fill(HIST("Multiplicity"), groupedTracks.size());
 
-    histos.fill(HIST("Anton/ZvtxEvents"), collision.posZ());
+    histos.fill(HIST("ZvtxEvents"), collision.posZ());
 
     for (auto& track : tracks) {
       ++trackCounter;
@@ -105,26 +115,31 @@ struct multiplicityPbPb {
       histos.fill(HIST("DCAxy"), track.dcaXY());
       histos.fill(HIST("DCAz"), track.dcaZ());
 
-      histos.fill(HIST("Anton/PhiTracks"), track.phi());
+      histos.fill(HIST("PhiTracks"), track.phi());
 
-      histos.fill(HIST("Anton/EtaZvtxTracks"), track.eta(), collision.posZ());
-      histos.fill(HIST("Anton/PhiEtaTracks"), track.phi(), track.eta());
+      histos.fill(HIST("EtaZvtxTracks"), track.eta(), collision.posZ());
+      histos.fill(HIST("PhiEtaTracks"), track.phi(), track.eta());
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
 
-    histos.fill(HIST("Anton/NtrkZvtxEvents"), trackCounter, collision.posZ());
+    histos.fill(HIST("NtrkZvtxEvents"), trackCounter, collision.posZ());
   }
 
   void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
+    int MCparticleCounter = 0;
+
     histos.fill(HIST("MCGENeventCounter"), 0.5);
 
     for (auto& mcParticle : mcParticles) {
+      ++MCparticleCounter;
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
+        histos.fill(HIST("MCGENEtaZvtxTracks"), mcParticle.eta(), mcCollision.posZ());
       }
     }
+    histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
   PROCESS_SWITCH(multiplicityPbPb, processMCGEN, "process for GEN MC data", true);
 };
