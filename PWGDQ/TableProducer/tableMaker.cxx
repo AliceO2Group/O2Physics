@@ -159,7 +159,6 @@ struct TableMaker {
   Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 300.0, "Maximum TPC signal"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
-  Configurable<bool> fConfigDetailedMftQA{"cfgDetailedMftQA", false, "If true, include more QA histograms for MFT tracks"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -193,7 +192,6 @@ struct TableMaker {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
-  bool fDoDetailedMftQA = false; // Bool to set detailed MFT QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
@@ -274,11 +272,9 @@ struct TableMaker {
       }
     }
     if (enableMuonHistos) {
-      if (fConfigDetailedMftQA) {
-        histClasses += "MftTracks;";
-      }
       if (fDoDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
+        histClasses += "MftTracks;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
           histClasses += "Orphan_Muons_MFTMCHMID;";
@@ -1090,7 +1086,7 @@ struct TableMaker {
 
       TString histMftName = fConfigAddMuonHistogram.value;
       if (classStr.Contains("Mft")) {
-        if (fConfigDetailedMftQA) {
+        if (fConfigDetailedQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMftName);
         }
       }
