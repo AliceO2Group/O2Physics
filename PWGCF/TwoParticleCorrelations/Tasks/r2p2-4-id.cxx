@@ -1079,7 +1079,6 @@ struct crossr2p24pk {
       //-----PROTON PID Particle1-----------------------------------------------
       tpccut = 2.2;
       tofcut = 2;
-      //			if(track1.tpcNClsCrossedRows()<70) continue;
       if (track1.pt() < 1.1) {
         if (track1.pt() < 0.85)
           tpccut = 2.2;
