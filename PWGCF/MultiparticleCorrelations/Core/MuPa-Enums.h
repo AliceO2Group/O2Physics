@@ -21,8 +21,9 @@ enum eConfiguration {
   eConfiguration_N
 };
 
-enum eRecoSim { eRec = 0,
-                eSim = 1 };
+enum eRecSim { eRec = 0,
+               eSim = 1,
+               eRecAndSim = 2 }; // TBI 20231021 find a better name?
 
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };
@@ -47,6 +48,7 @@ enum eEventHistograms {
   eVertex_y,
   eVertex_z,
   eNContributors, // Number of tracks used for the vertex
+  eImpactParameter,
   eEventHistograms_N
 };
 

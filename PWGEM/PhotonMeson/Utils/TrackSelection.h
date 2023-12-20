@@ -225,6 +225,9 @@ inline bool checkMCParticles(aod::McParticle const& mc1, aod::McParticle const& 
   if (mc1.mothersIds()[0] != mc2.mothersIds()[0]) {
     return false;
   }
+  if (const auto& mothers = mc1.mothers_as<aod::McParticles>(); mothers.empty() || mothers.size() > 1) {
+    return false;
+  }
   if (mc1.template mothers_first_as<aod::McParticles>().pdgCode() != motherType) {
     return false;
   }

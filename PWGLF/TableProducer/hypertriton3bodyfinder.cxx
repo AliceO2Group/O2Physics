@@ -125,40 +125,71 @@ struct trackprefilter {
   }
 };
 
+template <class TMCTrackTo, typename TMCParticle>
+bool is3bodyDecayedH3L(TMCParticle const& particle)
+{
+  if (particle.pdgCode() != 1010010030 && particle.pdgCode() != -1010010030) {
+    return false;
+  }
+  bool haveProton = false, havePion = false, haveDeuteron = false;
+  bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
+  for (auto& mcparticleDaughter : particle.template daughters_as<aod::McParticles>()) {
+    if (mcparticleDaughter.pdgCode() == 2212)
+      haveProton = true;
+    if (mcparticleDaughter.pdgCode() == -2212)
+      haveAntiProton = true;
+    if (mcparticleDaughter.pdgCode() == 211)
+      havePion = true;
+    if (mcparticleDaughter.pdgCode() == -211)
+      haveAntiPion = true;
+    if (mcparticleDaughter.pdgCode() == 1000010020)
+      haveDeuteron = true;
+    if (mcparticleDaughter.pdgCode() == -1000010020)
+      haveAntiDeuteron = true;
+  }
+  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
+    return true;
+  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
+    return true;
+  }
+  return false;
+}
+
 struct hypertriton3bodyFinder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables
-  Configurable<bool> UseCFFilterInMC{"UseCFFilterInMC", false, "Use CFFilter with MC check"};
+  Configurable<bool> UseCFFilter{"UseCFFilter", true, "Reject event without CF LD trigger"};
+  Configurable<bool> RejectBkgInMC{"RejectBkgInMC", false, "Reject fake 3-body pairs in MC check"};
+  Configurable<bool> KeepSignalInMC{"KeepSignalInMC", false, "Reject fake 3-body pairs in MC check"};
 
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   // Selection criteria
-  Configurable<float> minR2ToMeanVertex = {"minR2ToMeanVertex", 0.5 * 0.5, ""}; ///< min radial distance of V0 from beam line (mean vertex) //Q: Does this cut need to be removed?
-
-  Configurable<float> causalityRTolerance = {"causalityRTolerance", 1., ""}; ///< V0 radius cannot exceed its contributors minR by more than this value
-  Configurable<float> maxV0ToProngsRDiff = {"maxV0ToProngsRDiff", 50., ""};  ///< V0 radius cannot be lower than this ammount wrt minR of contributors
-  Configurable<float> minPt2V0 = {"minPt2V0", 0.5 * 0.5, ""};                ///< v0 minimum pT
-  Configurable<float> maxTgl2V0 = {"maxTgl2V0", 2. * 2., ""};                ///< maximum tgLambda of V0
+  Configurable<float> minRToMeanVertex = {"minRToMeanVertex", 0.5, ""};     ///< min radial distance of V0 from beam line (mean vertex)
+                                                                            // Configurable<float> causalityRTolerance = {"causalityRTolerance", 1., ""}; ///< V0 radius cannot exceed its contributors minR by more than this value
+  Configurable<float> maxV0ToProngsRDiff = {"maxV0ToProngsRDiff", 50., ""}; ///< V0 radius cannot be lower than this ammount wrt minR of contributors
+  Configurable<float> minPtV0 = {"minPtV0", 0.5, ""};                       ///< v0 minimum pT
+  Configurable<float> maxTglV0 = {"maxTglV0", 2., ""};                      ///< maximum tgLambda of V0
   Configurable<float> maxDCAXY2ToMeanVertex3bodyV0 = {"maxDCAXY2ToMeanVertex3bodyV0", 2 * 2, ""};
   Configurable<float> minCosPAXYMeanVertex3bodyV0 = {"minCosPAXYMeanVertex3bodyV0", 0.9, ""}; ///< min cos of PA to beam line (mean vertex) in tr. plane for 3body V0 cand.
   Configurable<float> minCosPA3bodyV0 = {"minCosPA3bodyV0", 0.8, ""};                         // min cos of PA to PV for 3body V0
 
   // for 3 body reconstructed Vertex
-  Configurable<float> maxRDiff3bodyV0 = {"maxRDiffV03bodyV0", 3, ""}; ///< Maximum difference between V0 and 3body radii
-  Configurable<float> minPt23Body = {"minPt23Body", 0.01 * 0.01, ""}; // minimum pT of 3body Vertex
-  Configurable<float> maxTgl23Body = {"maxTgl23Body", 2. * 2., ""};   // maximum tgLambda of 3body Vertex
-  Configurable<float> minCosPA3body = {"minCosPA3body", 0.8, ""};     // min cos of PA to PV for 3body Vertex
+  Configurable<float> minbachPt = {"minbachPt", 0.6, ""};           ///< Minimum bachelor Pt
+  Configurable<float> maxRDiff3bodyV0 = {"maxRDiff3bodyV0", 3, ""}; ///< Maximum difference between V0 and 3body radii
+  Configurable<float> minPt3Body = {"minPt3Body", 0.01, ""};        // minimum pT of 3body Vertex
+  Configurable<float> maxTgl3Body = {"maxTgl3Body", 2, ""};         // maximum tgLambda of 3body Vertex
+  Configurable<float> minCosPA3body = {"minCosPA3body", 0.8, ""};   // min cos of PA to PV for 3body Vertex
 
   // for DCA
-  // Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-
-  // for track cut in SVertexer, Can we use it in the production of goodtrack table?
-  // float maxDCAXY3Body = 0.3; // max DCA of 3 body decay to PV in XY?
-  // float maxDCAZ3Body = 0.3;  // max DCA of 3 body decay to PV in Z
+  Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
+  Configurable<bool> d_UseH3LDCACut{"d_UseH3LDCACut", true, "Use Cuts for H3L DCA to PV"};
+  Configurable<float> maxDCAXY3Body{"maxDCAXY3Body", 0.5, "DCAXY H3L to PV"}; // max DCA of 3 body decay to PV in XY
+  Configurable<float> maxDCAZ3Body{"maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};    // max DCA of 3 body decay to PV in Z
 
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -171,18 +202,104 @@ struct hypertriton3bodyFinder {
   Preslice<aod::V0GoodPosTracks> perCollisionGoodPosTracks = o2::aod::v0goodpostrack::collisionId;
   Preslice<aod::V0GoodNegTracks> perCollisionGoodNegTracks = o2::aod::v0goodnegtrack::collisionId;
   Preslice<aod::V0GoodTracks> perCollisionGoodTracks = o2::aod::v0goodtrack::collisionId;
+  Preslice<aod::V0s> perCollisionV0s = o2::aod::v0::collisionId;
+  Preslice<aod::V0Datas> perCollisionV0Datas = o2::aod::v0data::collisionId;
 
+  // Helper struct to pass V0 information
   HistogramRegistry registry{
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hDauTrackCounter", "hDauTrackCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-      {"hV0Counter", "hV0Counter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
-      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
-      {"hTrueV0Counter", "hTrueV0Counter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
-      {"hTrueVtx3BodyCounter", "hTrueVtx3BodyCounter", {HistType::kTH1F, {{9, 0.0f, 9.0f}}}},
+      {"hV0Counter", "hV0Counter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
+      {"hTrueV0Counter", "hTrueV0Counter", {HistType::kTH1F, {{8, -0.5f, 7.5f}}}},
+      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{9, -0.5f, 8.5f}}}},
+      {"hTrueVtx3BodyCounter", "hTrueVtx3BodyCounter", {HistType::kTH1F, {{9, -0.5f, 8.5f}}}},
+      {"hVirtLambaCounter", "hVirtualLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
+      {"hCFFilteredVirtLambaCounter", "hCFFilteredVirtLambaCounter", {HistType::kTH1F, {{6, -0.5f, 5.5f}}}},
     },
   };
+
+  //------------------------------------------------------------------
+  // Fill stats histograms
+  enum v0step { kV0All = 0,
+                kV0hasSV,
+                kV0Radius,
+                kV0Pt,
+                kV0TgLamda,
+                kV0InvMass,
+                kV0DcaXY,
+                kV0CosPA,
+                kNV0Steps };
+  enum vtxstep { kVtxAll = 0,
+                 kVtxbachPt,
+                 kVtxhasSV,
+                 kVtxRadius,
+                 kVtxPt,
+                 kVtxTgLamda,
+                 kVtxCosPA,
+                 kVtxDcaDau,
+                 kVtxDcaH3L,
+                 kNVtxSteps };
+
+  // Helper struct to do bookkeeping of building parameters
+  struct {
+    std::array<int32_t, kNV0Steps> v0stats;
+    std::array<int32_t, kNV0Steps> truev0stats;
+    std::array<int32_t, kNVtxSteps> vtxstats;
+    std::array<int32_t, kNVtxSteps> truevtxstats;
+    std::array<int32_t, 12> virtLambdastats;
+  } statisticsRegistry;
+
+  void resetHistos()
+  {
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
+      statisticsRegistry.v0stats[ii] = 0;
+      statisticsRegistry.truev0stats[ii] = 0;
+    }
+    for (Int_t ii = 0; ii < kNVtxSteps; ii++) {
+      statisticsRegistry.vtxstats[ii] = 0;
+      statisticsRegistry.truevtxstats[ii] = 0;
+    }
+    for (Int_t ii = 0; ii < 12; ii++) {
+      statisticsRegistry.virtLambdastats[ii] = 0;
+    }
+  }
+
+  void fillHistos()
+  {
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
+      registry.fill(HIST("hV0Counter"), ii, statisticsRegistry.v0stats[ii]);
+      registry.fill(HIST("hTrueV0Counter"), ii, statisticsRegistry.truev0stats[ii]);
+    }
+    for (Int_t ii = 0; ii < kNVtxSteps; ii++) {
+      registry.fill(HIST("hVtx3BodyCounter"), ii, statisticsRegistry.vtxstats[ii]);
+      registry.fill(HIST("hTrueVtx3BodyCounter"), ii, statisticsRegistry.truevtxstats[ii]);
+    }
+    for (Int_t ii = 0; ii < 3; ii++) {
+      registry.fill(HIST("hVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii]);
+      registry.fill(HIST("hVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 3]);
+      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii, statisticsRegistry.virtLambdastats[ii + 6]);
+      registry.fill(HIST("hCFFilteredVirtLambaCounter"), ii + 3, statisticsRegistry.virtLambdastats[ii + 9]);
+    }
+  }
+
+  // v0, vtx, and virtual Lambda statiscs
+  void FillV0Counter(int kn, bool istrue = false)
+  {
+    statisticsRegistry.v0stats[kn]++;
+    if (istrue) {
+      statisticsRegistry.truev0stats[kn]++;
+    }
+  }
+  void FillVtxCounter(int kn, bool istrue = false)
+  {
+    statisticsRegistry.vtxstats[kn]++;
+    if (istrue) {
+      statisticsRegistry.truevtxstats[kn]++;
+    }
+  }
+  //------------------------------------------------------------------
 
   int mRunNumber;
   float d_bz;
@@ -194,53 +311,26 @@ struct hypertriton3bodyFinder {
 
   void init(InitContext& context)
   {
+    resetHistos();
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    registry.get<TH1>(HIST("hDauTrackCounter"))->GetXaxis()->SetBinLabel(1, "Proton");
-    registry.get<TH1>(HIST("hDauTrackCounter"))->GetXaxis()->SetBinLabel(2, "Pion");
-    registry.get<TH1>(HIST("hDauTrackCounter"))->GetXaxis()->SetBinLabel(3, "Deuteron");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(2, "hasSV");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(3, "V0R");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(4, "TrackR-V0R(off)");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(5, "IfPropragated");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(6, "V0Pt");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(7, "tgLambda");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(8, "V0Mass");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(9, "dcaXY&CosPAXY");
-    registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(10, "CosPA");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(2, "hasSV");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(3, "V0R");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(4, "TrackRi-V0R(off)");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(5, "IfPropragated");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(6, "V0Pt");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(7, "tgLambda");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(8, "V0Mass");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(9, "dcaXY&CosPAXY");
-    registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(10, "CosPA");
-
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "bachPt");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "hasSV");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "VtxR");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "BachR-VtxR(off)");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "IfPropragated");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(7, "VtxPt");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(8, "tgLambda");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(9, "CosPA");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "bachPt");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "hasSV");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "VtxR");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "BachR-vtxR(off)");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "IfPropragated");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(7, "VtxPt");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(8, "tgLambda");
-    registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(9, "CosPA");
+    TString DauCounterbinLabel[3] = {"Proton", "Pion", "Deuteron"};
+    TString V0CounterbinLabel[8] = {"Total", "hasSV", "V0R", "V0Pt", "TgLambda", "V0Mass", "DcaXY", "CosPA"};
+    TString VtxCounterbinLabel[9] = {"Total", "bachPt", "hasSV", "VtxR", "VtxPt", "TgLambda", "CosPA", "DcaDau", "DcaH3L"};
+    for (int i{0}; i < 3; i++) {
+      registry.get<TH1>(HIST("hDauTrackCounter"))->GetXaxis()->SetBinLabel(i + 1, DauCounterbinLabel[i]);
+    }
+    for (int i{0}; i < kNV0Steps; i++) {
+      registry.get<TH1>(HIST("hV0Counter"))->GetXaxis()->SetBinLabel(i + 1, V0CounterbinLabel[i]);
+      registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(i + 1, V0CounterbinLabel[i]);
+    }
+    for (int i{0}; i < kNVtxSteps; i++) {
+      registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, VtxCounterbinLabel[i]);
+      registry.get<TH1>(HIST("hTrueVtx3BodyCounter"))->GetXaxis()->SetBinLabel(i + 1, VtxCounterbinLabel[i]);
+    }
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -345,45 +435,19 @@ struct hypertriton3bodyFinder {
       if (!mcgoodtrack.has_mothers()) {
         continue;
       }
-      bool isHypertriton = false;
+      bool flag_H3L = false;
       for (auto& mothertrack : mcgoodtrack.template mothers_as<aod::McParticles>()) {
-        if (std::abs(mothertrack.pdgCode()) != 1010010030) {
-          continue;
-        }
-        bool haveProton = false, havePion = false, haveDeuteron = false;
-        bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
-        for (auto& mcparticleDaughter : mothertrack.template daughters_as<aod::McParticles>()) {
-          if (mcparticleDaughter.pdgCode() == 2212) {
-            haveProton = true;
-          }
-          if (mcparticleDaughter.pdgCode() == -2212) {
-            haveAntiProton = true;
-          }
-          if (mcparticleDaughter.pdgCode() == 211) {
-            havePion = true;
-          }
-          if (mcparticleDaughter.pdgCode() == -211) {
-            haveAntiPion = true;
-          }
-          if (mcparticleDaughter.pdgCode() == 1000010020) {
-            haveDeuteron = true;
-          }
-          if (mcparticleDaughter.pdgCode() == -1000010020) {
-            haveAntiDeuteron = true;
-          }
-        }
-        if ((haveProton && haveAntiPion && haveDeuteron && mothertrack.pdgCode() == 1010010030) || (haveAntiProton && havePion && haveAntiDeuteron && mothertrack.pdgCode() == -1010010030)) {
-          isHypertriton = true;
-          break;
+        if (is3bodyDecayedH3L<aod::McParticles>(mothertrack)) {
+          flag_H3L = true;
         }
       }
-      if (isHypertriton && std::abs(mcgoodtrack.pdgCode()) == 2212) {
+      if (flag_H3L && std::abs(mcgoodtrack.pdgCode()) == 2212) {
         registry.fill(HIST("hDauTrackCounter"), 0.5);
       }
-      if (isHypertriton && std::abs(mcgoodtrack.pdgCode()) == 211) {
+      if (flag_H3L && std::abs(mcgoodtrack.pdgCode()) == 211) {
         registry.fill(HIST("hDauTrackCounter"), 1.5);
       }
-      if (isHypertriton && std::abs(mcgoodtrack.pdgCode()) == 1000010020) {
+      if (flag_H3L && std::abs(mcgoodtrack.pdgCode()) == 1000010020) {
         registry.fill(HIST("hDauTrackCounter"), 2.5);
       }
     }
@@ -396,42 +460,37 @@ struct hypertriton3bodyFinder {
   void DecayFinder(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
   {
     for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
-      registry.fill(HIST("hV0Counter"), 0.5);
       auto t0 = t0id.template goodTrack_as<TTrackTo>();
       auto Track0 = getTrackParCov(t0);
 
       for (auto& t1id : dNtracks) {
+
+        FillV0Counter(kV0All);
         auto t1 = t1id.template goodTrack_as<TTrackTo>();
         auto Track1 = getTrackParCov(t1);
         int nCand = fitter.process(Track0, Track1);
         if (nCand == 0) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 1.5);
+        FillV0Counter(kV0hasSV);
+
         // validate V0 radial position
         // First check closeness to the beam-line as same as SVertexer
         const auto& v0XYZ = fitter.getPCACandidate();
         float dxv0 = v0XYZ[0] - mMeanVertex.getX(), dyv0 = v0XYZ[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
-        if (r2v0 < minR2ToMeanVertex) {
+        float rv0 = std::sqrt(r2v0);
+        if (rv0 < minRToMeanVertex) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 2.5);
+        FillV0Counter(kV0Radius);
 
-        float rv0 = std::sqrt(r2v0);
         // Not involved: Get minR with same way in SVertexer
-        // float Track0minR =  RecoDecay::sqrtSumOfSquares(t0.x(),  t0.y()), Track1minR =  RecoDecay::sqrtSumOfSquares(t1.x(),  t1.y());
         // float drv0P = rv0 - Track0minR, drv0N = rv0 - Track1minR;
-        /*if (drv0P > causalityRTolerance || drv0P < -maxV0ToProngsRDiff ||
-          drv0N > causalityRTolerance || drv0N < -maxV0ToProngsRDiff) {
-          continue;
-          }*/
-        registry.fill(HIST("hV0Counter"), 3.5);
 
-        // the process function should finish the propagation
+        // check: if the process function finish the propagation
         if (!fitter.isPropagateTracksToVertexDone() && !fitter.propagateTracksToVertex()) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 4.5);
 
         int cand = 0;
         auto& trPProp = fitter.getTrack(0, cand);
@@ -445,16 +504,17 @@ struct hypertriton3bodyFinder {
         // Similar equation for 3D distance involving pV0[2]
         std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
         float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
-        if (pt2V0 < minPt2V0) { // pt cut
-          continue;
-        }
-        registry.fill(HIST("hV0Counter"), 5.5);
-
-        if (pV0[2] * pV0[2] / pt2V0 > maxTgl2V0) { // tgLambda cut
-          continue;
-        }
-        registry.fill(HIST("hV0Counter"), 6.5);
         float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
+        if (ptV0 < minPtV0) { // pt cut
+          continue;
+        }
+        FillV0Counter(kV0Pt);
+
+        if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
+          continue;
+        }
+        FillV0Counter(kV0TgLamda);
+
         // apply mass selections
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
         float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
@@ -462,27 +522,30 @@ struct hypertriton3bodyFinder {
         if (massV0LambdaHyp - o2::constants::physics::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::physics::MassLambda > massMargin) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 7.5);
+        FillV0Counter(kV0InvMass);
 
         float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
-        float cosPAXY = prodXYv0 / std::sqrt(r2v0 * pt2V0);
-        if (dca2 > maxDCAXY2ToMeanVertex3bodyV0 || cosPAXY < minCosPAXYMeanVertex3bodyV0) {
+        if (dca2 > maxDCAXY2ToMeanVertex3bodyV0) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 8.5);
+        FillV0Counter(kV0DcaXY);
 
+        float cosPAXY = prodXYv0 / std::sqrt(r2v0 * pt2V0);
+        if (cosPAXY < minCosPAXYMeanVertex3bodyV0) {
+          continue;
+        }
         float dx = v0XYZ[0] - dCollision.posX(), dy = v0XYZ[1] - dCollision.posY(), dz = v0XYZ[2] - dCollision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
         float cosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
         if (cosPA < minCosPA3bodyV0) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 9.5);
+        FillV0Counter(kV0CosPA);
 
         for (auto& t2id : dGoodtracks) {
           if (t2id.globalIndex() == t0id.globalIndex()) {
             continue; // skip the track used by V0
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 0.5);
+          FillVtxCounter(kVtxAll);
 
           auto t2 = t2id.template goodTrack_as<TTrackTo>();
           auto track0 = getTrackParCov(t0);
@@ -492,30 +555,29 @@ struct hypertriton3bodyFinder {
           if (bach.getPt() < 0.6) {
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 1.5);
+          FillVtxCounter(kVtxbachPt);
 
           int n3bodyVtx = fitter3body.process(track0, track1, bach);
           if (n3bodyVtx == 0) { // discard this pair
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 2.5);
+          FillVtxCounter(kVtxhasSV);
 
           int cand3B = 0;
           const auto& vertexXYZ = fitter3body.getPCACandidatePos(cand3B);
           // make sure the cascade radius is smaller than that of the vertex
           float dxc = vertexXYZ[0] - dCollision.posX(), dyc = vertexXYZ[1] - dCollision.posY(), dzc = vertexXYZ[2] - dCollision.posZ(), r2vertex = dxc * dxc + dyc * dyc;
-          if (std::abs(rv0 - std::sqrt(r2vertex)) > maxRDiff3bodyV0 || r2vertex < minR2ToMeanVertex) {
+          float rvertex = std::sqrt(r2vertex);
+          if (std::abs(rv0 - rvertex) > maxRDiff3bodyV0 || rvertex < minRToMeanVertex) {
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 3.5);
+          FillVtxCounter(kVtxRadius);
 
           // Not involved: bach.minR - rveretx check
-          registry.fill(HIST("hVtx3BodyCounter"), 4.5);
 
           if (!fitter3body.isPropagateTracksToVertexDone() && !fitter3body.propagateTracksToVertex()) {
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 5.5);
 
           auto& tr0 = fitter3body.getTrack(0, cand3B);
           auto& tr1 = fitter3body.getTrack(1, cand3B);
@@ -527,21 +589,42 @@ struct hypertriton3bodyFinder {
           std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
 
           float pt2 = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2 + p3B[2] * p3B[2];
-          if (pt2 < minPt23Body) { // pt cut
+          float pt = std::sqrt(pt2);
+          if (pt < minPt3Body) { // pt cut
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 6.5);
+          FillVtxCounter(kVtxPt);
 
-          if (p3B[2] * p3B[2] / pt2 > maxTgl23Body) { // tgLambda cut
+          if (p3B[2] / pt > maxTgl3Body) { // tgLambda cut
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 7.5);
+          FillVtxCounter(kVtxTgLamda);
 
           float cosPA = (p3B[0] * dxc + p3B[1] * dyc + p3B[2] * dzc) / std::sqrt(p2candidate * (r2vertex + dzc * dzc));
           if (cosPA < minCosPA3body) {
             continue;
           }
-          registry.fill(HIST("hVtx3BodyCounter"), 8.5);
+          FillVtxCounter(kVtxCosPA);
+
+          if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
+            continue;
+          }
+          FillVtxCounter(kVtxDcaDau);
+
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
 
           //  Not involved: H3L DCA Check
           vtx3bodydata(
@@ -549,22 +632,300 @@ struct hypertriton3bodyFinder {
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
-            t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
         }
       }
     }
+    fillHistos();
+    resetHistos();
+  }
+  //------------------------------------------------------------------
+  // MC 3body decay finder
+  template <class TTrackTo, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
+  void DecayFinderMC(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
+  {
+    for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
+      auto t0 = t0id.template goodTrack_as<TTrackTo>();
+      auto Track0 = getTrackParCov(t0);
+      for (auto& t1id : dNtracks) {
+
+        if (t0id.collisionId() != t1id.collisionId()) {
+          continue;
+        }
+        auto t1 = t1id.template goodTrack_as<TTrackTo>();
+        auto Track1 = getTrackParCov(t1);
+
+        bool isTrue3bodyV0 = false;
+        if (t0.has_mcParticle() && t1.has_mcParticle()) {
+          auto t0mc = t0.template mcParticle_as<aod::McParticles>();
+          auto t1mc = t1.template mcParticle_as<aod::McParticles>();
+          if ((t0mc.pdgCode() == 2212 && t1mc.pdgCode() == -211) || (t0mc.pdgCode() == 211 && t1mc.pdgCode() == -2212)) {
+            if (t0mc.has_mothers() && t1mc.has_mothers()) {
+              for (auto& t0mother : t0mc.template mothers_as<aod::McParticles>()) {
+                for (auto& t1mother : t1mc.template mothers_as<aod::McParticles>()) {
+                  if (t0mother.globalIndex() == t1mother.globalIndex() && std::abs(t0mother.pdgCode()) == 1010010030) {
+                    isTrue3bodyV0 = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        FillV0Counter(kV0All, isTrue3bodyV0);
+        if (!isTrue3bodyV0 && RejectBkgInMC) {
+          continue;
+        }
+
+        int nCand = fitter.process(Track0, Track1);
+        if (nCand == 0) {
+          continue;
+        }
+        FillV0Counter(kV0hasSV, isTrue3bodyV0);
+
+        // validate V0 radial position
+        // First check closeness to the beam-line as same as SVertexer
+        const auto& v0XYZ = fitter.getPCACandidate();
+        float dxv0 = v0XYZ[0] - mMeanVertex.getX(), dyv0 = v0XYZ[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
+        float rv0 = std::sqrt(r2v0);
+        if (rv0 < minRToMeanVertex) {
+          continue;
+        }
+        FillV0Counter(kV0Radius, isTrue3bodyV0);
+
+        // Not involved: Get minR with same way in SVertexer
+        // float drv0P = rv0 - Track0minR, drv0N = rv0 - Track1minR;
+
+        // check: if the process function finish the propagation
+        if (!fitter.isPropagateTracksToVertexDone() && !fitter.propagateTracksToVertex()) {
+          continue;
+        }
+
+        int cand = 0;
+        auto& trPProp = fitter.getTrack(0, cand);
+        auto& trNProp = fitter.getTrack(1, cand);
+        std::array<float, 3> pP, pN;
+        trPProp.getPxPyPzGlo(pP);
+        trNProp.getPxPyPzGlo(pN);
+        // estimate DCA of neutral V0 track to beamline: straight line with parametric equation
+        // x = X0 + pV0[0]*t, y = Y0 + pV0[1]*t reaches DCA to beamline (Xv, Yv) at
+        // t = -[ (x0-Xv)*pV0[0] + (y0-Yv)*pV0[1]) ] / ( pT(pV0)^2 )
+        // Similar equation for 3D distance involving pV0[2]
+        std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
+        float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
+        float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
+        if (ptV0 < minPtV0) { // pt cut
+          continue;
+        }
+        FillV0Counter(kV0Pt, isTrue3bodyV0);
+
+        if (pV0[2] / ptV0 > maxTglV0) { // tgLambda cut
+          continue;
+        }
+        FillV0Counter(kV0TgLamda, isTrue3bodyV0);
+
+        // apply mass selections
+        float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+        float massMargin = 20 * (0.001 * (1. + 0.5 * ptV0)) + 0.07;
+        if (massV0LambdaHyp - o2::constants::physics::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::physics::MassLambda > massMargin) {
+          continue;
+        }
+        FillV0Counter(kV0InvMass, isTrue3bodyV0);
+
+        float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
+        float cosPAXY = prodXYv0 / std::sqrt(r2v0 * pt2V0);
+        if (dca2 > maxDCAXY2ToMeanVertex3bodyV0) {
+          continue;
+        }
+        FillV0Counter(kV0DcaXY, isTrue3bodyV0);
+
+        if (cosPAXY < minCosPAXYMeanVertex3bodyV0) {
+          continue;
+        }
+        float dx = v0XYZ[0] - dCollision.posX(), dy = v0XYZ[1] - dCollision.posY(), dz = v0XYZ[2] - dCollision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
+        float cosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
+        if (cosPA < minCosPA3bodyV0) {
+          continue;
+        }
+        FillV0Counter(kV0CosPA, isTrue3bodyV0);
+
+        for (auto& t2id : dGoodtracks) {
+          if (t2id.globalIndex() == t0id.globalIndex()) {
+            continue; // skip the track used by V0
+          }
+          auto t2 = t2id.template goodTrack_as<TTrackTo>();
+          auto track0 = getTrackParCov(t0);
+          auto track1 = getTrackParCov(t1);
+          auto bach = getTrackParCov(t2);
+
+          bool isTrue3bodyVtx = false;
+          if (t0.has_mcParticle() && t1.has_mcParticle() && t2.has_mcParticle()) {
+            auto t0mc = t0.template mcParticle_as<aod::McParticles>();
+            auto t1mc = t1.template mcParticle_as<aod::McParticles>();
+            auto t2mc = t2.template mcParticle_as<aod::McParticles>();
+            if ((t0mc.pdgCode() == 2212 && t1mc.pdgCode() == -211 && t2mc.pdgCode() == 1000010020) || (t0mc.pdgCode() == 211 && t1mc.pdgCode() == -2212 && t2mc.pdgCode() == -1000010020)) {
+              if (t0mc.has_mothers() && t1mc.has_mothers() && t2mc.has_mothers()) {
+                for (auto& t0mother : t0mc.template mothers_as<aod::McParticles>()) {
+                  for (auto& t1mother : t1mc.template mothers_as<aod::McParticles>()) {
+                    for (auto& t2mother : t2mc.template mothers_as<aod::McParticles>()) {
+                      if (t0mother.globalIndex() == t1mother.globalIndex() && t0mother.globalIndex() == t2mother.globalIndex() && std::abs(t0mother.pdgCode()) == 1010010030) {
+                        isTrue3bodyVtx = true;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          FillVtxCounter(kVtxAll, isTrue3bodyVtx);
+          if (!isTrue3bodyVtx && RejectBkgInMC) {
+            continue;
+          }
+
+          if (bach.getPt() < minbachPt) {
+            continue;
+          }
+          FillVtxCounter(kVtxbachPt, isTrue3bodyVtx);
+
+          int n3bodyVtx = fitter3body.process(track0, track1, bach);
+          if (n3bodyVtx == 0) { // discard this pair
+            continue;
+          }
+          FillVtxCounter(kVtxhasSV, isTrue3bodyVtx);
+
+          int cand3B = 0;
+          const auto& vertexXYZ = fitter3body.getPCACandidatePos(cand3B);
+          // make sure the cascade radius is smaller than that of the vertex
+          float dxc = vertexXYZ[0] - dCollision.posX(), dyc = vertexXYZ[1] - dCollision.posY(), dzc = vertexXYZ[2] - dCollision.posZ(), r2vertex = dxc * dxc + dyc * dyc;
+          float rvertex = std::sqrt(r2vertex);
+          if (std::abs(rv0 - rvertex) > maxRDiff3bodyV0 || rvertex < minRToMeanVertex) {
+            continue;
+          }
+          FillVtxCounter(kVtxRadius, isTrue3bodyVtx);
+
+          // Not involved: bach.minR - rveretx check
+
+          // check: if the process function finish the propagation
+          if (!fitter3body.isPropagateTracksToVertexDone() && !fitter3body.propagateTracksToVertex()) {
+            continue;
+          }
+
+          auto& tr0 = fitter3body.getTrack(0, cand3B);
+          auto& tr1 = fitter3body.getTrack(1, cand3B);
+          auto& tr2 = fitter3body.getTrack(2, cand3B);
+          std::array<float, 3> p0, p1, p2;
+          tr0.getPxPyPzGlo(p0);
+          tr1.getPxPyPzGlo(p1);
+          tr2.getPxPyPzGlo(p2);
+          std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
+
+          float pt2 = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2 + p3B[2] * p3B[2];
+          float pt = std::sqrt(pt2);
+          if (pt < minPt3Body) { // pt cut
+            continue;
+          }
+          FillVtxCounter(kVtxPt, isTrue3bodyVtx);
+
+          if (p3B[2] / pt > maxTgl3Body) { // tgLambda cut
+            continue;
+          }
+          FillVtxCounter(kVtxTgLamda, isTrue3bodyVtx);
+
+          float cosPA = (p3B[0] * dxc + p3B[1] * dyc + p3B[2] * dzc) / std::sqrt(p2candidate * (r2vertex + dzc * dzc));
+          if (cosPA < minCosPA3body) {
+            continue;
+          }
+          FillVtxCounter(kVtxCosPA, isTrue3bodyVtx);
+
+          if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
+            continue;
+          }
+          FillVtxCounter(kVtxDcaDau, isTrue3bodyVtx);
+
+          // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+          gpu::gpustd::array<float, 2> dcaInfo;
+
+          auto Track0Par = getTrackPar(t0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track0dcaXY = dcaInfo[0];
+
+          auto Track1Par = getTrackPar(t1);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track1dcaXY = dcaInfo[0];
+
+          auto Track2Par = getTrackPar(t2);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+          auto Track2dcaXY = dcaInfo[0];
+
+          //  Not involved: H3L DCA Check
+          // auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), t2.sign());
+          auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, t2.sign());
+          o2::dataformats::DCA dca;
+          if (d_UseH3LDCACut && (!track3B.propagateToDCA({{dCollision.posX(), dCollision.posY(), dCollision.posZ()}, {dCollision.covXX(), dCollision.covXY(), dCollision.covYY(), dCollision.covXZ(), dCollision.covYZ(), dCollision.covZZ()}}, fitter3body.getBz(), &dca, 5.) ||
+                                 std::abs(dca.getY()) > maxDCAXY3Body || std::abs(dca.getZ()) > maxDCAZ3Body)) {
+            continue;
+          }
+          FillVtxCounter(kVtxDcaH3L, isTrue3bodyVtx);
+
+          vtx3bodydata(
+            t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), dCollision.globalIndex(), 0,
+            vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
+            p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
+            fitter3body.getChi2AtPCACandidate(),
+            Track0dcaXY, Track1dcaXY, Track2dcaXY);
+        }
+      }
+    }
+    fillHistos();
+    resetHistos();
   }
 
+  //------------------------------------------------------------------
+  // MC virtual lambda check
+  template <class TTrackTo, typename TCollisionTable, typename TV0DataTable>
+  void VirtualLambdaCheck(TCollisionTable const& dCollision, TV0DataTable const& fullV0s, int bin)
+  {
+    for (auto& v0 : fullV0s) {
+      statisticsRegistry.virtLambdastats[bin]++;
+      auto postrack = v0.template posTrack_as<TTrackTo>();
+      auto negtrack = v0.template negTrack_as<TTrackTo>();
+      if (postrack.has_mcParticle() && negtrack.has_mcParticle()) {
+        auto postrackmc = postrack.template mcParticle_as<aod::McParticles>();
+        auto negtrackmc = negtrack.template mcParticle_as<aod::McParticles>();
+
+        if ((postrackmc.pdgCode() == 2212 && negtrackmc.pdgCode() == -211) || (postrackmc.pdgCode() == 211 && negtrackmc.pdgCode() == -2212)) {
+          if (postrackmc.has_mothers() && negtrackmc.has_mothers()) {
+            for (auto& posmother : postrackmc.template mothers_as<aod::McParticles>()) {
+              for (auto& negmother : negtrackmc.template mothers_as<aod::McParticles>()) {
+                if (posmother.globalIndex() == negmother.globalIndex()) {
+                  if (posmother.pdgCode() == 1010010030)
+                    statisticsRegistry.virtLambdastats[bin + 1]++;
+                  else if (posmother.pdgCode() == -1010010030)
+                    statisticsRegistry.virtLambdastats[bin + 2]++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    fillHistos();
+    resetHistos();
+  }
+
+  //------------------------------------------------------------------
+  // Process Function
   void processData(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
-    registry.fill(HIST("hEventCounter"), 1.5);
 
     DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
   }
-  PROCESS_SWITCH(hypertriton3bodyFinder, processData, "Produce StoredVtx3BodyDatas without MC check", false);
+  PROCESS_SWITCH(hypertriton3bodyFinder, processData, "Produce StoredVtx3BodyDatas with data", false);
 
   void processCFFilteredData(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
@@ -579,7 +940,7 @@ struct hypertriton3bodyFinder {
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
       auto goodtracks = Goodtracks.sliceBy(perCollisionGoodTracks, collision.globalIndex());
 
-      if (!cffilter.hasLD()) {
+      if (!cffilter.hasLD() && UseCFFilter) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
@@ -587,9 +948,20 @@ struct hypertriton3bodyFinder {
       DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas without MC check under cffilters", true);
+  PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", true);
 
-  void processMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
+  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    registry.fill(HIST("hEventCounter"), 0.5);
+
+    CheckGoodTracks<FullTracksExtMCIU>(goodtracks, mcparticles);
+    DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
+  }
+  PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC", false);
+
+  void processCFFilteredMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::V0s const& V0s, aod::V0Datas const& fullV0s, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
   {
     for (int i{0}; i < collisions.size(); i++) {
       auto collision = collisions.iteratorAt(i);
@@ -600,8 +972,12 @@ struct hypertriton3bodyFinder {
 
       auto goodtracks = Goodtracks.sliceBy(perCollisionGoodTracks, collision.globalIndex());
       CheckGoodTracks<FullTracksExtMCIU>(goodtracks, mcparticles);
+      auto v0s = V0s.sliceBy(perCollisionV0s, collision.globalIndex());
+      auto fullv0s = fullV0s.sliceBy(perCollisionV0Datas, collision.globalIndex());
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, v0s, 0);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 3);
 
-      if (!cffilter.hasLD() && UseCFFilterInMC) {
+      if (!cffilter.hasLD() && UseCFFilter) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
@@ -609,271 +985,12 @@ struct hypertriton3bodyFinder {
       auto ptracks = Ptracks.sliceBy(perCollisionGoodPosTracks, collision.globalIndex());
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
 
-      for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
-        auto t0 = t0id.goodTrack_as<FullTracksExtMCIU>();
-        auto Track0 = getTrackParCov(t0);
-        for (auto& t1id : ntracks) {
-
-          if (t0id.collisionId() != t1id.collisionId()) {
-            continue;
-          }
-          auto t1 = t1id.goodTrack_as<FullTracksExtMCIU>();
-          auto Track1 = getTrackParCov(t1);
-
-          bool isTrue3bodyV0 = false;
-          if (t0.has_mcParticle() && t1.has_mcParticle()) {
-            auto t0mc = t0.mcParticle_as<aod::McParticles>();
-            auto t1mc = t1.mcParticle_as<aod::McParticles>();
-            if ((t0mc.pdgCode() == 2212 && t1mc.pdgCode() == -211) || (t0mc.pdgCode() == 211 && t1mc.pdgCode() == -2212)) {
-              if (t0mc.has_mothers() && t1mc.has_mothers()) {
-                for (auto& t0mother : t0mc.mothers_as<aod::McParticles>()) {
-                  for (auto& t1mother : t1mc.mothers_as<aod::McParticles>()) {
-                    if (t0mother.globalIndex() == t1mother.globalIndex() && std::abs(t0mother.pdgCode()) == 1010010030) {
-                      isTrue3bodyV0 = true;
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          if (!isTrue3bodyV0) {
-            continue;
-          } // save time
-
-          registry.fill(HIST("hV0Counter"), 0.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 0.5);
-          }
-
-          int nCand = fitter.process(Track0, Track1);
-          if (nCand == 0) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 1.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 1.5);
-          }
-          // validate V0 radial position
-          // First check closeness to the beam-line as same as SVertexer
-          const auto& v0XYZ = fitter.getPCACandidate();
-          float dxv0 = v0XYZ[0] - mMeanVertex.getX(), dyv0 = v0XYZ[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
-          if (r2v0 < minR2ToMeanVertex) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 2.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 2.5);
-          }
-
-          float rv0 = std::sqrt(r2v0);
-          // Not involved: Get minR with same way in SVertexer
-          // float Track0minR =  RecoDecay::sqrtSumOfSquares(t0.x(),  t0.y()), Track1minR =  RecoDecay::sqrtSumOfSquares(t1.x(),  t1.y());
-          // float drv0P = rv0 - Track0minR, drv0N = rv0 - Track1minR;
-          // if (drv0P > causalityRTolerance || drv0P < -maxV0ToProngsRDiff ||
-          //     drv0N > causalityRTolerance || drv0N < -maxV0ToProngsRDiff) {
-          //     continue;
-          // }
-          registry.fill(HIST("hV0Counter"), 3.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 3.5);
-          }
-
-          // the process function should finish the propagation
-          if (!fitter.isPropagateTracksToVertexDone() && !fitter.propagateTracksToVertex()) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 4.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 4.5);
-          }
-
-          int cand = 0;
-          auto& trPProp = fitter.getTrack(0, cand);
-          auto& trNProp = fitter.getTrack(1, cand);
-          std::array<float, 3> pP, pN;
-          trPProp.getPxPyPzGlo(pP);
-          trNProp.getPxPyPzGlo(pN);
-          // estimate DCA of neutral V0 track to beamline: straight line with parametric equation
-          // x = X0 + pV0[0]*t, y = Y0 + pV0[1]*t reaches DCA to beamline (Xv, Yv) at
-          // t = -[ (x0-Xv)*pV0[0] + (y0-Yv)*pV0[1]) ] / ( pT(pV0)^2 )
-          // Similar equation for 3D distance involving pV0[2]
-          std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
-          float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
-          if (pt2V0 < minPt2V0) { // pt cut
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 5.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 5.5);
-          }
-
-          if (pV0[2] * pV0[2] / pt2V0 > maxTgl2V0) { // tgLambda cut
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 6.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 6.5);
-          }
-          float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
-          // apply mass selections
-          float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
-          float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
-          float massMargin = 20 * (0.001 * (1. + 0.5 * ptV0)) + 0.07;
-          if (massV0LambdaHyp - o2::constants::physics::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::physics::MassLambda > massMargin) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 7.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 7.5);
-          }
-
-          float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
-          float cosPAXY = prodXYv0 / std::sqrt(r2v0 * pt2V0);
-          if (dca2 > maxDCAXY2ToMeanVertex3bodyV0 || cosPAXY < minCosPAXYMeanVertex3bodyV0) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 8.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 8.5);
-          }
-
-          float dx = v0XYZ[0] - collision.posX(), dy = v0XYZ[1] - collision.posY(), dz = v0XYZ[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
-          float cosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
-          if (cosPA < minCosPA3bodyV0) {
-            continue;
-          }
-          registry.fill(HIST("hV0Counter"), 9.5);
-          if (isTrue3bodyV0) {
-            registry.fill(HIST("hTrueV0Counter"), 9.5);
-          }
-
-          for (auto& t2id : goodtracks) {
-            if (t2id.globalIndex() == t0id.globalIndex()) {
-              continue; // skip the track used by V0
-            }
-            auto t2 = t2id.goodTrack_as<FullTracksExtMCIU>();
-            auto track0 = getTrackParCov(t0);
-            auto track1 = getTrackParCov(t1);
-            auto bach = getTrackParCov(t2);
-
-            bool isTrue3bodyVtx = false;
-            if (t0.has_mcParticle() && t1.has_mcParticle() && t2.has_mcParticle()) {
-              auto t0mc = t0.mcParticle_as<aod::McParticles>();
-              auto t1mc = t1.mcParticle_as<aod::McParticles>();
-              auto t2mc = t2.mcParticle_as<aod::McParticles>();
-              if ((t0mc.pdgCode() == 2212 && t1mc.pdgCode() == -211 && t2mc.pdgCode() == 1000010020) || (t0mc.pdgCode() == 211 && t1mc.pdgCode() == -2212 && t2mc.pdgCode() == -1000010020)) {
-                if (t0mc.has_mothers() && t1mc.has_mothers() && t2mc.has_mothers()) {
-                  for (auto& t0mother : t0mc.mothers_as<aod::McParticles>()) {
-                    for (auto& t1mother : t1mc.mothers_as<aod::McParticles>()) {
-                      for (auto& t2mother : t2mc.mothers_as<aod::McParticles>()) {
-                        if (t0mother.globalIndex() == t1mother.globalIndex() && t0mother.globalIndex() == t2mother.globalIndex() && std::abs(t0mother.pdgCode()) == 1010010030) {
-                          isTrue3bodyVtx = true;
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            // if (!isTrue3bodyVtx){ continue;} // save time
-            registry.fill(HIST("hVtx3BodyCounter"), 0.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 0.5);
-            }
-
-            if (bach.getPt() < 0.6) {
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 1.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 1.5);
-            }
-
-            int n3bodyVtx = fitter3body.process(track0, track1, bach);
-            if (n3bodyVtx == 0) { // discard this pair
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 2.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 2.5);
-            }
-
-            int cand3B = 0;
-            const auto& vertexXYZ = fitter3body.getPCACandidatePos(cand3B);
-            // make sure the cascade radius is smaller than that of the vertex
-            float dxc = vertexXYZ[0] - collision.posX(), dyc = vertexXYZ[1] - collision.posY(), dzc = vertexXYZ[2] - collision.posZ(), r2vertex = dxc * dxc + dyc * dyc;
-            if (std::abs(rv0 - std::sqrt(r2vertex)) > maxRDiff3bodyV0 || r2vertex < minR2ToMeanVertex) {
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 3.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 3.5);
-            }
-
-            // Not involved: bach.minR - rveretx check
-            registry.fill(HIST("hVtx3BodyCounter"), 4.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 4.5);
-            }
-
-            if (!fitter3body.isPropagateTracksToVertexDone() && !fitter3body.propagateTracksToVertex()) {
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 5.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 5.5);
-            }
-
-            auto& tr0 = fitter3body.getTrack(0, cand3B);
-            auto& tr1 = fitter3body.getTrack(1, cand3B);
-            auto& tr2 = fitter3body.getTrack(2, cand3B);
-            std::array<float, 3> p0, p1, p2;
-            tr0.getPxPyPzGlo(p0);
-            tr1.getPxPyPzGlo(p1);
-            tr2.getPxPyPzGlo(p2);
-            std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
-
-            float pt2 = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2 + p3B[2] * p3B[2];
-            if (pt2 < minPt23Body) { // pt cut
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 6.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 6.5);
-            }
-
-            if (p3B[2] * p3B[2] / pt2 > maxTgl23Body) { // tgLambda cut
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 7.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 7.5);
-            }
-
-            float cosPA = (p3B[0] * dxc + p3B[1] * dyc + p3B[2] * dzc) / std::sqrt(p2candidate * (r2vertex + dzc * dzc));
-            if (cosPA < minCosPA3body) {
-              continue;
-            }
-            registry.fill(HIST("hVtx3BodyCounter"), 8.5);
-            if (isTrue3bodyVtx) {
-              registry.fill(HIST("hTrueVtx3BodyCounter"), 8.5);
-            }
-
-            //  Not involved: H3L DCA Check
-            vtx3bodydata(
-              t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 0,
-              vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
-              p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
-              fitter3body.getChi2AtPCACandidate(),
-              t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
-          }
-        }
-      }
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, v0s, 6);
+      VirtualLambdaCheck<FullTracksExtMCIU>(collision, fullv0s, 9);
+      DecayFinderMC<FullTracksExtMCIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC check", false);
+  PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredMC, "Produce StoredVtx3BodyDatas with MC using CFtriggers", false);
 };
 
 struct hypertriton3bodyLabelBuilder {
@@ -920,7 +1037,7 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());

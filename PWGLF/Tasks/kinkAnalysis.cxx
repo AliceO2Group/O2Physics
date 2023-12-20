@@ -392,11 +392,16 @@ struct kinkAnalysis {
       } else {
         for (const auto& ambTrack : ambiTracks) {
           if (ambTrack.trackId() == track.globalIndex()) {
+            if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+              globalBCvector.push_back(-1);
+              break;
+            }
             globalBCvector.push_back(ambTrack.bc().begin().globalBC());
             break;
           }
         }
       }
+
       if (std::abs(track.eta()) < 0.8) {
         if (track.hasITS() && !track.hasTPC() && !track.hasTOF() && track.itsNCls() < 6 && track.itsNClsInnerBarrel() == 3 && track.itsChi2NCl() < 4) {
           selected[index] = 1;
@@ -734,12 +739,6 @@ struct kinkAnalysis {
               neutronE = sqrt(mNeutralDaughter * mNeutralDaughter + pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
-
-              // 28/9/2023
-              Printf("reco mother sign = %d, reco daughter sign = %d", trackM.sign(), trackDgh.sign());
-              Printf("reco mother pdg = %d, reco daughter pdg = %d", motherPdg, daughterPdg);
-
-              // end
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {

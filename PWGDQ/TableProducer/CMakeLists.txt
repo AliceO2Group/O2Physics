@@ -23,3 +23,8 @@ o2physics_add_dpl_workflow(table-maker-jpsi-hf
                     SOURCES tableMakerJpsiHf.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(table-maker-muon-mch-trk-eff
+                    SOURCES tableMakerMuonMchTrkEfficiency.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)

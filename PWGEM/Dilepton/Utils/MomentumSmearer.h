@@ -56,35 +56,35 @@ class MomentumSmearer
     // Get Resolution map
     TFile* fFile = TFile::Open(fResFileName);
     if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", fResFileName);
+      LOGP(error, "Could not open Resolution file {}", fResFileName.Data());
       return;
     }
     TObjArray* ArrResoPt = nullptr;
     if (fFile->GetListOfKeys()->Contains(fResPtHistName)) {
       ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(fResPtHistName));
     } else {
-      LOGP(error, "Could not open {} from file {}", fResPtHistName, fResFileName);
+      LOGP(error, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
     }
 
     TObjArray* ArrResoEta = nullptr;
     if (fFile->GetListOfKeys()->Contains(fResEtaHistName)) {
       ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(fResEtaHistName));
     } else {
-      LOGP(error, "Could not open {} from file {}", fResEtaHistName, fResFileName);
+      LOGP(error, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
     }
 
     TObjArray* ArrResoPhi_Pos = nullptr;
     if (fFile->GetListOfKeys()->Contains(TString(fResPhiPosHistName))) {
       ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiPosHistName));
     } else {
-      LOGP(error, "Could not open {} from file {}", fResPhiPosHistName, fResFileName);
+      LOGP(error, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
     }
 
     TObjArray* ArrResoPhi_Neg = nullptr;
     if (fFile->GetListOfKeys()->Contains(TString(fResPhiNegHistName))) {
       ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiNegHistName));
     } else {
-      LOGP(error, "Could not open {} from file {}", fResPhiNegHistName, fResFileName);
+      LOGP(error, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
     }
 
     fArrResoPt = ArrResoPt;

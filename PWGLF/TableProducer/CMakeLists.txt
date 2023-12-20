@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(QC)
+
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
@@ -16,13 +18,14 @@ o2physics_add_dpl_workflow(tpcpid
                     COMPONENT_NAME Analysis)
 
 # Strangeness
+
 o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdakzerolabelbuilder
-                    SOURCES lambdakzerolabelbuilder.cxx
+o2physics_add_dpl_workflow(lambdakzeromcbuilder
+                    SOURCES lambdakzeromcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -36,8 +39,8 @@ o2physics_add_dpl_workflow(lambdakzeromcfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdakzerotofpid
-                    SOURCES lambdakzerotofpid.cxx
+o2physics_add_dpl_workflow(lambdakzeropid
+                    SOURCES lambdakzeropid.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
@@ -46,8 +49,8 @@ o2physics_add_dpl_workflow(cascadebuilder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadelabelbuilder
-                    SOURCES cascadelabelbuilder.cxx
+o2physics_add_dpl_workflow(cascademcbuilder
+                    SOURCES cascademcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -59,6 +62,16 @@ o2physics_add_dpl_workflow(cascadefinder
 o2physics_add_dpl_workflow(cascademcfinder
                     SOURCES cascademcfinder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadepid
+                    SOURCES cascadepid.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangederivedbuilder
+                    SOURCES strangederivedbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hstrangecorrelationfilter
@@ -126,6 +139,11 @@ o2physics_add_dpl_workflow(f1protoninitializer
 
 o2physics_add_dpl_workflow(filterf1proton
                     SOURCES filterf1proton.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f1protonreducedtable
+                    SOURCES f1protonreducedtable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 

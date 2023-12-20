@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include <TDatabasePDG.h> // FIXME
+
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
@@ -533,7 +535,7 @@ std::array<cutContainerType, 5>
   cutContainerType output = 0;
   size_t counter = 0;
 
-  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
+  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass(); // FIXME: Get from the common header
   auto lambdaMassHypothesis = phi.mLambda();
   auto antiLambdaMassHypothesis = phi.mAntiLambda();
   auto diffLambda = abs(lambdaMassNominal - lambdaMassHypothesis);
@@ -623,8 +625,8 @@ void FemtoUniversePhiSelection::fillQA(C const& col, V const& phi, T const& posT
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;
     TLorentzVector part2Vec;
-    float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();
-    float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+    float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
+    float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
 
     part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);
     part2Vec.SetPtEtaPhiM(negTrack.pt(), negTrack.eta(), negTrack.phi(), mMassTwo);

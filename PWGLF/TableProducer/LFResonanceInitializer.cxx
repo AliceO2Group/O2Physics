@@ -168,7 +168,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
@@ -233,7 +233,7 @@ struct reso2initializer {
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
+    if (v0.v0cosPA() < cMinV0CosPA)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
@@ -418,26 +418,6 @@ struct reso2initializer {
     for (auto& track : tracks) {
       if (!IsTrackSelected<isMC>(collision, track))
         continue;
-      // Add PID selection criteria here
-      uint8_t tpcPIDselections = 0;
-      uint8_t tofPIDselections = 0;
-      // TPC PID
-      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kPion;
-      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kKaon;
-      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections |= aod::resodaughter::PDGtype::kProton;
-      // TOF PID
-      if (track.hasTOF()) {
-        tofPIDselections |= aod::resodaughter::PDGtype::kHasTOF;
-        if (std::abs(track.tofNSigmaPi()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kPion;
-        if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kKaon;
-        if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kProton;
-      }
       reso2trks(resoCollisions.lastIndex(),
                 track.pt(),
                 track.px(),
@@ -451,8 +431,7 @@ struct reso2initializer {
                 track.dcaZ(),
                 track.x(),
                 track.alpha(),
-                tpcPIDselections,
-                tofPIDselections,
+                track.hasTOF(),
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),
                 track.tpcNSigmaPr(),
@@ -492,8 +471,14 @@ struct reso2initializer {
                v0.eta(),
                v0.phi(),
                childIDs,
-               v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-               v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
+               v0.v0cosPA(),
+               v0.dcaV0daughters(),
+               v0.dcapostopv(),
+               v0.dcanegtopv(),
+               v0.dcav0topv(),
+               v0.mLambda(),
+               v0.mAntiLambda(),
+               v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {
         fillMCV0(v0);
@@ -521,7 +506,15 @@ struct reso2initializer {
                     childIDs,
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    casc.dcaV0daughters(), casc.dcacascdaughters(), casc.mXi(),
+                    casc.dcaV0daughters(),
+                    casc.dcacascdaughters(),
+                    casc.dcapostopv(),
+                    casc.dcanegtopv(),
+                    casc.dcabachtopv(),
+                    casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                    casc.dcaXYCascToPV(),
+                    casc.dcaZCascToPV(),
+                    casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if constexpr (isMC) {
         fillMCCascade(casc);

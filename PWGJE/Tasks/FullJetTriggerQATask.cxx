@@ -11,7 +11,7 @@
 
 // jet trigger QA task
 //
-// Author: Gijs van Weelden
+/// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 #include <bitset>
 #include <utility>
@@ -29,6 +29,7 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "EventFiltering/filterTables.h"
 
@@ -37,10 +38,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetTriggerQA {
-  using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
-  using collisionWithTrigger = soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator;
+  using collisionWithTrigger = soa::Join<aod::JCollisions, aod::JFullTrigSels>::iterator;
 
   enum TriggerType_t {
     kMinBias,
@@ -159,7 +160,7 @@ struct JetTriggerQA {
     histProcessed->GetXaxis()->SetBinLabel(15, "Selected Gamma very low DCAL");
 
     std::array<std::string, TriggerType_t::kNTriggers> triggerlabels = {{"MB", "EMC Any", "EMC MB", "EMC jet full high", "EMC jet full low", "EMC jet neutral high", "EMC jet neutral low", "EMC gamma very high", "DCL gamma very high", "EMC gamma high", "DCL gamma high", "EMC gamma low", "DCL gamma low", "EMC gamma very low", "DCL gamma very low"}};
-    registry.add("hTriggerCorrelation", "Correlation between EMCAL triggers", HistType::kTH2D, {{TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Main trigger"}, {TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Associated trigger"}});
+    registry.add("hTriggerCorrelation", "Correlation between EMCAL triggers", HistType::kTH2D, {{TriggerType_t::kNTriggers, -0.5, (double)TriggerType_t::kNTriggers - 0.5, "Main trigger"}, {TriggerType_t::kNTriggers, -0.5, (double)TriggerType_t::kNTriggers - 0.5, "Associated trigger"}});
     auto triggerCorrelation = registry.get<TH2>(HIST("hTriggerCorrelation"));
     for (std::size_t triggertype = 0; triggertype < TriggerType_t::kNTriggers; triggertype++) {
       triggerCorrelation->GetXaxis()->SetBinLabel(triggertype + 1, triggerlabels[triggertype].data());
@@ -323,7 +324,7 @@ struct JetTriggerQA {
   } // init
 
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusDef);
 
   double check_dphi(double dphi) const
   {
@@ -543,7 +544,7 @@ struct JetTriggerQA {
   }
 
   template <typename JetCollection>
-  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, aod::Tracks const& tracks, selectedClusters const& clusters, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hwtrg, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
+  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, aod::JTracks const& tracks, selectedClusters const& clusters, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hwtrg, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
   {
     auto isTrigger = [&triggerstatus](TriggerType_t triggertype) -> bool {
       return triggerstatus.test(triggertype);
@@ -567,7 +568,7 @@ struct JetTriggerQA {
       // This gives us access to all jet substructure information
       // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
       // for (const auto& trackList : tracksInJet) {
-      for (auto& track : jet.template tracks_as<aod::Tracks>()) {
+      for (auto& track : jet.template tracks_as<aod::JTracks>()) {
         auto trackPt = track.pt();
         auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());
@@ -646,10 +647,12 @@ struct JetTriggerQA {
     return std::make_pair(vecMaxJet, vecMaxJetNoFiducial);
   }
 
+  using JetCollisionsTable = soa::Join<aod::JCollisions, aod::JFullTrigSels>;
+
   template <typename JetCollection>
   void runQA(collisionWithTrigger const& collision,
              JetCollection const& jets,
-             aod::Tracks const& tracks,
+             aod::JTracks const& tracks,
              selectedClusters const& clusters)
   {
     std::bitset<TriggerType_t::kNTriggers> triggerstatus;
@@ -680,56 +683,60 @@ struct JetTriggerQA {
     }
 
     // fill event counters and correlation matrix without constraint on the EMCAL trigger flag
-    if (collision.alias_bit(kTVXinEMC)) {
+    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
       fillEventSelectionCounter(2);
       setTrigger(TriggerType_t::kEmcalMB);
     }
 
-    if (collision.hasJetFullHighPt()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::fullHigh)) {
       fillEventSelectionCounter(3);
       setTrigger(TriggerType_t::kEmcalJetFull);
     }
-    if (collision.hasJetFullLowPt()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::fullLow)) {
       fillEventSelectionCounter(4);
       setTrigger(TriggerType_t::kEmcalJetFullLow);
     }
-    if (collision.hasJetNeutralHighPt()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::neutralHigh)) {
       fillEventSelectionCounter(5);
       setTrigger(TriggerType_t::kEmcalJetNeutral);
     }
-    if (collision.hasJetNeutralLowPt()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::neutralLow)) {
       fillEventSelectionCounter(6);
       setTrigger(TriggerType_t::kEmcalJetNeutralLow);
     }
-    if (collision.hasGammaVeryHighPtEMCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::neutralLow)) {
+      fillEventSelectionCounter(6);
+      setTrigger(TriggerType_t::kEmcalJetNeutralLow);
+    }
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaVeryHighEMCAL)) {
       fillEventSelectionCounter(7);
       setTrigger(TriggerType_t::kEmcalGammaVeryHigh);
     }
-    if (collision.hasGammaVeryHighPtDCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaVeryHighDCAL)) {
       fillEventSelectionCounter(8);
       setTrigger(TriggerType_t::kDcalGammaVeryHigh);
     }
-    if (collision.hasGammaHighPtEMCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaHighEMCAL)) {
       fillEventSelectionCounter(9);
       setTrigger(TriggerType_t::kEmcalGammaHigh);
     }
-    if (collision.hasGammaHighPtDCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaHighDCAL)) {
       fillEventSelectionCounter(10);
       setTrigger(TriggerType_t::kDcalGammaHigh);
     }
-    if (collision.hasGammaLowPtEMCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaLowEMCAL)) {
       fillEventSelectionCounter(11);
       setTrigger(TriggerType_t::kEmcalGammaLow);
     }
-    if (collision.hasGammaLowPtDCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaLowDCAL)) {
       fillEventSelectionCounter(12);
       setTrigger(TriggerType_t::kDcalGammaLow);
     }
-    if (collision.hasGammaVeryLowPtEMCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaVeryLowEMCAL)) {
       fillEventSelectionCounter(13);
       setTrigger(TriggerType_t::kEmcalGammaVeryLow);
     }
-    if (collision.hasGammaVeryLowPtDCAL()) {
+    if (JetDerivedDataUtilities::selectFullTrigger(collision, JetDerivedDataUtilities::JTrigSelFull::gammaVeryLowDCAL)) {
       fillEventSelectionCounter(14);
       setTrigger(TriggerType_t::kDcalGammaVeryLow);
     }
@@ -823,7 +830,7 @@ struct JetTriggerQA {
 
   void processFullJets(collisionWithTrigger const& collision,
                        fullJetInfos const& jets,
-                       aod::Tracks const& tracks,
+                       aod::JTracks const& tracks,
                        selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);
@@ -832,7 +839,7 @@ struct JetTriggerQA {
 
   void processNeutralJets(collisionWithTrigger const& collision,
                           neutralJetInfos const& jets,
-                          aod::Tracks const& tracks,
+                          aod::JTracks const& tracks,
                           selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);

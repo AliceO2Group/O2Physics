@@ -18,19 +18,25 @@
 Configurable<string> cfTaskName{
   "cfTaskName", "Default task name",
   "set task name - use eventually to determine weights for this task"};
-Configurable<string> cfRunNumber{
-  "cfRunNumber", "Some run number",
-  "set run number - TBI temporarily here, this shall be eventually "
-  "automatically obtained from e.g. collision.bc().runNumber()"};
 Configurable<bool> cfVerbose{
   "cfVerbose", false,
   "run or not in verbose mode (but not for function calls per particle)"};
 Configurable<bool> cfVerboseForEachParticle{
   "cfVerboseForEachParticle", false,
   "run or not in verbose mode (also for function calls per particle)"};
+Configurable<bool> cfDoAdditionalInsanityChecks{
+  "cfDoAdditionalInsanityChecks", false,
+  "do additional insanity checks at run time (this leads to small loss of performance)"};
 Configurable<bool> cfUseCCDB{
   "cfUseCCDB", true,
   "access personal files from CCDB or from home dir in AliEn"};
+Configurable<string> cfWhatToProcess{
+  "cfWhatToProcess", "Rec",
+  "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated"};
+
+// Correlations:
+Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false,
+                                           "calculate or not correlations"};
 
 // Test0:
 Configurable<bool> cfCalculateTest0{"cfCalculateTest0", false,
@@ -87,6 +93,12 @@ Configurable<int> cNContributors_min{
   "minimum number of vertex contributors (set to -1 to ignore)"};
 Configurable<int> cNContributors_max{"cNContributors_max", 1000000000,
                                      "maximum number of vertex contributors"};
+
+Configurable<int> cImpactParameter_min{
+  "cImpactParameter_min", -1,
+  "minimum value of impact parameter (can be used only for sim) (set to -1 to ignore)"};
+Configurable<int> cImpactParameter_max{"cImpactParameter_max", 1000000000,
+                                       "maximum value of impact parameter (can be used only for sim)"};
 
 // Particle cuts:
 Configurable<float> pt_min{"pt_min", 0.2, "minimum track pt value [GeV/c]"};

@@ -54,9 +54,9 @@ class DGSelector
     // forward tracks
     LOGF(debug, "FwdTracks %i", fwdtracks.size());
     if (!diffCuts.withFwdTracks()) {
-      // only consider tracks with MID (good timing)
       for (auto& fwdtrack : fwdtracks) {
         LOGF(info, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
+        // only consider tracks with MID (good timing)
         if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
           return 2;
         }
@@ -158,12 +158,14 @@ class DGSelector
     }
 
     // no activity in muon arm
-    LOGF(debug, "FwdTracks %i", fwdtracks.size());
-    for (auto& fwdtrack : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
-    }
-    if (fwdtracks.size() > 0) {
-      return 2;
+    if (!diffCuts.withFwdTracks()) {
+      for (auto& fwdtrack : fwdtracks) {
+        LOGF(info, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
+        // only consider tracks with MID (good timing)
+        if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
+          return 2;
+        }
+      }
     }
 
     // number of tracks

@@ -33,6 +33,7 @@
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
@@ -44,19 +45,30 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
+using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
+using MyMCV0Leg = MyMCV0Legs::iterator;
+
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEE = MyDalitzEEs::iterator;
+
+using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronMCLabels>;
+using MyMCElectron = MyMCElectrons::iterator;
+
 struct MaterialBudgetMC {
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
   Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
   Configurable<float> CentMax{"CentMax", 999, "max. centrality"};
   Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
 
-  Configurable<float> maxY{"maxY", 999.f, "maximum rapidity for generated particles"};
-  Configurable<std::string> fConfigTagPCMCuts{"cfgTagPCMCuts", "qc_ITSTPC", "Comma separated list of V0 photon cuts for tag"};
-  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "qc_ITSTPC,qc_TPConly,qc_ITSonly", "Comma separated list of V0 photon cuts for probe"};
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
+  Configurable<std::string> fConfigTagCuts{"cfgTagCuts", "mee_0_120_tpconly_lowB", "Comma separated list of Dalitz EE cuts for tag"};
+  Configurable<std::string> fConfigProbeCuts{"cfgProbeCuts", "qc,wwire_ib", "Comma separated list of V0 photon cuts for probe"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -65,19 +77,19 @@ struct MaterialBudgetMC {
   OutputObj<THashList> fOutputGen{"Generated"};
   THashList* fMainList = new THashList();
 
-  std::vector<V0PhotonCut> fTagPCMCuts;
-  std::vector<V0PhotonCut> fProbePCMCuts;
+  std::vector<DalitzEECut> fTagCuts;
+  std::vector<V0PhotonCut> fProbeCuts;
   std::vector<PairCut> fPairCuts;
 
   std::vector<std::string> fPairNames;
   void init(InitContext& context)
   {
     if (context.mOptions.get<bool>("processMBMC")) {
-      fPairNames.push_back("PCMPCM");
+      fPairNames.push_back("PCMDalitzEE");
     }
 
-    DefineTagPCMCuts();
-    DefineProbePCMCuts();
+    DefineTagCuts();
+    DefineProbeCuts();
     DefinePairCuts();
     addhistograms();
 
@@ -114,7 +126,7 @@ struct MaterialBudgetMC {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
+  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -131,7 +143,7 @@ struct MaterialBudgetMC {
     THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
 
     // for V0s
-    for (const auto& cut : fProbePCMCuts) {
+    for (const auto& cut : fProbeCuts) {
       const char* cutname = cut.GetName();
       THashList* list_v0_cut = o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
       o2::aod::emphotonhistograms::DefineHistograms(list_v0_cut, "material_budget_study", "V0");
@@ -146,8 +158,8 @@ struct MaterialBudgetMC {
 
       o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
 
-      if (pairname == "PCMPCM") {
-        add_pair_histograms(list_pair, pairname, fTagPCMCuts, fProbePCMCuts, fPairCuts);
+      if (pairname == "PCMDalitzEE") {
+        add_pair_histograms(list_pair, pairname, fTagCuts, fProbeCuts, fPairCuts);
       }
 
     } // end of pair name loop
@@ -158,32 +170,32 @@ struct MaterialBudgetMC {
     o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "ConversionStudy");
   }
 
-  void DefineTagPCMCuts()
+  void DefineTagCuts()
   {
-    TString cutNamesStr = fConfigTagPCMCuts.value;
+    TString cutNamesStr = fConfigTagCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fTagPCMCuts.push_back(*pcmcuts::GetCut(cutname));
+        fTagCuts.push_back(*dalitzeecuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of Tag PCM cuts = %d", fTagPCMCuts.size());
+    LOGF(info, "Number of Tag PCM cuts = %d", fTagCuts.size());
   }
 
-  void DefineProbePCMCuts()
+  void DefineProbeCuts()
   {
-    TString cutNamesStr = fConfigProbePCMCuts.value;
+    TString cutNamesStr = fConfigProbeCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fProbePCMCuts.push_back(*pcmcuts::GetCut(cutname));
+        fProbeCuts.push_back(*pcmcuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of Probe PCM cuts = %d", fProbePCMCuts.size());
+    LOGF(info, "Number of Probe PCM cuts = %d", fProbeCuts.size());
   }
 
   void DefinePairCuts()
@@ -201,11 +213,12 @@ struct MaterialBudgetMC {
   }
 
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
+  Preslice<MyDalitzEEs> perCollision_ee = aod::dalitzee::emreducedeventId;
 
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    return o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, MyMCV0Legs>(g1, g2, cut1, cut2);
+    return o2::aod::photonpair::IsSelectedPair<MyMCElectrons, MyMCV0Legs>(g1, g2, cut1, cut2);
   }
 
   template <typename TEvents, typename TPhotons, typename TPreslice, typename TCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
@@ -224,7 +237,7 @@ struct MaterialBudgetMC {
         continue;
       }
 
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
+      auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
       for (auto& cut : cuts) {
         for (auto& photon : photons_coll) {
 
@@ -236,11 +249,7 @@ struct MaterialBudgetMC {
           auto ele = photon.template negTrack_as<MyMCV0Legs>();
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
-
           int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-            photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
-          }
 
           bool is_photon_physical_primary = false;
           if (photonid > 0) {
@@ -251,10 +260,10 @@ struct MaterialBudgetMC {
             continue;
           }
 
-          float phi_cp = atan2(photon.recalculatedVtxY(), photon.recalculatedVtxX());
-          float eta_cp = std::atanh(photon.recalculatedVtxZ() / sqrt(pow(photon.recalculatedVtxX(), 2) + pow(photon.recalculatedVtxY(), 2) + pow(photon.recalculatedVtxZ(), 2)));
+          float phi_cp = atan2(photon.vy(), photon.vx());
+          float eta_cp = std::atanh(photon.vz() / sqrt(pow(photon.vx(), 2) + pow(photon.vy(), 2) + pow(photon.vz(), 2)));
           value[0] = photon.pt();
-          value[1] = photon.recalculatedVtxR();
+          value[1] = photon.v0radius();
           value[2] = phi_cp > 0 ? phi_cp : phi_cp + TMath::TwoPi();
           value[3] = eta_cp;
           reinterpret_cast<THnSparseF*>(list_v0->FindObject(cut.GetName())->FindObject("hs_conv_point"))->Fill(value);
@@ -265,8 +274,8 @@ struct MaterialBudgetMC {
     } // end of collision loop
   }
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
-  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const&)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TMCParticles, typename TMCEvents, typename TEMPrimaryElectrons>
+  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const&, TEMPrimaryElectrons const& emprimaryelectrons)
   {
     THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
@@ -292,22 +301,15 @@ struct MaterialBudgetMC {
 
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-      double value[9] = {0.f};
-      float phi_cp1 = 0.f, eta_cp1 = 0.f;
+      double value[6] = {0.f};
       float phi_cp2 = 0.f, eta_cp2 = 0.f;
       for (auto& cut1 : cuts1) {
         for (auto& cut2 : cuts2) {
-          // if (std::string(cut1.GetName()) == std::string(cut2.GetName())) {
-          //   continue;
-          // }
           for (auto& g1 : photons1_coll) {
             for (auto& g2 : photons2_coll) {
-              if (g1.globalIndex() == g2.globalIndex()) {
-                continue;
-              }
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
@@ -317,10 +319,13 @@ struct MaterialBudgetMC {
                   continue;
                 }
 
-                auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
-                auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
+                auto pos1 = g1.template posTrack_as<MyMCElectrons>();
+                auto ele1 = g1.template negTrack_as<MyMCElectrons>();
                 auto pos2 = g2.template posTrack_as<MyMCV0Legs>();
                 auto ele2 = g2.template negTrack_as<MyMCV0Legs>();
+                if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {
+                  continue;
+                }
 
                 auto pos1mc = pos1.template emmcparticle_as<aod::EMMCParticles>();
                 auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
@@ -328,24 +333,12 @@ struct MaterialBudgetMC {
                 auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
                 // LOGF(info,"pos1mc.globalIndex() = %d , ele1mc.globalIndex() = %d , pos2mc.globalIndex() = %d , ele2mc.globalIndex() = %d", pos1mc.globalIndex(), ele1mc.globalIndex(), pos2mc.globalIndex(), ele2mc.globalIndex());
 
-                int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
                 int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
-
-                if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-                }
-                if (photonid2 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, 11, -11, 22, mcparticles);
-                }
-
-                // LOGF(info,"photonid1 = %d , photonid2 = %d", photonid1, photonid2);
-                if (photonid1 < 0 || photonid2 < 0) {
+                if (photonid2 < 0) {
                   continue;
                 }
-
-                auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto g2mc = mcparticles.iteratorAt(photonid2);
-                int pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+                int pi0id = FindCommonMotherFrom3Prongs(g2mc, pos1mc, ele1mc, 22, -11, 11, 111, mcparticles);
 
                 bool is_pi0_physical_primary = false;
                 if (pi0id > 0) {
@@ -356,25 +349,18 @@ struct MaterialBudgetMC {
                   continue;
                 }
 
-                ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // tag
-                ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // probe
+                ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass()); // tag
+                ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);        // probe
                 ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-                phi_cp1 = atan2(g1.recalculatedVtxY(), g1.recalculatedVtxX());
-                eta_cp1 = std::atanh(g1.recalculatedVtxZ() / sqrt(pow(g1.recalculatedVtxX(), 2) + pow(g1.recalculatedVtxY(), 2) + pow(g1.recalculatedVtxZ(), 2)));
-                phi_cp2 = atan2(g2.recalculatedVtxY(), g2.recalculatedVtxX());
-                eta_cp2 = std::atanh(g2.recalculatedVtxZ() / sqrt(pow(g2.recalculatedVtxX(), 2) + pow(g2.recalculatedVtxY(), 2) + pow(g2.recalculatedVtxZ(), 2)));
+                phi_cp2 = atan2(g2.vy(), g2.vx());
+                eta_cp2 = std::atanh(g2.vz() / sqrt(pow(g2.vx(), 2) + pow(g2.vy(), 2) + pow(g2.vz(), 2)));
                 value[0] = v12.M();
                 value[1] = g1.pt();
-                value[2] = g1.recalculatedVtxR();
-                value[3] = phi_cp1 > 0.f ? phi_cp1 : phi_cp1 + TMath::TwoPi();
-                value[4] = eta_cp1;
-                value[5] = g2.pt();
-                value[6] = g2.recalculatedVtxR();
-                value[7] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
-                value[8] = eta_cp2;
-
+                value[2] = g2.pt();
+                value[3] = g2.v0radius();
+                value[4] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
+                value[5] = eta_cp2;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_same"))->Fill(value);
-
               } // end of pair cut loop
             }   // end of g2 loop
           }     // end of g1 loop
@@ -383,16 +369,16 @@ struct MaterialBudgetMC {
     }           // end of collision loop
   }
 
-  Partition<aod::EMReducedEvents> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
+  Partition<MyCollisions> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
 
-  void processMBMC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
+  void processMBMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions, MyDalitzEEs const& dielectrons, MyMCElectrons const& primaryelectrons)
   {
-    fillsinglephoton(grouped_collisions, v0photons, perCollision_pcm, fProbePCMCuts, legs, mcparticles, mccollisions);
-    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagPCMCuts, fProbePCMCuts, fPairCuts, legs, mcparticles, mccollisions);
+    fillsinglephoton(grouped_collisions, v0photons, perCollision_pcm, fProbeCuts, legs, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMDalitzEE>(grouped_collisions, dielectrons, v0photons, perCollision_ee, perCollision_pcm, fTagCuts, fProbeCuts, fPairCuts, legs, mcparticles, mccollisions, primaryelectrons);
   }
 
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(soa::Join<MyCollisions, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -445,10 +431,7 @@ struct MaterialBudgetMC {
     }
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision)
-  {
-    // do nothing
-  }
+  void processDummy(MyCollisions::iterator const& collision) {}
 
   PROCESS_SWITCH(MaterialBudgetMC, processMBMC, "process material budget", false);
   PROCESS_SWITCH(MaterialBudgetMC, processGen, "process generated information", false);

@@ -38,6 +38,13 @@
 /// - Energy distribution
 /// - Time distribution
 /// - Count rate in 2D representation
+
+using namespace o2;
+using namespace o2::framework;
+
+using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
+using mcAmpClusters = soa::Join<aod::CaloAmbiguousClusters, aod::PHOSAmbCluLabels>;
+
 struct phosCluQA {
 
   o2::framework::Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy for histograms."};
@@ -536,6 +543,423 @@ struct phosCluQA {
       }
     }
   }
+  PROCESS_SWITCH(phosCluQA, process, "Process real data", true);
+
+  void processMC(o2::aod::BCs const& bcs,
+                 o2::aod::Collisions const& colls,
+                 aod::McParticles const& mcParticles,
+                 mcClusters const& clusters,
+                 mcAmpClusters const& ambclusters,
+                 o2::aod::CPVClusters const& cpvs)
+  {
+    // Filll BC map
+    if (fillBCmap && bcs.begin() != bcs.end()) {
+      auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
+      constexpr int nBCsPerOrbit = 3564;
+      std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+      std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
+      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
+      for (int i = 0; i < nBCsPerOrbit; i++) {
+        if (bcPatternB[i])
+          mHistManager.fill(HIST("BCB"), i);
+        if (bcPatternA[i])
+          mHistManager.fill(HIST("BCA"), i);
+        if (bcPatternC[i])
+          mHistManager.fill(HIST("BCC"), i);
+      }
+      fillBCmap = false;
+    }
+
+    // If several collisions appear in BC, choose one with largers number of contributors
+    std::map<int64_t, int> colMap;
+    for (auto cl : colls) {
+      auto colbc = colMap.find(cl.bc().globalBC());
+      if (colbc == colMap.end()) { // single collision per BC
+        colMap[cl.bc().globalBC()] = 1;
+      } else { // not unique collision per BC
+        colbc->second++;
+      }
+    }
+    for (const auto& bc : bcs) {
+      o2::InteractionRecord eventIR;
+      eventIR.setFromLong(bc.globalBC());
+      mHistManager.fill(HIST("bcAll"), 1);
+      auto colbc = colMap.find(bc.globalBC());
+
+      if (colbc == colMap.end()) { // no Collision
+        mHistManager.fill(HIST("bcAll"), 2);
+      } else {
+        if (colbc->second == 1) {
+          mHistManager.fill(HIST("bcAll"), 3);
+        } else {
+          mHistManager.fill(HIST("bcAll"), 4);
+        }
+      }
+    }
+
+    std::map<uint64_t, int> ncpvClu;
+    for (const auto& cpvclu : cpvs) {
+      ncpvClu[cpvclu.bcId()]++;
+      o2::InteractionRecord ir;
+      ir.setFromLong(cpvclu.bc().globalBC());
+      mHistManager.fill(HIST("cpvBCAll"), ir.bc);
+    }
+    std::map<uint64_t, int> nphosClu;
+    for (const auto& clu : clusters) {
+      nphosClu[clu.collision().bcId()]++;
+    }
+    std::map<uint64_t, int> nphosAmbClu;
+    for (const auto& clu : ambclusters) {
+      nphosAmbClu[clu.bcId()]++;
+    }
+    for (const auto& [bcid, n] : ncpvClu) {
+      if (nphosClu.find(bcid) != nphosClu.end()) {
+        mHistManager.fill(HIST("cpvPhosEvents"), 0., n);
+      } else {
+        mHistManager.fill(HIST("cpvPhosEvents"), 1., n);
+      }
+    }
+    for (const auto& [bcid, n] : ncpvClu) {
+      if (nphosAmbClu.find(bcid) != nphosAmbClu.end()) {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 0., n);
+      } else {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 1., n);
+      }
+    }
+
+    for (const auto& [bcid, n] : nphosClu) {
+      if (ncpvClu.find(bcid) == ncpvClu.end()) {
+        mHistManager.fill(HIST("cpvPhosEvents"), 2., n);
+      }
+    }
+
+    for (const auto& [bcid, n] : nphosAmbClu) {
+      if (ncpvClu.find(bcid) == ncpvClu.end()) {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 2., n);
+      }
+    }
+
+    for (const auto& cpvclu : cpvs) {
+      int bcCPV = cpvclu.bcId();
+      mHistManager.fill(HIST("CPVSp"), cpvclu.amplitude(), cpvclu.moduleNumber());
+      if (cpvclu.amplitude() < mCpvMinE) {
+        continue;
+      }
+      mHistManager.fill(HIST("CPVOcc"), cpvclu.posX(), cpvclu.posZ(), cpvclu.moduleNumber());
+
+      // CPV-PHOS matching
+      int currentPHOSBc = 0;
+      double dist = 9999.;
+      double dphi = 0., dz = 0., eClose = 0;
+      for (const auto& clu : clusters) {
+        if (clu.mod() != cpvclu.moduleNumber()) {
+          continue;
+        }
+        int bcPHOS = clu.collision().bcId();
+        if (currentPHOSBc == 0) {
+          currentPHOSBc = bcPHOS;
+        }
+        if (bcPHOS != currentPHOSBc) {  // switched to new event
+          if (currentPHOSBc == bcCPV) { // Real
+            if (clu.mod() == 2) {
+              mHistManager.fill(HIST("CPVPHOSDistReMod2"), dphi, dz, eClose);
+            } else {
+              if (clu.mod() == 3) {
+                mHistManager.fill(HIST("CPVPHOSDistReMod3"), dphi, dz, eClose);
+              } else {
+                if (clu.mod() == 4) {
+                  mHistManager.fill(HIST("CPVPHOSDistReMod4"), dphi, dz, eClose);
+                }
+              }
+            }
+          } else {
+            if (clu.mod() == 2) {
+              mHistManager.fill(HIST("CPVPHOSDistMiMod2"), dphi, dz, eClose);
+            } else {
+              if (clu.mod() == 3) {
+                mHistManager.fill(HIST("CPVPHOSDistMiMod3"), dphi, dz, eClose);
+              } else {
+                if (clu.mod() == 4) {
+                  mHistManager.fill(HIST("CPVPHOSDistMiMod4"), dphi, dz, eClose);
+                }
+              }
+            }
+          }
+          currentPHOSBc = bcPHOS;
+          dist = 9999.;
+          dphi = 999.;
+          dz = 999.;
+        }
+        double dr2 = pow(clu.x() - cpvclu.posX(), 2) + pow(clu.z() - cpvclu.posZ(), 2);
+        if (dr2 < dist) {
+          dist = dr2;
+          dz = clu.z() - cpvclu.posZ();
+          dphi = clu.x() - cpvclu.posX();
+          eClose = clu.e();
+        }
+      } // phos clusters
+      // last event
+      if (currentPHOSBc == bcCPV) { // Real
+        if (cpvclu.moduleNumber() == 2) {
+          mHistManager.fill(HIST("CPVPHOSDistReMod2"), dphi, dz, eClose);
+        } else {
+          if (cpvclu.moduleNumber() == 3) {
+            mHistManager.fill(HIST("CPVPHOSDistReMod3"), dphi, dz, eClose);
+          } else {
+            if (cpvclu.moduleNumber() == 4) {
+              mHistManager.fill(HIST("CPVPHOSDistReMod4"), dphi, dz, eClose);
+            }
+          }
+        }
+      } else {
+        if (cpvclu.moduleNumber() == 2) {
+          mHistManager.fill(HIST("CPVPHOSDistMiMod2"), dphi, dz, eClose);
+        } else {
+          if (cpvclu.moduleNumber() == 3) {
+            mHistManager.fill(HIST("CPVPHOSDistMiMod3"), dphi, dz, eClose);
+          } else {
+            if (cpvclu.moduleNumber() == 4) {
+              mHistManager.fill(HIST("CPVPHOSDistMiMod4"), dphi, dz, eClose);
+            }
+          }
+        }
+      }
+    }
+
+    o2::InteractionRecord ir;
+    for (const auto& clu : clusters) {
+      ir.setFromLong(clu.collision().bc().globalBC());
+      mHistManager.fill(HIST("cluBCAll"), ir.bc);
+
+      //  auto mcList = clu.labels(); //const std::vector<int>
+      //  auto mcEdep = clu.amplitides() ; //const std::vector<float>&
+      //  // bool isPhoton = false;
+      //  float edep=0.;
+      //  if(mcList.size()){
+      //    auto mp = mcParticles.iteratorAt(mcList[0]);
+      //    int pdg = mp.pdgCode();
+      //    edep = mcEdep[0];
+      // LOG(info) << "indx="<< mcList[0]<< " Edp=" << edep << " pdg=" << pdg;
+
+      //  }
+
+      if (clu.mod() == 1) {
+        mHistManager.fill(HIST("cluSpM1"), clu.e());
+        mHistManager.fill(HIST("cluMultM1"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("cluETimeM1"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 2) {
+        mHistManager.fill(HIST("cluSpM2"), clu.e());
+        mHistManager.fill(HIST("cluMultM2"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("cluETimeM2"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 3) {
+        mHistManager.fill(HIST("cluSpM3"), clu.e());
+        mHistManager.fill(HIST("cluMultM3"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("cluETimeM3"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 4) {
+        mHistManager.fill(HIST("cluSpM4"), clu.e());
+        mHistManager.fill(HIST("cluMultM4"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("cluETimeM4"), clu.time(), clu.e());
+      }
+      if (clu.e() > mMinCluE) {
+        mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
+        mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
+      }
+    }
+    for (const auto& clu : ambclusters) {
+      ir.setFromLong(clu.bc().globalBC());
+      mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
+
+      if (clu.mod() == 1) {
+        mHistManager.fill(HIST("ambcluSpM1"), clu.e());
+        mHistManager.fill(HIST("ambcluMultM1"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("ambcluETimeM1"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 2) {
+        mHistManager.fill(HIST("ambcluSpM2"), clu.e());
+        mHistManager.fill(HIST("ambcluMultM2"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("ambcluETimeM2"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 3) {
+        mHistManager.fill(HIST("ambcluSpM3"), clu.e());
+        mHistManager.fill(HIST("ambcluMultM3"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("ambcluETimeM3"), clu.time(), clu.e());
+      }
+      if (clu.mod() == 4) {
+        mHistManager.fill(HIST("ambcluSpM4"), clu.e());
+        mHistManager.fill(HIST("ambcluMultM4"), clu.e(), clu.ncell());
+        mHistManager.fill(HIST("ambcluETimeM4"), clu.time(), clu.e());
+      }
+      if (clu.e() > mMinCluE) {
+        mHistManager.fill(HIST("ambcluOcc"), clu.x(), clu.z(), clu.mod());
+        mHistManager.fill(HIST("ambcluE"), clu.x(), clu.z(), clu.mod(), clu.e());
+      }
+    }
+
+    // inv mass
+    for (const auto& clu1 : clusters) {
+      auto clu2 = clu1;
+      ++clu2;
+      int nMix = 100; // Number of photons to mix
+      for (; clu2 != clusters.end() && nMix > 0; clu2++) {
+        double m = pow(clu1.e() + clu2.e(), 2) - pow(clu1.px() + clu2.px(), 2) -
+                   pow(clu1.py() + clu2.py(), 2) - pow(clu1.pz() + clu2.pz(), 2);
+        if (m > 0)
+          m = sqrt(m);
+        double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
+                         pow(clu1.py() + clu2.py(), 2));
+        if (clu1.collision() == clu2.collision()) { // Real
+          if (clu1.mod() == 1 && clu2.mod() == 1) {
+            mHistManager.fill(HIST("mggReM11"), m, pt);
+          }
+          if (clu1.mod() == 2 && clu2.mod() == 2) {
+            mHistManager.fill(HIST("mggReM22"), m, pt);
+          }
+          if (clu1.mod() == 3 && clu2.mod() == 3) {
+            mHistManager.fill(HIST("mggReM33"), m, pt);
+          }
+          if (clu1.mod() == 4 && clu2.mod() == 4) {
+            mHistManager.fill(HIST("mggReM44"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggReM12"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggReM13"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggReM14"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("mggReM23"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("mggReM24"), m, pt);
+          }
+          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
+            mHistManager.fill(HIST("mggReM34"), m, pt);
+          }
+        } else { // Mixed
+          --nMix;
+          if (clu1.mod() == 1 && clu2.mod() == 1) {
+            mHistManager.fill(HIST("mggMiM11"), m, pt);
+          }
+          if (clu1.mod() == 2 && clu2.mod() == 2) {
+            mHistManager.fill(HIST("mggMiM22"), m, pt);
+          }
+          if (clu1.mod() == 3 && clu2.mod() == 3) {
+            mHistManager.fill(HIST("mggMiM33"), m, pt);
+          }
+          if (clu1.mod() == 4 && clu2.mod() == 4) {
+            mHistManager.fill(HIST("mggMiM44"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggMiM12"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggMiM13"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("mggMiM14"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("mggMiM23"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("mggMiM24"), m, pt);
+          }
+          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
+            mHistManager.fill(HIST("mggMiM34"), m, pt);
+          }
+        }
+      }
+    }
+
+    // inv mass
+    for (const auto& clu1 : ambclusters) {
+      auto clu2 = clu1;
+      ++clu2;
+      int nMix = 100; // Number of photons to mix
+      for (; clu2 != ambclusters.end() && nMix > 0; clu2++) {
+        double m = pow(clu1.e() + clu2.e(), 2) - pow(clu1.px() + clu2.px(), 2) -
+                   pow(clu1.py() + clu2.py(), 2) - pow(clu1.pz() + clu2.pz(), 2);
+        if (m > 0)
+          m = sqrt(m);
+        double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
+                         pow(clu1.py() + clu2.py(), 2));
+        if (clu1.bc() == clu2.bc()) { // Real
+          if (clu1.mod() == 1 && clu2.mod() == 1) {
+            mHistManager.fill(HIST("ambmggReM11"), m, pt);
+          }
+          if (clu1.mod() == 2 && clu2.mod() == 2) {
+            mHistManager.fill(HIST("ambmggReM22"), m, pt);
+          }
+          if (clu1.mod() == 3 && clu2.mod() == 3) {
+            mHistManager.fill(HIST("ambmggReM33"), m, pt);
+          }
+          if (clu1.mod() == 4 && clu2.mod() == 4) {
+            mHistManager.fill(HIST("ambmggReM44"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggReM12"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggReM13"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggReM14"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("ambmggReM23"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("ambmggReM24"), m, pt);
+          }
+          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
+            mHistManager.fill(HIST("ambmggReM34"), m, pt);
+          }
+        } else { // Mixed
+          --nMix;
+          if (clu1.mod() == 1 && clu2.mod() == 1) {
+            mHistManager.fill(HIST("ambmggMiM11"), m, pt);
+          }
+          if (clu1.mod() == 2 && clu2.mod() == 2) {
+            mHistManager.fill(HIST("ambmggMiM22"), m, pt);
+          }
+          if (clu1.mod() == 3 && clu2.mod() == 3) {
+            mHistManager.fill(HIST("ambmggMiM33"), m, pt);
+          }
+          if (clu1.mod() == 4 && clu2.mod() == 4) {
+            mHistManager.fill(HIST("ambmggMiM44"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggMiM12"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggMiM13"), m, pt);
+          }
+          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
+            mHistManager.fill(HIST("ambmggMiM14"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("ambmggMiM23"), m, pt);
+          }
+          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
+            mHistManager.fill(HIST("ambmggMiM24"), m, pt);
+          }
+          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
+            mHistManager.fill(HIST("ambmggMiM34"), m, pt);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(phosCluQA, processMC, "Process MC data", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

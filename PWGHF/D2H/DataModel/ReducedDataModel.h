@@ -30,10 +30,6 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 namespace o2
 {
 namespace aod
@@ -151,9 +147,12 @@ using HfRedTracks = HfRedTracksExt;
 
 namespace hf_charm_cand_reduced
 {
-DECLARE_SOA_COLUMN(InvMass, invMass, float);           //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);       //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float); //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                   //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);               //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float);         //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);             //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);       //! ML score for prompt class
+DECLARE_SOA_COLUMN(MlScoreNonprompt, mlScoreNonprompt, float); //! ML score for non-prompt class
 } // namespace hf_charm_cand_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -174,6 +173,11 @@ DECLARE_SOA_TABLE(HfRed2ProngsCov, "AOD", "HFRED2PRONGSCOV", //! Table with 2pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(HfRed2ProngsMl, "AOD", "HFRED2PRONGML", //! Table with 2prong candidate ML scores
+                  hf_charm_cand_reduced::MlScoreBkg,
+                  hf_charm_cand_reduced::MlScorePrompt,
+                  hf_charm_cand_reduced::MlScoreNonprompt);
+
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
 // to call DECLARE_SOA_INDEX_COLUMN_FULL later on
 DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong candidate information for reduced workflow
@@ -192,15 +196,30 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<2>);
 
+DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
+                  hf_charm_cand_reduced::MlScoreBkg,
+                  hf_charm_cand_reduced::MlScorePrompt,
+                  hf_charm_cand_reduced::MlScoreNonprompt,
+                  o2::soa::Marker<1>);
+
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_b0_reduced
 
-DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG",
+DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daughter indices
                   hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores for the D+ daughter
+                  hf_cand_b0_reduced::Prong0MlScoreBkg,
+                  hf_cand_b0_reduced::Prong0MlScorePrompt,
+                  hf_cand_b0_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
 
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
@@ -261,7 +280,7 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
 // so we can use them in the B0 part
 namespace hf_cand_b0_config
 {
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t); //! Flag to filter selected D+ mesons
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t);    //! Flag to filter selected D+ mesons
 DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-width of the B0 invariant-mass window in GeV/c2
 } // namespace hf_cand_b0_config
 

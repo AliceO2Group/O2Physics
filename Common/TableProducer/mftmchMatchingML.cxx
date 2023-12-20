@@ -59,7 +59,7 @@ struct mftmchMatchingML {
   float chi2up = 1000000;
   float chi2MatchMCHMIDup = 1000000;
 
-  Filter etaFilter = ((etalow < aod::fwdtrack::eta) && (etaup < aod::fwdtrack::eta));
+  Filter etaFilter = ((etalow < aod::fwdtrack::eta) && (aod::fwdtrack::eta < etaup));
   Filter pDcaFilter = (((pDCAcutrAtBsorberEndlow1 < aod::fwdtrack::rAtAbsorberEnd) && (aod::fwdtrack::rAtAbsorberEnd < pDCAcutrAtBsorberEndup1) && (aod::fwdtrack::pDca < pDCAcutdcaup1)) || ((pDCAcutrAtBsorberEndlow2 < aod::fwdtrack::rAtAbsorberEnd) && (aod::fwdtrack::rAtAbsorberEnd < pDCAcutrAtBsorberEndup2) && (aod::fwdtrack::pDca < pDCAcutdcaup2)));
   Filter chi2Filter = (aod::fwdtrack::chi2 < chi2up);
   Filter chi2MatchFilter = (aod::fwdtrack::chi2MatchMCHMID < chi2MatchMCHMIDup);
@@ -68,6 +68,8 @@ struct mftmchMatchingML {
   Configurable<std::string> cfgModelDir{"ccdb-path", "Users/m/mooya/models", "base path to the ONNX models"};
   Configurable<std::string> cfgModelName{"ccdb-file", "model_LHC22o.onnx", "name of ONNX model file"};
   Configurable<float> cfgThrScore{"threshold-score", 0.5, "Threshold value for matching score"};
+  Configurable<int> cfgColWindow{"collision-window", 1, "Search window (collision ID) for MFT track"};
+  Configurable<float> cfgXYWindow{"XY-window", 3, "Search window (delta XY) for MFT track"};
 
   Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "model-explorer"};
   Ort::SessionOptions session_options;
@@ -159,7 +161,7 @@ struct mftmchMatchingML {
     std::vector<float> input_tensor_values;
     input_tensor_values = getVariables(fwdtrack, mfttrack);
 
-    if (input_tensor_values[8] < 3) {
+    if (input_tensor_values[8] < cfgXYWindow) {
       std::vector<Ort::Value> input_tensors;
       input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float>(input_tensor_values.data(), input_tensor_values.size(), input_shape));
 
@@ -199,26 +201,41 @@ struct mftmchMatchingML {
     }
   }
 
-  void process(aod::Collisions::iterator const& collision, soa::Filtered<aod::FwdTracks> const& fwdtracks, aod::MFTTracks const& mfttracks)
+  void process(aod::Collisions const& collisions, soa::Filtered<aod::FwdTracks> const& fwdtracks, aod::MFTTracks const& mfttracks)
   {
-    for (auto& [fwdtrack, mfttrack] : combinations(CombinationsFullIndexPolicy(fwdtracks, mfttracks))) {
-
+    for (auto& fwdtrack : fwdtracks) {
       if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-        double result = matchONNX(fwdtrack, mfttrack);
-        if (result > cfgThrScore) {
-          double mftchi2 = mfttrack.chi2();
-          SMatrix5 mftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-          std::vector<double> mftv1;
-          SMatrix55 mftcovs(mftv1.begin(), mftv1.end());
-          o2::track::TrackParCovFwd mftpars1{mfttrack.z(), mftpars, mftcovs, mftchi2};
-          mftpars1.propagateToZlinear(collision.posZ());
+        double bestscore = 0;
+        int bestmfttrackid = -1;
+        for (auto& mfttrack : mfttracks) {
+          if (fwdtrack.has_collision() && mfttrack.has_collision()) {
+            if (0 <= fwdtrack.collisionId() - mfttrack.collisionId() && fwdtrack.collisionId() - mfttrack.collisionId() < cfgColWindow) {
+              double result = matchONNX(fwdtrack, mfttrack);
+              if (result > cfgThrScore) {
+                bestscore = result;
+                bestmfttrackid = mfttrack.globalIndex();
+              }
+            }
+          }
+        }
+        if (bestmfttrackid != -1) {
+          for (auto& mfttrack : mfttracks) {
+            if (mfttrack.globalIndex() == bestmfttrackid) {
+              double mftchi2 = mfttrack.chi2();
+              SMatrix5 mftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+              std::vector<double> mftv1;
+              SMatrix55 mftcovs(mftv1.begin(), mftv1.end());
+              o2::track::TrackParCovFwd mftpars1{mfttrack.z(), mftpars, mftcovs, mftchi2};
+              mftpars1.propagateToZlinear(mfttrack.collision().posZ());
 
-          float dcaX = (mftpars1.getX() - collision.posX());
-          float dcaY = (mftpars1.getY() - collision.posY());
-          double px = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
-          double py = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
-          double pz = fwdtrack.p() * cos(M_PI / 2 - atan(mfttrack.tgl()));
-          fwdtrackml(fwdtrack.collisionId(), 0, mfttrack.x(), mfttrack.y(), mfttrack.z(), mfttrack.phi(), mfttrack.tgl(), fwdtrack.sign() / std::sqrt(std::pow(px, 2) + std::pow(py, 2)), fwdtrack.nClusters(), -1, -1, -1, -1, -1, result, mfttrack.globalIndex(), fwdtrack.globalIndex(), fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mfttrack.trackTime(), mfttrack.trackTimeRes(), mfttrack.eta(), std::sqrt(std::pow(px, 2) + std::pow(py, 2)), std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)), dcaX, dcaY);
+              float dcaX = (mftpars1.getX() - mfttrack.collision().posX());
+              float dcaY = (mftpars1.getY() - mfttrack.collision().posY());
+              double px = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
+              double py = fwdtrack.p() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
+              double pz = fwdtrack.p() * cos(M_PI / 2 - atan(mfttrack.tgl()));
+              fwdtrackml(fwdtrack.collisionId(), 0, mfttrack.x(), mfttrack.y(), mfttrack.z(), mfttrack.phi(), mfttrack.tgl(), fwdtrack.sign() / std::sqrt(std::pow(px, 2) + std::pow(py, 2)), fwdtrack.nClusters(), fwdtrack.pDca(), fwdtrack.rAtAbsorberEnd(), 0, 0, 0, bestscore, mfttrack.globalIndex(), fwdtrack.globalIndex(), fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mfttrack.trackTime(), mfttrack.trackTimeRes(), mfttrack.eta(), std::sqrt(std::pow(px, 2) + std::pow(py, 2)), std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)), dcaX, dcaY);
+            }
+          }
         }
       }
     }

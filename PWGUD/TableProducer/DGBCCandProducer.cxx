@@ -62,6 +62,9 @@ struct tracksWGTInBCs {
   void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
   {
     // run number
+    if (bcs.size() <= 0) {
+      return;
+    }
     int rnum = bcs.iteratorAt(0).runNumber();
 
     // container to sort tracks with good timing according to their matching/closest BC
@@ -73,7 +76,7 @@ struct tracksWGTInBCs {
     for (auto const& track : tracks) {
       registry.get<TH1>(HIST("barrel/Tracks"))->Fill(0., 1.);
 
-      // is this track aPV track?
+      // is this track a PV track?
       if (track.isPVContributor()) {
         registry.get<TH1>(HIST("barrel/Tracks"))->Fill(1., 1.);
       }
@@ -96,17 +99,23 @@ struct tracksWGTInBCs {
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
-          LOGF(debug, "Track time %f", track.trackTime());
+          LOGF(debug, "First compatible BC %d Track time %f", firstCompatibleBC, track.trackTime());
           closestBC = (uint64_t)(firstCompatibleBC +
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
+          if (!track.has_collision()) {
+            continue;
+          }
           auto collision = track.collision_as<CCs>();
+          if (!collision.has_foundBC()) {
+            continue;
+          }
           closestBC = collision.foundBC_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
-        LOGF(debug, "Closest BC %d", closestBC);
+        LOGF(debug, "Updating tracksInBCList with %d", closestBC);
         tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
       }
     }
@@ -129,8 +138,8 @@ struct tracksWGTInBCs {
           break;
         }
       }
-      tracksWGTInBCs(indBCToSave, rnum, tracksInBC.first, tracksInBC.second);
       LOGF(debug, " BC %i/%u with %i tracks with good timing", indBCToSave, tracksInBC.first, tracksInBC.second.size());
+      tracksWGTInBCs(indBCToSave, rnum, tracksInBC.first, tracksInBC.second);
     }
     LOGF(debug, "barrel done");
   }
@@ -142,6 +151,9 @@ struct tracksWGTInBCs {
   void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
     // run number
+    if (bcs.size() <= 0) {
+      return;
+    }
     int rnum = bcs.iteratorAt(0).runNumber();
 
     // container to sort forward tracks according to their matching/closest BC
@@ -176,11 +188,18 @@ struct tracksWGTInBCs {
                                  (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
+          if (!fwdTrack.has_collision()) {
+            continue;
+          }
           auto collision = fwdTrack.collision_as<CCs>();
-          closestBC = collision.bc_as<BCs>().globalBC();
+          if (!collision.has_foundBC()) {
+            continue;
+          }
+          closestBC = collision.foundBC_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
+        LOGF(debug, "Updating fwdTracksInBCList with %d", closestBC);
         fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
       }
     }
@@ -205,7 +224,7 @@ struct tracksWGTInBCs {
       fwdTracksWGTInBCs(indBCToSave, rnum, fwdTracksInBC.first, fwdTracksInBC.second);
       LOGF(debug, " BC %i/%u with %i forward tracks with good timing", indBCToSave, fwdTracksInBC.first, fwdTracksInBC.second.size());
     }
-    LOGF(debug, "fwd done");
+    LOGF(debug, "forward done");
   }
   PROCESS_SWITCH(tracksWGTInBCs, processForward, "Process forward tracks", false);
 
@@ -539,6 +558,7 @@ struct DGBCCandProducer {
         bcnum = tibc.bcnum();
       }
     }
+
     bool withCollision = false;
     while (bc2go || tibc2go) {
       LOGF(debug, "Testing bc %d/%d/%d", bcnum, bc.globalBC(), tibc.bcnum());

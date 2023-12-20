@@ -30,6 +30,7 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
@@ -37,13 +38,10 @@ using namespace o2::aod::hf_cand_2prong;
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
+using MyDileptonCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsInfo>;
+using MyDileptonCandidatesSelectedWithDca = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
-
-constexpr float cutsBdt[1][3] = {{1., 0., 0.}}; // background, prompt, nonprompt
-static const std::vector<std::string> labelsBdt = {"Background", "Prompt", "Nonprompt"};
-static const std::vector<std::string> labelsEmpty{};
 
 HfHelper hfHelper;
 
@@ -58,29 +56,27 @@ struct tableMakerJpsiHf {
   Produces<RedJpDmDmesBdts> redDmesBdts;
   Produces<RedJpDmD0Masss> redD0Masses;
   Produces<RedJpDmDileptons> redDileptons;
-
-  // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
-  Configurable<std::string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-  // comment: add list of subgroups (must define subgroups under )
-  Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
+  Produces<RedJpDmColCounts> redCollCounter;
 
   // HF configurables
   // cuts on BDT output scores to be applied only for the histograms
-  Configurable<LabeledArray<float>> bdtCutsForHistos{"bdtCutsForHistos", {cutsBdt[0], 1, 3, labelsEmpty, labelsBdt}, "Additional bdt cut values only for histograms"};
   Configurable<double> yCandDmesonMax{"yCandDmesonMax", -1., "max. cand. rapidity"};
   // DQ configurables
+  Configurable<std::string> dileptonDecayChannel{"dileptonDecayChannel", "JPsiToMuMu", "Dilepton decay channel (JPsiToMuMu/JPsiToEE)"};
   Configurable<double> massDileptonCandMin{"massDileptonCandMin", 1, "minimum dilepton mass"};
   Configurable<double> massDileptonCandMax{"massDileptonCandMax", 5, "maximum dilepton mass"};
   // General configurables
   Configurable<bool> configDebug{"configDebug", true, "If true, fill D0 - J/psi histograms separately"};
+  Configurable<bool> storeTableForNorm{"storeTableForNorm", true, "If true, store a table with number of processed collisions for normalisation"};
 
   SliceCache cache;
-  Partition<MyPairCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDileptonCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDileptonCandidatesSelectedWithDca> selectedDileptonCandidatesWithDca = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
   Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
   Partition<MyD0CandidatesSelectedWithBdt> selectedD0CandidatesWithBdt = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
 
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
-  Preslice<MyPairCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
+  Preslice<MyDileptonCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
 
   // Define histograms manager
   float* fValuesDileptonCharmHadron{};
@@ -94,22 +90,29 @@ struct tableMakerJpsiHf {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->AddHistClass("Dmeson");
+    fHistMan->AddHistClass("JPsi");
     fHistMan->AddHistClass("JPsiDmeson");
     dqhistograms::DefineHistograms(fHistMan, "Dmeson", "dilepton-charmhadron", "dmeson");
-    dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsi");
-    dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsidmeson");
+    if (dileptonDecayChannel.value == "JPsiToMuMu") {
+      dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsitomumu");
+      dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsitomumudmeson");
+    }
+    if (dileptonDecayChannel.value == "JPsiToEE") {
+      dqhistograms::DefineHistograms(fHistMan, "JPsi", "dilepton-charmhadron", "jpsitoee");
+      dqhistograms::DefineHistograms(fHistMan, "JPsiDmeson", "dilepton-charmhadron", "jpsitoeedmeson");
+    }
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
   // Template function to run pair - hadron combinations
   // TODO: generalise to all charm-hadron species
-  template <bool withBdt, typename TDqTrack, typename THfTrack>
+  template <bool withDca, bool withBdt, typename TDqTrack, typename THfTrack>
   void runDileptonDmeson(TDqTrack const& dileptons, THfTrack const& dmesons, MyEvents::iterator const& collision)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
 
-    std::vector<float> scores{-1., 2., 2.};
     bool isCollSel{false};
     if (configDebug) {
       for (auto& dmeson : dmesons) {
@@ -117,10 +120,18 @@ struct tableMakerJpsiHf {
           continue;
         }
 
+        std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
         if constexpr (withBdt) {
-          scores[0] = dmeson.mlProbD0()[0];
-          scores[1] = dmeson.mlProbD0()[1];
-          scores[2] = dmeson.mlProbD0()[2];
+          if (dmeson.mlProbD0().size() == 3) {
+            for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+              scores[iScore] = dmeson.mlProbD0()[iScore];
+            }
+          }
+          if (dmeson.mlProbD0bar().size() == 3) {
+            for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
+              scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+            }
+          }
         }
 
         auto rapD0 = hfHelper.yD0(dmeson);
@@ -129,17 +140,15 @@ struct tableMakerJpsiHf {
           continue;
         }
 
-        if (scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-          if (dmeson.isSelD0() >= 1) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-          }
-          if (dmeson.isSelD0bar() >= 1) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, fValuesDileptonCharmHadron);
-            fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
-            VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
-          }
+        if (dmeson.isSelD0() >= 1) {
+          VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
+          fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+          VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
+        }
+        if (dmeson.isSelD0bar() >= 1) {
+          VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
+          fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
+          VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
         }
       }
     }
@@ -147,13 +156,15 @@ struct tableMakerJpsiHf {
     // loop over dileptons
     for (auto dilepton : dileptons) {
       auto massJPsi = dilepton.mass();
+      bool isJPsiFilled{false};
 
       if (massJPsi < massDileptonCandMin || massJPsi > massDileptonCandMax) {
         continue;
       }
 
       if (configDebug) {
-        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsiToMuMu>(dilepton, hfHelper, fValuesDileptonCharmHadron);
+        float dummyScore{-999.f};
+        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsi>(dilepton, hfHelper, dummyScore, fValuesDileptonCharmHadron);
         fHistMan->FillHistClass("JPsi", fValuesDileptonCharmHadron);
         VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
       }
@@ -179,20 +190,39 @@ struct tableMakerJpsiHf {
             isCollSel = true;
           }
           auto indexRed = redCollisions.lastIndex();
-          redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.mass(), dilepton.sign(), dilepton.mcDecision(), dilepton.tauz(), dilepton.lz(), dilepton.lxy());
+          if (!isJPsiFilled) {
+            if constexpr (withDca) {
+              redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.mass(), dilepton.sign(), dilepton.mcDecision(), dilepton.tauz(), dilepton.lz(), dilepton.lxy());
+            } else {
+              redDileptons(indexRed, dilepton.px(), dilepton.py(), dilepton.pz(), dilepton.mass(), dilepton.sign(), dilepton.mcDecision(), 0, 0, 0);
+            }
+            isJPsiFilled = true;
+          }
           redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+          std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
           if constexpr (withBdt) {
-            auto scores = dmeson.mlProbD0();
-            redDmesBdts(scores[0], scores[1], scores[2]);
+            if (dmeson.mlProbD0().size() == 3) {
+              for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+                scores[iScore] = dmeson.mlProbD0()[iScore];
+              }
+            }
+            if (dmeson.mlProbD0bar().size() == 3) {
+              for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
+                scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+              }
+            }
+            redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
           }
 
-          if (dmeson.isSelD0() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+          if (dmeson.isSelD0() >= 1) {
+            massD0 = hfHelper.invMassD0ToPiK(dmeson);
+            VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
-          if (dmeson.isSelD0bar() >= 1 && scores[0] < bdtCutsForHistos->get(0u, 0u) && scores[1] > bdtCutsForHistos->get(0u, 1u) && scores[2] > bdtCutsForHistos->get(0u, 2u)) {
-            VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, fValuesDileptonCharmHadron);
+          if (dmeson.isSelD0bar() >= 1) {
+            massD0bar = hfHelper.invMassD0barToKPi(dmeson);
+            VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
@@ -203,26 +233,32 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi - D0
-  void processJspiD0(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
+  void processJspiD0(MyEvents const& collisions, MyDileptonCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
+    if (storeTableForNorm) {
+      redCollCounter(collisions.size());
+    }
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
-      runDileptonDmeson<false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0, "Process J/psi - D0", true);
 
   // process J/psi - D0 adding the BDT output scores to the D0 table
-  void processJspiD0WithBdt(MyEvents const& collisions, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
+  void processJspiD0WithBdt(MyEvents const& collisions, MyDileptonCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
   {
+    if (storeTableForNorm) {
+      redCollCounter(collisions.size());
+    }
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
-      runDileptonDmeson<true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-
-  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0, "Process J/psi - D0", true);
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0WithBdt, "Process J/psi - D0", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
