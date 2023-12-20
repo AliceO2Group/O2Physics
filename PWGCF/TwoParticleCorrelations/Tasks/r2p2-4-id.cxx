@@ -726,8 +726,9 @@ struct crossr2p24pik {
         } else if (track2.hasTOF()) {
           if ((fabs(track2.tpcNSigmaKa()) > tpccut) || (fabs(track2.tofNSigmaKa()) > tofcut))
             continue;
-        } else
+        } else {
           continue;
+        }
         //------------------------------------------------------------------------
 
         etabin2 = (track2.eta() + 0.8) * 15;
