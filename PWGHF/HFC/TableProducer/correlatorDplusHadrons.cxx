@@ -244,7 +244,7 @@ struct HfCorrelatorDplusHadrons {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     long int globalBcIndex = bc.globalIndex();
-    long int timeStamp = bc.timestamp(); 
+    long int timeStamp = bc.timestamp();
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -268,7 +268,7 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultiplicity"), nTracks);
 
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      int cntDplus = 0; 
+      int cntDplus = 0;
       for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
@@ -299,7 +299,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hY"), hfHelper.yDplus(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
         registry.fill(HIST("hDplusBin"), poolBin);
-        entryDplus(candidate1.phi(),candidate1.eta(),candidate1.pt(),hfHelper.invMassDplusToPiKPi(candidate1),poolBin,globalBcIndex,timeStamp);
+        entryDplus(candidate1.phi(), candidate1.eta(), candidate1.pt(), hfHelper.invMassDplusToPiKPi(candidate1), poolBin, globalBcIndex, timeStamp);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is a Dplus, search for Hadrons and evaluate correlations
         for (const auto& track : tracks) {
@@ -321,7 +321,8 @@ struct HfCorrelatorDplusHadrons {
                                candidate1.pt(),
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate1), 0);
-          if (cntDplus==0) entryHadron(track.phi(),track.eta(),track.pt(),poolBin,globalBcIndex,timeStamp);
+          if (cntDplus == 0)
+            entryHadron(track.phi(), track.eta(), track.pt(), poolBin, globalBcIndex, timeStamp);
         } // Hadron Tracks loop
         cntDplus++;
       }   // end outer Dplus loop
