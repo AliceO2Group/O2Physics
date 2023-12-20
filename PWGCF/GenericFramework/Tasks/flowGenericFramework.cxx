@@ -221,7 +221,7 @@ struct GenericFramework {
     fGFW->CreateRegions();
     TObjArray* oba = new TObjArray();
     AddConfigObjectsToObjArray(oba, corrconfigs);
-    if (doprocessReco || doprocessRawData || doprocessRun2) {
+    if (doprocessReco || doprocessData || doprocessRun2) {
       fFC->SetName("FlowContainer");
       fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
@@ -360,13 +360,9 @@ struct GenericFramework {
     return 1;
   }
 
-  Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
-  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgBinning->GetPtMin() && aod::track::pt < cfgBinning->GetPtMax() && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-
   enum datatype {
-    kRaw,
-    kDerived,
+    kData,
+    kDerivedData,
     kGen
   };
 
@@ -379,7 +375,7 @@ struct GenericFramework {
       return;
     float vtxz = collision.posZ();
     if (cfgFillQA)
-      QAregistry.fill(HIST("vtxZ"), vtxz);
+      (dt == kGen) ? QAregistry.fill(HIST("vtxZ_gen"), vtxz) : QAregistry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
@@ -404,13 +400,14 @@ struct GenericFramework {
       phi = mcParticle.phi();
       if (!mcParticle.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
         return;
+      if (cfgFillWeights)
+        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
       if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
         return;
+      registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
       QAregistry.fill(HIST("phi"), phi);
       QAregistry.fill(HIST("eta"), eta);
       QAregistry.fill(HIST("pt"), pt);
-      if (cfgFillWeights)
-        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       pt = track.pt();
       eta = track.eta();
@@ -426,15 +423,16 @@ struct GenericFramework {
       pt = track.pt();
       eta = track.eta();
       phi = track.phi();
+      if (cfgFillWeights)
+        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        return;
+      registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
       if (cfgFillQA) {
         QAregistry.fill(HIST("phi"), phi);
         QAregistry.fill(HIST("eta"), eta);
         QAregistry.fill(HIST("pt_dcaXY_dcaZ"), pt, track.dcaXY(), track.dcaZ());
       }
-      if (cfgFillWeights)
-        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
-      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
-        return;
     }
     bool WithinPtPOI = (ptpoilow < pt) && (pt < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < pt) && (pt < ptrefup); // within RF pT range
@@ -444,10 +442,13 @@ struct GenericFramework {
       fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
     if (WithinPtPOI && WithinPtRef)
       fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
-    registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
   }
 
-  void processRawData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
+  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgBinning->GetPtMin() && aod::track::pt < cfgBinning->GetPtMax() && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
+  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
     if (!collision.sel8())
       return;
@@ -458,9 +459,9 @@ struct GenericFramework {
     QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
-    processCollision<kRaw>(collision, tracks, centrality);
+    processCollision<kData>(collision, tracks, centrality);
   }
-  PROCESS_SWITCH(GenericFramework, processRawData, "Process analysis for derived data", true);
+  PROCESS_SWITCH(GenericFramework, processData, "Process analysis for non-derived data", true);
 
   Filter dcaFilter = nabs(aod::track::dcaXY) < cfgDCAxy;
   void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
@@ -470,16 +471,20 @@ struct GenericFramework {
     if (!collision.sel8())
       return;
     loadCorrections(bc.timestamp());
-    processCollision<kRaw>(collision, tracks, centrality);
+    processCollision<kData>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processReco, "Process analysis for MC reconstructed events", false);
 
-  void processGen(soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::McCollisionLabels>>::iterator const& collision, aod::McParticles const& particles)
+  Filter mcCollFilter = aod::mccollision::posZ < cfgBinning->GetVtxZmax() && aod::mccollision::posZ > cfgBinning->GetVtxZmin();
+  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
   {
-    if (collision.has_mcCollision()) {
-      float centrality = collision.centFT0C();
-      processCollision<kGen>(collision, particles, centrality);
+    if (collisions.size() != 1)
+      return;
+    float centrality = -1;
+    for (auto& collision : collisions) {
+      centrality = collision.centFT0C();
     }
+    processCollision<kGen>(mcCollision, particles, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processGen, "Process analysis for MC generated events", false);
 
@@ -494,7 +499,7 @@ struct GenericFramework {
     QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
-    processCollision<kRaw>(collision, tracks, centrality);
+    processCollision<kData>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };
