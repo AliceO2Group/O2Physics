@@ -617,14 +617,8 @@ struct straRecoStudy {
       return;
 
     auto bachPartTrack = casc.template bachelor_as<TracksCompleteIUMC>();
-
-    auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
-    if (!(v0index.has_v0Data())) {
-      return;
-    }
-    auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-    auto posPartTrack = v0.template posTrack_as<TracksCompleteIUMC>();
-    auto negPartTrack = v0.template negTrack_as<TracksCompleteIUMC>();
+    auto posPartTrack = casc.template posTrack_as<TracksCompleteIUMC>();
+    auto negPartTrack = casc.template negTrack_as<TracksCompleteIUMC>();
 
     if (cascmc.pdgCode() == 3312) {
       histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
@@ -698,14 +692,14 @@ struct straRecoStudy {
     }
   }
 
-  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
     }
   }
   PROCESS_SWITCH(straRecoStudy, processCascade, "Regular cascade analysis", true);
-  void processTrackedCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processTrackedCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
@@ -723,13 +717,8 @@ struct straRecoStudy {
     }
     for (auto& casc : Cascades) {
       auto bachPartTrack = casc.bachelor_as<TracksCompleteIU>();
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue;
-      }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-      auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
-      auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
+      auto posPartTrack = casc.posTrack_as<TracksCompleteIU>();
+      auto negPartTrack = casc.negTrack_as<TracksCompleteIU>();
 
       histos.fill(HIST("h2dITSCluMap_CascPositive"), (float)posPartTrack.itsClusterMap(), casc.v0radius());
       histos.fill(HIST("h2dITSCluMap_CascNegative"), (float)negPartTrack.itsClusterMap(), casc.v0radius());
