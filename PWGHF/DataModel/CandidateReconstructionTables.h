@@ -1357,18 +1357,18 @@ DECLARE_SOA_COLUMN(PzPi1FromXicPlus, pzPi1FromXicPlus, float);
 DECLARE_SOA_COLUMN(PxPi2FromXicPlus, pxPi2FromXicPlus, float);
 DECLARE_SOA_COLUMN(PyPi2FromXicPlus, pyPi2FromXicPlus, float);
 DECLARE_SOA_COLUMN(PzPi2FromXicPlus, pzPi2FromXicPlus, float);
-DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
-DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
-DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
 DECLARE_SOA_COLUMN(PxPiFromCasc, pxPiFromCasc, float);
 DECLARE_SOA_COLUMN(PyPiFromCasc, pyPiFromCasc, float);
 DECLARE_SOA_COLUMN(PzPiFromCasc, pzPiFromCasc, float);
-DECLARE_SOA_COLUMN(PxPosV0Dau, pxPosV0Dau, float);
-DECLARE_SOA_COLUMN(PyPosV0Dau, pyPosV0Dau, float);
-DECLARE_SOA_COLUMN(PzPosV0Dau, pzPosV0Dau, float);
-DECLARE_SOA_COLUMN(PxNegV0Dau, pxNegV0Dau, float);
-DECLARE_SOA_COLUMN(PyNegV0Dau, pyNegV0Dau, float);
-DECLARE_SOA_COLUMN(PzNegV0Dau, pzNegV0Dau, float);
+DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
+DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
+DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
+DECLARE_SOA_COLUMN(PxV0PosDau, pxV0PosDau, float);
+DECLARE_SOA_COLUMN(PyV0PosDau, pyV0PosDau, float);
+DECLARE_SOA_COLUMN(PzV0PosDau, pzV0PosDau, float);
+DECLARE_SOA_COLUMN(PxV0NegDau, pxV0NegDau, float);
+DECLARE_SOA_COLUMN(PyV0NegDau, pyV0NegDau, float);
+DECLARE_SOA_COLUMN(PzV0NegDau, pzV0NegDau, float);
 DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
 DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
 DECLARE_SOA_COLUMN(ImpactParPi1FromXicPlusXY, impactParPi1FromXicPlusXY, float);
@@ -1382,34 +1382,35 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi1FromXicPlus, pi1FromXicPlus, int, Tracks, "_pi1fromXicPlus");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi2FromXicPlus, pi2FromXicPlus, int, Tracks, "_pi2fromXicPlus");
-DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
-DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassXicPlus, invMassXicPlus, double);
-DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
+DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
+DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
 DECLARE_SOA_COLUMN(CosPAXicPlus, cosPAXicPlus, double);
 DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, double);
-DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, double);
+DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
 DECLARE_SOA_COLUMN(CosPAXYXicPlus, cosPAXYXicPlus, double);
 DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
+DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, double);
+DECLARE_SOA_COLUMN(CTauXicPlus, ctauXicPlus, double);
 DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
 DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
-DECLARE_SOA_COLUMN(CTauXicPlus, ctauXicPlus, double);
-DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
-DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
-DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
-DECLARE_SOA_COLUMN(EtaPiFromXicPlus, etaPiFromXicPlus, double);
 DECLARE_SOA_COLUMN(EtaXicPlus, etaXicPlus, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
+DECLARE_SOA_COLUMN(EtaPi1FromXicPlus, etaPi1FromXicPlus, double);
+DECLARE_SOA_COLUMN(EtaPi2FromXicPlus, etaPi2FromXicPlus, double);
+DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float); // pos dau
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float); // neg dau
+DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
+DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0PosDau, dcaXYToPvV0PosDau, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0NegDau, dcaXYToPvV0NegDau, float);
 DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0PosDau, dcaZToPvV0PosDau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0NegDau, dcaZToPvV0NegDau, float);
+DECLARE_SOA_COLUMN(DcaXicPlusDau, dcaXicPlusDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
-DECLARE_SOA_COLUMN(DcaXicPlusDau, dcaXicPlusDau, float);
 DECLARE_SOA_COLUMN(DecLenXicPlus, decLenXicPlus, double);
 DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
 DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
@@ -1441,17 +1442,19 @@ DECLARE_SOA_TABLE(HfCandXicPlus, "AOD", "HFCANDXICPLUS",
                   hf_cand_xicplustoxipipi::XDecayVtxXicPlus, hf_cand_xicplustoxipipi::YDecayVtxXicPlus, hf_cand_xicplustoxipipi::ZDecayVtxXicPlus,
                   hf_cand_xicplustoxipipi::ErrorDecayLengthXicPlus, hf_cand_xicplustoxipipi::ErrorDecayLengthXYXicPlus,
                   hf_cand_xicplustoxipipi::Chi2PCAXicPlus,
-                  hf_cand_xicplustoxipipi::PxPi1FromXicPlus, hf_cand_xicplustoxipipi::PyPi1FromXicPlus, hf_cand_xicplustoxipipi::PzPi1FromXicPlus,
-                  hf_cand_xicplustoxipipi::PxPi2FromXicPlus, hf_cand_xicplustoxipipi::PyPi2FromXicPlus, hf_cand_xicplustoxipipi::PzPi2FromXicPlus,
-                  hf_cand_xicplustoxipipi::PxXicPlus, hf_cand_xicplustoxipipi::PyXicPlus, hf_cand_xicplustoxipipi::PzXicPlus,
-                  hf_cand_xicplustoxipipi::ImpactParPi1FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParPi2FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParCascXY,
-                  hf_cand_xicplustoxipipi::ErrImpactParPi1FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParPi2FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParCascXY,
                   hf_cand_xicplustoxipipi::XDecayVtxCascade, hf_cand_xicplustoxipipi::YDecayVtxCascade, hf_cand_xicplustoxipipi::ZDecayVtxCascade,
                   hf_cand_xicplustoxipipi::XDecayVtxV0, hf_cand_xicplustoxipipi::YDecayVtxV0, hf_cand_xicplustoxipipi::ZDecayVtxV0,
-                  hf_cand_xicplustoxipipi::PxPosV0Dau, hf_cand_xicplustoxipipi::PyPosV0Dau, hf_cand_xicplustoxipipi::PzPosV0Dau,
-                  hf_cand_xicplustoxipipi::PxNegV0Dau, hf_cand_xicplustoxipipi::PyNegV0Dau, hf_cand_xicplustoxipipi::PzNegV0Dau,
+                  hf_cand_xicplustoxipipi::PxPi1FromXicPlus, hf_cand_xicplustoxipipi::PyPi1FromXicPlus, hf_cand_xicplustoxipipi::PzPi1FromXicPlus,
+                  hf_cand_xicplustoxipipi::PxPi2FromXicPlus, hf_cand_xicplustoxipipi::PyPi2FromXicPlus, hf_cand_xicplustoxipipi::PzPi2FromXicPlus,
+                  hf_cand_xicplustoxipipi::PxCasc, hf_cand_xicplustoxipipi::PyCasc, hf_cand_xicplustoxipipi::PzCasc,
+                  hf_cand_xicplustoxipipi::ImpactParPi1FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParPi2FromXicPlusXY,hf_cand_xicplustoxipipi::ImpactParCascXY,
+                  hf_cand_xicplustoxipipi::ErrImpactParPi1FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParPi2FromXicPlusXY, hf_cand_xicplustoxipipi::ErrImpactParCascXY,
                   hf_cand_xicplustoxipipi::PxPiFromCasc, hf_cand_xicplustoxipipi::PyPiFromCasc, hf_cand_xicplustoxipipi::PzPiFromCasc,
-                  hf_cand_xicplustoxipipi::DcaXYToPvV0Dau0, hf_cand_xicplustoxipipi::DcaXYToPvV0Dau1,hf_cand_xicplustoxipipi::DcaXYToPvCascDau,
+                  hf_cand_xicplustoxipipi::PxLambda, hf_cand_xicplustoxipipi::PyLambda, hf_cand_xicplustoxipipi::PzLambda,
+                  hf_cand_xicplustoxipipi::PxV0PosDau, hf_cand_xicplustoxipipi::PyV0PosDau, hf_cand_xicplustoxipipi::PzV0PosDau,
+                  hf_cand_xicplustoxipipi::PxV0NegDau, hf_cand_xicplustoxipipi::PyV0NegDau, hf_cand_xicplustoxipipi::PzV0NegDau,
+                  hf_cand_xicplustoxipipi::DcaXYToPvCascDau, hf_cand_xicplustoxipipi::DcaXYToPvV0PosDau, hf_cand_xicplustoxipipi::DcaXYToPvV0NegDau,
+                  hf_cand_xicplustoxipipi::EtaPiFromCasc, hf_cand_xicplustoxipipi::EtaV0PosDau, hf_cand_xicplustoxipipi::EtaV0NegDau,
                   hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
