@@ -497,6 +497,12 @@ DECLARE_SOA_COLUMN(PzPos, pzpos, float);     //!
 DECLARE_SOA_COLUMN(PxNeg, pxneg, float);     //!
 DECLARE_SOA_COLUMN(PyNeg, pyneg, float);     //!
 DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
+DECLARE_SOA_COLUMN(PxPosErr, pxposerr, float);     //!
+DECLARE_SOA_COLUMN(PyPosErr, pyposerr, float);     //!
+DECLARE_SOA_COLUMN(PzPosErr, pzposerr, float);     //!
+DECLARE_SOA_COLUMN(PxNegErr, pxnegerr, float);     //!
+DECLARE_SOA_COLUMN(PyNegErr, pynegerr, float);     //!
+DECLARE_SOA_COLUMN(PzNegErr, pznegerr, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
@@ -722,8 +728,8 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
-                  cascdata::PxPosIni, cascdata::PyPosIni, cascdata::PzPosIni,
-                  cascdata::PxNegIni, cascdata::PyNegIni, cascdata::PzNegIni,
+                  cascdata::PxPosErr, cascdata::PyPosErr, cascdata::PzPosErr,
+                  cascdata::PxNegErr, cascdata::PyNegErr, cascdata::PzNegErr,
                   cascdata::PxV0, cascdata::PyV0, cascdata::PzV0,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,

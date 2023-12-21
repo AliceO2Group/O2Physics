@@ -34,8 +34,8 @@ DECLARE_SOA_COLUMN(PtGen, ptgen, float);
 // mass
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassXiKF, massxikf, float);
-DECLARE_SOA_COLUMN(MassOmega, massomega, float);
-DECLARE_SOA_COLUMN(MassOmegaKF, massomegakf, float);
+// DECLARE_SOA_COLUMN(MassOmega, massomega, float);
+// DECLARE_SOA_COLUMN(MassOmegaKF, massomegakf, float);
 // DCA
 DECLARE_SOA_COLUMN(DCAXYCascToPV, dcaxycasctopv, float);
 DECLARE_SOA_COLUMN(DCAXYCascToPVKF, dcaxycasctopvkf, float);
@@ -145,6 +145,13 @@ DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);
 DECLARE_SOA_COLUMN(DCANegToPVKF, dcanegtopvkf, float);
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
 DECLARE_SOA_COLUMN(DCABachToPVKF, dcabachtopvkf, float);
+// momentum
+DECLARE_SOA_COLUMN(PxPosMC, pxposmc, float);
+DECLARE_SOA_COLUMN(PyPosMC, pyposmc, float);
+DECLARE_SOA_COLUMN(PzPosMC, pzposmc, float);
+DECLARE_SOA_COLUMN(PxNegMC, pxnegmc, float);
+DECLARE_SOA_COLUMN(PyNegMC, pynegmc, float);
+DECLARE_SOA_COLUMN(PzNegMC, pznegmc, float);
 
 // ********* MC info **********
 DECLARE_SOA_COLUMN(IsTrueCasc, istruecasc, int);
@@ -163,8 +170,6 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::PtKF,
                   kfStrangenessStudy::MassXi,
                   kfStrangenessStudy::MassXiKF,
-                  kfStrangenessStudy::MassOmega,
-                  kfStrangenessStudy::MassOmegaKF,
                   kfStrangenessStudy::CascRad,
                   kfStrangenessStudy::CascRadKF,
                   kfStrangenessStudy::VtxX,
@@ -216,6 +221,30 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::DCABachToPVKF,
                   kfStrangenessStudy::PAV0ToPV,
                   kfStrangenessStudy::PAV0ToPVKF,
+                  kfStrangenessStudy::PxPosIURec,
+                  kfStrangenessStudy::PyPosIURec,
+                  kfStrangenessStudy::PzPosIURec,
+                  kfStrangenessStudy::PxPosIURecErr,
+                  kfStrangenessStudy::PyPosIURecErr,
+                  kfStrangenessStudy::PzPosIURecErr,
+                  kfStrangenessStudy::PxNegIURec,
+                  kfStrangenessStudy::PyNegIURec,
+                  kfStrangenessStudy::PzNegIURec,
+                  kfStrangenessStudy::PxNegIURecErr,
+                  kfStrangenessStudy::PyNegIURecErr,
+                  kfStrangenessStudy::PzNegIURecErr,
+                  kfStrangenessStudy::PxPosRec,
+                  kfStrangenessStudy::PyPosRec,
+                  kfStrangenessStudy::PzPosRec,
+                  kfStrangenessStudy::PxPosRecErr,
+                  kfStrangenessStudy::PyPosRecErr,
+                  kfStrangenessStudy::PzPosRecErr,
+                  kfStrangenessStudy::PxNegRec,
+                  kfStrangenessStudy::PyNegRec,
+                  kfStrangenessStudy::PzNegRec,
+                  kfStrangenessStudy::PxNegRecErr,
+                  kfStrangenessStudy::PyNegRecErr,
+                  kfStrangenessStudy::PzNegRecErr,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF);
 
@@ -226,8 +255,6 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::PtGen,
                   kfStrangenessStudy::MassXi,
                   kfStrangenessStudy::MassXiKF,
-                  kfStrangenessStudy::MassOmega,
-                  kfStrangenessStudy::MassOmegaKF,
                   kfStrangenessStudy::CascRad,
                   kfStrangenessStudy::CascRadKF,
                   kfStrangenessStudy::VtxXrec,
@@ -292,6 +319,36 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::DCABachToPVKF,
                   kfStrangenessStudy::PAV0ToPV,
                   kfStrangenessStudy::PAV0ToPVKF,
+                  kfStrangenessStudy::PxPosIURec,
+                  kfStrangenessStudy::PyPosIURec,
+                  kfStrangenessStudy::PzPosIURec,
+                  kfStrangenessStudy::PxPosIURecErr,
+                  kfStrangenessStudy::PyPosIURecErr,
+                  kfStrangenessStudy::PzPosIURecErr,
+                  kfStrangenessStudy::PxNegIURec,
+                  kfStrangenessStudy::PyNegIURec,
+                  kfStrangenessStudy::PzNegIURec,
+                  kfStrangenessStudy::PxNegIURecErr,
+                  kfStrangenessStudy::PyNegIURecErr,
+                  kfStrangenessStudy::PzNegIURecErr,
+                  kfStrangenessStudy::PxPosRec,
+                  kfStrangenessStudy::PyPosRec,
+                  kfStrangenessStudy::PzPosRec,
+                  kfStrangenessStudy::PxPosRecErr,
+                  kfStrangenessStudy::PyPosRecErr,
+                  kfStrangenessStudy::PzPosRecErr,
+                  kfStrangenessStudy::PxNegRec,
+                  kfStrangenessStudy::PyNegRec,
+                  kfStrangenessStudy::PzNegRec,
+                  kfStrangenessStudy::PxNegRecErr,
+                  kfStrangenessStudy::PyNegRecErr,
+                  kfStrangenessStudy::PzNegRecErr,
+                  kfStrangenessStudy::PxPosMC,
+                  kfStrangenessStudy::PyPosMC,
+                  kfStrangenessStudy::PzPosMC,
+                  kfStrangenessStudy::PxNegMC,
+                  kfStrangenessStudy::PyNegMC,
+                  kfStrangenessStudy::PzNegMC,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF,
                   kfStrangenessStudy::IsTrueCasc,
