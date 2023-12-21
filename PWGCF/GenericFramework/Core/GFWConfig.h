@@ -12,6 +12,7 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 #include <string>
@@ -95,6 +96,9 @@ class GFWBinningCuts
   }
   const auto& GetPtRefMin() const { return mPTrefmin; }
   const auto& GetPtRefMax() const { return mPTrefmax; }
+
+  const float& GetPtMin() const { return std::min(mPTrefmin, mPTpoimin); }
+  const float& GetPtMax() const { return std::max(mPTrefmax, mPTpoimax); }
 
   void SetNchBinning(int nchbins, float nchmin, float nchmax)
   {
