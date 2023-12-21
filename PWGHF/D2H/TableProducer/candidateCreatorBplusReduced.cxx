@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 /// Reconstruction of B+ candidates
 struct HfCandidateCreatorBplusReduced {
-  Produces<aod::HfCandBplusBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBplusBase> rowCandidateBase;    // table defined in CandidateReconstructionTables.h
   Produces<aod::HfRedBplusProngs> rowCandidateProngs; // table defined in ReducedDataModel.h
 
   // vertexing
