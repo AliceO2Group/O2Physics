@@ -307,7 +307,7 @@ struct HfDataCreatorDplusPiReduced {
       // D∓ → π∓ K± π∓
       std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1, pVec2);
       auto trackParCovD = df3.createParentTrackParCov();
-      int charge = (track1.signed1Pt() > 0) ? -1 : 1; 
+      int charge = (track1.signed1Pt() > 0) ? -1 : 1;
       trackParCovD.setAbsCharge(charge); // to be sure
 
       for (const auto& trackId : trackIndices) {
