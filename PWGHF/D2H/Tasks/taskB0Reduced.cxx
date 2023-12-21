@@ -41,6 +41,7 @@ DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //!
 DECLARE_SOA_COLUMN(MProng0, mProng0, float);                                 //! Invariant mass of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                     //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
 DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
@@ -85,7 +86,8 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::Phi,
                   hf_cand_b0_lite::Y,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
+                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_b0_lite::PtGen);
 } // namespace o2::aod
 
 /// B0 analysis task
@@ -373,7 +375,8 @@ struct HfTaskB0Reduced {
           candidate.phi(),
           hfHelper.yB0(candidate),
           flag,
-          origin);
+          origin,
+          -1.);
       }
     }
   }
@@ -506,7 +509,8 @@ struct HfTaskB0Reduced {
           candidate.phi(),
           hfHelper.yB0(candidate),
           flagMcMatchRec,
-          isSignal);
+          isSignal,
+          candidate.ptMother());
       }
     }
   }
