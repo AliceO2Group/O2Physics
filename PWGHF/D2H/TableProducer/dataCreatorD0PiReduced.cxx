@@ -23,7 +23,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -305,7 +304,8 @@ struct HfDataCreatorD0PiReduced {
 
       // D0(bar) → π∓ K±
       std::array<float, 3> pVecD0 = RecoDecay::pVec(pVec0, pVec1);
-      auto trackParCovD0 = o2::dataformats::V0(df2.getPCACandidatePos(), pVecD0, df2.calcPCACovMatrixFlat(), trackParCov0, trackParCov1);
+      auto trackParCovD0 = df2.createParentTrackParCov();
+      trackParCovD0.setAbsCharge(0); // to be sure
 
       for (const auto& trackId : trackIndices) {
         auto trackPion = trackId.template track_as<T>();
@@ -357,9 +357,11 @@ struct HfDataCreatorD0PiReduced {
           auto arrayDaughtersBplus = std::array{track0, track1, trackPion};
           int8_t sign{0};
           int8_t flag{0};
+          int8_t debug{0};
           // B+ → D0(bar) π+ → (K+ π-) π+
           // Printf("Checking B+ → D0bar π+");
           auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          auto motherPt = -1.f;
           if (indexRec > -1) {
             // D0bar → K+ π-
             // Printf("Checking D0bar → K+ π-");
@@ -367,13 +369,18 @@ struct HfDataCreatorD0PiReduced {
             if (indexRec > -1) {
               flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
             } else {
+              debug = 1;
               LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
             }
-          }
-          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), Pdg::kBPlus, true);
-          auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
-          rowHfD0PiMcRecReduced(indexHfCand2Prong, selectedTracksPion[trackPion.globalIndex()], flag, particleMother.pt());
+            auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), Pdg::kBPlus, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+            }
+          }
+
+          rowHfD0PiMcRecReduced(indexHfCand2Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, motherPt);
         }
         fillHfCand2Prong = true;
       }                       // pion loop
