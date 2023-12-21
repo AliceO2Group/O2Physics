@@ -173,7 +173,8 @@ struct cascadeBuilder {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF: use Lambda mass constraint"};
   Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint - WARNING: not adequate for inv mass analysis of Xi"};
-  Configurable<bool> kfDoDCAFitterPreMinim{"kfDoDCAFitterPreMinim", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections"};
+  Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
+  Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
 
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
@@ -1074,7 +1075,7 @@ struct cascadeBuilder {
     //__________________________________________
     //*>~<* step 1 : V0 with dca fitter, uses material corrections implicitly
     // This is optional - move close to minima and therefore take material
-    if (kfDoDCAFitterPreMinim) {
+    if (kfDoDCAFitterPreMinimV0) {
       int nCand = 0;
       try {
         nCand = fitter.process(posTrackParCov, negTrackParCov);
@@ -1127,7 +1128,7 @@ struct cascadeBuilder {
 
     //__________________________________________
     //*>~<* step 3 : Cascade with dca fitter (with material corrections)
-    if (kfDoDCAFitterPreMinim) {
+    if (kfDoDCAFitterPreMinimCasc) {
       int nCandCascade = 0;
       try {
         nCandCascade = fitter.process(v0TrackParCov, lBachelorTrack);
