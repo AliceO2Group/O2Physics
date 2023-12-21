@@ -298,8 +298,8 @@ struct hyperRecoTask {
       hypCand.momHe3TPC = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
       hypCand.momPiTPC = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
 
-      hypCand.flags |= static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4);
-      hypCand.flags |= static_cast<uint8_t>(negTrack.pidForTracking() & 0xF);
+      hypCand.flags |= hypCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
+      hypCand.flags |= hypCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);

@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
-#define PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
+#include <vector>
 #include "TH3F.h"
 #include "TProfile2D.h"
 #include "TProfile.h"
@@ -165,4 +166,4 @@ class FlowContainer : public TNamed
   ClassDef(FlowContainer, 2);
 };
 
-#endif // PWGCF_GENERICFRAMEWORK_FLOWCONTAINER_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_

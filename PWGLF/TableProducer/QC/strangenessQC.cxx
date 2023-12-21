@@ -177,10 +177,6 @@ struct strangenessQC {
 
     // cascades loop
     for (const auto& casc : Cascades) {
-      const auto& v0index = casc.v0_as<aod::V0sLinked>();
-      if (!(v0index.has_v0Data()))
-        continue; // skip those cascades for which V0 doesn't exist
-
       // Rapidity check
       if (TMath::Abs(casc.yXi()) > cascadesetting_rapidity &&
           TMath::Abs(casc.yOmega()) > cascadesetting_rapidity) {
@@ -204,10 +200,9 @@ struct strangenessQC {
       if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
         continue;
 
-      const auto& v0Casc = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       const auto& bachDau = casc.bachelor_as<DaughterTracks>();
-      const auto& posDau = v0Casc.posTrack_as<DaughterTracks>();
-      const auto& negDau = v0Casc.negTrack_as<DaughterTracks>();
+      const auto& posDau = casc.posTrack_as<DaughterTracks>();
+      const auto& negDau = casc.negTrack_as<DaughterTracks>();
 
       float cascDecayLength = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascTotalMomentum = std::hypot(casc.px(), casc.py(), casc.pz());

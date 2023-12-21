@@ -345,6 +345,9 @@ class VarManager : public TObject
     kMuonDCAy,
     kMuonTime,
     kMuonTimeRes,
+    kMftNClusters,
+    kMftClusterSize,
+    kMftMeanClusterSize,
 
     // MC particle variables
     kMCPdgCode,
@@ -1080,6 +1083,25 @@ void VarManager::FillTrack(T const& track, float* values)
 {
   if (!values) {
     values = fgValues;
+  }
+
+  if constexpr ((fillMap & TrackMFT) > 0) {
+    values[kPt] = track.pt();
+    values[kEta] = track.eta();
+    values[kPhi] = track.phi();
+    values[kMftNClusters] = track.nClusters();
+
+    uint64_t mftClsAndFlgs = track.mftClusterSizesAndTrackFlags();
+    double meanClusterSize = 0;
+    for (int i = 0; i < 10; ++i) {
+      double size = (mftClsAndFlgs >> (i * 6)) & 0x3fULL;
+      values[kMftClusterSize + i] = (mftClsAndFlgs >> (i * 6)) & 0x3fULL;
+      if (size > 0) {
+        meanClusterSize += size;
+      }
+    }
+    meanClusterSize /= track.nClusters();
+    values[kMftMeanClusterSize] = meanClusterSize;
   }
 
   // Quantities based on the basic table (contains just kine information and filter bits)

@@ -9,20 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_library(GFWCore
-               SOURCES  GFWPowerArray.cxx
-                        GFWCumulant.cxx
-                        GFW.cxx
-                        ProfileSubset.cxx
-                        FlowContainer.cxx
-                        GFWWeights.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
-
-o2physics_target_root_dictionary(GFWCore
-              HEADERS GFWPowerArray.h
-                      GFWCumulant.h
-                      GFW.h
-                      ProfileSubset.h
-                      FlowContainer.h
-                      GFWWeights.h
-              LINKDEF GenericFrameworkLinkDef.h)
+add_subdirectory(Core)
+add_subdirectory(Tasks)
+add_subdirectory(TableProducer)

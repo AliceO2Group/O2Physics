@@ -60,9 +60,9 @@ struct TagAndProbe {
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigTagPCMCut{"cfgTagPCMCuts", "tag_track", "Tag PCM photon cut. 1 per wagon"};
-  Configurable<std::string> fConfigTagPHOSCut{"cfgTagPHOSCuts", "tag", "Tag PHOS photon cuts. 1 per wagon"};
-  Configurable<std::string> fConfigTagEMCCut{"cfgTagEMCCuts", "tag", "Tag EMCal photon cuts. 1 per wagon"};
-  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "analysis,analysis_wo_mee,qc,qc_w_mee", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigTagPHOSCut{"cfgTagPHOSCuts", "test03", "Tag PHOS photon cuts. 1 per wagon"};
+  Configurable<std::string> fConfigTagEMCCut{"cfgTagEMCCuts", "standard", "Tag EMCal photon cuts. 1 per wagon"};
+  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "analysis,qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigProbePHOSCuts{"cfgProbePHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigProbeEMCCuts{"cfgProbeEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
