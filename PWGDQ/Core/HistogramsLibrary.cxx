@@ -477,6 +477,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "pdca_vs_Rabs_vs_p", "pDCA vs R_{abs} vs p", false, 2000, 0.0, 20.0, VarManager::kP, 100, 0., 200., VarManager::kMuonRAtAbsorberEnd, 200, 0.0, 1000., VarManager::kMuonPDca);
       hm->AddHistogram(histClass, "pdca_vs_Rabs_vs_pt", "pDCA vs R_{abs} vs pt", false, 2000, 0.0, 20.0, VarManager::kPt, 100, 0., 200., VarManager::kMuonRAtAbsorberEnd, 200, 0.0, 1000., VarManager::kMuonPDca);
     }
+    if (subGroupStr.Contains("mft-pid")) {
+      hm->AddHistogram(histClass, "hMftTrackEtaVsPt", "", false, 100, -5.f, -2.f, VarManager::kEta, 100, 0.f, 20.f, VarManager::kPt);
+      hm->AddHistogram(histClass, "hMftNClusters", "", false, 16, -0.5f, 15.5f, VarManager::kMftNClusters);
+      hm->AddHistogram(histClass, "hMftClusterSize", "", false, 101, -0.5f, 100.5f, VarManager::kMftClusterSize);
+      hm->AddHistogram(histClass, "hMftMeanClusterSize", "", false, 200, 0.f, 20.f, VarManager::kMftMeanClusterSize);
+    }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "Pt_vs_PtMC", "pT vs MC pT", false, 200, 0.0, 20.0, VarManager::kPt, 200, 0.0, 20.0, VarManager::kMCPt);
       hm->AddHistogram(histClass, "Eta_vs_EtaMC", "#eta vs MC #eta", false, 50, -1.0, 1.0, VarManager::kEta, 50, -1.0, 1.0, VarManager::kMCEta);
