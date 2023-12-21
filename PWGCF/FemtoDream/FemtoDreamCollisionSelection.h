@@ -60,7 +60,7 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/Zvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultPercentile", "; Multiplicity Percentile; Entries", kTH1F, {{100, 0, 100}});
-    mHistogramRegistry->add("Event/MultPercentileVSMultNTracksPV", "; Multiplicity Percentile; MultNTracks", kTH2F, {{100,0,100},{200, 0, 200}});
+    mHistogramRegistry->add("Event/MultPercentileVSMultNTracksPV", "; Multiplicity Percentile; MultNTracks", kTH2F, {{100, 0, 100}, {200, 0, 200}});
     mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", kTH1F, {{200, 0, 200}});
     mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", kTH1F, {{600, 0, 600}});
@@ -141,7 +141,7 @@ class FemtoDreamCollisionSelection
         mHistogramRegistry->fill(HIST("Event/MultPercentile"), col.centFT0M());
         mHistogramRegistry->fill(HIST("Event/MultPercentileVSMultNTracksPV"), col.centFT0M(), col.multNTracksPV());
       } else {
-      mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
+        mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       }
     }
   }
