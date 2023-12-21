@@ -138,7 +138,7 @@ struct phosTrigQA {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PhotFilters>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PhotonFilters>;
 
   /// \brief Process PHOS data
   void process(o2::aod::BCs const& bcs,
