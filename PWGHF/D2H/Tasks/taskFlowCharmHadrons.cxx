@@ -344,7 +344,7 @@ struct HfTaskFlowCharmHadrons {
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
 
   // Resolution
-  void processEventPlaneReso(CollsWithQvecs::iterator const& collision)
+  void processResolution(CollsWithQvecs::iterator const& collision)
   {
     float centrality = getCentrality(collision);
     float xQVecFT0a = collision.qvecFT0ARe();
@@ -399,7 +399,7 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), centrality, TMath::Cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
     }
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processEventPlaneReso, "Process event plane resolution", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
 
 }; // End struct HfTaskFlowCharmHadrons
 
