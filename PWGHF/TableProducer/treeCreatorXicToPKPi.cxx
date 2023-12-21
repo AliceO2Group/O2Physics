@@ -13,9 +13,10 @@
 /// \brief Writer of XiC -> pKpi candidates in the form of flat tables to be stored in TTrees.
 /// inspired from file treeCreatorLcToPKPi.cxx and to treeCreatorDplusToPiKPi.cxx
 
-
 /// \author Himanshu Sharma <himanshu.sharma@cern.ch>, INFN Padova
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN Bari
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -125,7 +126,6 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::OriginMcRec,
                   full::IsCandidateSwapped)
 
-
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CollisionId,
                   collision::PosX,
@@ -231,7 +231,7 @@ struct HfTreeCreatorXicToPKPi {
   Produces<o2::aod::HfCandXicLites> rowCandidateLite;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  //parameters for production of training samples
+  // parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
  Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
  Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
@@ -265,9 +265,9 @@ struct HfTreeCreatorXicToPKPi {
     }
 
     // Filling candidate properties
-     if (fillCandidateLiteTable) {
+    if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
-    } else{
+    } else {
       rowCandidateFull.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
@@ -422,7 +422,7 @@ struct HfTreeCreatorXicToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());
@@ -453,7 +453,7 @@ struct HfTreeCreatorXicToPKPi {
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
-    } else{
+    } else {
       rowCandidateFull.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
