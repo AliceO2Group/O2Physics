@@ -722,6 +722,8 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::PxPosIni, cascdata::PyPosIni, cascdata::PzPosIni,
+                  cascdata::PxNegIni, cascdata::PyNegIni, cascdata::PzNegIni,
                   cascdata::PxV0, cascdata::PyV0, cascdata::PzV0,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,

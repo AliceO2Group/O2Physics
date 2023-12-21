@@ -228,6 +228,8 @@ struct cascadeBuilder {
     std::array<float, 3> v0pos;
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
+    std::array<float, 3> v0momposini;
+    std::array<float, 3> v0momnegini;
     std::array<float, 3> cascademom;
     std::array<float, 3> v0mom;
     float v0dcadau;
@@ -1071,6 +1073,10 @@ struct cascadeBuilder {
       massNegTrack = o2::constants::physics::MassProton;
     }
 
+    // save innitial daughter momenta
+    posTrackParCov.getPxPyPzGlo(cascadecandidate.v0momposini);
+    negTrackParCov.getPxPyPzGlo(cascadecandidate.v0momnegini);
+
     //__________________________________________
     //*>~<* step 1 : V0 with dca fitter, uses material corrections implicitly
     // This is optional - move close to minima and therefore take material
@@ -1218,7 +1224,7 @@ struct cascadeBuilder {
     if (kfTuneForOmega)
       cascadecandidate.kfCascadeChi2 = KFOmega.GetChi2();
 
-    // Daughter momentum not KF-updated FIXME
+    // Daughter momentum not KF-updated FIXME --> but DCA fitter updated if pre-minimisation is used
     lBachelorTrack.getPxPyPzGlo(cascadecandidate.bachP);
     posTrackParCov.getPxPyPzGlo(cascadecandidate.v0mompos);
     negTrackParCov.getPxPyPzGlo(cascadecandidate.v0momneg);
@@ -1367,10 +1373,10 @@ struct cascadeBuilder {
                  cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                  cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                  cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-                 cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-                 cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-                 cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+                 cascadecandidate.v0momposini[0], cascadecandidate.v0momposini[1], cascadecandidate.v0momposini[2],
+                 cascadecandidate.v0momnegini[0], cascadecandidate.v0momnegini[1], cascadecandidate.v0momnegini[2],
                  cascadecandidate.v0mom[0], cascadecandidate.v0mom[1], cascadecandidate.v0mom[2],
+                 cascadecandidate.cascademom[0], cascadecandidate.cascademom[1], cascadecandidate.cascademom[2],
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                  cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
