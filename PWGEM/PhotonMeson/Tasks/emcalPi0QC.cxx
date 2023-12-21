@@ -177,7 +177,7 @@ struct Pi0QCTask {
     // create common axes
     LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
-    const o2Axis energyAxis{makeClusterBinning(), "#it{p}_{T} (GeV)"};
+    const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -189,15 +189,18 @@ struct Pi0QCTask {
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
     // cluster properties
-    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100}});
-    mHistManager.add("clusterTime", "Time of cluster", o2HistType::kTH1F, {{500, -250, 250}});
-    mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
-    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
-    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5}});
-    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10}});
-    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50}});
-    mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
+    for (bool iBeforeCuts : {false, true}) {
+      const char* ClusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
+      mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {energyAxis});
+      mHistManager.add(Form("%s/clusterE_SimpleBinning", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
+      mHistManager.add(Form("%s/clusterTime", ClusterDirectory), "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
+      mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, 2 * TMath::Pi(), "#phi"}});
+      mHistManager.add(Form("%s/clusterM02", ClusterDirectory), "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
+      mHistManager.add(Form("%s/clusterM20", ClusterDirectory), "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
+      mHistManager.add(Form("%s/clusterNLM", ClusterDirectory), "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
+      mHistManager.add(Form("%s/clusterNCells", ClusterDirectory), "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
+      mHistManager.add(Form("%s/clusterDistanceToBadChannel", ClusterDirectory), "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
+    }
 
     // meson related histograms
     mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
@@ -234,9 +237,8 @@ struct Pi0QCTask {
       }
     }
   }
-  /// \brief Process EMCAL clusters that are matched to a collisions
 
-  // void processCollisions(collisionEvSelIt const& collision, selectedClusters const& clusters)
+  /// \brief Process EMCAL clusters that are matched to a collisions
   void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision, selectedClusters const& clusters)
   {
     // for(const auto & collision : theCollisions){
@@ -258,7 +260,7 @@ struct Pi0QCTask {
     mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
 
     ProcessClusters(clusters);
-    ProcessMesons(clusters);
+    ProcessMesons();
   }
   PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
 
@@ -280,8 +282,8 @@ struct Pi0QCTask {
     }
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
 
-    ProcessAmbigousClusters(clusters);
-    ProcessMesons(clusters);
+    ProcessAmbiguousClusters(clusters);
+    ProcessMesons();
   }
   PROCESS_SWITCH(Pi0QCTask, processAmbiguous, "Process Ambiguous clusters", false);
 
@@ -309,50 +311,21 @@ struct Pi0QCTask {
         LOG(info) << "Something went wrong with the collision ID";
       }
 
-      // fill histograms of cluster properties
-      // in this implementation the cluster properties are directly
-      // loaded from the flat table, in the future one should
-      // consider using the AnalysisCluster object to work with
-      // after loading.
-      LOG(debug) << "Cluster energy: " << cluster.energy();
-      LOG(debug) << "Cluster time: " << cluster.time();
-      LOG(debug) << "Cluster M02: " << cluster.m02();
-      mHistManager.fill(HIST("clusterE"), cluster.energy());
-      mHistManager.fill(HIST("clusterTime"), cluster.time());
-      mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
-      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterM20"), cluster.m20());
-      mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
-      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
-      mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+      FillClusterQAHistos<decltype(cluster), 0>(cluster);
 
-      // apply basic cluster cuts
-      if (cluster.energy() < mMinEnergyCut) {
-        LOG(debug) << "Cluster rejected because of energy cut";
+      if (ClusterRejectedByCut(cluster))
         continue;
-      }
-      if (cluster.nCells() <= mMinNCellsCut) {
-        LOG(debug) << "Cluster rejected because of nCells cut";
-        continue;
-      }
-      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
-        LOG(debug) << "Cluster rejected because of m02 cut";
-        continue;
-      }
-      if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
-        LOG(debug) << "Cluster rejected because of time cut";
-        continue;
-      }
+
+      FillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
     }
   }
 
-  /// \brief Process EMCAL clusters that are matched to a collisions
+  /// \brief Process EMCAL clusters that are not matched to a collisions
   template <typename Clusters>
-  void ProcessAmbigousClusters(Clusters const& clusters)
+  void ProcessAmbiguousClusters(Clusters const& clusters)
   {
     LOG(debug) << "ProcessClusters";
     // clear photon vector
@@ -361,50 +334,70 @@ struct Pi0QCTask {
     // loop over all clusters from accepted collision
     for (const auto& cluster : clusters) {
 
-      // fill histograms of cluster properties
-      // in this implementation the cluster properties are directly
-      // loaded from the flat table, in the future one should
-      // consider using the AnalysisCluster object to work with
-      // after loading.
-      LOG(debug) << "Cluster energy: " << cluster.energy();
-      LOG(debug) << "Cluster time: " << cluster.time();
-      LOG(debug) << "Cluster M02: " << cluster.m02();
-      mHistManager.fill(HIST("clusterE"), cluster.energy());
-      mHistManager.fill(HIST("clusterTime"), cluster.time());
-      mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
-      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterM20"), cluster.m20());
-      mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
-      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
-      mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+      FillClusterQAHistos<decltype(cluster), 0>(cluster);
 
-      // apply basic cluster cuts
-      if (cluster.energy() < mMinEnergyCut) {
-        LOG(debug) << "Cluster rejected because of energy cut";
+      if (ClusterRejectedByCut(cluster))
         continue;
-      }
-      if (cluster.nCells() <= mMinNCellsCut) {
-        LOG(debug) << "Cluster rejected because of nCells cut";
-        continue;
-      }
-      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
-        LOG(debug) << "Cluster rejected because of m02 cut";
-        continue;
-      }
-      if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
-        LOG(debug) << "Cluster rejected because of time cut";
-        continue;
-      }
+
+      FillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
     }
   }
 
+  /// \brief Fills the standard QA histograms for a given cluster
+  template <typename Cluster, int BeforeCuts>
+  void FillClusterQAHistos(Cluster const& cluster)
+  {
+    // In this implementation the cluster properties are directly loaded from the flat table,
+    // in the future one should consider using the AnalysisCluster object to work with after loading.
+    static constexpr std::string_view clusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
+    static constexpr std::string_view clusterQAHistEnergySimpleBinning[2] = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
+    static constexpr std::string_view clusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
+    static constexpr std::string_view clusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
+    static constexpr std::string_view clusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
+    static constexpr std::string_view clusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
+    static constexpr std::string_view clusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
+    static constexpr std::string_view clusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
+    static constexpr std::string_view clusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
+    mHistManager.fill(HIST(clusterQAHistEnergy[BeforeCuts]), cluster.energy());
+    mHistManager.fill(HIST(clusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy());
+    mHistManager.fill(HIST(clusterQAHistTime[BeforeCuts]), cluster.time());
+    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi());
+    mHistManager.fill(HIST(clusterQAHistM02[BeforeCuts]), cluster.m02());
+    mHistManager.fill(HIST(clusterQAHistM20[BeforeCuts]), cluster.m20());
+    mHistManager.fill(HIST(clusterQAHistNLM[BeforeCuts]), cluster.nlm());
+    mHistManager.fill(HIST(clusterQAHistNCells[BeforeCuts]), cluster.nCells());
+    mHistManager.fill(HIST(clusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel());
+  }
+
+  /// \brief Return a boolean that states, whether a cluster should be rejected by the applied cluster cuts
+  template <typename Cluster>
+  bool ClusterRejectedByCut(Cluster const& cluster)
+  {
+    // apply basic cluster cuts
+    if (cluster.energy() < mMinEnergyCut) {
+      LOG(debug) << "Cluster rejected because of energy cut";
+      return true;
+    }
+    if (cluster.nCells() <= mMinNCellsCut) {
+      LOG(debug) << "Cluster rejected because of nCells cut";
+      return true;
+    }
+    if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
+      LOG(debug) << "Cluster rejected because of m02 cut";
+      return true;
+    }
+    if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
+      LOG(debug) << "Cluster rejected because of time cut";
+      return true;
+    }
+    return false;
+  }
+
   /// \brief Process meson candidates, calculate invariant mass and pT and fill histograms
-  template <typename Clusters>
-  void ProcessMesons(Clusters const& clusters)
+  void ProcessMesons()
   {
     LOG(debug) << "ProcessMesons " << mPhotons.size();
 
@@ -525,7 +518,6 @@ struct Pi0QCTask {
   /// \return vector with bin limits
   std::vector<double> makeClusterBinning() const
   {
-
     std::vector<double> result;
     int nBinsPt = 179;
     double maxPt = 60;

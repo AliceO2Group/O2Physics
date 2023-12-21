@@ -69,14 +69,14 @@ struct QaEfficiencyV0s {
 
     for (int i = 0; i < nSpecies; i++) {
       // MC efficiency (PDG code
-      histograms[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Num_%i", PDGs[i]), Form("Num %i", PDGs[i]), kTH1F, {axisPt});
-      histograms[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Den_%i", PDGs[i]), Form("Den %i", PDGs[i]), kTH1F, {axisPt});
+      histograms[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Num_pdg%i", PDGs[i]), Form("Num %i", PDGs[i]), kTH1F, {axisPt});
+      histograms[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Den_pdg%i", PDGs[i]), Form("Den %i", PDGs[i]), kTH1F, {axisPt});
 
-      histogramsPrm[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Num_%i", PDGs[i]), Form("Pt Prm Num %i", PDGs[i]), kTH1F, {axisPt});
-      histogramsPrm[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Den_%i", PDGs[i]), Form("Pt Prm Den %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrm[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Num_pdg%i", PDGs[i]), Form("Pt Prm Num %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrm[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Den_pdg%i", PDGs[i]), Form("Pt Prm Den %i", PDGs[i]), kTH1F, {axisPt});
 
-      histogramsPrmRap[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Rap/PtNum_%i", PDGs[i]), Form("Pt Prm Rap Num %i", PDGs[i]), kTH1F, {axisPt});
-      histogramsPrmRap[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Rap/PtDen_%i", PDGs[i]), Form("Pt Prm Rap Den %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrmRap[i][kHistoPtNum] = registry.add<TH1>(Form("Pt/Prm/Rap/PtNum_pdg%i", PDGs[i]), Form("Pt Prm Rap Num %i", PDGs[i]), kTH1F, {axisPt});
+      histogramsPrmRap[i][kHistoPtDen] = registry.add<TH1>(Form("Pt/Prm/Rap/PtDen_pdg%i", PDGs[i]), Form("Pt Prm Rap Den %i", PDGs[i]), kTH1F, {axisPt});
 
       TAxis* axis = histograms[i][0]->GetXaxis();
       listEfficiencyMC->Add(new TEfficiency(Form("efficiencyPt_pdg%d", PDGs[i]), Form("efficiencyPt_pdg%d", PDGs[i]), axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
