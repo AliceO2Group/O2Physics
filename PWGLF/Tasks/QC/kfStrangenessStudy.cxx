@@ -358,7 +358,7 @@ struct kfStrangenessStudy {
     histos.fill(HIST("hCase"), recocase);
   }
 
-  void resetMCvar()
+  void resetVars()
   {
     /// Cascade data
     isDCAfitter = 0; isKF = 0;
