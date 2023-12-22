@@ -189,7 +189,7 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (!(_magfield1 * _magfield2))
     return true;
-  if (abs(GetEtaDiff()) < deta || abs(GetPhiStarDiff(radius)) < dphi)
+  if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
     return true;
 
   return false;
