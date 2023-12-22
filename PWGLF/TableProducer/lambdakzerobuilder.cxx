@@ -849,7 +849,7 @@ struct lambdakzeroBuilder {
           if (V0.v0Type() > 1 && !storePhotonCandidates)
             continue;
           v0covs(positionCovariance, momentumCovariance);
-        }else{
+        } else {
           v0fccovs(positionCovariance, momentumCovariance);
         }
       }
