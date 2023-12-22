@@ -245,6 +245,7 @@ struct HfDataCreatorDplusPiReduced {
       o2::base::Propagator::initFieldFromGRP(grpo);
       bz = o2::base::Propagator::Instance()->getNominalBz();
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      runNumber = bc.runNumber();
     }
     df3.setBz(bz);
 
