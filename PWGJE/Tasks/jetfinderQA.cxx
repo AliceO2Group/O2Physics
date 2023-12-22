@@ -54,7 +54,7 @@ struct JetFinderQATask {
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
-  Configurable<float> pTHatExponent{"pTHatExponent", 0.1666, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
 
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
@@ -184,7 +184,7 @@ struct JetFinderQATask {
   void fillHistograms(T const& jet, float weight = 1.0)
   {
 
-    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
@@ -214,7 +214,7 @@ struct JetFinderQATask {
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
 
-    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat) {
       return;
     }
@@ -242,7 +242,7 @@ struct JetFinderQATask {
   template <typename T, typename U>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
-    float pTHat = 10. / (std::pow(weight, pTHatExponent));
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
