@@ -235,7 +235,7 @@ struct FemtoCorrelations {
     for (auto track : tracks) {
       if (abs(track.singleCollSel().posZ()) > _vertexZ)
         continue;
-      if (track.tpcNClsShared() > _tpcNClsShared && track.itsNCls() < _itsNCls)
+      if (track.tpcNClsShared() > _tpcNClsShared || track.itsNCls() < _itsNCls)
         continue;
       if (track.singleCollSel().multPerc() < *_centBins.value.begin() || track.singleCollSel().multPerc() > *(_centBins.value.end() - 1))
         continue;
