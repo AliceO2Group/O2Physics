@@ -845,7 +845,13 @@ struct lambdakzeroBuilder {
         for (int i = 0; i < 6; i++) {
           momentumCovariance[i] = covTpositive[MomInd[i]] + covTnegative[MomInd[i]];
         }
-        v0covs(positionCovariance, momentumCovariance);
+        if (V0.v0Type() > 0) {
+          if (V0.v0Type() > 1 && !storePhotonCandidates)
+            continue;
+          v0covs(positionCovariance, momentumCovariance);
+        }else if{
+          v0fccovs(positionCovariance, momentumCovariance);
+        }
       }
     }
     // En masse histo filling at end of process call
