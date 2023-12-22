@@ -103,7 +103,7 @@ class FemtoPair
     SetFirstParticle(obj.GetFirstParticle());
     SetSecondParticle(obj.GetSecondParticle());
   }
-  FemtoPair(const FemtoPair* obj)
+  explicit FemtoPair(const FemtoPair* obj)
   {
     SetFirstParticle(obj->GetFirstParticle());
     SetSecondParticle(obj->GetSecondParticle());
