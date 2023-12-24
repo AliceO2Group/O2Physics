@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Luca Barioglio
+/// \author Sweta Singh
 
 // O2 includes
 #include "Framework/AnalysisTask.h"          //
@@ -24,7 +24,6 @@
 #include "Common/DataModel/TrackSelectionTables.h" //
 #include "Common/DataModel/Centrality.h"           //
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"     //
 #include "Framework/ASoAHelpers.h"           //
 #include "Framework/HistogramRegistry.h"     //
@@ -228,10 +227,7 @@ struct CFAnalysisTask {
 
     // Perfroming the track selection==============================================================================================================
     for (auto track : inputTracks) { // Loop over tracks
-
-      //	if (!track.isGlobalTrack()) return;
-
-      if (!((fabs(track.eta()) < 0.8) && (fabs(track.dcaXY()) < 0.12) && (fabs(track.dcaZ()) < 1.) && (track.pt() > 0.15 && track.pt() < 2.))) {
+    if (!((fabs(track.eta()) < 0.8) && (fabs(track.dcaXY()) < 0.12) && (fabs(track.dcaZ()) < 1.) && (track.pt() > 0.15 && track.pt() < 2.))) {
         continue;
       }
 
@@ -286,7 +282,7 @@ struct CFAnalysisTask {
 
           VMeanPtPion.push_back(track.pt());
 
-          for (long unsigned int jPi = 0; jPi < VMeanPtPion.size(); jPi++) {
+          for (ULong64_t jPi = 0; jPi < VMeanPtPion.size(); jPi++) {
             histos.fill(HIST("hPtChPion"), nCh, VMeanPtPion[jPi]);
           }
 
@@ -311,7 +307,7 @@ struct CFAnalysisTask {
 
           VMeanPtKaon.push_back(track.pt());
 
-          for (long unsigned int jKa = 0; jKa < VMeanPtKaon.size(); jKa++) {
+          for (ULong64_t jKa = 0; jKa < VMeanPtKaon.size(); jKa++) {
             histos.fill(HIST("hPtChKaon"), nCh, VMeanPtKaon[jKa]);
           }
 
@@ -336,7 +332,7 @@ struct CFAnalysisTask {
 
           VMeanPtProton.push_back(track.pt());
 
-          for (long unsigned int jPr = 0; jPr < VMeanPtProton.size(); jPr++) {
+          for (ULong64_t jPr = 0; jPr < VMeanPtProton.size(); jPr++) {
             histos.fill(HIST("hPtChProton"), nCh, VMeanPtProton[jPr]);
           }
 
