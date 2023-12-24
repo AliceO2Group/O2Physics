@@ -227,7 +227,7 @@ struct CFAnalysisTask {
 
     // Perfroming the track selection==============================================================================================================
     for (auto track : inputTracks) { // Loop over tracks
-    if (!((fabs(track.eta()) < 0.8) && (fabs(track.dcaXY()) < 0.12) && (fabs(track.dcaZ()) < 1.) && (track.pt() > 0.15 && track.pt() < 2.))) {
+      if (!((fabs(track.eta()) < 0.8) && (fabs(track.dcaXY()) < 0.12) && (fabs(track.dcaZ()) < 1.) && (track.pt() > 0.15 && track.pt() < 2.))) {
         continue;
       }
 
@@ -398,7 +398,7 @@ struct CFAnalysisTask {
     histos.fill(HIST("hVarpx"), sample, nChp);
 
     //    for(int j=0; j<VMeanPt.size();j++){
-    for (long unsigned int j = 0; j < VMeanPt.size(); j++) {
+    for (ULong64_t j = 0; j < VMeanPt.size(); j++) {
       histos.fill(HIST("hPtCh"), nCh, VMeanPt[j]);
     }
 
