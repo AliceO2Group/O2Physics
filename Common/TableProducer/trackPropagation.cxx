@@ -55,6 +55,7 @@ struct TrackPropagation {
   Produces<aod::TracksDCACov> tracksDCACov;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
 
   bool fillTracksDCA = false;
   bool fillTracksDCACov = false;
@@ -75,7 +76,7 @@ struct TrackPropagation {
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", 0, "Apply Improver/DCA corrections to MC"};
-  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|pathCurrFileDcaXY=|pathUpgrFileDcaXY=|pathCurrFileDcaZ=|pathUpgrFileDcaZ=", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|pathCurrFileDcaXY=Users/h/hsharma/dcaCorr/LHC22l1b3_dcaXY|pathUpgrFileDcaXY=Users/h/hsharma/dcaCorr/LHC22s_apass5_dcaXY|pathCurrFileDcaZ=Users/h/hsharma/dcaCorr/LHC22l1b3_dcaZ|pathUpgrFileDcaZ=Users/h/hsharma/dcaCorr/LHC22s_apass5_dcaZ|nameFile=corrFile.root|oneOverPtCurrent=0|oneOverPtUpgrded=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
@@ -118,9 +119,8 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    
     /// TrackTuner initialization
-    if(useTrackTuner) {
+    if (useTrackTuner) {
       std::string outputStringParams = trackTunerObj.configParams(trackTunerParams);
       trackTunerObj.getDcaGraphs();
       trackTunedTracks->SetTitle(outputStringParams.c_str());
@@ -195,7 +195,7 @@ struct TrackPropagation {
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
-        if constexpr (IS_MC && fillCovMat) {  /// track tuner ok only if cov. matrix is used
+        if constexpr (IS_MC && fillCovMat) { /// track tuner ok only if cov. matrix is used
           if (useTrackTuner) {
             // call track propagator
             // this function reads many many things
@@ -274,7 +274,7 @@ struct TrackPropagation {
   {
     fillTrackTables</*IS_MC = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false, tracksIUWithMc, aod::McParticles>(tracks, mcParticles, collisions, bcs);
   }
-  PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", true);
+  PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", false);
 
   void processCovarianceData(tracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
