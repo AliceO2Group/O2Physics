@@ -32,11 +32,15 @@ struct TrackTuner {
   bool updatePulls = false;
   std::string pathCurrFileDcaXY = ""; // Path to file containing current DCAxy graphs
   std::string pathUpgrFileDcaXY = ""; // Path to file containing New DCAxy graphs
-  std::string pathCurrFileDcaZ = ""; // Path to file containing current DCAz graphs
-  std::string pathUpgrFileDcaZ = ""; // sPath to file containing New DCAz graphs
-  float oneOverPtCurrent = 0.; // 1/pt old
-  float oneOverPtUpgrded = 0.; // 1/pt new
+  std::string pathCurrFileDcaZ = "";  // Path to file containing current DCAz graphs
+  std::string pathUpgrFileDcaZ = "";  // Path to file containing New DCAz graphs
+  std::string nameFile = "";          // Common Name of different files containing graphs, found in the above paths
+  float oneOverPtCurrent = 0.;        // 1/pt old
+  float oneOverPtUpgrded = 0.;        // 1/pt new
   ///////////////////////////////
+
+  o2::ccdb::CcdbApi ccdbApi;
+  std::map<std::string, std::string> metadata;
 
   std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionCurrent;
   std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionUpgrded;
@@ -59,18 +63,18 @@ struct TrackTuner {
   std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionCurrent;
   std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionUpgrded;
 
-
   /// @brief Function to configure the TrackTuner parameters
   /// @param inputString Input string with all parameter configuration. Format: <name>=<value>|<name>=<value>
   /// @return String with the values of all parameters after configurations are listed, to cross check that everything worked well
-  std::string configParams(std::string inputString) {
-    
+  std::string configParams(std::string inputString)
+  {
+
     std::string delimiter = "|";
     std::string assignmentSymbol = "=";
-    
+
     LOG(info) << "[TrackTuner] === ";
     LOG(info) << "[TrackTuner] === Parameter configuration via std::string";
-    LOG(info) << "[TrackTuner] === Required format: \"<name>" << assignmentSymbol <<"<value>" << delimiter << "<name>" << assignmentSymbol << "<value>" << delimiter << "<name>" << assignmentSymbol << "<value>\"";
+    LOG(info) << "[TrackTuner] === Required format: \"<name>" << assignmentSymbol << "<value>" << delimiter << "<name>" << assignmentSymbol << "<value>" << delimiter << "<name>" << assignmentSymbol << "<value>\"";
     LOG(info) << "[TrackTuner] === Delimiter symbol: \"" << delimiter << "\"";
     LOG(info) << "[TrackTuner] === Assignment symbol: \"" << assignmentSymbol << "\"";
     LOG(info) << "[TrackTuner] === ";
@@ -78,36 +82,37 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner] >>> Original input string = \"" << inputString << "\"";
 
     /// Check the format of the input string
-    if(inputString.find(delimiter) == std::string::npos) {
-        // wrong delimiter symbol used
-        LOG(fatal) << "ERROR: delimiter symbol \"" << delimiter << "\" not found in the configuration string. Fix it!";
+    if (inputString.find(delimiter) == std::string::npos) {
+      // wrong delimiter symbol used
+      LOG(fatal) << "ERROR: delimiter symbol \"" << delimiter << "\" not found in the configuration string. Fix it!";
     }
-    if(inputString.find(assignmentSymbol) == std::string::npos) {
-        // wrong assignment symbol used
-        LOG(fatal) << "ERROR: assignment symbol \"" << assignmentSymbol << "\" not found in the configuration string. Fix it!";
+    if (inputString.find(assignmentSymbol) == std::string::npos) {
+      // wrong assignment symbol used
+      LOG(fatal) << "ERROR: assignment symbol \"" << assignmentSymbol << "\" not found in the configuration string. Fix it!";
     }
     int spaces = std::count(inputString.begin(), inputString.end(), ' ');
-    if(spaces > 0) {
-        // white spaces to be removed
-        LOG(fatal) << "ERROR: " << spaces << " white spaces found in the configuration string. Remove them!";
+    if (spaces > 0) {
+      // white spaces to be removed
+      LOG(fatal) << "ERROR: " << spaces << " white spaces found in the configuration string. Remove them!";
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
     /// Parameters to be configured via the string
     /// +++ to be manually updated every time one adds a new parameter to the TrackTuner.h +++
-    enum ePars {eDebugInfo=0, eUpdateTrackCovMat, eUpdateCurvature, eUpdatePulls, ePathCurrFileDcaXY, ePathUpgrFileDcaXY, ePathCurrFileDcaZ, ePathUpgrFileDcaZ, eOneOverPtCurrent, eOneOverPtUpgrded, eNPars};
+    enum ePars { eDebugInfo = 0,
+                 eUpdateTrackCovMat,
+                 eUpdateCurvature,
+                 eUpdatePulls,
+                 ePathCurrFileDcaXY,
+                 ePathUpgrFileDcaXY,
+                 ePathCurrFileDcaZ,
+                 ePathUpgrFileDcaZ,
+                 eNameCurrFile,
+                 eOneOverPtCurrent,
+                 eOneOverPtUpgrded,
+                 eNPars };
     std::map<uint8_t, std::string> mapParNames = {
-         std::make_pair(static_cast<uint8_t>(eDebugInfo), "debugInfo")
-        ,std::make_pair(static_cast<uint8_t>(eUpdateTrackCovMat), "updateTrackCovMat")
-        ,std::make_pair(static_cast<uint8_t>(eUpdateCurvature), "updateCurvature")
-        ,std::make_pair(static_cast<uint8_t>(eUpdatePulls), "updatePulls")
-        ,std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaXY), "pathCurrFileDcaXY")
-        ,std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaXY), "pathUpgrFileDcaXY")
-        ,std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaZ), "pathCurrFileDcaZ")
-        ,std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaZ), "pathUpgrFileDcaZ")
-        ,std::make_pair(static_cast<uint8_t>(eOneOverPtCurrent), "oneOverPtCurrent")
-        ,std::make_pair(static_cast<uint8_t>(eOneOverPtUpgrded), "oneOverPtUpgrded")
-    };
+      std::make_pair(static_cast<uint8_t>(eDebugInfo), "debugInfo"), std::make_pair(static_cast<uint8_t>(eUpdateTrackCovMat), "updateTrackCovMat"), std::make_pair(static_cast<uint8_t>(eUpdateCurvature), "updateCurvature"), std::make_pair(static_cast<uint8_t>(eUpdatePulls), "updatePulls"), std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaXY), "pathCurrFileDcaXY"), std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaXY), "pathUpgrFileDcaXY"), std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaZ), "pathCurrFileDcaZ"), std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaZ), "pathUpgrFileDcaZ"), std::make_pair(static_cast<uint8_t>(eNameCurrFile), "nameFile"), std::make_pair(static_cast<uint8_t>(eOneOverPtCurrent), "oneOverPtCurrent"), std::make_pair(static_cast<uint8_t>(eOneOverPtUpgrded), "oneOverPtUpgrded")};
     ///////////////////////////////////////////////////////////////////////////////////
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> Parameters before the custom settings";
@@ -119,61 +124,61 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner]     pathUpgrFileDcaXY = " << pathUpgrFileDcaXY;
     LOG(info) << "[TrackTuner]     pathCurrFileDcaZ = " << pathCurrFileDcaZ;
     LOG(info) << "[TrackTuner]     pathUpgrFileDcaZ = " << pathUpgrFileDcaZ;
+    LOG(info) << "[TrackTuner]     nameFile = " << nameFile;
     LOG(info) << "[TrackTuner]     oneOverPtCurrent = " << oneOverPtCurrent;
     LOG(info) << "[TrackTuner]     oneOverPtUpgrded = " << oneOverPtUpgrded;
 
-
-    //##############################################################################################
-    //########   split the original string, separating substrings delimited by "|" symbol   ########
+    // ##############################################################################################
+    // ########   split the original string, separating substrings delimited by "|" symbol   ########
 
     std::vector<std::string> slices = {};
 
-    while(inputString.find(delimiter) != std::string::npos) {  
-        /// we are not at the end of our string --> let's find out the next parameter to be configured!
-        slices.push_back( inputString.substr(0, inputString.find(delimiter)) ); // this gives us the substring until the next "|" character
-        inputString.erase(0, slices.back().length() + delimiter.length()); // erase the found substring for next iteration
+    while (inputString.find(delimiter) != std::string::npos) {
+      /// we are not at the end of our string --> let's find out the next parameter to be configured!
+      slices.push_back(inputString.substr(0, inputString.find(delimiter))); // this gives us the substring until the next "|" character
+      inputString.erase(0, slices.back().length() + delimiter.length());    // erase the found substring for next iteration
     }
     /// at this point, the input string is erased until the last delimiter (included)
     slices.push_back(inputString); // necessary to read the last parameter, after the last "|" symbol
 
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> String slices:";
-    for(std::string& s : slices)    LOG(info) << "[TrackTuner]     " << s;
+    for (std::string& s : slices)
+      LOG(info) << "[TrackTuner]     " << s;
 
     /// check if the number of input parameters is correct
     if (static_cast<uint8_t>(slices.size()) != eNPars) {
-        LOG(fatal) << "[TrackTuner] " << slices.size() << " parameters provided, while " << eNPars << " are expected. Fix it!";
+      LOG(fatal) << "[TrackTuner] " << slices.size() << " parameters provided, while " << eNPars << " are expected. Fix it!";
     }
 
-    //###################################################################################################################
-    //########   each split is now a std::string "<parName>=<value>" --> let's really configure each parameter   ########
+    // ###################################################################################################################
+    // ########   each split is now a std::string "<parName>=<value>" --> let's really configure each parameter   ########
 
     /// lambda expression to search for the parameter value (as string) in the configuration string
     auto getValueString = [&](uint8_t iPar) {
-        
-        /// this allows to search the parameter configuration even if they are not written in order
-        auto it = std::find_if(slices.begin(), slices.end(), [&](std::string s) {return s.find(mapParNames[iPar]) != std::string::npos;});
-        if(it == std::end(slices)) {
-          // parameter not found
-          LOG(fatal) << "\"" << mapParNames[iPar] << "\" not found in the configuration string";
-        }
-        std::string str = *it;
-        if(str.find('=') == std::string::npos || str.back() == '=') {
-          // value of the parameter missing in the configuration string
-          LOG(fatal) << "Missing value for \"" << mapParNames[iPar] << "\" in the configuration string";
-        }
-        return str.substr(str.find(assignmentSymbol)+1, str.length());
+      /// this allows to search the parameter configuration even if they are not written in order
+      auto it = std::find_if(slices.begin(), slices.end(), [&](std::string s) { return s.find(mapParNames[iPar]) != std::string::npos; });
+      if (it == std::end(slices)) {
+        // parameter not found
+        LOG(fatal) << "\"" << mapParNames[iPar] << "\" not found in the configuration string";
+      }
+      std::string str = *it;
+      if (str.find('=') == std::string::npos || str.back() == '=') {
+        // value of the parameter missing in the configuration string
+        LOG(fatal) << "Missing value for \"" << mapParNames[iPar] << "\" in the configuration string";
+      }
+      return str.substr(str.find(assignmentSymbol) + 1, str.length());
     };
 
     /// further lambda expression to handle bool initialization
     auto setBoolFromString = [=](bool& b, std::string str) {
-        if(!str.compare("1") || str.find("true") != std::string::npos || str.find("True") != std::string::npos || str.find("TRUE") != std::string::npos ) {
-            b = true;
-        } else if (!str.compare("0") || str.find("false") != std::string::npos || str.find("False") != std::string::npos || str.find("FALSE") != std::string::npos ) {
-            b = false;
-        } else {
-            LOG(fatal) << "[TrackTuner] Wrong bool initialization from configuration ";
-        }
+      if (!str.compare("1") || str.find("true") != std::string::npos || str.find("True") != std::string::npos || str.find("TRUE") != std::string::npos) {
+        b = true;
+      } else if (!str.compare("0") || str.find("false") != std::string::npos || str.find("False") != std::string::npos || str.find("FALSE") != std::string::npos) {
+        b = false;
+      } else {
+        LOG(fatal) << "[TrackTuner] Wrong bool initialization from configuration ";
+      }
     };
 
     std::string outputString = "";
@@ -211,7 +216,11 @@ struct TrackTuner {
     pathUpgrFileDcaZ = getValueString(ePathUpgrFileDcaZ);
     outputString += ", pathUpgrFileDcaZ=" + pathUpgrFileDcaZ;
     LOG(info) << "[TrackTuner]     pathUpgrFileDcaZ = " << pathUpgrFileDcaZ;
-    // Configure oneOverPtCurr 
+    // Configure nameFile
+    nameFile = getValueString(eNameCurrFile);
+    outputString += ", nameFile=" + nameFile;
+    LOG(info) << "[TrackTuner]     nameFile = " << nameFile;
+    // Configure oneOverPtCurr
     oneOverPtCurrent = std::stof(getValueString(eOneOverPtCurrent));
     outputString += ", oneOverPtCurrent=" + std::to_string(oneOverPtCurrent);
     LOG(info) << "[TrackTuner]     oneOverPtCurrent = " << oneOverPtCurrent;
@@ -220,27 +229,45 @@ struct TrackTuner {
     outputString += ", oneOverPtUpgrded=" + std::to_string(oneOverPtUpgrded);
     LOG(info) << "[TrackTuner]     oneOverPtUpgrded = " << oneOverPtUpgrded;
 
-    return outputString;    
+    return outputString;
   }
-
 
   void getDcaGraphs()
   {
-
-    const std::string fnameDCAxyFileCurr = pathCurrFileDcaXY.data();
-    const std::string fnameDCAxyFileUpgr = pathUpgrFileDcaXY.data();
-    const std::string fnameDCAzFileCurr = pathCurrFileDcaZ.data();
-    const std::string fnameDCAzFileUpgr = pathUpgrFileDcaZ.data();
-
     /*
     TODO
     --> add possibility to pick-up the file from CCDB
     */
+    o2::ccdb::CcdbApi ccdbApi;
+    std::string tmpDir[4] = {"./tmp/sim/dcaXY", "./tmp/sim/dcaZ", "./tmp/data/dcaXY", "./tmp/data/dcaZ"};
+    ccdbApi.init("http://alice-ccdb.cern.ch");
 
-    if ((fnameDCAxyFileCurr == "") || (fnameDCAzFileCurr == "") || (fnameDCAxyFileUpgr == "") || (fnameDCAzFileUpgr == "")) {
-      LOG(fatal) << "[TrackTuner] No Correction DCA files provided!";
-      return;
+    bool isCurrDCAxy = ccdbApi.retrieveBlob(pathCurrFileDcaXY.data(), tmpDir[0], metadata, 0, false, nameFile.data());
+    if (!isCurrDCAxy) {
+      LOG(fatal) << "[TrackTuner] DCAxy file for MC not found on CCDB, please check the pathCurrFileDcaXY and nameFile!";
     }
+    bool isCurrDCAz = ccdbApi.retrieveBlob(pathCurrFileDcaZ.data(), tmpDir[1], metadata, 0, false, nameFile.data());
+    if (!isCurrDCAz) {
+      LOG(fatal) << "[TrackTuner] DCAz file for MC not found on CCDB, please check the pathCurrFileDcaZ and nameFile!";
+    }
+    bool isUpgrDCAxy = ccdbApi.retrieveBlob(pathUpgrFileDcaXY.data(), tmpDir[2], metadata, 0, false, nameFile.data());
+    if (!isUpgrDCAxy) {
+      LOG(fatal) << "[TrackTuner] DCAxy file for Data not found on CCDB, please check the pathUpgrFileDcaXY and nameFile!";
+    }
+    bool isUpgrDCAz = ccdbApi.retrieveBlob(pathUpgrFileDcaZ.data(), tmpDir[3], metadata, 0, false, nameFile.data());
+    if (!isUpgrDCAz) {
+      LOG(fatal) << "[TrackTuner] DCAz file for Data not found on CCDB, please check the pathUpgrFileDcaZ and nameFile!";
+    }
+
+    const std::string fnameDCAxyFileCurr = tmpDir[0] + "/" + nameFile;
+    const std::string fnameDCAzFileCurr = tmpDir[1] + "/" + nameFile;
+    const std::string fnameDCAxyFileUpgr = tmpDir[2] + "/" + nameFile;
+    const std::string fnameDCAzFileUpgr = tmpDir[3] + "/" + nameFile;
+
+    // if ((fnameDCAxyFileCurr == "") || (fnameDCAzFileCurr == "") || (fnameDCAxyFileUpgr == "") || (fnameDCAzFileUpgr == "")) {
+    //   LOG(fatal) << "[TrackTuner] No Correction DCA files provided!";
+    //   return;
+    // }
 
     std::unique_ptr<TFile> fileCurrDcaXY(TFile::Open(fnameDCAxyFileCurr.c_str(), "READ"));
     std::unique_ptr<TFile> fileUpgrDcaXY(TFile::Open(fnameDCAxyFileUpgr.c_str(), "READ"));
@@ -248,7 +275,7 @@ struct TrackTuner {
     std::unique_ptr<TFile> fileCurrDcaZ(TFile::Open(fnameDCAzFileCurr.c_str(), "READ"));
     std::unique_ptr<TFile> fileUpgrDcaZ(TFile::Open(fnameDCAzFileUpgr.c_str(), "READ"));
 
-    if(!fileCurrDcaXY.get() || !fileUpgrDcaXY.get() || !fileCurrDcaZ.get() || !fileUpgrDcaZ.get()) {
+    if (!fileCurrDcaXY.get() || !fileUpgrDcaXY.get() || !fileCurrDcaZ.get() || !fileUpgrDcaZ.get()) {
       LOG(fatal) << "Something wrong with the input files for dca correction. Fix it!";
     }
 
@@ -262,7 +289,7 @@ struct TrackTuner {
     grDcaXYMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaXY->Get(grDcaMeanName.c_str())));
     grDcaXYPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaXY->Get(grDcaPullName.c_str())));
     grDcaXYPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaXY->Get(grDcaPullName.c_str())));
-    if(!grDcaXYResVsPtPionCurrent.get() || !grDcaXYResVsPtPionUpgrded.get() || !grDcaXYMeanVsPtPionCurrent.get() || !grDcaXYMeanVsPtPionUpgrded.get() || !grDcaXYPullVsPtPionCurrent.get() || !grDcaXYPullVsPtPionUpgrded.get()) {
+    if (!grDcaXYResVsPtPionCurrent.get() || !grDcaXYResVsPtPionUpgrded.get() || !grDcaXYMeanVsPtPionCurrent.get() || !grDcaXYMeanVsPtPionUpgrded.get() || !grDcaXYPullVsPtPionCurrent.get() || !grDcaXYPullVsPtPionUpgrded.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaXY. Fix it!";
     }
 
@@ -272,7 +299,7 @@ struct TrackTuner {
     grDcaZMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaZ->Get(grDcaMeanName.c_str())));
     grDcaZPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaZ->Get(grDcaPullName.c_str())));
     grDcaZPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaZ->Get(grDcaPullName.c_str())));
-    if(!grDcaZResVsPtPionCurrent.get() || !grDcaZResVsPtPionUpgrded.get() || !grDcaZMeanVsPtPionCurrent.get() || !grDcaZMeanVsPtPionUpgrded.get() || !grDcaZPullVsPtPionCurrent.get() || !grDcaZPullVsPtPionUpgrded.get()) {
+    if (!grDcaZResVsPtPionCurrent.get() || !grDcaZResVsPtPionUpgrded.get() || !grDcaZMeanVsPtPionCurrent.get() || !grDcaZMeanVsPtPionUpgrded.get() || !grDcaZPullVsPtPionCurrent.get() || !grDcaZPullVsPtPionUpgrded.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
     }
   }
@@ -289,8 +316,8 @@ struct TrackTuner {
     double DcaXYResUpgrded = 0.0; // sd0rpn=0.;
     double DcaZResUpgrded = 0.0;  // sd0zn =0.;
 
-    //double OneOverPtCurrent = 0.0; // spt1o =0.;
-    //double OneOverPtUpgrded = 0.0; // spt1n =0.;
+    // double OneOverPtCurrent = 0.0; // spt1o =0.;
+    // double OneOverPtUpgrded = 0.0; // spt1n =0.;
 
     double DcaXYMeanCurrent = 0.0; // sd0mrpo=0.;
     double DcaXYMeanUpgrded = 0.0; // sd0mrpn=0.;
@@ -346,34 +373,26 @@ struct TrackTuner {
     // double pt1o  =param  [4];
     double trackParOneOverPtCurrent = trackParCov.getQ2Pt();
     int sign = trackParCov.getQ2Pt() / TMath::Abs(trackParCov.getQ2Pt());
-
     // double pt1mc =parammc[4];
     double trackParOneOverPtMC = sign / mcparticle.pt();
-
-    //LOG(info) << std::scientific << std::setprecision(5);
     o2::dataformats::VertexBase vtxMC;
     vtxMC.setPos({mcparticle.vx(), mcparticle.vy(), mcparticle.vz()});
     vtxMC.setCov(0, 0, 0, 0, 0, 0); // ??? or All ZEROs // == 1 cm2? wrt prop point
 
-    if(debugInfo){
+    if (debugInfo) {
       // LOG(info) << " sign " << sign;
       // LOG(info) << " trackParCov.getQ2Pt() " << trackParOneOverPtCurrent << " " << trackParCov.getQ2Pt();
       // LOG(info) << " sign/mcparticle.pt() " << trackParOneOverPtMC;
       // LOG(info) << " (curvReco-curvMC)/curvMC " << (trackParOneOverPtCurrent - trackParOneOverPtMC)/trackParOneOverPtMC * 100.0 << "%";
       // LOG(info) << " trackParCov.getPtInv() " << trackParCov.getPtInv() <<  std::endl;
       // LOG(info) << " 1/trackParCov.getPtInv() " << 1./trackParCov.getPtInv() << " & mcparticle.pt() " << mcparticle.pt();
-
       LOG(info) << mcparticle.pt() << " " << 1 / trackParCov.getPtInv() << " " << (trackParOneOverPtCurrent - trackParOneOverPtMC) / trackParOneOverPtMC * 100.0;
-
       // LOG(info) << "Before Propagation to Production Point -> alpha: " << trackParCov.getAlpha() << ", DCAxy: " << trackParCov.getY() << ", DCAz: " << trackParCov.getZ();
     }
-
     // propagate to DCA with respect to the Production point
     o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
-
-    if(debugInfo){
+    if (debugInfo) {
       // LOG(info) << "After Propagation to Production Point -> alpha: " << trackParCov.getAlpha() << ", DCAxy: " << trackParCov.getY() << ", DCAz: " << trackParCov.getZ();
-
       LOG(info) << "track.y(): " << trackParCov.getY();
     }
 
@@ -388,7 +407,7 @@ struct TrackTuner {
     float mcVxRotated = mcparticle.vx() * TMath::Cos(trackParCov.getAlpha()) + mcparticle.vy() * TMath::Sin(trackParCov.getAlpha()); // invert
     float mcVyRotated = mcparticle.vy() * TMath::Cos(trackParCov.getAlpha()) - mcparticle.vx() * TMath::Sin(trackParCov.getAlpha());
 
-    if(debugInfo){
+    if (debugInfo) {
       // LOG(info) << "mcVy " <<  mcparticle.vy()   <<  std::endl;
       LOG(info) << "mcVxRotated " << mcVxRotated;
       LOG(info) << "mcVyRotated " << mcVyRotated;
@@ -432,7 +451,7 @@ struct TrackTuner {
     // double d0rpn =d0rpmc+dd0rpn-dd0mrpn;
     double trackParDcaXYUpgrded = trackParDcaXYMC + diffDcaXYFromMCUpgrded - diffDcaXYMeanUpgMinusCur;
 
-    if(debugInfo){
+    if (debugInfo) {
       LOG(info) << DcaZResCurrent << ", " << DcaZResUpgrded << ", diff(DcaZ - DcaZMC): " << diffDcaZFromMCCurent << ", diff upgraded: " << diffDcaZFromMCUpgrded << ", DcaZ Upgrded : " << trackParDcaZUpgrded;
       LOG(info) << DcaXYResCurrent << ", " << DcaXYResUpgrded << ", diff(DcaY - DcaYMC): " << diffDcaXYFromMCCurent << ", diff upgraded: " << diffDcaXYFromMCUpgrded << ", DcaY Upgrded :" << trackParDcaXYUpgrded;
     }
@@ -469,8 +488,8 @@ struct TrackTuner {
       // param[4]=pt1n ;
       trackParCov.setQ2Pt(trackParOneOverPtUpgrded);
     }
-    //if(debugInfo){
-      // LOG(info) << "Inside tuneTrackParams() before modifying trackParCov.getY(): " << trackParCov.getY() << " trackParOneOverPtMC = " << trackParOneOverPtMC << " diffOneOverPtFromMCUpgrded = "  << diffOneOverPtFromMCUpgrded <<  std::endl;
+    // if(debugInfo){
+    //  LOG(info) << "Inside tuneTrackParams() before modifying trackParCov.getY(): " << trackParCov.getY() << " trackParOneOverPtMC = " << trackParOneOverPtMC << " diffOneOverPtFromMCUpgrded = "  << diffOneOverPtFromMCUpgrded <<  std::endl;
     //}
 
     // Updating Single Track Covariance matrices
@@ -603,22 +622,22 @@ struct TrackTuner {
 
   // to be declared
   // ---------------
-  int getPhiBin(double phi) const
-  {
-    double pi = TMath::Pi();
-    if (phi > 2. * pi || phi < 0.)
-      return -1;
-    if ((phi <= (pi / 4.)) || (phi > 7. * (pi / 4.)))
-      return 0;
-    if ((phi > (pi / 4.)) && (phi <= 3. * (pi / 4.)))
-      return 1;
-    if ((phi > 3. * (pi / 4.)) && (phi <= 5. * (pi / 4.)))
-      return 2;
-    if ((phi > (5. * pi / 4.)) && (phi <= 7. * (pi / 4.)))
-      return 3;
-
-    return -1;
-  }
+  // int getPhiBin(double phi) const
+  // {
+  //   double pi = TMath::Pi();
+  //   if (phi > 2. * pi || phi < 0.)
+  //     return -1;
+  //   if ((phi <= (pi / 4.)) || (phi > 7. * (pi / 4.)))
+  //     return 0;
+  //   if ((phi > (pi / 4.)) && (phi <= 3. * (pi / 4.)))
+  //     return 1;
+  //   if ((phi > 3. * (pi / 4.)) && (phi <= 5. * (pi / 4.)))
+  //     return 2;
+  //   if ((phi > (5. * pi / 4.)) && (phi <= 7. * (pi / 4.)))
+  //     return 3;
+  //
+  //   return -1;
+  // }
 
   double EvalGraph(double x, const TGraphErrors* graph) const
   {
