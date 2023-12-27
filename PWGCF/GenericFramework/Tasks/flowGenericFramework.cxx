@@ -462,9 +462,11 @@ struct GenericFramework {
 
   void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
+    if (!collision.sel8())
+      return;
     const auto centrality = collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (!collision.sel8())
+    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
     QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
