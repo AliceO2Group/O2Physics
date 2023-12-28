@@ -59,7 +59,7 @@ using FemtoFullCollision =
 using FemtoFullCollisionCentRun2 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using FemtoFullCollisionCentRun3 =
-  soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
@@ -121,6 +121,11 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", true, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
   Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+  Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
+  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 0.f, "Max CentFT0 value for centrality selection"};
+
+  Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
+                                (aod::cent::centFT0C < ConfCentFT0Max);
 
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
@@ -582,8 +587,8 @@ struct femtoUniverseProducerTask {
     int cent = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      multNtr = col.centFT0M();
-      cent = col.centFT0M();
+      multNtr = col.centFT0C();
+      cent = col.centFT0C();
     }
 
     // check whether the basic event selection criteria are fulfilled
@@ -1150,7 +1155,7 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
   void
-    processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+    processTrackCentRun3Data(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& col,
                              aod::BCsWithTimestamps const&,
                              aod::FemtoFullTracks const& tracks)
   {

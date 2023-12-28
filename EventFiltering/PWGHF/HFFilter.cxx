@@ -294,7 +294,6 @@ struct HfFilter { // Main struct for HF triggers
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
-               aod::V0sLinked const& v0Links,
                aod::CascDatas const& cascades,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
@@ -943,15 +942,11 @@ struct HfFilter { // Main struct for HF triggers
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
         for (const auto& casc : cascThisColl) {
-          if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
-            continue;
-          }
           auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
-          auto v0 = casc.v0_as<aod::V0sLinked>();
-          auto v0Element = v0.v0Data_as<aod::V0Datas>();
-          auto v0DauPos = v0Element.posTrack_as<BigTracksPID>();
-          auto v0DauNeg = v0Element.negTrack_as<BigTracksPID>();
-          if (!helper.isSelectedCascade(casc, v0Element, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
+          auto v0DauPos = casc.posTrack_as<BigTracksPID>();
+          auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
+
+          if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
             continue;
           }
           if (activateQA) {

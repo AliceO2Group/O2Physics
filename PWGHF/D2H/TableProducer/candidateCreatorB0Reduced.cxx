@@ -267,11 +267,17 @@ struct HfCandidateCreatorB0ReducedExpressions {
   void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
   {
     for (const auto& candB0 : candsB0) {
+      bool filledMcInfo{false};
       for (const auto& rowDPiMcRec : rowsDPiMcRec) {
         if ((rowDPiMcRec.prong0Id() != candB0.prong0Id()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id())) {
           continue;
         }
         rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        filledMcInfo = true;
+        break;
+      }
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+        rowB0McRec(0, -1, -1.f);
       }
     }
   }

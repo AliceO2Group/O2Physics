@@ -94,10 +94,18 @@ struct lambdakzeroBuilder {
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs; // covariances
+
+  Produces<aod::V0fCIndices> v0fcindices;
+  Produces<aod::StoredV0fCCores> v0fccores;
+  Produces<aod::V0fCTrackXs> v0fctrackXs;
+  Produces<aod::V0fCCovs> v0fccovs;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables related to table creation
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+
+  Configurable<bool> storePhotonCandidates{"storePhotonCandidates", false, "store photon candidates (yes/no)"};
 
   // use auto-detect configuration
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
@@ -183,6 +191,8 @@ struct lambdakzeroBuilder {
                 kV0DCADau,
                 kV0CosPA,
                 kV0Radius,
+                kCountStandardV0,
+                kCountV0forCascade,
                 kNV0Steps };
 
   // Helper struct to pass V0 information
@@ -263,6 +273,8 @@ struct lambdakzeroBuilder {
     h->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
     h->GetXaxis()->SetBinLabel(5, "CosPA");
     h->GetXaxis()->SetBinLabel(6, "Radius");
+    h->GetXaxis()->SetBinLabel(7, "Count: Standard V0");
+    h->GetXaxis()->SetBinLabel(8, "Count: V0 exc. for casc");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -769,18 +781,46 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
-      // populates the various tables for analysis
-      v0indices(V0.posTrackId(), V0.negTrackId(),
-                V0.collisionId(), V0.globalIndex());
-      v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
-      v0cores(v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
-              v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
-              v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
-              v0candidate.dcaV0dau,
-              v0candidate.posDCAxy,
-              v0candidate.negDCAxy,
-              v0candidate.cosPA,
-              v0candidate.dcav0topv);
+      // V0 logic reminder
+      // 0: v0 saved for the only due to the cascade, 1: standalone v0, 3: standard v0 with photon-only test
+
+      if (V0.v0Type() > 0) {
+        if (V0.v0Type() > 1 && !storePhotonCandidates)
+          continue;
+        // populates the various tables for analysis
+        statisticsRegistry.v0stats[kCountStandardV0]++;
+        v0indices(V0.posTrackId(), V0.negTrackId(),
+                  V0.collisionId(), V0.globalIndex());
+        v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
+        v0cores(v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
+                v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
+                v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
+                v0candidate.dcaV0dau,
+                v0candidate.posDCAxy,
+                v0candidate.negDCAxy,
+                v0candidate.cosPA,
+                v0candidate.dcav0topv,
+                V0.v0Type());
+      } else {
+        // place V0s built exclusively for the sake of cascades
+        // in a fully independent table (though identical) to make
+        // sure there's no accidental usage of those candidates
+        // N.B.: these are obtained with *other selections* in
+        //       the svertexer!
+        statisticsRegistry.v0stats[kCountV0forCascade]++;
+        v0fcindices(V0.posTrackId(), V0.negTrackId(),
+                    V0.collisionId(), V0.globalIndex());
+        v0fctrackXs(v0candidate.posTrackX, v0candidate.negTrackX);
+        v0fccores(v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2],
+                  v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2],
+                  v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2],
+                  v0candidate.dcaV0dau,
+                  v0candidate.posDCAxy,
+                  v0candidate.negDCAxy,
+                  v0candidate.cosPA,
+                  v0candidate.dcav0topv,
+                  V0.v0Type());
+      }
 
       // populate V0 covariance matrices if required by any other task
       if (createV0CovMats) {
@@ -805,7 +845,13 @@ struct lambdakzeroBuilder {
         for (int i = 0; i < 6; i++) {
           momentumCovariance[i] = covTpositive[MomInd[i]] + covTnegative[MomInd[i]];
         }
-        v0covs(positionCovariance, momentumCovariance);
+        if (V0.v0Type() > 0) {
+          if (V0.v0Type() > 1 && !storePhotonCandidates)
+            continue;
+          v0covs(positionCovariance, momentumCovariance);
+        } else {
+          v0fccovs(positionCovariance, momentumCovariance);
+        }
       }
     }
     // En masse histo filling at end of process call
@@ -1151,17 +1197,23 @@ struct lambdakzeroV0DataLinkBuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 -> V0Data link table
-  void process(aod::V0s const& v0table, aod::V0Datas const& v0datatable)
+  void process(aod::V0s const& v0table, aod::V0Datas const& v0datatable, aod::V0fCDatas const& v0fcdatatable)
   {
-    std::vector<int> lIndices;
+    std::vector<int> lIndices, lfCIndices;
     lIndices.reserve(v0table.size());
-    for (int ii = 0; ii < v0table.size(); ii++)
+    lfCIndices.reserve(v0table.size());
+    for (int ii = 0; ii < v0table.size(); ii++) {
       lIndices[ii] = -1;
+      lfCIndices[ii] = -1;
+    }
     for (auto& v0data : v0datatable) {
       lIndices[v0data.v0Id()] = v0data.globalIndex();
     }
+    for (auto& v0fcdata : v0fcdatatable) {
+      lfCIndices[v0fcdata.v0Id()] = v0fcdata.globalIndex();
+    }
     for (int ii = 0; ii < v0table.size(); ii++) {
-      v0dataLink(lIndices[ii]);
+      v0dataLink(lIndices[ii], lfCIndices[ii]);
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -1170,6 +1222,7 @@ struct lambdakzeroV0DataLinkBuilder {
 // Extends the v0data table with expression columns
 struct lambdakzeroInitializer {
   Spawns<aod::V0Cores> v0cores;
+  Spawns<aod::V0fCCores> v0fccores;
   void init(InitContext const&) {}
 };
 

@@ -122,7 +122,7 @@ struct LFNucleiBATask {
 
   Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
-  Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum"};
+  Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum (2) p momentum."};
   Configurable<int> tritonSelConfig{"tritonSelConfig", 0, "Select tritons using (0) 3Sigma TPC triton (1) additional 3sigma TPC pi,K,p veto cut"};
   Configurable<int> helium3Pt{"helium3Pt", 0, "Select use default pT (0) or use instead 2*pT (1) for helium-3"};
   Configurable<int> antiDeuteronPt{"antiDeuteronPt", 0, "Select use default pT (0) or use instead pT shift (1) for antideuteron"};
@@ -132,8 +132,11 @@ struct LFNucleiBATask {
   TF1* fShiftPtantiHe = 0;
   TF1* fShiftPHe = 0;
   TF1* fShiftPantiHe = 0;
+  TF1* fShiftTPCmomHe = 0;
+  TF1* fShiftTPCmomantiHe = 0;
 
   TF1* fShiftAntiD = 0;
+  Configurable<bool> enableTPCmomShift{"enableTPCmomShift", false, "Flag to enable TPC momentum shift (for He only)"};
   Configurable<bool> enablePShift{"enablePShift", false, "Flag to enable P shift (for He only)"};
   Configurable<bool> enablePtShift{"enablePtShift", false, "Flag to enable Pt shift (for He only)"};
   Configurable<bool> enablePtShiftAntiD{"enablePtShiftAntiD", true, "Flag to enable Pt shift (for antiDeuteron only)"};
@@ -1410,6 +1413,9 @@ struct LFNucleiBATask {
       float shiftPPos = 0.f;
       float shiftPNeg = 0.f;
 
+      float shiftTPCmomPos = 0.f;
+      float shiftTPCmomNeg = 0.f;
+
       if (enablePtShift && !fShiftPtHe) {
         fShiftPtHe = new TF1("fShiftPtHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         auto par = (std::vector<float>)parShiftPtHe;
@@ -1432,6 +1438,18 @@ struct LFNucleiBATask {
         fShiftPantiHe = new TF1("fShiftPantiHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         auto par = (std::vector<float>)parShiftPantiHe;
         fShiftPantiHe->SetParameters(par[0], par[1], par[2], par[3], par[4]);
+      }
+
+      if (enableTPCmomShift && !fShiftTPCmomHe) {
+        fShiftTPCmomHe = new TF1("fShiftTPCmomHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        auto par = (std::vector<float>)parShiftPHe;
+        fShiftTPCmomHe->SetParameters(par[0], par[1], par[2], par[3], par[4]);
+      }
+
+      if (enableTPCmomShift && !fShiftTPCmomantiHe) {
+        fShiftTPCmomantiHe = new TF1("fShiftTPCmomantiHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        auto par = (std::vector<float>)parShiftPantiHe;
+        fShiftTPCmomantiHe->SetParameters(par[0], par[1], par[2], par[3], par[4]);
       }
 
       if (enablePtShiftAntiD && !fShiftAntiD) {
@@ -1477,15 +1495,23 @@ struct LFNucleiBATask {
       antiheTPCmomentum = track.tpcInnerParam();
 
       if (enablePShift && fShiftPHe) {
-        shiftPPos = fShiftPHe->Eval(2 * track.tpcInnerParam());
+        shiftPPos = fShiftPHe->Eval(2 * track.p());
         heP = track.p() - shiftPPos / 2.f;
-        heTPCmomentum = track.tpcInnerParam() - shiftPPos / 2.f;
       }
 
       if (enablePShift && fShiftPantiHe) {
-        shiftPNeg = fShiftPantiHe->Eval(2 * track.tpcInnerParam());
+        shiftPNeg = fShiftPantiHe->Eval(2 * track.p());
         antiheP = track.p() - shiftPNeg / 2.f;
-        antiheTPCmomentum = track.tpcInnerParam() - shiftPNeg / 2.f;
+      }
+
+      if (enableTPCmomShift && fShiftTPCmomHe) {
+        shiftTPCmomPos = fShiftTPCmomHe->Eval(2 * track.tpcInnerParam());
+        heTPCmomentum = track.tpcInnerParam() - shiftTPCmomPos / 2.f;
+      }
+
+      if (enableTPCmomShift && fShiftTPCmomantiHe) {
+        shiftTPCmomNeg = fShiftTPCmomantiHe->Eval(2 * track.tpcInnerParam());
+        antiheTPCmomentum = track.tpcInnerParam() - shiftTPCmomNeg / 2.f;
       }
 
       // p cut
@@ -2728,6 +2754,11 @@ struct LFNucleiBATask {
                 break;
               case 1:
                 massTOF = track.tofExpMom() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+                break;
+              case 2:
+                massTOF = track.p() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+                massTOFhe = heP * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+                massTOFantihe = antiheP * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
                 break;
             }
             histos.fill(HIST("tracks/h2TPCsignVsBetaGamma"), (track.beta() * gamma) / (1.f * track.sign()), track.tpcSignal());
