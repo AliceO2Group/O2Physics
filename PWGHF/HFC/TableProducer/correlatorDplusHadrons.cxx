@@ -243,7 +243,7 @@ struct HfCorrelatorDplusHadrons {
                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    int gCollisionId = collision.globalIndex();  
+    int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
