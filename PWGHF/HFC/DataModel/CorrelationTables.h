@@ -146,7 +146,7 @@ DECLARE_SOA_COLUMN(PtD, ptD, float);                //! Transverse momentum of D
 DECLARE_SOA_COLUMN(MD, mD, float);                  //! Invariant mass of D+
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);          //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);  //! Global index for the collision
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, long int); //! Timestamp for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
 } // namespace hf_dplus_meson
 
 DECLARE_SOA_TABLE(Dplus, "AOD", "DPLUS", //! D+-meson properties
