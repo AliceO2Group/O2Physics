@@ -325,7 +325,7 @@ struct HfCorrelatorDplusHadrons {
             entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
         } // Hadron Tracks loop
         cntDplus++;
-      }   // end outer Dplus loop
+      } // end outer Dplus loop
       registry.fill(HIST("hZvtx"), collision.posZ());
       registry.fill(HIST("hMultV0M"), collision.multFV0M());
     }
