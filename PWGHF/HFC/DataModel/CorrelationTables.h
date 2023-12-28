@@ -140,12 +140,12 @@ DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Gen
 // definition of columns and tables for Dplus properties
 namespace hf_dplus_meson
 {
-DECLARE_SOA_COLUMN(Phi, phi, float);                //! Phi of D+
-DECLARE_SOA_COLUMN(Eta, eta, float);                //! Eta of D+
-DECLARE_SOA_COLUMN(PtD, ptD, float);                //! Transverse momentum of D+
-DECLARE_SOA_COLUMN(MD, mD, float);                  //! Invariant mass of D+
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);          //! Pool Bin of event defined using zvtx and multiplicity
-DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);  //! Global index for the collision
+DECLARE_SOA_COLUMN(Phi, phi, float);               //! Phi of D+
+DECLARE_SOA_COLUMN(Eta, eta, float);               //! Eta of D+
+DECLARE_SOA_COLUMN(PtD, ptD, float);               //! Transverse momentum of D+
+DECLARE_SOA_COLUMN(MD, mD, float);                 //! Invariant mass of D+
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
 } // namespace hf_dplus_meson
 
@@ -161,12 +161,12 @@ DECLARE_SOA_TABLE(Dplus, "AOD", "DPLUS", //! D+-meson properties
 // definition of columns and tables for associated hadron properties
 namespace hf_assoc_tracks
 {
-DECLARE_SOA_COLUMN(Phi, phi, float);                //! Phi of hadron
-DECLARE_SOA_COLUMN(Eta, eta, float);                //! Eta of hadron
-DECLARE_SOA_COLUMN(PtH, ptH, float);                //! Transverse momentum of hadron
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);          //! Pool Bin of event defined using zvtx and multiplicity
-DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);  //! Global index for the collision
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);  //! Timestamp for the collision
+DECLARE_SOA_COLUMN(Phi, phi, float);               //! Phi of hadron
+DECLARE_SOA_COLUMN(Eta, eta, float);               //! Eta of hadron
+DECLARE_SOA_COLUMN(PtH, ptH, float);               //! Transverse momentum of hadron
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
 } // namespace hf_assoc_tracks
 
 DECLARE_SOA_TABLE(Hadron, "AOD", "HADRON", //! Associated hadron properties
