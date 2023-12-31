@@ -122,7 +122,7 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
   Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
   Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
-  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 0.f, "Max CentFT0 value for centrality selection"};
+  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
 
   Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfCentFT0Max);
@@ -162,6 +162,9 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
+  Configurable<float> ConfTPCTOFnSigmaCutPion{"ConfTPCTOFnSigmaCutPion", 10., "TPC TOF combined NSigma cut for pions"};
+  Configurable<float> ConfTPCTOFnSigmaCutProton{"ConfTPCTOFnSigmaCutProton", 10., "TPC TOF combined NSigma cut for protons"};
+  Configurable<float> ConfTPCTOFnSigmaCutKaon{"ConfTPCTOFnSigmaCutKaon", 10., "TPC TOF combined NSigma cut for kaons"};
 
   // TrackSelection *o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
@@ -618,6 +621,14 @@ struct femtoUniverseProducerTask {
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
+      }
+
+      if (!(ConfIsActivateV0 || ConfIsActivatePhi)){
+        if (track.pt() > 0.5){
+          if (!(TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion)) < ConfTPCTOFnSigmaCutPion || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton)) < ConfTPCTOFnSigmaCutProton || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon)) < ConfTPCTOFnSigmaCutKaon)){
+            continue;
+          }
+        }
       }
 
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
