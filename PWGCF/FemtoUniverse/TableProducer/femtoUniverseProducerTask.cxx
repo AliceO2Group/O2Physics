@@ -623,9 +623,9 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (!(ConfIsActivateV0 || ConfIsActivatePhi)){
-        if (track.pt() > 0.5){
-          if (!(TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion)) < ConfTPCTOFnSigmaCutPion || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton)) < ConfTPCTOFnSigmaCutProton || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon)) < ConfTPCTOFnSigmaCutKaon)){
+      if (!(ConfIsActivateV0 || ConfIsActivatePhi)) {
+        if (track.pt() > 0.5) {
+          if (!(TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion)) < ConfTPCTOFnSigmaCutPion || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton)) < ConfTPCTOFnSigmaCutProton || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon)) < ConfTPCTOFnSigmaCutKaon)) {
             continue;
           }
         }
