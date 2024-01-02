@@ -179,7 +179,8 @@ class FemtoUniverseDetaDphiStar
       for (int i = 0; i < 2; i++) {
         auto indexOfDaughter = part2.index() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
-        auto deta = part1.eta() - daughter.eta() auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        auto deta = part1.eta() - daughter.eta();
+        auto dphiAvg = CalculateDphiStar(part1, *daughter);
         dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
         histdetadpi[i][0]->Fill(deta, dphiAvg);
         if ((fabs(dphiAvg) < CutDeltaPhStar) && (fabs(deta) < CutDeltaEta)) {
