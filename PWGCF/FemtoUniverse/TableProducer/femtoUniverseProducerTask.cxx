@@ -162,9 +162,8 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
-  Configurable<float> ConfTPCTOFnSigmaCutPion{"ConfTPCTOFnSigmaCutPion", 10., "TPC TOF combined NSigma cut for pions"};
-  Configurable<float> ConfTPCTOFnSigmaCutProton{"ConfTPCTOFnSigmaCutProton", 10., "TPC TOF combined NSigma cut for protons"};
-  Configurable<float> ConfTPCTOFnSigmaCutKaon{"ConfTPCTOFnSigmaCutKaon", 10., "TPC TOF combined NSigma cut for kaons"};
+  Configurable<float> ConfTOFnSigmaCut{"ConfTOFnSigmaCut", 5., "TOF NSigma cut"};
+  Configurable<float> ConfTOFpTmin{"ConfTOFpTmin", 0.5, "TOF pT min"};
 
   // TrackSelection *o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
@@ -624,9 +623,15 @@ struct femtoUniverseProducerTask {
       }
 
       if (!(ConfIsActivateV0 || ConfIsActivatePhi)) {
-        if (track.pt() > 0.5) {
-          if (!(TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion)) < ConfTPCTOFnSigmaCutPion || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton)) < ConfTPCTOFnSigmaCutProton || TMath::Hypot(trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon)) < ConfTPCTOFnSigmaCutKaon)) {
+        if (track.pt() > ConfTOFpTmin) {
+          if (!track.hasTOF()) {
             continue;
+          }
+          std::vector<int> tmpPids = ConfChildPIDspecies;
+          for (o2::track::PID pid : tmpPids) {
+            if (!trackCuts.getNsigmaTOF(track, pid) < ConfTOFnSigmaCut) {
+              continue;
+            }
           }
         }
       }
