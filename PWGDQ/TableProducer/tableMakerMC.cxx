@@ -371,7 +371,7 @@ struct TableMakerMC {
             o2::base::Propagator::initFieldFromGRP(grpmagrun2);
           }
         } else {
-          if (fPropMuon){
+          if (fPropMuon) {
             VarManager::SetupMuonMagField();
           }
           grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
@@ -658,7 +658,7 @@ struct TableMakerMC {
           }
 
           VarManager::FillTrack<TMuonFillMap>(muon);
-	  if (fPropMuon) {
+          if (fPropMuon) {
             VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
           }
 
