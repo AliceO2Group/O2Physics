@@ -242,9 +242,8 @@ struct cascadepid {
       for (auto const& cascade : CascTable_thisCollision) {
         // Track casting
         auto bachTrack = cascade.bachelor_as<FullTracksExtIU>();
-        auto v0 = cascade.v0();
-        auto posTrack = v0.posTrack_as<FullTracksExtIU>();
-        auto negTrack = v0.negTrack_as<FullTracksExtIU>();
+        auto posTrack = cascade.posTrack_as<FullTracksExtIU>();
+        auto negTrack = cascade.negTrack_as<FullTracksExtIU>();
 
         // FIXME: TOF calculation: under construction, to follow
 

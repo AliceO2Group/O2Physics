@@ -97,11 +97,11 @@ bool ProfileSubset::OverrideBinsWithZero(int xb1, int yb1, int xb2, int yb2)
   if (GetNbinsX() < xb1 || GetNbinsX() < xb2) {
     lHaveToQuit = kTRUE;
     printf("xBins out of range! (%i-%i vs %i)\n", xb1, xb2, GetNbinsX());
-  };
+  }
   if (GetNbinsY() < yb1 || GetNbinsY() < yb2) {
     lHaveToQuit = kTRUE;
     printf("yBins out of range! (%i-%i vs %i)\n", yb1, yb2, GetNbinsY());
-  };
+  }
   if (lHaveToQuit)
     return kFALSE;
   for (int ix = xb1; ix <= xb2; ix++) {

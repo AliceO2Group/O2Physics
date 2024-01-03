@@ -233,6 +233,8 @@ struct HfTreeCreatorXicToPKPi {
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
 
   HfHelper hfHelper;
 
@@ -272,15 +274,21 @@ struct HfTreeCreatorXicToPKPi {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      if (fillOnlyBackground && downSampleBkgFactor < 1.) {
+        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+      }
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1) {
           if (fillCandidateLiteTable) {
+
             rowCandidateLite(
               candidate.chi2PCA(),
               candidate.decayLength(),
@@ -451,14 +459,19 @@ struct HfTreeCreatorXicToPKPi {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      if (downSampleBkgFactor < 1.) {
+        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+      }
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.chi2PCA(),
@@ -577,6 +590,7 @@ struct HfTreeCreatorXicToPKPi {
           }
         }
       };
+
       fillTable(0, candidate.isSelXicToPKPi(), hfHelper.invMassXicToPKPi(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
       fillTable(1, candidate.isSelXicToPiKP(), hfHelper.invMassXicToPiKP(candidate), hfHelper.ctXic(candidate), hfHelper.yXic(candidate), hfHelper.eXic(candidate));
     }

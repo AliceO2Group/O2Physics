@@ -29,6 +29,7 @@
 
 #include "EMCALBase/Geometry.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -179,10 +180,12 @@ struct Pi0QCTask {
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
 
-    // event properties
-    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsEMCTrigg", "Number of EMC triggered events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{4, 0.5, 4.5}});
+    auto heventType = mHistManager.get<TH1>(HIST("events"));
+    heventType->GetXaxis()->SetBinLabel(1, "All events");
+    heventType->GetXaxis()->SetBinLabel(2, "One collision in BC");
+    heventType->GetXaxis()->SetBinLabel(3, "Triggered");
+    heventType->GetXaxis()->SetBinLabel(4, "Selected");
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
@@ -239,11 +242,17 @@ struct Pi0QCTask {
   }
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision, selectedClusters const& clusters)
+  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, selectedClusters const& clusters)
   {
-    // for(const auto & collision : theCollisions){
-    mHistManager.fill(HIST("eventsAll"), 1);
+    mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
     LOG(debug) << "processCollisions";
+
+    if (collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
+      LOG(debug) << "Event not selected becaus there are multiple collisions in this BC, skipping";
+      return;
+    }
+    mHistManager.fill(HIST("events"), 2); // Fill "One collision in BC" bin of event histogram
+
     // do event selection if mDoEventSel is specified
     // currently the event selection is hard coded to kTVXinEMC
     // but other selections are possible that are defined in TriggerAliases.h
@@ -251,12 +260,13 @@ struct Pi0QCTask {
       LOG(debug) << "Event not selected becaus it is not kTVXinEMC, skipping";
       return;
     }
+    mHistManager.fill(HIST("events"), 3); // Fill "Triggered" bin of event histogram
     mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
     if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
       LOG(debug) << "Event not selected because of z-vertex cut z= " << collision.posZ() << " > " << mVertexCut << " cm, skipping";
       return;
     }
-    mHistManager.fill(HIST("eventsSelected"), 1);
+    mHistManager.fill(HIST("events"), 4); // Fill "Selected" bin of event histogram
     mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
 
     ProcessClusters(clusters);
@@ -381,7 +391,7 @@ struct Pi0QCTask {
       LOG(debug) << "Cluster rejected because of energy cut";
       return true;
     }
-    if (cluster.nCells() <= mMinNCellsCut) {
+    if (cluster.nCells() < mMinNCellsCut) {
       LOG(debug) << "Cluster rejected because of nCells cut";
       return true;
     }
@@ -400,8 +410,6 @@ struct Pi0QCTask {
   void ProcessMesons()
   {
     LOG(debug) << "ProcessMesons " << mPhotons.size();
-
-    mHistManager.fill(HIST("eventsEMCTrigg"), 1);
 
     // if less then 2 clusters are found, skip event
     if (mPhotons.size() < 2)

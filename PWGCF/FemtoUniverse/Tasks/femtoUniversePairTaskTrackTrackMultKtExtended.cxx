@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniversePairTaskTrackTrackMultKt.cxx
+/// \file femtoUniversePairTaskTrackTrackMultKtExtended.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
@@ -57,7 +57,7 @@ static const float cutsTable[nPart][nCuts]{
   {4.05f, 1.f, 3.f, 3.f, 100.f}};
 } // namespace
 
-struct femtoUniversePairTaskTrackTrackMultKt {
+struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -134,7 +134,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
 
   /// Event part
   Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
-  Configurable<float> ConfV0MHigh{"ConfV0MHigh", 1000.0, "Upper limit for V0M multiplicity"};
+  Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
 
   Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
@@ -144,8 +144,8 @@ struct femtoUniversePairTaskTrackTrackMultKt {
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
-  ConfigurableAxis ConfMultKstarBins{"ConfMultKstarBins", {VARIABLE_WIDTH, 0.0f, 13.0f, 20.0f, 30.0f, 40.0f, 50.0f, 100.0f, 99999.f}, "Bins for kstar analysis in multiplicity bins (10 is maximum)"};
+  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity or centrality"}; // \todo to be obtained from the hash task
+  ConfigurableAxis ConfMultKstarBins{"ConfMultKstarBins", {VARIABLE_WIDTH, 0.0f, 13.0f, 20.0f, 30.0f, 40.0f, 50.0f, 100.0f, 99999.f}, "Bins for kstar analysis in multiplicity or centrality bins (10 is maximum)"};
   ConfigurableAxis ConfKtKstarBins{"ConfKtKstarBins", {VARIABLE_WIDTH, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 2.0f, 99999.f}, "Bins for kstar analysis in kT bins (10 is maximum)"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
@@ -162,6 +162,8 @@ struct femtoUniversePairTaskTrackTrackMultKt {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
 
   Configurable<bool> cfgProcessPM{"cfgProcessPM", false, "Process particles of the opposite charge"};
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process particles of the same, positice charge"};
@@ -389,7 +391,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;
@@ -540,7 +542,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
     if (cfgProcessMM)
       doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKt, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processSameEvent, "Enable processing same event", true);
 
   /// process function for to call doSameEvent with Monte Carlo
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
@@ -565,7 +567,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
     if (cfgProcessMM)
       doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKt, processSameEventMC, "Enable processing same event for Monte Carlo", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
@@ -664,7 +666,7 @@ struct femtoUniversePairTaskTrackTrackMultKt {
       }
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKt, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processMixedEvent, "Enable processing mixed events", true);
 
   /// brief process function for to call doMixedEvent with Monte Carlo
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
@@ -705,13 +707,13 @@ struct femtoUniversePairTaskTrackTrackMultKt {
       }
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKt, processMixedEventMC, "Enable processing mixed events MC", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processMixedEventMC, "Enable processing mixed events MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniversePairTaskTrackTrackMultKt>(cfgc),
+    adaptAnalysisTask<femtoUniversePairTaskTrackTrackMultKtExtended>(cfgc),
   };
   return workflow;
 }

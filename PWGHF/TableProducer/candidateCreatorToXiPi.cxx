@@ -82,7 +82,6 @@ struct HfCandidateCreatorToXiPi {
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using V0sLinked = soa::Join<V0s, V0DataLink>;
   using MySkimIdx = soa::Filtered<aod::HfCascLf2Prongs>;
 
   Filter filterSelectIndexes = (aod::hf_track_index::hfflag > static_cast<uint8_t>(0));
@@ -104,7 +103,6 @@ struct HfCandidateCreatorToXiPi {
                aod::BCsWithTimestamps const&,
                TracksWCovDca const&,
                MyCascTable const&, CascadesLinked const&,
-               MyV0Table const&, V0sLinked const&,
                MySkimIdx const& candidates)
   {
 
@@ -112,7 +110,7 @@ struct HfCandidateCreatorToXiPi {
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
     double massXiFromPDG = MassXiMinus;     // pdg code 3312
     double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
-    double massXicFromPDG = MassXiCZero;    // pdg code 4132
+    double massXicFromPDG = MassXiC0;       // pdg code 4132
 
     // 2-prong vertex fitter to build the omegac/xic vertex
     o2::vertexing::DCAFitterN<2> df;
@@ -148,12 +146,11 @@ struct HfCandidateCreatorToXiPi {
 
       auto trackPion = cand.prong0_as<TracksWCovDca>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      int v0index = cascAodElement.v0Id();
       auto casc = cascAodElement.cascData_as<MyCascTable>();
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
-      auto v0AodElement = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0AodElement.v0Data_as<MyV0Table>();      // V0 <-- xi
-      auto trackV0Dau0 = v0.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
-      auto trackV0Dau1 = v0.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
+      auto trackV0Dau0 = casc.posTrack_as<TracksWCovDca>();       // V0 positive daughter track
+      auto trackV0Dau1 = casc.negTrack_as<TracksWCovDca>();       // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
@@ -315,7 +312,7 @@ struct HfCandidateCreatorToXiPi {
                    impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                    impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                    std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                   casc.v0Id(), v0.posTrackId(), v0.negTrackId(),
+                   v0index, casc.posTrackId(), casc.negTrackId(),
                    casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
                    mLambda, mCasc, mCharmBaryon,
                    cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -364,7 +361,7 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t debugGenLambda = 0;
 
     int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
-    int pdgCodeXic0 = Pdg::kXiCZero;    // 4132
+    int pdgCodeXic0 = Pdg::kXiC0;       // 4132
     int pdgCodeXiMinus = kXiMinus;      // 3312
     int pdgCodeLambda = kLambda0;       // 3122
     int pdgCodePiPlus = kPiPlus;        // 211

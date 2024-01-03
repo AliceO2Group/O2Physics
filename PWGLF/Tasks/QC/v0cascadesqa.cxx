@@ -560,15 +560,9 @@ struct v0cascadesQA {
     }
 
     for (auto& casc : Cascades) {
-
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
-      auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
 
       // histos_Casc.fill(HIST("XiProgSelections"), );
       // histos_Casc.fill(HIST("OmegaProgSelections"), );
@@ -666,14 +660,8 @@ struct v0cascadesQA {
 
         histos_Casc.fill(HIST("QA_XiMinusCandidates"), 1.5);
 
-        auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-        if (!(v0index.has_v0Data())) {
-          continue; // skip those cascades for which V0 doesn't exist
-        }
-        auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-
-        auto reconegtrack = v0.negTrack_as<MyTracksMC>();
-        auto recopostrack = v0.posTrack_as<MyTracksMC>();
+        auto reconegtrack = casc.negTrack_as<MyTracksMC>();
+        auto recopostrack = casc.posTrack_as<MyTracksMC>();
         auto recobachelor = casc.bachelor_as<MyTracksMC>();
         if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle() || !recobachelor.has_mcParticle()) {
           continue;

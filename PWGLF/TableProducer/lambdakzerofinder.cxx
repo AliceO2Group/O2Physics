@@ -125,7 +125,7 @@ struct lambdakzerofinder {
   Produces<aod::V0Indices> v0indices;
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
-  Produces<aod::V0s> v0;
+  Produces<aod::V0s_001> v0;
   Produces<aod::V0DataLink> v0datalink;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -289,8 +289,8 @@ struct lambdakzerofinder {
             pvec0[0], pvec0[1], pvec0[2],
             pvec1[0], pvec1[1], pvec1[2],
             TMath::Sqrt(fitter.getChi2AtPCACandidate()),
-            t1.dcaXY(), t2.dcaXY(), cosPA, smallestDCA);
-    v0datalink(v0cores.lastIndex());
+            t1.dcaXY(), t2.dcaXY(), cosPA, smallestDCA, 1);
+    v0datalink(v0cores.lastIndex(), -1);
     return 1;
   }
 
