@@ -172,7 +172,7 @@ void CommonProcess1(TrackTable tracks, Histograms& histos, int p) // Process tem
   int mult = 0, sign;
   int etabin1, etabin2, phibin1, phibin2;
   std::shared_ptr<TH2> h2d_1p[2][2] = {{histos.template get<TH2>(HIST("h2d_n1_etaPhiM")), histos.template get<TH2>(HIST("h2d_pt_etaPhiM"))}, {histos.template get<TH2>(HIST("h2d_n1_etaPhiP")), histos.template get<TH2>(HIST("h2d_pt_etaPhiP"))}}, h2d_2p[3][4] = {{histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2MM"))}, {histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2PM")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2PM")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM"))}, {histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"))}};
-  std::shared_ptr<TH1> h1i_1p[2] = {histos.template get<TH1>(HIST("h1d_n1_ptP")), histos.template get<TH1>(HIST("h1d_n1_ptM"))};
+  std::shared_ptr<TH1> h1d_1p[2] = {histos.template get<TH1>(HIST("h1d_n1_ptP")), histos.template get<TH1>(HIST("h1d_n1_ptM"))};
   for (auto track1 : tracks) {
     //-----Single Particle Distribution----------------------------------------
     //-----PION PID------------------------------------------------------------
@@ -187,7 +187,7 @@ void CommonProcess1(TrackTable tracks, Histograms& histos, int p) // Process tem
     histos.fill(HIST("h1d_n1_phi"), track1.phi());
     histos.fill(HIST("h1d_n1_eta"), track1.eta());
     sign = (track1.sign() + 1) / 2;
-    h1i_1p[sign]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
+    h1d_1p[sign]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
     h2d_1p[sign][0]->Fill(track1.eta(), track1.phi());
     h2d_1p[sign][1]->Fill(track1.eta(), track1.phi(), track1.pt());
     etabin1 = (track1.eta() + 0.8) * 15;
@@ -226,7 +226,7 @@ void CommonProcess2(TrackTable tracks, Histograms& histos, int p1, int p2) // Pr
   int mult = 0, sign1, sign2;
   int etabin1, etabin2, phibin1, phibin2;
   std::shared_ptr<TH2> h2d_1p[2][2][2] = {{{histos.template get<TH2>(HIST("h2d_n1_etaPhiM1")), histos.template get<TH2>(HIST("h2d_pt_etaPhiM1"))}, {histos.template get<TH2>(HIST("h2d_n1_etaPhiP1")), histos.template get<TH2>(HIST("h2d_pt_etaPhiP1"))}}, {{histos.template get<TH2>(HIST("h2d_n1_etaPhiM2")), histos.template get<TH2>(HIST("h2d_pt_etaPhiM2"))}, {histos.template get<TH2>(HIST("h2d_n1_etaPhiP2")), histos.template get<TH2>(HIST("h2d_pt_etaPhiP2"))}}}, h2d_2p[2][2][4] = {{{histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2MM")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2MM"))}, {histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2PM21")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2PM21")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM21")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM21"))}}, {{histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2PM12")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2PM12")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2PM12")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PM12"))}, {histos.template get<TH2>(HIST("h2d_n2_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_npt_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_ptn_eta1Phi1Eta2Phi2PP")), histos.template get<TH2>(HIST("h2d_ptpt_eta1Phi1Eta2Phi2PP"))}}};
-  std::shared_ptr<TH1> h1i_1p[2][2] = {{histos.template get<TH1>(HIST("h1d_n1_ptP1")), histos.template get<TH1>(HIST("h1d_n1_ptM1"))}, {histos.template get<TH1>(HIST("h1d_n1_ptP2")), histos.template get<TH1>(HIST("h1d_n1_ptM2"))}};
+  std::shared_ptr<TH1> h1d_1p[2][2] = {{histos.template get<TH1>(HIST("h1d_n1_ptP1")), histos.template get<TH1>(HIST("h1d_n1_ptM1"))}, {histos.template get<TH1>(HIST("h1d_n1_ptP2")), histos.template get<TH1>(HIST("h1d_n1_ptM2"))}};
   for (auto track1 : tracks) {
     //-----Single Particle Distribution----------------------------------------
     //-----KAON PID Particle2--------------------------------------------------
@@ -237,7 +237,7 @@ void CommonProcess2(TrackTable tracks, Histograms& histos, int p1, int p2) // Pr
       histos.fill(HIST("h1d_n1_phi2"), track1.phi());
       histos.fill(HIST("h1d_n1_eta2"), track1.eta());
       sign1 = (track1.sign() + 1) / 2;
-      h1i_1p[1][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
+      h1d_1p[1][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
       h2d_1p[1][sign1][0]->Fill(track1.eta(), track1.phi());
       h2d_1p[1][sign1][1]->Fill(track1.eta(), track1.phi(), track1.pt());
     }
@@ -250,7 +250,7 @@ void CommonProcess2(TrackTable tracks, Histograms& histos, int p1, int p2) // Pr
     histos.fill(HIST("h1d_n1_phi1"), track1.phi());
     histos.fill(HIST("h1d_n1_eta1"), track1.eta());
     sign1 = (track1.sign() + 1) / 2;
-    h1i_1p[0][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
+    h1d_1p[0][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt()));
     h2d_1p[0][sign1][0]->Fill(track1.eta(), track1.phi());
     h2d_1p[0][sign1][1]->Fill(track1.eta(), track1.phi(), track1.pt());
     //-------------------------------------------------------------------------
