@@ -624,14 +624,14 @@ struct femtoUniverseProducerTask {
 
       if (!(ConfIsActivateV0 || ConfIsActivatePhi)) {
         if (track.pt() > ConfTOFpTmin) {
-          if(!track.hasTOF()){
-          continue;
-        }
-        std::vector<int> tmpPids = ConfChildPIDspecies;
-        for (o2::track::PID pid : tmpPids){
-          if (!trackCuts.getNsigmaTOF(track, pid) < ConfTOFnSigmaCut) {
-                continue;
-              }
+          if (!track.hasTOF()) {
+            continue;
+          }
+          std::vector<int> tmpPids = ConfChildPIDspecies;
+          for (o2::track::PID pid : tmpPids) {
+            if (!trackCuts.getNsigmaTOF(track, pid) < ConfTOFnSigmaCut) {
+              continue;
+            }
           }
         }
       }
