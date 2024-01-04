@@ -110,9 +110,9 @@ struct lambdakzeropid {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
 
-  /// function to calculate track length of this track up to a certain segment of a detector 
+  /// function to calculate track length of this track up to a certain segment of a detector
   /// to be used internally in another funcrtion that calculates length until it finds the proper one
-  /// warning: this could be optimised further for speed 
+  /// warning: this could be optimised further for speed
   /// \param track the input track
   /// \param x1 x of the first point of the detector segment
   /// \param y1 y of the first point of the detector segment
@@ -123,15 +123,15 @@ struct lambdakzeropid {
   {
     // don't make use of the track parametrization
     float length = -104;
-    
+
     // causality protection
     std::array<float, 3> mom;
     track.getPxPyPzGlo(mom);
     // get start point
     std::array<float, 3> startPoint;
     track.getXYZGlo(startPoint);
-    
-    if( ((x1+x2)*mom[0] + (y1+y2)*mom[1]) < 0.0f )
+
+    if (((x1 + x2) * mom[0] + (y1 + y2) * mom[1]) < 0.0f)
       return -101;
 
     // get circle X, Y please
@@ -140,33 +140,33 @@ struct lambdakzeropid {
     track.getCircleParams(magneticField, trcCircle, sna, csa);
 
     // Calculate necessary inner product
-    float segmentModulus = std::hypot(x2-x1, y2-y1);
-    float alongSegment = ((trcCircle.xC - x1) * (x2 - x1) + (trcCircle.yC - y1) * (y2 - y1))/segmentModulus;
-    
-    // find point of closest approach between segment and circle center
-    float pcaX = (x2-x1)*alongSegment/segmentModulus + x1;
-    float pcaY = (y2-y1)*alongSegment/segmentModulus + y1;
+    float segmentModulus = std::hypot(x2 - x1, y2 - y1);
+    float alongSegment = ((trcCircle.xC - x1) * (x2 - x1) + (trcCircle.yC - y1) * (y2 - y1)) / segmentModulus;
 
-    float centerDistToPC = std::hypot(pcaX-trcCircle.xC, pcaY-trcCircle.yC);
+    // find point of closest approach between segment and circle center
+    float pcaX = (x2 - x1) * alongSegment / segmentModulus + x1;
+    float pcaY = (y2 - y1) * alongSegment / segmentModulus + y1;
+
+    float centerDistToPC = std::hypot(pcaX - trcCircle.xC, pcaY - trcCircle.yC);
 
     // distance pca-to-intercept in multiples of segment modulus (for convenience)
-    if(centerDistToPC > trcCircle.rC)
+    if (centerDistToPC > trcCircle.rC)
       return -103;
-    
-    float pcaToIntercept = TMath::Sqrt(TMath::Abs(trcCircle.rC * trcCircle.rC - centerDistToPC*centerDistToPC));
 
-    float interceptX1 = pcaX + (x2-x1)/segmentModulus*pcaToIntercept;
-    float interceptY1 = pcaY + (y2-y1)/segmentModulus*pcaToIntercept;
-    float interceptX2 = pcaX - (x2-x1)/segmentModulus*pcaToIntercept;
-    float interceptY2 = pcaY - (y2-y1)/segmentModulus*pcaToIntercept;
-    
-    float scalarCheck1 = ((x2-x1)*(interceptX1-x1) + (y2-y1)*(interceptY1-y1))/segmentModulus;
-    float scalarCheck2 = ((x2-x1)*(interceptX2-x1) + (y2-y1)*(interceptY2-y1))/segmentModulus;
-    
+    float pcaToIntercept = TMath::Sqrt(TMath::Abs(trcCircle.rC * trcCircle.rC - centerDistToPC * centerDistToPC));
+
+    float interceptX1 = pcaX + (x2 - x1) / segmentModulus * pcaToIntercept;
+    float interceptY1 = pcaY + (y2 - y1) / segmentModulus * pcaToIntercept;
+    float interceptX2 = pcaX - (x2 - x1) / segmentModulus * pcaToIntercept;
+    float interceptY2 = pcaY - (y2 - y1) / segmentModulus * pcaToIntercept;
+
+    float scalarCheck1 = ((x2 - x1) * (interceptX1 - x1) + (y2 - y1) * (interceptY1 - y1)) / segmentModulus;
+    float scalarCheck2 = ((x2 - x1) * (interceptX2 - x1) + (y2 - y1) * (interceptY2 - y1)) / segmentModulus;
+
     float cosAngle1 = -1000, sinAngle1 = -1000, modulus1 = -1000;
     float cosAngle2 = -1000, sinAngle2 = -1000, modulus2 = -1000;
     float length1 = -1000, length2 = -1000;
-    
+
     modulus1 = std::hypot(interceptX1 - trcCircle.xC, interceptY1 - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
     cosAngle1 = (interceptX1 - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (interceptY1 - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
     sinAngle1 = (interceptX1 - trcCircle.xC) * (startPoint[1] - trcCircle.yC) - (interceptY1 - trcCircle.yC) * (startPoint[0] - trcCircle.xC);
@@ -182,33 +182,35 @@ struct lambdakzeropid {
     sinAngle2 /= modulus2;
     length2 = trcCircle.rC * TMath::ACos(cosAngle2);
     length2 *= sqrt(1.0f + track.getTgl() * track.getTgl());
-    
+
     // rotate transverse momentum vector such that it is at intercepts
     float angle1 = TMath::ACos(cosAngle1);
-    if(sinAngle1<0) angle1 *= -1.0f;
-    float px1 = + TMath::Cos(angle1)*mom[0] + TMath::Sin(angle1)*mom[1];
-    float py1 = - TMath::Sin(angle1)*mom[0] + TMath::Cos(angle1)*mom[1];
-    
+    if (sinAngle1 < 0)
+      angle1 *= -1.0f;
+    float px1 = +TMath::Cos(angle1) * mom[0] + TMath::Sin(angle1) * mom[1];
+    float py1 = -TMath::Sin(angle1) * mom[0] + TMath::Cos(angle1) * mom[1];
+
     float angle2 = TMath::ACos(cosAngle2);
-    if(sinAngle2<0) angle2 *= -1.0f;
-    float px2 = + TMath::Cos(angle2)*mom[0] + TMath::Sin(angle2)*mom[1];
-    float py2 = - TMath::Sin(angle2)*mom[0] + TMath::Cos(angle2)*mom[1];
-    
-    float midSegX = 0.5f*(x2+x1);
-    float midSegY = 0.5f*(y2+y1);
-    
-    float scalarMomentumCheck1 = px1*midSegX+py1*midSegY;
-    float scalarMomentumCheck2 = px2*midSegX+py2*midSegY;
-    
+    if (sinAngle2 < 0)
+      angle2 *= -1.0f;
+    float px2 = +TMath::Cos(angle2) * mom[0] + TMath::Sin(angle2) * mom[1];
+    float py2 = -TMath::Sin(angle2) * mom[0] + TMath::Cos(angle2) * mom[1];
+
+    float midSegX = 0.5f * (x2 + x1);
+    float midSegY = 0.5f * (y2 + y1);
+
+    float scalarMomentumCheck1 = px1 * midSegX + py1 * midSegY;
+    float scalarMomentumCheck2 = px2 * midSegX + py2 * midSegY;
+
     float halfPerimeter = TMath::Pi() * trcCircle.rC; // perimeter check. Length should not pass this ever
-    
+
     if (scalarCheck1 > 0.0f && scalarCheck1 < segmentModulus && length1 < halfPerimeter && scalarMomentumCheck1 > 0.0f) {
       length = length1;
-      //X = interceptX1; Y = interceptY1;
+      // X = interceptX1; Y = interceptY1;
     }
     if (scalarCheck2 > 0.0f && scalarCheck2 < segmentModulus && length2 < halfPerimeter && scalarMomentumCheck2 > 0.0f) {
       length = length2;
-      //X = interceptX2; Y = interceptY2;
+      // X = interceptX2; Y = interceptY2;
     }
     return length;
   }
@@ -216,20 +218,22 @@ struct lambdakzeropid {
   /// function to calculate track length of this track up to a certain segmented detector
   /// \param track the input track
   /// \param magneticField the magnetic field to use when propagating
-  float findInterceptLength(o2::track::TrackParCov track, float magneticField){
-   for(int iSeg=0; iSeg<18; iSeg++){
+  float findInterceptLength(o2::track::TrackParCov track, float magneticField)
+  {
+    for (int iSeg = 0; iSeg < 18; iSeg++) {
       // Detector segmentation loop
-      float segmentAngle = 20.0f/180.0f * TMath::Pi();
-      float theta = static_cast<float>(iSeg)*20.0f/180.0f * TMath::Pi();
-      float halfWidth = tofPosition*TMath::Tan(0.5f*segmentAngle);
-      float x1 = TMath::Cos(theta)*(-halfWidth) + TMath::Sin(theta)*tofPosition;
-      float y1 = -TMath::Sin(theta)*(-halfWidth) + TMath::Cos(theta)*tofPosition;
-      float x2 = TMath::Cos(theta)*(+halfWidth) + TMath::Sin(theta)*tofPosition;
-      float y2 = -TMath::Sin(theta)*(+halfWidth) + TMath::Cos(theta)*tofPosition;
+      float segmentAngle = 20.0f / 180.0f * TMath::Pi();
+      float theta = static_cast<float>(iSeg) * 20.0f / 180.0f * TMath::Pi();
+      float halfWidth = tofPosition * TMath::Tan(0.5f * segmentAngle);
+      float x1 = TMath::Cos(theta) * (-halfWidth) + TMath::Sin(theta) * tofPosition;
+      float y1 = -TMath::Sin(theta) * (-halfWidth) + TMath::Cos(theta) * tofPosition;
+      float x2 = TMath::Cos(theta) * (+halfWidth) + TMath::Sin(theta) * tofPosition;
+      float y2 = -TMath::Sin(theta) * (+halfWidth) + TMath::Cos(theta) * tofPosition;
       float length = trackLengthToSegment(track, x1, y1, x2, y2, magneticField);
-      if( length > 0 ) return length;
+      if (length > 0)
+        return length;
     }
-    return -100; // not reached / not found 
+    return -100; // not reached / not found
   }
 
   void init(InitContext& context)
