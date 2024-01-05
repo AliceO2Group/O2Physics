@@ -155,7 +155,7 @@ struct strangederivedbuilder {
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
-                      collision.centFT0C(), collision.centFV0A());
+                     collision.centFT0C(), collision.centFV0A());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.timestamp(), bc.runNumber());
       }
