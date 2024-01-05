@@ -466,7 +466,7 @@ bool FemtoUniverseV0Selection::isSelectedMinimal(C const& col, V const& v0,
   }
 
   // check that track combinations for V0 or antiV0 would be fulfilling PID
-  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  float nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
   // antiV0
   auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
   auto nSigmaPiPos = posTrack.tpcNSigmaPi();
@@ -564,7 +564,7 @@ std::array<cutContainerType, 5>
   auto diffAntiLambda = abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
 
   float sign = 0.;
-  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  float nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
   auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
   auto nSigmaPiPos = posTrack.tpcNSigmaPi();
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
