@@ -77,7 +77,7 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOFPIDs> casctofpid; // table with Nsigmas
+  Produces<aod::CascTOFPIDs> casctofpids; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -249,7 +249,7 @@ struct cascadepid {
                     posTrack.length(), negTrack.length(), bachTrack.length(),
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, );
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
     }
   }

@@ -147,21 +147,17 @@ struct strangederivedbuilder {
 
   void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    int currentCollIdx = -1;
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0;
       // casc table sliced
       if (strange || fillEmptyCollisions) {
-        if (currentCollIdx != collIdx) {
-          strangeColl(collision.posX(), collision.posY(), collision.posZ());
-          strangeCents(collision.centFT0M(), collision.centFT0A(),
-                       collision.centFT0C(), collision.centFV0A());
-          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-          strangeStamps(bc.timestamp(), bc.runNumber());
-          currentCollIdx = collIdx;
-        }
+        strangeColl(collision.posX(), collision.posY(), collision.posZ());
+        strangeCents(collision.centFT0M(), collision.centFT0A(),
+                      collision.centFT0C(), collision.centFV0A());
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeStamps(bc.timestamp(), bc.runNumber());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
@@ -187,16 +183,15 @@ struct strangederivedbuilder {
                      collision.centFT0C(), collision.centFV0A());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.timestamp(), bc.runNumber());
-        currentCollIdx++;
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
-        v0collref(currentCollIdx);
+        v0collref(strangeColl.lastIndex());
       for (int i = 0; i < CascTable_thisColl.size(); i++)
-        casccollref(currentCollIdx);
+        casccollref(strangeColl.lastIndex());
       for (int i = 0; i < KFCascTable_thisColl.size(); i++)
-        kfcasccollref(currentCollIdx);
+        kfcasccollref(strangeColl.lastIndex());
       for (int i = 0; i < TraCascTable_thisColl.size(); i++)
-        tracasccollref(currentCollIdx);
+        tracasccollref(strangeColl.lastIndex());
     }
   }
 
