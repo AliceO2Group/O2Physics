@@ -105,7 +105,6 @@ struct GenericFramework {
   OutputObj<FlowContainer> fFC_gen{FlowContainer("FlowContainer_gen")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
-  HistogramRegistry QAregistry{"QAregistry", {}, OutputObjHandlingPolicy::QAObject};
 
   // define global variables
   GFW* fGFW = new GFW();
@@ -184,19 +183,19 @@ struct GenericFramework {
     }
 
     if (doprocessGen) {
-      QAregistry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
-      QAregistry.add("phi_gen", "", {HistType::kTH1D, {phiAxis}});
-      QAregistry.add("eta_gen", "", {HistType::kTH1D, {etaAxis}});
-      QAregistry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
+      registry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
+      registry.add("phi_gen", "", {HistType::kTH1D, {phiAxis}});
+      registry.add("eta_gen", "", {HistType::kTH1D, {etaAxis}});
+      registry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
     }
     if (doprocessReco || doprocessData || doprocessRun2) {
-      QAregistry.add("phi", "", {HistType::kTH1D, {phiAxis}});
-      QAregistry.add("eta", "", {HistType::kTH1D, {etaAxis}});
-      QAregistry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
-      QAregistry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
+      registry.add("phi", "", {HistType::kTH1D, {phiAxis}});
+      registry.add("eta", "", {HistType::kTH1D, {etaAxis}});
+      registry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
+      registry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
       registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      QAregistry.add("cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
-      QAregistry.add("globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+      registry.add("cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
+      registry.add("globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     }
 
     if (regions.GetSize() < 0)
@@ -366,7 +365,7 @@ struct GenericFramework {
       return;
     float vtxz = collision.posZ();
     if (cfgFillQA)
-      (dt == kGen) ? QAregistry.fill(HIST("vtxZ_gen"), vtxz) : QAregistry.fill(HIST("vtxZ"), vtxz);
+      (dt == kGen) ? registry.fill(HIST("vtxZ_gen"), vtxz) : registry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
@@ -431,13 +430,13 @@ struct GenericFramework {
   inline void FillQA(T phi, T eta, T pt, T dcaxy = 0, T dcaz = 0)
   {
     if (dt == kGen) {
-      QAregistry.fill(HIST("phi_gen"), phi);
-      QAregistry.fill(HIST("eta_gen"), eta);
-      QAregistry.fill(HIST("pt_gen"), pt);
+      registry.fill(HIST("phi_gen"), phi);
+      registry.fill(HIST("eta_gen"), eta);
+      registry.fill(HIST("pt_gen"), pt);
     } else {
-      QAregistry.fill(HIST("phi"), phi);
-      QAregistry.fill(HIST("eta"), eta);
-      QAregistry.fill(HIST("pt_dcaXY_dcaZ"), pt, dcaxy, dcaz);
+      registry.fill(HIST("phi"), phi);
+      registry.fill(HIST("eta"), eta);
+      registry.fill(HIST("pt_dcaXY_dcaZ"), pt, dcaxy, dcaz);
     }
   }
 
@@ -453,8 +452,8 @@ struct GenericFramework {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }
@@ -468,8 +467,8 @@ struct GenericFramework {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }
@@ -496,8 +495,8 @@ struct GenericFramework {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }
