@@ -77,7 +77,6 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOFs> v0tof;       // raw table for checks
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -91,7 +90,6 @@ struct lambdakzeropid {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<float> tofPosition{"tofPosition", 377.934f, "TOF effective (inscribed) radius"};
   Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx in QA plots"};
-  Configurable<bool> fillRawPID{"fillRawPID", true, "fill raw PID tables for debug/x-check"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -357,14 +355,11 @@ struct lambdakzeropid {
         deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
         deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
 
-        if (fillRawPID) {
-          v0tof(posTrackRow.length(), negTrackRow.length(),
-                posTrackRow.tofSignal(), negTrackRow.tofSignal(),
-                posTrackRow.tofEvTime(), negTrackRow.tofEvTime(),
-                deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-                deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
-                deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
-        }
+        v0tofpid(lengthPositive, lengthNegative,
+                  deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
+                  deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
+                  deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
+                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); //FIXME
 
         auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
