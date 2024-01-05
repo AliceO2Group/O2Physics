@@ -157,7 +157,7 @@ struct strangederivedbuilder {
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-        strangeStamps(bc.timestamp(), bc.runNumber());
+        strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
@@ -182,7 +182,7 @@ struct strangederivedbuilder {
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-        strangeStamps(bc.timestamp(), bc.runNumber());
+        strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
