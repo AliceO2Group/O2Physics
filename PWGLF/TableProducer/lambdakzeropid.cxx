@@ -77,7 +77,6 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOFs> v0tof;       // raw table for checks
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -89,9 +88,8 @@ struct lambdakzeropid {
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<float> tofPosition{"tofPosition", 370, "TOF position for tests"};
+  Configurable<float> tofPosition{"tofPosition", 377.934f, "TOF effective (inscribed) radius"};
   Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx in QA plots"};
-  Configurable<bool> fillRawPID{"fillRawPID", true, "fill raw PID tables for debug/x-check"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -110,69 +108,130 @@ struct lambdakzeropid {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
 
-  /// function to calculate track length of this track up to a certain radius
+  /// function to calculate track length of this track up to a certain segment of a detector
+  /// to be used internally in another funcrtion that calculates length until it finds the proper one
+  /// warning: this could be optimised further for speed
   /// \param track the input track
-  /// \param radius the radius of the layer you're calculating the length to
+  /// \param x1 x of the first point of the detector segment
+  /// \param y1 y of the first point of the detector segment
+  /// \param x2 x of the first point of the detector segment
+  /// \param y2 y of the first point of the detector segment
   /// \param magneticField the magnetic field to use when propagating
-  float trackLength(o2::track::TrackParCov track, float radius, float magneticField)
+  float trackLengthToSegment(o2::track::TrackParCov track, float x1, float y1, float x2, float y2, float magneticField)
   {
     // don't make use of the track parametrization
-    float length = -100;
+    float length = -104;
 
+    // causality protection
+    std::array<float, 3> mom;
+    track.getPxPyPzGlo(mom);
+    // get start point
+    std::array<float, 3> startPoint;
+    track.getXYZGlo(startPoint);
+
+    if (((x1 + x2) * mom[0] + (y1 + y2) * mom[1]) < 0.0f)
+      return -101;
+
+    // get circle X, Y please
     o2::math_utils::CircleXYf_t trcCircle;
     float sna, csa;
     track.getCircleParams(magneticField, trcCircle, sna, csa);
 
-    // distance between circle centers (one circle is at origin -> easy)
-    float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
+    // Calculate necessary inner product
+    float segmentModulus = std::hypot(x2 - x1, y2 - y1);
+    float alongSegment = ((trcCircle.xC - x1) * (x2 - x1) + (trcCircle.yC - y1) * (y2 - y1)) / segmentModulus;
 
-    // condition of circles touching - if not satisfied returned length will be -100
-    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
-      length = 0.0f;
+    // find point of closest approach between segment and circle center
+    float pcaX = (x2 - x1) * alongSegment / segmentModulus + x1;
+    float pcaY = (y2 - y1) * alongSegment / segmentModulus + y1;
 
-      // base radical direction
-      float ux = trcCircle.xC / centerDistance;
-      float uy = trcCircle.yC / centerDistance;
-      // calculate perpendicular vector (normalized) for +/- displacement
-      float vx = -uy;
-      float vy = +ux;
-      // calculate coordinate for radical line
-      float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
-      // calculate absolute displacement from center-to-center axis
-      float displace = (0.5f / centerDistance) * TMath::Sqrt(
-                                                   (-centerDistance + trcCircle.rC - radius) *
-                                                   (-centerDistance - trcCircle.rC + radius) *
-                                                   (-centerDistance + trcCircle.rC + radius) *
-                                                   (centerDistance + trcCircle.rC + radius));
+    float centerDistToPC = std::hypot(pcaX - trcCircle.xC, pcaY - trcCircle.yC);
 
-      // possible intercept points of track and TOF layer in 2D plane
-      float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-      float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+    // distance pca-to-intercept in multiples of segment modulus (for convenience)
+    if (centerDistToPC > trcCircle.rC)
+      return -103;
 
-      // decide on correct intercept point
-      std::array<float, 3> mom;
-      track.getPxPyPzGlo(mom);
-      float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
-      float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
+    float pcaToIntercept = TMath::Sqrt(TMath::Abs(trcCircle.rC * trcCircle.rC - centerDistToPC * centerDistToPC));
 
-      // get start point
-      std::array<float, 3> startPoint;
-      track.getXYZGlo(startPoint);
+    float interceptX1 = pcaX + (x2 - x1) / segmentModulus * pcaToIntercept;
+    float interceptY1 = pcaY + (y2 - y1) / segmentModulus * pcaToIntercept;
+    float interceptX2 = pcaX - (x2 - x1) / segmentModulus * pcaToIntercept;
+    float interceptY2 = pcaY - (y2 - y1) / segmentModulus * pcaToIntercept;
 
-      float cosAngle = -1000, modulus = -1000;
+    float scalarCheck1 = ((x2 - x1) * (interceptX1 - x1) + (y2 - y1) * (interceptY1 - y1)) / segmentModulus;
+    float scalarCheck2 = ((x2 - x1) * (interceptX2 - x1) + (y2 - y1) * (interceptY2 - y1)) / segmentModulus;
 
-      if (scalarProduct1 > scalarProduct2) {
-        modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
-      } else {
-        modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
-      }
-      cosAngle /= modulus;
-      length = trcCircle.rC * TMath::ACos(cosAngle);
-      length *= sqrt(1.0f + track.getTgl() * track.getTgl());
+    float cosAngle1 = -1000, sinAngle1 = -1000, modulus1 = -1000;
+    float cosAngle2 = -1000, sinAngle2 = -1000, modulus2 = -1000;
+    float length1 = -1000, length2 = -1000;
+
+    modulus1 = std::hypot(interceptX1 - trcCircle.xC, interceptY1 - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+    cosAngle1 = (interceptX1 - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (interceptY1 - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
+    sinAngle1 = (interceptX1 - trcCircle.xC) * (startPoint[1] - trcCircle.yC) - (interceptY1 - trcCircle.yC) * (startPoint[0] - trcCircle.xC);
+    cosAngle1 /= modulus1;
+    sinAngle1 /= modulus1;
+    length1 = trcCircle.rC * TMath::ACos(cosAngle1);
+    length1 *= sqrt(1.0f + track.getTgl() * track.getTgl());
+
+    modulus2 = std::hypot(interceptX2 - trcCircle.xC, interceptY2 - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+    cosAngle2 = (interceptX2 - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (interceptY2 - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
+    sinAngle2 = (interceptX2 - trcCircle.xC) * (startPoint[1] - trcCircle.yC) - (interceptY2 - trcCircle.yC) * (startPoint[0] - trcCircle.xC);
+    cosAngle2 /= modulus2;
+    sinAngle2 /= modulus2;
+    length2 = trcCircle.rC * TMath::ACos(cosAngle2);
+    length2 *= sqrt(1.0f + track.getTgl() * track.getTgl());
+
+    // rotate transverse momentum vector such that it is at intercepts
+    float angle1 = TMath::ACos(cosAngle1);
+    if (sinAngle1 < 0)
+      angle1 *= -1.0f;
+    float px1 = +TMath::Cos(angle1) * mom[0] + TMath::Sin(angle1) * mom[1];
+    float py1 = -TMath::Sin(angle1) * mom[0] + TMath::Cos(angle1) * mom[1];
+
+    float angle2 = TMath::ACos(cosAngle2);
+    if (sinAngle2 < 0)
+      angle2 *= -1.0f;
+    float px2 = +TMath::Cos(angle2) * mom[0] + TMath::Sin(angle2) * mom[1];
+    float py2 = -TMath::Sin(angle2) * mom[0] + TMath::Cos(angle2) * mom[1];
+
+    float midSegX = 0.5f * (x2 + x1);
+    float midSegY = 0.5f * (y2 + y1);
+
+    float scalarMomentumCheck1 = px1 * midSegX + py1 * midSegY;
+    float scalarMomentumCheck2 = px2 * midSegX + py2 * midSegY;
+
+    float halfPerimeter = TMath::Pi() * trcCircle.rC; // perimeter check. Length should not pass this ever
+
+    if (scalarCheck1 > 0.0f && scalarCheck1 < segmentModulus && length1 < halfPerimeter && scalarMomentumCheck1 > 0.0f) {
+      length = length1;
+      // X = interceptX1; Y = interceptY1;
+    }
+    if (scalarCheck2 > 0.0f && scalarCheck2 < segmentModulus && length2 < halfPerimeter && scalarMomentumCheck2 > 0.0f) {
+      length = length2;
+      // X = interceptX2; Y = interceptY2;
     }
     return length;
+  }
+
+  /// function to calculate track length of this track up to a certain segmented detector
+  /// \param track the input track
+  /// \param magneticField the magnetic field to use when propagating
+  float findInterceptLength(o2::track::TrackParCov track, float magneticField)
+  {
+    for (int iSeg = 0; iSeg < 18; iSeg++) {
+      // Detector segmentation loop
+      float segmentAngle = 20.0f / 180.0f * TMath::Pi();
+      float theta = static_cast<float>(iSeg) * 20.0f / 180.0f * TMath::Pi();
+      float halfWidth = tofPosition * TMath::Tan(0.5f * segmentAngle);
+      float x1 = TMath::Cos(theta) * (-halfWidth) + TMath::Sin(theta) * tofPosition;
+      float y1 = -TMath::Sin(theta) * (-halfWidth) + TMath::Cos(theta) * tofPosition;
+      float x2 = TMath::Cos(theta) * (+halfWidth) + TMath::Sin(theta) * tofPosition;
+      float y2 = -TMath::Sin(theta) * (+halfWidth) + TMath::Cos(theta) * tofPosition;
+      float length = trackLengthToSegment(track, x1, y1, x2, y2, magneticField);
+      if (length > 0)
+        return length;
+    }
+    return -100; // not reached / not found
   }
 
   void init(InitContext& context)
@@ -282,8 +341,8 @@ struct lambdakzeropid {
         posTrack.propagateTo(v0.posX(), d_bz);
         negTrack.propagateTo(v0.negX(), d_bz);
 
-        float lengthPositive = trackLength(posTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
-        float lengthNegative = trackLength(negTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
+        float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
+        float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
         float timePositivePr = lengthPositive / velocityPositivePr;
         float timePositivePi = lengthPositive / velocityPositivePi;
         float timeNegativePr = lengthNegative / velocityNegativePr;
@@ -296,14 +355,11 @@ struct lambdakzeropid {
         deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
         deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
 
-        if (fillRawPID) {
-          v0tof(posTrackRow.length(), negTrackRow.length(),
-                posTrackRow.tofSignal(), negTrackRow.tofSignal(),
-                posTrackRow.tofEvTime(), negTrackRow.tofEvTime(),
-                deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-                deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
-                deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
-        }
+        v0tofpid(lengthPositive, lengthNegative,
+                 deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
+                 deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
+                 deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
+                 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); // FIXME
 
         auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
