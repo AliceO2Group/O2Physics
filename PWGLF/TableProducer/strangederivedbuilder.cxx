@@ -85,9 +85,9 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // mother information
-  Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
-  Produces<aod::CascMCMothers> cascmothers;           // casc mother references
-  Produces<aod::MotherMCParts> motherMCParts;         // mc particles for mothers
+  Produces<aod::V0MCMothers> v0mothers;       // V0 mother references
+  Produces<aod::CascMCMothers> cascmothers;   // casc mother references
+  Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
 
   //__________________________________________________
   // raw TOF PID for posterior use if requested
