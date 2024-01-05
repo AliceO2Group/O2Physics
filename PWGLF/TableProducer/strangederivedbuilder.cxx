@@ -63,6 +63,7 @@ struct strangederivedbuilder {
   // fundamental building blocks of derived data
   Produces<aod::StraCollision> strangeColl;      // characterises collisions
   Produces<aod::StraCents> strangeCents;         // characterises collisions / centrality
+  Produces<aod::StraStamps> strangeStamps;       // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;       // references collisions from cascades
   Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from KF cascades
@@ -144,7 +145,7 @@ struct strangederivedbuilder {
       histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     int currentCollIdx = -1;
     for (const auto& collision : collisions) {
@@ -157,6 +158,8 @@ struct strangederivedbuilder {
           strangeColl(collision.posX(), collision.posY(), collision.posZ());
           strangeCents(collision.centFT0M(), collision.centFT0A(),
                        collision.centFT0C(), collision.centFV0A());
+          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+          strangeStamps(bc.timestamp(), bc.runNumber());
           currentCollIdx = collIdx;
         }
       }
@@ -165,7 +168,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades)
+  void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -182,6 +185,8 @@ struct strangederivedbuilder {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeStamps(bc.timestamp(), bc.runNumber());
         currentCollIdx++;
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)

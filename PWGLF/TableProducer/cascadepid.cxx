@@ -245,6 +245,11 @@ struct cascadepid {
         auto negTrack = cascade.negTrack_as<FullTracksExtIU>();
 
         // FIXME: TOF calculation: under construction, to follow
+        casctofpids(0.0f, 0.0f,
+                    posTrack.length(), negTrack.length(), bachTrack.length(), 
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,);
       }
     }
   }

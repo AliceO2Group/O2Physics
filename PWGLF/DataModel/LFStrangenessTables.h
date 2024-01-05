@@ -34,6 +34,8 @@ DECLARE_SOA_TABLE(StraEPs, "AOD", "STRAEPS", //! centrality percentiles
                   qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C,
                   qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M,
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
+                  bc::RunNumber, timestamp::Timestamp);
 
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
