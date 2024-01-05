@@ -184,7 +184,7 @@ struct ChJetTriggerQATask {
 
       TLorentzVector v;
 
-      for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
+      for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
         if (!JetDerivedDataUtilities::selectTrack(trk, trackSelection)) {
           continue;
