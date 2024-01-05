@@ -181,7 +181,7 @@ struct strangederivedbuilder {
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
-                       collision.centFT0C(), collision.centFV0A());
+                     collision.centFT0C(), collision.centFV0A());
         currentCollIdx++;
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
