@@ -75,6 +75,9 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
+// Cores with references and TOF pid 
+using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
+
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
@@ -82,7 +85,7 @@ struct lambdakzeropid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<V0FullCores> perCollision = o2::aod::v0data::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -246,12 +249,8 @@ struct lambdakzeropid {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    histos.add("h3dMassK0ShortPositive", "h3dMassK0ShortPositive", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaPositive", "h3dMassLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaPositive", "h3dMassAntiLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassK0ShortNegative", "h3dMassK0ShortNegative", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaNegative", "h3dMassLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaNegative", "h3dMassAntiLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
+    // per event
+    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500,-0.5f,499.5f}});
   }
 
   void initCCDB(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision)
@@ -301,7 +300,7 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, soa::Join<aod::V0Datas, aod::V0TOFs> const& V0s)
+  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0FullCores const& V0s)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB - based on StraCollisions for derived analysis
@@ -309,6 +308,7 @@ struct lambdakzeropid {
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      histos.fill(HIST("hCandidateCounter"), V0Table_thisCollision.size());
       // V0 table sliced
       for (auto const& v0 : V0Table_thisCollision) {
         // time of V0 segment
@@ -334,10 +334,6 @@ struct lambdakzeropid {
         float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
         float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
 
-        // propagate to V0 decay vertex
-        posTrack.propagateTo(v0.posX(), d_bz);
-        negTrack.propagateTo(v0.negX(), d_bz);
-
         float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
         float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
         float timePositivePr = lengthPositive / velocityPositivePr;
@@ -357,23 +353,6 @@ struct lambdakzeropid {
                  deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                  deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); // FIXME
-
-        auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
-        // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
-        // the v0 (stored indices) contain the tags of the lambdakzero preselector
-
-        if (originalV0.isdEdxK0Short() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-        }
-        if (originalV0.isdEdxLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositiveLambdaPr, v0.mLambda());
-          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativeLambdaPi, v0.mLambda());
-        }
-        if (originalV0.isdEdxAntiLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mAntiLambda());
-          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativeK0ShortPi, v0.mAntiLambda());
-        }
       }
     }
   }
