@@ -46,7 +46,7 @@ using std::array;
 using std::cout;
 using std::endl;
 
-struct strangepidqa{
+struct strangepidqa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   ConfigurableAxis vertexZ{"vertexZ", {30, -15.0f, 15.0f}, ""};
 
@@ -62,7 +62,7 @@ struct strangepidqa{
 
   // Length axis
   ConfigurableAxis axisLength{"axisLength", {600, 0.0f, +600.0f}, "track Length (cm)"};
-  
+
   void init(InitContext const&)
   {
     // Event counter
@@ -88,17 +88,18 @@ struct strangepidqa{
     histos.add("h2dPionDeltaTimeVsPt", "h2dPionDeltaTimeVsPt", {HistType::kTH2F, {axisPt, axisDeltaTime}});
     histos.add("h2dPionDeltaTimeVsRadius", "h2dPionDeltaTimeVsRadius", {HistType::kTH2F, {axisRadius, axisDeltaTime}});
   }
-  
+
   void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFs, aod::V0TOFPIDs> const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    
-    for (auto& lambda: v0s) { // selecting photons from Sigma0
-      if (lambda.pdgCode()!=3122) continue;
-      
+
+    for (auto& lambda : v0s) { // selecting photons from Sigma0
+      if (lambda.pdgCode() != 3122)
+        continue;
+
       histos.fill(HIST("h2dLambdaRadiusVsPt"), lambda.pt(), lambda.v0radius());
       histos.fill(HIST("h2dLambdaMassVsPt"), lambda.pt(), lambda.mLambda());
-      
+
       histos.fill(HIST("h2dProtonDeltaTimeVsPt"), lambda.pt(), lambda.posTOFDeltaTLaPr());
       histos.fill(HIST("h2dProtonDeltaTimeVsRadius"), lambda.v0radius(), lambda.posTOFDeltaTLaPr());
       histos.fill(HIST("h2dPionDeltaTimeVsPt"), lambda.pt(), lambda.negTOFDeltaTLaPi());
@@ -116,7 +117,4 @@ struct strangepidqa{
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<strangepidqa>(cfgc)};
-  
 }
-
-

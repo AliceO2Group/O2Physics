@@ -75,7 +75,7 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
-// Cores with references and TOF pid 
+// Cores with references and TOF pid
 using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
 
 struct lambdakzeropid {
@@ -250,7 +250,7 @@ struct lambdakzeropid {
     ccdb->setFatalWhenNull(false);
 
     // per event
-    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500,-0.5f,499.5f}});
+    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
   }
 
   void initCCDB(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision)
@@ -319,8 +319,8 @@ struct lambdakzeropid {
         float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
 
         // initialize from V0 position and momenta
-        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1); 
-        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1); 
+        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
+        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
         float deltaTimePositiveLambdaPi = -1e+6;
         float deltaTimeNegativeLambdaPi = -1e+6;
