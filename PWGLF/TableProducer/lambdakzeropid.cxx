@@ -75,6 +75,9 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
+// Cores with references and TOF pid
+using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
+
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
@@ -82,7 +85,7 @@ struct lambdakzeropid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<V0FullCores> perCollision = o2::aod::v0data::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -117,7 +120,7 @@ struct lambdakzeropid {
   /// \param x2 x of the first point of the detector segment
   /// \param y2 y of the first point of the detector segment
   /// \param magneticField the magnetic field to use when propagating
-  float trackLengthToSegment(o2::track::TrackParCov track, float x1, float y1, float x2, float y2, float magneticField)
+  float trackLengthToSegment(o2::track::TrackPar track, float x1, float y1, float x2, float y2, float magneticField)
   {
     // don't make use of the track parametrization
     float length = -104;
@@ -216,7 +219,7 @@ struct lambdakzeropid {
   /// function to calculate track length of this track up to a certain segmented detector
   /// \param track the input track
   /// \param magneticField the magnetic field to use when propagating
-  float findInterceptLength(o2::track::TrackParCov track, float magneticField)
+  float findInterceptLength(o2::track::TrackPar track, float magneticField)
   {
     for (int iSeg = 0; iSeg < 18; iSeg++) {
       // Detector segmentation loop
@@ -246,17 +249,13 @@ struct lambdakzeropid {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    histos.add("h3dMassK0ShortPositive", "h3dMassK0ShortPositive", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaPositive", "h3dMassLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaPositive", "h3dMassAntiLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassK0ShortNegative", "h3dMassK0ShortNegative", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
-    histos.add("h3dMassLambdaNegative", "h3dMassLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
-    histos.add("h3dMassAntiLambdaNegative", "h3dMassAntiLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
+    // per event
+    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumber == collision.runNumber()) {
       return;
     }
 
@@ -268,11 +267,11 @@ struct lambdakzeropid {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = bc.runNumber();
+      mRunNumber = collision.runNumber();
       return;
     }
 
-    auto run3grp_timestamp = bc.timestamp();
+    auto run3grp_timestamp = collision.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
@@ -290,7 +289,7 @@ struct lambdakzeropid {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
-    mRunNumber = bc.runNumber();
+    mRunNumber = collision.runNumber();
   }
 
   float velocity(float lMomentum, float lMass)
@@ -301,15 +300,15 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
+  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0FullCores const& V0s)
   {
     for (const auto& collision : collisions) {
-      // Fire up CCDB
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
+      // Fire up CCDB - based on StraCollisions for derived analysis
+      initCCDB(collision);
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      histos.fill(HIST("hCandidateCounter"), V0Table_thisCollision.size());
       // V0 table sliced
       for (auto const& v0 : V0Table_thisCollision) {
         // time of V0 segment
@@ -319,11 +318,9 @@ struct lambdakzeropid {
         float timeK0Short = lengthV0 / velocityK0Short; // in picoseconds
         float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
 
-        auto const& posTrackRow = v0.posTrack_as<FullTracksExtIU>();
-        auto const& negTrackRow = v0.negTrack_as<FullTracksExtIU>();
-
-        auto posTrack = getTrackParCov(posTrackRow);
-        auto negTrack = getTrackParCov(negTrackRow);
+        // initialize from V0 position and momenta
+        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
+        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
         float deltaTimePositiveLambdaPi = -1e+6;
         float deltaTimeNegativeLambdaPi = -1e+6;
@@ -337,10 +334,6 @@ struct lambdakzeropid {
         float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
         float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
 
-        // propagate to V0 decay vertex
-        posTrack.propagateTo(v0.posX(), d_bz);
-        negTrack.propagateTo(v0.negX(), d_bz);
-
         float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
         float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
         float timePositivePr = lengthPositive / velocityPositivePr;
@@ -348,35 +341,18 @@ struct lambdakzeropid {
         float timeNegativePr = lengthNegative / velocityNegativePr;
         float timeNegativePi = lengthNegative / velocityNegativePi;
 
-        deltaTimePositiveLambdaPr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePr);
-        deltaTimePositiveLambdaPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePi);
-        deltaTimeNegativeLambdaPr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePr);
-        deltaTimeNegativeLambdaPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePi);
-        deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
-        deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
+        deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
+        deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
+        deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
+        deltaTimeNegativeLambdaPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePi);
+        deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timeNegativePi);
+        deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
 
         v0tofpid(lengthPositive, lengthNegative,
                  deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
                  deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                  deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); // FIXME
-
-        auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
-        // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
-        // the v0 (stored indices) contain the tags of the lambdakzero preselector
-
-        if (originalV0.isdEdxK0Short() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
-        }
-        if (originalV0.isdEdxLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositiveLambdaPr, v0.mLambda());
-          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativeLambdaPi, v0.mLambda());
-        }
-        if (originalV0.isdEdxAntiLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mAntiLambda());
-          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativeK0ShortPi, v0.mAntiLambda());
-        }
       }
     }
   }

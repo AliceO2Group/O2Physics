@@ -25,7 +25,7 @@ namespace o2::aod
 // this is optional but will ensure full flexibility
 // if required (for 2pc, etc)
 DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
-                  collision::PosX, collision::PosY, collision::PosZ);
+                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ);
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
