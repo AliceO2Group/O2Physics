@@ -58,12 +58,12 @@ class FemtoDreamCollisionSelection
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
-    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
-    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
-    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
-    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Zvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/MultPercentile", "; Multiplicity Percentile; Entries", kTH1F, {{100, 0, 100}});
+    mHistogramRegistry->add("Event/MultPercentileVSMultNTracksPV", "; Multiplicity Percentile; MultNTracks", kTH2F, {{100, 0, 100}, {200, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", kTH1F, {{200, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
+    mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", kTH1F, {{600, 0, 600}});
   }
 
   /// Print some debug information
@@ -134,15 +134,14 @@ class FemtoDreamCollisionSelection
   void fillQA(T const& col)
   {
     if (mHistogramRegistry) {
-      mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/Zvtx"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
-      mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
       if (mCheckIsRun3) {
-        mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
+        mHistogramRegistry->fill(HIST("Event/MultPercentile"), col.centFT0M());
+        mHistogramRegistry->fill(HIST("Event/MultPercentileVSMultNTracksPV"), col.centFT0M(), col.multNTracksPV());
       } else {
-        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5 * (col.multFV0M())); // in AliPhysics, the VOM was defined by (V0A + V0C)/2.
+        mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       }
     }
   }
