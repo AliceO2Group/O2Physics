@@ -623,7 +623,7 @@ struct ProbeThirdTrack {
           }
           auto ptTrackThird = trackThird.pt();
           auto invMass = computeInvariantMass(trackFirst, trackSecond, trackThird, channel);
-          if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || aod::tagandprobe::TagChannels::DstarMinus) && invMass > 0.18f) {
+          if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.18f) {
             continue;
           } else if (invMass < 1.65f || invMass > 2.10f) {
             continue;
