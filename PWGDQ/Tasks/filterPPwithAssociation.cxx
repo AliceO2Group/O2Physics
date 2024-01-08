@@ -989,6 +989,8 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", false, "If true, also select like sign (--/++) barrel track pairs"};
+  Configurable<bool> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", false, "If true, also select like sign (--/++) muon pairs"};
 
   int fNBarrelCuts;                                    // number of barrel selections
   int fNMuonCuts;                                      // number of muon selections
@@ -1140,8 +1142,10 @@ struct DQFilterPPTask {
         auto t1 = a1.template track_as<TTracks>();
         auto t2 = a2.template track_as<TTracks>();
         // keep just opposite-sign pairs
-        if (t1.sign() * t2.sign() > 0) {
-          continue;
+        if (!fConfigFilterLsBarrelTracksPairs) {
+          if (t1.sign() * t2.sign() > 0) {
+            continue;
+          }
         }
 
         // construct the pair and apply pair cuts
@@ -1198,8 +1202,10 @@ struct DQFilterPPTask {
         auto t1 = a1.template fwdtrack_as<TMuons>();
         auto t2 = a2.template fwdtrack_as<TMuons>();
         // keep just opposite-sign pairs
-        if (t1.sign() * t2.sign() > 0) {
-          continue;
+        if (!fConfigFilterLsMuonsPairs) {
+          if (t1.sign() * t2.sign() > 0) {
+            continue;
+          }
         }
 
         // construct the pair and apply cuts

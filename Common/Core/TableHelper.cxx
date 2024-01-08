@@ -39,18 +39,37 @@ void printTablesInWorkflow(o2::framework::InitContext& initContext)
 /// @param table name of the table to check for
 bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
 {
-  LOG(info) << "Checking if table " << table << " is needed";
+  LOG(debug) << "Checking if table " << table << " is needed";
   bool tableNeeded = false;
   auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto const& device : workflows.devices) {
     for (auto const& input : device.inputs) {
       if (input.matcher.binding == table) {
-        LOG(info) << "Table: " << input.matcher.binding << " is needed in device: " << device.name;
+        LOG(debug) << "Table: " << input.matcher.binding << " is needed in device: " << device.name;
         tableNeeded = true;
       }
     }
   }
   return tableNeeded;
+}
+
+/// Function to enable or disable a configurable flag, depending on the fact that a table is needed or not
+/// @param initContext initContext of the init function
+/// @param table name of the table to check for
+/// @param flag bool value of flag to set, if the given value is true it will be kept, disregarding the table usage in the workflow.
+void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, bool& flag)
+{
+  if (flag) {
+    LOG(info) << "Table enabled: " + table;
+    return;
+  }
+  if (isTableRequiredInWorkflow(initContext, table)) {
+    flag = true;
+    LOG(info) << "Auto-enabling table: " + table;
+    return;
+  }
+  flag = false;
+  LOG(info) << "Table disabled and not required: " + table;
 }
 
 /// Function to enable or disable a configurable flag, depending on the fact that a table is needed or not
@@ -68,8 +87,10 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
     if (flag < 0) {
       flag = 1;
       LOG(info) << "Auto-enabling table: " + table;
-    } else {
-      LOG(info) << "Table disabled: " + table;
+      return;
     }
+    LOG(info) << "Table disabled but required: " + table;
   }
+  flag = 0;
+  LOG(info) << "Table disabled and not required: " + table;
 }

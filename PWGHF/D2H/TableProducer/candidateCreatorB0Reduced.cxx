@@ -13,6 +13,7 @@
 /// \brief Reconstruction of B0 candidates
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
+/// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -34,37 +35,44 @@ using namespace o2::framework::expressions;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0Reduced {
-  Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
-  Produces<aod::HfRedB0Prongs> rowCandidateProngs; // table defined in ReducedDataModel.h
+  Produces<aod::HfCandB0Base> rowCandidateBase;         // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfRedB0Prongs> rowCandidateProngs;      // table defined in ReducedDataModel.h
+  Produces<aod::HfRedB0DpMls> rowCandidateDmesMlScores; // table defined in ReducedDataModel.h
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
-  Configurable<double> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
+  Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
   // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
   float myInvMassWindowDPi{1.};
 
-  double massPi{0.};
-  double massD{0.};
-  double massB0{0.};
-  double bz{0.};
+  float massPi{0.};
+  float massD{0.};
+  float massB0{0.};
+  float bz{0.};
 
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
+    std::array<bool, 2> doprocess{doprocessData, doprocessDataWithDmesMl};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function for data should be enabled at a time.");
+    }
+
     // histograms
     registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
@@ -86,11 +94,106 @@ struct HfCandidateCreatorB0Reduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void process(aod::HfRedCollisions const& collisions,
-               soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov> const& candsD,
-               soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
-               aod::HfOrigColCounts const& collisionsCounter,
-               aod::HfCandB0Configs const& configs)
+  /// Main function to perform B0 candidate creation
+  /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
+  /// \param collision the collision
+  /// \param candsDThisColl B0 candidates in this collision
+  /// \param tracksPionThisCollision pion tracks in this collision
+  /// \param invMass2DPiMin minimum B0 invariant-mass
+  /// \param invMass2DPiMax maximum B0 invariant-mass
+  template <bool withDmesMl, typename Cands, typename Pions>
+  void runCandidateCreation(aod::HfRedCollisions::iterator const& collision,
+                            Cands const& candsDThisColl,
+                            Pions const& tracksPionThisCollision,
+                            const float& invMass2DPiMin,
+                            const float& invMass2DPiMax)
+  {
+    auto primaryVertex = getPrimaryVertex(collision);
+    auto covMatrixPV = primaryVertex.getCov();
+
+    // Set the magnetic field from ccdb
+    bz = collision.bz();
+    df2.setBz(bz);
+
+    for (const auto& candD : candsDThisColl) {
+      auto trackParCovD = getTrackParCov(candD);
+      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+
+      for (const auto& trackPion : tracksPionThisCollision) {
+        // this track is among daughters
+        if (trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong1Id() || trackPion.trackId() == candD.prong2Id()) {
+          continue;
+        }
+
+        auto trackParCovPi = getTrackParCov(trackPion);
+        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+
+        // compute invariant mass square and apply selection
+        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+        if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
+          continue;
+        }
+        // ---------------------------------
+        // reconstruct the 2-prong B0 vertex
+        if (df2.process(trackParCovD, trackParCovPi) == 0) {
+          continue;
+        }
+        // DPi passed B0 reconstruction
+
+        // calculate relevant properties
+        const auto& secondaryVertexB0 = df2.getPCACandidate();
+        auto chi2PCA = df2.getChi2AtPCACandidate();
+        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
+        registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
+        registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
+
+        // propagate D and Pi to the B0 vertex
+        df2.propagateTracksToVertex();
+        // track.getPxPyPzGlo(pVec) modifies pVec of track
+        df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
+        df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
+
+        registry.fill(HIST("hMassB0ToDPi"), std::sqrt(invMass2DPi));
+
+        // compute impact parameters of D and Pi
+        o2::dataformats::DCA dcaD;
+        o2::dataformats::DCA dcaPion;
+        trackParCovD.propagateToDCA(primaryVertex, bz, &dcaD);
+        trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
+
+        // get uncertainty of the decay length
+        float phi, theta;
+        // getPointDirection modifies phi and theta
+        getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
+        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+
+        // fill the candidate table for the B0 here:
+        rowCandidateBase(collision.globalIndex(),
+                         collision.posX(), collision.posY(), collision.posZ(),
+                         secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
+                         errorDecayLength, errorDecayLengthXY,
+                         chi2PCA,
+                         pVecD[0], pVecD[1], pVecD[2],
+                         pVecPion[0], pVecPion[1], pVecPion[2],
+                         dcaD.getY(), dcaPion.getY(),
+                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
+                         BIT(hf_cand_b0::DecayType::B0ToDPi));
+
+        rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
+
+        if constexpr (withDmesMl) {
+          rowCandidateDmesMlScores(candD.mlScoreBkg(), candD.mlScorePrompt(), candD.mlScoreNonprompt());
+        }
+      } // pi loop
+    }   // D loop
+  }
+
+  void processData(aod::HfRedCollisions const& collisions,
+                   soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov> const& candsD,
+                   soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
+                   aod::HfOrigColCounts const& collisionsCounter,
+                   aod::HfCandB0Configs const& configs)
   {
     // DPi invariant-mass window cut
     for (const auto& config : configs) {
@@ -98,104 +201,62 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    double invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    double invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
     }
 
     static int ncol = 0;
-
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto primaryVertex = getPrimaryVertex(collision);
-      auto covMatrixPV = primaryVertex.getCov();
-
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
+      runCandidateCreation<false>(collision, candsDThisColl, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
       if (ncol % 10000 == 0) {
-        LOG(debug) << ncol << " collisions parsed";
+        LOGP(debug, "collisions parsed {}", ncol);
       }
       ncol++;
+    }
+  } // processData
 
-      // Set the magnetic field from ccdb
-      bz = collision.bz();
-      df2.setBz(bz);
+  PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processData, "Process data without any ML score", true);
 
+  void processDataWithDmesMl(aod::HfRedCollisions const& collisions,
+                             soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl> const& candsD,
+                             soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
+                             aod::HfOrigColCounts const& collisionsCounter,
+                             aod::HfCandB0Configs const& configs)
+  {
+    // DPi invariant-mass window cut
+    for (const auto& config : configs) {
+      myInvMassWindowDPi = config.myInvMassWindowDPi();
+    }
+    // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
+    // to avoid accepting DPi pairs that were not formed in DPi pair creator
+    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+
+    for (const auto& collisionCounter : collisionsCounter) {
+      registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
+    }
+
+    static int ncol = 0;
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
-      for (const auto& candD : candsDThisColl) {
-        auto trackParCovD = getTrackParCov(candD);
-        std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
+      runCandidateCreation<true>(collision, candsDThisColl, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
+      if (ncol % 10000 == 0) {
+        LOGP(debug, "collisions parsed {}", ncol);
+      }
+      ncol++;
+    }
+  } // processDataWithDmesMl
 
-        auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
-        for (const auto& trackPion : tracksPionThisCollision) {
-          // this track is among daughters
-          if (trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong1Id() || trackPion.trackId() == candD.prong2Id()) {
-            continue;
-          }
-
-          auto trackParCovPi = getTrackParCov(trackPion);
-          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-
-          // compute invariant mass square and apply selection
-          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
-          if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
-            continue;
-          }
-          // ---------------------------------
-          // reconstruct the 2-prong B0 vertex
-          if (df2.process(trackParCovD, trackParCovPi) == 0) {
-            continue;
-          }
-          // DPi passed B0 reconstruction
-
-          // calculate relevant properties
-          const auto& secondaryVertexB0 = df2.getPCACandidate();
-          auto chi2PCA = df2.getChi2AtPCACandidate();
-          auto covMatrixPCA = df2.calcPCACovMatrixFlat();
-          registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
-          registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
-
-          // propagate D and Pi to the B0 vertex
-          df2.propagateTracksToVertex();
-          // track.getPxPyPzGlo(pVec) modifies pVec of track
-          df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
-          df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
-
-          registry.fill(HIST("hMassB0ToDPi"), std::sqrt(invMass2DPi));
-
-          // compute impact parameters of D and Pi
-          o2::dataformats::DCA dcaD;
-          o2::dataformats::DCA dcaPion;
-          trackParCovD.propagateToDCA(primaryVertex, bz, &dcaD);
-          trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
-
-          // get uncertainty of the decay length
-          double phi, theta;
-          // getPointDirection modifies phi and theta
-          getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
-          auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-          auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-
-          int hfFlag = BIT(hf_cand_b0::DecayType::B0ToDPi);
-
-          // fill the candidate table for the B0 here:
-          rowCandidateBase(thisCollId,
-                           collision.posX(), collision.posY(), collision.posZ(),
-                           secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
-                           errorDecayLength, errorDecayLengthXY,
-                           chi2PCA,
-                           pVecD[0], pVecD[1], pVecD[2],
-                           pVecPion[0], pVecPion[1], pVecPion[2],
-                           dcaD.getY(), dcaPion.getY(),
-                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           hfFlag);
-
-          rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
-        } // pi loop
-      }   // D loop
-    }     // collision loop
-  }       // process
-};        // struct
+  PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processDataWithDmesMl, "Process data with ML scores of D mesons", false);
+}; // struct
 
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorB0ReducedExpressions {
@@ -206,11 +267,17 @@ struct HfCandidateCreatorB0ReducedExpressions {
   void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
   {
     for (const auto& candB0 : candsB0) {
+      bool filledMcInfo{false};
       for (const auto& rowDPiMcRec : rowsDPiMcRec) {
         if ((rowDPiMcRec.prong0Id() != candB0.prong0Id()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id())) {
           continue;
         }
         rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        filledMcInfo = true;
+        break;
+      }
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+        rowB0McRec(0, -1, -1.f);
       }
     }
   }

@@ -255,7 +255,7 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascidx(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId());
+            cascidx(/*v0.globalIndex(), */ -1, v0.posTrack().globalIndex(), v0.negTrack().globalIndex(), t0.globalIndex(), v0.negTrack().collisionId());
             cascdata(-1, lXiMass, lOmegaMass,
                      posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
@@ -346,7 +346,7 @@ struct cascadefinder {
             lNCand++;
             // If we got here, it means this is a good candidate!
 
-            cascidx(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId());
+            cascidx(/*v0.globalIndex(), */ -1, v0.posTrack().globalIndex(), v0.negTrack().globalIndex(), t0.globalIndex(), v0.negTrack().collisionId());
             cascdata(+1, lXiMass, lOmegaMass,
                      posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],

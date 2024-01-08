@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorLcMl.cxx
+/// \file candidateSelectorLcPidMl.cxx
 /// \brief Λc± → p± K∓ π± selection task using BDT
 ///
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
@@ -36,7 +36,7 @@ using namespace o2::framework;
 using namespace o2::ml;
 
 /// Struct for applying Lc selection cuts
-struct HfCandidateSelectorLcMl {
+struct HfCandidateSelectorLcPidMl {
   Produces<aod::HfSelLc> hfSelLcCandidate;
 
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
@@ -323,5 +323,5 @@ struct HfCandidateSelectorLcMl {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorLcMl>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorLcPidMl>(cfgc)};
 }

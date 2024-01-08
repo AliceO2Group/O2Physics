@@ -140,6 +140,7 @@ struct TableMaker {
   Produces<ReducedMuonsCov> muonCov;
   Produces<ReducedMuonsInfo> muonInfo;
   Produces<ReducedMFTTracks> trackMFT;
+  Produces<ReducedMFTTracksExtra> trackMFTExtra;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
@@ -189,7 +190,6 @@ struct TableMaker {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -201,12 +201,12 @@ struct TableMaker {
   void init(o2::framework::InitContext& context)
   {
     DefineCuts();
-    ccdb->setURL(fConfigCcdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
     if (fPropMuon) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
+        fCCDB->get<TGeoManager>(geoPath);
       }
     }
 
@@ -232,8 +232,8 @@ struct TableMaker {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") ||
-                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithMults") ||
+                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCent") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithMults") || context.mOptions.get<bool>("processBarrelOnlyWithCentAndMults") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCentAndMults") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") ||
@@ -246,7 +246,7 @@ struct TableMaker {
                              context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithCovAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly") ||
-                             context.mOptions.get<bool>("processMuonMLOnly") || context.mOptions.get<bool>("processMuonMLOnly"));
+                             context.mOptions.get<bool>("processMuonsAndMFT") || context.mOptions.get<bool>("processMuonsAndMFTWithFilter") || context.mOptions.get<bool>("processMuonMLOnly"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
@@ -273,6 +273,7 @@ struct TableMaker {
     if (enableMuonHistos) {
       if (fDoDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
+        histClasses += "MftTracks;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
           histClasses += "Orphan_Muons_MFTMCHMID;";
@@ -358,12 +359,15 @@ struct TableMaker {
         }
       }
       if (fIsRun2 == true) {
-        grpmagrun2 = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+        grpmagrun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
         if (grpmagrun2 != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmagrun2);
         }
       } else {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }
+        grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (grpmag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
         }
@@ -570,6 +574,7 @@ struct TableMaker {
 
     if constexpr (static_cast<bool>(TMFTFillMap)) {
       trackMFT.reserve(mftTracks.size());
+      trackMFTExtra.reserve(mftTracks.size());
       // TODO add cuts on the MFT tracks
       int nDel = 0;
       for (auto& mft : mftTracks) {
@@ -582,7 +587,11 @@ struct TableMaker {
 
         mftOffsets[mft.globalIndex()] = mft.offsets();
 
+        VarManager::FillTrack<gkMFTFillMap>(mft);
+        fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
+
         trackMFT(event.lastIndex(), trackFilteringTag, mft.pt(), mft.eta(), mft.phi());
+        trackMFTExtra(mft.mftClusterSizesAndTrackFlags(), mft.sign());
       } // end of mft : mftTracks
 
     } // end if constexpr (TMFTFillMap)
@@ -1076,6 +1085,13 @@ struct TableMaker {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
         }
       }
+
+      TString histMftName = fConfigAddMuonHistogram.value;
+      if (classStr.Contains("Mft")) {
+        if (fConfigDetailedQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMftName);
+        }
+      }
     }
 
     // create statistics histograms (event, tracks, muons)
@@ -1249,11 +1265,25 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
+  // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
+  void processBarrelOnlyWithCovWithCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                        soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithCent, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
   // Produce barrel only tables, with centrality and multiplicity -------------------------------------------------------------------
   void processBarrelOnlyWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
+  // Produce barrel only tables, with centrality and multiplicity -------------------------------------------------------------------
+  void processBarrelOnlyWithCovWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                                soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
@@ -1362,6 +1392,13 @@ struct TableMaker {
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMapWithMultsAndEventFilter, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
     }
+  }
+
+  // Produce MFT tracks tables and muons  ------------------------------------------------------------------------------------------------------------------
+  void processMuonsAndMFT(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                          aod::MFTTracks const& tracksMft, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr, tracksMft);
   }
 
   // Produce MFT tracks tables and muons, with event filtering  ------------------------------------------------------------------------------------------------------------------
@@ -1485,7 +1522,9 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithMultsAndEventFilter, "Build barrel-only DQ skimmed data model, w/ multiplicity, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovAndEventFilter, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCent, "Build barrel-only DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovWithCent, "Build barrel-only DQ skimmed data model, w/ centrality and w/ track covariance", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities and w/ track covariance", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnly, "Build barrel-only DQ skimmed data model, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
@@ -1504,6 +1543,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnly, "Build muon-only DQ skimmed data model using track-collision association tables", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model using track-collision association tables", false);
+  PROCESS_SWITCH(TableMaker, processMuonsAndMFT, "Build MFT and muons DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonsAndMFTWithFilter, "Build MFT and muons DQ skimmed data model, w/ event filter", false);
 };
 
