@@ -920,7 +920,7 @@ struct femtoUniverseProducerTask {
                   p1.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  1); // sign, workaround for now
       const int rowOfPosTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p1, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -940,7 +940,7 @@ struct femtoUniverseProducerTask {
                   p2.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  -1); // sign, workaround for now
       const int rowOfNegTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
