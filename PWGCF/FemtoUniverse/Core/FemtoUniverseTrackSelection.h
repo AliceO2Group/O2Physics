@@ -197,7 +197,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
     return outString;
   }
 
-  int getSigmaPIDMax()
+  float getSigmaPIDMax()
   {
     return nSigmaPIDMax;
   }
