@@ -33,63 +33,65 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod {
-  namespace tagandprobe {
-    enum TagChannels : uint8_t {
-      DplusToKPiPi = 0,
-      DsOrDplusToKKPi,
-      DstarPlusToDzeroPi,
-      DstarMinusToDzeroBarPi,
-      NTagChannels
-    };
+namespace o2::aod
+{
+namespace tagandprobe
+{
+enum TagChannels : uint8_t {
+  DplusToKPiPi = 0,
+  DsOrDplusToKKPi,
+  DstarPlusToDzeroPi,
+  DstarMinusToDzeroBarPi,
+  NTagChannels
+};
 
-    enum TrackTypes : uint8_t {
-      GlobalWoDca = 0,
-      GlobalWoDcaWoIts,
-      GlobalWoDcaWoTpc,
-      NTrackTypes
-    };
+enum TrackTypes : uint8_t {
+  GlobalWoDca = 0,
+  GlobalWoDcaWoIts,
+  GlobalWoDcaWoTpc,
+  NTrackTypes
+};
 
-    static constexpr int nBinsPt = 7;
-    static constexpr int nCutVars = 4;
-    static constexpr int nCutVarsDzero = 7;
-    constexpr float binsPt[nBinsPt + 1] = {0., 1., 2., 4., 6., 10., 20., 1000.};
-    auto vecBinsPt = std::vector<float>{binsPt, binsPt + nBinsPt + 1};
+static constexpr int nBinsPt = 7;
+static constexpr int nCutVars = 4;
+static constexpr int nCutVarsDzero = 7;
+constexpr float binsPt[nBinsPt + 1] = {0., 1., 2., 4., 6., 10., 20., 1000.};
+auto vecBinsPt = std::vector<float>{binsPt, binsPt + nBinsPt + 1};
 
-    // default values for the cuts
-    constexpr float cuts[nBinsPt][nCutVars] = {{0.01f, 0.01f, 2.f, 2.f},
-                                               {0.01f, 0.01f, 2.f, 2.f},
-                                               {0.02f, 0.02f, 2.f, 2.f},
-                                               {0.02f, 0.02f, 2.f, 2.f},
-                                               {0.04f, 0.04f, 2.f, 2.f},
-                                               {0.04f, 0.04f, 2.f, 2.f},
-                                               {0.06f, 0.06f, 2.f, 2.f}};
+// default values for the cuts
+constexpr float cuts[nBinsPt][nCutVars] = {{0.01f, 0.01f, 2.f, 2.f},
+                                           {0.01f, 0.01f, 2.f, 2.f},
+                                           {0.02f, 0.02f, 2.f, 2.f},
+                                           {0.02f, 0.02f, 2.f, 2.f},
+                                           {0.04f, 0.04f, 2.f, 2.f},
+                                           {0.04f, 0.04f, 2.f, 2.f},
+                                           {0.06f, 0.06f, 2.f, 2.f}};
 
-    constexpr float cutsDzero[nBinsPt][nCutVarsDzero] = {{0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                         {0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                         {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                         {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                         {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
-                                                         {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
-                                                         {0.06f, 0.06f, 2.f, 2.f, 0.f, 0.95f, 0.95f}};
+constexpr float cutsDzero[nBinsPt][nCutVarsDzero] = {{0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
+                                                     {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
+                                                     {0.06f, 0.06f, 2.f, 2.f, 0.f, 0.95f, 0.95f}};
 
-    static const std::vector<std::string> labelsPt{};
-    static const std::vector<std::string> labelsCutVar = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY"};
-    static const std::vector<std::string> labelsCutVarDzero = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY", "impParProd", "cosPointing", "cosPointingXY"};
+static const std::vector<std::string> labelsPt{};
+static const std::vector<std::string> labelsCutVar = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY"};
+static const std::vector<std::string> labelsCutVarDzero = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY", "impParProd", "cosPointing", "cosPointingXY"};
 
-    DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
-    DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //! Index to first track
-    DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //! Index to second track
-    DECLARE_SOA_COLUMN(Channel, channel, uint8_t);                    //! tag channel
-  }
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
+DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //! Index to first track
+DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //! Index to second track
+DECLARE_SOA_COLUMN(Channel, channel, uint8_t);                    //! tag channel
+} // namespace tagandprobe
 
-  DECLARE_SOA_TABLE(Dmeson2VtxTags, "AOD", "DMESON2VTXTAG", //! Table for 2-track vertices used as tag
-                    soa::Index<>,
-                    aod::tagandprobe::CollisionId,
-                    aod::tagandprobe::Track0Id,
-                    aod::tagandprobe::Track1Id,
-                    aod::tagandprobe::Channel);
-}
+DECLARE_SOA_TABLE(Dmeson2VtxTags, "AOD", "DMESON2VTXTAG", //! Table for 2-track vertices used as tag
+                  soa::Index<>,
+                  aod::tagandprobe::CollisionId,
+                  aod::tagandprobe::Track0Id,
+                  aod::tagandprobe::Track1Id,
+                  aod::tagandprobe::Channel);
+} // namespace o2::aod
 
 /// Reconstruction of 2-prong displaced vertices (very good quality and purity)
 /// 1) K∓K± for φ from Ds± or D± → φπ± decays
@@ -117,8 +119,8 @@ struct TagTwoProngDisplacedVertices {
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
-  Filter evSelFilter = aod::evsel::sel8 == true; // simple event selection
-  Filter collisionFilter = nabs(aod::collision::posZ) < 10.f; // simple event selection
+  Filter evSelFilter = aod::evsel::sel8 == true;                                                                                                              // simple event selection
+  Filter collisionFilter = nabs(aod::collision::posZ) < 10.f;                                                                                                 // simple event selection
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && aod::track::pt > trackPtMin && (nabs(aod::track::dcaXY) > trackDcaXyMin || aod::track::pt > 2.f); // for the tag, we only consider global tracks with large dcaXY (low pT only)
   using TracksWithSelAndDcaFiltered = soa::Filtered<TracksWithSelAndDca>;
   using CollisionsFiltered = soa::Filtered<CollisionsWithEvSel>;
@@ -197,7 +199,7 @@ struct TagTwoProngDisplacedVertices {
     return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
   }
 
-  template<typename Pvec>
+  template <typename Pvec>
   bool isSelectedInvariantMass(const Pvec& pVecTrackFirst,
                                const Pvec& pVecTrackSecond,
                                const uint8_t channel,
@@ -207,13 +209,13 @@ struct TagTwoProngDisplacedVertices {
   {
     auto arrMomentum = std::array{pVecTrackFirst, pVecTrackSecond};
     invMass2 = RecoDecay::m2(arrMomentum, masses[channel]);
-    if (invMass2 > invMassMax*invMassMax || invMass2 < invMassMin*invMassMin) {
+    if (invMass2 > invMassMax * invMassMax || invMass2 < invMassMin * invMassMin) {
       return false;
     }
     return true;
   }
 
-  template<typename TTrack>
+  template <typename TTrack>
   bool isSelectedPidTof(const TTrack& track,
                         const uint8_t channel)
   {
@@ -222,26 +224,22 @@ struct TagTwoProngDisplacedVertices {
     }
 
     switch (channel) {
-      case aod::tagandprobe::TagChannels::DplusToKPiPi:
-      {
+      case aod::tagandprobe::TagChannels::DplusToKPiPi: {
         if (std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) {
           return true;
         }
       }
-      case aod::tagandprobe::TagChannels::DsOrDplusToKKPi:
-      {
+      case aod::tagandprobe::TagChannels::DsOrDplusToKKPi: {
         if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
           return true;
         }
       }
-      case aod::tagandprobe::TagChannels::DstarPlusToDzeroPi:
-      {
+      case aod::tagandprobe::TagChannels::DstarPlusToDzeroPi: {
         if ((track.signed1Pt() > 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() < 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
       }
-      case aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi:
-      {
+      case aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi: {
         if ((track.signed1Pt() < 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() > 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
@@ -250,7 +248,7 @@ struct TagTwoProngDisplacedVertices {
     return false;
   }
 
-  template<typename PV, typename SV, typename CovMatSV, typename PVec>
+  template <typename PV, typename SV, typename CovMatSV, typename PVec>
   bool isSelectedTopology(const PV& primVtx,
                           const SV& secVtx,
                           const CovMatSV& covMatrixSecVtx,
@@ -280,12 +278,12 @@ struct TagTwoProngDisplacedVertices {
     float phi, theta;
     getPointDirection(pvCoord, secVtx, phi, theta);
     auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
-    if (decLen/errorDecLen < topologicalCuts[channel].get(ptBin, 2u)) {
+    if (decLen / errorDecLen < topologicalCuts[channel].get(ptBin, 2u)) {
       return false;
     }
 
     auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
-    if (decLenXy/errorDecLenXy < topologicalCuts[channel].get(ptBin, 3u)) {
+    if (decLenXy / errorDecLenXy < topologicalCuts[channel].get(ptBin, 3u)) {
       return false;
     }
 
@@ -307,7 +305,7 @@ struct TagTwoProngDisplacedVertices {
     return true;
   }
 
-  template<typename CCollision, typename TTracks>
+  template <typename CCollision, typename TTracks>
   void computeCombinatorialSameCharge(CCollision const& collision,
                                       TTracks const& tracks, // pool of tracks
                                       const uint8_t channel,
@@ -363,7 +361,7 @@ struct TagTwoProngDisplacedVertices {
     }
   }
 
-  template<typename CCollision, typename TTracks>
+  template <typename CCollision, typename TTracks>
   void computeCombinatorialOppositeCharge(CCollision const& collision,
                                           TTracks const& tracksPos,
                                           TTracks const& tracksNeg,
@@ -438,7 +436,7 @@ struct TagTwoProngDisplacedVertices {
       } else {
         LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
-      runNumber = bc.runNumber();    
+      runNumber = bc.runNumber();
     }
 
     // kinematic limits for massPiPi in D+ decays
@@ -467,7 +465,7 @@ struct TagTwoProngDisplacedVertices {
       } else {
         LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
-      runNumber = bc.runNumber();    
+      runNumber = bc.runNumber();
     }
 
     // We expect the phi resonance, so we cut around it with a good margin
@@ -494,7 +492,7 @@ struct TagTwoProngDisplacedVertices {
       } else {
         LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
-      runNumber = bc.runNumber();    
+      runNumber = bc.runNumber();
     }
 
     // We expect the phi resonance, so we cut around it with a good margin
@@ -571,14 +569,14 @@ struct ProbeThirdTrack {
     std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "Tpc", "Its"};
     std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi"};
 
-    for (int iChannel{0}; iChannel<aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
-      for (int iTrackType{0}; iTrackType<aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
+    for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
+      for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         histos[iChannel][iTrackType] = registry.add<TH2>(Form("h%sVsPtProbe_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()), ";#it{p}_{T}(probe track) (GeV/#it{c}); #it{M} (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMass[iChannel]});
       }
     }
   }
 
-  template<typename TTrack>
+  template <typename TTrack>
   float computeInvariantMass(TTrack const& trackFirst, TTrack const& trackSecond, TTrack const& trackThird, uint8_t& channel)
   {
     std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
@@ -592,7 +590,7 @@ struct ProbeThirdTrack {
       float invMassDzero = RecoDecay::m(arrMomentumDzero, massesDzeroDau);
       invMass -= invMassDzero;
     }
- 
+
     return invMass;
   }
 
@@ -630,7 +628,7 @@ struct ProbeThirdTrack {
           } else if (invMass < 1.65f || invMass > 2.10f) {
             continue;
           }
-          for (int iTrackType{0}; iTrackType<aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
+          for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
             if (trackSelector[iTrackType].IsSelected(trackThird)) {
               histos[channel][iTrackType]->Fill(ptTrackThird, invMass);
             }
