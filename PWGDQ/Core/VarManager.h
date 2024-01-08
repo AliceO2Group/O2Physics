@@ -552,6 +552,11 @@ class VarManager : public TObject
     KFParticle::SetField(magField);
     fgUsedKF = true;
   }
+  // Setup magnetic field for muon propagation
+  static void SetupMuonMagField()
+  {
+    o2::mch::TrackExtrap::setField();
+  }
 
   // Setup the 2 prong DCAFitterN
   static void SetupTwoProngDCAFitter(float magField, bool propagateToPCA, float maxR, float maxDZIni, float minParamChange, float minRelChi2Change, bool useAbsDCA)
@@ -816,7 +821,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack propmuon;
     if (static_cast<int>(muon.trackType()) > 2) {
-      o2::mch::TrackExtrap::setField();
       o2::dataformats::GlobalFwdTrack track;
       track.setParameters(tpars);
       track.setZ(fwdtrack.getZ());
@@ -2060,8 +2064,11 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
           auto x2x01 = static_cast<float>(geoMan1.meanX2X0);
           auto x2x02 = static_cast<float>(geoMan2.meanX2X0);
-          pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x01);
-          pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x02);
+          float B[3];
+          float xyz[3] = {0, 0, 0};
+          KFGeoTwoProng.GetFieldValue(xyz, B);
+          pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
+          pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
           v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
           v12 = v1 + v2;
