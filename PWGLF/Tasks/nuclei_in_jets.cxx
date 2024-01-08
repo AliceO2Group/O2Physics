@@ -125,8 +125,8 @@ struct nuclei_in_jets {
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("pt_leading", "pt leading", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{100, -0.5, 0.5, "#Delta#eta"}, {100, -TMath::Pi(), TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("eta_phi_ue", "DeltaEta DeltaPhi UE", HistType::kTH2F, {{100, -0.5, 0.5, "#Delta#eta"}, {100, -TMath::Pi(), TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("eta_phi_jet", "DeltaEta DeltaPhi jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("eta_phi_ue", "DeltaEta DeltaPhi UE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("r_max_jet", "R Max jet", HistType::kTH1F, {{200, 0.0, 6.0, "#it{R}_{max}"}});
     registryQC.add("r_jet", "R jet", HistType::kTH1F, {{200, 0.0, 1.0, "#it{R}"}});
     registryQC.add("r_ue", "R ue", HistType::kTH1F, {{200, 0.0, 1.0, "#it{R}"}});

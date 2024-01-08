@@ -25,7 +25,7 @@ namespace o2::aod
 // this is optional but will ensure full flexibility
 // if required (for 2pc, etc)
 DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
-                  collision::PosX, collision::PosY, collision::PosZ);
+                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ);
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
@@ -34,6 +34,8 @@ DECLARE_SOA_TABLE(StraEPs, "AOD", "STRAEPS", //! centrality percentiles
                   qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C,
                   qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M,
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
+                  bc::RunNumber, timestamp::Timestamp);
 
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;

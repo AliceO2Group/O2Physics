@@ -105,7 +105,6 @@ struct GenericFramework {
   OutputObj<FlowContainer> fFC_gen{FlowContainer("FlowContainer_gen")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
-  HistogramRegistry QAregistry{"QAregistry", {}, OutputObjHandlingPolicy::QAObject};
 
   // define global variables
   GFW* fGFW = new GFW();
@@ -183,29 +182,20 @@ struct GenericFramework {
       fWeights->Init(true, false);
     }
 
-    if (doprocessGen || doprocessReco) {
-      if (doprocessGen) {
-        QAregistry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
-        QAregistry.add("phi_gen", "", {HistType::kTH1D, {phiAxis}});
-        QAregistry.add("eta_gen", "", {HistType::kTH1D, {etaAxis}});
-        QAregistry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
-      }
-      if (doprocessReco) {
-        QAregistry.add("pt", "", {HistType::kTH1D, {ptAxis}});
-        QAregistry.add("phi", "", {HistType::kTH1D, {phiAxis}});
-        QAregistry.add("eta", "", {HistType::kTH1D, {etaAxis}});
-        QAregistry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
-        registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      }
-    } else {
-      QAregistry.add("phi", "", {HistType::kTH1D, {phiAxis}});
-      QAregistry.add("eta", "", {HistType::kTH1D, {etaAxis}});
-      QAregistry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
-
-      QAregistry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
+    if (doprocessGen) {
+      registry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
+      registry.add("phi_gen", "", {HistType::kTH1D, {phiAxis}});
+      registry.add("eta_gen", "", {HistType::kTH1D, {etaAxis}});
+      registry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
+    }
+    if (doprocessReco || doprocessData || doprocessRun2) {
+      registry.add("phi", "", {HistType::kTH1D, {phiAxis}});
+      registry.add("eta", "", {HistType::kTH1D, {etaAxis}});
+      registry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
+      registry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
       registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      QAregistry.add("cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
-      QAregistry.add("globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+      registry.add("cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
+      registry.add("globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     }
 
     if (regions.GetSize() < 0)
@@ -375,7 +365,7 @@ struct GenericFramework {
       return;
     float vtxz = collision.posZ();
     if (cfgFillQA)
-      (dt == kGen) ? QAregistry.fill(HIST("vtxZ_gen"), vtxz) : QAregistry.fill(HIST("vtxZ"), vtxz);
+      (dt == kGen) ? registry.fill(HIST("vtxZ_gen"), vtxz) : registry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
@@ -390,58 +380,64 @@ struct GenericFramework {
   inline void ProcessTrack(TrackObject const& track, const float& centrality, const float& vtxz)
   {
     float weff = 1, wacc = 1;
-    float pt, eta, phi;
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
         return;
       auto mcParticle = track.mcParticle();
-      pt = mcParticle.pt();
-      eta = mcParticle.eta();
-      phi = mcParticle.phi();
-      if (!mcParticle.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
+      if (!mcParticle.isPhysicalPrimary() || mcParticle.eta() < etalow || mcParticle.eta() > etaup || mcParticle.pt() < ptlow || mcParticle.pt() > ptup)
         return;
       if (cfgFillWeights)
-        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
-      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        fWeights->Fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), centrality, 0);
+      if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
         return;
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
-      QAregistry.fill(HIST("phi"), phi);
-      QAregistry.fill(HIST("eta"), eta);
-      QAregistry.fill(HIST("pt"), pt);
+      registry.fill(HIST("phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
+      if (cfgFillQA)
+        FillQA<kData>(mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      FillGFW(mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), weff * wacc);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
-      pt = track.pt();
-      eta = track.eta();
-      phi = track.phi();
-      if (!track.isPhysicalPrimary() || eta < etalow || eta > etaup || pt < ptlow || pt > ptup)
+      if (!track.isPhysicalPrimary() || track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
         return;
-      if (cfgFillQA) {
-        QAregistry.fill(HIST("phi_gen"), phi);
-        QAregistry.fill(HIST("eta_gen"), eta);
-        QAregistry.fill(HIST("pt_gen"), pt);
-      }
+      if (cfgFillQA)
+        FillQA<kGen>(track.phi(), track.eta(), track.pt());
+      FillGFW(track.phi(), track.eta(), track.pt(), 1.);
     } else {
-      pt = track.pt();
-      eta = track.eta();
-      phi = track.phi();
       if (cfgFillWeights)
-        fWeights->Fill(phi, eta, vtxz, pt, centrality, 0);
-      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         return;
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), phi, eta, vtxz, wacc);
-      if (cfgFillQA) {
-        QAregistry.fill(HIST("phi"), phi);
-        QAregistry.fill(HIST("eta"), eta);
-        QAregistry.fill(HIST("pt_dcaXY_dcaZ"), pt, track.dcaXY(), track.dcaZ());
-      }
+      registry.fill(HIST("phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
+      if (cfgFillQA)
+        FillQA<kData>(track.phi(), track.eta(), track.pt(), track.dcaXY(), track.dcaZ());
+      FillGFW(track.phi(), track.eta(), track.pt(), weff * wacc);
     }
+  }
+
+  template <typename T>
+  inline void FillGFW(T phi, T eta, T pt, float w)
+  {
     bool WithinPtPOI = (ptpoilow < pt) && (pt < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < pt) && (pt < ptrefup); // within RF pT range
     if (WithinPtRef)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 1);
     if (WithinPtPOI)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 2);
     if (WithinPtPOI && WithinPtRef)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
+      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 4);
+    return;
+  }
+
+  template <datatype dt, typename T>
+  inline void FillQA(T phi, T eta, T pt, T dcaxy = 0, T dcaz = 0)
+  {
+    if (dt == kGen) {
+      registry.fill(HIST("phi_gen"), phi);
+      registry.fill(HIST("eta_gen"), eta);
+      registry.fill(HIST("pt_gen"), pt);
+    } else {
+      registry.fill(HIST("phi"), phi);
+      registry.fill(HIST("eta"), eta);
+      registry.fill(HIST("pt_dcaXY_dcaZ"), pt, dcaxy, dcaz);
+    }
   }
 
   Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
@@ -456,20 +452,23 @@ struct GenericFramework {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processData, "Process analysis for non-derived data", true);
 
-  Filter dcaFilter = nabs(aod::track::dcaXY) < cfgDCAxy;
-  void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
-    const auto centrality = collision.centFT0C();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (!collision.sel8())
       return;
+    const auto centrality = collision.centFT0C();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
+      return;
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }
@@ -496,8 +495,8 @@ struct GenericFramework {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    QAregistry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    QAregistry.fill(HIST("cent_nch"), tracks.size(), centrality);
+    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
     processCollision<kData>(collision, tracks, centrality);
   }

@@ -190,7 +190,6 @@ struct TableMaker {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -202,12 +201,12 @@ struct TableMaker {
   void init(o2::framework::InitContext& context)
   {
     DefineCuts();
-    ccdb->setURL(fConfigCcdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
     if (fPropMuon) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
+        fCCDB->get<TGeoManager>(geoPath);
       }
     }
 
@@ -360,12 +359,15 @@ struct TableMaker {
         }
       }
       if (fIsRun2 == true) {
-        grpmagrun2 = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+        grpmagrun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
         if (grpmagrun2 != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmagrun2);
         }
       } else {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }
+        grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (grpmag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
         }

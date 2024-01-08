@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "TMath.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -42,10 +43,12 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, float ldeltaphistarcut, float ldeltaetacut, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
+    CutDeltaPhStar = ldeltaphistarcut;
+    CutDeltaEta = ldeltaetacut;
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -177,10 +180,11 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughter = part2.index() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
+        auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
         histdetadpi[i][0]->Fill(deta, dphiAvg);
-        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = true;
+        if ((fabs(dphiAvg) < CutDeltaPhStar) && (fabs(deta) < CutDeltaEta)) {
+          pass = true; // pair is close
         } else {
           histdetadpi[i][1]->Fill(deta, dphiAvg);
         }
@@ -217,6 +221,8 @@ class FemtoUniverseDetaDphiStar
 
   float deltaPhiMax;
   float deltaEtaMax;
+  float CutDeltaPhStar;
+  float CutDeltaEta;
   float magfield;
   bool plotForEveryRadii = false;
 
@@ -267,6 +273,40 @@ class FemtoUniverseDetaDphiStar
       }
     }
     return dPhiAvg / num;
+  }
+
+  // Get particle charge from mask
+  template <typename T1>
+  float GetCharge(const T1& part)
+  {
+    float charge = 0;
+    if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
+      charge = 0;
+    } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
+      charge = 1;
+    } else if ((part.cut() & kSignMinusMask) == kSignMinusMask) {
+      charge = -1;
+    } else {
+      LOG(fatal) << "FemtoUniverseDetaDphiStar: Charge bits are set wrong!";
+    }
+    return charge;
+  }
+
+  // Calculate phi* as in https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoPairCutRadialDistance.cxx
+  template <typename T1, typename T2>
+  double CalculateDphiStar(const T1& part1, const T2& part2)
+  {
+    float charge1 = GetCharge(part1);
+    float charge2 = GetCharge(part2);
+    float rad = 0.8;
+
+    double deltaphiconstFD = 0.3 * 0.1 * 0.01 / 2;
+    // double deltaphiconstAF = 0.15;
+    double afsi0b = deltaphiconstFD * magfield * charge1 * rad / part1.pt();
+    double afsi1b = deltaphiconstFD * magfield * charge2 * rad / part2.pt();
+
+    double dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    return dphis;
   }
 };
 
