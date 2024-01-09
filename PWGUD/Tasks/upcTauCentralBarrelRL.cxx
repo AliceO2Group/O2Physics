@@ -946,7 +946,7 @@ struct UpcTauCentralBarrelRL {
 	void processAnalysisFinished(aod::Collisions const& collisions){
 
 		if (verboseInfo) LOGF(info,"####################################### END OF THIS DATAFRAME #######################################");
-		if (verboseDebug) LOGF(info,"countCollisions = %d, largestIndex = %d",countCollisions, largestIndex);
+		if (verboseDebug) LOGF(info,"countCollisions = %d");
 		isFirstReconstructedCollisions = true;
 
 	} // end processAnalysisFinished
