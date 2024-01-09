@@ -43,10 +43,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct UpcMCCentralBarrel {
+struct UpcTauCentralBarrelRL {
 
 	// Global varialbes
 	bool isFirstReconstructedCollisions;
+    int countCollisions;
 	Service<o2::framework::O2DatabasePDG> pdg;
 
 	HistogramRegistry histos{
@@ -472,7 +473,7 @@ struct UpcMCCentralBarrel {
             float trkPy = track.py();
             float trkPz = track.pz();
 //			histos.get<TH1>(HIST("Tracks/raw/hTrackZ"))->Fill(track.z());
-			histos.get<TH1>(HIST("Tracks/raw/hTrackP"))->Fill(momentum(trkPx, trkPy, trkPz);
+			histos.get<TH1>(HIST("Tracks/raw/hTrackP"))->Fill(momentum(trkPx, trkPy, trkPz));
 			histos.get<TH1>(HIST("Tracks/raw/hTrackPt"))->Fill(track.pt());
 			histos.get<TH1>(HIST("Tracks/raw/hTrackPhi"))->Fill(phi(trkPx, trkPy));
 			histos.get<TH1>(HIST("Tracks/raw/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
@@ -516,7 +517,7 @@ struct UpcMCCentralBarrel {
             float trkPy = track.py();
             float trkPz = track.pz();
 //			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackZ"))->Fill(track.z());
-			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackP"))->Fill(momentum(trkPx, trkPy, trkPz);
+			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackP"))->Fill(momentum(trkPx, trkPy, trkPz));
 			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPt"))->Fill(track.pt());
 			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPhi"))->Fill(phi(trkPx, trkPy));
 			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
@@ -601,22 +602,22 @@ struct UpcMCCentralBarrel {
             auto acoplanarity = calculateAcoplanarity(daug[0].Phi(),daug[1].Phi());
 
             if (trkDaug1.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
+                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
             }
             if (trkDaug2.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
+                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
             }
 
             histos.get<TH1>(HIST("EventTwoTracks/hInvariantMass"))->Fill(mother.M());
@@ -806,28 +807,28 @@ struct UpcMCCentralBarrel {
             mother = daug[0] + daug[1] + daug[2] + daug[3];
 
             if (trkDaug1.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
+                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
             }
             if (trkDaug2.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
+                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
             }
             if (trkDaug3.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
-                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
-                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
+                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
+                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
+                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
             }
             if (trkDaug4.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
-                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
-                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
-                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
+                histosPID.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
+                if (countPVGTpions == 4) histosPID.get<TH2>(HIST("EventFourTracks/WithPion/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
+                if (countPVGTelectrons == 1 && countPVGTpions == 3) histosPID.get<TH2>(HIST("EventFourTracks/WithElectron/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
+                if (countPVGTpions == 3 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventFourTracks/WithMuon/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
             }
 
             histos.get<TH1>(HIST("EventFourTracks/hInvariantMass"))->Fill(mother.M());
@@ -887,28 +888,28 @@ struct UpcMCCentralBarrel {
             mother = daug[0] + daug[1] + daug[2] + daug[3] + daug[4] + daug[5];
 
             if (trkDaug1.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug1.p(),trkDaug1.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
             }
             if (trkDaug2.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug2.p(),trkDaug2.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
             }
             if (trkDaug3.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug3.p(),trkDaug3.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[2].P(),trkDaug3.tpcSignal());
             }
             if (trkDaug4.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug4.p(),trkDaug4.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[3].P(),trkDaug4.tpcSignal());
             }
             if (trkDaug5.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug5.p(),trkDaug5.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug5.p(),trkDaug5.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[4].P(),trkDaug5.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[4].P(),trkDaug5.tpcSignal());
             }
             if (trkDaug6.hasTPC()) {
-                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(trkDaug6.p(),trkDaug6.tpcSignal());
-                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(trkDaug6.p(),trkDaug6.tpcSignal());
+                histosPID.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[5].P(),trkDaug6.tpcSignal());
+                if (countPVGTpions == 6) histosPID.get<TH2>(HIST("EventSixTracks/SixPions/PID/hTPCsignalVsP"))->Fill(daug[5].P(),trkDaug6.tpcSignal());
             }
 
             histos.get<TH1>(HIST("EventSixTracks/hInvariantMass"))->Fill(mother.M());
