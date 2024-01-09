@@ -108,7 +108,7 @@ struct qVectorsCorrection {
     // Fill the registry with the needed objects.
     const AxisSpec axisCent{110, 0., 110.};
     const AxisSpec axisQvec{1000, -3, 3};
-    const AxisSpec axisQvecF{1000, -0.3 ,0.3};
+    const AxisSpec axisQvecF{1000, -0.3, 0.3};
     const AxisSpec axisConst{12, 0., 12.}; // 4 constants x 3 detectors.
     const AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
