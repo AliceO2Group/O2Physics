@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoWorldEfficiencyTask.cxx
+/// \file femtoWorldEficiencyTask.cxx
 /// \author Lukasz Graczykowski, WUT Warsaw, lgraczyk@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 /// \author Alicja Plachta, WUT Warsaw, alicja.plachta@cern.ch
@@ -158,6 +158,15 @@ struct femtoWorldEficiencyTask {
 
     registryPri.add("plus/TOFmatchingAll", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("minus/TOFmatchingAll", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPri.add("plus/TOFmatchingPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/TOFmatchingPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPri.add("plus/TOFmatchingKa", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/TOFmatchingKa", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPri.add("plus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     // Pri our tracking cuts only
     registryPriCuts.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
@@ -411,7 +420,17 @@ struct femtoWorldEficiencyTask {
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("plus/TOFmatchingAll"), mcParticle.pt());
+              if (mcParticle.pdgCode() == 211) {
+                registryPri.fill(HIST("plus/TOFmatchingPi"), mcParticle.pt());
+              }
+              if (mcParticle.pdgCode() == 321) {
+                registryPri.fill(HIST("plus/TOFmatchingKa"), mcParticle.pt());
+              }
+              if (mcParticle.pdgCode() == 2212) {
+                registryPri.fill(HIST("plus/TOFmatchingPr"), mcParticle.pt());
+              }
             }
+
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == 211) {
               registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/PiPriPt"), mcParticle.pt());
@@ -442,7 +461,17 @@ struct femtoWorldEficiencyTask {
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("minus/TOFmatchingAll"), mcParticle.pt());
+              if (mcParticle.pdgCode() == -211) {
+                registryPri.fill(HIST("minus/TOFmatchingPi"), mcParticle.pt());
+              }
+              if (mcParticle.pdgCode() == -321) {
+                registryPri.fill(HIST("minus/TOFmatchingKa"), mcParticle.pt());
+              }
+              if (mcParticle.pdgCode() == -2212) {
+                registryPri.fill(HIST("minus/TOFmatchingPr"), mcParticle.pt());
+              }
             }
+
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == -211) {
               registryPri.fill(HIST("minus/PiPri"), track.pt(), track.eta());
               registryPri.fill(HIST("minus/PiPriPt"), mcParticle.pt());
