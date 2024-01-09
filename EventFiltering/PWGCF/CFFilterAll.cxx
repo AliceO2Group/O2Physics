@@ -929,12 +929,17 @@ struct CFFilter {
     return true;
   }
 
-  template <typename T>
-  bool isSelectedV0Daughter(T const& track, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
+  template <typename T, typename V>
+  bool isSelectedV0Daughter(T const& track, V const& v0, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
   {
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY();
+    float dcaXY = -1;
+    if (charge > 0) {
+      dcaXY = v0.dcapostopv();
+    } else if (charge < 0) {
+      dcaXY = v0.dcanegtopv();
+    };
     const auto sign = track.sign();
     double nSigmaTPC = -999.f;
 
