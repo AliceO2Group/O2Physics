@@ -345,7 +345,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     // loop over all D mesons
     for (auto const& dmeson : groupPartsAllDmesons) {
-      
+
       if (dmeson.mLambda() > 0.0f) {
         registry.fill(HIST("hMassVsPt"), dmeson.mLambda(), dmeson.pt());
         registry.fill(HIST("hMassVsPtFiner"), dmeson.mLambda(), dmeson.pt());
