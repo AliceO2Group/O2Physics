@@ -943,7 +943,7 @@ struct UpcTauCentralBarrelRL {
 
 	}//processSimulatorLevel
 
-	void processAnalysisFinished(aod::Collisions const& collisions){
+	void processAnalysisFinished(aod::FullUDCollision const& collisions){
 
 		if (verboseInfo) LOGF(info,"####################################### END OF THIS DATAFRAME #######################################");
 		if (verboseDebug) LOGF(info,"countCollisions = %d");
