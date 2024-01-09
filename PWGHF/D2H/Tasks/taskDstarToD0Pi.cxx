@@ -119,7 +119,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(aod::TracksWDcaExtra const&,
+  void process(aod::Tracks const&,
                CandDstarWSelFlag const&)
   {
     for (const auto& candDstar : rowsSelectedCandDstar) {
@@ -155,7 +155,7 @@ struct HfTaskDstarToD0Pi {
       auto invD0 = candDstar.invMassD0();
       auto invD0Bar = candDstar.invMassD0Bar();
 
-      auto prongSoftPi = candDstar.prongPi_as<aod::TracksWDcaExtra>();
+      auto prongSoftPi = candDstar.prongPi_as<aod::Tracks>();
       if (prongSoftPi.sign() > 0) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
