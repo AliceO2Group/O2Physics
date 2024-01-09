@@ -191,11 +191,11 @@ bool trackSelection(T track, int selection)
 	// Is central barrel vertex contributor
 	if (selection==2 && track.isPVContributor()!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==3 && track.isQualityTrack()!=1) return false;
+//	if (selection==3 && track.isQualityTrack()!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==4 && track.isPrimaryTrack()!=1) return false;
+//	if (selection==4 && track.isPrimaryTrack()!=1) return false;
 	// Is central barrel track selection global track
-	if (selection==5 && track.isGlobalTrack()!=1) return false;
+//	if (selection==5 && track.isGlobalTrack()!=1) return false;
 	// Is central barrel track selection has TOF
 	if (selection==6 && track.hasTOF()!=1) return false;
 	// Is central barrel track selection nSigmaElectron cut
