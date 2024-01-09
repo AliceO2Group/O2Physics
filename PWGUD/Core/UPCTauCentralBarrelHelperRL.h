@@ -187,7 +187,7 @@ bool trackSelection(T track, int selection)
 {
 	if (selection==0) return true;
 	// Is central barrel propagated track
-	if (selection==1 && track.trackType()!=1) return false;
+//	if (selection==1 && track.trackType()!=1) return false;
 	// Is central barrel vertex contributor
 	if (selection==2 && track.isPVContributor()!=1) return false;
 	// Is central barrel track selection global track
