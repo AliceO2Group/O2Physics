@@ -176,14 +176,14 @@ struct phianalysisrun3 {
 
     // default filling
     if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign < 0) {
-      if(unlike) {
-	histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
+      if (unlike) {
+        histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
       }
-      if(mix) {
-	histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
+      if (mix) {
+        histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
       }
-      if(rotation) {
-	histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation);
+      if (rotation) {
+        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation);
       }
     }
     if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign > 0 && likesign) {
@@ -216,9 +216,9 @@ struct phianalysisrun3 {
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
   // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor =  ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  
+
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
 
@@ -256,10 +256,10 @@ struct phianalysisrun3 {
         bool unlike = true;
         bool mix = false;
         bool likesign = true;
-	bool rotation = true;
-	if (isITSOnlycut) {
-	  FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-	}
+        bool rotation = true;
+        if (isITSOnlycut) {
+          FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        }
         if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
           FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
@@ -292,14 +292,14 @@ struct phianalysisrun3 {
         bool unlike = false;
         bool mix = true;
         bool likesign = false;
-	bool rotation = false;
+        bool rotation = false;
         if (!selectionTrack(t1)) {
           continue;
         }
         if (!selectionTrack(t2)) {
           continue;
         }
-	if (isITSOnlycut) {
+        if (isITSOnlycut) {
           FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
         if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
@@ -308,7 +308,6 @@ struct phianalysisrun3 {
       }
     }
   }
-
 
   PROCESS_SWITCH(phianalysisrun3, processMixedEvent, "Process Mixed event", false);
   void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
@@ -406,11 +405,11 @@ struct phianalysisrun3 {
               if (std::abs(mothertrack1.pdgCode()) != 333) {
                 continue;
               }
-	      if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-		if (std::abs(mothertrack1.pdgCode()) != 333) {
-		  continue;
-		}
-	      }
+              if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+                if (std::abs(mothertrack1.pdgCode()) != 333) {
+                  continue;
+                }
+              }
               pvec0 = array{track1.px(), track1.py(), track1.pz()};
               pvec1 = array{track2.px(), track2.py(), track2.pz()};
               auto arrMomrec = array{pvec0, pvec1};
