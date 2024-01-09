@@ -592,6 +592,18 @@ DECLARE_SOA_COLUMN(Z, z, float);             //!
 DECLARE_SOA_COLUMN(Xlambda, xlambda, float); //!
 DECLARE_SOA_COLUMN(Ylambda, ylambda, float); //!
 DECLARE_SOA_COLUMN(Zlambda, zlambda, float); //!
+DECLARE_SOA_COLUMN(XPos, xpos, float);     //!
+DECLARE_SOA_COLUMN(YPos, ypos, float);     //!
+DECLARE_SOA_COLUMN(ZPos, zpos, float);     //!
+DECLARE_SOA_COLUMN(XNeg, xneg, float);     //!
+DECLARE_SOA_COLUMN(YNeg, yneg, float);     //!
+DECLARE_SOA_COLUMN(ZNeg, zneg, float);     //!
+DECLARE_SOA_COLUMN(XPosErr, xposerr, float);     //!
+DECLARE_SOA_COLUMN(YPosErr, yposerr, float);     //!
+DECLARE_SOA_COLUMN(ZPosErr, zposerr, float);     //!
+DECLARE_SOA_COLUMN(XNegErr, xnegerr, float);     //!
+DECLARE_SOA_COLUMN(YNegErr, ynegerr, float);     //!
+DECLARE_SOA_COLUMN(ZNegErr, znegerr, float);     //!
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float);     //!
@@ -808,6 +820,10 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
+                  cascdata::XPos, cascdata::YPos, cascdata::ZPos,
+                  cascdata::XPosErr, cascdata::YPosErr, cascdata::ZPosErr,
+                  cascdata::XNeg, cascdata::YNeg, cascdata::ZNeg,
+                  cascdata::XNegErr, cascdata::YNegErr, cascdata::ZNegErr,
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,

@@ -239,6 +239,10 @@ struct cascadeBuilder {
     std::array<float, 3> v0momneg;
     std::array<float, 3> v0momposerr;
     std::array<float, 3> v0momnegerr;
+    std::array<float, 3> v0postrack;
+    std::array<float, 3> v0negtrack;
+    std::array<float, 3> v0postrackerr;
+    std::array<float, 3> v0negtrackerr;
     std::array<float, 3> cascademom;
     std::array<float, 3> v0mom;
     float v0dcadau;
@@ -1245,12 +1249,22 @@ struct cascadeBuilder {
     std::array<float, 21> cvpos, cvneg;
     posTrackParCov.getCovXYZPxPyPzGlo(cvpos);
     negTrackParCov.getCovXYZPxPyPzGlo(cvneg);
-    cascadecandidate.v0momposerr[0] = cvpos[9];
-    cascadecandidate.v0momposerr[1] = cvpos[14];
-    cascadecandidate.v0momposerr[2] = cvpos[21];
-    cascadecandidate.v0momnegerr[0] = cvneg[9];
-    cascadecandidate.v0momnegerr[1] = cvneg[14];
-    cascadecandidate.v0momnegerr[2] = cvneg[21];
+    cascadecandidate.v0momposerr[0] = sqrt(cvpos[9]);
+    cascadecandidate.v0momposerr[1] = sqrt(cvpos[14]);
+    cascadecandidate.v0momposerr[2] = sqrt(cvpos[21]);
+    cascadecandidate.v0momnegerr[0] = sqrt(cvneg[9]);
+    cascadecandidate.v0momnegerr[1] = sqrt(cvneg[14]);
+    cascadecandidate.v0momnegerr[2] = sqrt(cvneg[21]);
+
+    // Daughter track position at vertex
+    posTrackParCov.getXYZGlo(cascadecandidate.v0postrack);
+    negTrackParCov.getXYZGlo(cascadecandidate.v0negtrack);
+    cascadecandidate.v0postrackerr[0] = sqrt(cvpos[0]);
+    cascadecandidate.v0postrackerr[1] = sqrt(cvpos[2]);
+    cascadecandidate.v0postrackerr[2] = sqrt(cvpos[5]);
+    cascadecandidate.v0negtrackerr[0] = sqrt(cvneg[0]);
+    cascadecandidate.v0negtrackerr[1] = sqrt(cvneg[2]);
+    cascadecandidate.v0negtrackerr[2] = sqrt(cvneg[5]);
 
     // mother position information from KF
     cascadecandidate.v0pos[0] = KFV0.GetX();
@@ -1412,6 +1426,10 @@ struct cascadeBuilder {
       kfcascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                  cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                  cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+                 cascadecandidate.v0postrack[0], cascadecandidate.v0postrack[1], cascadecandidate.v0postrack[2],
+                 cascadecandidate.v0negtrack[0], cascadecandidate.v0negtrack[1], cascadecandidate.v0negtrack[2],
+                 cascadecandidate.v0postrackerr[0], cascadecandidate.v0postrackerr[1], cascadecandidate.v0postrackerr[2],
+                 cascadecandidate.v0negtrackerr[0], cascadecandidate.v0negtrackerr[1], cascadecandidate.v0negtrackerr[2],
                  cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                  cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                  cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
