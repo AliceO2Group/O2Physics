@@ -173,27 +173,6 @@ int enumMyParticle(int valuePDG)
 	}
 }
 
-
-template <typename P, typename T>
-float nSigmaCorrection(T trackPIDinfo, P particlePDG)
-// Calculate correction on TPC nSigma for all particles based on true info
-{
-	float nSigmaTPC[5];
-	nSigmaTPC[P_ELECTRON] = trackPIDinfo.tpcNSigmaEl();
-	nSigmaTPC[P_MUON] = trackPIDinfo.tpcNSigmaMu();
-	nSigmaTPC[P_PION] = trackPIDinfo.tpcNSigmaPi();
-	nSigmaTPC[P_KAON] = trackPIDinfo.tpcNSigmaKa();
-	nSigmaTPC[P_PROTON] = trackPIDinfo.tpcNSigmaPr();
-	
-	int whatParticle = enumMyParticle(particlePDG.pdgCode());
-
-	if (whatParticle != -1){
-		return nSigmaTPC[whatParticle] - gRandom->Gaus(0,1);  // get the nSigma shift wrt. the correct particle nSigmaShift using random sampling of a Gaussian with mean=0 and pool=1
-	}
-	return 0.;
-}
-
-
 template <typename C>
 bool isEvSelFITempty(C collision)
 // Get FIT information from EventSelection task for each collision
@@ -244,105 +223,6 @@ bool selectTrack(T track, int setOfCuts)
 	if (setOfCuts<7 && trackSelection(track,6)==1) return false;
 
 	return true;
-}
-
-template <typename Ts>
-void fillTrackSelectionExtensionHistogram(HistogramRegistry &registry, Ts tracks)
-// Fill into histogram effect of track selection for all tracks
-{
-
-	const int nXbins = registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->GetNbins();
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->SetNdivisions(nXbins, "X");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(1,70,0.02,30,-1,-1,"no cut");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(2,70,0.02,30,-1,-1,"kTrackType");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(3,70,0.02,30,-1,-1,"kPtRange");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(4,70,0.02,30,-1,-1,"kEtaRange");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(5,70,0.02,30,-1,-1,"kTPCNCls");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(6,70,0.02,30,-1,-1,"kTPCCrossedRows");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(7,70,0.02,30,-1,-1,"kTPCCrossedRowsOverNCls");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(8,70,0.02,30,-1,-1,"kTPCChi2NDF");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(9,70,0.02,30,-1,-1,"kTPCRefit");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(10,70,0.02,30,-1,-1,"kITSNCls");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(11,70,0.02,30,-1,-1,"kITSChi2NDF");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(12,70,0.02,30,-1,-1,"kITSRefit");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(13,70,0.02,30,-1,-1,"kITSHits");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(14,70,0.02,30,-1,-1,"kGoldenChi2");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(15,70,0.02,30,-1,-1,"kDCAxy");
-	registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(16,70,0.02,30,-1,-1,"kDCAz");
-
-	const int nXbins2 = registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->GetNbins();
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->SetNdivisions(nXbins2, "X");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(1,70,0.02,30,-1,-1,"no cut");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(2,70,0.02,30,-1,-1,"kTrackType");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(3,70,0.02,30,-1,-1,"kPtRange");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(4,70,0.02,30,-1,-1,"kEtaRange");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(5,70,0.02,30,-1,-1,"kTPCNCls");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(6,70,0.02,30,-1,-1,"kTPCCrossedRows");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(7,70,0.02,30,-1,-1,"kTPCCrossedRowsOverNCls");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(8,70,0.02,30,-1,-1,"kTPCChi2NDF");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(9,70,0.02,30,-1,-1,"kTPCRefit");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(10,70,0.02,30,-1,-1,"kITSNCls");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(11,70,0.02,30,-1,-1,"kITSChi2NDF");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(12,70,0.02,30,-1,-1,"kITSRefit");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(13,70,0.02,30,-1,-1,"kITSHits");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(14,70,0.02,30,-1,-1,"kGoldenChi2");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(15,70,0.02,30,-1,-1,"kDCAxy");
-	registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->GetXaxis()->ChangeLabel(16,70,0.02,30,-1,-1,"kDCAz");
-
-	for (auto& track : tracks){
-		// investigate each selection separately
-		registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(0);
-		if (track.passedTrackType()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(1);
-		if (track.passedPtRange()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(2);
-		if (track.passedEtaRange()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(3);
-		if (track.passedTPCNCls()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(4);
-		if (track.passedTPCCrossedRows()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(5);
-		if (track.passedTPCCrossedRowsOverNCls()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(6);
-		if (track.passedTPCChi2NDF()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(7);
-		if (track.passedTPCRefit()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(8);
-		if (track.passedITSNCls()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(9);
-		if (track.passedITSChi2NDF()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(10);
-		if (track.passedITSRefit()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(11);
-		if (track.passedITSHits()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(12);
-		if (track.passedGoldenChi2()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(13);
-		if (track.passedDCAxy()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(14);
-		if (track.passedDCAz()) registry.get<TH1>(HIST("Meta/hEffectOfTrackSelectionExtensions"))->Fill(15);
-
-		// investigate selections consecutively
-		registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(0);
-		if (track.passedTrackType()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(1);
-		else continue;
-		if (track.passedPtRange()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(2);
-		else continue;
-		if (track.passedEtaRange()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(3);
-		else continue;
-		if (track.passedTPCNCls()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(4);
-		else continue;
-		if (track.passedTPCCrossedRows()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(5);
-		else continue;
-		if (track.passedTPCCrossedRowsOverNCls()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(6);
-		else continue;
-		if (track.passedTPCChi2NDF()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(7);
-		else continue;
-		if (track.passedTPCRefit()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(8);
-		else continue;
-		if (track.passedITSNCls()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(9);
-		else continue;
-		if (track.passedITSChi2NDF()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(10);
-		else continue;
-		if (track.passedITSRefit()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(11);
-		else continue;
-		if (track.passedITSHits()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(12);
-		else continue;
-		if (track.passedGoldenChi2()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(13);
-		else continue;
-		if (track.passedDCAxy()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(14);
-		else continue;
-		if (track.passedDCAz()) registry.get<TH1>(HIST("Meta/hCumulativeEffectOfTrackSelectionExtensions"))->Fill(15);
-		else continue;
-
-	}
-
 }
 
 
