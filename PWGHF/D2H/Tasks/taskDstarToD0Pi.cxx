@@ -34,10 +34,9 @@ struct HfTaskDstarToD0Pi {
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
-  Configurable<std::vector<double>> confVecPtBins{"confVecPtBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
+  Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi>;
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
   /// @brief specially for MC data
   // full reconstructed Dstar candidate
   using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
@@ -58,7 +57,7 @@ struct HfTaskDstarToD0Pi {
 
   void init(InitContext&)
   {
-    auto vecPtBins = (std::vector<double>)confVecPtBins;
+    auto vecPtBins = (std::vector<double>)ptBins;
 
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
@@ -120,11 +119,12 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(TracksSel const&,
+  void process(aod::TracksWDcaExtra const&,
                CandDstarWSelFlag const&)
   {
     for (const auto& candDstar : rowsSelectedCandDstar) {
-      if (yCandDstarRecoMax >= 0. && std::abs(candDstar.y(constants::physics::MassDStar)) > yCandDstarRecoMax) {
+      auto yDstar = candDstar.y(constants::physics::MassDStar);
+      if (yCandDstarRecoMax >= 0. && std::abs(yDstar) > yCandDstarRecoMax) {
         continue;
       }
       registry.fill(HIST("QA/hPtDstar"), candDstar.pt());
@@ -150,25 +150,25 @@ struct HfTaskDstarToD0Pi {
       registry.fill(HIST("QA/hd0Prong1"), candDstar.impactParameter1(), candDstar.pt());
       registry.fill(HIST("QA/hd0ProngSoftPi"), candDstar.impParamSoftPi(), candDstar.pt());
 
-      auto mInvDstar = candDstar.invMassDstar();
-      auto mInvAntiDstar = candDstar.invMassAntiDstar();
-      auto mInvD0 = candDstar.invMassD0();
-      auto mInvD0Bar = candDstar.invMassD0Bar();
+      auto invDstar = candDstar.invMassDstar();
+      auto invAntiDstar = candDstar.invMassAntiDstar();
+      auto invD0 = candDstar.invMassD0();
+      auto invD0Bar = candDstar.invMassD0Bar();
 
-      auto prongSoftPi = candDstar.prongPi_as<TracksSel>();
+      auto prongSoftPi = candDstar.prongPi_as<aod::TracksWDcaExtra>();
       if (prongSoftPi.sign() > 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (mInvDstar - mInvD0), candDstar.pt());
-        registry.fill(HIST("Yield/hInvMassD0"), mInvD0, candDstar.ptD0());
-        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (mInvDstar - mInvD0));
-        registry.fill(HIST("Yield/hInvMassDstar"), mInvDstar);
+        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
+        registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
+        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
+        registry.fill(HIST("Yield/hInvMassDstar"), invDstar);
         // filling pt of two pronges of D0
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
       } else if (prongSoftPi.sign() < 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (mInvAntiDstar - mInvD0Bar), candDstar.pt());
-        registry.fill(HIST("Yield/hInvMassD0"), mInvD0Bar, candDstar.ptD0());
-        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (mInvAntiDstar - mInvD0Bar));
-        registry.fill(HIST("Yield/hInvMassDstar"), mInvAntiDstar);
+        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
+        registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
+        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
+        registry.fill(HIST("Yield/hInvMassDstar"), invAntiDstar);
         // filling pt of two pronges of D0Bar
         registry.fill(HIST("QA/hPtProng0D0Bar"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0Bar"), candDstar.ptProng1());
@@ -184,25 +184,25 @@ struct HfTaskDstarToD0Pi {
     int8_t signDstar = 0;
     // MC at Reconstruction level
     for (const auto& candDstarMcRec : rowsSelectedCandDstarMcRec) {
-      if (yCandDstarRecoMax >= 0. && std::abs(candDstarMcRec.y(constants::physics::MassDStar)) > yCandDstarRecoMax) {
-        continue;
-      }
       auto ptDstarRecSig = candDstarMcRec.pt();
       auto yDstarRecSig = candDstarMcRec.y(constants::physics::MassDStar);
-      if (std::abs(candDstarMcRec.flagMcMatchRec()) == BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful
+      if (yCandDstarRecoMax >= 0. && std::abs(yDstarRecSig) > yCandDstarRecoMax) {
+        continue;
+      }
+      if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtDstarGenSig"), particleMother.pt());    // generator level pt
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
-        if (candDstarMcRec.isRecoTopol() == true) {                                   // if Topological selection are passed
+        if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
           registry.fill(HIST("QA/hPtVsYRecoTopolDstarRecSig"), ptDstarRecSig, yDstarRecSig);
         }
-        if (candDstarMcRec.isRecoPid() == true) { // if PID selection is passed
+        if (candDstarMcRec.isRecoPid()) { // if PID selection is passed
           registry.fill(HIST("QA/hPtVsYRecoPidDstarRecSig"), ptDstarRecSig, yDstarRecSig);
         }
-        if (candDstarMcRec.isRecoCand() == true) { // if all selection passed
+        if (candDstarMcRec.isRecoCand()) { // if all selection passed
           registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
         }
         registry.fill(HIST("QA/hCPASkimD0RecSig"), candDstarMcRec.cpaD0());
@@ -212,25 +212,25 @@ struct HfTaskDstarToD0Pi {
         // only prompt signal at reconstruction level
         if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("QA/hPtVsYSkimPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
-          if (candDstarMcRec.isRecoTopol() == true) {                                         // if Topological selection are passed
+          if (candDstarMcRec.isRecoTopol()) {                                                 // if Topological selection are passed
             registry.fill(HIST("QA/hPtVsYRecoTopolPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoPid() == true) { // if PID selection is passed
+          if (candDstarMcRec.isRecoPid()) { // if PID selection is passed
             registry.fill(HIST("QA/hPtVsYRecoPidPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoCand() == true) { // if all selection passed
+          if (candDstarMcRec.isRecoCand()) { // if all selection passed
             registry.fill(HIST("QA/hPtFullRecoPromptDstarRecSig"), ptDstarRecSig);
           }
 
         } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) { // only non-prompt signal at reconstruction level
           registry.fill(HIST("QA/hPtVsYSkimNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
-          if (candDstarMcRec.isRecoTopol() == true) { // if Topological selection are passed
+          if (candDstarMcRec.isRecoTopol()) { // if Topological selection are passed
             registry.fill(HIST("QA/hPtVsYRecoTopolNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoPid() == true) {
+          if (candDstarMcRec.isRecoPid()) {
             registry.fill(HIST("QA/PtVsYRecoPidNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoCand() == true) {
+          if (candDstarMcRec.isRecoCand()) {
             registry.fill(HIST("QA/PtFullRecoPromptDstarRecSig"), ptDstarRecSig);
           }
         }
@@ -245,7 +245,7 @@ struct HfTaskDstarToD0Pi {
 
     // MC at Generator Level
     for (const auto& mcParticle : rowsMcPartilces) {
-      if (std::abs(mcParticle.flagMcMatchGen()) == BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi)) {
+      if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         // auto yGen = mcParticle.y(); // Can we use this definition?
         auto yGen = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDStar);
