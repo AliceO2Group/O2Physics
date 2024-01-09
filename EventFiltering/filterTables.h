@@ -105,15 +105,15 @@ DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool); //! isotropic eve
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);   //! event contains leading track
 
 // photons
-DECLARE_SOA_COLUMN(PHOSPhoton, hasPHOSPhoton, bool);           //! PHOS single photons
-DECLARE_SOA_COLUMN(PHOSElectron, hasPHOSElectron, bool);       //! PHOS single electron
-DECLARE_SOA_COLUMN(PHOSPair, hasPHOSpair, bool);               //! PHOS photon pair
-DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);               //! PHOS antineutrons
+DECLARE_SOA_COLUMN(PHOSPhoton, hasPHOSPhoton, bool); //! PHOS single photons
+DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);     //! PHOS antineutrons
+// DECLARE_SOA_COLUMN(PHOSElectron, hasPHOSElectron, bool);       //! PHOS single electron
+// DECLARE_SOA_COLUMN(PHOSPair, hasPHOSpair, bool);               //! PHOS photon pair
 DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT photon
-DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
-DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
-DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
-DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool);               //! PCM and ee
+// DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
+// DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
+// DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
+// DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool);               //! PCM and ee
 } // namespace filtering
 
 namespace decision
@@ -196,7 +196,7 @@ using MultFilter = MultFilters::iterator;
 
 // photons
 DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
-                  filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar, filtering::PCMHighPtPhoton, filtering::PCMMatCalib, filtering::PCMEtaDalitz, filtering::PCMEtaGG, filtering::PCMandEE);
+                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton);
 
 using PhotonFilter = PhotonFilters::iterator;
 

@@ -70,8 +70,9 @@ struct EMPhotonFilterQC {
   }
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  Preslice<aod::DalitzEEs> perCollision_ee = aod::dalitzee::collisionId;
-  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::DalitzEEs const& dielectrons)
+  // Preslice<aod::DalitzEEs> perCollision_ee = aod::dalitzee::collisionId;
+  // void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::DalitzEEs const& dielectrons)
+  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -79,7 +80,7 @@ struct EMPhotonFilterQC {
         registry.fill(HIST("hEventCounter"), 2);
       }
       auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
-      auto dielectrons_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
+      // auto dielectrons_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
 
       if (collision.hasPCMHighPtPhoton()) {
         registry.fill(HIST("hEventCounter"), 3);
@@ -92,65 +93,65 @@ struct EMPhotonFilterQC {
         } // end of v0 photon loop
       }
 
-      if (collision.hasPCMMatCalib()) {
-        registry.fill(HIST("hEventCounter"), 5);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 6);
-        }
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
-          registry.fill(HIST("PCM_MBCalib/hMeePt"), g2.mass(), g2.pt());
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST("PCM_MBCalib/hMeegPt"), v12.M(), g1.pt());
-        } // end of dielectron-photon pair loop
-      }
+      // if (collision.hasPCMMatCalib()) {
+      //   registry.fill(HIST("hEventCounter"), 5);
+      //   if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      //     registry.fill(HIST("hEventCounter"), 6);
+      //   }
+      //   for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
+      //     registry.fill(HIST("PCM_MBCalib/hMeePt"), g2.mass(), g2.pt());
+      //     ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+      //     ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+      //     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+      //     registry.fill(HIST("PCM_MBCalib/hMeegPt"), v12.M(), g1.pt());
+      //   } // end of dielectron-photon pair loop
+      // }
 
-      if (collision.hasPCMEtaDalitz()) {
-        registry.fill(HIST("hEventCounter"), 7);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 8);
-        }
-        for (auto& dielectron : dielectrons_coll) {
-          registry.fill(HIST("PCM_EtaDalitz/hMeePt"), dielectron.mass(), dielectron.pt());
-        }
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST("PCM_EtaDalitz/hMeegPt"), v12.M(), v12.Pt());
-        } // end of dielectron-photon pair loop
-      }
+      // if (collision.hasPCMEtaDalitz()) {
+      //   registry.fill(HIST("hEventCounter"), 7);
+      //   if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      //     registry.fill(HIST("hEventCounter"), 8);
+      //   }
+      //   for (auto& dielectron : dielectrons_coll) {
+      //     registry.fill(HIST("PCM_EtaDalitz/hMeePt"), dielectron.mass(), dielectron.pt());
+      //   }
+      //   for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
+      //     ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+      //     ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+      //     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+      //     registry.fill(HIST("PCM_EtaDalitz/hMeegPt"), v12.M(), v12.Pt());
+      //   } // end of dielectron-photon pair loop
+      // }
 
-      if (collision.hasPCMEtaGG()) {
-        registry.fill(HIST("hEventCounter"), 9);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 10);
-        }
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0photons_coll, v0photons_coll))) {
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST("PCM_EtaGG/hMggPt"), v12.M(), v12.Pt());
-        } // end of dielectron-photon pair loop
-      }
+      // if (collision.hasPCMEtaGG()) {
+      //   registry.fill(HIST("hEventCounter"), 9);
+      //   if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      //     registry.fill(HIST("hEventCounter"), 10);
+      //   }
+      //   for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0photons_coll, v0photons_coll))) {
+      //     ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+      //     ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+      //     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+      //     registry.fill(HIST("PCM_EtaGG/hMggPt"), v12.M(), v12.Pt());
+      //   } // end of dielectron-photon pair loop
+      // }
 
-      if (collision.hasPCMandEE()) {
-        registry.fill(HIST("hEventCounter"), 11);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 12);
-        }
+      // if (collision.hasPCMandEE()) {
+      //   registry.fill(HIST("hEventCounter"), 11);
+      //   if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      //     registry.fill(HIST("hEventCounter"), 12);
+      //   }
 
-        for (auto& dielectron : dielectrons_coll) {
-          registry.fill(HIST("PCM_EE/hMeePt"), dielectron.mass(), dielectron.pt());
-        }
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST("PCM_EE/hMeegPt"), v12.M(), v12.Pt());
-        } // end of dielectron-photon pair loop
-      }
+      //   for (auto& dielectron : dielectrons_coll) {
+      //     registry.fill(HIST("PCM_EE/hMeePt"), dielectron.mass(), dielectron.pt());
+      //   }
+      //   for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
+      //     ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+      //     ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+      //     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+      //     registry.fill(HIST("PCM_EE/hMeegPt"), v12.M(), v12.Pt());
+      //   } // end of dielectron-photon pair loop
+      // }
 
     } // end of collision loop
   }
