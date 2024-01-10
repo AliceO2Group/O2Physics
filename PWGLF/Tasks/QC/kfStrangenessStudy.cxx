@@ -146,8 +146,8 @@ struct kfStrangenessStudy {
     histos.add("hCase", "hCase", kTH1F, {{5, 0, 5}});
   }
 
-  template <typename TCollision, typename TCascade, typename TCascDatas, typename TKFCascDatas, typename TV0, typename TV0fCDatas>
-  void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const&, TKFCascDatas const&, TV0 const&, TV0fCDatas const&)
+  template <typename TCollision, typename TCascade, typename TCascDatas, typename TKFCascDatas, typename TV0, typename TV0Datas, typename TV0fCDatas>
+  void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const&, TKFCascDatas const&, TV0 const&, TV0Datas const&, TV0fCDatas const&)
   {
     if (cascade.has_cascData()) {
       LOG(info) << "Cascade has CascData!";
@@ -155,8 +155,20 @@ struct kfStrangenessStudy {
       // if present: this candidate was accepted by default DCAfitter building
       isDCAfitter = 1;
       auto cascdata = cascade.template cascData_as<TCascDatas>();
-      auto v0 = cascade.template v0_as<TV0>();
-      auto v0data = v0.template v0fCData_as<TV0fCDatas>();
+      auto v0index = cascade.template v0_as<TV0>();
+      if (v0index.has_v0Data()) {
+        // V0 passed both standard and cascade V0 selections
+        auto v0data = v0index.template v0Data_as<TV0Datas>();
+        vtxXrecErrV0 = sqrt(v0data.positionCovMat()[0]);
+        vtxYrecErrV0 = sqrt(v0data.positionCovMat()[2]);
+        vtxZrecErrV0 = sqrt(v0data.positionCovMat()[5]);
+      } else if (v0index.has_v0fCData()) {
+        // V0 passed only cascade V0 selections, use this instead
+        auto v0data = v0index.template v0fCData_as<TV0fCDatas>();
+        vtxXrecErrV0 = sqrt(v0data.positionCovMat()[0]);
+        vtxYrecErrV0 = sqrt(v0data.positionCovMat()[2]);
+        vtxZrecErrV0 = sqrt(v0data.positionCovMat()[5]);
+      }
       ptRec = cascdata.pt();
       vtxXrec = cascdata.x();
       vtxYrec = cascdata.y();
@@ -168,9 +180,6 @@ struct kfStrangenessStudy {
       vtxXrecV0 = cascdata.xlambda();
       vtxYrecV0 = cascdata.ylambda();
       vtxZrecV0 = cascdata.zlambda();
-      vtxXrecErrV0 = sqrt(v0data.positionCovMat()[0]);
-      vtxYrecErrV0 = sqrt(v0data.positionCovMat()[2]);
-      vtxZrecErrV0 = sqrt(v0data.positionCovMat()[5]);
       massLambda = cascdata.mLambda();
       massXi = cascdata.mXi();
       dcaXYCascToPV = cascdata.dcaXYCascToPV();
@@ -461,7 +470,7 @@ struct kfStrangenessStudy {
 
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, FullTracksIU const&)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, FullTracksIU const&)
   {
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -501,7 +510,7 @@ struct kfStrangenessStudy {
       momNegRecIUErr[2] = cvnegini[21];
 
       // get cascade data and fill table
-      getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0fCDatas);
+      getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0Datas, V0fCDatas);
       if (cascade.has_cascData() || cascade.has_kfCascData()) {
         fillCascDataTable(collision);
       }
@@ -509,7 +518,7 @@ struct kfStrangenessStudy {
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, FullTracksIU const&, aod::McParticles const& particlesMC)
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, FullTracksIU const&, aod::McParticles const& particlesMC)
   {
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -549,7 +558,7 @@ struct kfStrangenessStudy {
       momNegRecIUErr[2] = sqrt(cvneg[21]);
 
       // get cascade data
-      getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0fCDatas);
+      getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0Datas, V0fCDatas);
 
       // ========== get cascade MC information ===========
       if (cascade.has_kfCascData() && cascade.has_cascData()) {
