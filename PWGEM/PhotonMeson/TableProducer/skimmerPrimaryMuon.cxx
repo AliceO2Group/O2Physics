@@ -54,6 +54,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.0f, "max DCA 3D in sigma"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 1e+10, "max TPC dE/dx"};
   Configurable<float> maxPin{"maxPin", 1.0, "max pin for PID"};
@@ -144,10 +145,6 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
-    // if(abs(track.dcaXY()) > dca_xy_max || abs(track.dcaZ()) > dca_z_max){
-    //   return false;
-    // }
-
     if (track.itsNCls() < minitsncls) {
       return false;
     }
@@ -162,6 +159,11 @@ struct skimmerPrimaryMuon {
     }
 
     if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+      return false;
+    }
+
+    float dca_3d = std::sqrt(std::pow(track.dcaXY() / std::sqrt(track.cYY()), 2) + std::pow(track.dcaZ() / std::sqrt(track.cZZ()), 2));
+    if (dca_3d > dca_3d_sigma_max) {
       return false;
     }
 
