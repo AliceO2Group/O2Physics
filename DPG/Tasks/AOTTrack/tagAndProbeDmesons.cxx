@@ -82,15 +82,31 @@ static const std::vector<std::string> labelsCutVarDzero = {"decayLength", "decay
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
 DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //! Index to first track
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //! Index to second track
-DECLARE_SOA_COLUMN(Channel, channel, uint8_t);                    //! tag channel
 } // namespace tagandprobe
 
-DECLARE_SOA_TABLE(Dmeson2VtxTags, "AOD", "DMESON2VTXTAG", //! Table for 2-track vertices used as tag
+DECLARE_SOA_TABLE(PiPiFromDpTags, "AOD", "PIPIFROMDPTAG", //! Table for same sign 2-pion vertices used as tags
+                  soa::Index<>,
+                  aod::tagandprobe::CollisionId,
+                  aod::tagandprobe::Track0Id,
+                  aod::tagandprobe::Track1Id);
+DECLARE_SOA_TABLE(KaKaFromDspTags, "AOD", "KAKAFROMDSPTAG", //! Table for opposite sign 2-kaon vertices used as tags
                   soa::Index<>,
                   aod::tagandprobe::CollisionId,
                   aod::tagandprobe::Track0Id,
                   aod::tagandprobe::Track1Id,
-                  aod::tagandprobe::Channel);
+                  soa::Marker<1>);
+DECLARE_SOA_TABLE(PiKaFromDzTags, "AOD", "PIKAFROMDZTAG", //! Table for opposite sign pion(+)-kaon(-) vertices used as tags
+                  soa::Index<>,
+                  aod::tagandprobe::CollisionId,
+                  aod::tagandprobe::Track0Id,
+                  aod::tagandprobe::Track1Id,
+                  soa::Marker<2>);
+DECLARE_SOA_TABLE(KaPiFromDzTags, "AOD", "KAPIFROMDZTAG", //! Table for opposite sign kaon(+)-pion(-) vertices used as tags
+                  soa::Index<>,
+                  aod::tagandprobe::CollisionId,
+                  aod::tagandprobe::Track0Id,
+                  aod::tagandprobe::Track1Id,
+                  soa::Marker<3>);
 } // namespace o2::aod
 
 /// Reconstruction of 2-prong displaced vertices (very good quality and purity)
@@ -99,7 +115,10 @@ DECLARE_SOA_TABLE(Dmeson2VtxTags, "AOD", "DMESON2VTXTAG", //! Table for 2-track 
 /// 3) K∓π± for D0 from D±* → D0π± decays
 struct TagTwoProngDisplacedVertices {
 
-  Produces<aod::Dmeson2VtxTags> tagTable;
+  Produces<aod::PiPiFromDpTags> tagPiPiTable;
+  Produces<aod::KaKaFromDspTags> tagKaKaTable;
+  Produces<aod::KaPiFromDzTags> tagKaPiTable;
+  Produces<aod::PiKaFromDzTags> tagPiKaTable;
   SliceCache cache;
 
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
@@ -356,7 +375,7 @@ struct TagTwoProngDisplacedVertices {
         }
 
         registry.fill(HIST("hMassPiPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2)); // only channel with same sign tracks for the moment
-        tagTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex(), channel);
+        tagPiPiTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex());
       }
     }
   }
@@ -414,10 +433,14 @@ struct TagTwoProngDisplacedVertices {
 
         if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
           registry.fill(HIST("hMassKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
-        } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
+          tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+        } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
           registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+        } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
+          registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         }
-        tagTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), channel);
       }
     }
   }
@@ -514,7 +537,10 @@ struct ProbeThirdTrack {
 
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra, aod::TrackSelection>;
 
-  Preslice<aod::Dmeson2VtxTags> twoProngVerticesPerCollision = aod::tagandprobe::collisionId;
+  Preslice<aod::PiPiFromDpTags> tagsPiPiPerCollision = aod::tagandprobe::collisionId;
+  Preslice<aod::KaKaFromDspTags> tagsKaKaPerCollision = aod::tagandprobe::collisionId;
+  Preslice<aod::PiKaFromDzTags> tagsPiKaPerCollision = aod::tagandprobe::collisionId;
+  Preslice<aod::KaPiFromDzTags> tagsKaPiPerCollision = aod::tagandprobe::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   std::array<std::array<double, 3>, aod::tagandprobe::TagChannels::NTagChannels> masses = {std::array{constants::physics::MassPionCharged, constants::physics::MassPionCharged, constants::physics::MassKaonCharged},
@@ -577,7 +603,7 @@ struct ProbeThirdTrack {
   }
 
   template <typename TTrack>
-  float computeInvariantMass(TTrack const& trackFirst, TTrack const& trackSecond, TTrack const& trackThird, uint8_t& channel)
+  float computeInvariantMass(TTrack const& trackFirst, TTrack const& trackSecond, TTrack const& trackThird, const uint8_t channel)
   {
     std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
     std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
@@ -594,50 +620,102 @@ struct ProbeThirdTrack {
     return invMass;
   }
 
-  void processCombinatorial(aod::Collisions const& collisions,
-                            aod::Dmeson2VtxTags const& twoProngVertices,
-                            aod::TrackAssoc const& trackIndices,
-                            TracksWithSelAndDca const& tracks)
+  template<typename TTrackIndices, typename TTrack, typename TTracks>
+  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& tracks, TTrack const& trackFirst, TTrack const& trackSecond, const uint8_t channel)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedTwoProngVertices = twoProngVertices.sliceBy(twoProngVerticesPerCollision, thisCollId);
-      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      for (const auto& twoProngVtx : groupedTwoProngVertices) {
-        auto channel = twoProngVtx.channel();
-        auto trackFirst = twoProngVtx.track0_as<TracksWithSelAndDca>();
-        auto trackSecond = twoProngVtx.track1_as<TracksWithSelAndDca>();
-        for (const auto& trackIndex : groupedTrackIndices) {
-          auto trackThird = trackIndex.track_as<TracksWithSelAndDca>();
-          if (trackThird.globalIndex() == trackFirst.globalIndex() || trackThird.globalIndex() == trackSecond.globalIndex()) {
-            continue;
-          }
-          if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi && trackThird.signed1Pt() * trackFirst.signed1Pt() > 0.) { // must be opposite sign
-            continue;
-          }
-          if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi && trackThird.signed1Pt() < 0.) { // must be positive
-            continue;
-          }
-          if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi && trackThird.signed1Pt() > 0.) { // must be negative
-            continue;
-          }
-          auto ptTrackThird = trackThird.pt();
-          auto invMass = computeInvariantMass(trackFirst, trackSecond, trackThird, channel);
-          if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.18f) {
-            continue;
-          } else if (invMass < 1.65f || invMass > 2.10f) {
-            continue;
-          }
-          for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
-            if (trackSelector[iTrackType].IsSelected(trackThird)) {
-              histos[channel][iTrackType]->Fill(ptTrackThird, invMass);
-            }
-          }
+    for (const auto& trackIndex : groupedTrackThirdIndices) {
+      auto trackThird = trackIndex.template track_as<TTracks>();
+      if (trackThird.globalIndex() == trackFirst.globalIndex() || trackThird.globalIndex() == trackSecond.globalIndex()) {
+        continue;
+      }
+      if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi && trackThird.signed1Pt() * trackFirst.signed1Pt() > 0.) { // must be opposite sign
+        continue;
+      }
+      if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi && trackThird.signed1Pt() < 0.) { // must be positive
+        continue;
+      }
+      if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi && trackThird.signed1Pt() > 0.) { // must be negative
+        continue;
+      }
+      auto ptTrackThird = trackThird.pt();
+      auto invMass = computeInvariantMass(trackFirst, trackSecond, trackThird, channel);
+      if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.18f) {
+        continue;
+      } else if (invMass < 1.65f || invMass > 2.10f) {
+        continue;
+      }
+      for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
+        if (trackSelector[iTrackType].IsSelected(trackThird)) {
+          histos[channel][iTrackType]->Fill(ptTrackThird, invMass);
         }
       }
     }
   }
-  PROCESS_SWITCH(ProbeThirdTrack, processCombinatorial, "Process combinatorial of tagged 2-prong vertices with additional track", true);
+
+  void processCombinatorialDplusToKaPiPi(aod::Collisions const& collisions,
+                                         aod::PiPiFromDpTags const& tagsPiPi,
+                                         aod::TrackAssoc const& trackIndices,
+                                         TracksWithSelAndDca const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      // D+ -> pi+pi+K- and c.c.
+      auto groupedTagsPiPi = tagsPiPi.sliceBy(tagsPiPiPerCollision, thisCollId);
+      for (const auto& tagPiPi : groupedTagsPiPi) {
+        auto trackFirst = tagPiPi.track0_as<TracksWithSelAndDca>();
+        auto trackSecond = tagPiPi.track1_as<TracksWithSelAndDca>();
+        loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DplusToKPiPi);
+      }
+    }
+  }
+  PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDplusToKaPiPi, "Process combinatorial of tagged 2-pion vertices with additional track", true);
+
+  void processCombinatorialDsToPhiPi(aod::Collisions const& collisions,
+                                     aod::KaKaFromDspTags const& tagsKaKa,
+                                     aod::TrackAssoc const& trackIndices,
+                                     TracksWithSelAndDca const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
+      auto thisCollId = collision.globalIndex();
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      auto groupedTagsKaKa = tagsKaKa.sliceBy(tagsKaKaPerCollision, thisCollId);
+      for (const auto& tagKaKa : groupedTagsKaKa) {
+        auto trackFirst = tagKaKa.track0_as<TracksWithSelAndDca>();
+        auto trackSecond = tagKaKa.track1_as<TracksWithSelAndDca>();
+        loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
+      }
+    }
+  }
+  PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDsToPhiPi, "Process combinatorial of tagged 2-kaon (phi) vertices with additional track", true);
+
+  void processCombinatorialDstarToDzeroPi(aod::Collisions const& collisions,
+                                          aod::PiKaFromDzTags const& tagsPiKa,
+                                          aod::KaPiFromDzTags const& tagsKaPi,
+                                          aod::TrackAssoc const& trackIndices,
+                                          TracksWithSelAndDca const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      // D*+ -> D0(->pi+K-)pi+
+      auto groupedTagsPiKa = tagsPiKa.sliceBy(tagsPiKaPerCollision, thisCollId);
+      for (const auto& tagPiKa : groupedTagsPiKa) {
+        auto trackFirst = tagPiKa.track0_as<TracksWithSelAndDca>();
+        auto trackSecond = tagPiKa.track1_as<TracksWithSelAndDca>();
+        loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
+      }
+      // D*- -> D0bar(->K+pi-)pi-
+      auto groupedTagsKaPi = tagsKaPi.sliceBy(tagsKaPiPerCollision, thisCollId);
+      for (const auto& tagKaPi : groupedTagsKaPi) {
+        auto trackFirst = tagKaPi.track0_as<TracksWithSelAndDca>();
+        auto trackSecond = tagKaPi.track1_as<TracksWithSelAndDca>();
+        loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi);
+      }
+    }
+  }
+  PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDstarToDzeroPi, "Process combinatorial of tagged pion-kaon (D0) vertices with additional track", true);
 
   void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(ProbeThirdTrack, processDummy, "Dummy process function that does nothing", false);
