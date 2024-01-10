@@ -85,7 +85,6 @@ class GFWBinningCuts
     return ss.str();
   }
 
-
   void SetVtxZBinning(int vtxbins, float vtxmin, float vtxmax)
   {
     mVtxZbins = vtxbins;

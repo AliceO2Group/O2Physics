@@ -91,7 +91,7 @@ struct GenericFramework {
                                           "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15,1,1,0,0}}, "Configurations for each correlation to calculate"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
 
   // #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
   //  Connect to ccdb
@@ -228,7 +228,7 @@ struct GenericFramework {
       fFC_gen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-    fFCpt->Initialise(multAxis,cfgMpar,configs,cfgNbootstrap);
+    fFCpt->Initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
     // Event selection - Alex
     if (cfgUse22sEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -342,17 +342,16 @@ struct GenericFramework {
   void FillOutputContainers(const GFW::CorrConfig& corrconf, const float& centmult, const double& rndm, uint8_t mask)
   {
     fFCpt->CalculateCorrelations();
-    fFCpt->FillPtProfiles(centmult,rndm);
-    fFCpt->FillCMProfiles(centmult,rndm);
+    fFCpt->FillPtProfiles(centmult, rndm);
+    fFCpt->FillCMProfiles(centmult, rndm);
     auto dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
       return;
     if (!corrconf.pTDif) {
       auto val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
-      {
+      if (TMath::Abs(val) < 1) {
         (dt == kGen) ? fFC_gen->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm);
-        fFCpt->FillVnPtProfiles(centmult,val,dnx,rndm,mask);
+        fFCpt->FillVnPtProfiles(centmult, val, dnx, rndm, mask);
       }
       return;
     }
@@ -427,7 +426,7 @@ struct GenericFramework {
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
-    fFCpt->Fill(weff,track.pt());
+    fFCpt->Fill(weff, track.pt());
     bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
     if (WithinPtRef)
@@ -454,7 +453,7 @@ struct GenericFramework {
   }
 
   Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
-  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgPtmin && aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
+  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
