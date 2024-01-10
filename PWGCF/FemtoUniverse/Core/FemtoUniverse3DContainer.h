@@ -74,24 +74,23 @@ class FemtoUniverse3DContainer
   /// \param mTAxis axis object for the mT axis
   /// \param use3dplots Flag to fill 3D plots
   /// \param isiden Identical or non-identical particle pair
-  /// \param islcms LCMS or PRF 
+  /// \param islcms LCMS or PRF
   template <typename T>
   void init_base(std::string folderName, std::string femtoObs1D, std::string femtoObsKout, std::string femtoObsKside, std::string femtoObsKlong, T femtoObsAxis1D, T femtoObsAxisOut, T femtoObsAxisSide, T femtoObsAxisLong, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots, bool isiden)
   {
     mHistogramRegistry->add((folderName + "/relPairMom3D").c_str(), ("; " + femtoObsKout + "; " + femtoObsKside + "; " + femtoObsKlong).c_str(), kTH3F, {femtoObsAxisOut, femtoObsAxisSide, femtoObsAxisLong});
     mHistogramRegistry->add((folderName + "/relPairMomOut").c_str(), ("; " + femtoObsKout + "; Entries").c_str(), kTH1F, {femtoObsAxisOut});
     mHistogramRegistry->add((folderName + "/relPairMomSide").c_str(), ("; " + femtoObsKside + "; Entries").c_str(), kTH1F, {femtoObsAxisSide});
-    mHistogramRegistry->add((folderName + "/relPairMomLong").c_str(), ("; " + femtoObsKlong + "; Entries").c_str(), kTH1F, {femtoObsAxisLong}); 
+    mHistogramRegistry->add((folderName + "/relPairMomLong").c_str(), ("; " + femtoObsKlong + "; Entries").c_str(), kTH1F, {femtoObsAxisLong});
     mHistogramRegistry->add((folderName + "/relPairMom1D").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
-    if (!isiden) 
-    {
+    if (!isiden) {
       mHistogramRegistry->add((folderName + "/KStarOutP").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
       mHistogramRegistry->add((folderName + "/KStarSideP").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
       mHistogramRegistry->add((folderName + "/KStarLongP").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
       mHistogramRegistry->add((folderName + "/KStarOutN").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
       mHistogramRegistry->add((folderName + "/KStarSideN").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
-      mHistogramRegistry->add((folderName + "/KStarLongN").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});   
-    } 
+      mHistogramRegistry->add((folderName + "/KStarLongN").c_str(), ("; " + femtoObs1D + "; Entries").c_str(), kTH1F, {femtoObsAxis1D});
+    }
     mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
     mHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs1D + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis1D, kTAxis});
     mHistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs1D + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis1D, mTAxis});
@@ -123,17 +122,16 @@ class FemtoUniverse3DContainer
     mHistogramRegistry = registry;
     std::string femtoObs1D, femtoObsKout, femtoObsKside, femtoObsKlong;
 
-    if (isiden){
+    if (isiden) {
       femtoObs1D = "#it{q} (GeV/#it{c})";
       femtoObsKout = "#it{q}_{out} (GeV/#it{c})";
       femtoObsKside = "#it{q}_{side} (GeV/#it{c})";
-      femtoObsKlong = "#it{q}_{long} (GeV/#it{c})";    
-    }
-    else {
+      femtoObsKlong = "#it{q}_{long} (GeV/#it{c})";
+    } else {
       femtoObs1D = "#it{k*} (GeV/#it{c})";
       femtoObsKout = "#it{k*}_{out} (GeV/#it{c})";
       femtoObsKside = "#it{k*}_{side} (GeV/#it{c})";
-      femtoObsKlong = "#it{k*}_{long} (GeV/#it{c})";    
+      femtoObsKlong = "#it{k*}_{long} (GeV/#it{c})";
     }
     framework::AxisSpec femtoObsAxis1D = {kstarBins, femtoObs1D.c_str()};
     framework::AxisSpec femtoObsAxisOut = {kstarBins, femtoObsKout.c_str()};
@@ -165,7 +163,7 @@ class FemtoUniverse3DContainer
   }
 
   /// Pass a pair to the container and compute all the relevant observables
-  /// Called by setPair 
+  /// Called by setPair
   /// \tparam T type of the femtouniverseparticle
   /// \param part1 Particle one
   /// \param part2 Particle two
@@ -180,9 +178,8 @@ class FemtoUniverse3DContainer
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt());
-     
-    if (isiden) 
-    {
+
+    if (isiden) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairMom1D"), (2.0 * femtoObs1D));
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarkT"), (2.0 * femtoObs1D), kT);
@@ -193,9 +190,7 @@ class FemtoUniverse3DContainer
       if (use3dplots) {
         mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), (2.0 * femtoObs1D), mT, mult);
       }
-    }
-    else
-    {
+    } else {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairMom1D"), femtoObs1D);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs1D, kT);
@@ -221,34 +216,35 @@ class FemtoUniverse3DContainer
   template <bool isMC, typename T>
   void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool isiden, bool islcms)
   {
-    std::vector<double> f3d;    
+    std::vector<double> f3d;
     const float kT = FemtoUniverseMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
-    
+
     f3d = FemtoUniverseMath::getpairmom3d(part1, mMassOne, part2, mMassTwo, isiden, islcms);
 
     const float femtoObs1D = f3d[0];
     const float femtoObsKout = f3d[1];
     const float femtoObsKside = f3d[2];
-    const float femtoObsKlong = f3d[3];  
-        
+    const float femtoObsKlong = f3d[3];
+
     if (mHistogramRegistry) {
-    //std::cout<<"working"<<std::endl;
       setPair_base<o2::aod::femtouniverseMCparticle::MCType::kRecon>(femtoObsKout, femtoObsKside, femtoObsKlong, femtoObs1D, kT, mT, part1, part2, mult, use3dplots, isiden);
-      //std::cout<<"working2"<<std::endl;
-      if (!isiden){
-        if (femtoObsKout>0.0) {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarOutP"), femtoObs1D);}
-        else {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarOutN"), femtoObs1D);}
-        if (femtoObsKside>0.0) {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarSideP"), femtoObs1D);}
-        else {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarSideN"), femtoObs1D);}
-        if (femtoObsKlong>0.0) {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarLongP"), femtoObs1D);}      
-        else {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarLongN"), femtoObs1D);}
+      if (!isiden) {
+        if (femtoObsKout > 0.0) {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarOutP"), femtoObs1D);
+        } else {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarOutN"), femtoObs1D);
+        }
+        if (femtoObsKside > 0.0) {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarSideP"), femtoObs1D);
+        } else {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarSideN"), femtoObs1D);
+        }
+        if (femtoObsKlong > 0.0) {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarLongP"), femtoObs1D);
+        } else {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]) + HIST("/KStarLongN"), femtoObs1D);
+        }
       }
     }
   }
