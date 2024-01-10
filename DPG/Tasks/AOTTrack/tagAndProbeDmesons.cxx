@@ -53,31 +53,31 @@ enum TrackTypes : uint8_t {
 };
 
 static constexpr int nBinsPt = 7;
-static constexpr int nCutVars = 4;
-static constexpr int nCutVarsDzero = 7;
+static constexpr int nCutVars = 6;
+static constexpr int nCutVarsDzero = 9;
 constexpr float binsPt[nBinsPt + 1] = {0., 1., 2., 4., 6., 10., 20., 1000.};
 auto vecBinsPt = std::vector<float>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-constexpr float cuts[nBinsPt][nCutVars] = {{0.01f, 0.01f, 2.f, 2.f},
-                                           {0.01f, 0.01f, 2.f, 2.f},
-                                           {0.02f, 0.02f, 2.f, 2.f},
-                                           {0.02f, 0.02f, 2.f, 2.f},
-                                           {0.04f, 0.04f, 2.f, 2.f},
-                                           {0.04f, 0.04f, 2.f, 2.f},
-                                           {0.06f, 0.06f, 2.f, 2.f}};
+constexpr float cuts[nBinsPt][nCutVars] = {{0.1f, 1.5f, 0.01f, 0.01f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.01f, 0.01f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.02f, 0.02f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.02f, 0.02f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.04f, 0.04f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.04f, 0.04f, 2.f, 2.f},
+                                           {0.1f, 1.5f, 0.06f, 0.06f, 2.f, 2.f}};
 
-constexpr float cutsDzero[nBinsPt][nCutVarsDzero] = {{0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                     {0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                     {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                     {0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
-                                                     {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
-                                                     {0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
-                                                     {0.06f, 0.06f, 2.f, 2.f, 0.f, 0.95f, 0.95f}};
+constexpr float cutsDzero[nBinsPt][nCutVarsDzero] = {{1.815f, 1.915f, 0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {1.815f, 1.915f, 0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {1.815f, 1.915f, 0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {1.815f, 1.915f, 0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+                                                     {1.815f, 1.915f, 0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
+                                                     {1.815f, 1.915f, 0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
+                                                     {1.815f, 1.915f, 0.06f, 0.06f, 2.f, 2.f, 0.f, 0.95f, 0.95f}};
 
 static const std::vector<std::string> labelsPt{};
-static const std::vector<std::string> labelsCutVar = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY"};
-static const std::vector<std::string> labelsCutVarDzero = {"decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY", "impParProd", "cosPointing", "cosPointingXY"};
+static const std::vector<std::string> labelsCutVar = {"minMass", "maxMass", "decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY"};
+static const std::vector<std::string> labelsCutVarDzero = {"minMass", "maxMass", "decayLength", "decayLengthXY", "normDecayLength", "normDecayLengthXY", "impParProd", "cosPointing", "cosPointingXY"};
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
 DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //! Index to first track
@@ -222,11 +222,17 @@ struct TagTwoProngDisplacedVertices {
   bool isSelectedInvariantMass(const Pvec& pVecTrackFirst,
                                const Pvec& pVecTrackSecond,
                                const uint8_t channel,
-                               float& invMassMin,
-                               float& invMassMax,
                                float& invMass2)
   {
     auto arrMomentum = std::array{pVecTrackFirst, pVecTrackSecond};
+    auto pVec = RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond);
+    auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
+    if (ptBin == -1) {
+      return false;
+    }
+
+    auto invMassMin = topologicalCuts[channel].get(ptBin, 0u);
+    auto invMassMax = topologicalCuts[channel].get(ptBin, 1u);
     invMass2 = RecoDecay::m2(arrMomentum, masses[channel]);
     if (invMass2 > invMassMax * invMassMax || invMass2 < invMassMin * invMassMin) {
       return false;
@@ -283,40 +289,40 @@ struct TagTwoProngDisplacedVertices {
 
     std::array<float, 3> pvCoord = {primVtx.getX(), primVtx.getY(), primVtx.getZ()};
     auto decLen = RecoDecay::distance(pvCoord, secVtx);
-    if (decLen < topologicalCuts[channel].get(ptBin, 0u)) {
+    if (decLen < topologicalCuts[channel].get(ptBin, 2u)) {
       return false;
     }
 
     auto covMatrixPV = primVtx.getCov();
 
     auto decLenXy = RecoDecay::distanceXY(pvCoord, secVtx);
-    if (decLenXy < topologicalCuts[channel].get(ptBin, 1u)) {
+    if (decLenXy < topologicalCuts[channel].get(ptBin, 3u)) {
       return false;
     }
 
     float phi, theta;
     getPointDirection(pvCoord, secVtx, phi, theta);
     auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
-    if (decLen / errorDecLen < topologicalCuts[channel].get(ptBin, 2u)) {
+    if (decLen / errorDecLen < topologicalCuts[channel].get(ptBin, 4u)) {
       return false;
     }
 
     auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
-    if (decLenXy / errorDecLenXy < topologicalCuts[channel].get(ptBin, 3u)) {
+    if (decLenXy / errorDecLenXy < topologicalCuts[channel].get(ptBin, 5u)) {
       return false;
     }
 
     // only for D0 meson
     if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-      if (trackDcaXy[0] * trackDcaXy[1] > topologicalCuts[channel].get(ptBin, 4u)) {
+      if (trackDcaXy[0] * trackDcaXy[1] > topologicalCuts[channel].get(ptBin, 6u)) {
         return false;
       }
       auto cpa = RecoDecay::cpa(pvCoord, secVtx, pVec);
-      if (cpa < topologicalCuts[channel].get(ptBin, 5u)) {
+      if (cpa < topologicalCuts[channel].get(ptBin, 7u)) {
         return false;
       }
       auto cpaXy = RecoDecay::cpaXY(pvCoord, secVtx, pVec);
-      if (cpaXy < topologicalCuts[channel].get(ptBin, 6u)) {
+      if (cpaXy < topologicalCuts[channel].get(ptBin, 8u)) {
         return false;
       }
     }
@@ -328,8 +334,6 @@ struct TagTwoProngDisplacedVertices {
   void computeCombinatorialSameCharge(CCollision const& collision,
                                       TTracks const& tracks, // pool of tracks
                                       const uint8_t channel,
-                                      float& invMassMin,
-                                      float& invMassMax,
                                       float& bz)
   {
     for (auto trackFirst = tracks.begin(); trackFirst != tracks.end(); ++trackFirst) {
@@ -347,7 +351,8 @@ struct TagTwoProngDisplacedVertices {
         float invMass2{0.f};
         std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
         std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-        if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMassMin, invMassMax, invMass2)) {
+
+        if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMass2)) {
           continue;
         }
 
@@ -385,8 +390,6 @@ struct TagTwoProngDisplacedVertices {
                                           TTracks const& tracksPos,
                                           TTracks const& tracksNeg,
                                           const uint8_t channel,
-                                          float& invMassMin,
-                                          float& invMassMax,
                                           float& bz)
   {
     for (const auto& trackPos : tracksPos) {
@@ -404,7 +407,7 @@ struct TagTwoProngDisplacedVertices {
         float invMass2{0.f};
         std::array<float, 3> pVecTrackPos{trackPos.px(), trackPos.py(), trackPos.pz()};
         std::array<float, 3> pVecTrackNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
-        if (!isSelectedInvariantMass(pVecTrackPos, pVecTrackNeg, channel, invMassMin, invMassMax, invMass2)) {
+        if (!isSelectedInvariantMass(pVecTrackPos, pVecTrackNeg, channel, invMass2)) {
           continue;
         }
 
@@ -462,15 +465,11 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    // kinematic limits for massPiPi in D+ decays
-    float invMassMin{0.1f};
-    float invMassMax{1.5f};
-
     auto groupPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, invMassMin, invMassMax, bz);
+    computeCombinatorialSameCharge(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz);
 
     auto groupNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, invMassMin, invMassMax, bz);
+    computeCombinatorialSameCharge(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplus, "Process pipi combinatorial to tag pion pairs from D+ decays", true);
 
@@ -491,13 +490,9 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    // We expect the phi resonance, so we cut around it with a good margin
-    float invMassMin{constants::physics::MassPhi - 0.04f};
-    float invMassMax{constants::physics::MassPhi + 0.04f};
-
     auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, invMassMin, invMassMax, bz);
+    computeCombinatorialOppositeCharge(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplus, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays", false);
 
@@ -518,16 +513,12 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    // We expect the phi resonance, so we cut around it with a good margin
-    float invMassMin{constants::physics::MassD0 - 0.05f};
-    float invMassMax{constants::physics::MassD0 + 0.05f};
-
     auto groupPionPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupPionNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, invMassMin, invMassMax, bz);
-    computeCombinatorialOppositeCharge(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, invMassMin, invMassMax, bz);
+    computeCombinatorialOppositeCharge(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz);
+    computeCombinatorialOppositeCharge(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 };
