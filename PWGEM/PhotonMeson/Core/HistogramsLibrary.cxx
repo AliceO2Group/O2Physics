@@ -128,6 +128,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     THnSparseF* hs_dilepton_uls_same = nullptr;
     THnSparseF* hs_dilepton_lspp_same = nullptr;
     THnSparseF* hs_dilepton_lsmm_same = nullptr;
+    THnSparseF* hs_dilepton_uls_dca_same = nullptr;
+    THnSparseF* hs_dilepton_lspp_dca_same = nullptr;
+    THnSparseF* hs_dilepton_lsmm_dca_same = nullptr;
 
     if (TString(histClass).Contains("EE")) {
       const int nm = 162;
@@ -177,18 +180,18 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       hs_dilepton_lsmm_same->Sumw2();
       list->Add(hs_dilepton_lsmm_same);
 
-      const int ndim_dca = 3; // mee, dca1, dca2
-      const int nbins_dca[ndim_dca] = {nm - 1, 50, 50};
-      const double xmin_dca[ndim_dca] = {0.0, 0.0, 0.0};
-      const double xmax_dca[ndim_dca] = {3.5, 5.0, 5.0};
+      const int ndim_dca = 4; // mee, dca1, dca2
+      const int nbins_dca[ndim_dca] = {nm - 1, 50, 50, 50};
+      const double xmin_dca[ndim_dca] = {0.0, 0.0, 0.0, 0.0};
+      const double xmax_dca[ndim_dca] = {3.5, 5.0, 5.0, 5.0};
 
-      THnSparseF* hs_dilepton_uls_dca_same = new THnSparseF("hs_dilepton_uls_dca_same", "hs_dilepton_uls_dca;m_{ee} (GeV/c^{2});DCA_{e^{+}}^{3D} (#sigma);DCA_{e^{-}}^{3D} (#sigma);", ndim_dca, nbins_dca, xmin_dca, xmax_dca);
+      hs_dilepton_uls_dca_same = new THnSparseF("hs_dilepton_uls_dca_same", "hs_dilepton_uls_dca;m_{ee} (GeV/c^{2});DCA_{e^{+}}^{3D} (#sigma);DCA_{e^{-}}^{3D} (#sigma);DCA_{ee}^{3D} (#sigma);", ndim_dca, nbins_dca, xmin_dca, xmax_dca);
       hs_dilepton_uls_dca_same->SetBinEdges(0, mee);
       hs_dilepton_uls_dca_same->Sumw2();
       list->Add(hs_dilepton_uls_dca_same);
 
-      THnSparseF* hs_dilepton_lspp_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
-      THnSparseF* hs_dilepton_lsmm_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
+      hs_dilepton_lspp_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
+      hs_dilepton_lsmm_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
       list->Add(hs_dilepton_lspp_dca_same);
       list->Add(hs_dilepton_lsmm_dca_same);
 
@@ -231,6 +234,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(hs_dilepton_uls_mix);
       list->Add(hs_dilepton_lspp_mix);
       list->Add(hs_dilepton_lsmm_mix);
+
+      THnSparseF* hs_dilepton_uls_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
+      THnSparseF* hs_dilepton_lspp_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
+      THnSparseF* hs_dilepton_lsmm_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_dca_same->Clone("hs_dilepton_lsmm_dca_mix"));
+      list->Add(hs_dilepton_uls_dca_mix);
+      list->Add(hs_dilepton_lspp_dca_mix);
+      list->Add(hs_dilepton_lsmm_dca_mix);
     }
 
     list->Add(new TH1F("hNpair_uls", "Number of ULS pairs per collision", 101, -0.5f, 100.5f));

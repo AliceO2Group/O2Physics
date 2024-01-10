@@ -145,7 +145,7 @@ struct DalitzEEQCMC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
-    double values_single[3] = {0, 0, 0};
+    double values_single[4] = {0, 0, 0, 0};
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -202,6 +202,7 @@ struct DalitzEEQCMC {
               values_single[0] = uls_pair.mass();
               values_single[1] = std::sqrt(std::pow(pos.dcaXY() / std::sqrt(pos.cYY()), 2) + std::pow(pos.dcaZ() / std::sqrt(pos.cZZ()), 2));
               values_single[2] = std::sqrt(std::pow(ele.dcaXY() / std::sqrt(ele.cYY()), 2) + std::pow(ele.dcaZ() / std::sqrt(ele.cZZ()), 2));
+              values_single[3] = std::sqrt((std::pow(values_single[1], 2) + std::pow(values_single[2], 2)) / 2.f);
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
 
               if (mcmother.pdgCode() == 111) {
