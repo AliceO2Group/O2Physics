@@ -10,16 +10,16 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include <fmt/format.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
 #include <iostream>
 #include <cstdio>
 #include <random>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <fmt/format.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
 
 #include "filterTables.h"
 
@@ -226,7 +226,7 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
   FILTER_CONFIGURABLE(FullJetFilters);
-  FILTER_CONFIGURABLE(PhotFilters);
+  FILTER_CONFIGURABLE(PhotonFilters);
 
   int mRunNumber{-1};
   o2::InteractionRecord mEndOfITSramp{0, 0};
