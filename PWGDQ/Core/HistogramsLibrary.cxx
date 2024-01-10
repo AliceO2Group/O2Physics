@@ -657,9 +657,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
       }
       if (subGroupStr.Contains("pbpb")) {
-        hm->AddHistogram(histClass, "Mass_Cent", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentVZERO);
-        hm->AddHistogram(histClass, "Pt_Cent", "", false, 120, 0.0, 30.0, VarManager::kPt, 100, 0., 100., VarManager::kCentVZERO);
-        hm->AddHistogram(histClass, "Rapidity_Cent", "", false, 200, 2.5, 4.0, VarManager::kRap, 100, 0., 100., VarManager::kCentVZERO);
+        hm->AddHistogram(histClass, "Mass_CentVZERO", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentVZERO);
+        hm->AddHistogram(histClass, "Pt_CentVZERO", "", false, 120, 0.0, 30.0, VarManager::kPt, 100, 0., 100., VarManager::kCentVZERO);
+        hm->AddHistogram(histClass, "Rapidity_CentVZERO", "", false, 200, 2.5, 4.0, VarManager::kRap, 100, 0., 100., VarManager::kCentVZERO);
+        hm->AddHistogram(histClass, "Mass_CentFT0C", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Pt_CentFT0C", "", false, 120, 0.0, 30.0, VarManager::kPt, 100, 0., 100., VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Rapidity_CentFT0C", "", false, 200, 2.5, 4.0, VarManager::kRap, 100, 0., 100., VarManager::kCentFT0C);
       }
       if (subGroupStr.Contains("lowmass")) {
         hm->AddHistogram(histClass, "MassLow", "", false, 400, 0.0, 2.0, VarManager::kMass);
