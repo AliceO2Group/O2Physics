@@ -52,7 +52,7 @@ std::vector<double> ptbinning = {
   2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
 float ptpoilow = 0.2, ptpoiup = 10.0;
 float ptreflow = 0.2, ptrefup = 3.0;
-float ptlow = 0.2, ptup = 3.0;
+float ptlow = 0.2, ptup = 10.0;
 int etabins = 16;
 float etalow = -0.8, etaup = 0.8;
 int vtxZbins = 40;
@@ -81,11 +81,12 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction");
+  O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt");
+  O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt");
 
   Configurable<GFWBinningCuts> cfgBinning{"cfgBinning",
-                                          {40, -10.0, 10.0, 0.2, 2.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, 16, -0.8, 0.8, 72, 0.2, 5.0, 300, 0.5, 3000.5, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},
+                                          {40, -10.0, 10.0, 0.2, 10.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, 16, -0.8, 0.8, 72, 0.2, 3.0, 300, 0.5, 3000.5, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},
                                           "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
-
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
@@ -122,6 +123,7 @@ struct GenericFramework {
   void init(InitContext const&)
   {
     LOGF(info, "flowGenericFramework::init()");
+    LOGF(info, "Binning: \n%s", cfgBinning->Print());
     regions.SetNames(cfgRegions->GetNames());
     regions.SetEtaMin(cfgRegions->GetEtaMin());
     regions.SetEtaMax(cfgRegions->GetEtaMax());
@@ -137,8 +139,8 @@ struct GenericFramework {
     ptpoiup = cfgBinning->GetPtPOImax();
     ptreflow = cfgBinning->GetPtRefMin();
     ptrefup = cfgBinning->GetPtRefMax();
-    ptlow = cfgBinning->GetPtMin();
-    ptup = cfgBinning->GetPtMax();
+    ptlow = cfgPtmin;
+    ptup = cfgPtmax;
     etabins = cfgBinning->GetEtaBins();
     etalow = cfgBinning->GetEtaMin();
     etaup = cfgBinning->GetEtaMax();
@@ -441,7 +443,7 @@ struct GenericFramework {
   }
 
   Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
-  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgBinning->GetPtMin() && aod::track::pt < cfgBinning->GetPtMax() && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
+  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgPtmin && aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
