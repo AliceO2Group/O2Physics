@@ -347,7 +347,7 @@ void FlowPtContainer::CreateCentralMomentList()
 }
 void FlowPtContainer::CalculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt)
 {
-  TH1* reth = (TH1*)inh[0]->Clone(Form("cm%i_%i", m, ind));
+  TH1* reth = reinterpret_cast<TH1*>(inh[0]->Clone(Form("cm%i_%i", m, ind)));
   for (auto i(1); i < m; ++i) {
     TH1* mptPow = raiseHistToPower(hMpt, i);
     inh[i]->Multiply(mptPow);

@@ -138,7 +138,7 @@ Long64_t BootstrapProfile::Merge(TCollection* collist)
         reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Reset();
     }
     for (Int_t i = 0; i < fListOfEntries->GetEntries(); i++)
-      reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Add((TProfile*)tarL->At(i));
+      reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Add(reinterpret_cast<TProfile*>(tarL->At(i)));
     nmerged++;
   }
   return nmergedpf;
@@ -216,7 +216,7 @@ void BootstrapProfile::MergeBS(BootstrapProfile* target)
       reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Reset();
   }
   for (Int_t i = 0; i < fListOfEntries->GetEntries(); i++)
-    reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Add((TProfile*)tarL->At(i));
+    reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Add(reinterpret_cast<TProfile*>(tarL->At(i)));
 }
 TProfile* BootstrapProfile::getSummedProfiles()
 {
