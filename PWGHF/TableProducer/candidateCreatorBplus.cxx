@@ -18,9 +18,9 @@
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -28,18 +28,17 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bplus;
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
@@ -72,13 +71,11 @@ struct HfCandidateCreatorBplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
-
-  // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
 
   double massPi{0.};
   double massD0{0.};
@@ -131,9 +128,9 @@ struct HfCandidateCreatorBplus {
     runNumber = 0;
 
     // invariant-mass window cut
-    massPi = pdg->Mass(kPiPlus);
-    massD0 = pdg->Mass(pdg::Code::kD0);
-    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    massPi = MassPiPlus;
+    massD0 = MassD0;
+    massBplus = MassBPlus;
     invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
     invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
   }
@@ -197,11 +194,11 @@ struct HfCandidateCreatorBplus {
         if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(yD0(candD0)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candD0)) > yCandMax) {
           continue;
         }
 
-        hRapidityD0->Fill(yD0(candD0));
+        hRapidityD0->Fill(hfHelper.yD0(candD0));
 
         // track0 <-> pi, track1 <-> K
         auto prong0 = candD0.prong0_as<TracksWithSel>();
@@ -357,7 +354,7 @@ struct HfCandidateCreatorBplusExpressions {
     int8_t signB = 0, signD0 = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int kD0pdg = pdg::Code::kD0;
+    int kD0pdg = Pdg::kD0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -370,8 +367,8 @@ struct HfCandidateCreatorBplusExpressions {
       auto arrayDaughters = std::array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
-      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -pdg::Code::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
+      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -Pdg::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
         flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
@@ -389,12 +386,12 @@ struct HfCandidateCreatorBplusExpressions {
 
       // B± → D0bar(D0) π± → (K± π∓) π±
       std::vector<int> arrayDaughterB;
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
         // D0(bar) → π± K∓
         for (auto iD : arrayDaughterB) {
           auto candDaughterMC = mcParticles.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
-            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, pdg::Code::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
+            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
           }
         }
         if (indexGenD0 > -1) {

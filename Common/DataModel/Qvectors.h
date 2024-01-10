@@ -21,44 +21,61 @@
 #ifndef COMMON_DATAMODEL_QVECTORS_H_
 #define COMMON_DATAMODEL_QVECTORS_H_
 
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
 namespace qvec
 {
-DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality percentile.
-DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float); //! Real part of Qvec in FT0A.
-DECLARE_SOA_COLUMN(QvecFT0AIm, qvecFT0AIm, float); //! Imaginary part for FT0A.
-DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float); //! Real part of Qvec in FT0C.
-DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float); //! Imaginary part for FT0C.
-DECLARE_SOA_COLUMN(QvecFV0ARe, qvecFV0ARe, float); //! Real part of Qvec in FV0A.
-DECLARE_SOA_COLUMN(QvecFV0AIm, qvecFV0AIm, float); //! Imaginary part for FV0A.
+DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(CentBin, centBin, int);
+
+DECLARE_SOA_COLUMN(QvecRe, qvecRe, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecIm, qvecIm, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecAmp, qvecAmp, std::vector<float>);
+
+DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float);
+DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float);
+DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float);
+DECLARE_SOA_COLUMN(QvecFT0AIm, qvecFT0AIm, float);
+DECLARE_SOA_COLUMN(QvecFT0MRe, qvecFT0MRe, float);
+DECLARE_SOA_COLUMN(QvecFT0MIm, qvecFT0MIm, float);
+DECLARE_SOA_COLUMN(QvecFV0ARe, qvecFV0ARe, float);
+DECLARE_SOA_COLUMN(QvecFV0AIm, qvecFV0AIm, float);
 DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
 DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float);
 DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float);
 DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float);
-DECLARE_SOA_COLUMN(QvecFT0CUncorRe, qvecFT0CUncorRe, float);
-DECLARE_SOA_COLUMN(QvecFT0CUncorIm, qvecFT0CUncorIm, float);
-DECLARE_SOA_COLUMN(QvecFT0CRectrRe, qvecFT0CRectrRe, float);
-DECLARE_SOA_COLUMN(QvecFT0CRectrIm, qvecFT0CRectrIm, float);
-DECLARE_SOA_COLUMN(QvecFT0CTwistRe, qvecFT0CTwistRe, float);
-DECLARE_SOA_COLUMN(QvecFT0CTwistIm, qvecFT0CTwistIm, float);
-/// NOTE: Add here Qx,Qy for other systems.
+
+DECLARE_SOA_COLUMN(SumAmplFT0C, sumAmplFT0C, float);
+DECLARE_SOA_COLUMN(SumAmplFT0A, sumAmplFT0A, float);
+DECLARE_SOA_COLUMN(SumAmplFT0M, sumAmplFT0M, float);
+DECLARE_SOA_COLUMN(SumAmplFV0A, sumAmplFV0A, float);
+DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);
+DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);
+DECLARE_SOA_COLUMN(LabelsBPos, labelsBPos, std::vector<int>);
+DECLARE_SOA_COLUMN(LabelsBNeg, labelsBNeg, std::vector<int>);
 } // namespace qvec
 
-DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS", //! Table with all Qvectors.
-                  qvec::Cent,
-                  qvec::QvecFT0ARe, qvec::QvecFT0AIm,
-                  qvec::QvecFT0CRe, qvec::QvecFT0CIm,
-                  qvec::QvecFV0ARe, qvec::QvecFV0AIm,
-                  qvec::QvecBPosRe, qvec::QvecBPosIm,
-                  qvec::QvecBNegRe, qvec::QvecBNegIm,
-                  qvec::QvecFT0CUncorRe, qvec::QvecFT0CUncorIm,
-                  qvec::QvecFT0CRectrRe, qvec::QvecFT0CRectrIm,
-                  qvec::QvecFT0CTwistRe, qvec::QvecFT0CTwistIm);
-
+DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORDEVS", //! Table with all Qvectors.
+                  qvec::Cent, qvec::CentBin, qvec::QvecRe, qvec::QvecIm, qvec::QvecAmp);
 using Qvector = Qvectors::iterator;
+
+DECLARE_SOA_TABLE(QvectorFT0Cs, "AOD", "QVECTORSFT0C", qvec::CentBin, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(QvectorFT0As, "AOD", "QVECTORSFT0A", qvec::CentBin, qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(QvectorFT0Ms, "AOD", "QVECTORSFT0M", qvec::CentBin, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(QvectorFV0As, "AOD", "QVECTORSFV0A", qvec::CentBin, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::CentBin, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);
+DECLARE_SOA_TABLE(QvectorBNegs, "AOD", "QVECTORSBNEG", qvec::CentBin, qvec::QvecBNegRe, qvec::QvecBNegIm, qvec::NTrkBNeg, qvec::LabelsBNeg);
+
+using QvectorFT0C = QvectorFT0Cs::iterator;
+using QvectorFT0A = QvectorFT0As::iterator;
+using QvectorFT0M = QvectorFT0Ms::iterator;
+using QvectorFV0A = QvectorFV0As::iterator;
+using QvectorBPos = QvectorBPoss::iterator;
+using QvectorBNeg = QvectorBNegs::iterator;
+
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_QVECTORS_H_

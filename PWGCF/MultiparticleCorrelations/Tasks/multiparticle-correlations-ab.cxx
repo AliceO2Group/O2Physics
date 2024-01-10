@@ -10,10 +10,26 @@
 // or submit itself to any jurisdiction.
 
 // O2:
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 using namespace o2;
 using namespace o2::framework;
+
+using CollisionRec = aod::Collision;
+using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
+using CollisionSim = aod::McCollision;
+
+using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;
+
+using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>::iterator;
+
+using TracksSim = aod::McParticles;
+using TrackSim = aod::McParticles::iterator;
 
 // ROOT:
 #include "TList.h"
@@ -32,9 +48,19 @@ using namespace std;
 // *) Global constants:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
+// *) These are indended flags for PROCESS_SWITCH, have to be global, at least for the time being...
+//    TBI 20231017 check this further, it doesn't work yet this way. It seems I have to pass to PROCESS_SWITCH(  ) only literals 'true' or 'false'
+//    TBI 20231020 I could as well re-define them as data members...
+bool gProcessRec = false;
+bool gProcessRecSim = false;
+bool gProcessSim = false;
+
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
+
+  // *) CCDB:
+  Service<ccdb::BasicCCDBManager> ccdb;
 
 // *) Configurables (cuts):
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
@@ -62,23 +88,21 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     Bool_t oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
-    // *) Book base list:
-    BookBaseList();
-
     // *) Default configuration, booking, binning and cuts:
     DefaultConfiguration();
     DefaultBooking();
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
-    // *) Configure the task with setters and getters:
-    // TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
-    //   TH1D* phiWeights = GetHistogramWithWeights("/alice/cern.ch/user/a/abilandz/weights.root", "phi"); // both relative and abs path shell be fine
-    //   SetWeightsHist(phiWeights, "phi");
+    // *) Set what to process - only rec, both rec and sim, only sim:
+    WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions
 
     // *) Book random generator:
     delete gRandom;
     gRandom = new TRandom3(fRandomSeed); // if uiSeed is 0, the seed is determined uniquely in space and time via TUUID
+
+    // *) Book base list:
+    BookBaseList();
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
@@ -98,89 +122,82 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
   // -------------------------------------------
 
-  // *) Process the data:
-  void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
-  {
-    // *) Fill event histograms for reconstructed data before event cuts:
-    FillEventHistograms(collision, tracks, eRec, eBefore);
+  // Since I am subscribing to different tables in each case, there are 3 separate implementations of process(...)
+  // A) Process only reconstructed data;
+  // B) Process both reconstructed and corresponding MC truth simulated data;
+  // C) Process only simulated data.
 
-    // *) Event cuts:
-    if (!EventCuts(collision)) {
+  // -------------------------------------------
+
+  // A) Process only reconstructed data:
+  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
+  {
+
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
+    if (!gProcessRec) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
+              // from subsequent processing (which will also dump the output file, etc.). When that's possible,
+              // move this to a member function Steer(...)
+    }
+
+    // *) Steer all analysis steps:
+    Steer<eRec>(collision, tracks);
+
+  } // void processRec(...)
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true);
+
+  // -------------------------------------------
+
+  // B) Process both reconstructed and corresponding MC truth simulated data:
+  void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  {
+
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
+    if (!gProcessRecSim) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
       return;
     }
 
-    // *) Fill event histograms for reconstructed data after event cuts:
-    FillEventHistograms(collision, tracks, eRec, eAfter);
+    // *) Steer all analysis steps:
+    Steer<eRecAndSim>(collision, tracks);
 
-    // *) Main loop over particles:
-    Double_t dPhi = 0.;      //, dPt = 0., dEta = 0.;
-    Double_t wPhi = 1.;      //, wPt = 1., wEta = 1.;
-    Double_t wToPowerP = 1.; // final particle weight raised to power p
-    fSelectedTracks = 0;     // reset number of selected tracks
-    for (auto& track : tracks) {
+  } // void processRecSim(...)
 
-      // *) Fill particle histograms for reconstructed data before particle cuts:
-      FillParticleHistograms(track, eRec, eBefore);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
-      // *) Particle cuts:
-      if (!ParticleCuts(track)) {
-        continue;
-      }
+  // -------------------------------------------
 
-      // *) Fill particle histograms for reconstructed data after particle cuts:
-      FillParticleHistograms(track, eRec, eAfter);
+  // C) Process only simulated data:
+  void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
+  {
+    // ...
 
-      // *) Fill Q-vectors:
-      dPhi = track.phi();
-      // dPt  = track.pt();
-      // dEta = track.eta();
-      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-          // if (fUseWeights[0]||fUseWeights[1]||fUseWeights[2]) {
-          //   wToPowerP = pow(wPhi*wPt*wEta,wp);
-          // }
-          qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
-        } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
-      }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
-
-      // *) Nested loops containers:
-      if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
-        if (nl_a.ftaNestedLoops[0]) {
-          nl_a.ftaNestedLoops[0]->AddAt(dPhi, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-        if (nl_a.ftaNestedLoops[1]) {
-          nl_a.ftaNestedLoops[1]->AddAt(wPhi, fSelectedTracks);
-        } // remember that the 2nd argument here must start from 0
-      }   // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
-
-      // *) Counter of selected tracks in the current event:
-      fSelectedTracks++;
-      if (fSelectedTracks > 100) {
-        break;
-      } // TBI 20220803 hardcoded 100
-
-      // *) tmp:
-      fResultsHist->Fill(pw_a.fWeightsHist[wPHI]->GetBinContent(pw_a.fWeightsHist[wPHI]->FindBin(track.phi()))); // TBI 20220713 meaningless, only temporarily here to check if this is feasible
-
-    } // for (auto& track : tracks)
-
-    // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
-    if (fCalculateCorrelations) {
-      CalculateCorrelations();
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
+    if (!gProcessSim) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
 
-    // *) Calculate nested loops:
-    if (fCalculateNestedLoops) {
-      CalculateNestedLoops();
-
-      // TBI 20220823 this shall be called after all events are processed, only temporarily here called for each event:
-      ComparisonNestedLoopsVsCorrelations();
+    // *) If I reached max number of events, ignore the remaining collisions:
+    if (!fProcessRemainingEvents) {
+      return;
     }
 
-    // *) Reset event-by-event objects:
-    ResetEventByEventQuantities();
+    // *) Steer all analysis steps:
+    Steer<eSim>(collision, tracks);
 
-  } // void process(...)
+  } // void processSim(...)
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
 
 }; // struct MultiparticleCorrelationsAB
 

@@ -20,6 +20,7 @@
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -37,9 +38,10 @@
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod::hffilters;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hffilters;
 
 struct HfFilterPrepareMlSamples { // Main struct
 
@@ -49,7 +51,7 @@ struct HfFilterPrepareMlSamples { // Main struct
   // parameters for production of training samples
   Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -120,7 +122,7 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       // D0(bar) → π± K∓
       bool isInCorrectColl{false};
-      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         flag = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
@@ -131,7 +133,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       }
 
       float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < downSampleBkgFactor)) {
         train2P(invMassD0, invMassD0bar, pt2Prong, trackParPos.getPt(), dcaPos[0], dcaPos[1], trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
                 trackParNeg.getPt(), dcaNeg[0], dcaNeg[1], trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(), flag, isInCorrectColl);
       }
@@ -201,27 +203,27 @@ struct HfFilterPrepareMlSamples { // Main struct
       int8_t channel = -1;
 
       // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec >= 0) {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kDs;
         }
       }
       if (indexRec < 0) {
         // Λc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kLc;
         }
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kXic;
         }
@@ -238,7 +240,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       }
 
       float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
-      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < downSampleBkgFactor)) {
         train3P(invMassDplus, invMassDsToKKPi, invMassDsToPiKK, invMassLcToPKPi, invMassLcToPiKP, invMassXicToPKPi, invMassXicToPiKP, pt3Prong, deltaMassKKFirst, deltaMassKKSecond,
                 trackParFirst.getPt(), dcaFirst[0], dcaFirst[1], trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
                 trackParSecond.getPt(), dcaSecond[0], dcaSecond[1], trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),

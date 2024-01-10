@@ -63,8 +63,6 @@ struct femtoUniversePairTaskTrackPhi {
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
-    Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
     Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
     Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
     Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
@@ -92,7 +90,7 @@ struct femtoUniversePairTaskTrackPhi {
   /// Particle 2 --- PHI
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePhi{"ConfPDGCodePhi", 333, "Phi meson - PDG code"};
-    Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
+    // Configurable<uint32_t> ConfCutPhi{"ConfCutPhi", 5542474, "Phi meson - Selection bit from cutCulator"};
     Configurable<int> ConfPIDPhi{"ConfPIDPhi", 2, "Phi meson - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
     // Configurable<float> ConfPtLowPhi{"ConfPtLowPhi", 0.5, "Lower limit for Pt for the Phi meson"}; // change according to wrzesa cuts
     // Configurable<float> ConfPtHighPhi{"ConfPtHighPhi", 1.5, "Higher limit for Pt for the Phi meson"};
@@ -105,6 +103,10 @@ struct femtoUniversePairTaskTrackPhi {
   /// Partitions for particle 2
   Partition<FemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi));
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsPhiMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi));
+
+  /// Partitions  for Phi daughters kPhiChild
+  Partition<FemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
@@ -136,11 +138,12 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
-  Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.01, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.004, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
@@ -271,6 +274,17 @@ struct femtoUniversePairTaskTrackPhi {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
+    qaRegistry.add("PhiDaugh_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("PhiDaugh_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("PhiDaugh_pos/pt", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
+    qaRegistry.add("PhiDaugh_pos/eta", "; #it{eta}; Counts", kTH1F, {{200, -1.5, 1.5}});
+    qaRegistry.add("PhiDaugh_pos/phi", "; #it{varphi}; Counts", kTH1F, {{200, 0, 2. * M_PI}});
+    qaRegistry.add("PhiDaugh_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("PhiDaugh_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("PhiDaugh_neg/pt", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
+    qaRegistry.add("PhiDaugh_neg/eta", "; #it{eta}; Counts", kTH1F, {{200, -1.5, 1.5}});
+    qaRegistry.add("PhiDaugh_neg/phi", "; #it{varphi}; Counts", kTH1F, {{200, 0, 2. * M_PI}});
+
     trackHistoPartPhi.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarInvMassBins, ConfBothTracks.ConfIsMC, ConfPhi.ConfPDGCodePhi);
     if (!ConfTrack.ConfIsSame) {
       trackHistoPartTrack.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfBothTracks.ConfIsMC, ConfTrack.ConfPDGCodeTrack);
@@ -291,7 +305,7 @@ struct femtoUniversePairTaskTrackPhi {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDPhiCandidate = ConfPhi.ConfPIDPhi.value;
@@ -317,12 +331,36 @@ struct femtoUniversePairTaskTrackPhi {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartitionType groupPartsPhiDaugh, PartType parts, float magFieldTesla, int multCol)
   {
 
     /// Histogramming same event
     for (auto& phicandidate : groupPartsPhi) {
       trackHistoPartPhi.fillQA<isMC, false>(phicandidate);
+    }
+
+    float tpcNSigma;
+    float tofNSigma;
+    for (auto& phidaugh : groupPartsPhiDaugh) {
+      if (phidaugh.mAntiLambda() == 1) { // workaround
+        tpcNSigma = trackCuts.getNsigmaTPC(phidaugh, o2::track::PID::Kaon);
+        tofNSigma = trackCuts.getNsigmaTOF(phidaugh, o2::track::PID::Kaon);
+
+        qaRegistry.fill(HIST("PhiDaugh_pos/nSigmaTPC"), phidaugh.p(), tpcNSigma);
+        qaRegistry.fill(HIST("PhiDaugh_pos/nSigmaTOF"), phidaugh.p(), tofNSigma);
+        qaRegistry.fill(HIST("PhiDaugh_pos/pt"), phidaugh.pt());
+        qaRegistry.fill(HIST("PhiDaugh_pos/eta"), phidaugh.eta());
+        qaRegistry.fill(HIST("PhiDaugh_pos/phi"), phidaugh.phi());
+      } else if (phidaugh.mAntiLambda() == -1) { // workaround
+        tpcNSigma = trackCuts.getNsigmaTPC(phidaugh, o2::track::PID::Kaon);
+        tofNSigma = trackCuts.getNsigmaTOF(phidaugh, o2::track::PID::Kaon);
+
+        qaRegistry.fill(HIST("PhiDaugh_neg/nSigmaTPC"), phidaugh.p(), tpcNSigma);
+        qaRegistry.fill(HIST("PhiDaugh_neg/nSigmaTOF"), phidaugh.p(), tofNSigma);
+        qaRegistry.fill(HIST("PhiDaugh_neg/pt"), phidaugh.pt());
+        qaRegistry.fill(HIST("PhiDaugh_neg/eta"), phidaugh.eta());
+        qaRegistry.fill(HIST("PhiDaugh_neg/phi"), phidaugh.phi());
+      }
     }
 
     if (!ConfTrack.ConfIsSame) {
@@ -377,16 +415,16 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
       // // Close Pair Rejection
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
-      // // Track Cleaning
-      // if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
-      //   continue;
-      // }
+      // Track Cleaning
+      if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
+        continue;
+      }
       sameEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
     }
@@ -402,8 +440,9 @@ struct femtoUniversePairTaskTrackPhi {
 
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
@@ -419,8 +458,9 @@ struct femtoUniversePairTaskTrackPhi {
 
     auto thegroupPartsPhi = partsPhiMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrack = partsTrackMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -465,11 +505,11 @@ struct femtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      // if (ConfIsCPR.value) {
-      //   if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
-      //     continue;
-      //   }
-      // }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla)) {
+          continue;
+        }
+      }
 
       mixedEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
       mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);

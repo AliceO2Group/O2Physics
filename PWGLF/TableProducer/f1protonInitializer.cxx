@@ -33,7 +33,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -178,10 +178,10 @@ struct f1protoninitializer {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > cMaxV0DCA) {
+    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short);
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
     if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
@@ -191,9 +191,9 @@ struct f1protoninitializer {
   }
 
   /////////////////////////////////////////////////////////////
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massKa = RecoDecay::getMassPDG(kKPlus);
-  double massK0s = RecoDecay::getMassPDG(kK0Short);
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
+  double massK0s = o2::constants::physics::MassK0Short;
   double massF1{0.};
   double masskKs0{0.};
   double pT{0.};

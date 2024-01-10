@@ -134,12 +134,12 @@ struct tpcPidFull {
     /// TPC PID Response
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
-      LOGP(info, "Loading TPC response from file {}", fname);
+      LOGP(info, "Loading TPC response from file {}", fname.Data());
       try {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
         f->GetObject("Response", response);
       } catch (...) {
-        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
+        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname.Data());
       }
       response->PrintAll();
     } else {
@@ -203,7 +203,7 @@ struct tpcPidFull {
     }
   }
 
-  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterMap > (uint8_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
+  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   void process(Coll const& collisions, Trks const& tracks,

@@ -20,6 +20,7 @@
 #include "PWGLF/DataModel/v0qaanalysis.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -141,8 +142,8 @@ struct v0postprocessing {
       if (candidate.v0cospa() > cospaK0s &&
           TMath::Abs(candidate.rapk0short()) < rap &&
           candidate.ctauk0short() < ctauK0s &&
-          TMath::Abs(candidate.massk0short() - RecoDecay::getMassPDG(310)) < 0.075 &&
-          TMath::Abs(candidate.masslambda() - RecoDecay::getMassPDG(3122)) > v0rejK0s) {
+          TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) < 0.075 &&
+          TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s) {
 
         registry.fill(HIST("hMassK0Short"), candidate.massk0short());
         registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
@@ -168,8 +169,8 @@ struct v0postprocessing {
       /* if (candidate.v0cospa() > cospaLambda &&
            TMath::Abs(candidate.raplambda()) < rap &&
            candidate.ctaulambda() < ctauK0s &&
-           TMath::Abs(candidate.masslambda() - RecoDecay::getMassPDG(3122)) < 0.075 &&
-           TMath::Abs(candidate.massk0short() - RecoDecay::getMassPDG(310)) > v0rejLambda) {
+           TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+           TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) > v0rejLambda) {
 
            registry.fill(HIST("hMassLambda"), candidate.masslambda());
            registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
@@ -202,8 +203,8 @@ struct v0postprocessing {
         if (candidate.v0cospa() > cospaK0s &&
             TMath::Abs(candidate.rapk0short()) < rap &&
             candidate.ctauk0short() < ctauK0s &&
-            TMath::Abs(candidate.massk0short() - RecoDecay::getMassPDG(310)) < 0.075 &&
-            TMath::Abs(candidate.masslambda() - RecoDecay::getMassPDG(3122)) > v0rejK0s &&
+            TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) < 0.075 &&
+            TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s &&
             (candidate.pdgcode() == 310)) {
 
           registry.fill(HIST("hMassK0Short_MC"), candidate.massk0short());

@@ -16,6 +16,8 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include <TLorentzVector.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>     // FIXME
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -52,10 +54,14 @@ struct k1analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"}; // Combined
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
+  Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -168,9 +174,9 @@ struct k1analysis {
     histos.print();
   }
 
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massK892 = TDatabasePDG::Instance()->GetParticle(313)->Mass();
+  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();  // FIXME: Get from the common header
+  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
+  double massK892 = TDatabasePDG::Instance()->GetParticle(313)->Mass();   // FIXME: Get from the common header
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
@@ -191,23 +197,47 @@ struct k1analysis {
     return true;
   }
 
-  // PID selection tools from phianalysisrun3
+  // PID selection tools
   template <typename T>
-  bool selectionPIDPion(const T& candidate, bool hasTOF)
+  bool selectionPIDPion(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (2.0 * nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
   }
   template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
+  bool selectionPIDKaon(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
@@ -252,6 +282,7 @@ struct k1analysis {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    auto multiplicity = collision.cent();
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonanceK892, lDecayDaughter_bach, lResonanceK1;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks2, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -262,8 +293,8 @@ struct k1analysis {
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
-      auto isTrk1hasTOF = ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
-      auto isTrk2hasTOF = ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+      auto isTrk1hasTOF = trk1.hasTOF();
+      auto isTrk2hasTOF = trk2.hasTOF();
       auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
       auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
@@ -272,7 +303,11 @@ struct k1analysis {
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
       //// PID selections
-      if (!selectionPIDPion(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+      if (cUseOnlyTOFTrackPi && !isTrk1hasTOF)
+        continue;
+      if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
+        continue;
+      if (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2))
         continue;
 
       //// QA plots after the selection
@@ -307,14 +342,14 @@ struct k1analysis {
         histos.fill(HIST("k892invmass"), lResonanceK892.M()); // quick check
         if (trk1.sign() > 0) {                                // Positive pion
           if (trk2.sign() > 0)                                // Positive kaon
-            histos.fill(HIST("hK892invmass_PP"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+            histos.fill(HIST("hK892invmass_PP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
           else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_PN"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
+            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // Anti-K(892)0
         } else {                                                                                                // Negative pion
           if (trk2.sign() > 0)                                                                                  // Positive kaon
-            histos.fill(HIST("hK892invmass_NP"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // K(892)0
+            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // K(892)0
           else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_NN"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+            histos.fill(HIST("hK892invmass_NN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
         }
       }
       // Like-sign rejection for K(892)0 - disabled for further LS bkg study
@@ -340,11 +375,11 @@ struct k1analysis {
 
         auto bTrkPt = bTrack.pt();
         auto bTrkTPCnSigmaPi = bTrack.tpcNSigmaPi();
-        auto isbTrkhasTOF = ((bTrack.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) ? true : false;
+        auto isbTrkhasTOF = bTrack.hasTOF();
         auto bTrack_TOFnSigma = (isbTrkhasTOF) ? bTrack.tofNSigmaPi() : -999.;
 
         // PID selection
-        if (!selectionPIDPion(bTrack, isbTrkhasTOF))
+        if (!selectionPIDPion(bTrack))
           continue;
 
         if constexpr (!IsMix) {
@@ -393,32 +428,32 @@ struct k1analysis {
             if (bTrack.sign() > 0) {                              // bachelor pi+
               if (trk2.sign() > 0) {                              // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                                                 // bachelor pi-
               if (trk2.sign() > 0) {                                 // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           } else {                   // K892-LS (false)
             if (bTrack.sign() > 0) { // bachelor pi+
               if (trk2.sign() > 0) { // Kaon+
-                histos.fill(HIST("hK1invmass_PPP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PPP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_PPN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PPN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                 // bachelor pi-
               if (trk2.sign() > 0) { // Kaon_
-                histos.fill(HIST("hK1invmass_NNN"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NNN"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_NNP"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NNP"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           }
@@ -432,11 +467,11 @@ struct k1analysis {
               histos.fill(HIST("QAMC/K1PairAsymm"), lPairAsym);
 
               if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
-                histos.fill(HIST("hK1invmass_NPP_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP_MC"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
               if ((bTrack.sign() < 0) && (trk2.sign() < 0)) { // Anti-matter
-                histos.fill(HIST("hK1invmass_PNN_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN_MC"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
               histos.fill(HIST("hTrueK1pt"), lResonanceK1.Pt());
@@ -450,16 +485,16 @@ struct k1analysis {
             if (bTrack.sign() > 0) {                                  // bachelor pi+
               if (trk2.sign() > 0) {                                  // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_NPP_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPP_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
-                histos.fill(HIST("hK1invmass_PNP_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNP_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             } else {                 // bachelor pi-
               if (trk2.sign() > 0) { // kaon + means K(892)0 is matter.
-                histos.fill(HIST("hK1invmass_NPN_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_NPN_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               } else {
                 histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
-                histos.fill(HIST("hK1invmass_PNN_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("hK1invmass_PNN_Mix"), multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               }
             }
           }
@@ -476,7 +511,7 @@ struct k1analysis {
   PROCESS_SWITCH(k1analysis, processData, "Process Event for data without Partitioning", true);
 
   void processMC(aod::ResoCollision& collision,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
@@ -506,12 +541,11 @@ struct k1analysis {
   PROCESS_SWITCH(k1analysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
-
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

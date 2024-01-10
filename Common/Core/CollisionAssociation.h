@@ -125,20 +125,24 @@ class CollisionAssociation
                         RevIndices& reverseIndices)
   {
     // cache globalBC
-    std::vector<uint64_t> globalBC;
+    std::vector<int64_t> globalBC;
     for (const auto& track : tracks) {
       if (track.has_collision()) {
-        globalBC.push_back(track.collision().bc().globalBC());
+        globalBC.push_back((int64_t)track.collision().bc().globalBC());
       } else {
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+                globalBC.push_back(-1);
+                break;
+              }
+              globalBC.push_back((int64_t)ambTrack.bc().begin().globalBC());
               break;
             }
           } else {
             if (ambTrack.template getId<TTracks>() == track.globalIndex()) {
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              globalBC.push_back((int64_t)ambTrack.bc().begin().globalBC());
               break;
             }
           }
@@ -163,7 +167,10 @@ class CollisionAssociation
         }
 
         float trackTime = track.trackTime();
-        const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
+        if (globalBC[track.filteredIndex()] < 0) {
+          continue;
+        }
+        const int64_t bcOffsetWindow = globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
         if (std::abs(bcOffsetWindow) > bOffsetMax) {
           continue;
         }
@@ -171,7 +178,7 @@ class CollisionAssociation
         float trackTimeRes = track.trackTimeRes();
         if constexpr (isCentralBarrel) {
           if (mUsePvAssociation && track.isPVContributor()) {
-            trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
+            trackTime = track.collision().collisionTime();        // if PV contributor, we assume the time to be the one of the collision
             trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS; // 1 BC
           }
         }

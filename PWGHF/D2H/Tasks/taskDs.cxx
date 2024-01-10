@@ -16,17 +16,19 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
 
 /// Ds± analysis task
 struct HfTaskDs {
@@ -36,17 +38,19 @@ struct HfTaskDs {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
 
+  HfHelper hfHelper;
+
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
+  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   HistogramRegistry registry{
     "registry",
@@ -77,6 +81,7 @@ struct HfTaskDs {
     registry.add("hCos3PiK", "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hAbsCos3PiK", "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassKK", "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpactParameterProngSqSum", "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthError", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthXYError", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -114,7 +119,7 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     registry.fill(HIST("hPt"), pt);
     registry.fill(HIST("hEta"), candidate.eta(), pt);
-    registry.fill(HIST("hCt"), ctDs(candidate), pt);
+    registry.fill(HIST("hCt"), hfHelper.ctDs(candidate), pt);
     registry.fill(HIST("hDecayLength"), candidate.decayLength(), pt);
     registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), pt);
     registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), pt);
@@ -143,10 +148,11 @@ struct HfTaskDs {
   void fillHistoKKPi(const T1& candidate)
   {
     auto pt = candidate.pt();
-    registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), pt);
-    registry.fill(HIST("hCos3PiK"), cos3PiKDsToKKPi(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToKKPi(candidate)), pt);
-    registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToKKPi(candidate), pt);
+    registry.fill(HIST("hMass"), hfHelper.invMassDsToKKPi(candidate), pt);
+    registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToKKPi(candidate), pt);
+    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToKKPi(candidate)), pt);
+    registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
+    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToKKPi(candidate), pt);
     return;
   }
 
@@ -156,10 +162,11 @@ struct HfTaskDs {
   void fillHistoPiKK(const T1& candidate)
   {
     auto pt = candidate.pt();
-    registry.fill(HIST("hMass"), invMassDsToPiKK(candidate), pt);
-    registry.fill(HIST("hCos3PiK"), cos3PiKDsToPiKK(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToPiKK(candidate)), pt);
-    registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToPiKK(candidate), pt);
+    registry.fill(HIST("hMass"), hfHelper.invMassDsToPiKK(candidate), pt);
+    registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToPiKK(candidate), pt);
+    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToPiKK(candidate)), pt);
+    registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
+    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToPiKK(candidate), pt);
     return;
   }
 
@@ -170,7 +177,7 @@ struct HfTaskDs {
   void fillHistoMCRec(const T1& candidate, int flag)
   {
     auto pt = candidate.pt(); // rec. level pT
-    auto y = yDs(candidate);
+    auto y = hfHelper.yDs(candidate);
 
     registry.fill(HIST("hPtRecSig"), pt);
     registry.fill(HIST("hCPARecSig"), candidate.cpa());
@@ -213,7 +220,7 @@ struct HfTaskDs {
   void process(CandDsData const& candidates)
   {
     for (const auto& candidate : selectedDsToKKPiCand) {
-      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillHisto(candidate);
@@ -221,7 +228,7 @@ struct HfTaskDs {
     }
 
     for (const auto& candidate : selectedDsToPiKKCand) {
-      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillHisto(candidate);
@@ -235,12 +242,12 @@ struct HfTaskDs {
   {
     // MC rec.
     for (const auto& candidate : reconstructedCandSig) {
-      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
-      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, pdg::Code::kDS, true);
+      auto indexMother = RecoDecay::getMother(mcParticles, prong0McPart, o2::constants::physics::Pdg::kDS, true);
       auto particleMother = mcParticles.iteratorAt(indexMother);
       registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
 
@@ -256,7 +263,7 @@ struct HfTaskDs {
     }
 
     for (const auto& candidate : reconstructedCandBkg) {
-      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -268,12 +275,12 @@ struct HfTaskDs {
 
     // MC gen.
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() != decayChannel) {
           continue;
         }
         auto pt = particle.pt();
-        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
         if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
           continue;
         }

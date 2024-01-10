@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "TMath.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -42,10 +43,12 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, float ldeltaphistarcut, float ldeltaetacut, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
+    CutDeltaPhStar = ldeltaphistarcut;
+    CutDeltaEta = ldeltaetacut;
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -75,6 +78,18 @@ class FemtoUniverseDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       for (int i = 0; i < 2; i++) {
         std::string dirName = static_cast<std::string>(dirNames[2]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        if (plotForEveryRadii) {
+          for (int j = 0; j < 9; j++) {
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          }
+        }
+      }
+    }
+    if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
+      for (int i = 0; i < 2; i++) {
+        std::string dirName = static_cast<std::string>(dirNames[3]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
@@ -130,11 +145,11 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
-      /// Track-Phi combination
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
+      /// Track-D0 combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {
-        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kPhi candidates.";
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kD0) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack, kD0 candidates.";
         return false;
       }
 
@@ -152,6 +167,29 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+      /// Track-Phi combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kPhi candidates.";
+        return false;
+      }
+
+      bool pass = false;
+      for (int i = 0; i < 2; i++) {
+        auto indexOfDaughter = part2.index() - 2 + i;
+        auto daughter = particles.begin() + indexOfDaughter;
+        auto deta = part1.eta() - daughter.eta();
+        auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
+        histdetadpi[i][0]->Fill(deta, dphiAvg);
+        if ((fabs(dphiAvg) < CutDeltaPhStar) && (fabs(deta) < CutDeltaEta)) {
+          pass = true; // pair is close
+        } else {
+          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        }
+      }
+      return pass;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -161,7 +199,7 @@ class FemtoUniverseDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
-  static constexpr std::string_view dirNames[3] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kPhi/"};
+  static constexpr std::string_view dirNames[4] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kPhi/", "kTrack_kD0/"};
 
   static constexpr std::string_view histNames[2][2] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1"},
                                                        {"detadphidetadphi0After_0", "detadphidetadphi0After_1"}};
@@ -183,6 +221,8 @@ class FemtoUniverseDetaDphiStar
 
   float deltaPhiMax;
   float deltaEtaMax;
+  float CutDeltaPhStar;
+  float CutDeltaEta;
   float magfield;
   bool plotForEveryRadii = false;
 
@@ -233,6 +273,40 @@ class FemtoUniverseDetaDphiStar
       }
     }
     return dPhiAvg / num;
+  }
+
+  // Get particle charge from mask
+  template <typename T1>
+  float GetCharge(const T1& part)
+  {
+    float charge = 0;
+    if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
+      charge = 0;
+    } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
+      charge = 1;
+    } else if ((part.cut() & kSignMinusMask) == kSignMinusMask) {
+      charge = -1;
+    } else {
+      LOG(fatal) << "FemtoUniverseDetaDphiStar: Charge bits are set wrong!";
+    }
+    return charge;
+  }
+
+  // Calculate phi* as in https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoPairCutRadialDistance.cxx
+  template <typename T1, typename T2>
+  double CalculateDphiStar(const T1& part1, const T2& part2)
+  {
+    float charge1 = GetCharge(part1);
+    float charge2 = GetCharge(part2);
+    float rad = 0.8;
+
+    double deltaphiconstFD = 0.3 * 0.1 * 0.01 / 2;
+    // double deltaphiconstAF = 0.15;
+    double afsi0b = deltaphiconstFD * magfield * charge1 * rad / part1.pt();
+    double afsi1b = deltaphiconstFD * magfield * charge2 * rad / part2.pt();
+
+    double dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    return dphis;
   }
 };
 

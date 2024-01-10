@@ -129,8 +129,8 @@ struct lutEntry_t {
   float otof = 0.;
   float covm[15] = {0.};
   float eigval[5] = {0.};
-  float eigvec[5][5] = {0.};
-  float eiginv[5][5] = {0.};
+  float eigvec[5][5] = {{0.}};
+  float eiginv[5][5] = {{0.}};
   void print()
   {
     printf(" --- lutEntry: pt = %f, eta = %f (%s)\n", pt, eta, valid ? "valid" : "not valid");

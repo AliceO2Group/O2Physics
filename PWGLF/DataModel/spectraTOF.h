@@ -373,8 +373,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float v) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; });     // Dummy
 
 } // namespace spectra
 
@@ -417,7 +418,7 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
                   spectra::IsPVContributor,
-                  track::ITSClusterMap,
+                  track::ITSClusterSizes,
                   spectra::HasTRD,
                   //   pidtofevtime::EvTimeTOF,
                   //   pidtofevtime::EvTimeTOFErr,
@@ -437,16 +438,17 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   track::Sign<spectra::PtSigned>,
                   spectra::P<spectra::PtSigned, spectra::Eta>,
                   spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
-                  spectra::HasITS<track::ITSClusterMap>,
+                  spectra::HasITS<track::ITSClusterSizes>,
                   spectra::HasTPC<track::TPCChi2NCl>,
                   spectra::HasTOF<track::TOFChi2>,
                   spectra::TRDSignal<track::TOFChi2>,
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
                   spectra::TRDPattern<track::TOFChi2>,
-                  spectra::IsQualityTrackITS<track::TOFChi2>,
-                  spectra::IsQualityTrackTPC<track::TOFChi2>,
-                  track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
+                  spectra::IsInAcceptanceTrack<track::TOFChi2>, // Dummy
+                  spectra::IsQualityTrackITS<track::TOFChi2>,   // Dummy
+                  spectra::IsQualityTrackTPC<track::TOFChi2>,   // Dummy
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,

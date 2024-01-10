@@ -22,11 +22,13 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
@@ -92,7 +94,7 @@ struct f0980analysis {
 
     AxisSpec PIDqaAxis = {120, -6, 6};
     AxisSpec pTqaAxis = {200, 0, 20};
-    AxisSpec phiqaAxis = {72, -constants::math::PI, constants::math::PI};
+    AxisSpec phiqaAxis = {72, 0., 2.0 * constants::math::PI};
 
     histos.add("hInvMass_f0980_US", "unlike invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
@@ -117,7 +119,7 @@ struct f0980analysis {
     histos.print();
   }
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  double massPi = MassPionCharged;
 
   int RTIndex(double pairphi, double lhphi)
   {
@@ -156,9 +158,7 @@ struct f0980analysis {
   template <typename TrackType>
   bool SelPion(const TrackType track)
   {
-    if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) !=
-          aod::resodaughter::kHasTOF ||
-        !cfgUseTOF) {
+    if (track.hasTOF() || !cfgUseTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
         return false;
       }
@@ -183,7 +183,7 @@ struct f0980analysis {
         LHphi = trk.phi();
       }
     }
-    histos.fill(HIST("QA/LTpt"), LHpt, collision.multV0M(), LHphi);
+    histos.fill(HIST("QA/LTpt"), LHpt, collision.cent(), LHphi);
 
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] :
@@ -211,23 +211,23 @@ struct f0980analysis {
 
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
+                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
+          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
             continue;
           if (trk1.motherId() != trk2.motherId())
             continue;
           if (abs(trk1.motherPDG()) != 9010221)
             continue;
           histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(),
-                      collision.multV0M());
+                      collision.cent());
         }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
         histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
+                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
-                    collision.multV0M(), RTIndex(Reco.Phi(), LHphi), LHpt);
+                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
       }
     }
   }
@@ -241,8 +241,7 @@ struct f0980analysis {
 
   void processMCLight(
     aod::ResoCollision& collision,
-    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
-    aod::McParticles const& mcParticles)
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true>(collision, resotracks);
   }
@@ -260,8 +259,8 @@ struct f0980analysis {
         continue;
       }
       bool pass = false;
-      if ((abs(part.daughterPDG1()) == kPiPlus &&
-           abs(part.daughterPDG2()) == kPiPlus)) {
+      if ((abs(part.daughterPDG1()) == 211 &&
+           abs(part.daughterPDG2()) == 211)) {
         pass = true;
       }
       if (!pass) // If we have both decay products

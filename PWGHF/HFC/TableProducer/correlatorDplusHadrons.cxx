@@ -12,6 +12,7 @@
 /// \file correlatorDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -22,16 +23,16 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_correlation_dplus_hadron;
-using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
-using namespace o2::constants::math;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 
@@ -42,8 +43,7 @@ double getDeltaPhi(double phiD, double phiHadron)
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
-const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
+std::vector<double> efficiencyDmeson(npTBinsMassAndEfficiency + 1);
 
 // histogram binning definition
 const int massAxisBins = 350;
@@ -70,10 +70,11 @@ BinningType corrBinning{{zBins, multBins}, true};
 struct HfDplusSelection {
   Produces<aod::DmesonSelection> dplusSel;
 
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
+  HfHelper hfHelper;
   SliceCache cache;
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
@@ -87,7 +88,7 @@ struct HfDplusSelection {
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
       for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
-        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -109,10 +110,10 @@ struct HfDplusSelection {
       auto selectedDplusCandidatesMcGrouped = selectedDplusCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate1 : selectedDplusCandidatesMcGrouped) {
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -131,10 +132,10 @@ struct HfDplusSelection {
   {
     bool isDplusFound = 0;
     for (const auto& particle1 : mcParticles) {
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -153,8 +154,10 @@ struct HfDplusSelection {
 struct HfCorrelatorDplusHadrons {
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
+  Produces<aod::Dplus> entryDplus;
+  Produces<aod::Hadron> entryHadron;
 
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
+  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -166,8 +169,9 @@ struct HfCorrelatorDplusHadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for Dplus meson"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
 
+  HfHelper hfHelper;
   SliceCache cache;
 
   // Event Mixing for the Data Mode
@@ -236,8 +240,11 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -261,9 +268,9 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultiplicity"), nTracks);
 
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-
+      int cntDplus = 0;
       for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
-        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -273,7 +280,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -281,17 +288,18 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
         }
         // fill invariant mass plots and generic info from all Dplus candidates
-        registry.fill(HIST("hMassDplus_2D"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
-        registry.fill(HIST("hMassDplusData"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
+        registry.fill(HIST("hMassDplus_2D"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDplusData"), hfHelper.invMassDplusToPiKPi(candidate1), efficiencyWeight);
         registry.fill(HIST("hPtCand"), candidate1.pt());
         registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
         registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
         registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
         registry.fill(HIST("hEta"), candidate1.eta());
         registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
-        registry.fill(HIST("hY"), yDplus(candidate1));
+        registry.fill(HIST("hY"), hfHelper.yDplus(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
         registry.fill(HIST("hDplusBin"), poolBin);
+        entryDplus(candidate1.phi(), candidate1.eta(), candidate1.pt(), hfHelper.invMassDplusToPiKPi(candidate1), poolBin, gCollisionId, timeStamp);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is a Dplus, search for Hadrons and evaluate correlations
         for (const auto& track : tracks) {
@@ -312,9 +320,12 @@ struct HfCorrelatorDplusHadrons {
                                track.eta() - candidate1.eta(),
                                candidate1.pt(),
                                track.pt(), poolBin);
-          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), 0);
+          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate1), 0);
+          if (cntDplus == 0)
+            entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
         } // Hadron Tracks loop
-      }   // end outer Dplus loop
+        cntDplus++;
+      } // end outer Dplus loop
       registry.fill(HIST("hZvtx"), collision.posZ());
       registry.fill(HIST("hMultV0M"), collision.multFV0M());
     }
@@ -352,10 +363,10 @@ struct HfCorrelatorDplusHadrons {
       bool flagDplusSignal = false;
       for (const auto& candidate1 : selectedDplusCandidatesMcGrouped) {
         // check decay channel flag for candidate1
-        if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
+        if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -369,7 +380,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
         }
 
-        if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
+        if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
           // fill per-candidate distributions from Dplus true candidates
           registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
           registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
@@ -377,20 +388,20 @@ struct HfCorrelatorDplusHadrons {
           registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
           registry.fill(HIST("hEtaMCRec"), candidate1.eta());
           registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
-          registry.fill(HIST("hYMCRec"), yDplus(candidate1));
+          registry.fill(HIST("hYMCRec"), hfHelper.yDplus(candidate1));
           registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDplusToPiKPi());
         }
         // fill invariant mass plots from Dplus signal and background candidates
-        registry.fill(HIST("hMassDplusMCRec"), invMassDplusToPiKPi(candidate1), efficiencyWeight);
-        if (std::abs(candidate1.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) { // also matched as Dplus
-          registry.fill(HIST("hMassDplusMCRecSig"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMassDplusMCRec"), hfHelper.invMassDplusToPiKPi(candidate1), efficiencyWeight);
+        if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) { // also matched as Dplus
+          registry.fill(HIST("hMassDplusMCRecSig"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
-          registry.fill(HIST("hMassDplusMCRecBkg"), invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassDplusMCRecBkg"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
         }
         registry.fill(HIST("hDplusBin"), poolBin);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
-        flagDplusSignal = candidate1.flagMcMatchRec() == 1 << DecayType::DplusToPiKPi;
+        flagDplusSignal = candidate1.flagMcMatchRec() == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
         for (const auto& track : tracks) {
           if (std::abs(track.eta()) > etaTrackMax) {
             continue;
@@ -409,7 +420,7 @@ struct HfCorrelatorDplusHadrons {
                                track.eta() - candidate1.eta(),
                                candidate1.pt(),
                                track.pt(), poolBin);
-          entryDplusHadronRecoInfo(invMassDplusToPiKPi(candidate1), flagDplusSignal);
+          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate1), flagDplusSignal);
         } // end inner loop (Tracks)
 
       } // end outer Dplus loop
@@ -441,10 +452,10 @@ struct HfCorrelatorDplusHadrons {
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
+      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -458,7 +469,7 @@ struct HfCorrelatorDplusHadrons {
       counterDplusHadron++;
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
         continue;
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
@@ -511,11 +522,11 @@ struct HfCorrelatorDplusHadrons {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (yCandMax >= 0. && std::abs(yDplus(t1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(t1)) > yCandMax) {
           continue;
         }
         entryDplusHadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin);
-        entryDplusHadronRecoInfo(invMassDplusToPiKPi(t1), 0);
+        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(t1), 0);
       }
     }
   }
@@ -532,11 +543,11 @@ struct HfCorrelatorDplusHadrons {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (yCandMax >= 0. && std::abs(yDplus(t1)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(hfHelper.yDplus(t1)) > yCandMax) {
           continue;
         }
         entryDplusHadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin);
-        entryDplusHadronRecoInfo(invMassDplusToPiKPi(t1), 0);
+        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(t1), 0);
       }
     }
   }
@@ -567,11 +578,11 @@ struct HfCorrelatorDplusHadrons {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         // Check track t1 is Dplus
-        if (std::abs(t1.pdgCode()) != pdg::Code::kDPlus) {
+        if (std::abs(t1.pdgCode()) != Pdg::kDPlus) {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, RecoDecay::getMassPDG(t1.pdgCode()));
+        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassDPlus);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }

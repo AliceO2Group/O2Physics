@@ -21,12 +21,13 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_casc;
 using namespace o2::framework::expressions;
 
 /// LcToK0sp analysis task
@@ -35,6 +36,8 @@ struct HfTaskLcToK0sP {
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
   Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
+
+  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
@@ -259,7 +262,7 @@ struct HfTaskLcToK0sP {
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = o2::aod::hf_cand_casc::invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -275,13 +278,13 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
-      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
+      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
+      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
+      auto ctLc = hfHelper.ctLc(candidate);
 
       registry.fill(HIST("hPtCand"), ptCand);
       registry.fill(HIST("hEtaCand"), eta);
@@ -362,7 +365,7 @@ struct HfTaskLcToK0sP {
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = o2::aod::hf_cand_casc::invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -378,13 +381,13 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
-      auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
+      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
+      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
+      auto ctLc = hfHelper.ctLc(candidate);
 
       const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();

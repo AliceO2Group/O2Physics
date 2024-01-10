@@ -72,7 +72,6 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoUniverseProducerMCTruthTask {
-  int evCount = 0;
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
@@ -80,6 +79,8 @@ struct femtoUniverseProducerMCTruthTask {
   // Tables being produced
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
+  // Produces<aod::FDMCLabels> outputPartsMCLabels;
+  // Produces<aod::FDMCParticles> outputPartsMC;
 
   // Analysis configs
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -134,38 +135,15 @@ struct femtoUniverseProducerMCTruthTask {
   template <typename CollisionType, typename TrackType>
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
-    const auto vtxZ = col.posZ();
-    const auto spher = 0; // colCuts.computeSphericity(col, tracks);
-    int mult = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      mult = col.multFV0M();
-      multNtr = col.multNTracksPV();
-    } else {
-      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in
-                                     /// FemtoUniverseRun2 is defined V0M/2
-      multNtr = col.multTracklets();
+    for (auto& c : col) {
+      const auto vtxZ = c.posZ();
+      const auto spher = 0; // colCuts.computeSphericity(col, tracks);
+      int mult = 0;
+      int multNtr = 0;
+
+      // colCuts.fillQA(c); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
-    }
-
-    // check whether the basic event selection criteria are fulfilled
-    // if the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-
-    // CHECK WHAT CUTS SHOULD BE USED FOR MC TRUTH
-    //  if (!colCuts.isSelected(col)) {
-    //    if (ConfIsTrigger) {
-    //      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-    //    }
-    //    return;
-    //  }
-
-    colCuts.fillQA(col);
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
   }
 
   template <typename TrackType>
@@ -176,8 +154,7 @@ struct femtoUniverseProducerMCTruthTask {
     for (auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
-      if (!particle.isPhysicalPrimary())
-        continue;
+
       if (particle.eta() < -ConfFilteringTracks.ConfEtaFilterCut || particle.eta() > ConfFilteringTracks.ConfEtaFilterCut)
         continue;
       if (particle.pt() < ConfFilteringTracks.ConfPtLowFilterCut || particle.pt() > ConfFilteringTracks.ConfPtHighFilterCut)
@@ -190,7 +167,8 @@ struct femtoUniverseProducerMCTruthTask {
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            pass = true;
+            if (particle.isPhysicalPrimary())
+              pass = true;
           }
         }
         if (!pass)
@@ -224,17 +202,14 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   void
-    processTrackMC(aod::FemtoFullCollisionMC const& col,
-                   aod::BCsWithTimestamps const&,
-                   aod::McCollisions const& mcCollisions,
-                   aod::McParticles const& mcParticles)
+    processTrackMC(aod::McCollision const& mcCol,
+                   soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                   aod::McParticles const& mcParticles,
+                   aod::BCsWithTimestamps const&)
   {
-    if (evCount > 30)
-      return;
-    evCount++;
     // magnetic field for run not needed for mc truth
     // fill the tables
-    fillCollisions(col, mcParticles);
+    fillCollisions(collisions, mcParticles);
     fillParticles(mcParticles);
   }
   PROCESS_SWITCH(femtoUniverseProducerMCTruthTask, processTrackMC, "Provide MC data for track analysis", true);

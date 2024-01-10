@@ -25,6 +25,7 @@ namespace o2::aod
 {
 
 DECLARE_SOA_TABLE(PIDMults, "AOD", "PIDMults", //! TPC auxiliary table for the PID
+                  o2::soa::Marker<1>,
                   mult::MultTPC);
 using PIDMult = PIDMults::iterator;
 

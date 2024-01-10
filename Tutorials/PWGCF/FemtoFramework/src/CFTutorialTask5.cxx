@@ -8,174 +8,213 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief Femtodream Tutorial 5
-/// \author Luca Barioglio, Anton Riedel
 
-// O2 includes
+/// \author Anton Riedel
+
+/// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "TDatabasePDG.h"
+
+/// FemtoDream includes
 #include "PWGCF/FemtoDream/FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/FemtoUtils.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
-// STEP 2
-// Example task illustrating how to mix elements of different partitions and different events + process switches
-
-namespace o2::aod
-{
-using MyCollisions = soa::Join<aod::Collisions,
-                               aod::EvSels,
-                               aod::Mults>;
-using MyTracks = soa::Join<aod::FullTracks,
-                           aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                           aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe>;
-using MyCollision = MyCollisions::iterator;
-using MyTrack = MyTracks::iterator;
-} // namespace o2::aod
-
 struct CFTutorialTask5 {
-  SliceCache cache;
-  Preslice<o2::aod::MyTracks> perCol = o2::aod::track::collisionId;
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Defining configurables
-  Configurable<float> ConfZvtxCut{"ConfZvtxCut", 10, "Z vtx cut"};
-  Configurable<float> ConfEtaCut{"ConfEtaCut", 0.8, "Pseudorapidity cut"};
-  Configurable<float> ConfMaxPtCut{"ConfMaxPtCut", 3.0, "Max Pt cut"};
-  Configurable<float> ConfMinPtCut{"ConfMinPtCut", 0.5, "Min Pt cut"};
-  Configurable<float> ConfMinNSigmaTPCCut{"ConfMinNSigmaTPCCut", 3., "N-sigma TPC cut"};
+  // Define additional analysis level cuts applied as filters
+  Configurable<float> ConfZvtxMin{"ConfZvtxMin", -10, "Min Z vtx cut"};
+  Configurable<float> ConfZvtxMax{"ConfZvtxMax", 10, "Max Z vtx cut"};
+  Configurable<float> ConfEtaMin{"ConfEtaMin", -0.8, "Pseudorapidity cut"};
+  Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8, "Pseudorapidity cut"};
+  Configurable<float> ConfPtMin{"ConfPtMin", 0.5, "Max Pt cut"};
+  Configurable<float> ConfPtMax{"ConfPtMax", 4.0, "Min Pt cut"};
 
   // Defining filters
-  Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZvtxCut);
-  Filter trackFilter = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > ConfMinPtCut) && (aod::track::pt < ConfMaxPtCut);
+  Filter collisionFilter = (aod::collision::posZ > ConfZvtxMin) && (aod::collision::posZ < ConfZvtxMax);
+  Filter trackFilter = (aod::femtodreamparticle::eta > ConfEtaMin) && (aod::femtodreamparticle::eta < ConfEtaMax) && (aod::femtodreamparticle::pt > ConfPtMin) && (aod::femtodreamparticle::pt < ConfPtMax);
 
-  // Applying filters
-  using MyFilteredCollisions = soa::Filtered<o2::aod::MyCollisions>;
-  using MyFilteredCollision = MyFilteredCollisions::iterator;
-  using MyFilteredTracks = soa::Filtered<o2::aod::MyTracks>;
+  // Apply filters
+  using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
+  using FilteredFDCollision = FilteredFDCollisions::iterator;
 
-  Partition<MyFilteredTracks> positive = aod::track::signed1Pt > 0.f;
-  Partition<MyFilteredTracks> negative = aod::track::signed1Pt < 0.f;
+  using FilteredFDParts = soa::Filtered<aod::FDParticles>;
+  using FilteredFDPart = FilteredFDParts::iterator;
 
-  // TODO
-  // define axis for event mixing, i.e. mix events with similar multiplicity and z-vertex position
+  // selections for particles
+  Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
 
-  // Equivalent of the AliRoot task UserCreateOutputObjects
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 0, "Particle 1 - Index in ConfTrkPIDspecies of producer task"};
+  Configurable<int> ConfPIDValuePartOne{"ConfPIDValuePartOne", 3, "Particle 1 - Read from cutCulator"};
+
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
+  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
+  Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 0, "Particle 2 - Index in ConfTrkPIDspecies of producer task"};
+  Configurable<int> ConfPIDValuePartTwo{"ConfPIDValuePartTwo", 3, "Particle 1 - Read from cutCulator"};
+
+  Configurable<float> ConfPIDThreshold{"ConfPIDThreshold", 0.75, "Momentum threshold for TPC to TPCTOF PID"};
+  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
+  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.f, 3.5f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+
+  /// Partitions for particle 1 and particle 2
+  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+
+  HistogramRegistry HistRegistry{"FemtoTutorial", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  /// mixing
+  SliceCache cache;
+  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+
+  Configurable<int> ConfMixingDepth{"ConfMixingDepth", 10, "Number of events for mixing"};
+
+  // TODO:
+  // add binning policy for event mixing using bins in both multiplicity and position of z vertex
+
+  // create analysis objects like histograms
   void init(o2::framework::InitContext&)
   {
-    // Define your axes
-    // Constant bin width axis
-    AxisSpec vtxZAxis = {100, -20, 20};
-    // Variable bin width axis
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.};
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
-    // Add histograms to histogram manager (as in the output object of in AliPhysics)
-    histos.add("hZvtx", ";Z (cm)", kTH1F, {vtxZAxis});
+    // Add histograms to histogram registry
+    HistRegistry.add("Event/hZvtx", ";Z (cm)", kTH1F, {{240, -12, 12}});
 
-    histos.add("hChargePos", ";z;", kTH1F, {{3, -1.5, 1.5}});
-    histos.add("hPPos", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.5, 4.}});
-    histos.add("hEtaPos", ";#it{p} (GeV/#it{c})", kTH1F, {{100, -1.5, 1.5}});
-    histos.add("hPtPos", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hNsigmaTPCPos", ";#it{p} (GeV/#it{c}); n#sigma_{TPC}^{proton}", kTH2F, {{35, 0.5, 4.}, {100, -5., 5.}});
-    histos.add("hSEPos", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
-    histos.add("hMEPos", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Particle1/hPt", ";#it{p_{T}} (GeV/#it{c})", kTH1F, {{100, 0, 4}});
+    HistRegistry.add("Particle1/hEta", ";#eta", kTH1F, {{100, -1., 1.}});
+    HistRegistry.add("Particle1/hPhi", ";#phi", kTH1F, {{360, 0, 6.28}});
 
-    histos.add("hChargeNeg", ";z;", kTH1F, {{3, -1.5, 1.5}});
-    histos.add("hPNeg", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.5, 4.}});
-    histos.add("hEtaNeg", ";#it{p} (GeV/#it{c})", kTH1F, {{100, -1.5, 1.5}});
-    histos.add("hPtNeg", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hNsigmaTPCNeg", ";#it{p} (GeV/#it{c}); n#sigma_{TPC}^{antiproton}", kTH2F, {{35, 0.5, 4.}, {100, -5., 5.}});
-    histos.add("hSENeg", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
-    histos.add("hMENeg", ";#k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Particle2/hPt", ";#it{p_{T}} (GeV/#it{c})", kTH1F, {{100, 0, 4}});
+    HistRegistry.add("Particle2/hEta", ";#eta", kTH1F, {{100, -1., 1.}});
+    HistRegistry.add("Particle2/hPhi", ";#phi", kTH1F, {{360, 0, 6.28}});
+
+    HistRegistry.add("Pair/hSE", ";k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
+    HistRegistry.add("Pair/hME", ";k^{*} (GeV/#it{c})", kTH1F, {{1000, 0., 5.}});
   }
 
-  // TODO
-  // rename function to processSame event and activiate this function with a process switch (see TOD) below)
-  // void processSame(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
-  void process(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
-  {
-    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
-    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
-    histos.fill(HIST("hZvtx"), coll.posZ());
+  // TODO:
+  // implement a process switch to run both same and mixed event processing
 
-    for (auto track : groupPositive) {
-      histos.fill(HIST("hChargePos"), track.sign());
-      histos.fill(HIST("hPPos"), track.p());
-      histos.fill(HIST("hPtPos"), track.pt());
-      histos.fill(HIST("hEtaPos"), track.eta());
-      histos.fill(HIST("hNsigmaTPCPos"), track.tpcInnerParam(), track.tpcNSigmaPr());
+  // process same event
+  void process(FilteredFDCollision const& col, FilteredFDParts const& parts)
+  {
+
+    /// event QA
+    HistRegistry.fill(HIST("Event/hZvtx"), col.posZ());
+
+    // generate partition of particels
+    auto GroupPartsOne = PartsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto GroupPartsTwo = PartsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+
+    /// QA for particle 1
+    for (auto& part : GroupPartsOne) {
+      /// check PID of particle 1 using function from FemtoUtils using PID bit
+      if (isFullPIDSelected(part.pidcut(),
+                            part.p(),
+                            ConfPIDThreshold.value,
+                            ConfPIDPartOne.value,
+                            ConfNspecies.value,
+                            ConfTrkPIDnSigmaMax.value,
+                            ConfPIDValuePartOne.value,
+                            ConfPIDValuePartOne.value)) {
+        HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
+        HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
+        HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
+      }
     }
 
-    for (auto track : groupNegative) {
-      histos.fill(HIST("hChargeNeg"), track.sign());
-      histos.fill(HIST("hPNeg"), track.p());
-      histos.fill(HIST("hPtNeg"), track.pt());
-      histos.fill(HIST("hEtaNeg"), track.eta());
-      histos.fill(HIST("hNsigmaTPCNeg"), track.tpcInnerParam(), track.tpcNSigmaPr());
+    /// QA for particle 2
+    /// skip QA if particle 1 & 2 are the same
+    if (ConfIsSame.value == false) {
+      for (auto& part : GroupPartsTwo) {
+        /// check PID of particle 1 using function from FemtoUtils using PID bit
+        if (isFullPIDSelected(part.pidcut(),
+                              part.p(),
+                              ConfPIDThreshold.value,
+                              ConfPIDPartTwo.value,
+                              ConfNspecies.value,
+                              ConfTrkPIDnSigmaMax.value,
+                              ConfPIDValuePartTwo.value,
+                              ConfPIDValuePartTwo.value)) {
+          HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
+          HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
+          HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
+        }
+      }
     }
 
     float kstar = 0.;
-    float mp = constants::physics::MassProton;
+    float m0 = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne.value)->Mass();
+    float m1 = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo.value)->Mass();
 
-    for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(groupPositive, groupPositive))) {
-      if (fabs(p0.tpcNSigmaPr()) > 3. || fabs(p1.tpcNSigmaPr() > 3.)) {
-        continue;
-      }
-      kstar = FemtoDreamMath::getkstar(p0, mp, p1, mp);
-      histos.fill(HIST("hSEPos"), kstar);
-    }
+    /// particle combinations
+    /// if particles are the same or not determines the combination stratety
+    if (ConfIsSame) {
+      for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(GroupPartsOne, GroupPartsTwo))) {
+        if (isFullPIDSelected(p0.pidcut(),
+                              p0.p(),
+                              ConfPIDThreshold.value,
+                              ConfPIDPartOne.value,
+                              ConfNspecies.value,
+                              ConfTrkPIDnSigmaMax.value,
+                              ConfPIDValuePartOne.value,
+                              ConfPIDValuePartOne.value) &&
+            isFullPIDSelected(p1.pidcut(),
+                              p1.p(),
+                              ConfPIDThreshold.value,
+                              ConfPIDPartOne.value,
+                              ConfNspecies.value,
+                              ConfTrkPIDnSigmaMax.value,
+                              ConfPIDValuePartOne.value,
+                              ConfPIDValuePartOne.value)
 
-    for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(groupNegative, groupNegative))) {
-      if (fabs(p0.tpcNSigmaPr()) > 3. || fabs(p1.tpcNSigmaPr() > 3.)) {
-        continue;
+        ) {
+          kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
+          HistRegistry.fill(HIST("Pair/hSE"), kstar);
+        }
       }
-      kstar = FemtoDreamMath::getkstar(p0, mp, p1, mp);
-      histos.fill(HIST("hSENeg"), kstar);
+    } else {
+      for (auto& [p0, p1] : combinations(soa::CombinationsFullIndexPolicy(GroupPartsOne, GroupPartsTwo))) {
+        if (isFullPIDSelected(p0.pidcut(),
+                              p0.p(),
+                              ConfPIDThreshold.value,
+                              ConfPIDPartOne.value,
+                              ConfNspecies.value,
+                              ConfTrkPIDnSigmaMax.value,
+                              ConfPIDValuePartOne.value,
+                              ConfPIDValuePartOne.value) &&
+            isFullPIDSelected(p1.pidcut(),
+                              p1.p(),
+                              ConfPIDThreshold.value,
+                              ConfPIDPartOne.value,
+                              ConfNspecies.value,
+                              ConfTrkPIDnSigmaMax.value,
+                              ConfPIDValuePartOne.value,
+                              ConfPIDValuePartOne.value)
+
+        ) {
+          kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
+          HistRegistry.fill(HIST("Pair/hSE"), kstar);
+        }
+      }
     }
   }
-  // TODO
-  // implement process switch
+  // PROCESS_SWITCH(...);
 
-  // void processMixed(MyFilteredCollisions const& colls, MyFilteredTracks const& tracks)
+  // TODO:
+  // Implement mixed event processing
+  // abstract or reuse code from the same processing
+
+  // void processMixedEvent(...)
   // {
-  //
-  // TODO
-  // implement process mixing using the configurable axis
-
-  // reuse code from processSame for mixing tracks
-  // auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
-  // auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-  //
-  // float kstar = 0.;
-  // float mp = constants::physics::MassProton;
-  //
-  // for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(groupPositive, groupPositive))) {
-  //   if (fabs(p0.tpcNSigmaPr()) > 3. || fabs(p1.tpcNSigmaPr() > 3.)) {
-  //     continue;
-  //   }
-  //   kstar = FemtoDreamMath::getkstar(p0, mp, p1, mp);
-  //   histos.fill(HIST("hMEPos"), kstar);
   // }
-  //
-  // for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(groupNegative, groupNegative))) {
-  //   if (fabs(p0.tpcNSigmaPr()) > 3. || fabs(p1.tpcNSigmaPr() > 3.)) {
-  //     continue;
-  //   }
-  //   kstar = FemtoDreamMath::getkstar(p0, mp, p1, mp);
-  //   histos.fill(HIST("hMENeg"), kstar);
-  // }
-
-  // TODO
-  // implement process switch
+  // PROCESS_SWITCH(...);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -63,7 +63,7 @@ class EventPlaneHelper
 
   // Method to get the Q-vector and sum of amplitudes for any channel in FIT, given
   // the detector and amplitude.
-  void SumQvectors(int det, int chno, float ampl, TComplex& Qvec, double& sum);
+  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum);
 
   // Method to get the bin corresponding to a centrality percentile, according to the
   // centClasses[] array defined in Tasks/qVectorsQA.cxx.
@@ -90,10 +90,10 @@ class EventPlaneHelper
                           float& lambdaPlus, float& lambdaMinus);
 
   // Method to calculate the event plane from the provided (Qx, Qy), for n = 2.
-  float GetEventPlane(const float qx, const float qy);
+  float GetEventPlane(const float qx, const float qy, int nmode = 2);
 
   // Method to calculate the resolution R2 for the provided profile.
-  double GetResolution(const std::shared_ptr<TProfile> prof);
+  float GetResolution(const float RefA, const float RefB, const float sig, int nmode = 2);
 
  private:
   double mOffsetFT0AX = 0.;     // X-coordinate of the offset of FT0-A.

@@ -27,7 +27,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -93,7 +93,7 @@ struct lambdakzeroQa {
       registry.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
 
       registry.fill(HIST("hV0Radius"), v0.v0radius());
-      registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("hV0CosPA"), v0.v0cosPA());
       registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
       registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
       registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
@@ -224,7 +224,7 @@ struct lambdakzeroAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
         auto reconegtrack = v0.negTrack_as<MyTracks>();
@@ -238,7 +238,7 @@ struct lambdakzeroAnalysisMc {
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
+          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
 
             // Lambda
@@ -312,7 +312,7 @@ struct lambdakzeroAnalysisMc {
         // K0Short
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 7.5);
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
+          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             if ((v0.qtarm() > paramArmenterosCut * TMath::Abs(v0.alpha())) || !boolArmenterosCut) {
               registry.fill(HIST("V0loopFiltersCounts"), 9.5);
@@ -359,7 +359,7 @@ struct lambdakzeroAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
         auto reconegtrack = v0.negTrack_as<MyTracks>();
@@ -370,7 +370,7 @@ struct lambdakzeroAnalysisMc {
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
+          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
             registry.fill(HIST("h3dMassLambda"), collision.centRun2V0M(), v0.pt(), v0.mLambda());
             registry.fill(HIST("h3dMassAntiLambda"), collision.centRun2V0M(), v0.pt(), v0.mAntiLambda());
@@ -403,7 +403,7 @@ struct lambdakzeroAnalysisMc {
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 7.5);
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
+          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());

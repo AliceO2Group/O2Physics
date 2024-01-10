@@ -21,6 +21,7 @@
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -41,11 +42,10 @@
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 using namespace o2;
+using namespace o2::analysis;
+using namespace o2::aod::hffilters;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hffilters;
-using namespace hf_cuts_single_track;
-using namespace hf_cuts_bdt_multiclass;
 
 struct HfFilter { // Main struct for HF triggers
 
@@ -61,8 +61,8 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 5, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
-  // min pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> minPtCuts{"minPtCuts", {cutsMinPt[0], 1, 4, labelsEmpty, labelsColumnsMinPt}, "minimum pT for bachelor tracks (except for V0 and cascades)"};
+  // min and max pts for tracks and bachelors (except for V0 and cascades)
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 4, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -163,7 +163,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // helper object
@@ -172,10 +172,12 @@ struct HfFilter { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setPtBinsSingleTracks(pTBinsTrack);
-    helper.setMinPtBeautyBachelor(minPtCuts->get(0u, 0u));
-    helper.setMinPtDstarSoftPion(minPtCuts->get(0u, 1u));
+    helper.setPtLimitsBeautyBachelor(ptCuts->get(0u, 0u), ptCuts->get(1u, 0u));
+    helper.setPtLimitsDstarSoftPion(ptCuts->get(0u, 1u), ptCuts->get(1u, 1u));
+    helper.setPtLimitsProtonForFemto(ptCuts->get(0u, 2u), ptCuts->get(1u, 2u));
+    helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
-    helper.setMinPtProtonForFemto(minPtCuts->get(0u, 2u));
+    helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setPtThresholdPidStrategyForFemto(ptThresholdForFemtoPid);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
@@ -184,8 +186,6 @@ struct HfFilter { // Main struct for HF triggers
     helper.setDeltaMassCharmHadForBeauty(deltaMassBeauty->get(0u, kNBeautyParticles));
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u));
-    helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
-    helper.setMinPtCharmBaryonBachelor(minPtCuts->get(0u, 3u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
     helper.setTpcPidCalibrationOption(setTPCCalib);
 
@@ -294,7 +294,6 @@ struct HfFilter { // Main struct for HF triggers
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
-               aod::V0sLinked const& v0Links,
                aod::CascDatas const& cascades,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
@@ -329,6 +328,9 @@ struct HfFilter { // Main struct for HF triggers
       if (currentRun != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
+        // setMatLUT only after magfield has been initalized
+        // (setMatLUT has implicit and problematic init field call if not)
+        o2::base::Propagator::Instance()->setMatLUT(lut);
 
         // needed for TPC PID postcalibrations
         if (setTPCCalib == 1) {
@@ -373,12 +375,13 @@ struct HfFilter { // Main struct for HF triggers
           getPxPyPz(trackParNeg, pVecNeg);
         }
 
-        bool isCharmTagged{true}, isBeautyTagged{true};
+        bool isSignalTagged{true}, isCharmTagged{true}, isBeautyTagged{true};
 
         // apply ML models
         int tagBDT = 0;
         float scoresToFill[3] = {-1., -1., -1.};
         if (applyML && onnxFiles[kD0] != "") {
+          isSignalTagged = false;
           isCharmTagged = false;
           isBeautyTagged = false;
 
@@ -408,11 +411,12 @@ struct HfFilter { // Main struct for HF triggers
             hBDTScoreNonPrompt[kD0]->Fill(scoresToFill[2]);
           }
 
+          isSignalTagged = TESTBIT(tagBDT, RecoDecay::OriginType::None);
           isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
           isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
         }
 
-        if (!isCharmTagged && !isBeautyTagged) {
+        if (!isSignalTagged) {
           continue;
         }
 
@@ -420,7 +424,7 @@ struct HfFilter { // Main struct for HF triggers
         auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
         if (applyOptimisation) {
-          optimisationTreeCharm(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2]);
+          optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2]);
         }
 
         auto selD0 = helper.isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong, preselD0, activateQA, hMassVsPtC[kD0]);
@@ -466,7 +470,7 @@ struct HfFilter { // Main struct for HF triggers
                 keepEvent[kBeauty3P] = true;
                 // fill optimisation tree for D0
                 if (applyOptimisation) {
-                  optimisationTreeBeauty(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], dcaThird[0]);
+                  optimisationTreeBeauty(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], dcaThird[0]);
                 }
                 if (activateQA) {
                   hMassVsPtB[kBplus]->Fill(ptCand, massCand);
@@ -527,7 +531,7 @@ struct HfFilter { // Main struct for HF triggers
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
-                optimisationTreeFemto(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
               }
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto2P] = true;
@@ -543,7 +547,7 @@ struct HfFilter { // Main struct for HF triggers
         // 2-prong with Gamma (conversion photon)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
         for (const auto& v0 : v0sThisCollision) {
-          if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+          if (!keepEvent[kV0Charm2P] && (isSignalTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
@@ -552,6 +556,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
               if (TESTBIT(selV0, kPhoton)) {
@@ -690,6 +695,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
+        std::array<int8_t, kNCharmParticles - 1> isSignalTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
@@ -699,6 +705,7 @@ struct HfFilter { // Main struct for HF triggers
         } // initialize BDT scores array outside ML loop
         // apply ML models
         if (applyML) {
+          isSignalTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
 
@@ -727,6 +734,7 @@ struct HfFilter { // Main struct for HF triggers
               LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
             }
 
+            isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
 
@@ -738,7 +746,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
-        if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0) && !std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+        if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
         }
 
@@ -754,25 +762,25 @@ struct HfFilter { // Main struct for HF triggers
         if (is3Prong[0]) {
           is3ProngInMass[0] = helper.isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, activateQA, hMassVsPtC[kDplus]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kDPlus, pt3Prong, scoresToFill[0][0], scoresToFill[0][1], scoresToFill[0][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kDPlus, pt3Prong, scoresToFill[0][0], scoresToFill[0][1], scoresToFill[0][2]);
           }
         }
         if (is3Prong[1]) {
           is3ProngInMass[1] = helper.isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1], activateQA, hMassVsPtC[kDs]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kDS, pt3Prong, scoresToFill[1][0], scoresToFill[1][1], scoresToFill[1][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kDS, pt3Prong, scoresToFill[1][0], scoresToFill[1][1], scoresToFill[1][2]);
           }
         }
         if (is3Prong[2]) {
           is3ProngInMass[2] = helper.isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[2], activateQA, hMassVsPtC[kLc]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kLambdaCPlus, pt3Prong, scoresToFill[2][0], scoresToFill[2][1], scoresToFill[2][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kLambdaCPlus, pt3Prong, scoresToFill[2][0], scoresToFill[2][1], scoresToFill[2][2]);
           }
         }
         if (is3Prong[3]) {
           is3ProngInMass[3] = helper.isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[3], activateQA, hMassVsPtC[kXic]);
           if (applyOptimisation) {
-            optimisationTreeCharm(thisCollId, pdg::Code::kXiCPlus, pt3Prong, scoresToFill[3][0], scoresToFill[3][1], scoresToFill[3][2]);
+            optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kXiCPlus, pt3Prong, scoresToFill[3][0], scoresToFill[3][1], scoresToFill[3][2]);
           }
         }
 
@@ -780,7 +788,7 @@ struct HfFilter { // Main struct for HF triggers
           keepEvent[kHighPt3P] = true;
           if (activateQA) {
             for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-              if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
+              if (is3Prong[iCharmPart - 1] && (isSignalTagged[iCharmPart - 1])) {
                 hCharmHighPt[iCharmPart]->Fill(pt3Prong);
               }
             }
@@ -803,7 +811,7 @@ struct HfFilter { // Main struct for HF triggers
             getPxPyPz(trackParFourth, pVecFourth);
           }
 
-          int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
+          int charmParticleID[kNBeautyParticles - 2] = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
 
           float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
           float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
@@ -851,9 +859,9 @@ struct HfFilter { // Main struct for HF triggers
 
         // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
-        bool isGoodDsToKKPi = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
-        bool isGoodDsToPiKK = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
-        bool isGoodDPlus = (isCharmTagged[kDplus - 1] || isBeautyTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
+        bool isGoodDsToKKPi = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
+        bool isGoodDsToPiKK = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
+        bool isGoodDPlus = (isSignalTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
         auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
         auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
@@ -867,6 +875,7 @@ struct HfFilter { // Main struct for HF triggers
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
+              trackParV0.setPID(o2::track::PID::Kaon);
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
               getPxPyPz(trackParV0, pVecV0);
 
@@ -933,15 +942,11 @@ struct HfFilter { // Main struct for HF triggers
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
         for (const auto& casc : cascThisColl) {
-          if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
-            continue;
-          }
           auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
-          auto v0 = casc.v0_as<aod::V0sLinked>();
-          auto v0Element = v0.v0Data_as<aod::V0Datas>();
-          auto v0DauPos = v0Element.posTrack_as<BigTracksPID>();
-          auto v0DauNeg = v0Element.negTrack_as<BigTracksPID>();
-          if (!helper.isSelectedCascade(casc, v0Element, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
+          auto v0DauPos = casc.posTrack_as<BigTracksPID>();
+          auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
+
+          if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
             continue;
           }
           if (activateQA) {
@@ -966,6 +971,7 @@ struct HfFilter { // Main struct for HF triggers
             gpu::gpustd::array<float, 2> dcaInfo;
             std::array<float, 3> pVecCascade = {casc.px(), casc.py(), casc.pz()};
             auto trackParCasc = o2::track::TrackPar(std::array{casc.x(), casc.y(), casc.z()}, pVecCascade, bachelorCasc.sign(), true);
+            trackParCasc.setPID(o2::track::PID::XiMinus);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParCasc, pVecCascade);
 

@@ -14,9 +14,9 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 /// Reconstruction of B+ candidates
 struct HfCandidateCreatorBplusReduced {
-  Produces<aod::HfCandBplusBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBplusBase> rowCandidateBase;    // table defined in CandidateReconstructionTables.h
   Produces<aod::HfRedBplusProngs> rowCandidateProngs; // table defined in ReducedDataModel.h
 
   // vertexing
@@ -50,9 +50,6 @@ struct HfCandidateCreatorBplusReduced {
   Configurable<double> invMassWindowD0PiTolerance{"invMassWindowD0PiTolerance", 0.01, "invariant-mass window tolerance for D0Pi pair preselections (GeV/c2)"};
   // variable that will store the value of invMassWindowD0Pi (defined in dataCreatorD0PiReduced.cxx)
   float myInvMassWindowD0Pi{1.};
-
-  // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
 
   double massPi{0.};
   double massD0{0.};
@@ -85,9 +82,9 @@ struct HfCandidateCreatorBplusReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // invariant-mass window cut
-    massPi = pdg->Mass(kPiPlus);
-    massD0 = pdg->Mass(pdg::Code::kD0);
-    massBplus = pdg->Mass(pdg::Code::kBPlus);
+    massPi = o2::constants::physics::MassPiPlus;
+    massD0 = o2::constants::physics::MassD0;
+    massBplus = o2::constants::physics::MassBPlus;
   }
 
   void process(aod::HfRedCollisions const& collisions,
@@ -205,11 +202,17 @@ struct HfCandidateCreatorBplusReducedExpressions {
   void processMc(HfMcRecRedD0Pis const& rowsD0PiMcRec, HfRedBplusProngs const& candsBplus)
   {
     for (const auto& candBplus : candsBplus) {
+      bool filledMcInfo{false};
       for (const auto& rowD0PiMcRec : rowsD0PiMcRec) {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
+        filledMcInfo = true;
+        break;
+      }
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+        rowBplusMcRec(0, -1, -1.f);
       }
     }
   }
