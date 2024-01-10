@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoWorldEficiencyTask.cxx
+/// \file femtoWorldEfficiencyTask.cxx
 /// \author Lukasz Graczykowski, WUT Warsaw, lgraczyk@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 /// \author Alicja Plachta, WUT Warsaw, alicja.plachta@cern.ch
