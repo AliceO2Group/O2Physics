@@ -32,7 +32,7 @@ o2physics_add_dpl_workflow(femtouniverse-pair-track-track-mult-kt-extended
 o2physics_add_dpl_workflow(femtouniverse-pair-track-track-threedrelmom-mult-kt-extended
           SOURCES femtoUniversePairTaskTrackTrack3DMultKtExtended.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-          COMPONENT_NAME Analysis)          
+          COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femtouniverse-debug-track
           SOURCES femtoUniverseDebugTrack.cxx
