@@ -390,7 +390,7 @@ struct femtoDreamProducerTask {
       }
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track,track.pt(),track.eta(),sqrtf(powf(track.dcaXY(),2.f)+powf(track.dcaZ(),2.f)));
+      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),
@@ -443,7 +443,7 @@ struct femtoDreamProducerTask {
         childIDs[0] = rowInPrimaryTrackTablePos;
         childIDs[1] = 0;
         outputParts(outputCollision.lastIndex(),
-		    v0.positivept(), v0.positiveeta(), v0.positivephi(),
+                    v0.positivept(), v0.positiveeta(), v0.positivephi(),
                     aod::femtodreamparticle::ParticleType::kV0Child,
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts),
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID),
