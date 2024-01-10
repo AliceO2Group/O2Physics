@@ -30,6 +30,7 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "FlowContainer.h"
+#include "FlowPtContainer.h"
 #include "GFWConfig.h"
 #include "GFWWeights.h"
 #include <TProfile.h>
@@ -74,6 +75,7 @@ using namespace o2::analysis::genericframework;
 struct GenericFramework {
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
@@ -89,7 +91,7 @@ struct GenericFramework {
                                           "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15,1,1,0,0}}, "Configurations for each correlation to calculate"};
 
   // #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
   //  Connect to ccdb
@@ -103,6 +105,7 @@ struct GenericFramework {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<FlowPtContainer> fFCpt{FlowPtContainer("FlowPtContainer")};
   OutputObj<FlowContainer> fFC_gen{FlowContainer("FlowContainer_gen")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
@@ -132,8 +135,9 @@ struct GenericFramework {
     configs.SetCorrs(cfgCorrConfig->GetCorrs());
     configs.SetHeads(cfgCorrConfig->GetHeads());
     configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
-    LOGF(info, "Regions:\n%s", regions.Print());
-    LOGF(info, "CorrConfigs:\n%s", configs.Print());
+    configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
+    LOGF(info, "Regions: {name, etamin, etamax, ptDif, fill bitmask}\n%s", regions.Print());
+    LOGF(info, "CorrConfigs: {Header, corr. config., ptDif, vnpt bitmask}\n%s", configs.Print());
     ptbinning = cfgBinning->GetPtBinning();
     ptpoilow = cfgBinning->GetPtPOImin();
     ptpoiup = cfgBinning->GetPtPOImax();
@@ -184,13 +188,13 @@ struct GenericFramework {
       fWeights->Init(true, false);
     }
 
-    if (doprocessGen) {
+    if (doprocessMCGen) {
       registry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
       registry.add("phi_gen", "", {HistType::kTH1D, {phiAxis}});
       registry.add("eta_gen", "", {HistType::kTH1D, {etaAxis}});
       registry.add("vtxZ_gen", "", {HistType::kTH1D, {vtxAxis}});
     }
-    if (doprocessReco || doprocessData || doprocessRun2) {
+    if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("phi", "", {HistType::kTH1D, {phiAxis}});
       registry.add("eta", "", {HistType::kTH1D, {etaAxis}});
       registry.add("vtxZ", "", {HistType::kTH1D, {vtxAxis}});
@@ -213,18 +217,18 @@ struct GenericFramework {
     fGFW->CreateRegions();
     TObjArray* oba = new TObjArray();
     AddConfigObjectsToObjArray(oba, corrconfigs);
-    if (doprocessReco || doprocessData || doprocessRun2) {
+    if (doprocessData || doprocessRun2 || doprocessMCReco) {
       fFC->SetName("FlowContainer");
       fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
     }
-    if (doprocessGen) {
+    if (doprocessMCGen) {
       fFC_gen->SetName("FlowContainer_gen");
       fFC_gen->SetXAxis(fPtAxis);
       fFC_gen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-
+    fFCpt->Initialise(multAxis,cfgMpar,configs,cfgNbootstrap);
     // Event selection - Alex
     if (cfgUse22sEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -294,29 +298,6 @@ struct GenericFramework {
     return true;
   }
 
-  void FillFC(OutputObj<FlowContainer> fc, const GFW::CorrConfig& corrconf, const float& centmult, const double& rndm)
-  {
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
-        fc->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm);
-      return;
-    }
-    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
-      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-      if (dnx == 0)
-        continue;
-      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
-        fc->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), centmult, val, dnx, rndm);
-    }
-    return;
-  }
-
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
   {
@@ -353,10 +334,38 @@ struct GenericFramework {
   }
 
   enum datatype {
-    kData,
-    kDerivedData,
+    kReco,
     kGen
   };
+
+  template <datatype dt>
+  void FillOutputContainers(const GFW::CorrConfig& corrconf, const float& centmult, const double& rndm, uint8_t mask)
+  {
+    fFCpt->CalculateCorrelations();
+    fFCpt->FillPtProfiles(centmult,rndm);
+    fFCpt->FillCMProfiles(centmult,rndm);
+    auto dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      auto val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+      {
+        (dt == kGen) ? fFC_gen->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconf.Head.c_str(), centmult, val, dnx, rndm);
+        fFCpt->FillVnPtProfiles(centmult,val,dnx,rndm,mask);
+      }
+      return;
+    }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      auto val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        (dt == kGen) ? fFC_gen->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), centmult, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), centmult, val, dnx, rndm);
+    }
+    return;
+  }
 
   template <datatype dt, typename TCollision, typename TTracks>
   void processCollision(TCollision collision, TTracks tracks, const float& centrality)
@@ -369,12 +378,13 @@ struct GenericFramework {
     if (cfgFillQA)
       (dt == kGen) ? registry.fill(HIST("vtxZ_gen"), vtxz) : registry.fill(HIST("vtxZ"), vtxz);
     fGFW->Clear();
+    fFCpt->ClearVector();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
       ProcessTrack(track, centrality, vtxz);
     }
-    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC((dt == kGen) ? fFC_gen : fFC, corrconfigs.at(l_ind), (cfgUseNch) ? tracks.size() : centrality, l_Random);
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
+      FillOutputContainers<dt>(corrconfigs.at(l_ind), (cfgUseNch) ? tracks.size() : centrality, l_Random, configs.GetpTCorrMasks()[l_ind]);
     }
   }
 
@@ -394,14 +404,14 @@ struct GenericFramework {
         return;
       registry.fill(HIST("phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
       if (cfgFillQA)
-        FillQA<kData>(mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), track.dcaXY(), track.dcaZ());
-      FillGFW(mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), weff * wacc);
+        FillQA<kReco>(track);
+      FillGFW(mcParticle, weff, wacc);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       if (!track.isPhysicalPrimary() || track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
         return;
       if (cfgFillQA)
-        FillQA<kGen>(track.phi(), track.eta(), track.pt());
-      FillGFW(track.phi(), track.eta(), track.pt(), 1.);
+        FillQA<kGen>(track);
+      FillGFW(track, 1., 1.);
     } else {
       if (cfgFillWeights)
         fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
@@ -409,36 +419,37 @@ struct GenericFramework {
         return;
       registry.fill(HIST("phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
       if (cfgFillQA)
-        FillQA<kData>(track.phi(), track.eta(), track.pt(), track.dcaXY(), track.dcaZ());
-      FillGFW(track.phi(), track.eta(), track.pt(), weff * wacc);
+        FillQA<kReco>(track);
+      FillGFW(track, weff, wacc);
     }
   }
 
-  template <typename T>
-  inline void FillGFW(T phi, T eta, T pt, float w)
+  template <typename TrackObject>
+  inline void FillGFW(TrackObject track, float weff, float wacc)
   {
-    bool WithinPtPOI = (ptpoilow < pt) && (pt < ptpoiup); // within POI pT range
-    bool WithinPtRef = (ptreflow < pt) && (pt < ptrefup); // within RF pT range
+    fFCpt->Fill(weff,track.pt());
+    bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
+    bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
     if (WithinPtRef)
-      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 1);
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
     if (WithinPtPOI)
-      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 2);
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
     if (WithinPtPOI && WithinPtRef)
-      fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, w, 4);
+      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
     return;
   }
 
-  template <datatype dt, typename T>
-  inline void FillQA(T phi, T eta, T pt, T dcaxy = 0, T dcaz = 0)
+  template <datatype dt, typename TrackObject>
+  inline void FillQA(TrackObject track)
   {
-    if (dt == kGen) {
-      registry.fill(HIST("phi_gen"), phi);
-      registry.fill(HIST("eta_gen"), eta);
-      registry.fill(HIST("pt_gen"), pt);
+    if constexpr (dt == kGen) {
+      registry.fill(HIST("phi_gen"), track.phi());
+      registry.fill(HIST("eta_gen"), track.eta());
+      registry.fill(HIST("pt_gen"), track.pt());
     } else {
-      registry.fill(HIST("phi"), phi);
-      registry.fill(HIST("eta"), eta);
-      registry.fill(HIST("pt_dcaXY_dcaZ"), pt, dcaxy, dcaz);
+      registry.fill(HIST("phi"), track.phi());
+      registry.fill(HIST("eta"), track.eta());
+      registry.fill(HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
     }
   }
 
@@ -457,11 +468,11 @@ struct GenericFramework {
     registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
-    processCollision<kData>(collision, tracks, centrality);
+    processCollision<kReco>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processData, "Process analysis for non-derived data", true);
 
-  void processReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     if (!collision.sel8())
       return;
@@ -472,12 +483,12 @@ struct GenericFramework {
     registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
-    processCollision<kData>(collision, tracks, centrality);
+    processCollision<kReco>(collision, tracks, centrality);
   }
-  PROCESS_SWITCH(GenericFramework, processReco, "Process analysis for MC reconstructed events", false);
+  PROCESS_SWITCH(GenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
   Filter mcCollFilter = aod::mccollision::posZ < cfgBinning->GetVtxZmax() && aod::mccollision::posZ > cfgBinning->GetVtxZmin();
-  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
+  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
   {
     if (collisions.size() != 1)
       return;
@@ -487,7 +498,7 @@ struct GenericFramework {
     }
     processCollision<kGen>(mcCollision, particles, centrality);
   }
-  PROCESS_SWITCH(GenericFramework, processGen, "Process analysis for MC generated events", false);
+  PROCESS_SWITCH(GenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
@@ -500,7 +511,7 @@ struct GenericFramework {
     registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
     registry.fill(HIST("cent_nch"), tracks.size(), centrality);
     loadCorrections(bc.timestamp());
-    processCollision<kData>(collision, tracks, centrality);
+    processCollision<kReco>(collision, tracks, centrality);
   }
   PROCESS_SWITCH(GenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };

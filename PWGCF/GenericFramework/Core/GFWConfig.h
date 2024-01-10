@@ -128,6 +128,9 @@ class GFWBinningCuts
   const auto& GetPtRefMin() const { return mPTrefmin; }
   const auto& GetPtRefMax() const { return mPTrefmax; }
 
+  const float& GetPtMin() const { return std::min(mPTrefmin, mPTpoimin); }
+  const float& GetPtMax() const { return std::max(mPTrefmax, mPTpoimax); }
+
   void SetNchBinning(int nchbins, float nchmin, float nchmax)
   {
     mNchbins = nchbins;
@@ -219,13 +222,13 @@ class GFWCorrConfigs
   GFWCorrConfigs(std::vector<std::string> corrs_ = {"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}",
                                                     "refFull {2 2 -2 -2}"},
                  std::vector<std::string> heads_ = {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"},
-                 std::vector<int> pTDifs_ = {0, 0, 0, 0, 0}) : corrs{std::move(corrs_)}, heads{std::move(heads_)}, pTDifs{std::move(pTDifs_)} {};
+                 std::vector<int> pTDifs_ = {0, 0, 0, 0, 0}, std::vector<int> pTCorrMasks_ = {15, 1, 1, 0, 0}) : corrs{std::move(corrs_)}, heads{std::move(heads_)}, pTDifs{std::move(pTDifs_)}, pTCorrMasks{std::move(pTCorrMasks_)} {};
 
   auto Print() const
   {
     std::stringstream ss;
     for (auto i = 0; i < corrs.size(); ++i) {
-      ss << "{" << heads[i] << ", " << corrs[i] << ", " << pTDifs[i] << "}";
+      ss << "{" << heads[i] << ", " << corrs[i] << ", " << pTDifs[i] << ", " << pTCorrMasks[i] << "}";
       if (i != corrs.size() - 1)
         ss << "\n";
     }
@@ -243,10 +246,14 @@ class GFWCorrConfigs
   void SetpTDifs(std::vector<int> pTDifs_) { pTDifs = std::move(pTDifs_); }
   const auto& GetpTDifs() const { return pTDifs; }
 
+  void SetpTCorrMasks(std::vector<int> pTCorrMasks_) { pTCorrMasks = std::move(pTCorrMasks_); }
+  const auto& GetpTCorrMasks() const { return pTCorrMasks; }
+
  private:
   std::vector<std::string> corrs;
   std::vector<std::string> heads;
   std::vector<int> pTDifs;
+  std::vector<int> pTCorrMasks;
   ClassDefNV(GFWCorrConfigs, 1);
 };
 
