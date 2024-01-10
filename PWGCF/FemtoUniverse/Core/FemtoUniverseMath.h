@@ -20,6 +20,8 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
