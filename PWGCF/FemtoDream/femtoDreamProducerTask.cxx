@@ -380,7 +380,7 @@ struct femtoDreamProducerTask {
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the pri,v0.dcamary track table row <-> aod::track table global index
+    std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
