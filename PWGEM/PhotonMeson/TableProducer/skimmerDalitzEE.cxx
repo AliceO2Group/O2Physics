@@ -75,6 +75,7 @@ struct skimmerDalitzEE {
           continue;
         }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
@@ -83,10 +84,10 @@ struct skimmerDalitzEE {
         float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
 
         if constexpr (isCEFP) {
-          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
           dalitz_ee_eventid(collision.globalIndex());
         } else { // for analysis
-          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
           dalitz_ee_eventid(collision.globalIndex());
         }
 
@@ -102,6 +103,7 @@ struct skimmerDalitzEE {
           continue;
         }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
@@ -110,10 +112,10 @@ struct skimmerDalitzEE {
         float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
 
         if constexpr (isCEFP) {
-          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
           dalitz_ee_eventid(collision.globalIndex());
         } else { // for analysis
-          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
           dalitz_ee_eventid(collision.globalIndex());
         }
 

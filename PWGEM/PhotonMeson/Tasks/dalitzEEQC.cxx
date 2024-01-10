@@ -140,6 +140,7 @@ struct DalitzEEQC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
+    double values_single[3] = {0, 0, 0};
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -180,6 +181,11 @@ struct DalitzEEQC {
             values[2] = uls_pair.dcaXY();
             values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
+
+            values_single[0] = uls_pair.mass();
+            values_single[1] = std::sqrt(std::pow(pos.dcaXY() / std::sqrt(pos.cYY()), 2) + std::pow(pos.dcaZ() / std::sqrt(pos.cZZ()), 2));
+            values_single[2] = std::sqrt(std::pow(ele.dcaXY() / std::sqrt(ele.cYY()), 2) + std::pow(ele.dcaZ() / std::sqrt(ele.cZZ()), 2));
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
             nuls++;
             for (auto& track : {pos, ele}) {
               if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
@@ -192,6 +198,8 @@ struct DalitzEEQC {
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
 
         for (auto& lspp_pair : lspp_pairs_per_coll) {
+          auto pos = lspp_pair.template posTrack_as<MyTracks>();
+          auto ele = lspp_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lspp_pair)) {
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
@@ -199,11 +207,17 @@ struct DalitzEEQC {
             values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
             nlspp++;
+            values_single[0] = lspp_pair.mass();
+            values_single[1] = std::sqrt(std::pow(pos.dcaXY() / std::sqrt(pos.cYY()), 2) + std::pow(pos.dcaZ() / std::sqrt(pos.cZZ()), 2));
+            values_single[2] = std::sqrt(std::pow(ele.dcaXY() / std::sqrt(ele.cYY()), 2) + std::pow(ele.dcaZ() / std::sqrt(ele.cZZ()), 2));
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_dca_same"))->Fill(values_single);
           }
         } // end of lspp pair loop
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
 
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
+          auto pos = lsmm_pair.template posTrack_as<MyTracks>();
+          auto ele = lsmm_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lsmm_pair)) {
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
@@ -211,6 +225,10 @@ struct DalitzEEQC {
             values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
             nlsmm++;
+            values_single[0] = lsmm_pair.mass();
+            values_single[1] = std::sqrt(std::pow(pos.dcaXY() / std::sqrt(pos.cYY()), 2) + std::pow(pos.dcaZ() / std::sqrt(pos.cZZ()), 2));
+            values_single[2] = std::sqrt(std::pow(ele.dcaXY() / std::sqrt(ele.cYY()), 2) + std::pow(ele.dcaZ() / std::sqrt(ele.cZZ()), 2));
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_dca_same"))->Fill(values_single);
           }
         } // end of lsmm pair loop
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
