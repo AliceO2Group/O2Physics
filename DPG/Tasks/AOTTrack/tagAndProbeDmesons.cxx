@@ -526,7 +526,7 @@ struct TagTwoProngDisplacedVertices {
 /// Probe third track reconstruction efficiency with different selections
 struct ProbeThirdTrack {
 
-  using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra, aod::TrackSelection>;
+  using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra>;
 
   Preslice<aod::PiPiFromDpTags> tagsPiPiPerCollision = aod::tagandprobe::collisionId;
   Preslice<aod::KaKaFromDspTags> tagsKaKaPerCollision = aod::tagandprobe::collisionId;
@@ -569,7 +569,6 @@ struct ProbeThirdTrack {
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMinNCrossedRowsTPC(70);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMaxChi2PerClusterTPC(4.f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMaxDcaZ(2.f);
 
     // ITS tracks (global tracks without TPC requirements)
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
@@ -611,7 +610,7 @@ struct ProbeThirdTrack {
     return invMass;
   }
 
-  template<typename TTrackIndices, typename TTrack, typename TTracks>
+  template <typename TTrackIndices, typename TTrack, typename TTracks>
   void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& tracks, TTrack const& trackFirst, TTrack const& trackSecond, const uint8_t channel)
   {
     for (const auto& trackIndex : groupedTrackThirdIndices) {
