@@ -75,27 +75,27 @@ struct phianalysisrun3 {
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
   {
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
+    histos.add("hCentrality", "Centrality distribution", kTH1F, {{201, -0.5, 200.5}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
-    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{20000, 0.0f, 20000.0f}});
+    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
     if (!isMC) {
-      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassRotation", "Invariant mass of Phi meson Rotation", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassRotation", "Invariant mass of Phi meson Rotation", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       if (isEtaAssym) {
-        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       }
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{2, 0.0f, 2.0f}});
