@@ -3663,11 +3663,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     if (!nameStr.compare(Form("lmee_pp_502TeV_TOFloose%s", vecPIDcase.at(icase).Data()))) {
       if (icase == 0) {
         cut->AddCut(VarManager::kTPCnSigmaEl, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
-        cut->AddCut(VarManager::kTPCnSigmaPi, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi, -99., 3., true, VarManager::kPin, 0.0, 4.0, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi, -99., 2.5, true, VarManager::kPin, 4.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -4., 4., false, VarManager::kPin, 0.3, 1e+10, false);
       } else if (icase == 1 || icase == 2) {
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
-        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 3., true, VarManager::kPin, 0.0, 4.0, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 4.0, 1e+10, false);
         cut->AddCut(VarManager::kTOFnSigmaEl, -4., 4., false, VarManager::kPin, 0.3, 1e+10, false);
       }
       return cut;
