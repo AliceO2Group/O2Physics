@@ -57,13 +57,13 @@ struct FemtoCorrelations {
   Configurable<float> _vertexZ{"VertexZ", 10.0, "abs vertexZ value limit"};
 
   Configurable<int> _sign_1{"sign_1", 1, "sign of the first particle in a pair"};
-  Configurable<int> _particlePDG_1{"particlePDG_1", 2212, "PDG code of the first particle in a pair to perform PID for (only proton and deurton are supported now)"};
+  Configurable<int> _particlePDG_1{"particlePDG_1", 2212, "PDG code of the first particle in a pair to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma_1{"tpcNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_1{"PIDtrshld_1", 10.0, "first particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_1{"tofNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TOF"};
 
   Configurable<int> _sign_2{"sign_2", 1, "sign of the second particle in a pair"};
-  Configurable<int> _particlePDG_2{"particlePDG_2", 2212, "PDG code of the second particle in a pair to perform PID for (only proton and deurton are supported now)"};
+  Configurable<int> _particlePDG_2{"particlePDG_2", 2212, "PDG code of the second particle in a pair to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma_2{"tpcNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_2{"PIDtrshld_2", 10.0, "second particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_2{"tofNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TOF"};
@@ -80,6 +80,9 @@ struct FemtoCorrelations {
   Configurable<int> _multNsubBins{"multSubBins", 1, "number of sub-bins to perform the mixing within"};
   Configurable<std::vector<float>> _kTbins{"kTbins", std::vector<float>{0.0f, 100.0f}, "pair transverse momentum kT binning"};
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
+
+  Configurable<bool> _fill3dCF{"fill3dCF", false, "flag for filling 3D LCMS histos: true -- fill; false -- not"};
+  ConfigurableAxis CF3DkStarBinning{"CF3DkStarBinning", {100, -0.25, 0.25}, "k* binning of the CF 3D in LCMS (Nbins, lowlimit, uplimit)"};
 
   bool IsIdentical;
 
@@ -117,8 +120,12 @@ struct FemtoCorrelations {
 
   std::vector<std::shared_ptr<TH1>> MultHistos;
   std::vector<std::vector<std::shared_ptr<TH1>>> kThistos;
-  std::vector<std::vector<std::shared_ptr<TH1>>> SEhistos;
-  std::vector<std::vector<std::shared_ptr<TH1>>> MEhistos;
+  std::vector<std::vector<std::shared_ptr<TH1>>> SEhistos_1D;
+  std::vector<std::vector<std::shared_ptr<TH1>>> MEhistos_1D;
+
+  std::vector<std::vector<std::shared_ptr<TH3>>> SEhistos_3D;
+  std::vector<std::vector<std::shared_ptr<TH3>>> MEhistos_3D;
+  std::vector<std::vector<std::shared_ptr<TH3>>> kStarVSkStar3D;
 
   void init(o2::framework::InitContext&)
   {
@@ -141,28 +148,44 @@ struct FemtoCorrelations {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
-    const AxisSpec kStarAxis{CFkStarBinning, "k* (GeV/c)"};
-
     for (int i = 0; i < _centBins.value.size() - 1; i++) {
-      std::vector<std::shared_ptr<TH1>> SEperMult;
-      std::vector<std::shared_ptr<TH1>> MEperMult;
+      std::vector<std::shared_ptr<TH1>> SEperMult_1D;
+      std::vector<std::shared_ptr<TH1>> MEperMult_1D;
       std::vector<std::shared_ptr<TH1>> kTperMult;
 
-      auto hMult = registry.add<TH1>(Form("Cent%i/Mult_vs_cent%i", i, i), Form("Mult_vs_cent%i", i), kTH1F, {{5001, -0.5, 5000.5, "Nch"}});
+      auto hMult = registry.add<TH1>(Form("Cent%i/TPCMult_cent%i", i, i), Form("TPCMult_cent%i", i), kTH1F, {{5001, -0.5, 5000.5, "Mult."}});
       MultHistos.push_back(std::move(hMult));
 
       for (int j = 0; j < _kTbins.value.size() - 1; j++) {
-        auto hSE = registry.add<TH1>(Form("Cent%i/SE_cent%i_kT%i", i, i, j), Form("SE_cent%i_kT%i", i, j), kTH1F, {kStarAxis});
-        auto hME = registry.add<TH1>(Form("Cent%i/ME_cent%i_kT%i", i, i, j), Form("ME_cent%i_kT%i", i, j), kTH1F, {kStarAxis});
+        auto hSE_1D = registry.add<TH1>(Form("Cent%i/SE_1D_cent%i_kT%i", i, i, j), Form("SE_1D_cent%i_kT%i", i, j), kTH1F, {{CFkStarBinning, "k* (GeV/c)"}});
+        auto hME_1D = registry.add<TH1>(Form("Cent%i/ME_1D_cent%i_kT%i", i, i, j), Form("ME_1D_cent%i_kT%i", i, j), kTH1F, {{CFkStarBinning, "k* (GeV/c)"}});
         auto hkT = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
-        SEperMult.push_back(std::move(hSE));
-        MEperMult.push_back(std::move(hME));
+        SEperMult_1D.push_back(std::move(hSE_1D));
+        MEperMult_1D.push_back(std::move(hME_1D));
         kTperMult.push_back(std::move(hkT));
       }
 
-      SEhistos.push_back(std::move(SEperMult));
-      MEhistos.push_back(std::move(MEperMult));
+      SEhistos_1D.push_back(std::move(SEperMult_1D));
+      MEhistos_1D.push_back(std::move(MEperMult_1D));
       kThistos.push_back(std::move(kTperMult));
+
+      if (_fill3dCF) {
+        std::vector<std::shared_ptr<TH3>> SEperMult_3D;
+        std::vector<std::shared_ptr<TH3>> MEperMult_3D;
+        std::vector<std::shared_ptr<TH3>> kStarVSkStar3DperMult;
+
+        for (int j = 0; j < _kTbins.value.size() - 1; j++) {
+          auto hSE_3D = registry.add<TH3>(Form("Cent%i/SE_3D_cent%i_kT%i", i, i, j), Form("SE_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DkStarBinning, "k*_out (GeV/c)"}, {CF3DkStarBinning, "k*_side (GeV/c)"}, {CF3DkStarBinning, "k*_long (GeV/c)"}});
+          auto hME_3D = registry.add<TH3>(Form("Cent%i/ME_3D_cent%i_kT%i", i, i, j), Form("ME_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DkStarBinning, "k*_out (GeV/c)"}, {CF3DkStarBinning, "k*_side (GeV/c)"}, {CF3DkStarBinning, "k*_long (GeV/c)"}});
+          auto hkStarVSkStar3D = registry.add<TH3>(Form("Cent%i/kStarVSkStar3D_cent%i_kT%i", i, i, j), Form("kStarVSkStar3D_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DkStarBinning, "k*_out (GeV/c)"}, {CF3DkStarBinning, "k*_side (GeV/c)"}, {CF3DkStarBinning, "k*_long (GeV/c)"}});
+          SEperMult_3D.push_back(std::move(hSE_3D));
+          MEperMult_3D.push_back(std::move(hME_3D));
+          kStarVSkStar3DperMult.push_back(std::move(hkStarVSkStar3D));
+        }
+        SEhistos_3D.push_back(std::move(SEperMult_3D));
+        MEhistos_3D.push_back(std::move(MEperMult_3D));
+        kStarVSkStar3D.push_back(std::move(kStarVSkStar3DperMult));
+      }
     }
 
     registry.add("p_first", Form("p_%i", static_cast<int>(_particlePDG_1)), kTH1F, {{100, 0., 5., "p"}});
@@ -178,8 +201,14 @@ struct FemtoCorrelations {
   template <typename Type>
   void mixTracks(Type const& tracks, int multBin)
   { // template for identical particles from the same collision
-    if (multBin < 0 && multBin > SEhistos.size())
-      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0 or exceeds the configured number of Cent. bins");
+    if (multBin >= 0) {
+      if (multBin > SEhistos_1D.size())
+        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
+      if (_fill3dCF && multBin > SEhistos_3D.size())
+        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
+    } else {
+      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0");
+    }
 
     for (int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
       for (int iii = ii + 1; iii < tracks.size(); iii++) {
@@ -187,12 +216,23 @@ struct FemtoCorrelations {
         Pair->SetPair(tracks[ii], tracks[iii]);
         float pair_kT = Pair->GetKt();
         int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin < 0 && kTbin > SEhistos[multBin].size())
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0 or exceeds the configured number of kT bins");
+        if (kTbin >= 0) {
+          if (kTbin > SEhistos_1D[multBin].size())
+            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
+          if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
+            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
+        } else {
+          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
+        }
 
         if (!Pair->IsClosePair(_deta, _dphi, _radiusTPC)) {
           kThistos[multBin][kTbin]->Fill(pair_kT);
-          SEhistos[multBin][kTbin]->Fill(Pair->GetKstar()); // close pair rejection and fillig the SE histo
+          SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar()); // close pair rejection and fillig the SE histo
+
+          if (_fill3dCF) {
+            TVector3 KstarLCMS = Pair->Get3dKstar();
+            SEhistos_3D[multBin][kTbin]->Fill(KstarLCMS.X(), KstarLCMS.Y(), KstarLCMS.Z());
+          }
         }
         Pair->ResetPair();
       }
@@ -202,8 +242,14 @@ struct FemtoCorrelations {
   template <int SE_or_ME, typename Type>
   void mixTracks(Type const& tracks1, Type const& tracks2, int multBin)
   { // last value: 0 -- SE; 1 -- ME
-    if (multBin < 0 && multBin > SEhistos.size())
-      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0 or exceeds the configured number of Cent. bins");
+    if (multBin >= 0) {
+      if (multBin > SEhistos_1D.size())
+        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
+      if (_fill3dCF && multBin > SEhistos_3D.size())
+        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
+    } else {
+      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0");
+    }
 
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
@@ -211,15 +257,32 @@ struct FemtoCorrelations {
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
         int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin < 0 && kTbin > SEhistos[multBin].size())
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0 or exceeds the configured number of kT bins");
+        if (kTbin >= 0) {
+          if (kTbin > SEhistos_1D[multBin].size())
+            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
+          if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
+            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
+        } else {
+          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
+        }
 
         if (!Pair->IsClosePair(_deta, _dphi, _radiusTPC)) {
           if (!SE_or_ME) {
-            SEhistos[multBin][kTbin]->Fill(Pair->GetKstar());
+            SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
             kThistos[multBin][kTbin]->Fill(pair_kT);
+
+            if (_fill3dCF) {
+              TVector3 KstarLCMS = Pair->Get3dKstar();
+              SEhistos_3D[multBin][kTbin]->Fill(KstarLCMS.X(), KstarLCMS.Y(), KstarLCMS.Z());
+            }
           } else {
-            MEhistos[multBin][kTbin]->Fill(Pair->GetKstar());
+            MEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
+
+            if (_fill3dCF) {
+              TVector3 KstarLCMS = Pair->Get3dKstar();
+              MEhistos_3D[multBin][kTbin]->Fill(KstarLCMS.X(), KstarLCMS.Y(), KstarLCMS.Z());
+              kStarVSkStar3D[multBin][kTbin]->Fill(KstarLCMS.X(), KstarLCMS.Y(), KstarLCMS.Z(), Pair->GetKstar());
+            }
           }
         }
         Pair->ResetPair();

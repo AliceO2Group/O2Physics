@@ -81,6 +81,20 @@ float GetKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& secon
 
 //====================================================================================
 
+TVector3 Get3dKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& second4momentum)
+{
+  TLorentzVector fourmomentasum = first4momentum + second4momentum;
+  first4momentum.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z());  // boost to LCMS
+  second4momentum.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z()); // boost to LCMS
+
+  TVector3 qinv = first4momentum.Vect() - second4momentum.Vect();
+  qinv.RotateZ((-1) * fourmomentasum.Phi()); // rotate so the X axis is along pair's kT
+
+  return 0.5 * qinv;
+}
+
+//====================================================================================
+
 template <typename TrackType>
 class FemtoPair
 {
@@ -153,6 +167,7 @@ class FemtoPair
       return 1000;
   }
   float GetKstar() const;
+  TVector3 Get3dKstar() const;
   float GetKt() const;
 
  private:
@@ -211,6 +226,24 @@ float FemtoPair<TrackType>::GetKstar() const
   second4momentum.SetPtEtaPhiM(_second->pt(), _second->eta(), _second->phi(), particle_mass(_PDG2));
 
   return GetKstarFrom4vectors(first4momentum, second4momentum, _isidentical);
+}
+
+template <typename TrackType>
+TVector3 FemtoPair<TrackType>::Get3dKstar() const
+{
+  if (_first == NULL || _second == NULL)
+    return TVector3(-1000, -1000, -1000);
+  if (!(_magfield1 * _magfield2))
+    return TVector3(-1000, -1000, -1000);
+  if (!(_PDG1 * _PDG2))
+    return TVector3(-1000, -1000, -1000);
+
+  TLorentzVector first4momentum;
+  first4momentum.SetPtEtaPhiM(_first->pt(), _first->eta(), _first->phi(), particle_mass(_PDG1));
+  TLorentzVector second4momentum;
+  second4momentum.SetPtEtaPhiM(_second->pt(), _second->eta(), _second->phi(), particle_mass(_PDG2));
+
+  return Get3dKstarFrom4vectors(first4momentum, second4momentum);
 }
 
 template <typename TrackType>
