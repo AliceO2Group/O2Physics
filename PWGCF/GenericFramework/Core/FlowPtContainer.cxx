@@ -21,7 +21,7 @@ FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
                                      fillCounter(0),
                                      fEventWeight(kEventWeight::kUnity),
                                      corrNum(),
-                                     corrDen(){};
+                                     corrDen() {}
 FlowPtContainer::~FlowPtContainer()
 {
   delete fCMTermList;
@@ -37,7 +37,7 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fillCounter(0),
                                                      fEventWeight(kEventWeight::kUnity),
                                                      corrNum(),
-                                                     corrDen(){};
+                                                     corrDen() {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title, int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs) : TNamed(name, title),
                                                                                                                                                 fCMTermList(0),
                                                                                                                                                 fCorrList(0),
@@ -282,28 +282,34 @@ double FlowPtContainer::OrderedAddition(std::vector<double> vec)
 }
 void FlowPtContainer::RebinMulti(Int_t nbins)
 {
-  if (fCMTermList)
+  if (fCMTermList) {
     for (Int_t i = 0; i < fCMTermList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCMTermList->At(i))->RebinMulti(nbins);
-  if (fCorrList)
+  }
+  if (fCorrList) {
     for (Int_t i = 0; i < fCorrList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->RebinMulti(nbins);
-  if (fCovList)
+  }
+  if (fCovList) {
     for (Int_t i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins);
+  }
   return;
 }
 void FlowPtContainer::RebinMulti(Int_t nbins, Double_t* binedges)
 {
-  if (fCMTermList)
+  if (fCMTermList) {
     for (Int_t i = 0; i < fCMTermList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCMTermList->At(i))->RebinMulti(nbins, binedges);
-  if (fCorrList)
+  }
+  if (fCorrList) {
     for (Int_t i = 0; i < fCorrList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->RebinMulti(nbins, binedges);
-  if (fCovList)
+  }
+  if (fCovList) {
     for (Int_t i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins, binedges);
+  }
   return;
 }
 TH1* FlowPtContainer::getCorrHist(int ind, int m)
@@ -327,12 +333,12 @@ void FlowPtContainer::CreateCentralMomentList()
   fCentralMomentList = new TList();
   fCentralMomentList->SetOwner();
   for (auto m(1); m <= 4; ++m) {
-    for (int i = -1; i < dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->getNSubs(); ++i) {
-      TH1* hMpt = dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->getHist(i);
+    for (int i = -1; i < reinterpret_cast<BootstrapProfile*>(fCMTermList->At(0))->getNSubs(); ++i) {
+      TH1* hMpt = reinterpret_cast<BootstrapProfile*>(fCMTermList->At(0))->getHist(i);
       std::vector<TH1*> hTs;
       for (int j = 0; j < m; ++j) {
         dynamic_cast<BootstrapProfile*>(fCMTermList->FindObject(Form("cm%i_Mpt%i", m, j)))->SetErrorOption("g");
-        hTs.push_back(dynamic_cast<BootstrapProfile*>(fCMTermList->FindObject(Form("cm%i_Mpt%i", m, j)))->getHist(i));
+        hTs.push_back(reinterpret_cast<BootstrapProfile*>(fCMTermList->FindObject(Form("cm%i_Mpt%i", m, j)))->getHist(i));
       }
       CalculateCentralMomentHists(hTs, i, m, hMpt);
     }
@@ -359,7 +365,7 @@ TH1* FlowPtContainer::getCumulantHist(int ind, int m)
   if (!fCumulantList)
     return 0;
   if (ind + 1 < fCumulantList->GetEntries())
-    return dynamic_cast<TH1*>(fCumulantList->At((ind + 1) * mpar + m - 1));
+    return reinterpret_cast<TH1*>(fCumulantList->At((ind + 1) * mpar + m - 1));
 }
 void FlowPtContainer::CreateCumulantList()
 {
@@ -368,21 +374,20 @@ void FlowPtContainer::CreateCumulantList()
   fCumulantList = new TList();
   fCumulantList->SetOwner();
   //((BootstrapProfile*)fCorrList->At(0))->PresetWeights((BootstrapProfile*)fCorrList->At(mpar-1));
-  for (int i = -1; i < dynamic_cast<BootstrapProfile*>(fCorrList->At(0))->getNSubs(); ++i) {
+  for (int i = -1; i < reinterpret_cast<BootstrapProfile*>(fCorrList->At(0))->getNSubs(); ++i) {
     std::vector<TH1*> hTs;
     for (int j = 0; j < mpar; ++j) {
       dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("corr_%ipar", j + 1)))->SetErrorOption("g");
-      hTs.push_back(dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("corr_%ipar", j + 1)))->getHist(i));
+      hTs.push_back(reinterpret_cast<BootstrapProfile*>(fCorrList->FindObject(Form("corr_%ipar", j + 1)))->getHist(i));
     }
     CalculateCumulantHists(hTs, i);
   }
-  fCumulantList->ls();
   //((BootstrapProfile*)fCorrList->At(0))->PresetWeights(0);
   return;
 }
 void FlowPtContainer::CalculateCumulantHists(std::vector<TH1*> inh, int ind)
 {
-  auto binomial = [&](const int n, const int m) { assert(n>=m); return fFactorial[n]/(fFactorial[m]*fFactorial[n-m]); };
+  auto binomial = [&](const int n, const int m) { assert(n >= m); return fFactorial[n]/(fFactorial[m]*fFactorial[n-m]); };
   for (int m = 1; m <= mpar; ++m) {
     TH1* reth = dynamic_cast<TH1*>(inh[m - 1]->Clone(Form("reth%i_%i", m, ind)));
     // TH1* hWeights = (TH1*)inh[m-1]->Clone(Form("hWeights%i_%i",m,ind));
@@ -417,19 +422,19 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
       else
         MergeBSLists(fCMTermList, t_CMTerm);
       nmerged++;
-    };
+    }
     if (t_Corr) {
       if (!fCorrList)
         fCorrList = dynamic_cast<TList*>(t_Corr->Clone());
       else
         MergeBSLists(fCorrList, t_Corr);
-    };
+    }
     if (t_Cum) {
       if (!fCumulantList)
         fCumulantList = dynamic_cast<TList*>(t_Cum->Clone());
       else
         MergeBSLists(fCumulantList, t_Cum);
-    };
+    }
     if (t_CM) {
       if (!fCentralMomentList)
         fCentralMomentList = dynamic_cast<TList*>(t_CM->Clone());
@@ -444,12 +449,12 @@ void FlowPtContainer::MergeBSLists(TList* source, TList* target)
   if (source->GetEntries() != target->GetEntries()) {
     printf("Number in lists to be merged are not the same, skipping...\n");
     return;
-  };
+  }
   for (Int_t i = 0; i < source->GetEntries(); i++) {
     BootstrapProfile* l_obj = dynamic_cast<BootstrapProfile*>(source->At(i));
     BootstrapProfile* t_obj = dynamic_cast<BootstrapProfile*>(target->At(i));
     l_obj->MergeBS(t_obj);
-  };
+  }
 }
 TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
 {

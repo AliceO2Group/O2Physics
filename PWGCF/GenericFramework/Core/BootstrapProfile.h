@@ -37,13 +37,13 @@ class BootstrapProfile : public TProfile
   TProfile* getProfile(Int_t ind = -1);
   TProfile* getSummedProfiles();
   void OverrideMainWithSub();
-  Int_t getNSubs() { return fListOfEntries->GetEntries(); };
-  void PresetWeights(BootstrapProfile* targetBS) { fPresetWeights = targetBS; };
+  Int_t getNSubs() { return fListOfEntries->GetEntries(); }
+  void PresetWeights(BootstrapProfile* targetBS) { fPresetWeights = targetBS; }
   void ResetBin(Int_t nbin)
   {
-    ResetBin((TProfile*)this, nbin);
+    ResetBin(reinterpret_cast<TProfile*>(this), nbin);
     for (Int_t i = 0; i < fListOfEntries->GetEntries(); i++)
-      ResetBin((TProfile*)fListOfEntries->At(i), nbin);
+      ResetBin(reinterpret_cast<TProfile*>(fListOfEntries->At(i)), nbin);
   };
   ClassDef(BootstrapProfile, 2);
 

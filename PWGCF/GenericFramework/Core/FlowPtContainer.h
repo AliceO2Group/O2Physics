@@ -12,6 +12,8 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
+#include <algorithm>
+#include <vector>
 #include "BootstrapProfile.h"
 #include "TNamed.h"
 #include "TList.h"
@@ -51,7 +53,7 @@ class FlowPtContainer : public TNamed
   void FillCMProfiles(const double& lMult, const double& rn);
   TList* GetCorrList() { return fCorrList; }
   TList* GetCMTermList() { return fCMTermList; }
-  void SetEventWeight(const unsigned int& lWeight) { fEventWeight = lWeight; };
+  void SetEventWeight(const unsigned int& lWeight) { fEventWeight = lWeight; }
   void RebinMulti(Int_t nbins);
   void RebinMulti(Int_t nbins, double* binedges);
   TH1* getCentralMomentHist(int ind, int m);
