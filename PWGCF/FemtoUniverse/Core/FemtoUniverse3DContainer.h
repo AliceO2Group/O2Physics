@@ -12,10 +12,10 @@
 /// \file FemtoUniverse3DContainer.h
 /// \brief Definition of the FemtoUniverse3DContainer
 /// \remark This file is inherited from ~/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h on 10/01/2024
-/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl8
 
-#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEFEMTOCONTAINER_H_
-#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEFEMTOCONTAINER_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSE3DCONTAINER_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSE3DCONTAINER_H_
 
 #include <fairlogger/Logger.h>
 #include <vector>
@@ -261,4 +261,4 @@ class FemtoUniverse3DContainer
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEFEMTOCONTAINER_H_
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSE3DCONTAINER_H_
