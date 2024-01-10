@@ -259,7 +259,7 @@ struct femtoDreamProducerReducedTask {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // an array of two bit-wise containers of the systematic variations is obtained
       // one container for the track quality cuts and one for the PID cuts
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),

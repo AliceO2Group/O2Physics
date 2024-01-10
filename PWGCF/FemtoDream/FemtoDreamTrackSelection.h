@@ -137,13 +137,17 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   bool isSelectedMinimal(T const& track);
 
   /// Obtain the bit-wise container for the selections
+  /// Pt, eta and dca are not necessarily taken from the track table. For example, for V0 daughters they are recaluated and stored in the V0 table
   /// \todo For the moment, PID is separated from the other selections, hence instead of a single value an std::array of size two is returned
   /// \tparam cutContainerType Data type of the bit-wise container for the selections
   /// \tparam T Data type of the track
   /// \param track Track
+  /// \param Pt pt of the track
+  /// \param Eta eta of the track
+  /// \param Dca dca of the track with respect to primary vertex
   /// \return The bit-wise container for the selections, separately with all selection criteria, and the PID
-  template <typename cutContainerType, typename T>
-  std::array<cutContainerType, 2> getCutContainer(T const& track);
+  template <typename cutContainerType, typename T, typename R>
+  std::array<cutContainerType, 2> getCutContainer(T const& track, R Pt, R Eta, R Dcaxy);
 
   /// Some basic QA histograms
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -478,15 +482,15 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   return true;
 }
 
-template <typename cutContainerType, typename T>
-std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T const& track)
+template <typename cutContainerType, typename T, typename R>
+std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T const& track, R Pt, R Eta, R Dca)
 {
   cutContainerType output = 0;
   size_t counter = 0;
   cutContainerType outputPID = 0;
   const auto sign = track.sign();
-  const auto pT = track.pt();
-  const auto eta = track.eta();
+  const auto pt = Pt;
+  const auto eta = Eta;
   const auto tpcNClsF = track.tpcNClsFound();
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
@@ -495,7 +499,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
-  const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
+  const auto dca = Dca;
 
   std::vector<float> pidTPC, pidTOF;
   for (auto it : mPIDspecies) {
@@ -523,7 +527,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
           break;
         case (femtoDreamTrackSelection::kpTMin):
         case (femtoDreamTrackSelection::kpTMax):
-          observable = pT;
+          observable = pt;
           break;
         case (femtoDreamTrackSelection::kEtaMax):
           observable = eta;
