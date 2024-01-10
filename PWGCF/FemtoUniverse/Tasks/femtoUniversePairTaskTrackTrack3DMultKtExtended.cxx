@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoUniversePairTaskTrackTrack3DMultKtExtended.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks and compute relative pair-momentum in three dimesnions 
+/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks and compute relative pair-momentum in three dimesnions
 /// \remark This file is inherited from ~/FemtoUniverse/Tasks/femtoUniversePairTaskTrackTrackMultKtExtended.cxx on 10/01/2024
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
@@ -163,7 +163,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
-  
   Configurable<bool> cfgProcessPM{"cfgProcessPM", false, "Process particles of the opposite charge"};
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process particles of the same, positice charge"};
   Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process particles of the same, positice charge"};
@@ -390,7 +389,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);    }
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
+    }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;
     vPIDPartTwo = tracktwofilter.ConfPIDPartTwo.value;
