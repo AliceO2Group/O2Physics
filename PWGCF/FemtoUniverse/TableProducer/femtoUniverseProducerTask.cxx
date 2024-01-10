@@ -65,8 +65,8 @@ using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-            aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-            aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+            aod::pidTPCDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -454,9 +454,9 @@ struct femtoUniverseProducerTask {
                        particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
                        particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
                        particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
-                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
-                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else if constexpr (isPhiOrD0) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
