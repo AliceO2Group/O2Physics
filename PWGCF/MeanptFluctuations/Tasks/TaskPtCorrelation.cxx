@@ -1,4 +1,3 @@
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -9,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 
 // O2 includes
 #include <CCDB/BasicCCDBManager.h>
@@ -74,7 +72,6 @@ struct TaskPtCorrelation_QA {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-
   
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -94,8 +91,6 @@ struct TaskPtCorrelation_QA {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90};
     AxisSpec centAxis = {centBining, "centrality (%)"};
-    
-
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
@@ -110,18 +105,14 @@ struct TaskPtCorrelation_QA {
   // declare production of table etaphi
   Produces<aod::MultPtQn> mult_ptQn;
 
-  // Equivalent of the AliRoot task UserExec
-  
   //void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void process(aodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aodTracks const& inputTracks)
   {
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), coll.centFT0C());
     
-    
     //variables
     double cent = coll.centFT0C();
-    
     double pT_sum = 0.0;
     double N=0.0;
 
@@ -130,7 +121,6 @@ struct TaskPtCorrelation_QA {
     float q3=0.0;
     float q4=0.0;
     float n_ch=0.0;
-    
     
     for (auto track : inputTracks) { // Loop over tracks
 
@@ -170,12 +160,8 @@ struct TaskPtCorrelation_analysis {
   //Define output
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> Subsample;
-  TRandom3* fRndm = new TRandom3(0);
-  
- 
+  TRandom3* fRndm = new TRandom3(0); 
 
-  //OutputObj<TProfile2D> etaptB[10];
-  
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {90,0,90, "centrality (%)"};
@@ -210,10 +196,6 @@ struct TaskPtCorrelation_analysis {
       Subsample[i][8] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t3", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
       Subsample[i][9] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t4", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
     }
-
-   
-       
-
   }
   
   float mean_term1;
@@ -275,8 +257,6 @@ struct TaskPtCorrelation_analysis {
   }
   
 };
-
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
