@@ -1,3 +1,4 @@
+
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -9,7 +10,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// O2 includes
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
@@ -30,8 +30,6 @@
 #include "TRandom3.h"
 #include "TMath.h"
 
-// define columns in a sub-namespace of o2::aod
-// and tables in namespace o2::aod
 namespace o2::aod
 {
   namespace ptQn
@@ -43,19 +41,12 @@ namespace o2::aod
     DECLARE_SOA_COLUMN(N_ch, n_ch, float);
     DECLARE_SOA_COLUMN(Centrality, centrality, float);
   }
-  // namespace etaphi
   DECLARE_SOA_TABLE(MultPtQn, "AOD", "pT_Qn", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality);
-} // namespace o2::aod
-
+} 
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// STEP 0
-// Example task illustrating how to create histograms and fill them with basic information.
-// A basic event selection is applied.
-
 
 struct TaskPtCorrelation_QA {
 
@@ -102,7 +93,6 @@ struct TaskPtCorrelation_QA {
     histos.add("hMeanPt", "", kTProfile, {centAxis});
   }
 
-  // declare production of table etaphi
   Produces<aod::MultPtQn> mult_ptQn;
 
   //void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
