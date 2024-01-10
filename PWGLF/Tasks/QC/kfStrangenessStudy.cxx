@@ -42,7 +42,6 @@ using std::array;
 using CascadesCrossLinked = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink>;
 using CascDataLabeled = soa::Join<aod::CascDatas, aod::CascCovs, aod::McCascLabels>;
 using KFCascDataLabeled = soa::Join<aod::KFCascDatas, aod::KFCascCovs, aod::McKFCascLabels>;
-using V0fCDataLabeled = soa::Join<aod::V0fCDatas, aod::V0fCCovs, aod::McV0Labels>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksCovIU>;
 using V0s = aod::V0sLinked;
 
@@ -271,8 +270,8 @@ struct kfStrangenessStudy {
     }
   }
 
-  template <typename TCollision, typename TCascData, typename TV0s, typename TV0fCDatas, typename TMCParticle>
-  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TV0s const&, TV0fCDatas const&, TMCParticle const& mcparticles)
+  template <typename TCollision, typename TCascData, typename TV0s, typename TMCParticle>
+  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TV0s const&, TMCParticle const& mcparticles)
   {
     if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
       auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
@@ -510,7 +509,7 @@ struct kfStrangenessStudy {
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, V0fCDataLabeled const& V0fCDatas, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, FullTracksIU const&, aod::McParticles const& particlesMC)
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, FullTracksIU const&, aod::McParticles const& particlesMC)
   {
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -557,19 +556,19 @@ struct kfStrangenessStudy {
         LOG(info) << "Both fitters were successful!";
         recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, V0fCDatas, particlesMC);
+        getCascMCdata(collision, cascdata, V0s, particlesMC);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
         LOG(info) << "Only KF was successful!";
         recocase = 2;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, V0fCDatas, particlesMC);
+        getCascMCdata(collision, cascdata, V0s, particlesMC);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
         LOG(info) << "Only DCA fitter was successful!";
         recocase = 3;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, V0fCDatas, particlesMC);
+        getCascMCdata(collision, cascdata, V0s, particlesMC);
       }
 
     } // end cascade loop
