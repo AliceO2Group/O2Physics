@@ -86,9 +86,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt");
 
-  Configurable<GFWBinningCuts> cfgBinning{"cfgBinning",
-                                          {40, -10.0, 10.0, 0.2, 10.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, 16, -0.8, 0.8, 72, 0.2, 3.0, 300, 0.5, 3000.5, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},
-                                          "triplets - nbins, min, max - for z_vtx, PtPOI, eta - nbins for phi - ptRef min and max"};
+  Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning",{40, -10.0, 10.0, 16, -0.8, 0.8, 72, 300, 0.5, 3000.5, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}},"Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
@@ -126,7 +124,6 @@ struct GenericFramework {
   void init(InitContext const&)
   {
     LOGF(info, "flowGenericFramework::init()");
-    LOGF(info, "Binning: \n%s", cfgBinning->Print());
     regions.SetNames(cfgRegions->GetNames());
     regions.SetEtaMin(cfgRegions->GetEtaMin());
     regions.SetEtaMax(cfgRegions->GetEtaMax());
@@ -136,28 +133,29 @@ struct GenericFramework {
     configs.SetHeads(cfgCorrConfig->GetHeads());
     configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
     configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
-    LOGF(info, "Regions: {name, etamin, etamax, ptDif, fill bitmask}\n%s", regions.Print());
-    LOGF(info, "CorrConfigs: {Header, corr. config., ptDif, vnpt bitmask}\n%s", configs.Print());
-    ptbinning = cfgBinning->GetPtBinning();
-    ptpoilow = cfgBinning->GetPtPOImin();
-    ptpoiup = cfgBinning->GetPtPOImax();
-    ptreflow = cfgBinning->GetPtRefMin();
-    ptrefup = cfgBinning->GetPtRefMax();
+    regions.Print();
+    configs.Print();
+    ptbinning = cfgGFWBinning->GetPtBinning();
+    ptpoilow = cfgGFWBinning->GetPtPOImin();
+    ptpoiup = cfgGFWBinning->GetPtPOImax();
+    ptreflow = cfgGFWBinning->GetPtRefMin();
+    ptrefup = cfgGFWBinning->GetPtRefMax();
     ptlow = cfgPtmin;
     ptup = cfgPtmax;
-    etabins = cfgBinning->GetEtaBins();
-    etalow = cfgBinning->GetEtaMin();
-    etaup = cfgBinning->GetEtaMax();
-    vtxZbins = cfgBinning->GetVtxZbins();
-    vtxZlow = cfgBinning->GetVtxZmin();
-    vtxZup = cfgBinning->GetVtxZmax();
-    phibins = cfgBinning->GetPhiBins();
+    etabins = cfgGFWBinning->GetEtaBins();
+    etalow = cfgGFWBinning->GetEtaMin();
+    etaup = cfgGFWBinning->GetEtaMax();
+    vtxZbins = cfgGFWBinning->GetVtxZbins();
+    vtxZlow = cfgGFWBinning->GetVtxZmin();
+    vtxZup = cfgGFWBinning->GetVtxZmax();
+    phibins = cfgGFWBinning->GetPhiBins();
     philow = 0.0f;
     phiup = constants::math::TwoPI;
-    nchbins = cfgBinning->GetNchBins();
-    nchlow = cfgBinning->GetNchMin();
-    nchup = cfgBinning->GetNchMax();
-    centbinning = cfgBinning->GetCentBinning();
+    nchbins = cfgGFWBinning->GetNchBins();
+    nchlow = cfgGFWBinning->GetNchMin();
+    nchup = cfgGFWBinning->GetNchMax();
+    centbinning = cfgGFWBinning->GetCentBinning();
+    cfgGFWBinning->Print();
 
     AxisSpec phiAxis = {phibins, philow, phiup, "#phi"};
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
@@ -452,8 +450,8 @@ struct GenericFramework {
     }
   }
 
-  Filter collisionFilter = aod::collision::posZ < cfgBinning->GetVtxZmax() && aod::collision::posZ > cfgBinning->GetVtxZmin();
-  Filter trackFilter = aod::track::eta < cfgBinning->GetEtaMax() && aod::track::eta > cfgBinning->GetEtaMin() && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
+  Filter collisionFilter = aod::collision::posZ < cfgGFWBinning->GetVtxZmax() && aod::collision::posZ > cfgGFWBinning->GetVtxZmin();
+  Filter trackFilter = aod::track::eta < cfgGFWBinning->GetEtaMax() && aod::track::eta > cfgGFWBinning->GetEtaMin() && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy;
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
@@ -486,7 +484,7 @@ struct GenericFramework {
   }
   PROCESS_SWITCH(GenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
-  Filter mcCollFilter = aod::mccollision::posZ < cfgBinning->GetVtxZmax() && aod::mccollision::posZ > cfgBinning->GetVtxZmin();
+  Filter mcCollFilter = aod::mccollision::posZ < cfgGFWBinning->GetVtxZmax() && aod::mccollision::posZ > cfgGFWBinning->GetVtxZmin();
   void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
   {
     if (collisions.size() != 1)
