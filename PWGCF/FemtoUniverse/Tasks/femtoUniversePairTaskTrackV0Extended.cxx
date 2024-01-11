@@ -39,7 +39,6 @@ using namespace o2::aod::pidutils;
 struct femtoUniversePairTaskTrackV0Extended {
 
   SliceCache cache;
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FUExtParticles>;
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
@@ -176,7 +175,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     for (auto& part : groupPartsOne) {
       /// PID using stored binned nsigma
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+      const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
 
       if (!IsParticleNSigma(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
         continue;
@@ -200,7 +199,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
       /// PID using stored binned nsigma
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStoreKa())};
+      const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
 
       if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
         continue;
@@ -242,7 +241,7 @@ struct femtoUniversePairTaskTrackV0Extended {
         }
         /// PID using stored binned nsigma
         const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-        const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStoreKa())};
+        const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
 
         if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
           continue;
