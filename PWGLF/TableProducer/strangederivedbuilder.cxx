@@ -144,7 +144,7 @@ struct strangederivedbuilder {
     });
 
     // Creation of histograms: MC generated
-    for (Int_t i = 0; i < nSpecies; i++){
+    for (Int_t i = 0; i < nSpecies; i++) {
       histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
       histos.add(Form("h2dGen%s", particleNames[i].data()), Form("h2dGen%s", particleNames[i].data()), kTH2D, {axisCentrality, axisPt});
     }
@@ -430,7 +430,8 @@ struct strangederivedbuilder {
     }
   }
 
-  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles){
+  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles)
+  {
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
 
     // identify best-of collision
@@ -454,7 +455,6 @@ struct strangederivedbuilder {
         });
       }
     }
-
   }
 
   void processProduceV0TOFs(aod::Collision const& collision, aod::V0Datas const& V0s, FullTracksExtIUTOF const&)
