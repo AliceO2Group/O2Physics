@@ -54,8 +54,9 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
-  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 1e+10, "max TPC dE/dx"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.0f, "max DCA 3D in sigma"};
+  Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", -4.0, "min. TPC n sigma for muon inclusion"};
+  Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 4.0, "max. TPC n sigma for muon inclusion"};
   Configurable<float> maxPin{"maxPin", 1.0, "max pin for PID"};
   Configurable<float> maxPin_TPC{"maxPin_TPC", 0.2, "max pin for TPC pid only"};
   Configurable<float> maxTPCNsigmaMu_lowPin{"maxTPCNsigmaMu_lowPin", +4.0, "max. TPC n sigma for muon inclusion at low pin"};
@@ -100,6 +101,8 @@ struct skimmerPrimaryMuon {
       {"MC/Primary/hNfTPC", "Nfindable TPC;N_{f}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
       {"MC/Primary/hChi2TPC", "chi2 TPC;#chi^{2}/N_{cls}^{TPC}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
       {"MC/Primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Primary/hDCAxy_Pt", "DCA xy vs. p_{T};p_{T} (GeV/c);DCA_{xy} (cm)", {HistType::kTH2F, {{100, 0.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Primary/hDCAz_Pt", "DCA z vs. p_{T};p_{T} (GeV/c);DCA_{z} (cm)", {HistType::kTH2F, {{100, 0.f, +1.f}, {200, -1.f, +1.f}}}},
       {"MC/Primary/hDCA3D", "DCA;DCA_{3D} (cm)", {HistType::kTH1F, {{100, 0.f, +1.f}}}},
       {"MC/Primary/hDCAxy_resolution", "DCA xy resolution;DCA_{xy} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
       {"MC/Primary/hDCAz_resolution", "DCA z resolution;DCA_{z} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
@@ -118,6 +121,8 @@ struct skimmerPrimaryMuon {
       {"MC/Secondary/hNfTPC", "Nfindable TPC;N_{f}^{TPC}", {HistType::kTH1F, {{161, -0.5f, +160.5f}}}},
       {"MC/Secondary/hChi2TPC", "chi2 TPC;#chi^{2}/N_{cls}^{TPC}", {HistType::kTH1F, {{100, 0.f, 10.f}}}},
       {"MC/Secondary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Secondary/hDCAxy_Pt", "DCA xy vs. p_{T};p_{T} (GeV/c);DCA_{xy} (cm)", {HistType::kTH2F, {{100, 0.f, +1.f}, {200, -1.f, +1.f}}}},
+      {"MC/Secondary/hDCAz_Pt", "DCA z vs. p_{T};p_{T} (GeV/c);DCA_{z} (cm)", {HistType::kTH2F, {{100, 0.f, +1.f}, {200, -1.f, +1.f}}}},
       {"MC/Secondary/hDCA3D", "DCA;DCA_{3D} (cm)", {HistType::kTH1F, {{100, 0.f, +1.f}}}},
       {"MC/Secondary/hDCAxy_resolution", "DCA xy resolution;DCA_{xy} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
       {"MC/Secondary/hDCAz_resolution", "DCA z resolution;DCA_{z} resolution (cm)", {HistType::kTH1F, {{100, 0.f, +0.1f}}}},
@@ -144,10 +149,6 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
-    // if(abs(track.dcaXY()) > dca_xy_max || abs(track.dcaZ()) > dca_z_max){
-    //   return false;
-    // }
-
     if (track.itsNCls() < minitsncls) {
       return false;
     }
@@ -162,6 +163,11 @@ struct skimmerPrimaryMuon {
     }
 
     if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+      return false;
+    }
+
+    float dca_3d = std::sqrt(std::pow(track.dcaXY() / std::sqrt(track.cYY()), 2) + std::pow(track.dcaZ() / std::sqrt(track.cZZ()), 2));
+    if (dca_3d > dca_3d_sigma_max) {
       return false;
     }
 
@@ -224,6 +230,8 @@ struct skimmerPrimaryMuon {
             fRegistry.fill(HIST("MC/Primary/hNfTPC"), track.tpcNClsFindable());
             fRegistry.fill(HIST("MC/Primary/hChi2TPC"), track.tpcChi2NCl());
             fRegistry.fill(HIST("MC/Primary/hDCAxyz"), track.dcaXY(), track.dcaZ());
+            fRegistry.fill(HIST("MC/Primary/hDCAxy_Pt"), track.pt(), track.dcaXY());
+            fRegistry.fill(HIST("MC/Primary/hDCAz_Pt"), track.pt(), track.dcaZ());
             fRegistry.fill(HIST("MC/Primary/hDCA3D"), sqrt(pow(track.dcaXY(), 2) + pow(track.dcaZ(), 2)));
             fRegistry.fill(HIST("MC/Primary/hDCAxy_resolution"), sqrt(track.cYY()));
             fRegistry.fill(HIST("MC/Primary/hDCAz_resolution"), sqrt(track.cZZ()));
@@ -243,6 +251,8 @@ struct skimmerPrimaryMuon {
             fRegistry.fill(HIST("MC/Secondary/hNfTPC"), track.tpcNClsFindable());
             fRegistry.fill(HIST("MC/Secondary/hChi2TPC"), track.tpcChi2NCl());
             fRegistry.fill(HIST("MC/Secondary/hDCAxyz"), track.dcaXY(), track.dcaZ());
+            fRegistry.fill(HIST("MC/Secondary/hDCAxy_Pt"), track.pt(), track.dcaXY());
+            fRegistry.fill(HIST("MC/Secondary/hDCAz_Pt"), track.pt(), track.dcaZ());
             fRegistry.fill(HIST("MC/Secondary/hDCA3D"), sqrt(pow(track.dcaXY(), 2) + pow(track.dcaZ(), 2)));
             fRegistry.fill(HIST("MC/Secondary/hDCAxy_resolution"), sqrt(track.cYY()));
             fRegistry.fill(HIST("MC/Secondary/hDCAz_resolution"), sqrt(track.cZZ()));
@@ -329,7 +339,8 @@ struct skimmerPrimaryMuon {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx && o2::aod::track::tpcInnerParam < maxPin;
+  Filter trackFilter = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its;
+  Filter pidFilter = minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu && o2::aod::track::tpcInnerParam < maxPin;
 
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;

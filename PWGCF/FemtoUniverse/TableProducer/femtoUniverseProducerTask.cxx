@@ -243,10 +243,10 @@ struct femtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-    Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-    Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
-    Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+    Configurable<int> ConfD0SelectionFlag{"ConfD0SelectionFlag", 1, "Selection Flag for D0"};
+    Configurable<int> ConfD0barSelectionFlag{"ConfD0barSelectionFlag", 1, "Selection Flag for D0bar"};
+    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", 4.0, "max. cand. rapidity"};
+    Configurable<float> ConfD0D0barMinPt{"ConfD0D0barMinPt", 0., "min. cand. pT"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -766,7 +766,11 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (ConfD0Selection.yCandMax >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yCandMax) {
+      if (ConfD0Selection.ConfD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.ConfD0D0barCandMaxY) {
+        continue;
+      }
+
+      if (hfCand.pt() > ConfD0Selection.ConfD0D0barMinPt) {
         continue;
       }
 
@@ -778,13 +782,13 @@ struct femtoUniverseProducerTask {
       auto postrack = hfCand.template prong0_as<TrackType>();
       auto negtrack = hfCand.template prong1_as<TrackType>();
 
-      if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
+      if (hfCand.isSelD0() == ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() != ConfD0Selection.ConfD0barSelectionFlag) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0ToPiK(hfCand);
-      } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
+      } else if (hfCand.isSelD0() != ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() == ConfD0Selection.ConfD0barSelectionFlag) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
-      } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
+      } else if (hfCand.isSelD0() == ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() == ConfD0Selection.ConfD0barSelectionFlag) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
       } else {
@@ -920,7 +924,7 @@ struct femtoUniverseProducerTask {
                   p1.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  1); // sign, workaround for now
       const int rowOfPosTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p1, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -940,7 +944,7 @@ struct femtoUniverseProducerTask {
                   p2.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  -1); // sign, workaround for now
       const int rowOfNegTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);

@@ -216,7 +216,9 @@ struct femtoDreamPairTaskTrackV0 {
       }
     }
     if ((doprocessSameEvent && doprocessSameEventMasked) ||
-        (doprocessMixedEvent && doprocessMixedEventMasked)) {
+        (doprocessMixedEvent && doprocessMixedEventMasked) ||
+        (doprocessSameEventMC && doprocessSameEventMCMasked) ||
+        (doprocessMixedEventMC && doprocessMixedEventMCMasked)) {
       LOG(fatal) << "Normal and masked processing cannot be activated simultaneously!";
     }
   }
@@ -234,7 +236,7 @@ struct femtoDreamPairTaskTrackV0 {
       const auto& posChild = parts.iteratorAt(v0.index() - 2);
       const auto& negChild = parts.iteratorAt(v0.index() - 1);
       // This is how it is supposed to work but there seems to be an issue
-      // with partitions and accessing elements in tables that have been
+      // with partitions and accessing elements in tables that have been declared
       // with an SELF_INDEX column. Under investigation. Maybe need to change
       // femtdream dataformat to take special care of v0 candidates
       // auto posChild = v0.template children_as<S>().front();
@@ -278,6 +280,9 @@ struct femtoDreamPairTaskTrackV0 {
     eventHisto.fillQA(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceTrk1.size() == 0 && SliceV02.size() == 0) {
+      return;
+    }
     doSameEvent<false>(SliceTrk1, SliceV02, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
@@ -295,21 +300,34 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMasked, "Enable processing same event with masks", false);
 
   void processSameEventMC(o2::aod::FDCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  // void processSameEventMC(o2::aod::FDCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
+    eventHisto.fillQA(col);
+    auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceMCTrk1.size() == 0 && SliceMCV02.size() == 0) {
+      return;
+    }
+    doSameEvent<true>(SliceMCTrk1, SliceMCV02, parts, col.magField(), col.multNtr());
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMC, "Enable processing same event MC", false);
+
+  void processSameEventMCMasked(MaskedCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
+  {
+    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+      return;
+    }
     eventHisto.fillQA(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<true>(SliceMCTrk1, SliceMCV02, parts, col.magField(), col.multNtr());
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMC, "Enable processing same event MC", false);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMCMasked, "Enable processing same event MC with masks", false);
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType SliceTrk1, PartitionType SliceV02, PartType parts, float magFieldTesla, int multCol)
   {
-
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
       const auto& negChild = parts.iteratorAt(p2.index() - 1);
@@ -325,7 +343,7 @@ struct femtoDreamPairTaskTrackV0 {
           continue;
         }
       }
-      // track cleaning
+      // pair cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
@@ -336,16 +354,13 @@ struct femtoDreamPairTaskTrackV0 {
   void processMixedEvent(o2::aod::FDCollisions& cols, FilteredFDParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
-      const int multCol = collision1.multNtr();
-
       auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
 
-      const auto& magFieldTesla1 = collision1.magField();
-      const auto& magFieldTesla2 = collision2.magField();
-
-      if (magFieldTesla1 != magFieldTesla2) {
-        continue;
+      const int multCol = collision1.multNtr();
+      const auto magFieldTesla1 = collision1.magField();
+      if (SliceTrk1.size() == 0 || SliceV02.size() == 0) {
+        return;
       }
       doMixedEvent<false>(SliceTrk1, SliceV02, parts, magFieldTesla1, multCol);
     }
@@ -354,7 +369,6 @@ struct femtoDreamPairTaskTrackV0 {
 
   void processMixedEventMasked(MaskedCollisions const& cols, FilteredFDParticles const& parts)
   {
-
     Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
     Partition<MaskedCollisions> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit;
 
@@ -362,39 +376,49 @@ struct femtoDreamPairTaskTrackV0 {
     PartitionMaskedCol2.bindTable(cols);
 
     for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(colBinning, ConfNEventsMix.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
-      const int multCol = collision1.multNtr();
       auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-      const auto& magFieldTesla1 = collision1.magField();
-      const auto& magFieldTesla2 = collision2.magField();
-      if (magFieldTesla1 != magFieldTesla2) {
-        continue;
-      }
+
+      const int multCol = collision1.multNtr();
+      const auto magFieldTesla1 = collision1.magField();
       doMixedEvent<false>(SliceTrk1, SliceV02, parts, magFieldTesla1, multCol);
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMasked, "Enable processing mixed events with masks", false);
 
   void processMixedEventMC(o2::aod::FDCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  // void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
-      const int multCol = collision1.multNtr();
-
       auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
 
-      const auto& magFieldTesla1 = collision1.magField();
-      const auto& magFieldTesla2 = collision2.magField();
-
-      if (magFieldTesla1 != magFieldTesla2) {
-        continue;
+      const int multCol = collision1.multNtr();
+      const auto magFieldTesla1 = collision1.magField();
+      if (SliceMCTrk1.size() == 0 || SliceMCV02.size() == 0) {
+        return;
       }
-
       doMixedEvent<true>(SliceMCTrk1, SliceMCV02, parts, magFieldTesla1, multCol);
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMC, "Enable processing mixed events MC", false);
+
+  void processMixedEventMCMasked(MaskedCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
+  {
+    Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
+    Partition<MaskedCollisions> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit;
+
+    PartitionMaskedCol1.bindTable(cols);
+    PartitionMaskedCol2.bindTable(cols);
+
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(colBinning, ConfNEventsMix.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
+      auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+      const int multCol = collision1.multNtr();
+      const auto magFieldTesla1 = collision1.magField();
+      doMixedEvent<true>(SliceMCTrk1, SliceMCV02, parts, magFieldTesla1, multCol);
+    }
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMCMasked, "Enable processing mixed events MC with masks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -52,6 +52,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe>;
+using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 
 // simple checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -62,6 +63,7 @@ struct strangederivedbuilder {
   // fundamental building blocks of derived data
   Produces<aod::StraCollision> strangeColl;      // characterises collisions
   Produces<aod::StraCents> strangeCents;         // characterises collisions / centrality
+  Produces<aod::StraStamps> strangeStamps;       // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;       // references collisions from cascades
   Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from KF cascades
@@ -84,9 +86,14 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // mother information
-  Produces<aod::V0MCMothers> v0mothers;               // V0 mother references
-  Produces<aod::CascMCMothers> cascmothers;           // casc mother references
-  Produces<aod::MotherMCParts> motherMCParts;         // mc particles for mothers
+  Produces<aod::V0MCMothers> v0mothers;       // V0 mother references
+  Produces<aod::CascMCMothers> cascmothers;   // casc mother references
+  Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
+
+  //__________________________________________________
+  // raw TOF PID for posterior use if requested
+  Produces<aod::V0TOFs> v0tofs;     // V0 part
+  Produces<aod::CascTOFs> casctofs; // cascade part
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -119,8 +126,11 @@ struct strangederivedbuilder {
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
 
+  int64_t currentCollIdx;
+
   void init(InitContext& context)
   {
+    currentCollIdx = -1;
     // setup map for fast checking if enabled
     static_for<0, nSpecies - 1>([&](auto i) {
       constexpr int index = i.value;
@@ -135,30 +145,27 @@ struct strangederivedbuilder {
       histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    int currentCollIdx = -1;
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0;
       // casc table sliced
       if (strange || fillEmptyCollisions) {
-        if (currentCollIdx != collIdx) {
-          strangeColl(collision.posX(), collision.posY(), collision.posZ());
-          strangeCents(collision.centFT0M(), collision.centFT0A(),
-                       collision.centFT0C(), collision.centFV0A());
-          currentCollIdx = collIdx;
-        }
+        strangeColl(collision.posX(), collision.posY(), collision.posZ());
+        strangeCents(collision.centFT0M(), collision.centFT0A(),
+                     collision.centFT0C(), collision.centFV0A());
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades)
+  void processCollisions(soa::Join<aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
-    int currentCollIdx = -1;
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
@@ -171,12 +178,11 @@ struct strangederivedbuilder {
                      TraCascTable_thisColl.size() > 0;
       // casc table sliced
       if (strange || fillEmptyCollisions) {
-        if (currentCollIdx != collIdx) {
-          strangeColl(collision.posX(), collision.posY(), collision.posZ());
-          strangeCents(collision.centFT0M(), collision.centFT0A(),
-                       collision.centFT0C(), collision.centFV0A());
-          currentCollIdx = collIdx;
-        }
+        strangeColl(collision.posX(), collision.posY(), collision.posZ());
+        strangeCents(collision.centFT0M(), collision.centFT0A(),
+                     collision.centFT0C(), collision.centFV0A());
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
@@ -418,6 +424,28 @@ struct strangederivedbuilder {
     }
   }
 
+  void processProduceV0TOFs(aod::Collision const& collision, aod::V0Datas const& V0s, FullTracksExtIUTOF const&)
+  {
+    for (auto const& v0 : V0s) {
+      auto const& posTrackRow = v0.posTrack_as<FullTracksExtIUTOF>();
+      auto const& negTrackRow = v0.negTrack_as<FullTracksExtIUTOF>();
+      v0tofs(posTrackRow.length(), negTrackRow.length(),
+             posTrackRow.tofSignal(), negTrackRow.tofSignal(),
+             posTrackRow.tofEvTime(), negTrackRow.tofEvTime());
+    }
+  }
+  void processProduceCascTOFs(aod::Collision const& collision, aod::CascDatas const& Cascades, FullTracksExtIUTOF const&)
+  {
+    for (auto const& cascade : Cascades) {
+      auto const& posTrackRow = cascade.posTrack_as<FullTracksExtIUTOF>();
+      auto const& negTrackRow = cascade.negTrack_as<FullTracksExtIUTOF>();
+      auto const& bachTrackRow = cascade.bachelor_as<FullTracksExtIUTOF>();
+      casctofs(posTrackRow.length(), negTrackRow.length(), bachTrackRow.length(),
+               posTrackRow.tofSignal(), negTrackRow.tofSignal(), bachTrackRow.tofSignal(),
+               posTrackRow.tofEvTime(), negTrackRow.tofEvTime(), bachTrackRow.tofEvTime());
+    }
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
@@ -426,6 +454,8 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processSimulation, "Produce simulated information", true);
+  PROCESS_SWITCH(strangederivedbuilder, processProduceV0TOFs, "Produce V0TOFs table", true);
+  PROCESS_SWITCH(strangederivedbuilder, processProduceCascTOFs, "Produce CascTOFs table", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
