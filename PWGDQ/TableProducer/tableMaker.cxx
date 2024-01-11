@@ -1257,7 +1257,14 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
-
+                                              
+ // Produce muon tables only, with muon cov matrix and multiplicity --------------------------------------------------------------------------------------------
+  void processMuonOnlyWithCovMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+    {
+      fullSkimming<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+    }
+                                          
   // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
   void processMuonMLOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                          soa::Filtered<aod::FwdTracksML> const& tracksMuon)
@@ -1416,6 +1423,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCentAndMults, "Build muon-only DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndCent, "Build muon-only DQ skimmed data model, w/ centrality and muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovMults, "Build muon-only DQ skimmed data model, w/ muon cov matrix and multiplicity", false);
   PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processMuonMLOnly, "Build muon-only DQ skimmed data model with global muon track by ML matching", false);
