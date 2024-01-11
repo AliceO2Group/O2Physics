@@ -134,7 +134,7 @@ class DGCutparHolder
   bool mTSC;
   bool mTCE;
   bool mTOR;
-  
+
   // maximum FIT time
   float mMaxFITtime;
 
