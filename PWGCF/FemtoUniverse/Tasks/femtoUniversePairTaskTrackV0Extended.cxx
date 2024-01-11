@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniversePairTaskTrackTrack.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
+/// \brief Tasks that build pairs of track particles and v0s
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
@@ -37,10 +36,9 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoUniverse;
 using namespace o2::aod::pidutils;
 
-struct femtoUniversePairTaskTrackV0 {
+struct femtoUniversePairTaskTrackV0Extended {
 
   SliceCache cache;
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FUExtParticles>;
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
@@ -98,6 +96,8 @@ struct femtoUniversePairTaskTrackV0 {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
@@ -113,7 +113,7 @@ struct femtoUniversePairTaskTrackV0 {
 
   bool IsParticleNSigma(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
-    if (mom < Confmom) {
+    if (mom <= Confmom) {
       if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
         return true;
       } else {
@@ -147,7 +147,7 @@ struct femtoUniversePairTaskTrackV0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
   }
   /// This function processes the same event and takes care of all the histogramming
@@ -175,9 +175,9 @@ struct femtoUniversePairTaskTrackV0 {
     for (auto& part : groupPartsOne) {
       /// PID using stored binned nsigma
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+      const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
 
-      if (!IsParticleNSigma(part.pt(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+      if (!IsParticleNSigma(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
         continue;
       }
       qaRegistry.fill(HIST("Tracks_one/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrackChoicePartOne]);
@@ -199,16 +199,16 @@ struct femtoUniversePairTaskTrackV0 {
       }
       /// PID using stored binned nsigma
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStoreKa())};
+      const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
 
-      if (!IsParticleNSigma(p1.pt(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+      if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
         continue;
       }
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
   void processMixedEvent(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
@@ -241,9 +241,9 @@ struct femtoUniversePairTaskTrackV0 {
         }
         /// PID using stored binned nsigma
         const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-        const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(p1.tofNSigmaStoreKa())};
+        const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
 
-        if (!IsParticleNSigma(p1.pt(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+        if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
           continue;
         }
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
@@ -251,13 +251,13 @@ struct femtoUniversePairTaskTrackV0 {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniversePairTaskTrackV0>(cfgc),
+    adaptAnalysisTask<femtoUniversePairTaskTrackV0Extended>(cfgc),
   };
   return workflow;
 }

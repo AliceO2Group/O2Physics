@@ -41,6 +41,10 @@ struct skimmerDalitzEE {
 
   SliceCache cache;
   Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emreducedeventId;
+
+  SliceCache cache_cefp;
+  Preslice<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
+
   Produces<aod::DalitzEEs> dalitzees;
   Produces<o2::aod::DalitzEEEMReducedEventIds> dalitz_ee_eventid;
   Produces<o2::aod::EMReducedEventsNee> event_nee;
@@ -58,7 +62,7 @@ struct skimmerDalitzEE {
 
   void init(InitContext const&) {}
 
-  template <EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
+  template <EM_EEPairType pairtype, bool isCEFP, typename TCollision, typename TTracks1, typename TTracks2>
   int fillPairTable(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     int npair = 0;
@@ -71,14 +75,22 @@ struct skimmerDalitzEE {
           continue;
         }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
         float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
-        dalitz_ee_eventid(collision.globalIndex());
+
+        if constexpr (isCEFP) {
+          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitz_ee_eventid(collision.globalIndex());
+        } else { // for analysis
+          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitz_ee_eventid(collision.globalIndex());
+        }
+
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         npair++;
       }      // end of pairing loop
@@ -91,14 +103,22 @@ struct skimmerDalitzEE {
           continue;
         }
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+        float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcaeexy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
         float dcaeez = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcaeexy, dcaeez, static_cast<int>(pairtype));
-        dalitz_ee_eventid(collision.globalIndex());
+
+        if constexpr (isCEFP) {
+          dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitz_ee_eventid(collision.globalIndex());
+        } else { // for analysis
+          dalitzees(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcaeexy, dcaeez, static_cast<int>(pairtype));
+          dalitz_ee_eventid(collision.globalIndex());
+        }
+
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         npair++;
       } // end of pairing loop
@@ -108,22 +128,41 @@ struct skimmerDalitzEE {
 
   Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > 0;
   Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < 0;
-
-  void process(MyCollisions const& collisions, MyTracks const& tracks)
+  void processAnalysis(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
-      npair_uls = fillPairTable<EM_EEPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+      npair_uls = fillPairTable<EM_EEPairType::kULS, false>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (storeLS) {
-        npair_lspp = fillPairTable<EM_EEPairType::kLSpp>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-        npair_lsmm = fillPairTable<EM_EEPairType::kLSmm>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+        npair_lspp = fillPairTable<EM_EEPairType::kLSpp, false>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+        npair_lsmm = fillPairTable<EM_EEPairType::kLSmm, false>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
       }
       event_nee(npair_uls, npair_lspp, npair_lsmm);
     } // end of collision loop
   }
+  PROCESS_SWITCH(skimmerDalitzEE, processAnalysis, "Process dalitz ee for analysis", true);
+
+  Partition<aod::EMPrimaryElectrons> posTracks_cefp = o2::aod::emprimaryelectron::sign > 0;
+  Partition<aod::EMPrimaryElectrons> negTracks_cefp = o2::aod::emprimaryelectron::sign < 0;
+  void processCEFP(soa::Join<aod::Collisions, aod::EMReducedEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
+  {
+    for (auto& collision : collisions) {
+      auto posTracks_per_coll = posTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+      auto negTracks_per_coll = negTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+
+      int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
+      npair_uls = fillPairTable<EM_EEPairType::kULS, true>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+      if (storeLS) {
+        npair_lspp = fillPairTable<EM_EEPairType::kLSpp, true>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+        npair_lsmm = fillPairTable<EM_EEPairType::kLSmm, true>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+      }
+      event_nee(npair_uls, npair_lspp, npair_lsmm);
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerDalitzEE, processCEFP, "Process dalitz ee for CEFP", false); // for central event filter processing
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

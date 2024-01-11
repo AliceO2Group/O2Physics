@@ -17,6 +17,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -37,16 +38,16 @@
 #include "TMath.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::femtoDream;
 
 namespace o2::aod
 {
 
 using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
-using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
@@ -141,7 +142,7 @@ struct femtoDreamProducerTask {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -344,22 +345,22 @@ struct femtoDreamProducerTask {
   template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
-
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
-    int mult = 0;
+    float mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      mult = col.multFV0M();
+      mult = col.centFT0M();
       multNtr = col.multNTracksPV();
     } else {
-      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in
-                                     /// FemtoDreamRun2 is defined V0M/2
+      mult = 1; // multiplicity percentile is know in Run 2
       multNtr = col.multTracklets();
     }
     if (ConfEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
+
+    colCuts.fillQA(col);
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
@@ -376,7 +377,6 @@ struct femtoDreamProducerTask {
       }
     }
 
-    colCuts.fillQA(col);
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
@@ -390,7 +390,7 @@ struct femtoDreamProducerTask {
       }
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),
@@ -442,12 +442,12 @@ struct femtoDreamProducerTask {
         rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
         childIDs[0] = rowInPrimaryTrackTablePos;
         childIDs[1] = 0;
-        outputParts(outputCollision.lastIndex(), v0.positivept(),
-                    v0.positiveeta(), v0.positivephi(),
+        outputParts(outputCollision.lastIndex(),
+                    v0.positivept(), v0.positiveeta(), v0.positivephi(),
                     aod::femtodreamparticle::ParticleType::kV0Child,
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts),
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID),
-                    0.,
+                    postrack.dcaXY(),
                     childIDs,
                     0,
                     0);
@@ -467,7 +467,7 @@ struct femtoDreamProducerTask {
                     aod::femtodreamparticle::ParticleType::kV0Child,
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts),
                     cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID),
-                    0.,
+                    negtrack.dcaXY(),
                     childIDs,
                     0,
                     0);
@@ -503,7 +503,7 @@ struct femtoDreamProducerTask {
     processData(aod::FemtoFullCollision const& col,
                 aod::BCsWithTimestamps const&,
                 aod::FemtoFullTracks const& tracks,
-                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+                o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

@@ -57,8 +57,8 @@ struct f1protoncorrelation {
   void init(o2::framework::InitContext&)
   {
     // register histograms
-    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hNsigmaProtonTPCSE", "Nsigma Proton TPC distribution same event", kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 1.0f}});
+    histos.add("hNsigmaProtonTPCME", "Nsigma Proton TPC distribution mixed event", kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 1.0f}});
     histos.add("h2SameEventPtCorrelation", "Pt correlation of F1 and proton", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {100, 0.0, 10.0}});
     histos.add("h2SameEventInvariantMassUnlike_mass104", "Unlike Sign Invariant mass of f1 same event", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {800, 1.0, 1.8}});
     histos.add("h2MixEventInvariantMassUnlike_mass104", "Unlike Sign Invariant mass of f1 mix event", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {800, 1.0, 1.8}});
@@ -133,37 +133,38 @@ struct f1protoncorrelation {
           continue;
         }
         auto relative_momentum = getkstar(F1, Proton);
-        histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, Pion.P() / Kaon.P(), Proton.Pt());
+        histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
         if (f1track.f1MassKaonKshort() < 1.04) {
           if (f1track.f1SignalStat() == 1) {
-            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass104"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass104"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("hNsigmaProtonTPCSE"), protontrack.protonNsigmaTPC(), relative_momentum);
           }
           if (f1track.f1SignalStat() == -1) {
-            histos.fill(HIST("h2SameEventInvariantMassLike_mass104"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2SameEventInvariantMassLike_mass104"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (f1track.f1MassKaonKshort() < 1.03) {
           if (f1track.f1SignalStat() == 1) {
-            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass103"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass103"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (f1track.f1SignalStat() == -1) {
-            histos.fill(HIST("h2SameEventInvariantMassLike_mass103"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2SameEventInvariantMassLike_mass103"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (f1track.f1MassKaonKshort() < 1.02) {
           if (f1track.f1SignalStat() == 1) {
-            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass102"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass102"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (f1track.f1SignalStat() == -1) {
-            histos.fill(HIST("h2SameEventInvariantMassLike_mass102"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2SameEventInvariantMassLike_mass102"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (f1track.f1MassKaonKshort() < 1.01) {
           if (f1track.f1SignalStat() == 1) {
-            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass101"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2SameEventInvariantMassUnlike_mass101"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (f1track.f1SignalStat() == -1) {
-            histos.fill(HIST("h2SameEventInvariantMassLike_mass101"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2SameEventInvariantMassLike_mass101"), relative_momentum, F1.Pt(), F1.M());
           }
         }
       }
@@ -224,34 +225,35 @@ struct f1protoncorrelation {
         auto relative_momentum = getkstar(F1, Proton);
         if (t1.f1MassKaonKshort() < 1.04) {
           if (t1.f1SignalStat() == 1) {
-            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass104"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass104"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("hNsigmaProtonTPCME"), t2.protonNsigmaTPC(), relative_momentum);
           }
           if (t1.f1SignalStat() == -1) {
-            histos.fill(HIST("h2MixEventInvariantMassLike_mass104"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2MixEventInvariantMassLike_mass104"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (t1.f1MassKaonKshort() < 1.03) {
           if (t1.f1SignalStat() == 1) {
-            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass103"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass103"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (t1.f1SignalStat() == -1) {
-            histos.fill(HIST("h2MixEventInvariantMassLike_mass103"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2MixEventInvariantMassLike_mass103"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (t1.f1MassKaonKshort() < 1.02) {
           if (t1.f1SignalStat() == 1) {
-            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass102"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass102"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (t1.f1SignalStat() == -1) {
-            histos.fill(HIST("h2MixEventInvariantMassLike_mass102"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2MixEventInvariantMassLike_mass102"), relative_momentum, F1.Pt(), F1.M());
           }
         }
         if (t1.f1MassKaonKshort() < 1.01) {
           if (t1.f1SignalStat() == 1) {
-            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass101"), relative_momentum, Pion.P() / Kaon.P(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass101"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
           }
           if (t1.f1SignalStat() == -1) {
-            histos.fill(HIST("h2MixEventInvariantMassLike_mass101"), relative_momentum, Pion.P() / Kaon.P(), F1.M());
+            histos.fill(HIST("h2MixEventInvariantMassLike_mass101"), relative_momentum, F1.Pt(), F1.M());
           }
         }
       }

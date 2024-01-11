@@ -77,8 +77,7 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOFs> casctof;       // raw table for checks
-  Produces<aod::CascTOFPIDs> casctofpid; // table with Nsigmas
+  Produces<aod::CascTOFPIDs> casctofpids; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -242,19 +241,15 @@ struct cascadepid {
       for (auto const& cascade : CascTable_thisCollision) {
         // Track casting
         auto bachTrack = cascade.bachelor_as<FullTracksExtIU>();
-        auto v0 = cascade.v0();
-        auto posTrack = v0.posTrack_as<FullTracksExtIU>();
-        auto negTrack = v0.negTrack_as<FullTracksExtIU>();
+        auto posTrack = cascade.posTrack_as<FullTracksExtIU>();
+        auto negTrack = cascade.negTrack_as<FullTracksExtIU>();
 
         // FIXME: TOF calculation: under construction, to follow
-
-        if (fillRawPID) {
-          casctof(posTrack.length(), negTrack.length(), bachTrack.length(),
-                  posTrack.tofSignal(), negTrack.tofSignal(), bachTrack.tofSignal(),
-                  posTrack.tofEvTime(), negTrack.tofEvTime(), bachTrack.tofEvTime(),
-                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                  0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-        }
+        casctofpids(0.0f, 0.0f,
+                    posTrack.length(), negTrack.length(), bachTrack.length(),
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
     }
   }

@@ -68,30 +68,34 @@ struct phianalysisrun3 {
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
+  Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
+  Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
   {
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {{2001, -0.5, 2000.5}});
+    histos.add("hCentrality", "Centrality distribution", kTH1F, {{201, -0.5, 200.5}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
-    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 2000.0f}});
+    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
     if (!isMC) {
-      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassRotation", "Invariant mass of Phi meson Rotation", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       if (isEtaAssym) {
-        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
-        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{2001, -0.5, 2000.5}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
+        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       }
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{2, 0.0f, 2.0f}});
@@ -104,40 +108,48 @@ struct phianalysisrun3 {
   double rapidity;
   double genMass, recMass, resolution;
   double mass{0.};
+  double massrotation{0.};
   double pT{0.};
   array<float, 3> pvec0;
   array<float, 3> pvec1;
+  array<float, 3> pvec1rotation;
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (iscustomDCAcut && !(candidate.isGlobalTrack() || candidate.isPVContributor())) {
+    if (iscustomDCAcut && !(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
       return false;
-    } else {
-      if (!candidate.isGlobalTrackWoDCA() || std::abs(candidate.dcaXY()) > cfgCutDCAxy || std::abs(candidate.dcaZ()) > cfgCutDCAz || !candidate.isPVContributor()) {
-        return false;
-      }
+    }
+    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() || candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+      return false;
+    }
+    if (isITSOnlycut && !(candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+      return false;
     }
     return true;
   }
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombined * nsigmaCutCombined)) {
+    if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
       return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    }
+    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
     return false;
   }
   template <typename T1, typename T2>
-  void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, float massd1, float massd2)
+  void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
   {
     pvec0 = array{candidate1.px(), candidate1.py(), candidate1.pz()};
     pvec1 = array{candidate2.px(), candidate2.py(), candidate2.pz()};
+    pvec1rotation = array{-candidate2.px(), -candidate2.py(), candidate2.pz()};
     auto arrMom = array{pvec0, pvec1};
+    auto arrMomrotation = array{pvec0, pvec1rotation};
     int track1Sign = candidate1.sign();
     int track2Sign = candidate2.sign();
     mass = RecoDecay::m(arrMom, array{massd1, massd2});
+    massrotation = RecoDecay::m(arrMomrotation, array{massd1, massd2});
     pT = RecoDecay::pt(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py()});
     rapidity = RecoDecay::y(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py(), candidate1.pz() + candidate2.pz()}, mass);
     if (isEtaAssym && unlike && track1Sign * track2Sign < 0) {
@@ -162,11 +174,19 @@ struct phianalysisrun3 {
       }
     }
 
-    if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign < 0 && unlike) {
-      histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
-    } else if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign < 0 && mix) {
-      histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
-    } else if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign > 0 && likesign) {
+    // default filling
+    if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign < 0) {
+      if (unlike) {
+        histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
+      }
+      if (mix) {
+        histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
+      }
+      if (rotation) {
+        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation);
+      }
+    }
+    if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign > 0 && likesign) {
       if (track1Sign > 0 && track2Sign > 0) {
         histos.fill(HIST("h3PhiInvMassLikeSignPP"), multiplicity, pT, mass);
       } else {
@@ -190,12 +210,14 @@ struct phianalysisrun3 {
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
   // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
@@ -209,7 +231,7 @@ struct phianalysisrun3 {
     if (cfgMultFT0)
       multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
     if (!cfgMultFT0)
-      multiplicity = collision.centFT0M() - 0.5;
+      multiplicity = collision.centFT0M();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -234,8 +256,12 @@ struct phianalysisrun3 {
         bool unlike = true;
         bool mix = false;
         bool likesign = true;
-        if (selectionPID(track1) && selectionPID(track2)) {
-          FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, massKa, massKa);
+        bool rotation = true;
+        if (isITSOnlycut) {
+          FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        }
+        if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+          FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
       }
     }
@@ -245,8 +271,9 @@ struct phianalysisrun3 {
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
-    SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    //////// currently mixing the event with similar TPC multiplicity ////////
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
         continue;
@@ -259,20 +286,24 @@ struct phianalysisrun3 {
       if (cfgMultFT0)
         multiplicity = c1.multZeqFT0A() + c1.multZeqFT0C();
       if (!cfgMultFT0)
-        multiplicity = c1.centFT0M() - 0.5;
+        multiplicity = c1.centFT0M();
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
         bool likesign = false;
+        bool rotation = false;
         if (!selectionTrack(t1)) {
           continue;
         }
         if (!selectionTrack(t2)) {
           continue;
         }
-        if (selectionPID(t1) && selectionPID(t2)) {
-          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, massKa, massKa);
+        if (isITSOnlycut) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        }
+        if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
       }
     }
@@ -370,11 +401,15 @@ struct phianalysisrun3 {
             if (std::abs(mothertrack1.y()) > 0.5) {
               continue;
             }
-            if (selectionPID(track1) && selectionPID(track2)) {
+            if (isITSOnlycut) {
               if (std::abs(mothertrack1.pdgCode()) != 333) {
                 continue;
               }
-
+              if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+                if (std::abs(mothertrack1.pdgCode()) != 333) {
+                  continue;
+                }
+              }
               pvec0 = array{track1.px(), track1.py(), track1.pz()};
               pvec1 = array{track2.px(), track2.py(), track2.pz()};
               auto arrMomrec = array{pvec0, pvec1};

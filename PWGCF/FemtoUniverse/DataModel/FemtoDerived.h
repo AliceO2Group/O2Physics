@@ -62,7 +62,7 @@ enum ParticleType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -124,6 +124,12 @@ DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float);
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float);
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float);
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float);
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);
+
 } // namespace femtouniverseparticle
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
@@ -162,11 +168,11 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   pidtpc_tiny::TPCNSigmaStoreKa,
                   pidtpc_tiny::TPCNSigmaStorePr,
                   pidtpc_tiny::TPCNSigmaStoreDe,
-                  pidtof_tiny::TOFNSigmaStoreEl,
-                  pidtof_tiny::TOFNSigmaStorePi,
-                  pidtof_tiny::TOFNSigmaStoreKa,
-                  pidtof_tiny::TOFNSigmaStorePr,
-                  pidtof_tiny::TOFNSigmaStoreDe,
+                  femtouniverseparticle::TOFNSigmaEl,
+                  femtouniverseparticle::TOFNSigmaPi,
+                  femtouniverseparticle::TOFNSigmaKa,
+                  femtouniverseparticle::TOFNSigmaPr,
+                  femtouniverseparticle::TOFNSigmaDe,
                   femtouniverseparticle::DaughDCA,
                   femtouniverseparticle::TransRadius,
                   femtouniverseparticle::DecayVtxX,
@@ -178,12 +184,7 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
                   pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
                   pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>,
-                  pidtpc_tiny::TPCNSigmaDe<pidtpc_tiny::TPCNSigmaStoreDe>,
-                  pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>,
-                  pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
-                  pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
-                  pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
-                  pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
+                  pidtpc_tiny::TPCNSigmaDe<pidtpc_tiny::TPCNSigmaStoreDe>);
 using FDFullParticle = FDExtParticles::iterator;
 
 /// FemtoUniverseTrackMC

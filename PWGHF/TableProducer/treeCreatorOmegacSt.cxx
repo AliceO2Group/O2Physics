@@ -30,10 +30,11 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-
+#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGHF/Core/SelectorCuts.h"
@@ -67,6 +68,7 @@ DECLARE_SOA_COLUMN(PxPion, pxPion, float);
 DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
 DECLARE_SOA_COLUMN(IsPositivePion, isPositivePion, bool);
+DECLARE_SOA_COLUMN(ITSClusterMapPion, itsClusterMapPion, uint8_t);
 DECLARE_SOA_COLUMN(CpaOmegac, cpaOmegac, float);
 DECLARE_SOA_COLUMN(CpaOmega, cpaOmega, float);
 DECLARE_SOA_COLUMN(DcaXYOmega, dcaXYOmega, float);
@@ -125,6 +127,7 @@ DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
                   st_omegac::PyPion,
                   st_omegac::PzPion,
                   st_omegac::IsPositivePion,
+                  st_omegac::ITSClusterMapPion,
                   st_omegac::CpaOmegac,
                   st_omegac::CpaOmega,
                   st_omegac::DcaXYOmega,
@@ -172,6 +175,8 @@ struct HfTreeCreatorOmegacSt {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
+  Configurable<int> minNoClsTrackedPion{"minNoClsTrackedPion", 70, "Minimum number of clusters required for associated pions"};
+  Configurable<int> filterCollisions{"filterCollisions", 8, "0: no filtering; 8: sel8"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
   Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0., "Inv. mass window for tracked Xi"};
@@ -180,21 +185,25 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> massWindowOmegaC{"massWindowOmegaC", 0.1, "Inv. mass window for Omegac"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
   Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
-  Configurable<float> maxNSigmaBachelor{"maxNSigmaBachelor", 5., "Max Nsigma for bachelor of tracked Xi (Ka)"};
-  Configurable<float> maxNSigmaV0Pr{"maxNSigmaV0Pr", 5., "Max Nsigma for proton from V0 fromtracked Xi"};
-  Configurable<float> maxNSigmaV0Pi{"maxNSigmaV0Pi", 5., "Max Nsigma for pion from V0 fromtracked Xi"};
-  Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega2git s2"};
+  Configurable<float> maxNSigmaBachelor{"maxNSigmaBachelor", 5., "Max Nsigma for bachelor of tracked cascade"};
+  Configurable<float> maxNSigmaV0Pr{"maxNSigmaV0Pr", 5., "Max Nsigma for proton from V0 from tracked cascade"};
+  Configurable<float> maxNSigmaV0Pi{"maxNSigmaV0Pi", 5., "Max Nsigma for pion from V0 from tracked cascade"};
+  Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
+  Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
   Produces<aod::HfOmegacSt> outputTable;
   Produces<aod::HfOmegaStGen> outputTableGen;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
 
-  bool bzOnly = true;
+  Filter collisionFilter = (filterCollisions.node() == 0) ||
+                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
+
   float bz = 0.;
   int runNumber{0};
 
-  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+  using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
   HistogramRegistry registry{
@@ -264,7 +273,7 @@ struct HfTreeCreatorOmegacSt {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
-  void processData(aod::Collision const& collision,
+  void processData(Collisions::iterator const& collision,
                    aod::AssignedTrackedCascades const& trackedCascades,
                    aod::Cascades const& cascades,
                    aod::V0s const& v0s,
@@ -392,7 +401,13 @@ struct HfTreeCreatorOmegacSt {
                 trackId == bachelor.globalIndex()) {
               continue;
             }
-            if (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) {
+            if ((track.itsNCls() >= 4) &&
+                (track.tpcNClsFound() >= minNoClsTrackedPion) &&
+                (track.tpcNClsCrossedRows() >= minNoClsTrackedPion) &&
+                (track.tpcNClsCrossedRows() >= 0.8 * track.tpcNClsFindable()) &&
+                (track.tpcChi2NCl() <= 4.f) &&
+                (track.itsChi2NCl() <= 36.f) &&
+                (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
               LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
               auto trackParCovCasc = getTrackParCov(trackCasc);
               auto trackParCovPion = getTrackParCov(track);
@@ -420,7 +435,7 @@ struct HfTreeCreatorOmegacSt {
                 registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
 
                 if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
-                    (std::abs(massXiC - o2::constants::physics::MassXiCZero) < massWindowXiC)) {
+                    (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
                   registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                   registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   outputTable(massOmega,
@@ -444,6 +459,7 @@ struct HfTreeCreatorOmegacSt {
                               momenta[1][1],
                               momenta[1][2],
                               track.sign() > 0 ? true : false,
+                              track.itsClusterMap(),
                               cpaOmegaC,
                               cpaOmega,
                               impactParameterTrk.getY(),

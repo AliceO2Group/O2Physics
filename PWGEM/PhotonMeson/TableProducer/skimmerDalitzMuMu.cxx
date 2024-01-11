@@ -71,13 +71,14 @@ struct skimmerDalitzMuMu {
           continue;
         }
         float phiv = 0.f;
+        float opangle = 0.f;
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
         float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
+        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
         dalitz_mumu_eventid(collision.globalIndex());
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         npair++;
@@ -91,13 +92,14 @@ struct skimmerDalitzMuMu {
           continue;
         }
         float phiv = 0.f;
+        float opangle = 0.f;
         float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
         float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
         float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
         float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
         float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
         float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
+        dalitzmumus(collision.collisionId(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), phiv, opangle, dcamumuxy, dcamumuz, static_cast<int>(pairtype));
         dalitz_mumu_eventid(collision.globalIndex());
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         npair++;

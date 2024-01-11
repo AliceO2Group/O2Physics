@@ -59,8 +59,11 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPV"))->Fill(obj.multNTracksPV());
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPVeta1"))->Fill(obj.multNTracksPVeta1());
     reinterpret_cast<TH2F*>(list->FindObject("hMultFT0"))->Fill(obj.multFT0A(), obj.multFT0C());
+    reinterpret_cast<TH1F*>(list->FindObject("hCentFT0A"))->Fill(obj.centFT0A());
+    reinterpret_cast<TH1F*>(list->FindObject("hCentFT0C"))->Fill(obj.centFT0C());
     reinterpret_cast<TH1F*>(list->FindObject("hCentFT0M"))->Fill(obj.centFT0M());
     reinterpret_cast<TH2F*>(list->FindObject("hCentFT0MvsMultNTracksPV"))->Fill(obj.centFT0M(), obj.multNTracksPV());
+    reinterpret_cast<TH2F*>(list->FindObject("hMultFT0MvsMultNTracksPV"))->Fill(obj.multFT0A() + obj.multFT0C(), obj.multNTracksPV());
   } else if constexpr (htype == EMHistType::kPhoton) { // ROOT::Math::PtEtaPhiMVector
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.Pt());
     reinterpret_cast<TH1F*>(list->FindObject("hY"))->Fill(obj.Rapidity());
@@ -110,6 +113,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXY(), obj.dcaZ());
+    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyzSigma"))->Fill(obj.dcaXY() / sqrt(obj.cYY()), obj.dcaZ() / sqrt(obj.cZZ()));
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyRes_Pt"))->Fill(obj.pt(), sqrt(obj.cYY()) * 1e+4); // convert cm to um
     reinterpret_cast<TH2F*>(list->FindObject("hDCAzRes_Pt"))->Fill(obj.pt(), sqrt(obj.cZZ()) * 1e+4);  // convert cm to um
     reinterpret_cast<TH1F*>(list->FindObject("hNclsITS"))->Fill(obj.itsNCls());

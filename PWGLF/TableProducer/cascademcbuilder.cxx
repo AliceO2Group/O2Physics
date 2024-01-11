@@ -69,20 +69,12 @@ struct cascademcbuilder {
       float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
       float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
       float px = -999.0f, py = -999.0f, pz = -999.0f;
-
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        casclabels(-1, -1);
-        continue; // skip those cascades for which V0 doesn't exist (but: should never happen)
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
       int lLabel = -1, lMotherLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -164,14 +156,12 @@ struct cascademcbuilder {
   void processKFCascades(aod::KFCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0();
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -209,19 +199,12 @@ struct cascademcbuilder {
   void processTrackedCascades(aod::TraCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        tracasclabels(-1);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -261,18 +244,10 @@ struct cascademcbuilder {
     for (auto& casc : casctable) {
       bool bbTag = false; // bachelor-baryon correlation tag to pass
 
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        bbtags(bbTag);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Bachelor-baryon association checker
       // this will allow for analyses to pinpoint the effect of spurious, unwanted correlations!

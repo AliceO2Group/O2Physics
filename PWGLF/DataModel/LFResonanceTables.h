@@ -23,6 +23,7 @@
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 
@@ -31,10 +32,10 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
-DECLARE_SOA_COLUMN(Cent, cent, float);               //! Centrality (Multiplicity) percentile (Default: FT0M)
-DECLARE_SOA_COLUMN(Mult, mult, int);                 //! FT0 multiplicity
-DECLARE_SOA_COLUMN(Spherocity, spherocity, float);   //! Spherocity of the event
-DECLARE_SOA_COLUMN(BMagField, bMagField, float);     //! Magnetic field
+DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Mult, mult, int);               //! FT0 multiplicity
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
+DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::soa::Index<>,
@@ -54,21 +55,22 @@ namespace resodaughter
 {
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);                                     //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Px, px, float);                                     //! p_x (GeV/c)
-DECLARE_SOA_COLUMN(Py, py, float);                                     //! p_y (GeV/c)
-DECLARE_SOA_COLUMN(Pz, pz, float);                                     //! p_z (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! Phi
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                       //! Type of the particle, according to resodaughter::ParticleType
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                     //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);                          //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //! Sign of the track charge
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);      //! Is global track without DCA
-DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);              //! Is primary track
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);            //! Is primary vertex contributor
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                              //! Has TOF
+DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                                   //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                                   //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                                   //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! Phi
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                     //! Type of the particle, according to resodaughter::ParticleType
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                   //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]);                        //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(CascadeIndices, cascIndices, int[3]);             //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is global track without DCA
+DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);          //! Is primary vertex contributor
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
 DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);       //! DCA between daughters from cascade
@@ -142,6 +144,9 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::Indices,
                   resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
+                  v0data::DCAPosToPV,
+                  v0data::DCANegToPV,
+                  v0data::DCAV0ToPV,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
                   resodaughter::MK0Short,
@@ -160,11 +165,17 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  resodaughter::Indices,
+                  resodaughter::CascadeIndices,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
                   resodaughter::CascDaughDCA,
+                  cascdata::DCAPosToPV,
+                  cascdata::DCANegToPV,
+                  cascdata::DCABachToPV,
+                  v0data::DCAV0ToPV,
+                  cascdata::DCAXYCascToPV,
+                  cascdata::DCAZCascToPV,
                   resodaughter::MXi,
                   resodaughter::TransRadius,
                   resodaughter::CascTransRadius,

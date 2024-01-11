@@ -109,6 +109,7 @@ struct jetspectraDerivedMaker {
     histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event (sel8) selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/NumContrib", "Number of contributors to vertex of collision; number of contributors to vtx; number of entries", HistType::kTH1F, {{nBins, 0, 600}});
+    histos.add("EventProp/rejectedCollId", "CollisionId of collisions that did not pass the event selection; collisionId; number of entries", HistType::kTH1F, {{10, 0, 5}});
 
     const AxisSpec axisPercentileFT0A{binsPercentile, "Centrality FT0A"};
     const AxisSpec axisPercentileFT0C{binsPercentile, "Centrality FT0C"};
@@ -128,80 +129,82 @@ struct jetspectraDerivedMaker {
   {
     // here we already fill some event histos for cross checks
     if (!collision.sel8()) {
+      histos.fill(HIST("EventProp/rejectedCollId"), 2);
       return false;
     }
 
     if (abs(collision.posZ()) > ValVtx) {
+      histos.fill(HIST("EventProp/rejectedCollId"), 3);
       return false;
     }
     histos.fill(HIST("EventProp/collisionVtxZ"), collision.posZ());                                                              // test fill
                                                                                                                                  //  Last thing, check the sampling
     if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+      histos.fill(HIST("EventProp/rejectedCollId"), 4);
       return false;
     }
     histos.fill(HIST("EventProp/sampledvertexz"), collision.posZ());
     histos.fill(HIST("EventProp/NumContrib"), collision.numContrib());
-    return true;
-
-    if (fillMultiplicity) {
-      histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+    if (fillMultiplicity == true) {
       histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
-      histos.fill(HIST("Mult/FT0M"), collision.multFT0M());
+      histos.fill(HIST("Centrality/FT0C"), collision.centFT0C());
+      histos.fill(HIST("Mult/FT0C"), collision.multFT0C());
       histos.fill(HIST("Mult/FT0A"), collision.multFT0A());
       histos.fill(HIST("Mult/NTracksPV"), collision.multNTracksPV());
     }
+    return true;
   }
 
   Produces<o2::aod::JeTracks> tableTrack;
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
   unsigned int randomSeed = 0;
-  void processData(CollisionCandidate::iterator const& collision,
-                   TrackCandidates const& tracks,
-                   aod::BCs const&)
+  void processData(CollisionCandidate const& collisions,
+                   TrackCandidates const& tracks)
   {
-    if (!isEventSelected(collision)) {
-      return;
+    for (const auto& collision : collisions) {
+      if (!isEventSelected(collision)) {
+        histos.fill(HIST("EventProp/rejectedCollId"), 1);
+      }
     }
+    tableTrack.reserve(tracks.size());
     for (const auto& trk : tracks) {
-      if (!trk.has_collision() || !(collision.globalIndex() == trk.collisionId())) {
-        return;
+      if (!customTrackCuts.IsSelected(trk)) { // we fill all tracks that have a collision(rejected or not) and pass this check !
+        continue;
+      } else {
+        tableTrack(trk.collisionId(),
+                   trk.trackTime(),
+                   trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
+                   trk.sigma1Pt(),
+                   trk.alpha(),
+                   trk.x(), trk.y(), trk.z(),
+                   trk.snp(),
+                   trk.tgl(),
+                   trk.isPVContributor(),
+                   trk.hasTRD(),
+                   trk.hasITS(),
+                   trk.hasTPC(),
+                   trk.isGlobalTrack(),
+                   trk.isGlobalTrackWoDCA(),
+                   trk.isGlobalTrackWoPtEta(),
+                   trk.flags(),
+                   trk.trackType(),
+                   trk.length(),
+                   trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
+                   trk.tpcNClsShared(),
+                   trk.tpcNClsFindable(),
+                   trk.tpcNClsFindableMinusFound(),
+                   trk.tpcNClsFindableMinusCrossedRows(),
+                   trk.itsClusterMap(),
+                   trk.itsNCls(),
+                   trk.tpcFractionSharedCls(),
+                   trk.tpcNClsFound(),
+                   trk.tpcNClsCrossedRows(),
+                   trk.tpcCrossedRowsOverFindableCls(),
+                   trk.tpcFoundOverFindableCls(),
+                   trk.dcaXY(),
+                   trk.dcaZ());
       }
-      if (!customTrackCuts.IsSelected(trk)) {
-        return;
-      }
-      tableTrack(trk.collisionId(),
-                 trk.trackTime(),
-                 trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
-                 trk.sigma1Pt(),
-                 trk.alpha(),
-                 trk.x(), trk.y(), trk.z(),
-                 trk.snp(),
-                 trk.tgl(),
-                 trk.isPVContributor(),
-                 trk.hasTRD(),
-                 trk.hasITS(),
-                 trk.hasTPC(),
-                 trk.isGlobalTrack(),
-                 trk.isGlobalTrackWoDCA(),
-                 trk.isGlobalTrackWoPtEta(),
-                 trk.flags(),
-                 trk.trackType(),
-                 trk.length(),
-                 trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
-                 trk.tpcNClsShared(),
-                 trk.tpcNClsFindable(),
-                 trk.tpcNClsFindableMinusFound(),
-                 trk.tpcNClsFindableMinusCrossedRows(),
-                 trk.itsClusterMap(),
-                 trk.itsNCls(),
-                 trk.tpcFractionSharedCls(),
-                 trk.tpcNClsFound(),
-                 trk.tpcNClsCrossedRows(),
-                 trk.tpcCrossedRowsOverFindableCls(),
-                 trk.tpcFoundOverFindableCls(),
-                 trk.dcaXY(),
-                 trk.dcaZ());
     }
   }
 

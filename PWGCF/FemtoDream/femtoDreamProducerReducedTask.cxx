@@ -45,13 +45,8 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 
-using FemtoFullCollision = soa::Join<aod::Collisions,
-                                     aod::EvSels,
-                                     aod::Mults>::iterator;
-using FemtoFullCollisionMC = soa::Join<aod::Collisions,
-                                       aod::EvSels,
-                                       aod::Mults,
-                                       aod::McCollisionLabels>::iterator;
+using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -104,7 +99,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry Registry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
@@ -226,19 +221,20 @@ struct femtoDreamProducerReducedTask {
 
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
-
     int mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      mult = col.multFV0M();
+      mult = col.centFT0M();
       multNtr = col.multNTracksPV();
     } else {
-      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+      mult = 1; // multiplicity percentile is known in Run 2
       multNtr = col.multTracklets();
     }
     if (ConfEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
+
+    colCuts.fillQA(col);
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     /// That includes checking if there are any usable tracks in a collision
@@ -249,7 +245,6 @@ struct femtoDreamProducerReducedTask {
       return;
     }
 
-    colCuts.fillQA(col);
     // now the table is filled
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
@@ -264,7 +259,7 @@ struct femtoDreamProducerReducedTask {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // an array of two bit-wise containers of the systematic variations is obtained
       // one container for the track quality cuts and one for the PID cuts
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),

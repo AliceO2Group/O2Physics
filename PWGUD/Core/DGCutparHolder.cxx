@@ -78,6 +78,22 @@ void DGCutparHolder::SetMaxNSigmaTOF(float maxnSigma)
 {
   mMaxNSigmaTOF = maxnSigma;
 }
+void DGCutparHolder::SetTVX(bool tvx)
+{
+  mTVX = tvx;
+}
+void DGCutparHolder::SetTSC(bool tsc)
+{
+  mTSC = tsc;
+}
+void DGCutparHolder::SetTCE(bool tce)
+{
+  mTCE = tce;
+}
+void DGCutparHolder::SetTOR(bool tor)
+{
+  mTOR = tor;
+}
 void DGCutparHolder::SetMaxFITtime(float maxFITtime)
 {
   mMaxFITtime = maxFITtime;
@@ -108,5 +124,9 @@ float DGCutparHolder::minIVM() const { return mMinIVM; }
 float DGCutparHolder::maxIVM() const { return mMaxIVM; }
 float DGCutparHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; }
 float DGCutparHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; }
+bool DGCutparHolder::withTVX() const { return mTVX; }
+bool DGCutparHolder::withTSC() const { return mTSC; }
+bool DGCutparHolder::withTCE() const { return mTCE; }
+bool DGCutparHolder::withTOR() const { return mTOR; }
 float DGCutparHolder::maxFITtime() const { return mMaxFITtime; }
 std::vector<float> DGCutparHolder::FITAmpLimits() const { return mFITAmpLimits; }

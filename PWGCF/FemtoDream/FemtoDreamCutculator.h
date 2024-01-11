@@ -22,6 +22,7 @@
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
 #include <bitset>
+#include <functional>
 #include <iostream>
 #include <random>
 #include <string>
@@ -322,20 +323,29 @@ class FemtoDreamCutculator
                 << " not recognized - available options are (T/V)" << std::endl;
       return;
     }
-    std::bitset<8 * sizeof(aod::femtodreamparticle::cutContainerType)>
-      bitOutput = output;
+    std::bitset<8 * sizeof(aod::femtodreamparticle::cutContainerType)> bitOutput = output;
     std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
     std::cout << "CutCulator has spoken - your selection bit is" << std::endl;
     std::cout << bitOutput << " (bitwise)" << std::endl;
     std::cout << output << " (number representation)" << std::endl;
-    std::cout << "PID for these species is stored:" << std::endl;
-    int index = 0;
+    std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "PID bits for these species are available:" << std::endl;
     int randomIndex = 0;
     std::random_device rd;
     std::mt19937 rng(rd());
     std::uniform_int_distribution<int> uni(0, mPIDValues.size() - 1);
-    for (auto id : mPIDspecies) {
-      std::cout << o2::track::PID::getName(id) << " : " << index++ << std::endl;
+    std::sort(mPIDValues.begin(), mPIDValues.end(), std::greater<>());
+    int Bit = 0;
+
+    std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+    for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
+      for (std::size_t j = 0; j < mPIDValues.size(); j++) {
+        std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
+        Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
+        std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
+        std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
+        std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+      }
       if (SysChecks) {
         // Seed the random number generator
         // Select a random element
@@ -345,20 +355,14 @@ class FemtoDreamCutculator
         std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
       }
     }
-    std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
   }
 
  private:
-  boost::property_tree::ptree
-    mConfigTree; ///< the dpl-config.json buffered into a ptree
-  FemtoDreamTrackSelection
-    mTrackSel; ///< for setting up the bit-wise selection container for tracks
-  FemtoDreamV0Selection
-    mV0Sel; ///< for setting up the bit-wise selection container for V0s
-  std::vector<o2::track::PID::ID>
-    mPIDspecies; ///< list of particle species for which PID is stored
-  std::vector<float>
-    mPIDValues; ///< list of nsigma values for which PID is stored
+  boost::property_tree::ptree mConfigTree;     ///< the dpl-config.json buffered into a ptree
+  FemtoDreamTrackSelection mTrackSel;          ///< for setting up the bit-wise selection container for tracks
+  FemtoDreamV0Selection mV0Sel;                ///< for setting up the bit-wise selection container for V0s
+  std::vector<o2::track::PID::ID> mPIDspecies; ///< list of particle species for which PID is stored
+  std::vector<float> mPIDValues;               ///< list of nsigma values for which PID is stored
 };
 } // namespace o2::analysis::femtoDream
 

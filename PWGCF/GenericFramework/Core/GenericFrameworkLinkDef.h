@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_GENERICFRAMEWORK_GENERICFRAMEWORKLINKDEF_H_
-#define PWGCF_GENERICFRAMEWORK_GENERICFRAMEWORKLINKDEF_H_
+#ifndef PWGCF_GENERICFRAMEWORK_CORE_GENERICFRAMEWORKLINKDEF_H_
+#define PWGCF_GENERICFRAMEWORK_CORE_GENERICFRAMEWORKLINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -22,5 +22,10 @@
 #pragma link C++ class ProfileSubset + ;
 #pragma link C++ class FlowContainer + ;
 #pragma link C++ class GFWWeights + ;
+#pragma link C++ class BootstrapProfile + ;
+#pragma link C++ class FlowPtContainer + ;
+#pragma link C++ class o2::analysis::genericframework::GFWBinningCuts + ;
+#pragma link C++ class o2::analysis::genericframework::GFWRegions + ;
+#pragma link C++ class o2::analysis::genericframework::GFWCorrConfigs + ;
 
-#endif // PWGCF_GENERICFRAMEWORK_GENERICFRAMEWORKLINKDEF_H_
+#endif // PWGCF_GENERICFRAMEWORK_CORE_GENERICFRAMEWORKLINKDEF_H_

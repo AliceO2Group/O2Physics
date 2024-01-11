@@ -472,7 +472,13 @@ struct reso2initializer {
                v0.phi(),
                childIDs,
                v0.v0cosPA(),
-               v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
+               v0.dcaV0daughters(),
+               v0.dcapostopv(),
+               v0.dcanegtopv(),
+               v0.dcav0topv(),
+               v0.mLambda(),
+               v0.mAntiLambda(),
+               v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
       if constexpr (isMC) {
         fillMCV0(v0);
@@ -484,12 +490,13 @@ struct reso2initializer {
   template <bool isMC, typename CollisionType, typename CascType, typename TrackType>
   void fillCascades(CollisionType const& collision, CascType const& cascades, TrackType const& tracks)
   {
-    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
+    int childIDs[3] = {0, 0, 0}; // these IDs are necessary to keep track of the children
     for (auto& casc : cascades) {
       if (!IsCascSelected<isMC>(collision, casc, tracks))
         continue;
-      childIDs[0] = casc.v0Id();
-      childIDs[1] = casc.bachelorId();
+      childIDs[0] = casc.posTrackId();
+      childIDs[1] = casc.negTrackId();
+      childIDs[2] = casc.bachelorId();
       reso2cascades(resoCollisions.lastIndex(),
                     casc.pt(),
                     casc.px(),
@@ -500,7 +507,15 @@ struct reso2initializer {
                     childIDs,
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    casc.dcaV0daughters(), casc.dcacascdaughters(), casc.mXi(),
+                    casc.dcaV0daughters(),
+                    casc.dcacascdaughters(),
+                    casc.dcapostopv(),
+                    casc.dcanegtopv(),
+                    casc.dcabachtopv(),
+                    casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                    casc.dcaXYCascToPV(),
+                    casc.dcaZCascToPV(),
+                    casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if constexpr (isMC) {
         fillMCCascade(casc);
