@@ -189,7 +189,7 @@ Long64_t FlowContainer::Merge(TCollection* collist)
   Long64_t nmerged = 0;
   FlowContainer* l_FC = 0;
   TIter all_FC(collist);
-  while (l_FC = dynamic_cast<FlowContainer*>(all_FC())) {
+  while ((l_FC = dynamic_cast<FlowContainer*>(all_FC()))) {
     if (!fProf)
       continue;
     TProfile2D* tpro = GetProfile();
