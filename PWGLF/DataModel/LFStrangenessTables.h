@@ -105,7 +105,7 @@ DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! pdg code
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! primary criterion
 } // namespace motherParticle
 
-DECLARE_SOA_TABLE(MotherMCParts, "AOD", "MOTHERMCPARTS", //! mother MC information, abbreviated name due to size limit
+DECLARE_SOA_TABLE(MotherMCParts, "AOD", "MOTHERMCPART", //! mother MC information, abbreviated name due to size limit
                   motherParticle::Px, motherParticle::Py, motherParticle::Pz,
                   motherParticle::PDGCode, motherParticle::IsPhysicalPrimary);
 
