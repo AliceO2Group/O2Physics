@@ -33,21 +33,21 @@ namespace o2::aod
 {
 namespace ptQn
 {
-DECLARE_SOA_COLUMN(Q1, q1, float);
-DECLARE_SOA_COLUMN(Q2, q2, float);
-DECLARE_SOA_COLUMN(Q3, q3, float);
-DECLARE_SOA_COLUMN(Q4, q4, float);
-DECLARE_SOA_COLUMN(N_ch, n_ch, float);
-DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(Q1, q1, float); //! sum of pT of tracks in an event 
+DECLARE_SOA_COLUMN(Q2, q2, float); //! sum of (pT)^2 of tracks in an event 
+DECLARE_SOA_COLUMN(Q3, q3, float); //! sum of (pT)^3 of tracks in an event 
+DECLARE_SOA_COLUMN(Q4, q4, float); //! sum of (pT)^4 of tracks in an event 
+DECLARE_SOA_COLUMN(N_ch, n_ch, float); //! no of charged particles in an event 
+DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of event
 } // namespace ptQn
-DECLARE_SOA_TABLE(MultPtQn, "AOD", "pT_Qn", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality);
+DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality);
 } // namespace o2::aod
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct TaskPtCorrelation_QA {
+struct MeanptFluctuations_QA_QnTable {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
@@ -138,7 +138,7 @@ struct TaskPtCorrelation_QA {
   }
 };
 
-struct TaskPtCorrelation_analysis {
+struct  MeanptFluctuations_analysis {
 
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
 
@@ -248,7 +248,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Equivalent to the AddTask in AliPhysics
   return WorkflowSpec{
-    adaptAnalysisTask<TaskPtCorrelation_QA>(cfgc),
-    adaptAnalysisTask<TaskPtCorrelation_analysis>(cfgc),
+    adaptAnalysisTask<MeanptFluctuations_QA_QnTable>(cfgc),
+    adaptAnalysisTask<MeanptFluctuations_analysis>(cfgc),
   };
 }
