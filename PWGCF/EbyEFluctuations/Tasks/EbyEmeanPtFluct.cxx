@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EbyEmeanPtFluc.cxx
-///        Mean pT fluctuation for identified particles
+///        Even by Event mean pT fluctuation of identified particles
 ///
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
 
