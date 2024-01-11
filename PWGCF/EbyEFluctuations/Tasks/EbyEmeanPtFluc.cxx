@@ -26,14 +26,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
-#include <iostream>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace std;
 
 double massPi = TDatabasePDG::Instance()->GetParticle(211)->Mass();
 double massKa = TDatabasePDG::Instance()->GetParticle(321)->Mass();
