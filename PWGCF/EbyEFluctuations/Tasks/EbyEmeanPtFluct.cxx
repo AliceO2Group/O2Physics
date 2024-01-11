@@ -13,7 +13,7 @@
 ///        Mean pT fluctuation for identified particles
 ///
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
-// 
+//
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
