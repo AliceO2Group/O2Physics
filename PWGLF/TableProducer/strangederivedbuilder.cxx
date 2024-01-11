@@ -430,7 +430,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, TracksCompleteIUMC const& tracks, aod::McParticles const& mcParticles)
+  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, aod::McParticles const& mcParticles)
   {
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
 
