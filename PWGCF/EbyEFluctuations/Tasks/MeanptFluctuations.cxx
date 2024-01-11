@@ -33,14 +33,14 @@ namespace o2::aod
 {
 namespace ptQn
 {
-DECLARE_SOA_COLUMN(Q1, q1, float); //! sum of pT of tracks in an event
-DECLARE_SOA_COLUMN(Q2, q2, float); //! sum of (pT)^2 of tracks in an event
-DECLARE_SOA_COLUMN(Q3, q3, float); //! sum of (pT)^3 of tracks in an event
-DECLARE_SOA_COLUMN(Q4, q4, float); //! sum of (pT)^4 of tracks in an event
-DECLARE_SOA_COLUMN(N_ch, n_ch, float); //! no of charged particles/multiplicity in an event
+DECLARE_SOA_COLUMN(Q1, q1, float);                 //! sum of pT of tracks in an event
+DECLARE_SOA_COLUMN(Q2, q2, float);                 //! sum of (pT)^2 of tracks in an event
+DECLARE_SOA_COLUMN(Q3, q3, float);                 //! sum of (pT)^3 of tracks in an event
+DECLARE_SOA_COLUMN(Q4, q4, float);                 //! sum of (pT)^4 of tracks in an event
+DECLARE_SOA_COLUMN(N_ch, n_ch, float);             //! no of charged particles/multiplicity in an event
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of event
 } // namespace ptQn
-  DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality); //! table to store e-by-e sum of pT, (pT)^2, (pT)^3, (pT)^4 of tracks, multiplicity and centrality
+DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality); //! table to store e-by-e sum of pT, (pT)^2, (pT)^3, (pT)^4 of tracks, multiplicity and centrality
 } // namespace o2::aod
 
 using namespace o2;
@@ -138,7 +138,7 @@ struct MeanptFluctuations_QA_QnTable {
   }
 };
 
-struct  MeanptFluctuations_analysis {
+struct MeanptFluctuations_analysis {
 
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
 
