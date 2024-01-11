@@ -151,7 +151,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
-  ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis ConfkstarBins{"ConfkstarBins", {300, -1.5, 1.5}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<bool> ConfIsIden{"ConfIsIden", true, "Choosing identical or non-identical pairs"};
