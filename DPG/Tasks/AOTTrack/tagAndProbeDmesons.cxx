@@ -187,9 +187,9 @@ struct TagTwoProngDisplacedVertices {
     ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar};
 
     const AxisSpec axisPt{250, 0.f, 50.f};
-    const AxisSpec axisMassPiPi{280, 0.1f, 1.5f};
-    const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.04f, constants::physics::MassPhi + 0.04f};
-    const AxisSpec axisMassKaPi{200, constants::physics::MassD0 - 0.05f, constants::physics::MassD0 + 0.05f};
+    const AxisSpec axisMassPiPi{250, 0.f, 2.5f};
+    const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
+    const AxisSpec axisMassKaPi{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f};
 
     if (doprocessPiPiFromDplus) {
       registry.add<TH2>("hMassPiPiVsPt", ";#it{p}_{T}(#pi#pi) (GeV/#it{c}); #it{M}(#pi#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassPiPi});
@@ -366,7 +366,7 @@ struct TagTwoProngDisplacedVertices {
           LOG(error) << "Exception caught in DCA fitter process call!";
           continue;
         }
-        if (nVertices == 0) {
+        if (nVertices != 1) {
           continue;
         }
 
@@ -421,7 +421,7 @@ struct TagTwoProngDisplacedVertices {
           LOG(error) << "Exception caught in DCA fitter process call!";
           continue;
         }
-        if (nVertices == 0) {
+        if (nVertices != 1) {
           continue;
         }
 
@@ -526,7 +526,7 @@ struct TagTwoProngDisplacedVertices {
 /// Probe third track reconstruction efficiency with different selections
 struct ProbeThirdTrack {
 
-  using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra>;
+  using TracksWithDca = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
 
   Preslice<aod::PiPiFromDpTags> tagsPiPiPerCollision = aod::tagandprobe::collisionId;
   Preslice<aod::KaKaFromDspTags> tagsKaKaPerCollision = aod::tagandprobe::collisionId;
@@ -541,7 +541,7 @@ struct ProbeThirdTrack {
 
   std::array<TrackSelection, aod::tagandprobe::TrackTypes::NTrackTypes> trackSelector{}; // define the track selectors
 
-  std::array<std::array<std::shared_ptr<TH2>, aod::tagandprobe::TrackTypes::NTrackTypes>, aod::tagandprobe::TagChannels::NTagChannels> histos{};
+  std::array<std::array<std::shared_ptr<THnSparse>, aod::tagandprobe::TrackTypes::NTrackTypes>, aod::tagandprobe::TagChannels::NTagChannels> histos{};
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
@@ -579,35 +579,39 @@ struct ProbeThirdTrack {
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxDcaZ(2.f);
 
-    const AxisSpec axisPt{250, 0.f, 25.f};
+    const AxisSpec axisPtProbe{250, 0.f, 25.f};
+    const AxisSpec axisPtTag{250, 0.f, 50.f};
+    const AxisSpec axisPtD{50, 0.f, 50.f};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{450, 1.65f, 2.10f}, AxisSpec{450, 1.65f, 2.10f}, AxisSpec{360, 0.f, 0.18f}, AxisSpec{360, 0.f, 0.18f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{250, 0.f, 2.5f}, AxisSpec{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
     std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "Tpc", "Its"};
     std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi"};
 
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
-        histos[iChannel][iTrackType] = registry.add<TH2>(Form("h%sVsPtProbe_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()), ";#it{p}_{T}(probe track) (GeV/#it{c}); #it{M} (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMass[iChannel]});
+        histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()), "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe track) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2})", HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel]});
       }
     }
   }
 
   template <typename TTrack>
-  float computeInvariantMass(TTrack const& trackFirst, TTrack const& trackSecond, TTrack const& trackThird, const uint8_t channel)
+  void computeInvariantMass(TTrack const& trackFirst, TTrack const& trackSecond, TTrack const& trackThird, const uint8_t channel, float& ptTag, float& invMassTag, float& ptD, float& invMass)
   {
     std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
     std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
     std::array<float, 3> pVecTrackThird{trackThird.px(), trackThird.py(), trackThird.pz()};
     auto arrMomentum = std::array{pVecTrackFirst, pVecTrackSecond, pVecTrackThird};
-    float invMass = RecoDecay::m(arrMomentum, masses[channel]);
-    if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-      auto arrMomentumDzero = std::array{pVecTrackFirst, pVecTrackSecond};
-      auto massesDzeroDau = std::array{masses[channel][0], masses[channel][1]};
-      float invMassDzero = RecoDecay::m(arrMomentumDzero, massesDzeroDau);
-      invMass -= invMassDzero;
-    }
+    auto arrMomentumTag = std::array{pVecTrackFirst, pVecTrackSecond};
+    ptTag = RecoDecay::pt(RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond));
+    ptD = RecoDecay::pt(RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond, pVecTrackThird));
+    invMass = RecoDecay::m(arrMomentum, masses[channel]);
+    auto massesTagDau = std::array{masses[channel][0], masses[channel][1]};
+    invMassTag = RecoDecay::m(arrMomentumTag, massesTagDau);
 
-    return invMass;
+    if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
+      invMass -= invMassTag;
+    }
   }
 
   template <typename TTrackIndices, typename TTrack, typename TTracks>
@@ -628,15 +632,16 @@ struct ProbeThirdTrack {
         continue;
       }
       auto ptTrackThird = trackThird.pt();
-      auto invMass = computeInvariantMass(trackFirst, trackSecond, trackThird, channel);
+      float invMass{-1.f}, invMassTag{-1.f}, ptTag{-1.f}, ptD{-1.f};
+      computeInvariantMass(trackFirst, trackSecond, trackThird, channel, ptTag, invMassTag, ptD, invMass);
       if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.18f) {
         continue;
-      } else if (invMass < 1.65f || invMass > 2.10f) {
+      } else if ((channel == aod::tagandprobe::TagChannels::DplusToKPiPi || channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) && (invMass < 1.65f || invMass > 2.10f)) {
         continue;
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         if (trackSelector[iTrackType].IsSelected(trackThird)) {
-          histos[channel][iTrackType]->Fill(ptTrackThird, invMass);
+          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, invMass, invMassTag);
         }
       }
     }
@@ -645,7 +650,7 @@ struct ProbeThirdTrack {
   void processCombinatorialDplusToKaPiPi(aod::Collisions const& collisions,
                                          aod::PiPiFromDpTags const& tagsPiPi,
                                          aod::TrackAssoc const& trackIndices,
-                                         TracksWithSelAndDca const& tracks)
+                                         TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -653,8 +658,8 @@ struct ProbeThirdTrack {
       // D+ -> pi+pi+K- and c.c.
       auto groupedTagsPiPi = tagsPiPi.sliceBy(tagsPiPiPerCollision, thisCollId);
       for (const auto& tagPiPi : groupedTagsPiPi) {
-        auto trackFirst = tagPiPi.track0_as<TracksWithSelAndDca>();
-        auto trackSecond = tagPiPi.track1_as<TracksWithSelAndDca>();
+        auto trackFirst = tagPiPi.track0_as<TracksWithDca>();
+        auto trackSecond = tagPiPi.track1_as<TracksWithDca>();
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DplusToKPiPi);
       }
     }
@@ -664,7 +669,7 @@ struct ProbeThirdTrack {
   void processCombinatorialDsToPhiPi(aod::Collisions const& collisions,
                                      aod::KaKaFromDspTags const& tagsKaKa,
                                      aod::TrackAssoc const& trackIndices,
-                                     TracksWithSelAndDca const& tracks)
+                                     TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
       // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
@@ -672,8 +677,8 @@ struct ProbeThirdTrack {
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto groupedTagsKaKa = tagsKaKa.sliceBy(tagsKaKaPerCollision, thisCollId);
       for (const auto& tagKaKa : groupedTagsKaKa) {
-        auto trackFirst = tagKaKa.track0_as<TracksWithSelAndDca>();
-        auto trackSecond = tagKaKa.track1_as<TracksWithSelAndDca>();
+        auto trackFirst = tagKaKa.track0_as<TracksWithDca>();
+        auto trackSecond = tagKaKa.track1_as<TracksWithDca>();
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
       }
     }
@@ -684,7 +689,7 @@ struct ProbeThirdTrack {
                                           aod::PiKaFromDzTags const& tagsPiKa,
                                           aod::KaPiFromDzTags const& tagsKaPi,
                                           aod::TrackAssoc const& trackIndices,
-                                          TracksWithSelAndDca const& tracks)
+                                          TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -692,15 +697,15 @@ struct ProbeThirdTrack {
       // D*+ -> D0(->pi+K-)pi+
       auto groupedTagsPiKa = tagsPiKa.sliceBy(tagsPiKaPerCollision, thisCollId);
       for (const auto& tagPiKa : groupedTagsPiKa) {
-        auto trackFirst = tagPiKa.track0_as<TracksWithSelAndDca>();
-        auto trackSecond = tagPiKa.track1_as<TracksWithSelAndDca>();
+        auto trackFirst = tagPiKa.track0_as<TracksWithDca>(); // positive --> pion
+        auto trackSecond = tagPiKa.track1_as<TracksWithDca>(); // negative --> kaon
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
       }
       // D*- -> D0bar(->K+pi-)pi-
       auto groupedTagsKaPi = tagsKaPi.sliceBy(tagsKaPiPerCollision, thisCollId);
       for (const auto& tagKaPi : groupedTagsKaPi) {
-        auto trackFirst = tagKaPi.track0_as<TracksWithSelAndDca>();
-        auto trackSecond = tagKaPi.track1_as<TracksWithSelAndDca>();
+        auto trackFirst = tagKaPi.track0_as<TracksWithDca>(); // positive --> kaon
+        auto trackSecond = tagKaPi.track1_as<TracksWithDca>(); // negative --> pion
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi);
       }
     }
