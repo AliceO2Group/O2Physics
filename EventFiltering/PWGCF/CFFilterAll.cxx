@@ -932,13 +932,15 @@ struct CFFilter {
   template <typename T, typename V>
   bool isSelectedV0Daughter(T const& track, V const& v0, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
   {
-    const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    float dcaXY = -1;
+    float eta = -1;
+    float dca = -1;
     if (charge > 0) {
-      dcaXY = v0.dcapostopv();
+      eta = v0.positiveeta();
+      dca = v0.dcapostopv();
     } else if (charge < 0) {
-      dcaXY = v0.dcanegtopv();
+      eta = v0.negativeeta();
+      dca = v0.dcanegtopv();
     };
     const auto sign = track.sign();
     double nSigmaTPC = -999.f;
@@ -955,7 +957,7 @@ struct CFFilter {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    if (std::abs(dca) < ConfDaughDCAMin) {
       return false;
     }
 
@@ -1148,18 +1150,18 @@ struct CFFilter {
       }
     }
     if (charge > 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughProton, nSigmaTPCPos)) {
+      if (!isSelectedV0Daughter(posTrack, v0, 1, CFTrigger::kDaughProton, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughPion, nSigmaTPCNeg)) {
+      if (!isSelectedV0Daughter(negTrack, v0, -1, CFTrigger::kDaughPion, nSigmaTPCNeg)) {
         return false;
       }
     }
     if (charge < 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughPion, nSigmaTPCPos)) {
+      if (!isSelectedV0Daughter(posTrack, v0, 1, CFTrigger::kDaughPion, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughProton, nSigmaTPCNeg)) {
+      if (!isSelectedV0Daughter(negTrack, v0, -1, CFTrigger::kDaughProton, nSigmaTPCNeg)) {
         return false;
       }
     }
