@@ -63,11 +63,11 @@ DECLARE_SOA_COLUMN(PosTOFDeltaTK0Pi, posTOFDeltaTK0Pi, float); //! positive trac
 DECLARE_SOA_COLUMN(NegTOFDeltaTK0Pi, negTOFDeltaTK0Pi, float); //! positive track TOFDeltaT from pion <- k0short expectation
 
 // delta-decay-times (event-time-independent)
-DECLARE_SOA_COLUMN(DeltaDecayTimeLambda, deltaDecayTimeLambda, float); //! delta-decay time estimate from proton/pion from Lambda
+DECLARE_SOA_COLUMN(DeltaDecayTimeLambda, deltaDecayTimeLambda, float);         //! delta-decay time estimate from proton/pion from Lambda
 DECLARE_SOA_COLUMN(DeltaDecayTimeAntiLambda, deltaDecayTimeAntiLambda, float); //! delta-decay time estimate from pion/proton from AntiLambda
-DECLARE_SOA_COLUMN(DeltaDecayTimeK0Short, deltaDecayTimeK0Short, float); //! delta-decay time estimate from pion/pion from K0Short
+DECLARE_SOA_COLUMN(DeltaDecayTimeK0Short, deltaDecayTimeK0Short, float);       //! delta-decay time estimate from pion/pion from K0Short
 
-// n-sigmas - unused as of now 
+// n-sigmas - unused as of now
 DECLARE_SOA_COLUMN(PosNSigmaLaPi, posNSigmaLaPi, float); //! positive track NSigma from pion <- lambda expectation
 DECLARE_SOA_COLUMN(PosNSigmaLaPr, posNSigmaLaPr, float); //! positive track NSigma from proton <- lambda expectation
 DECLARE_SOA_COLUMN(NegNSigmaLaPi, negNSigmaLaPi, float); //! negative track NSigma from pion <- lambda expectation
@@ -81,12 +81,12 @@ DECLARE_SOA_COLUMN(TofBetaAntiLambda, tofBetaAntiLambda, float); //! beta value 
 DECLARE_SOA_COLUMN(TofBetaK0Short, tofBetaK0Short, float);       //! beta value with K0Short hypothesis
 
 // debug quantities
-DECLARE_SOA_COLUMN(V0LifetimeLambda, v0LifetimeLambda, float);       //! lifetime of V0 assuming lambda mass (ps)
-DECLARE_SOA_COLUMN(V0LifetimeK0Short, v0LifetimeK0Short, float);     //! lifetime of V0 assuming K0 mass (ps)
-DECLARE_SOA_COLUMN(PosLifetimePr, posLifetimePr, float);             //! lifetime (to TOF) of pos prong assuming proton mass (ps)
-DECLARE_SOA_COLUMN(PosLifetimePi, posLifetimePi, float);             //! lifetime (to TOF) of pos prong assuming pion mass (ps)
-DECLARE_SOA_COLUMN(NegLifetimePr, negLifetimePr, float);             //! lifetime (to TOF) of neg prong assuming proton mass (ps)
-DECLARE_SOA_COLUMN(NegLifetimePi, negLifetimePi, float);             //! lifetime (to TOF) of neg prong assuming pion mass (ps)
+DECLARE_SOA_COLUMN(V0LifetimeLambda, v0LifetimeLambda, float);   //! lifetime of V0 assuming lambda mass (ps)
+DECLARE_SOA_COLUMN(V0LifetimeK0Short, v0LifetimeK0Short, float); //! lifetime of V0 assuming K0 mass (ps)
+DECLARE_SOA_COLUMN(PosLifetimePr, posLifetimePr, float);         //! lifetime (to TOF) of pos prong assuming proton mass (ps)
+DECLARE_SOA_COLUMN(PosLifetimePi, posLifetimePi, float);         //! lifetime (to TOF) of pos prong assuming pion mass (ps)
+DECLARE_SOA_COLUMN(NegLifetimePr, negLifetimePr, float);         //! lifetime (to TOF) of neg prong assuming proton mass (ps)
+DECLARE_SOA_COLUMN(NegLifetimePi, negLifetimePi, float);         //! lifetime (to TOF) of neg prong assuming pion mass (ps)
 } // namespace v0data
 
 DECLARE_SOA_TABLE(V0TOFs, "AOD", "V0TOF", // raw information table (for debug, etc)
@@ -98,8 +98,8 @@ DECLARE_SOA_TABLE(V0TOFPIDs, "AOD", "V0TOFPID", // processed info table (for ana
                   v0data::PosTOFDeltaTLaPi, v0data::PosTOFDeltaTLaPr,
                   v0data::NegTOFDeltaTLaPi, v0data::NegTOFDeltaTLaPr,
                   v0data::PosTOFDeltaTK0Pi, v0data::NegTOFDeltaTK0Pi,
-                  v0data::DeltaDecayTimeLambda,  
-                  v0data::DeltaDecayTimeAntiLambda, 
+                  v0data::DeltaDecayTimeLambda,
+                  v0data::DeltaDecayTimeAntiLambda,
                   v0data::DeltaDecayTimeK0Short);
 
 DECLARE_SOA_TABLE(V0TOFDebugs, "AOD", "V0TOFDEBUG", // table with intermediate information solely for debugging

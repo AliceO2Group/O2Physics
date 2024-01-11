@@ -75,13 +75,13 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
-// Cores with references and TOF pid 
+// Cores with references and TOF pid
 using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
-  Produces<aod::V0TOFBetas> v0tofbeta; // table with betas
+  Produces<aod::V0TOFBetas> v0tofbeta;    // table with betas
   Produces<aod::V0TOFDebugs> v0tofdebugs; // table with extra debug information
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -235,7 +235,7 @@ struct lambdakzeropid {
       if (thisLength < length && thisLength > 0)
         length = thisLength;
     }
-    if ( length > 1e+5 ) 
+    if (length > 1e+5)
       length = -100; // force negative to avoid misunderstandings
     return length;
   }
@@ -253,14 +253,14 @@ struct lambdakzeropid {
     ccdb->setFatalWhenNull(false);
 
     // per event
-    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500,-0.5f,499.5f}});
+    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
 
     // measured vs expected total time QA
-    if(doQA){
+    if (doQA) {
       histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
       histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
 
-      // delta lambda decay time 
+      // delta lambda decay time
       histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisPt, axisDeltaTime}});
     }
   }
@@ -331,8 +331,8 @@ struct lambdakzeropid {
         float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
 
         // initialize from V0 position and momenta
-        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1); 
-        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1); 
+        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
+        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
         float deltaTimePositiveLambdaPi = -1e+6;
         float deltaTimeNegativeLambdaPi = -1e+6;
@@ -353,12 +353,12 @@ struct lambdakzeropid {
         float timeNegativePr = lengthNegative / velocityNegativePr;
         float timeNegativePi = lengthNegative / velocityNegativePi;
 
-        if( v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0 && lengthPositive > 0){
+        if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0 && lengthPositive > 0) {
           deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
           deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
           deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timeNegativePi);
         }
-        if( v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0 && lengthNegative > 0){
+        if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0 && lengthNegative > 0) {
           deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
           deltaTimeNegativeLambdaPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePi);
           deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
@@ -366,29 +366,29 @@ struct lambdakzeropid {
         float deltaDecayTimeLambda = -10e+4;
         float deltaDecayTimeAntiLambda = -10e+4;
         float deltaDecayTimeK0Short = -10e+4;
-        if( v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && lengthPositive > 0  && lengthNegative > 0){ // does not depend on event time
-          deltaDecayTimeLambda = (v0.posTOFSignal() - timePositivePr) - (v0.negTOFSignal() - timeNegativePi); 
-          deltaDecayTimeAntiLambda = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePr); 
-          deltaDecayTimeK0Short = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePi); 
+        if (v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && lengthPositive > 0 && lengthNegative > 0) { // does not depend on event time
+          deltaDecayTimeLambda = (v0.posTOFSignal() - timePositivePr) - (v0.negTOFSignal() - timeNegativePi);
+          deltaDecayTimeAntiLambda = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePr);
+          deltaDecayTimeK0Short = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePi);
         }
 
         // calculate betas
 
-        float evTimeMean = 0.5f*(v0.posTOFEventTime() + v0.negTOFEventTime());
-        float decayTimeLambda = 0.5f*((v0.posTOFSignal() - timePositivePr) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
-        float decayTimeAntiLambda = 0.5f*((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePr)) - evTimeMean;
-        float decayTimeK0Short = 0.5f*((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
+        float evTimeMean = 0.5f * (v0.posTOFEventTime() + v0.negTOFEventTime());
+        float decayTimeLambda = 0.5f * ((v0.posTOFSignal() - timePositivePr) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
+        float decayTimeAntiLambda = 0.5f * ((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePr)) - evTimeMean;
+        float decayTimeK0Short = 0.5f * ((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
 
         float betaLambda = -1e+6;
         float betaAntiLambda = -1e+6;
         float betaK0Short = -1e+6;
-        
-        if( v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && v0.posTOFEventTime() > 0 && v0.negTOFEventTime() > 0){
-          betaLambda = (lengthV0/decayTimeLambda)/0.0299792458;
-          betaAntiLambda = (lengthV0/decayTimeAntiLambda)/0.0299792458;
-          betaK0Short = (lengthV0/decayTimeK0Short)/0.0299792458;
+
+        if (v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && v0.posTOFEventTime() > 0 && v0.negTOFEventTime() > 0) {
+          betaLambda = (lengthV0 / decayTimeLambda) / 0.0299792458;
+          betaAntiLambda = (lengthV0 / decayTimeAntiLambda) / 0.0299792458;
+          betaK0Short = (lengthV0 / decayTimeK0Short) / 0.0299792458;
         }
-        
+
         v0tofpid(lengthPositive, lengthNegative,
                  deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
                  deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
@@ -397,17 +397,17 @@ struct lambdakzeropid {
         v0tofbeta(betaLambda, betaAntiLambda, betaK0Short);
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
-        if(doQA){ 
-          if(v0.posTOFSignal()>0 && v0.posTOFEventTime()>0)
-            histos.fill(HIST("h2dProtonMeasuredVsExpected"), 
-            (timeLambda + timePositivePr), 
-            (v0.posTOFSignal() - v0.posTOFEventTime()));
-          if(v0.negTOFSignal()>0 && v0.negTOFEventTime()>0)
-            histos.fill(HIST("h2dPionMeasuredVsExpected"), 
-            (timeLambda + timeNegativePi), 
-            (v0.negTOFSignal() - v0.negTOFEventTime()));
+        if (doQA) {
+          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0)
+            histos.fill(HIST("h2dProtonMeasuredVsExpected"),
+                        (timeLambda + timePositivePr),
+                        (v0.posTOFSignal() - v0.posTOFEventTime()));
+          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0)
+            histos.fill(HIST("h2dPionMeasuredVsExpected"),
+                        (timeLambda + timeNegativePi),
+                        (v0.negTOFSignal() - v0.negTOFEventTime()));
 
-          // delta lambda decay time 
+          // delta lambda decay time
           histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.pt(), deltaDecayTimeLambda);
         }
       }
