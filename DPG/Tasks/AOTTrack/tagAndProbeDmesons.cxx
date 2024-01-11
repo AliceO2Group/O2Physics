@@ -582,7 +582,7 @@ struct ProbeThirdTrack {
     const AxisSpec axisPtProbe{250, 0.f, 25.f};
     const AxisSpec axisPtTag{250, 0.f, 50.f};
     const AxisSpec axisPtD{50, 0.f, 50.f};
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{450, 1.65f, 2.10f}, AxisSpec{450, 1.65f, 2.10f}, AxisSpec{360, 0.f, 0.18f}, AxisSpec{360, 0.f, 0.18f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{450, 1.65f, 2.10f}, AxisSpec{450, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{250, 0.f, 2.5f}, AxisSpec{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
     std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "Tpc", "Its"};
@@ -634,9 +634,9 @@ struct ProbeThirdTrack {
       auto ptTrackThird = trackThird.pt();
       float invMass{-1.f}, invMassTag{-1.f}, ptTag{-1.f}, ptD{-1.f};
       computeInvariantMass(trackFirst, trackSecond, trackThird, channel, ptTag, invMassTag, ptD, invMass);
-      if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.18f) {
+      if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.17f) {
         continue;
-      } else if ((channel == aod::tagandprobe::TagChannels::DplusToKPiPi || channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) && (invMass < 1.65f || invMass > 2.10f)) {
+      } else if ((channel == aod::tagandprobe::TagChannels::DplusToKPiPi || channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) && (invMass < 1.65f || invMass > 2.10f)) {
         continue;
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
