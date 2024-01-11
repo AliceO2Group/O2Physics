@@ -102,8 +102,8 @@ struct tpcPidQa {
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
-  ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Bining in number of cluster in TPC" };
-  Configurable<bool> flagFourDemensionQA{"flagFourDemensionQA",false, "Flag to check the four dimension QA"};
+  ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Bining in number of cluster in TPC"};
+  Configurable<bool> flagFourDemensionQA{"flagFourDemensionQA", false, "Flag to check the four dimension QA"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -185,12 +185,12 @@ struct tpcPidQa {
 
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec tpcnclsAxis{tpcNclsBins, "TPC #cls"};
-   
+
     HistogramConfigSpec defaultParticleHists{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
-    if(flagFourDemensionQA){
+    if (flagFourDemensionQA) {
       histos.add(hnsigma_eta[id].data(), axisTitle, defaultParticleHists);
     }
-   
+
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
       return;
     }
@@ -202,11 +202,11 @@ struct tpcPidQa {
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
 
-    HistogramConfigSpec defaultParticleHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis} };
-    if(flagFourDemensionQA){
+    HistogramConfigSpec defaultParticleHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    if (flagFourDemensionQA) {
       histos.add(hnsigma_eta_wTOF[id].data(), Form("With TOF %s", axisTitle), defaultParticleHists_wTOF);
     }
-      
+
     if (splitSignalPerCharge) {
       histos.add(hnsigma_pt_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
       histos.add(hsignal_wTOF[id].data(), "With TOF", kTH3F, {pAxis, dedxAxis, chargeAxis});
@@ -408,9 +408,11 @@ struct tpcPidQa {
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
         histos.fill(HIST(hdelta[id]), t.tpcInnerParam(), diff);
-        if(flagFourDemensionQA){
+
+        if (flagFourDemensionQA) {
           histos.fill(HIST(hnsigma_eta[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
         }
+
         if (splitSignalPerCharge) {
           histos.fill(HIST(hdelta_pt[id]), t.pt(), diff, t.sign());
         } else {
@@ -429,7 +431,7 @@ struct tpcPidQa {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigma_wTOF[id]), t.p(), nsigma);
-          if(flagFourDemensionQA){
+          if (flagFourDemensionQA) {
             histos.fill(HIST(hnsigma_eta_wTOF[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
           }
           if (splitSignalPerCharge) {
@@ -510,3 +512,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<tpcPidQa>(cfgc)};
 }
+
