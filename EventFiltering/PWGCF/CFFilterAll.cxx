@@ -941,7 +941,7 @@ struct CFFilter {
     } else if (charge < 0) {
       eta = v0.negativeeta();
       dca = v0.dcanegtopv();
-    };
+    }
     const auto sign = track.sign();
     double nSigmaTPC = -999.f;
 
