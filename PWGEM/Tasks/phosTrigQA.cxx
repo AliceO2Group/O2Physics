@@ -138,7 +138,7 @@ struct phosTrigQA {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PhotFilters>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PhotonFilters>;
 
   /// \brief Process PHOS data
   void process(o2::aod::BCs const& bcs,
@@ -372,18 +372,18 @@ struct phosTrigQA {
           mHistManager.fill(HIST("elSpTr"), clu.e(), 6.5);
         }
       }
-      if (clu.collision_as<SelCollisions>().hasPHOSElectron()) {
-        mHistManager.fill(HIST("cluSpTr"), clu.e(), 7.5);
-        if (clu.trackdist() < 2.) { // 2: Distance to CPV cluster in sigmas
-          mHistManager.fill(HIST("elSpTr"), clu.e(), 7.5);
-        }
-      }
-      if (clu.collision_as<SelCollisions>().hasPHOSpair()) {
-        mHistManager.fill(HIST("cluSpTr"), clu.e(), 8.5);
-        if (clu.trackdist() < 2.) { // 2: Distance to CPV cluster in sigmas
-          mHistManager.fill(HIST("elSpTr"), clu.e(), 8.5);
-        }
-      }
+      // if (clu.collision_as<SelCollisions>().hasPHOSElectron()) {
+      //   mHistManager.fill(HIST("cluSpTr"), clu.e(), 7.5);
+      //   if (clu.trackdist() < 2.) { // 2: Distance to CPV cluster in sigmas
+      //     mHistManager.fill(HIST("elSpTr"), clu.e(), 7.5);
+      //   }
+      // }
+      // if (clu.collision_as<SelCollisions>().hasPHOSpair()) {
+      //   mHistManager.fill(HIST("cluSpTr"), clu.e(), 8.5);
+      //   if (clu.trackdist() < 2.) { // 2: Distance to CPV cluster in sigmas
+      //     mHistManager.fill(HIST("elSpTr"), clu.e(), 8.5);
+      //   }
+      // }
       if (clu.collision_as<SelCollisions>().hasPHOSnbar()) {
         mHistManager.fill(HIST("cluSpTr"), clu.e(), 9.5);
         if (clu.trackdist() < 2.) { // 2: Distance to CPV cluster in sigmas
@@ -503,12 +503,12 @@ struct phosTrigQA {
       if (clu1.collision_as<SelCollisions>().hasPHOSPhoton()) {
         selections |= 1 << 6;
       }
-      if (clu1.collision_as<SelCollisions>().hasPHOSElectron()) {
-        selections |= 1 << 7;
-      }
-      if (clu1.collision_as<SelCollisions>().hasPHOSpair()) {
-        selections |= 1 << 8;
-      }
+      // if (clu1.collision_as<SelCollisions>().hasPHOSElectron()) {
+      //   selections |= 1 << 7;
+      // }
+      // if (clu1.collision_as<SelCollisions>().hasPHOSpair()) {
+      //   selections |= 1 << 8;
+      // }
       if (clu1.collision_as<SelCollisions>().hasPHOSnbar()) {
         selections |= 1 << 9;
       }

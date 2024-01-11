@@ -57,6 +57,8 @@ struct createPCM {
     "createPCM",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"hV0xy", "hV0xy;X (cm);Y(cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
+      {"hV0xy_recalculated", "hV0xy_recalculated;X (cm);Y(cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
     },
   };
 
@@ -302,6 +304,11 @@ struct createPCM {
       if (v0radius < v0Rmin || v0Rmax < v0radius) {
         return;
       }
+
+      registry.fill(HIST("hV0xy"), svpos[0], svpos[1]); // this should have worst resolution
+      float xyz_tmp[3] = {0.f, 0.f, 0.f};
+      Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz_tmp, matCorr);
+      registry.fill(HIST("hV0xy_recalculated"), xyz_tmp[0], xyz_tmp[1]); // this should have good resolution
 
       // populates the various tables that comprise V0Datas
       v0indices(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1);

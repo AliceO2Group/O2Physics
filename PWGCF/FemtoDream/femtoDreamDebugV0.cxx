@@ -41,7 +41,7 @@ struct femtoDreamDebugV0 {
 
   Configurable<int> ConfV01_PDGCode{"ConfV01_PDGCode", 3122, "V0 - PDG code"};
   Configurable<int> ConfV01_ChildPos_PDGCode{"ConfV01_PosChild_PDGCode", 2212, "Positive Child - PDG code"};
-  Configurable<int> ConfV01_NegChild_PDGCode{"ConfV01_NegChild_PDGCode", 211, "Negative Child- PDG code"};
+  Configurable<int> ConfV01_ChildNeg_PDGCode{"ConfV01_NegChild_PDGCode", 211, "Negative Child- PDG code"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_CutBit{"ConfV01_CutBit", 338, "V0 - Selection bit from cutCulator"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarMomentumBins{"ConfV0TempFitVarMomentumBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
@@ -57,6 +57,7 @@ struct femtoDreamDebugV0 {
 
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_CutBit{"ConfV01_ChildPos_CutBit", 150, "Positive Child of V0 - Selection bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_TPCBit{"ConfV01_ChildPos_TPCBit", 4, "Positive Child of V0 - PID bit from cutCulator"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildNeg_CutBit{"ConfV01_ChildNeg_CutBit", 149, "Negative Child of V0 - PID bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildNeg_TPCBit{"ConfV01_ChildNeg_TPCBit", 8, "Negative Child of V0 - PID bit from cutCulator"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
@@ -79,7 +80,7 @@ struct femtoDreamDebugV0 {
   {
     eventHisto.init(&EventRegistry);
     posChildHistos.init(&V0Registry, ConfV0ChildTempFitVarMomentumBins, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfV0ChildTempFitVarMomentumBins, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0InvMassBins, false, ConfV01_NegChild_PDGCode, true);
+    negChildHistos.init(&V0Registry, ConfV0ChildTempFitVarMomentumBins, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
     V0Histos.init(&V0Registry, ConfV0TempFitVarMomentumBins, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
   }
 
@@ -107,7 +108,7 @@ struct femtoDreamDebugV0 {
           (posChild.cut() & ConfV01_ChildPos_CutBit) == ConfV01_ChildPos_CutBit &&
           (posChild.pidcut() & ConfV01_ChildPos_TPCBit) == ConfV01_ChildPos_TPCBit &&
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
-          (negChild.cut() & ConfV01_ChildNeg_TPCBit) == ConfV01_ChildNeg_TPCBit &&
+          (negChild.cut() & ConfV01_ChildNeg_CutBit) == ConfV01_ChildNeg_CutBit &&
           (negChild.pidcut() & ConfV01_ChildNeg_TPCBit) == ConfV01_ChildNeg_TPCBit) {
         V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value));
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value));
