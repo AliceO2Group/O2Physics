@@ -1257,7 +1257,7 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
-                                              
+                                             
  // Produce muon tables only, with muon cov matrix and multiplicity --------------------------------------------------------------------------------------------
   void processMuonOnlyWithCovMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyMuonsWithCov> const& tracksMuon)
