@@ -621,8 +621,8 @@ struct meanPtFluc {
 
     // Charged Particles:
     if (Nch > 1) {
-      auto Nch2 = double(Nch) * (double(Nch) - 1);
-      auto mean_Q1 = Q1_ch / double(Nch);
+      auto Nch2 = static_cast<double>(Nch) * (static_cast<double>(Nch) - 1);
+      auto mean_Q1 = Q1_ch / static_cast<double>(Nch);
       auto twopart = ((Q1_ch * Q1_ch) - Q2_ch);
       auto twopart1 = (twopart) / (Nch2);
       hist.fill(HIST("Analysis/Charged/h_mean_Q1_ch"), mean_Q1);
@@ -632,14 +632,14 @@ struct meanPtFluc {
     }
 
     if (Nch > 2) {
-      auto Nch3 = double(Nch) * (double(Nch) - 1) * (double(Nch) - 2);
+      auto Nch3 = static_cast<double>(Nch) * (static_cast<double>(Nch) - 1) * (static_cast<double>(Nch) - 2);
       auto threepart = ((Q1_ch * Q1_ch * Q1_ch) - (3 * Q2_ch * Q1_ch) + 2 * Q3_ch);
       auto threepart1 = threepart / Nch3;
       hist.fill(HIST("Analysis/Charged/h_threepart_Mult_ch"), NTPC, threepart1, N_FT0M);
     }
 
     if (Nch > 3) {
-      auto Nch4 = double(Nch) * (double(Nch) - 1) * (double(Nch) - 2) * (double(Nch) - 3);
+      auto Nch4 = static_cast<double>(Nch) * (static_cast<double>(Nch) - 1) * (static_cast<double>(Nch) - 2) * (static_cast<double>(Nch) - 3);
       auto fourpart = ((Q1_ch * Q1_ch * Q1_ch * Q1_ch) - (6 * Q2_ch * Q1_ch * Q1_ch) + (3 * Q2_ch * Q2_ch) + (8 * Q3_ch * Q1_ch) - 6 * Q4_ch);
       auto fourpart1 = fourpart / Nch4;
       hist.fill(HIST("Analysis/Charged/h_fourpart_Mult_ch"), NTPC, fourpart1, N_FT0M);
@@ -647,8 +647,8 @@ struct meanPtFluc {
 
     // Pions:
     if (N_Pi > 1) {
-      auto Nch2_Pi = double(N_Pi) * (double(N_Pi) - 1);
-      auto mean_Q1_Pi = Q1_Pi / double(N_Pi);
+      auto Nch2_Pi = static_cast<double>(N_Pi) * (static_cast<double>(N_Pi) - 1);
+      auto mean_Q1_Pi = Q1_Pi / static_cast<double>(N_Pi);
       auto twopart_Pi = ((Q1_Pi * Q1_Pi) - Q2_Pi);
       auto twopart1_Pi = (twopart_Pi) / (Nch2_Pi);
       hist.fill(HIST("Analysis/Pion/h_mean_Q1_pi"), mean_Q1_Pi);
@@ -658,14 +658,14 @@ struct meanPtFluc {
     }
 
     if (N_Pi > 2) {
-      auto Nch3_Pi = double(N_Pi) * (double(N_Pi) - 1) * (double(N_Pi) - 2);
+      auto Nch3_Pi =  static_cast<double>(N_Pi) * ( static_cast<double>(N_Pi) - 1) * ( static_cast<double>(N_Pi) - 2);
       auto threepart_Pi = ((Q1_Pi * Q1_Pi * Q1_Pi) - (3 * Q2_Pi * Q1_Pi) + 2 * Q3_Pi);
       auto threepart1_Pi = threepart_Pi / Nch3_Pi;
       hist.fill(HIST("Analysis/Pion/h_threepart_Mult_pi"), NTPC, threepart1_Pi, N_FT0M);
     }
 
     if (N_Pi > 3) {
-      auto Nch4_Pi = double(N_Pi) * (double(N_Pi) - 1) * (double(N_Pi) - 2) * (double(N_Pi) - 3);
+      auto Nch4_Pi =  static_cast<double>(N_Pi) * ( static_cast<double>(N_Pi) - 1) * ( static_cast<double>(N_Pi) - 2) * ( static_cast<double>(N_Pi) - 3);
       auto fourpart_Pi = ((Q1_Pi * Q1_Pi * Q1_Pi * Q1_Pi) - (6 * Q2_Pi * Q1_Pi * Q1_Pi) + (3 * Q2_Pi * Q2_Pi) + (8 * Q3_Pi * Q1_Pi) - 6 * Q4_Pi);
       auto fourpart1_Pi = fourpart_Pi / Nch4_Pi;
       hist.fill(HIST("Analysis/Pion/h_fourpart_Mult_pi"), NTPC, fourpart1_Pi, N_FT0M);
@@ -673,8 +673,8 @@ struct meanPtFluc {
 
     // Kaons:
     if (N_Ka > 1) {
-      auto Nch2_Ka = double(N_Ka) * (double(N_Ka) - 1);
-      auto mean_Q1_Ka = Q1_Ka / double(N_Ka);
+      auto Nch2_Ka =  static_cast<double>(N_Ka) * ( static_cast<double>(N_Ka) - 1);
+      auto mean_Q1_Ka = Q1_Ka /  static_cast<double>(N_Ka);
       auto twopart_Ka = ((Q1_Ka * Q1_Ka) - Q2_Ka);
       auto twopart1_Ka = (twopart_Ka) / (Nch2_Ka);
       hist.fill(HIST("Analysis/Kaon/h_mean_Q1_ka"), mean_Q1_Ka);
@@ -684,14 +684,14 @@ struct meanPtFluc {
     }
 
     if (N_Ka > 2) {
-      auto Nch3_Ka = double(N_Ka) * (double(N_Ka) - 1) * (double(N_Ka) - 2);
+      auto Nch3_Ka =  static_cast<double>(N_Ka) * ( static_cast<double>(N_Ka) - 1) * ( static_cast<double>(N_Ka) - 2);
       auto threepart_Ka = ((Q1_Ka * Q1_Ka * Q1_Ka) - (3 * Q2_Ka * Q1_Ka) + 2 * Q3_Ka);
       auto threepart1_Ka = threepart_Ka / Nch3_Ka;
       hist.fill(HIST("Analysis/Kaon/h_threepart_Mult_ka"), NTPC, threepart1_Ka, N_FT0M);
     }
 
     if (N_Ka > 3) {
-      auto Nch4_Ka = double(N_Ka) * (double(N_Ka) - 1) * (double(N_Ka) - 2) * (double(N_Ka) - 3);
+      auto Nch4_Ka =  static_cast<double>(N_Ka) * ( static_cast<double>(N_Ka) - 1) * ( static_cast<double>(N_Ka) - 2) * ( static_cast<double>(N_Ka) - 3);
       auto fourpart_Ka = ((Q1_Ka * Q1_Ka * Q1_Ka * Q1_Ka) - (6 * Q2_Ka * Q1_Ka * Q1_Ka) + (3 * Q2_Ka * Q2_Ka) + (8 * Q3_Ka * Q1_Ka) - 6 * Q4_Ka);
       auto fourpart1_Ka = fourpart_Ka / Nch4_Ka;
       hist.fill(HIST("Analysis/Kaon/h_fourpart_Mult_ka"), NTPC, fourpart1_Ka, N_FT0M);
@@ -699,8 +699,8 @@ struct meanPtFluc {
 
     // Protons:
     if (N_Pr > 1) {
-      auto Nch2_Pr = double(N_Pr) * (double(N_Pr) - 1);
-      auto mean_Q1_Pr = Q1_Pr / double(N_Pr);
+      auto Nch2_Pr =  static_cast<double>(N_Pr) * ( static_cast<double>(N_Pr) - 1);
+      auto mean_Q1_Pr = Q1_Pr /  static_cast<double>(N_Pr);
       auto twopart_Pr = ((Q1_Pr * Q1_Pr) - Q2_Pr);
       auto twopart1_Pr = (twopart_Pr) / (Nch2_Pr);
       hist.fill(HIST("Analysis/Proton/h_mean_Q1_pr"), mean_Q1_Pr);
@@ -710,14 +710,14 @@ struct meanPtFluc {
     }
 
     if (N_Pr > 2) {
-      auto Nch3_Pr = double(N_Pr) * (double(N_Pr) - 1) * (double(N_Pr) - 2);
+      auto Nch3_Pr =  static_cast<double>(N_Pr) * ( static_cast<double>(N_Pr) - 1) * ( static_cast<double>(N_Pr) - 2);
       auto threepart_Pr = ((Q1_Pr * Q1_Pr * Q1_Pr) - (3 * Q2_Pr * Q1_Pr) + 2 * Q3_Pr);
       auto threepart1_Pr = threepart_Pr / Nch3_Pr;
       hist.fill(HIST("Analysis/Proton/h_threepart_Mult_pr"), NTPC, threepart1_Pr, N_FT0M);
     }
 
     if (N_Pr > 3) {
-      auto Nch4_Pr = double(N_Pr) * (double(N_Pr) - 1) * (double(N_Pr) - 2) * (double(N_Pr) - 3);
+      auto Nch4_Pr =  static_cast<double>(N_Pr) * ( static_cast<double>(N_Pr) - 1) * ( static_cast<double>(N_Pr) - 2) * ( static_cast<double>(N_Pr) - 3);
       auto fourpart_Pr = ((Q1_Pr * Q1_Pr * Q1_Pr * Q1_Pr) - (6 * Q2_Pr * Q1_Pr * Q1_Pr) + (3 * Q2_Pr * Q2_Pr) + (8 * Q3_Pr * Q1_Pr) - 6 * Q4_Pr);
       auto fourpart1_Pr = fourpart_Pr / Nch4_Pr;
       hist.fill(HIST("Analysis/Proton/h_fourpart_Mult_pr"), NTPC, fourpart1_Pr, Cent_FT0M);
@@ -725,46 +725,46 @@ struct meanPtFluc {
 
     //----------------------------- TPC (No p cuts)---------------------------//
     if (N_Pi_tpc > 1) {
-      double mean_Q1_Pi_tpc = Q1_Pi_tpc / double(N_Pi_tpc);
-      double twopart_Pi_tpc = ((Q1_Pi_tpc * Q1_Pi_tpc) - Q2_Pi_tpc) / (double(N_Pi_tpc) * (double(N_Pi_tpc) - 1));
+      double mean_Q1_Pi_tpc = Q1_Pi_tpc /  static_cast<double>(N_Pi_tpc);
+      double twopart_Pi_tpc = ((Q1_Pi_tpc * Q1_Pi_tpc) - Q2_Pi_tpc) / ( static_cast<double>(N_Pi_tpc) * ( static_cast<double>(N_Pi_tpc) - 1));
       hist.fill(HIST("Analysis/Pion/h_mean_Q1_Mult_pi_tpc"), NTPC, mean_Q1_Pi_tpc, N_FT0M);
       hist.fill(HIST("Analysis/Pion/h_twopart_Mult_pi_tpc"), NTPC, twopart_Pi_tpc, N_FT0M);
     }
     if (N_Ka_tpc > 1) {
-      double mean_Q1_Ka_tpc = Q1_Ka_tpc / double(N_Ka_tpc);
-      double twopart_Ka_tpc = ((Q1_Ka_tpc * Q1_Ka_tpc) - Q2_Ka_tpc) / (double(N_Ka_tpc) * (double(N_Ka_tpc) - 1));
+      double mean_Q1_Ka_tpc = Q1_Ka_tpc /  static_cast<double>(N_Ka_tpc);
+      double twopart_Ka_tpc = ((Q1_Ka_tpc * Q1_Ka_tpc) - Q2_Ka_tpc) / ( static_cast<double>(N_Ka_tpc) * ( static_cast<double>(N_Ka_tpc) - 1));
       hist.fill(HIST("Analysis/Kaon/h_mean_Q1_Mult_ka_tpc"), NTPC, mean_Q1_Ka_tpc, N_FT0M);
       hist.fill(HIST("Analysis/Kaon/h_twopart_Mult_ka_tpc"), NTPC, twopart_Ka_tpc, N_FT0M);
     }
     if (N_Pr_tpc > 1) {
-      double mean_Q1_Pr_tpc = Q1_Pr_tpc / double(N_Pr_tpc);
-      double twopart_Pr_tpc = ((Q1_Pr_tpc * Q1_Pr_tpc) - Q2_Pr_tpc) / (double(N_Pr_tpc) * (double(N_Pr_tpc) - 1));
+      double mean_Q1_Pr_tpc = Q1_Pr_tpc /  static_cast<double>(N_Pr_tpc);
+      double twopart_Pr_tpc = ((Q1_Pr_tpc * Q1_Pr_tpc) - Q2_Pr_tpc) / ( static_cast<double>(N_Pr_tpc) * ( static_cast<double>(N_Pr_tpc) - 1));
       hist.fill(HIST("Analysis/Proton/h_mean_Q1_Mult_pr_tpc"), NTPC, mean_Q1_Pr_tpc, N_FT0M);
       hist.fill(HIST("Analysis/Proton/h_twopart_Mult_pr_tpc"), NTPC, twopart_Pr_tpc, N_FT0M);
     }
 
     //-----------------------TPC + TOF (No p cuts)--------------------------//
     if (Nch_tof > 1) {
-      double mean_Q1_tof = Q1_tof / double(Nch_tof);
-      double twopart_tof = ((Q1_tof * Q1_tof) - Q2_tof) / (double(Nch_tof) * (double(Nch_tof) - 1));
+      double mean_Q1_tof = Q1_tof /  static_cast<double>(Nch_tof);
+      double twopart_tof = ((Q1_tof * Q1_tof) - Q2_tof) / ( static_cast<double>(Nch_tof) * ( static_cast<double>(Nch_tof) - 1));
       hist.fill(HIST("Analysis/Charged/h_mean_Q1_Mult_ch_tof"), NTPC, mean_Q1_tof, N_FT0M);
       hist.fill(HIST("Analysis/Charged/h_twopart_Mult_ch_tof"), NTPC, twopart_tof, N_FT0M);
     }
     if (N_Pi_tof > 1) {
-      double mean_Q1_Pi_tof = Q1_Pi_tof / double(N_Pi_tof);
-      double twopart_Pi_tof = ((Q1_Pi_tof * Q1_Pi_tof) - Q2_Pi_tof) / (double(N_Pi_tof) * (double(N_Pi_tof) - 1));
+      double mean_Q1_Pi_tof = Q1_Pi_tof / static_cast<double>(N_Pi_tof);
+      double twopart_Pi_tof = ((Q1_Pi_tof * Q1_Pi_tof) - Q2_Pi_tof) / (static_cast<double>(N_Pi_tof) * (static_cast<double>(N_Pi_tof) - 1));
       hist.fill(HIST("Analysis/Pion/h_mean_Q1_Mult_pi_tof"), NTPC, mean_Q1_Pi_tof, N_FT0M);
       hist.fill(HIST("Analysis/Pion/h_twopart_Mult_pi_tof"), NTPC, twopart_Pi_tof, N_FT0M);
     }
     if (N_Ka_tof > 1) {
-      double mean_Q1_Ka_tof = Q1_Ka_tof / double(N_Ka_tof);
-      double twopart_Ka_tof = ((Q1_Ka_tof * Q1_Ka_tof) - Q2_Ka_tof) / (double(N_Ka_tof) * (double(N_Ka_tof) - 1));
+      double mean_Q1_Ka_tof = Q1_Ka_tof / static_cast<double>(N_Ka_tof);
+      double twopart_Ka_tof = ((Q1_Ka_tof * Q1_Ka_tof) - Q2_Ka_tof) / (static_cast<double>(N_Ka_tof) * (static_cast<double>(N_Ka_tof) - 1));
       hist.fill(HIST("Analysis/Kaon/h_mean_Q1_Mult_ka_tof"), NTPC, mean_Q1_Ka_tof, N_FT0M);
       hist.fill(HIST("Analysis/Kaon/h_twopart_Mult_ka_tof"), NTPC, twopart_Ka_tof, N_FT0M);
     }
     if (N_Pr_tof > 1) {
-      double mean_Q1_Pr_tof = Q1_Pr_tof / double(N_Pr_tof);
-      double twopart_Pr_tof = ((Q1_Pr_tof * Q1_Pr_tof) - Q2_Pr_tof) / (double(N_Pr_tof) * (double(N_Pr_tof) - 1));
+      double mean_Q1_Pr_tof = Q1_Pr_tof /  static_cast<double>(N_Pr_tof);
+      double twopart_Pr_tof = ((Q1_Pr_tof * Q1_Pr_tof) - Q2_Pr_tof) / ( static_cast<double>(N_Pr_tof) * ( static_cast<double>(N_Pr_tof) - 1));
       hist.fill(HIST("Analysis/Proton/h_mean_Q1_Mult_pr_tof"), NTPC, mean_Q1_Pr_tof, N_FT0M);
       hist.fill(HIST("Analysis/Proton/h_twopart_Mult_pr_tof"), NTPC, twopart_Pr_tof, N_FT0M);
     }
