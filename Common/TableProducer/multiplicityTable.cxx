@@ -79,6 +79,10 @@ struct MultiplicityTableTaskIndexed {
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
+
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+  Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+
   int mRunNumber;
   bool lCalibLoaded;
   TList* lCalibObjects;
@@ -138,7 +142,7 @@ struct MultiplicityTableTaskIndexed {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
@@ -284,7 +288,7 @@ struct MultiplicityTableTaskIndexed {
       if (doVertexZeq > 0) {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
-          lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
+          lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
           if (lCalibObjects) {
             hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
             hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
