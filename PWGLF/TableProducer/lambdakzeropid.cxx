@@ -75,12 +75,14 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
-// Cores with references and TOF pid
+// Cores with references and TOF pid 
 using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
+  Produces<aod::V0TOFBetas> v0tofbeta; // table with betas
+  Produces<aod::V0TOFDebugs> v0tofdebugs; // table with extra debug information
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -92,7 +94,7 @@ struct lambdakzeropid {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<float> tofPosition{"tofPosition", 377.934f, "TOF effective (inscribed) radius"};
-  Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx in QA plots"};
+  Configurable<bool> doQA{"doQA", true, "create QA histos"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -101,10 +103,9 @@ struct lambdakzeropid {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
-  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
-  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisTime{"axisTime", {200, 0.0f, +20000.0f}, "T (ps)"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
 
   int mRunNumber;
   float d_bz;
@@ -132,8 +133,9 @@ struct lambdakzeropid {
     std::array<float, 3> startPoint;
     track.getXYZGlo(startPoint);
 
-    if (((x1 + x2) * mom[0] + (y1 + y2) * mom[1]) < 0.0f)
-      return -101;
+    // better replaced with scalar momentum check later
+    // if (((x1 + x2) * mom[0] + (y1 + y2) * mom[1]) < 0.0f)
+    //   return -101;
 
     // get circle X, Y please
     o2::math_utils::CircleXYf_t trcCircle;
@@ -203,13 +205,11 @@ struct lambdakzeropid {
     float scalarMomentumCheck1 = px1 * midSegX + py1 * midSegY;
     float scalarMomentumCheck2 = px2 * midSegX + py2 * midSegY;
 
-    float halfPerimeter = TMath::Pi() * trcCircle.rC; // perimeter check. Length should not pass this ever
-
-    if (scalarCheck1 > 0.0f && scalarCheck1 < segmentModulus && length1 < halfPerimeter && scalarMomentumCheck1 > 0.0f) {
+    if (scalarCheck1 > 0.0f && scalarCheck1 < segmentModulus && scalarMomentumCheck1 > 0.0f) {
       length = length1;
       // X = interceptX1; Y = interceptY1;
     }
-    if (scalarCheck2 > 0.0f && scalarCheck2 < segmentModulus && length2 < halfPerimeter && scalarMomentumCheck2 > 0.0f) {
+    if (scalarCheck2 > 0.0f && scalarCheck2 < segmentModulus && scalarMomentumCheck2 > 0.0f) {
       length = length2;
       // X = interceptX2; Y = interceptY2;
     }
@@ -221,6 +221,7 @@ struct lambdakzeropid {
   /// \param magneticField the magnetic field to use when propagating
   float findInterceptLength(o2::track::TrackPar track, float magneticField)
   {
+    float length = 1e+6;
     for (int iSeg = 0; iSeg < 18; iSeg++) {
       // Detector segmentation loop
       float segmentAngle = 20.0f / 180.0f * TMath::Pi();
@@ -230,11 +231,13 @@ struct lambdakzeropid {
       float y1 = -TMath::Sin(theta) * (-halfWidth) + TMath::Cos(theta) * tofPosition;
       float x2 = TMath::Cos(theta) * (+halfWidth) + TMath::Sin(theta) * tofPosition;
       float y2 = -TMath::Sin(theta) * (+halfWidth) + TMath::Cos(theta) * tofPosition;
-      float length = trackLengthToSegment(track, x1, y1, x2, y2, magneticField);
-      if (length > 0)
-        return length;
+      float thisLength = trackLengthToSegment(track, x1, y1, x2, y2, magneticField);
+      if (thisLength < length && thisLength > 0)
+        length = thisLength;
     }
-    return -100; // not reached / not found
+    if ( length > 1e+5 ) 
+      length = -100; // force negative to avoid misunderstandings
+    return length;
   }
 
   void init(InitContext& context)
@@ -250,7 +253,16 @@ struct lambdakzeropid {
     ccdb->setFatalWhenNull(false);
 
     // per event
-    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
+    histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500,-0.5f,499.5f}});
+
+    // measured vs expected total time QA
+    if(doQA){
+      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
+      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
+
+      // delta lambda decay time 
+      histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+    }
   }
 
   void initCCDB(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision)
@@ -319,8 +331,8 @@ struct lambdakzeropid {
         float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
 
         // initialize from V0 position and momenta
-        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
-        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
+        o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1); 
+        o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1); 
 
         float deltaTimePositiveLambdaPi = -1e+6;
         float deltaTimeNegativeLambdaPi = -1e+6;
@@ -341,18 +353,63 @@ struct lambdakzeropid {
         float timeNegativePr = lengthNegative / velocityNegativePr;
         float timeNegativePi = lengthNegative / velocityNegativePi;
 
-        deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
-        deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
-        deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
-        deltaTimeNegativeLambdaPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePi);
-        deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timeNegativePi);
-        deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
+        if( v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0 && lengthPositive > 0){
+          deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
+          deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
+          deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timeNegativePi);
+        }
+        if( v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0 && lengthNegative > 0){
+          deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
+          deltaTimeNegativeLambdaPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePi);
+          deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
+        }
+        float deltaDecayTimeLambda = -10e+4;
+        float deltaDecayTimeAntiLambda = -10e+4;
+        float deltaDecayTimeK0Short = -10e+4;
+        if( v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && lengthPositive > 0  && lengthNegative > 0){ // does not depend on event time
+          deltaDecayTimeLambda = (v0.posTOFSignal() - timePositivePr) - (v0.negTOFSignal() - timeNegativePi); 
+          deltaDecayTimeAntiLambda = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePr); 
+          deltaDecayTimeK0Short = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePi); 
+        }
 
+        // calculate betas
+
+        float evTimeMean = 0.5f*(v0.posTOFEventTime() + v0.negTOFEventTime());
+        float decayTimeLambda = 0.5f*((v0.posTOFSignal() - timePositivePr) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
+        float decayTimeAntiLambda = 0.5f*((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePr)) - evTimeMean;
+        float decayTimeK0Short = 0.5f*((v0.posTOFSignal() - timePositivePi) + (v0.negTOFSignal() - timeNegativePi)) - evTimeMean;
+
+        float betaLambda = -1e+6;
+        float betaAntiLambda = -1e+6;
+        float betaK0Short = -1e+6;
+        
+        if( v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && v0.posTOFEventTime() > 0 && v0.negTOFEventTime() > 0){
+          betaLambda = (lengthV0/decayTimeLambda)/0.0299792458;
+          betaAntiLambda = (lengthV0/decayTimeAntiLambda)/0.0299792458;
+          betaK0Short = (lengthV0/decayTimeK0Short)/0.0299792458;
+        }
+        
         v0tofpid(lengthPositive, lengthNegative,
                  deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
                  deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
                  deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
-                 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f); // FIXME
+                 deltaDecayTimeLambda, deltaDecayTimeAntiLambda, deltaDecayTimeK0Short);
+        v0tofbeta(betaLambda, betaAntiLambda, betaK0Short);
+        v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
+
+        if(doQA){ 
+          if(v0.posTOFSignal()>0 && v0.posTOFEventTime()>0)
+            histos.fill(HIST("h2dProtonMeasuredVsExpected"), 
+            (timeLambda + timePositivePr), 
+            (v0.posTOFSignal() - v0.posTOFEventTime()));
+          if(v0.negTOFSignal()>0 && v0.negTOFEventTime()>0)
+            histos.fill(HIST("h2dPionMeasuredVsExpected"), 
+            (timeLambda + timeNegativePi), 
+            (v0.negTOFSignal() - v0.negTOFEventTime()));
+
+          // delta lambda decay time 
+          histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.pt(), deltaDecayTimeLambda);
+        }
       }
     }
   }
