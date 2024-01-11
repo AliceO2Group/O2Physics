@@ -37,7 +37,7 @@ double massPi = TDatabasePDG::Instance()->GetParticle(211)->Mass();
 double massKa = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
-struct meanPtFluc {
+struct meanPtFlucId {
   Configurable<float> ptMax{"ptMax", 2.0, "maximum pT"};
   Configurable<float> ptMin{"ptMin", 0.15, "minimum pT"};
   Configurable<float> etaCut{"etaCut", 0.8, "Eta cut"};
@@ -375,7 +375,7 @@ struct meanPtFluc {
     hist.fill(HIST("QA/before/h_VtxZ"), myCol.posZ());
     hist.fill(HIST("QA/before/h_Counts"), 2);
   }
-  PROCESS_SWITCH(meanPtFluc, process_QA, "process QA", true);
+  PROCESS_SWITCH(meanPtFlucId, process_QA, "process QA", true);
 
   void process(MyFilteredCollisions::iterator const& col, MyFilteredTracks const& tracks)
   {
@@ -773,5 +773,5 @@ struct meanPtFluc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<meanPtFluc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<meanPtFlucId>(cfgc)};
 }
