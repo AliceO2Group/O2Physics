@@ -812,7 +812,7 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::Rapidity<cascdata::Px, cascdata::Py, cascdata::Pz>,
-                  
+
                   cascdata::NegativePt<cascdata::PxNeg, cascdata::PyNeg>,
                   cascdata::PositivePt<cascdata::PxPos, cascdata::PyPos>,
                   cascdata::BachelorPt<cascdata::PxBach, cascdata::PyBach>,
@@ -849,8 +849,8 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
 
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
-                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>, 
-                  
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+
                   cascdata::NegativePt<cascdata::PxNeg, cascdata::PyNeg>,
                   cascdata::PositivePt<cascdata::PxPos, cascdata::PyPos>,
                   cascdata::BachelorPt<cascdata::PxBach, cascdata::PyBach>,

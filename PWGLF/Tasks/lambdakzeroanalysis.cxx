@@ -69,13 +69,13 @@ struct lambdakzeroAnalysis {
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{2, -0.5f, +1.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "posZ cut");
-    
+
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
-    
+
     histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
     histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
     histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-    
+
     // Extra QA histograms to be added <fixme>
   }
 
@@ -93,7 +93,7 @@ struct lambdakzeroAnalysis {
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
-  
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   void process(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Cores, aod::V0Extras>> const& fullV0s, dauTracks const&)
@@ -104,7 +104,7 @@ struct lambdakzeroAnalysis {
     }
     histos.fill(HIST("hEventSelection"), 1.5);
     histos.fill(HIST("hEventCentrality"), collision.centFT0C());
-    
+
     for (auto& v0 : fullV0s) {
       // FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       if (v0.v0radius() > v0radius && v0.v0cosPA() > v0cospa) {
