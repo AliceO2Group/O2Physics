@@ -697,14 +697,14 @@ struct ProbeThirdTrack {
       // D*+ -> D0(->pi+K-)pi+
       auto groupedTagsPiKa = tagsPiKa.sliceBy(tagsPiKaPerCollision, thisCollId);
       for (const auto& tagPiKa : groupedTagsPiKa) {
-        auto trackFirst = tagPiKa.track0_as<TracksWithDca>(); // positive --> pion
+        auto trackFirst = tagPiKa.track0_as<TracksWithDca>();  // positive --> pion
         auto trackSecond = tagPiKa.track1_as<TracksWithDca>(); // negative --> kaon
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
       }
       // D*- -> D0bar(->K+pi-)pi-
       auto groupedTagsKaPi = tagsKaPi.sliceBy(tagsKaPiPerCollision, thisCollId);
       for (const auto& tagKaPi : groupedTagsKaPi) {
-        auto trackFirst = tagKaPi.track0_as<TracksWithDca>(); // positive --> kaon
+        auto trackFirst = tagKaPi.track0_as<TracksWithDca>();  // positive --> kaon
         auto trackSecond = tagKaPi.track1_as<TracksWithDca>(); // negative --> pion
         loopOverThirdTrack(groupedTrackIndices, tracks, trackFirst, trackSecond, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi);
       }
