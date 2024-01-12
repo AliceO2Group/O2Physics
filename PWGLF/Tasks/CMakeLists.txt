@@ -160,6 +160,11 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derivedcascadeanalysis
+                    SOURCES derivedCascadeAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Resonance
 o2physics_add_dpl_workflow(rsnanalysis
                     SOURCES rsnanalysis.cxx
