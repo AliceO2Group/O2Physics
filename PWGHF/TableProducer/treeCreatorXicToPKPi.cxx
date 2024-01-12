@@ -232,7 +232,6 @@ struct HfTreeCreatorXicToPKPi {
   Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandXicLites> rowCandidateLite;
 
-
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -300,135 +299,135 @@ struct HfTreeCreatorXicToPKPi {
     auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
     auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
 
-    if(fillCandidateLiteTable) {
-            rowCandidateLite(
-              candidate.chi2PCA(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.ptProng0(),
-              candidate.ptProng1(),
-              candidate.ptProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaKa(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaKa(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaPi(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tpcNSigmaPr(),
-              trackNeg.tofNSigmaPi(),
-              trackNeg.tofNSigmaKa(),
-              trackNeg.tofNSigmaPr(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaKa(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaKa(),
-              trackPos2.tofNSigmaPr(),
-              candidate.isSelXicToPKPi(),
-              candidate.isSelXicToPiKP(),
-              invMassXic,
-              candidate.pt(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              candidate.eta(),
-              candidate.phi(),
-              flagMc,
-              originMc);
-  //            candidate.isCandidateSwapped());
-    }else {
-        rowCandidateFull(
-              candidate.collisionId(),
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.xSecondaryVertex(),
-              candidate.ySecondaryVertex(),
-              candidate.zSecondaryVertex(),
-              candidate.errorDecayLength(),
-              candidate.errorDecayLengthXY(),
-              candidate.chi2PCA(),
-              candidate.rSecondaryVertex(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.impactParameterNormalised0(),
-              candidate.ptProng0(),
-              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-              candidate.impactParameterNormalised1(),
-              candidate.ptProng1(),
-              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-              candidate.impactParameterNormalised2(),
-              candidate.ptProng2(),
-              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-              candidate.pxProng0(),
-              candidate.pyProng0(),
-              candidate.pzProng0(),
-              candidate.pxProng1(),
-              candidate.pyProng1(),
-              candidate.pzProng1(),
-              candidate.pxProng2(),
-              candidate.pyProng2(),
-              candidate.pzProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.errorImpactParameter0(),
-              candidate.errorImpactParameter1(),
-              candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaKa(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaKa(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaPi(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tpcNSigmaPr(),
-              trackNeg.tofNSigmaPi(),
-              trackNeg.tofNSigmaKa(),
-              trackNeg.tofNSigmaPr(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaKa(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaKa(),
-              trackPos2.tofNSigmaPr(),
-              candidate.isSelXicToPKPi(),
-              candidate.isSelXicToPiKP(),
-              invMassXic,
-              candidate.pt(),
-              candidate.p(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              hfHelper.ctXic(candidate),
-              candidate.eta(),
-              candidate.phi(),
-              hfHelper.yXic(candidate),
-              hfHelper.eXic(candidate),
-              flagMc,
-              originMc,
-              //candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+    if (fillCandidateLiteTable) {
+      rowCandidateLite(
+        candidate.chi2PCA(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.ptProng0(),
+        candidate.ptProng1(),
+        candidate.ptProng2(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameter2(),
+        trackPos1.tpcNSigmaPi(),
+        trackPos1.tpcNSigmaKa(),
+        trackPos1.tpcNSigmaPr(),
+        trackPos1.tofNSigmaPi(),
+        trackPos1.tofNSigmaKa(),
+        trackPos1.tofNSigmaPr(),
+        trackNeg.tpcNSigmaPi(),
+        trackNeg.tpcNSigmaKa(),
+        trackNeg.tpcNSigmaPr(),
+        trackNeg.tofNSigmaPi(),
+        trackNeg.tofNSigmaKa(),
+        trackNeg.tofNSigmaPr(),
+        trackPos2.tpcNSigmaPi(),
+        trackPos2.tpcNSigmaKa(),
+        trackPos2.tpcNSigmaPr(),
+        trackPos2.tofNSigmaPi(),
+        trackPos2.tofNSigmaKa(),
+        trackPos2.tofNSigmaPr(),
+        candidate.isSelXicToPKPi(),
+        candidate.isSelXicToPiKP(),
+        invMassXic,
+        candidate.pt(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.eta(),
+        candidate.phi(),
+        flagMc,
+        originMc);
+      //            candidate.isCandidateSwapped());
+    } else {
+      rowCandidateFull(
+        candidate.collisionId(),
+        candidate.posX(),
+        candidate.posY(),
+        candidate.posZ(),
+        candidate.xSecondaryVertex(),
+        candidate.ySecondaryVertex(),
+        candidate.zSecondaryVertex(),
+        candidate.errorDecayLength(),
+        candidate.errorDecayLengthXY(),
+        candidate.chi2PCA(),
+        candidate.rSecondaryVertex(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.impactParameterNormalised0(),
+        candidate.ptProng0(),
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        candidate.impactParameterNormalised1(),
+        candidate.ptProng1(),
+        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        candidate.impactParameterNormalised2(),
+        candidate.ptProng2(),
+        RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.pxProng2(),
+        candidate.pyProng2(),
+        candidate.pzProng2(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameter2(),
+        candidate.errorImpactParameter0(),
+        candidate.errorImpactParameter1(),
+        candidate.errorImpactParameter2(),
+        trackPos1.tpcNSigmaPi(),
+        trackPos1.tpcNSigmaKa(),
+        trackPos1.tpcNSigmaPr(),
+        trackPos1.tofNSigmaPi(),
+        trackPos1.tofNSigmaKa(),
+        trackPos1.tofNSigmaPr(),
+        trackNeg.tpcNSigmaPi(),
+        trackNeg.tpcNSigmaKa(),
+        trackNeg.tpcNSigmaPr(),
+        trackNeg.tofNSigmaPi(),
+        trackNeg.tofNSigmaKa(),
+        trackNeg.tofNSigmaPr(),
+        trackPos2.tpcNSigmaPi(),
+        trackPos2.tpcNSigmaKa(),
+        trackPos2.tpcNSigmaPr(),
+        trackPos2.tofNSigmaPi(),
+        trackPos2.tofNSigmaKa(),
+        trackPos2.tofNSigmaPr(),
+        candidate.isSelXicToPKPi(),
+        candidate.isSelXicToPiKP(),
+        invMassXic,
+        candidate.pt(),
+        candidate.p(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        hfHelper.ctXic(candidate),
+        candidate.eta(),
+        candidate.phi(),
+        hfHelper.yXic(candidate),
+        hfHelper.eXic(candidate),
+        flagMc,
+        originMc,
+        // candidate.isCandidateSwapped(),
+        candidate.globalIndex());
     }
-    }
+  }
 
-   void processData(aod::Collisions const& collisions,
+  void processData(aod::Collisions const& collisions,
                    CandXicData const& candidates,
                    TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-        fillEvent(collision, 0, 1);
-        }
+      fillEvent(collision, 0, 1);
+    }
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(selectedXicToPKPiCand.size() + selectedXicToPKPiCand.size());
@@ -456,7 +455,6 @@ struct HfTreeCreatorXicToPKPi {
       fillCandidateTable<false, 1>(candidate);
     }
   }
-  
 
   PROCESS_SWITCH(HfTreeCreatorXicToPKPi, processData, "Process data tree writer", true);
 
@@ -554,7 +552,7 @@ struct HfTreeCreatorXicToPKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorXicToPKPi, processMc, "Process MC tree writer", false);
-  };
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
