@@ -413,7 +413,6 @@ struct HfTreeCreatorXicToPKPi {
         hfHelper.eXic(candidate),
         flagMc,
         originMc,
-        // candidate.isCandidateSwapped(),
         candidate.globalIndex());
     }
   }
