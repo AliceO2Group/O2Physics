@@ -109,7 +109,6 @@ struct FillFlagsTable {
     }
   }
 };
-
 struct r2p24id {
   Configurable<float> minpT{"minpT", 0.2, "Minimum pT"};
   Configurable<float> maxpT{"maxpT", 2.0, "Maximum pT"};
@@ -138,17 +137,17 @@ struct r2p24id {
     histos.add("h1i_n1_multPM", "Multiplicity", kTH1I, {{200, 0, 200, "Multiplicity"}});
     for (int i = 0; i < 7; i++) {
       if (i < 4) { // Single particle distribution histograms
-        snprintf(histname, 50, "h1d_n1_ptP_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h1d_n1_ptP_%s", name[i]);
         histos.add(histname, "p_T for +ve particles", kTH1D, {{100, 0, 6, "p_T"}});
-        snprintf(histname, 50, "h1d_n1_ptM_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h1d_n1_ptM_%s", name[i]);
         histos.add(histname, "p_T for -ve particles", kTH1D, {{100, 0, 6, "p_T"}});
-        snprintf(histname, 50, "h2d_n1_etaPhiP_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h2d_n1_etaPhiP_%s", name[i]);
         histos.add(histname, "#rho_1 for +ve particles", kTH2D, {eta, phi});
-        snprintf(histname, 50, "h2d_n1_etaPhiM_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h2d_n1_etaPhiM_%s", name[i]);
         histos.add(histname, "#rho_1 for -ve particles", kTH2D, {eta, phi});
-        snprintf(histname, 50, "h2d_pt_etaPhiP_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h2d_pt_etaPhiP_%s", name[i]);
         histos.add(histname, "p_T for +ve particles", kTH2D, {eta, phi});
-        snprintf(histname, 50, "h2d_pt_etaPhiM_%s", name[i]);
+        snprintf(histname, sizeof(histname), "h2d_pt_etaPhiM_%s", name[i]);
         histos.add(histname, "p_T for -ve particles", kTH2D, {eta, phi});
       }
       //---Two patricle distribution histograms--------------------------------
@@ -161,47 +160,47 @@ struct r2p24id {
         else if (i == 6)
           e = 3;
         // There are two kinds of  "********PM_*" histograms here, one is for when track1 is +ve the other is for when track2 is +ve.
-        snprintf(histname, 50, "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "#rho_2 for +ve_1 -ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "p_Tp_T for +ve_1 -ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "p_Tn for +ve_1 -ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "np_T for +ve_1 -ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
+        snprintf(histname, sizeof(histname), "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
         histos.add(histname, "#rho_2 for -ve_1 +ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
+        snprintf(histname, sizeof(histname), "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
         histos.add(histname, "p_Tp_T for -ve_1 +ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
+        snprintf(histname, sizeof(histname), "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
         histos.add(histname, "p_Tn for -ve_1 +ve_2 particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
+        snprintf(histname, sizeof(histname), "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[f], name[e]);
         histos.add(histname, "np_T for -ve_1 +ve_2 particles", kTH2D, {etaphi1, etaphi2});
       } else {
-        snprintf(histname, 50, "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_n2_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "#rho_2 for +ve-ve particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_ptpt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "p_Tp_T for +ve-ve particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_ptn_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "p_Tn for +ve-ve particles", kTH2D, {etaphi1, etaphi2});
-        snprintf(histname, 50, "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
+        snprintf(histname, sizeof(histname), "h2d_npt_eta1Phi1Eta2Phi2PM_%s%s", name[e], name[f]);
         histos.add(histname, "np_T for +ve-ve particles", kTH2D, {etaphi1, etaphi2});
       }
-      snprintf(histname, 50, "h2d_n2_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_n2_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
       histos.add(histname, "#rho_2 for +ve+ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_n2_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_n2_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
       histos.add(histname, "#rho_2 for -ve-ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_ptpt_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_ptpt_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
       histos.add(histname, "p_Tp_T for +ve+ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_ptpt_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_ptpt_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
       histos.add(histname, "p_Tp_T for -ve-ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_ptn_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_ptn_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
       histos.add(histname, "p_Tn for +ve+ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_ptn_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_ptn_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
       histos.add(histname, "p_Tn for -ve-ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_npt_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_npt_eta1Phi1Eta2Phi2PP_%s%s", name[e], name[f]);
       histos.add(histname, "np_T for +ve+ve particles", kTH2D, {etaphi1, etaphi2});
-      snprintf(histname, 50, "h2d_npt_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
+      snprintf(histname, sizeof(histname), "h2d_npt_eta1Phi1Eta2Phi2MM_%s%s", name[e], name[f]);
       histos.add(histname, "np_T for -ve-ve particles", kTH2D, {etaphi1, etaphi2});
       //-----------------------------------------------------------------------
     }
@@ -405,6 +404,7 @@ struct r2p24id {
     histos.fill(HIST("h1i_n1_multPM"), mult);
   }
 };
+
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
