@@ -527,7 +527,7 @@ struct HfTreeCreatorXicToPKPi {
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           fillCandidateTable<true, 0>(candidate);
         }
-        if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
+        if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
           fillCandidateTable<true, 1>(candidate);
         }
       }
