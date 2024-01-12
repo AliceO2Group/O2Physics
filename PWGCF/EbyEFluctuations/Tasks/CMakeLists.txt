@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(mean-pt-fluc-id
                   SOURCES EbyEmeanPtFlucIdentified.cxx
-                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                   COMPONENT_NAME Analysis)
