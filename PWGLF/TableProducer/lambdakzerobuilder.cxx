@@ -122,7 +122,7 @@ struct lambdakzeroBuilder {
 
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
-  // select momentum slice if desired 
+  // select momentum slice if desired
   Configurable<float> minimumPt{"minimumPt", 0.0f, "Minimum pT to store candidate"};
   Configurable<float> maximumPt{"maximumPt", 1000.0f, "Maximum pT to store candidate"};
 
@@ -657,7 +657,7 @@ struct lambdakzeroBuilder {
     auto pz = v0candidate.posP[2] + v0candidate.negP[2];
     auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
 
-    if( lPt < minimumPt || lPt > maximumPt ){
+    if (lPt < minimumPt || lPt > maximumPt) {
       return false; // reject if not within desired window
     }
 
@@ -683,7 +683,6 @@ struct lambdakzeroBuilder {
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
-      
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
