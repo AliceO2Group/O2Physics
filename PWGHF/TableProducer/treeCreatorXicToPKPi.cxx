@@ -430,7 +430,7 @@ struct HfTreeCreatorXicToPKPi {
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(selectedXicToPKPiCand.size() + selectedXicToPiKPCand.size());
     } else {
-      rowCandidateFull.reserve(selectedXicToPKPiCand.size() + selectedXicToPKPiCand.size());
+      rowCandidateFull.reserve(selectedXicToPKPiCand.size() + selectedXicToPiKPCand.size());
     }
 
     for (const auto& candidate : selectedXicToPKPiCand) {
