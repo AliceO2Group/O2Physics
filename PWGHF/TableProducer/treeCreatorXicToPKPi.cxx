@@ -428,7 +428,7 @@ struct HfTreeCreatorXicToPKPi {
     }
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(selectedXicToPKPiCand.size() + selectedXicToPKPiCand.size());
+      rowCandidateLite.reserve(selectedXicToPKPiCand.size() + selectedXicToPiKPCand.size());
     } else {
       rowCandidateFull.reserve(selectedXicToPKPiCand.size() + selectedXicToPKPiCand.size());
     }
