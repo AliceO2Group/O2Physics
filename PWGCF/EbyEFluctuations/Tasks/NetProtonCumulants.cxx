@@ -54,7 +54,7 @@ struct NetProtonCumulants_Table_QA {
   Configurable<float> cfgCutPtUpperTPC{"cfgCutPtUpperTPC", 0.6f, "Upper pT cut for PID using TPC only"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
   Configurable<float> cfgnSigmaCut{"cfgnSigmaCut", 2.0f, "PID nSigma cut"};
-  
+
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl);
@@ -82,7 +82,7 @@ struct NetProtonCumulants_Table_QA {
     std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90};
     AxisSpec centAxis = {centBining, "centrality (%)"};
     AxisSpec netProtonAxis = {2001, -1000.5, 1000.5, "net-proton number"};
-    
+
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
     histos.add("hPtAll", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
@@ -98,15 +98,13 @@ struct NetProtonCumulants_Table_QA {
     histos.add("hNetProtonVsCentrality", "", kTH2F, {netProtonAxis, centAxis});
     histos.add("hProfileTotalProton", "", kTProfile, {centAxis});
   }
-
   Produces<aod::NetProton> net_proton_num; //! table creation
-								
+
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void process(aodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aodTracks const& inputTracks)
   {
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), coll.centFT0C());
-    
     // variables
     float cent = coll.centFT0C();
     float n_ch = 0.0;
@@ -116,14 +114,13 @@ struct NetProtonCumulants_Table_QA {
     //! centrality cut
     if (cent > 0.0f && cent < 90.0f) {
 
-      for (auto track : inputTracks) { //! Loop over tracks
+     for (auto track : inputTracks) { //! Loop over tracks
+        histos.fill(HIST("hPtAll"), track.pt());
+        histos.fill(HIST("hEtaAll"), track.eta());
+        histos.fill(HIST("hPhiAll"), track.phi());
 
-	histos.fill(HIST("hPtAll"), track.pt());
-	histos.fill(HIST("hEtaAll"), track.eta());
-	histos.fill(HIST("hPhiAll"), track.phi());
-
-	//! PID checking
-	int flag=0; 
+        //! PID checking
+	int flag=0;
 	if (track.pt() > 0.2f && track.pt() <= cfgCutPtUpperTPC) {
 	  if (track.tpcNSigmaPr() < cfgnSigmaCut) {
 	    flag = 1;
