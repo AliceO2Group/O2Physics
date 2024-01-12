@@ -276,7 +276,7 @@ struct HfTreeCreatorXicToPKPi {
 
   /// Fill table accounting for MC information and mass hypothesis
   /// \param doMc true to fill MC information
-  /// \param massHypo mass hypothesis considered: 0 = KKPi, 1 = PiKK
+  /// \param massHypo mass hypothesis considered: 0 = PKPi, 1 = PiKP
   /// \param candidate is candidate
   template <bool doMc = false, int massHypo = 0, typename T>
   void fillCandidateTable(const T& candidate)
