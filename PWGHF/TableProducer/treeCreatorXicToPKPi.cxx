@@ -340,7 +340,6 @@ struct HfTreeCreatorXicToPKPi {
         candidate.phi(),
         flagMc,
         originMc);
-      //            candidate.isCandidateSwapped());
     } else {
       rowCandidateFull(
         candidate.collisionId(),
