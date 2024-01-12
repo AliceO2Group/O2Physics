@@ -162,19 +162,19 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0};
       const double xmax[ndim] = {3.5, 10.0, 5.0, 3.2};
 
-      hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_uls_same->SetBinEdges(0, mee);
       hs_dilepton_uls_same->SetBinEdges(1, pt);
       hs_dilepton_uls_same->Sumw2();
       list->Add(hs_dilepton_uls_same);
 
-      hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lspp_same->SetBinEdges(0, mee);
       hs_dilepton_lspp_same->SetBinEdges(1, pt);
       hs_dilepton_lspp_same->Sumw2();
       list->Add(hs_dilepton_lspp_same);
 
-      hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{xy,ee} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lsmm_same->SetBinEdges(0, mee);
       hs_dilepton_lsmm_same->SetBinEdges(1, pt);
       hs_dilepton_lsmm_same->Sumw2();

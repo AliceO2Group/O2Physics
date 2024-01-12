@@ -350,8 +350,15 @@ class DalitzEECut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DalitzEECuts::kDCA3Dsigma: {
-        float dca_3d = std::sqrt(std::pow(track.dcaXY() / std::sqrt(track.cYY()), 2) + std::pow(track.dcaZ() / std::sqrt(track.cZZ()), 2));
-        return mMinDca3D <= dca_3d && dca_3d <= mMaxDca3D; // in sigma
+        float dca_3d = 999.f;
+        float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+        if (det < 0) {
+          dca_3d = 999.f;
+        } else {
+          float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+          dca_3d = std::sqrt(std::abs(chi2) / 2.);
+        }
+        return mMinDca3D <= dca_3d && dca_3d <= mMaxDca3D; // in sigma for single leg
       }
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
