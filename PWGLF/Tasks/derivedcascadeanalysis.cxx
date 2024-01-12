@@ -115,7 +115,7 @@ struct derivedCascadeAnalysis {
   void init(InitContext const&)
   {
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
-    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101,0,101}});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
 
     histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
 
@@ -124,10 +124,10 @@ struct derivedCascadeAnalysis {
       histos.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(i, CutLabel[i - 1]);
     }
 
-    histos.add("InvMassBefSel/hNegativeCascade", "hNegativeCascade", HistType::kTH3F, {axisPt, axisXiMass,{101,0,101}});
-    histos.add("InvMassBefSel/hPositiveCascade", "hPositiveCascade", {HistType::kTH3F, {axisPt, axisXiMass,{101,0,101}}});
+    histos.add("InvMassBefSel/hNegativeCascade", "hNegativeCascade", HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}});
+    histos.add("InvMassBefSel/hPositiveCascade", "hPositiveCascade", {HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}}});
 
-    if(!isXi){
+    if (!isXi) {
       histos.get<TH3>(HIST("InvMassBefSel/hNegativeCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
       histos.get<TH3>(HIST("InvMassBefSel/hPositiveCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
     }
@@ -156,18 +156,22 @@ struct derivedCascadeAnalysis {
 
       // To have trace of how it was before selections
       if (casc.sign() < 0) {
-        if (isXi) histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
-        else histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
+        if (isXi)
+          histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
+        else
+          histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
       }
       if (casc.sign() > 0) {
-        if (isXi) histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
-        else histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
+        if (isXi)
+          histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
+        else
+          histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
       }
 
       if (isXi) {
         if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > masswin)
-            continue;
-          histos.fill(HIST("hCandidate"), ++counter);
+          continue;
+        histos.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(casc.yXi()) > rapCut)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
@@ -191,56 +195,58 @@ struct derivedCascadeAnalysis {
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
-      if(doDCAdauToPVCut){
+      if (doDCAdauToPVCut) {
         if (TMath::Abs(casc.dcabachtopv()) < dcaBachToPV)
           continue;
-        if(casc.sign() > 0 && (TMath::Abs(casc.dcanegtopv()) < dcaBaryonToPV || TMath::Abs(casc.dcapostopv()) < dcaMesonToPV))
+        if (casc.sign() > 0 && (TMath::Abs(casc.dcanegtopv()) < dcaBaryonToPV || TMath::Abs(casc.dcapostopv()) < dcaMesonToPV))
           continue;
-        if(casc.sign() < 0 && (TMath::Abs(casc.dcapostopv()) < dcaBaryonToPV || TMath::Abs(casc.dcanegtopv()) < dcaMesonToPV))
+        if (casc.sign() < 0 && (TMath::Abs(casc.dcapostopv()) < dcaBaryonToPV || TMath::Abs(casc.dcanegtopv()) < dcaMesonToPV))
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
-      if(doCascadeCosPaCut)
-      {
-        if(doPtDepCosPaCut){
+      if (doCascadeCosPaCut) {
+        if (doPtDepCosPaCut) {
           double ptdepCut = casCosPaPtParameter / casc.pt();
           if (ptdepCut > 0.3 || casc.pt() < 0.5)
             ptdepCut = 0.3;
           if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < TMath::Cos(ptdepCut))
             continue;
-        }else if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospa)
+        } else if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospa)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
-      if(doV0CosPaCut)
-      {
-        if(doPtDepV0CosPaCut)
-        {
+      if (doV0CosPaCut) {
+        if (doPtDepV0CosPaCut) {
           double ptdepCut = v0CosPaPtParameter / casc.pt();
           if (ptdepCut > 0.3 || casc.pt() < 0.5)
             ptdepCut = 0.3;
-          if (casc.casccosPA(casc.x(),casc.y(),casc.z()) < TMath::Cos(ptdepCut))
+          if (casc.casccosPA(casc.x(), casc.y(), casc.z()) < TMath::Cos(ptdepCut))
             continue;
-        }else if (casc.casccosPA(casc.x(),casc.y(),casc.z()) < v0cospa)
+        } else if (casc.casccosPA(casc.x(), casc.y(), casc.z()) < v0cospa)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      } else ++counter;
+      } else
+        ++counter;
 
-      if(doDCACascadeDauCut){
+      if (doDCACascadeDauCut) {
         if (casc.dcacascdaughters() > dcacascdau)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
-      if(doDCAV0DauCut){
+      if (doDCAV0DauCut) {
         if (casc.dcaV0daughters() > dcav0dau)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
-      if (doCascadeRadiusCut){
+      if (doCascadeRadiusCut) {
         if (casc.cascradius() < minRadius)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
@@ -248,45 +254,50 @@ struct derivedCascadeAnalysis {
         if (casc.cascradius() > maxRadius)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      } else counter+=2;
+      } else
+        counter += 2;
 
-      if(doV0RadiusCut){
+      if (doV0RadiusCut) {
         if (casc.v0radius() < minV0Radius)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
         if (casc.v0radius() > maxV0Radius)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      } else counter+=2;
+      } else
+        counter += 2;
 
-      if(doDCAV0ToPVCut){
-        if (TMath::Abs(casc.dcav0topv(casc.x(),casc.y(),casc.z())) < dcaV0ToPV)
+      if (doDCAV0ToPVCut) {
+        if (TMath::Abs(casc.dcav0topv(casc.x(), casc.y(), casc.z())) < dcaV0ToPV)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
       if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > lambdaMassWin)
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
-      if(doNTPCSigmaCut){
+      if (doNTPCSigmaCut) {
         if (casc.sign() < 0) {
-          if( TMath::Abs(posExtra.tpcNSigmaPr()) > nsigmatpcPr || TMath::Abs(negExtra.tpcNSigmaPi()) > nsigmatpcPi )
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) > nsigmatpcPr || TMath::Abs(negExtra.tpcNSigmaPi()) > nsigmatpcPi)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         } else if (casc.sign() > 0) {
-          if (TMath::Abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || TMath::Abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr )
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || TMath::Abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         }
-      }else ++counter;
+      } else
+        ++counter;
 
-      if(doBachelorBaryonCut){
-        if ( (casc.bachBaryonCosPA() > bachBaryonCosPA || TMath::Abs(casc.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
+      if (doBachelorBaryonCut) {
+        if ((casc.bachBaryonCosPA() > bachBaryonCosPA || TMath::Abs(casc.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
           continue;
         }
         histos.fill(HIST("hCandidate"), ++counter);
-      }else ++counter;
+      } else
+        ++counter;
 
       if (posExtra.tpcCrossedRows() < mintpccrrows || negExtra.tpcCrossedRows() < mintpccrrows || bachExtra.tpcCrossedRows() < mintpccrrows)
         continue;
@@ -311,43 +322,48 @@ struct derivedCascadeAnalysis {
 
       double invmass;
       if (isXi) {
-        if(doNTPCSigmaCut){
+        if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaPi()) > nsigmatpcPi)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        }else ++counter;
+        } else
+          ++counter;
 
-        if(doProperLifeTimeCut){
-          if ( pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13) > proplifetime * ctauxiPDG)
+        if (doProperLifeTimeCut) {
+          if (pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13) > proplifetime * ctauxiPDG)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        }else ++counter;
+        } else
+          ++counter;
 
         if (TMath::Abs(casc.mOmega() - pdgDB->Mass(3334)) < rejcomp)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
         invmass = casc.mXi();
       } else {
-        if(doNTPCSigmaCut){
+        if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        }else ++counter;
+        } else
+          ++counter;
 
-        if(doProperLifeTimeCut){
+        if (doProperLifeTimeCut) {
           if (pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13) > proplifetime * ctauomegaPDG)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        }else ++counter;
+        } else
+          ++counter;
         if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) < rejcomp)
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
         invmass = casc.mOmega();
       }
 
-      if(casc.sign() < 0) histos.fill(HIST("InvMassAfterSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
-      else histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
-
+      if (casc.sign() < 0)
+        histos.fill(HIST("InvMassAfterSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
+      else
+        histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
     }
   }
 
