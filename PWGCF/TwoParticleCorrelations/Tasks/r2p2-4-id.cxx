@@ -405,7 +405,6 @@ struct r2p24id {
   }
 };
 
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
