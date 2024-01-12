@@ -443,7 +443,7 @@ struct HfTreeCreatorXicToPKPi {
       fillCandidateTable<false, 0>(candidate);
     }
 
-    for (const auto& candidate : selectedXicToPKPiCand) {
+    for (const auto& candidate : selectedXicToPiKPCand) {
       if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
