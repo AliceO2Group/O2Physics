@@ -162,7 +162,6 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
-  Configurable<float> ConfTOFnSigmaCut{"ConfTOFnSigmaCut", 5., "TOF NSigma cut"};
   Configurable<float> ConfTOFpTmin{"ConfTOFpTmin", 500, "TOF pT min"};
 
   // TrackSelection *o2PhysicsTrackSelection;
@@ -626,12 +625,6 @@ struct femtoUniverseProducerTask {
         if (track.pt() > ConfTOFpTmin) {
           if (!track.hasTOF()) {
             continue;
-          }
-          std::vector<int> tmpPids = ConfChildPIDspecies;
-          for (o2::track::PID pid : tmpPids) {
-            if (!trackCuts.getNsigmaTOF(track, pid) < ConfTOFnSigmaCut) {
-              continue;
-            }
           }
         }
       }
