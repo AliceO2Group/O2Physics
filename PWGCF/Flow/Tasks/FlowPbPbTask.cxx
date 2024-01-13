@@ -62,7 +62,7 @@ struct FlowPbPbTask {
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
@@ -74,6 +74,16 @@ struct FlowPbPbTask {
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
   std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray;
+  enum ExtraProfile {
+    // here are TProfiles for vn-pt correlations that are not implemented in GFW
+    kMeanPt_InGap08 = 0,
+    kC22_Gap08_Weff,
+    kC22_Gap08_MeanPt,
+    kPtVarParA_InGap08,
+    kPtVarParB_InGap08,
+    // Count the total number of enum
+    kCount_ExtraProfile
+  };
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
@@ -101,15 +111,14 @@ struct FlowPbPbTask {
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
     for (int i = 0; i < cfgNbootstrap; i++) {
-      // currently we have 5 TProfiles in each sub dir
-      BootstrapArray[i].resize(5);
+      BootstrapArray[i].resize(kCount_ExtraProfile);
     }
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
-      BootstrapArray[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisMultiplicity}}));
-      BootstrapArray[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisMultiplicity}}));
-      BootstrapArray[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
-      BootstrapArray[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][kMeanPt_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][kC22_Gap08_Weff] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][kC22_Gap08_MeanPt] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][kPtVarParA_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
+      BootstrapArray[i][kPtVarParB_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisMultiplicity}}));
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -355,16 +364,16 @@ struct FlowPbPbTask {
     // Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     if (weffEvent_WithinGap08 > 1e-6)
-      BootstrapArray[SampleIndex][0]->Fill(cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+      BootstrapArray[SampleIndex][kMeanPt_InGap08]->Fill(cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
     if (weffEvent_WithinGap08 > 1e-6)
-      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][1], BootstrapArray[SampleIndex][2], cent);
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][kC22_Gap08_Weff], BootstrapArray[SampleIndex][kC22_Gap08_MeanPt], cent);
     if (WeffEvent_diff_WithGap08 > 1e-6) {
-      BootstrapArray[SampleIndex][3]->Fill(cent,
-                                           (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                                           WeffEvent_diff_WithGap08);
-      BootstrapArray[SampleIndex][4]->Fill(cent,
-                                           (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                                           WeffEvent_diff_WithGap08);
+      BootstrapArray[SampleIndex][kPtVarParA_InGap08]->Fill(cent,
+                                                            (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                                                            WeffEvent_diff_WithGap08);
+      BootstrapArray[SampleIndex][kPtVarParB_InGap08]->Fill(cent,
+                                                            (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
+                                                            WeffEvent_diff_WithGap08);
     }
 
     // Filling Flow Container
