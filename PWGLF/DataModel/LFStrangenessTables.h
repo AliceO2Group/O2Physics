@@ -15,6 +15,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
 
@@ -29,6 +30,8 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
+                  evsel::Sel8);
 DECLARE_SOA_TABLE(StraEPs, "AOD", "STRAEPS", //! centrality percentiles
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A,
                   qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C,
@@ -698,6 +701,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! rapidity (0, 1: Xi; 2, 3: Ome
                                return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassOmegaMinus);
                              return 0.0f;
                            });
+
+DECLARE_SOA_DYNAMIC_COLUMN(NegativePt, negativept, //! negative daughter pT
+                           [](float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxneg, pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(PositivePt, positivept, //! positive daughter pT
+                           [](float pxpos, float pypos) -> float { return RecoDecay::sqrtSumOfSquares(pxpos, pypos); });
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorPt, bachelorpt, //! bachelor daughter pT
+                           [](float pxpos, float pypos) -> float { return RecoDecay::sqrtSumOfSquares(pxpos, pypos); });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeEta, negativeeta, //! negative daughter eta
+                           [](float PxNeg, float PyNeg, float PzNeg) -> float { return RecoDecay::eta(std::array{PxNeg, PyNeg, PzNeg}); });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativePhi, negativephi, //! negative daughter phi
+                           [](float PxNeg, float PyNeg) -> float { return RecoDecay::phi(PxNeg, PyNeg); });
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveEta, positiveeta, //! positive daughter eta
+                           [](float PxPos, float PyPos, float PzPos) -> float { return RecoDecay::eta(std::array{PxPos, PyPos, PzPos}); });
+DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
+                           [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorEta, bacheloreta, //! bachelor daughter eta
+                           [](float PxPos, float PyPos, float PzPos) -> float { return RecoDecay::eta(std::array{PxPos, PyPos, PzPos}); });
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorPhi, bachelorphi, //! bachelor daughter phi
+                           [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 } // namespace cascdata
 
 //______________________________________________________
@@ -792,7 +814,17 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
-                  cascdata::Rapidity<cascdata::Px, cascdata::Py, cascdata::Pz>);
+                  cascdata::Rapidity<cascdata::Px, cascdata::Py, cascdata::Pz>,
+
+                  cascdata::NegativePt<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositivePt<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorPt<cascdata::PxBach, cascdata::PyBach>,
+                  cascdata::NegativeEta<cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::NegativePhi<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositiveEta<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos>,
+                  cascdata::PositivePhi<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorEta<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
+                  cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>);
 
 DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
@@ -820,7 +852,17 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
 
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
-                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>);
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+
+                  cascdata::NegativePt<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositivePt<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorPt<cascdata::PxBach, cascdata::PyBach>,
+                  cascdata::NegativeEta<cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::NegativePhi<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositiveEta<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos>,
+                  cascdata::PositivePhi<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorEta<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
+                  cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>);
 
 DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
@@ -848,7 +890,17 @@ DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
 
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
-                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>);
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+
+                  cascdata::NegativePt<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositivePt<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorPt<cascdata::PxBach, cascdata::PyBach>,
+                  cascdata::NegativeEta<cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::NegativePhi<cascdata::PxNeg, cascdata::PyNeg>,
+                  cascdata::PositiveEta<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos>,
+                  cascdata::PositivePhi<cascdata::PxPos, cascdata::PyPos>,
+                  cascdata::BachelorEta<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
+                  cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>);
 
 DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlation variables
                   cascdata::PDGCode, cascdata::PDGCodeMother, cascdata::PDGCodeV0, cascdata::IsPhysicalPrimary,
