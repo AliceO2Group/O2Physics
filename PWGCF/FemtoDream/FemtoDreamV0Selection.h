@@ -552,8 +552,8 @@ template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
   FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
-  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
+  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
+  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 

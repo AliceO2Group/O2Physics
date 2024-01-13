@@ -140,6 +140,9 @@ struct DalitzEEQC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
+    double values_single[4] = {0, 0, 0, 0};
+    float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -175,11 +178,30 @@ struct DalitzEEQC {
           auto pos = uls_pair.template posTrack_as<MyTracks>();
           auto ele = uls_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(uls_pair)) {
+            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
+            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
+            if (det_pos < 0 || det_ele < 0) {
+              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+              LOGF(info, "determinant is negative.");
+            } else {
+              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
+              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
+              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
+              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
+              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+            }
+            values_single[0] = uls_pair.mass();
+            values_single[1] = dca_pos_3d;
+            values_single[2] = dca_ele_3d;
+            values_single[3] = dca_ee_3d;
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
+
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
-            values[2] = uls_pair.dcaXY();
+            values[2] = dca_ee_3d;
             values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
+
             nuls++;
             for (auto& track : {pos, ele}) {
               if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
@@ -192,10 +214,30 @@ struct DalitzEEQC {
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
 
         for (auto& lspp_pair : lspp_pairs_per_coll) {
+          auto pos = lspp_pair.template posTrack_as<MyTracks>();
+          auto ele = lspp_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lspp_pair)) {
+            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
+            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
+            if (det_pos < 0 || det_ele < 0) {
+              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+              LOGF(info, "determinant is negative.");
+            } else {
+              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
+              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
+              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
+              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
+              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+            }
+            values_single[0] = lspp_pair.mass();
+            values_single[1] = dca_pos_3d;
+            values_single[2] = dca_ele_3d;
+            values_single[3] = dca_ee_3d;
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_dca_same"))->Fill(values_single);
+
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
-            values[2] = lspp_pair.dcaXY();
+            values[2] = dca_ee_3d;
             values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
             nlspp++;
@@ -204,10 +246,30 @@ struct DalitzEEQC {
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
 
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
+          auto pos = lsmm_pair.template posTrack_as<MyTracks>();
+          auto ele = lsmm_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lsmm_pair)) {
+            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
+            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
+            if (det_pos < 0 || det_ele < 0) {
+              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+              LOGF(info, "determinant is negative.");
+            } else {
+              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
+              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
+              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
+              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
+              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+            }
+            values_single[0] = lsmm_pair.mass();
+            values_single[1] = dca_pos_3d;
+            values_single[2] = dca_ele_3d;
+            values_single[3] = dca_ee_3d;
+            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_dca_same"))->Fill(values_single);
+
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
-            values[2] = lsmm_pair.dcaXY();
+            values[2] = dca_ee_3d;
             values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
             nlsmm++;
@@ -238,6 +300,9 @@ struct DalitzEEQC {
     double values[4] = {0, 0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
     float phiv = 0;
+    double values_single[4] = {0, 0, 0, 0};
+    float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
       auto dileptons_coll1 = dileptons.sliceBy(perCollision, collision1.globalIndex());
@@ -256,66 +321,50 @@ struct DalitzEEQC {
           auto pos2 = dl2.template posTrack_as<MyTracks>();
           auto ele2 = dl2.template negTrack_as<MyTracks>();
 
-          // float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
-          // float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
-          // float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
-          // float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
-          // float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
-          // float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
+          for (auto& t1 : {pos1, ele1}) {
+            for (auto& t2 : {pos2, ele2}) {
+              v1 = ROOT::Math::PtEtaPhiMVector(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+              v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+              v12 = v1 + v2;
+              phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision1.bz());
 
-          // mix uls1
-          // ROOT::Math::PtEtaPhiMVector v1(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          // ROOT::Math::PtEtaPhiMVector v2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          // ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), ele2.px(), ele2.py(), ele2.pz(), pos1.sign(), ele2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
-          }
+              det_pos = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+              det_ele = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
+              if (det_pos < 0 || det_ele < 0) {
+                dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+                LOGF(info, "determinant is negative.");
+              } else {
+                float chi2pos = (t1.dcaXY() * t1.dcaXY() * t1.cZZ() + t1.dcaZ() * t1.dcaZ() * t1.cYY() - 2. * t1.dcaXY() * t1.dcaZ() * t1.cZY()) / det_pos;
+                float chi2ele = (t2.dcaXY() * t2.dcaXY() * t2.cZZ() + t2.dcaZ() * t2.dcaZ() * t2.cYY() - 2. * t2.dcaXY() * t2.dcaZ() * t2.cZY()) / det_ele;
+                dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
+                dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
+                dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+              }
+              values_single[0] = v12.M();
+              values_single[1] = dca_pos_3d;
+              values_single[2] = dca_ele_3d;
+              values_single[3] = dca_ee_3d;
 
-          // mix uls2
-          v1 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele1.px(), ele1.py(), ele1.pz(), pos2.sign(), ele1.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2) + pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos2) && cut.IsSelectedTrack(ele1) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
-          }
+              values[0] = v12.M();
+              values[1] = v12.Pt();
+              values[2] = dca_ee_3d;
+              values[3] = phiv;
 
-          // mix lspp
-          v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), pos2.px(), pos2.py(), pos2.pz(), pos1.sign(), pos2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(pos2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
-          }
-
-          // mix lsmm
-          v1 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(ele1.px(), ele1.py(), ele1.pz(), ele2.px(), ele2.py(), ele2.pz(), ele1.sign(), ele2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(ele1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
+              if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), phiv)) {
+                if (t1.sign() * t2.sign() < 0) {
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_mix"))->Fill(values_single);
+                } else if (t1.sign() > 0 && t2.sign() > 0) {
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_dca_mix"))->Fill(values_single);
+                } else if (t1.sign() < 0 && t2.sign() < 0) {
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_dca_mix"))->Fill(values_single);
+                } else {
+                  LOGF(info, "This should not happen.");
+                }
+              }
+            }
           }
 
         } // end of different dileptn combinations

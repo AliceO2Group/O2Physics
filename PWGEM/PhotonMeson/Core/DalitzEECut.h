@@ -56,6 +56,7 @@ class DalitzEECut : public TNamed
     kTOFNsigmaPi,
     kTOFNsigmaKa,
     kTOFNsigmaPr,
+    kDCA3Dsigma,
     kDCAxy,
     kDCAz,
     kITSNCls,
@@ -139,6 +140,9 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kDCA3Dsigma)) {
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
@@ -345,6 +349,17 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
+      case DalitzEECuts::kDCA3Dsigma: {
+        float dca_3d = 999.f;
+        float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+        if (det < 0) {
+          dca_3d = 999.f;
+        } else {
+          float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+          dca_3d = std::sqrt(std::abs(chi2) / 2.);
+        }
+        return mMinDca3D <= dca_3d && dca_3d <= mMaxDca3D; // in sigma for single leg
+      }
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
@@ -396,8 +411,9 @@ class DalitzEECut : public TNamed
   void SetTOFNsigmaPrRange(float min = -1e+10, float max = 1e+10);
   void SetMaxPinMuonTPConly(float max);
 
-  void SetMaxDcaXY(float maxDcaXY);
-  void SetMaxDcaZ(float maxDcaZ);
+  void SetDca3DRange(float min, float max); // in sigma
+  void SetMaxDcaXY(float maxDcaXY);         // in cm
+  void SetMaxDcaZ(float maxDcaZ);           // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
 
@@ -425,6 +441,8 @@ class DalitzEECut : public TNamed
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
 
+  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
+  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
