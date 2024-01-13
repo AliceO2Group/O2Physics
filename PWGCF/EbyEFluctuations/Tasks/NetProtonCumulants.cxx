@@ -168,6 +168,13 @@ struct NetProtonCumulants_Table_QA {
 struct NetProtonCumulants_analysis {
 
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
+  ConfigurableAxis centAxis{"centAxis", {90, 0, 90},""};
+  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5},""};
+
+  // Connect to ccdb
+  Service<ccdb::BasicCCDBManager> ccdb;
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   // Define output
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -177,8 +184,8 @@ struct NetProtonCumulants_analysis {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec centAxis = {90, 0, 90, "centrality (%)"};
-    AxisSpec multAxis = {5000, 0.5, 5000.5, "#it{N}_{ch,acc}"};
+    // AxisSpec centAxis = {90, 0, 90, "centrality (%)"};
+    // AxisSpec multAxis = {5000, 0.5, 5000.5, "#it{N}_{ch,acc}"};
 
     registry.add("Prof_mu1_netproton", "", {HistType::kTProfile, {centAxis}});
     registry.add("Prof_mu2_netproton", "", {HistType::kTProfile, {centAxis}});
