@@ -73,7 +73,6 @@ struct MeanptFluctuations_QA_QnTable {
   // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
-
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
@@ -149,8 +148,8 @@ struct MeanptFluctuations_QA_QnTable {
 struct MeanptFluctuations_analysis {
 
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
-  ConfigurableAxis centAxis{"centAxis", {90, 0, 90},""};
-  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5},""};
+  ConfigurableAxis centAxis{"centAxis", {90, 0, 90}, ""};
+  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
 
   expressions::Filter Nch_filter = aod::ptQn::n_ch > 3.0f;
   using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
@@ -159,7 +158,7 @@ struct MeanptFluctuations_analysis {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-  
+
   // Define output
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> Subsample;
@@ -174,7 +173,7 @@ struct MeanptFluctuations_analysis {
     registry.add("Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    
+
     // initial array
     Subsample.resize(cfgNSubsample);
     for (int i = 0; i < cfgNSubsample; i++) {
@@ -192,7 +191,7 @@ struct MeanptFluctuations_analysis {
   float variance_term1;
   float skewness_term1;
   float kurtosis_term1;
-  
+
   // void process(aod::MultPtQn::iterator const& event_ptqn)
   void process(FilteredMultPtQn::iterator const& event_ptqn)
   {
@@ -203,13 +202,13 @@ struct MeanptFluctuations_analysis {
     variance_term1 = (TMath::Power(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
     skewness_term1 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
     kurtosis_term1 = (TMath::Power(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * TMath::Power(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * TMath::Power(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
-    
+
     // filling profiles for central values
     registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
     registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
     registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
     registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
-    
+
     // selecting subsample and filling profiles
     float l_Random = fRndm->Rndm();
     int SampleIndex = static_cast<int>(cfgNSubsample * l_Random);
