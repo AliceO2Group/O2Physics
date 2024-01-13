@@ -53,10 +53,13 @@ struct MeanptFluctuations_QA_QnTable {
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 3.0f, "Higher pT cut"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
+  // Configurable<float> cfgCutTrackDcaXY{"cfgCutTrackDcaXY", 0.1f, "Maximum DcaXY"};
+  Configurable<float> cfgCutTrackDcaZ{"cfgCutTrackDcaZ", 2.0f, "Maximum DcaZ"};
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl);
+  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
+  // Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (nabs(aod::track::dcaXY) < cfgCutTrackDcaZ) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -68,7 +71,8 @@ struct MeanptFluctuations_QA_QnTable {
   // filtering collisions and tracks***********
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+
 
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
@@ -89,6 +93,8 @@ struct MeanptFluctuations_QA_QnTable {
     histos.add("hPhi", ";#phi", kTH1F, {{100, 0., 2. * M_PI}});
     histos.add("hEta", ";#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
+    histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -5, 5}});
+    histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
   }
 
@@ -117,6 +123,8 @@ struct MeanptFluctuations_QA_QnTable {
       histos.fill(HIST("hPt"), track.pt());
       histos.fill(HIST("hEta"), track.eta());
       histos.fill(HIST("hPhi"), track.phi());
+      histos.fill(HIST("hDcaXY"), track.dcaXY());
+      histos.fill(HIST("hDcaZ"), track.dcaZ());
 
       pT_sum += track.pt();
       N += 1.0;
@@ -141,10 +149,17 @@ struct MeanptFluctuations_QA_QnTable {
 struct MeanptFluctuations_analysis {
 
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
+  ConfigurableAxis centAxis{"centAxis", {90, 0, 90},""};
+  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5},""};
 
   expressions::Filter Nch_filter = aod::ptQn::n_ch > 3.0f;
   using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
 
+  // Connect to ccdb
+  Service<ccdb::BasicCCDBManager> ccdb;
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  
   // Define output
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> Subsample;
@@ -152,50 +167,32 @@ struct MeanptFluctuations_analysis {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec centAxis = {90, 0, 90, "centrality (%)"};
-    AxisSpec multAxis = {5000, 0.5, 5000.5, "#it{N}_{ch,acc}"};
+    // AxisSpec centAxis = {90, 0, 90, "centrality (%)"};
+    // AxisSpec multAxis = {5000, 0.5, 5000.5, "#it{N}_{ch,acc}"};
 
     registry.add("Prof_mean_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_var_t2", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_skew_t2", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_skew_t3", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_kurt_t2", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_kurt_t3", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_kurt_t4", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-
+    
     // initial array
     Subsample.resize(cfgNSubsample);
     for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i].resize(10);
+      Subsample[i].resize(4);
     }
     for (int i = 0; i < cfgNSubsample; i++) {
       Subsample[i][0] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
       Subsample[i][1] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][2] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_var_t2", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][3] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][4] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_skew_t2", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][5] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_skew_t3", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][6] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][7] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t2", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][8] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t3", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][9] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t4", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      Subsample[i][2] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      Subsample[i][3] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
     }
   }
 
   float mean_term1;
   float variance_term1;
-  float variance_term2;
   float skewness_term1;
-  float skewness_term2;
-  float skewness_term3;
   float kurtosis_term1;
-  float kurtosis_term2;
-  float kurtosis_term3;
-  float kurtosis_term4;
-
+  
   // void process(aod::MultPtQn::iterator const& event_ptqn)
   void process(FilteredMultPtQn::iterator const& event_ptqn)
   {
@@ -203,44 +200,23 @@ struct MeanptFluctuations_analysis {
 
     // calculating observables
     mean_term1 = event_ptqn.q1() / event_ptqn.n_ch();
-
     variance_term1 = (TMath::Power(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
-    variance_term2 = event_ptqn.q1() / event_ptqn.n_ch();
-
     skewness_term1 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
-    skewness_term2 = (TMath::Power(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
-    skewness_term3 = (event_ptqn.q1() / event_ptqn.n_ch());
-
     kurtosis_term1 = (TMath::Power(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * TMath::Power(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * TMath::Power(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
-    kurtosis_term2 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
-    kurtosis_term3 = (TMath::Power(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
-    kurtosis_term4 = (event_ptqn.q1() / event_ptqn.n_ch());
-
+    
     // filling profiles for central values
     registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
     registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
-    registry.get<TProfile2D>(HIST("Prof_var_t2"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term2);
     registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
-    registry.get<TProfile2D>(HIST("Prof_skew_t2"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term2);
-    registry.get<TProfile2D>(HIST("Prof_skew_t3"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term3);
     registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
-    registry.get<TProfile2D>(HIST("Prof_kurt_t2"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term2);
-    registry.get<TProfile2D>(HIST("Prof_kurt_t3"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term3);
-    registry.get<TProfile2D>(HIST("Prof_kurt_t4"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term4);
-
+    
     // selecting subsample and filling profiles
     float l_Random = fRndm->Rndm();
     int SampleIndex = static_cast<int>(cfgNSubsample * l_Random);
     Subsample[SampleIndex][0]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
     Subsample[SampleIndex][1]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
-    Subsample[SampleIndex][2]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term2);
-    Subsample[SampleIndex][3]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
-    Subsample[SampleIndex][4]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term2);
-    Subsample[SampleIndex][5]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term3);
-    Subsample[SampleIndex][6]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
-    Subsample[SampleIndex][7]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term2);
-    Subsample[SampleIndex][8]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term3);
-    Subsample[SampleIndex][9]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term4);
+    Subsample[SampleIndex][2]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
+    Subsample[SampleIndex][3]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
   }
 };
 
