@@ -166,7 +166,14 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
-    float dca_3d = std::sqrt(std::pow(track.dcaXY() / std::sqrt(track.cYY()), 2) + std::pow(track.dcaZ() / std::sqrt(track.cZZ()), 2));
+    float dca_3d = 999.f;
+    float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+    if (det < 0) {
+      dca_3d = 999.f;
+    } else {
+      float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+      dca_3d = std::sqrt(std::abs(chi2) / 2.);
+    }
     if (dca_3d > dca_3d_sigma_max) {
       return false;
     }
@@ -276,7 +283,7 @@ struct skimmerPrimaryMuon {
                      track.tpcChi2NCl(), track.tpcInnerParam(),
                      track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                      track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                     track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ());
+                     track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ(), track.cZY());
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
       fRegistry.fill(HIST("Track/hTPCNsigmaMu_after"), track.tpcInnerParam(), track.tpcNSigmaMu());
