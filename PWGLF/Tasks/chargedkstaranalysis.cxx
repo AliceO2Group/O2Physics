@@ -57,11 +57,11 @@ struct chargedkstaranalysis {
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{
-      "ccdb-no-later-than",
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch())
-          .count(),
-      "latest acceptable timestamp of creation for the object"};
+    "ccdb-no-later-than",
+    std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch())
+      .count(),
+    "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080",
                                 "url of the ccdb repository"};
 
@@ -74,7 +74,11 @@ struct chargedkstaranalysis {
                                     true,
                                     true};
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
@@ -110,7 +114,7 @@ struct chargedkstaranalysis {
   Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f,
                                           "V0 Daugh sel: Min. nCls TPC"};
   Configurable<float> ConfDaughDCAMin{
-      "ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
+    "ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 4,
                                        "PID selections for KS0 daughters"};
 
@@ -132,7 +136,8 @@ struct chargedkstaranalysis {
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     // Axes
     AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f,
                                 "#it{M}_{inv} [GeV/#it{c}^{2}]"};
@@ -168,9 +173,9 @@ struct chargedkstaranalysis {
     if (QAv0) {
       // K0s reconstruction
       histos.add(
-          "hMassvsptvsmult", "hMassvsptvsmult",
-          {HistType::kTHnSparseF, {{K0ShortMassAxis}, {ptAxis}, {multAxis}}},
-          true);
+        "hMassvsptvsmult", "hMassvsptvsmult",
+        {HistType::kTHnSparseF, {{K0ShortMassAxis}, {ptAxis}, {multAxis}}},
+        true);
       // K0s topological/PID cuts
       histos.add("hDCAV0Daughters", "hDCAV0Daughters",
                  {HistType::kTH1F, {{50, 0.0f, 5.0f}}});
@@ -189,14 +194,16 @@ struct chargedkstaranalysis {
   }
 
   double massPi = TDatabasePDG::Instance()
-                      ->GetParticle(kPiPlus)
-                      ->Mass(); // FIXME: Get from the common header
+                    ->GetParticle(kPiPlus)
+                    ->Mass(); // FIXME: Get from the common header
   double massK0s = TDatabasePDG::Instance()
-                       ->GetParticle(kK0Short)
-                       ->Mass(); // FIXME: Get from the common header
+                     ->GetParticle(kK0Short)
+                     ->Mass(); // FIXME: Get from the common header
   ROOT::Math::PtEtaPhiMVector CKSVector;
 
-  template <typename T> bool selectionTrack(const T &candidate) {
+  template <typename T>
+  bool selectionTrack(const T& candidate)
+  {
     if (iscustomDCAcut &&
         !(candidate.isGlobalTrack() || candidate.isPVContributor() ||
           candidate.itsNCls() > cfgITScluster)) {
@@ -212,11 +219,13 @@ struct chargedkstaranalysis {
     return true;
   }
 
-  template <typename T> bool selectionPID(const T &candidate) {
+  template <typename T>
+  bool selectionPID(const T& candidate)
+  {
     if (candidate.hasTOF() &&
         (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() +
          candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) <
-            (nsigmaCutCombined * nsigmaCutCombined)) {
+          (nsigmaCutCombined * nsigmaCutCombined)) {
       return true;
     }
     if (!candidate.hasTOF() &&
@@ -227,8 +236,9 @@ struct chargedkstaranalysis {
   }
 
   template <typename Collision, typename V0>
-  bool SelectionV0(Collision const &collision, V0 const &candidate,
-                   float multiplicity) {
+  bool SelectionV0(Collision const& collision, V0 const& candidate,
+                   float multiplicity)
+  {
     if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
@@ -247,8 +257,8 @@ struct chargedkstaranalysis {
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(),
                                              collision.posZ()) *
                     TDatabasePDG::Instance()
-                        ->GetParticle(kK0Short)
-                        ->Mass(); // FIXME: Get from the common header
+                      ->GetParticle(kK0Short)
+                      ->Mass(); // FIXME: Get from the common header
     float lowmasscutks0 = 0.497 - cWidthKs0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + cWidthKs0 * cSigmaMassKs0;
     // float decayLength = candidate.distovertotmom(collision.posX(),
@@ -291,8 +301,9 @@ struct chargedkstaranalysis {
   }
 
   template <typename T>
-  bool isSelectedV0Daughter(T const &track, float charge,
-                            double nsigmaV0Daughter) {
+  bool isSelectedV0Daughter(T const& track, float charge,
+                            double nsigmaV0Daughter)
+  {
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
     const auto dcaXY = track.dcaXY();
@@ -334,43 +345,51 @@ struct chargedkstaranalysis {
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
   Filter acceptanceFilter =
-      (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+    (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) &&
                         (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<
-      soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs,
-                aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
+    soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs,
+              aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
   using TrackCandidates = soa::Filtered<
-      soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+              aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
   using V0TrackCandidate = aod::V0Datas;
 
   ConfigurableAxis axisVertex{
-      "axisVertex", {20, -10, 10}, "vertex axis for bin"};
+    "axisVertex",
+    {20, -10, 10},
+    "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{
-      "axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
+    "axisMultiplicityClass",
+    {20, 0, 100},
+    "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{
-      "axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
+    "axisMultiplicity",
+    {2000, 0, 10000},
+    "TPC multiplicity  for bin"};
 
   using BinningTypeTPCMultiplicity =
-      ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeVertexContributor =
-      ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   using BinningTypeCentralityM =
-      ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeCentralityC =
-      ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   BinningTypeVertexContributor binningOnPositions{
-      {axisVertex, axisMultiplicity}, true};
+    {axisVertex, axisMultiplicity},
+    true};
   Pair<EventCandidates, TrackCandidates, V0TrackCandidate,
        BinningTypeVertexContributor>
-      pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
+    pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
 
-  void processSE(EventCandidates::iterator const &collision,
-                 TrackCandidates const &tracks, aod::V0Datas const &V0s,
-                 aod::BCs const &) {
+  void processSE(EventCandidates::iterator const& collision,
+                 TrackCandidates const& tracks, aod::V0Datas const& V0s,
+                 aod::BCs const&)
+  {
 
     if (!collision.sel8()) {
       return;
@@ -422,7 +441,7 @@ struct chargedkstaranalysis {
 
     } // track loop ends
 
-    for (auto &v0 : V0s) {
+    for (auto& v0 : V0s) {
 
       auto postrack = v0.template posTrack_as<TrackCandidates>();
       auto negtrack = v0.template negTrack_as<TrackCandidates>();
@@ -469,12 +488,12 @@ struct chargedkstaranalysis {
 
   PROCESS_SWITCH(chargedkstaranalysis, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const &collisions,
-                 TrackCandidates const &tracks, V0TrackCandidate const &V0s)
+  void processME(EventCandidates const& collisions,
+                 TrackCandidates const& tracks, V0TrackCandidate const& V0s)
 
   {
 
-    for (auto &[c1, tracks1, c2, tracks2] : pair) {
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
 
       if (!c1.sel8()) {
         continue;
@@ -491,8 +510,8 @@ struct chargedkstaranalysis {
       if (cfgMultFT0 == 0 && cfgCentFT0C == 0)
         multiplicity = c1.centFT0M();
 
-      for (auto &[t1, t2] : o2::soa::combinations(
-               o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (auto& [t1, t2] : o2::soa::combinations(
+             o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (!(selectionTrack(t1) || selectionPID(t1)))
           continue;
@@ -529,6 +548,7 @@ struct chargedkstaranalysis {
   PROCESS_SWITCH(chargedkstaranalysis, processME, "Process Mixed event", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<chargedkstaranalysis>(cfgc)};
 }
