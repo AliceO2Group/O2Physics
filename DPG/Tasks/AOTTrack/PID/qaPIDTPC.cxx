@@ -51,8 +51,8 @@ struct tpcPidQa {
                                                       "nsigma/pt/Ka", "nsigma/pt/Pr", "nsigma/pt/De",
                                                       "nsigma/pt/Tr", "nsigma/pt/He", "nsigma/pt/Al"};
   static constexpr std::string_view hnsigma_p_eta_Ncl[Np] = {"nsigma/sparsePinEtaNcl/El", "nsigma/sparsePinEtaNcl/Mu", "nsigma/sparsePinEtaNcl/Pi",
-                                                       "nsigma/sparsePinEtaNcl/Ka", "nsigma/sparsePinEtaNcl/Pr", "nsigma/sparsePinEtaNcl/De",
-                                                       "nsigma/sparsePinEtaNcl/Tr", "nsigma/sparsePinEtaNcl/He", "nsigma/sparsePinEtaNcl/Al"};
+                                                             "nsigma/sparsePinEtaNcl/Ka", "nsigma/sparsePinEtaNcl/Pr", "nsigma/sparsePinEtaNcl/De",
+                                                             "nsigma/sparsePinEtaNcl/Tr", "nsigma/sparsePinEtaNcl/He", "nsigma/sparsePinEtaNcl/Al"};
 
   // With TOF
   static constexpr std::string_view hexpected_wTOF[Np] = {"wTOF/expected/El", "wTOF/expected/Mu", "wTOF/expected/Pi",
@@ -80,8 +80,8 @@ struct tpcPidQa {
                                                         "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
                                                         "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
   static constexpr std::string_view hnsigma_p_eta_Ncl_wTOF[Np] = {"wTOF/nsigma/sparsePinEtaNcl/El", "wTOF/nsigma/sparsePinEtaNcl/Mu", "wTOF/nsigma/sparsePinEtaNcl/Pi",
-                                                            "wTOF/nsigma/sparsePinEtaNcl/Ka", "wTOF/nsigma/sparsePinEtaNcl/Pr", "wTOF/nsigma/sparsePinEtaNcl/De",
-                                                            "wTOF/nsigma/sparsePinEtaNcl/Tr", "wTOF/nsigma/sparsePinEtaNcl/He", "wTOF/nsigma/sparsePinEtaNcl/Al"};
+                                                                  "wTOF/nsigma/sparsePinEtaNcl/Ka", "wTOF/nsigma/sparsePinEtaNcl/Pr", "wTOF/nsigma/sparsePinEtaNcl/De",
+                                                                  "wTOF/nsigma/sparsePinEtaNcl/Tr", "wTOF/nsigma/sparsePinEtaNcl/He", "wTOF/nsigma/sparsePinEtaNcl/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
