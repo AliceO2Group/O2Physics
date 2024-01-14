@@ -24,7 +24,6 @@
 #include "Common/DataModel/TrackSelectionTables.h" //
 #include "Common/DataModel/Centrality.h"           //
 
-
 #include "Framework/AnalysisDataModel.h"     //
 #include "Framework/ASoAHelpers.h"           //
 #include "Framework/HistogramRegistry.h"     //
