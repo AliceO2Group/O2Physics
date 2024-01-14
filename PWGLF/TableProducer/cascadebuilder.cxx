@@ -188,6 +188,12 @@ struct cascadeBuilder {
   ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
   ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
 
+  // round some V0 core variables up to a certain level of precision if requested 
+  // useful to keep derived data sizes under control
+  // variables that are rounded include the DCAs but not the CosPA (precision needed) 
+  Configurable<bool> roundDCAVariables{"roundDCAVariables", false, "round topological variables"};
+  Configurable<float> precisionDCAs{"precisionDCAs", 0.01f, "precision to keep the DCAs with"};
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -272,6 +278,23 @@ struct cascadeBuilder {
      {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
      {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
      {"hBachelorITSClusters", "hBachelorITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
+
+  float roundToPrecision( float number, float step = 0.01){
+    // this function rounds a certain number in an axis that is quantized by
+    // the variable 'step'; the rounded number is placed halfway between
+    // n*step and (n+1)*step such that analysis can be done with absolutely
+    // no issue with precision 'step'.
+    return step*static_cast<float>(static_cast<int>((number)/step))+TMath::Sign(1.0f,number)*(0.5f)*step;
+  }
+
+  void roundCascadeCandidateVariables(){ 
+    // Do not round actual cascade (pseudo-)track DCAs -> consider they may be tracked, high precision 
+    cascadecandidate.dcacascdau = roundToPrecision ( cascadecandidate.dcacascdau , precisionDCAs); 
+    cascadecandidate.v0dcadau = roundToPrecision ( cascadecandidate.v0dcadau , precisionDCAs); 
+    cascadecandidate.v0dcanegtopv = roundToPrecision ( cascadecandidate.v0dcanegtopv , precisionDCAs); 
+    cascadecandidate.v0dcapostopv = roundToPrecision ( cascadecandidate.v0dcapostopv , precisionDCAs); 
+    cascadecandidate.bachDCAxy = roundToPrecision ( cascadecandidate.bachDCAxy , precisionDCAs); 
+  }
 
   void resetHistos()
   {
@@ -1287,6 +1310,10 @@ struct cascadeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
+      // round the DCA variables to a certain precision if asked
+      if ( roundDCAVariables ) 
+        roundCascadeCandidateVariables(); 
+
       cascidx(/*cascadecandidate.v0Id, */ cascade.globalIndex(),
               cascadecandidate.positiveId, cascadecandidate.negativeId,
               cascadecandidate.bachelorId, cascade.collisionId());
@@ -1345,6 +1372,11 @@ struct cascadeBuilder {
       bool validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade);
       if (!validCascadeCandidateKF)
         continue; // doesn't pass cascade selections
+
+      // round the DCA variables to a certain precision if asked
+      if ( roundDCAVariables ) 
+        roundCascadeCandidateVariables(); 
+
       registry.fill(HIST("hKFParticleStatistics"), 2.0f);
 
       kfcascidx(/*cascadecandidate.v0Id, */ cascade.globalIndex(),
@@ -1407,6 +1439,10 @@ struct cascadeBuilder {
       }
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
+
+      // round the DCA variables to a certain precision if asked
+      if ( roundDCAVariables ) 
+        roundCascadeCandidateVariables(); 
 
       // fill regular tables (no strangeness tracking)
       cascidx(/*cascadecandidate.v0Id, */ cascade.globalIndex(),
