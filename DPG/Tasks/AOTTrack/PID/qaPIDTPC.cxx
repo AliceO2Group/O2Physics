@@ -50,9 +50,9 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigma_pt[Np] = {"nsigma/pt/El", "nsigma/pt/Mu", "nsigma/pt/Pi",
                                                       "nsigma/pt/Ka", "nsigma/pt/Pr", "nsigma/pt/De",
                                                       "nsigma/pt/Tr", "nsigma/pt/He", "nsigma/pt/Al"};
-  static constexpr std::string_view hnsigma_eta[Np] = {"nsigma/eta/El", "nsigma/eta/Mu", "nsigma/eta/Pi",
-                                                       "nsigma/eta/Ka", "nsigma/eta/Pr", "nsigma/eta/De",
-                                                       "nsigma/eta/Tr", "nsigma/eta/He", "nsigma/eta/Al"};
+  static constexpr std::string_view hnsigma_p_eta_Ncl[Np] = {"nsigma/sparsePinEtaNcl/El", "nsigma/sparsePinEtaNcl/Mu", "nsigma/sparsePinEtaNcl/Pi",
+                                                       "nsigma/sparsePinEtaNcl/Ka", "nsigma/sparsePinEtaNcl/Pr", "nsigma/sparsePinEtaNcl/De",
+                                                       "nsigma/sparsePinEtaNcl/Tr", "nsigma/sparsePinEtaNcl/He", "nsigma/sparsePinEtaNcl/Al"};
 
   // With TOF
   static constexpr std::string_view hexpected_wTOF[Np] = {"wTOF/expected/El", "wTOF/expected/Mu", "wTOF/expected/Pi",
@@ -79,9 +79,9 @@ struct tpcPidQa {
   static constexpr std::string_view hsignal_wTOF[Np] = {"wTOF/signal/El", "wTOF/signal/Mu", "wTOF/signal/Pi",
                                                         "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
                                                         "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
-  static constexpr std::string_view hnsigma_eta_wTOF[Np] = {"wTOF/nsigma/eta/El", "wTOF/nsigma/eta/Mu", "wTOF/nsigma/eta/Pi",
-                                                            "wTOF/nsigma/eta/Ka", "wTOF/nsigma/eta/Pr", "wTOF/nsigma/eta/De",
-                                                            "wTOF/nsigma/eta/Tr", "wTOF/nsigma/eta/He", "wTOF/nsigma/eta/Al"};
+  static constexpr std::string_view hnsigma_p_eta_Ncl_wTOF[Np] = {"wTOF/nsigma/sparsePinEtaNcl/El", "wTOF/nsigma/sparsePinEtaNcl/Mu", "wTOF/nsigma/sparsePinEtaNcl/Pi",
+                                                            "wTOF/nsigma/sparsePinEtaNcl/Ka", "wTOF/nsigma/sparsePinEtaNcl/Pr", "wTOF/nsigma/sparsePinEtaNcl/De",
+                                                            "wTOF/nsigma/sparsePinEtaNcl/Tr", "wTOF/nsigma/sparsePinEtaNcl/He", "wTOF/nsigma/sparsePinEtaNcl/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -89,7 +89,7 @@ struct tpcPidQa {
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
-  ConfigurableAxis etaBins{"etaBins", {50, -1.f, 1.f}, "Binning in eta"};
+  ConfigurableAxis etaBins{"etaBins", {100, -1.f, 1.f}, "Binning in eta"};
   ConfigurableAxis phiBins{"phiBins", {100, 0, TMath::TwoPi()}, "Binning in eta"};
   ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
   ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (dEdx - expected dEdx)"};
@@ -103,7 +103,7 @@ struct tpcPidQa {
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Bining in number of cluster in TPC"};
-  Configurable<bool> flagFourDemensionQA{"flagFourDemensionQA", false, "Flag to check the four dimension QA"};
+  Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -186,9 +186,9 @@ struct tpcPidQa {
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec tpcnclsAxis{tpcNclsBins, "TPC #cls"};
 
-    HistogramConfigSpec defaultParticleHists{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
-    if (flagFourDemensionQA) {
-      histos.add(hnsigma_eta[id].data(), axisTitle, defaultParticleHists);
+    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    if (fillTHnSparses) {
+      histos.add(hnsigma_p_eta_Ncl[id].data(), axisTitle, particleSparseHists);
     }
 
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
@@ -202,9 +202,9 @@ struct tpcPidQa {
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
 
-    HistogramConfigSpec defaultParticleHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
-    if (flagFourDemensionQA) {
-      histos.add(hnsigma_eta_wTOF[id].data(), Form("With TOF %s", axisTitle), defaultParticleHists_wTOF);
+    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    if (fillTHnSparses) {
+      histos.add(hnsigma_p_eta_Ncl_wTOF[id].data(), Form("With TOF %s", axisTitle), particleSparseHists_wTOF);
     }
 
     if (splitSignalPerCharge) {
@@ -409,8 +409,8 @@ struct tpcPidQa {
         histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
         histos.fill(HIST(hdelta[id]), t.tpcInnerParam(), diff);
 
-        if (flagFourDemensionQA) {
-          histos.fill(HIST(hnsigma_eta[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
+        if (fillTHnSparses) {
+          histos.fill(HIST(hnsigma_p_eta_Ncl[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
         }
 
         if (splitSignalPerCharge) {
@@ -431,8 +431,8 @@ struct tpcPidQa {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigma_wTOF[id]), t.p(), nsigma);
-          if (flagFourDemensionQA) {
-            histos.fill(HIST(hnsigma_eta_wTOF[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
+          if (fillTHnSparses) {
+            histos.fill(HIST(hnsigma_p_eta_Ncl_wTOF[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
           }
           if (splitSignalPerCharge) {
             histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma, t.sign());
