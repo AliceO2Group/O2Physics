@@ -124,6 +124,12 @@ struct strangederivedbuilder {
 
   Configurable<bool> fillEmptyCollisions{"fillEmptyCollisions", false, "fill collision entries without candidates"};
 
+  // round Nsigma variables up to a certain level of precision if requested
+  // useful to keep derived data sizes under control
+  // variables that are rounded include the DCAs but not the CosPA (precision needed)
+  Configurable<bool> roundNSigmaVariables{"roundNSigmaVariables", false, "round NSigma variables"};
+  Configurable<float> precisionNSigmas{"precisionNSigmas", 0.1f, "precision to keep NSigmas"};
+
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
@@ -131,6 +137,15 @@ struct strangederivedbuilder {
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
 
   int64_t currentCollIdx;
+
+  float roundToPrecision(float number, float step = 0.01)
+  {
+    // this function rounds a certain number in an axis that is quantized by
+    // the variable 'step'; the rounded number is placed halfway between
+    // n*step and (n+1)*step such that analysis can be done with absolutely
+    // no issue with precision 'step'.
+    return step * static_cast<float>(static_cast<int>((number) / step)) + TMath::Sign(1.0f, number) * (0.5f) * step;
+  }
 
   void init(InitContext& context)
   {
@@ -329,9 +344,20 @@ struct strangederivedbuilder {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
-        dauTrackTPCPIDs(tr.tpcSignal(), tr.tpcNSigmaEl(),
-                        tr.tpcNSigmaPi(), tr.tpcNSigmaKa(),
-                        tr.tpcNSigmaPr(), tr.tpcNSigmaHe());
+
+        // round if requested
+        if (roundNSigmaVariables) {
+          dauTrackTPCPIDs(tr.tpcSignal(),
+                          roundToPrecision(tr.tpcNSigmaEl(), precisionNSigmas),
+                          roundToPrecision(tr.tpcNSigmaPi(), precisionNSigmas),
+                          roundToPrecision(tr.tpcNSigmaKa(), precisionNSigmas),
+                          roundToPrecision(tr.tpcNSigmaPr(), precisionNSigmas),
+                          roundToPrecision(tr.tpcNSigmaHe(), precisionNSigmas));
+        } else {
+          dauTrackTPCPIDs(tr.tpcSignal(), tr.tpcNSigmaEl(),
+                          tr.tpcNSigmaPi(), tr.tpcNSigmaKa(),
+                          tr.tpcNSigmaPr(), tr.tpcNSigmaHe());
+        }
       }
     }
     // done!
