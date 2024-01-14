@@ -24,7 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h" //
 #include "Common/DataModel/Centrality.h"           //
 
-#include "Framework/runDataProcessing.h"
+
 #include "Framework/AnalysisDataModel.h"     //
 #include "Framework/ASoAHelpers.h"           //
 #include "Framework/HistogramRegistry.h"     //
@@ -300,7 +300,7 @@ struct MeanpTFlucPbPbIdentified {
 
           VMeanPtPion.push_back(track.pt());
 
-          for (long unsigned int jPi = 0; jPi < VMeanPtPion.size(); jPi++) {
+          for (ULong64_t jPi = 0; jPi < VMeanPtPion.size(); jPi++) {
             histos.fill(HIST("hPtChPion"), nCh, VMeanPtPion[jPi]);
           }
 
@@ -325,7 +325,7 @@ struct MeanpTFlucPbPbIdentified {
 
           VMeanPtKaon.push_back(track.pt());
 
-          for (long unsigned int jKa = 0; jKa < VMeanPtKaon.size(); jKa++) {
+          for (ULong64_t jKa = 0; jKa < VMeanPtKaon.size(); jKa++) {
             histos.fill(HIST("hPtChKaon"), nCh, VMeanPtKaon[jKa]);
           }
 
@@ -350,7 +350,7 @@ struct MeanpTFlucPbPbIdentified {
 
           VMeanPtProton.push_back(track.pt());
 
-          for (long unsigned int jPr = 0; jPr < VMeanPtProton.size(); jPr++) {
+          for (ULong64_t jPr = 0; jPr < VMeanPtProton.size(); jPr++) {
             histos.fill(HIST("hPtChProton"), nCh, VMeanPtProton[jPr]);
           }
 
@@ -416,7 +416,7 @@ struct MeanpTFlucPbPbIdentified {
     histos.fill(HIST("hVarpx"), sample, nChp);
 
     //    for(int j=0; j<VMeanPt.size();j++){
-    for (long unsigned int j = 0; j < VMeanPt.size(); j++) {
+    for (ULong64_t j = 0; j < VMeanPt.size(); j++) {
       histos.fill(HIST("hPtCh"), nCh, VMeanPt[j]);
     }
 
