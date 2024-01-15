@@ -110,8 +110,8 @@ o2physics_add_dpl_workflow(id-raa
                     COMPONENT_NAME Analysis)
 
 # Strangeness
-o2physics_add_dpl_workflow(lambdakzeroanalysis
-                    SOURCES lambdakzeroanalysis.cxx
+o2physics_add_dpl_workflow(derivedlambdakzeroanalysis
+                    SOURCES derivedlambdakzeroanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -181,7 +181,6 @@ o2physics_add_dpl_workflow(k892pmanalysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(lambda1520analysis
                     SOURCES lambda1520analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -241,7 +240,6 @@ o2physics_add_dpl_workflow(f1protoncorrelation
                     SOURCES f1protoncorrelation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-
 
 o2physics_add_dpl_workflow(chargedkstaranalysis
                     SOURCES chargedkstaranalysis.cxx
