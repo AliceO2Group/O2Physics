@@ -33,6 +33,15 @@ Configurable<bool> cfUseCCDB{
 Configurable<string> cfWhatToProcess{
   "cfWhatToProcess", "Rec",
   "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated"};
+Configurable<unsigned int> cfRandomSeed{
+  "cfRandomSeed", 0,
+  "0 = random seed is guaranteed to be unique in space and time"};
+Configurable<bool> cfUseFisherYates{
+  "cfUseFisherYates", false,
+  "use or not Fisher-Yates algorithm to randomize particle indices"};
+Configurable<int> cfFixedNumberOfRandomlySelectedTracks{
+  "cfFixedNumberOfRandomlySelectedTracks", -1,
+  "Set to some integer > 0, to apply and use. Set to <=0, to ignore."};
 
 // Correlations:
 Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false,
@@ -53,6 +62,12 @@ Configurable<bool> cfUseEtaWeights{"cfUseEtaWeights", false,
                                    "use or not eta weights"};
 Configurable<string> cfFileWithWeights{"cfFileWithWeights",
                                        "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
+
+// Nested loops:
+Configurable<bool> cfCalculateNestedLoops{"cfCalculateNestedLoops", false,
+                                          "cross-check for all events all correlations with nested loops"};
+Configurable<bool> cfCalculateCustomNestedLoops{"cfCalculateCustomNestedLoops", false,
+                                                "cross-check e-b-e all correlations with custom nested loops"};
 
 // Event cuts:
 Configurable<int> cNumberOfEvents_min{
@@ -93,7 +108,6 @@ Configurable<int> cNContributors_min{
   "minimum number of vertex contributors (set to -1 to ignore)"};
 Configurable<int> cNContributors_max{"cNContributors_max", 1000000000,
                                      "maximum number of vertex contributors"};
-
 Configurable<int> cImpactParameter_min{
   "cImpactParameter_min", -1,
   "minimum value of impact parameter (can be used only for sim) (set to -1 to ignore)"};
@@ -103,5 +117,18 @@ Configurable<int> cImpactParameter_max{"cImpactParameter_max", 1000000000,
 // Particle cuts:
 Configurable<float> pt_min{"pt_min", 0.2, "minimum track pt value [GeV/c]"};
 Configurable<float> pt_max{"pt_max", 5.0, "maximum track pt value [GeV/c]"};
+
+// Fixed-length binning: TBI 20240113 I do it via string + tokenize + Atof(), until I figure out how to pass array directly via configurable
+Configurable<string> cFixedLength_pt_bins{"cFixedLength_pt_bins", "1.0,2.0,5.0", "variable-length pt bins"};
+
+// Variable-length binning: TBI 20240113 I do it via string + tokenize + Atof(), until I figure out how to pass array directly via configurable
+Configurable<bool> cUseVariableLength_mult_bins{"cUseVariableLength_mult_bins", false, "use or not variable-length multiplicity bins"};
+Configurable<string> cVariableLength_mult_bins{"cVariableLength_mult_bins", "0.,100.,250.,1000.", "variable-length multiplicity bins"};
+Configurable<bool> cUseVariableLength_cent_bins{"cUseVariableLength_cent_bins", false, "use or not variable-length centrality bins"};
+Configurable<string> cVariableLength_cent_bins{"cVariableLength_cent_bins", "0.,10.,50.,100.", "variable-length centrality bins"};
+Configurable<bool> cUseVariableLength_pt_bins{"cUseVariableLength_pt_bins", false, "use or not variable-length pt bins"};
+Configurable<string> cVariableLength_pt_bins{"cVariableLength_pt_bins", "1.0,2.0,5.0", "variable-length pt bins"};
+Configurable<bool> cUseVariableLength_eta_bins{"cUseVariableLength_eta_bins", false, "use or not variable-length eta bins"};
+Configurable<string> cVariableLength_eta_bins{"cVariableLength_eta_bins", "-0.8,-0.4,0.0,0.4,0.8", "variable-length eta bins"};
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
