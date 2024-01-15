@@ -67,9 +67,9 @@ struct HfCandidateSelectorLc {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
- // QA switch
+  // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
- // ML inference
+  // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
@@ -221,7 +221,7 @@ struct HfCandidateSelectorLc {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
-	  hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -242,8 +242,8 @@ struct HfCandidateSelectorLc {
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-	if (applyMl) {
-	  hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
         }
         continue;
       }
@@ -255,9 +255,9 @@ struct HfCandidateSelectorLc {
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-	if (applyMl) {
-	  hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
-	}
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
         continue;
       }
 
@@ -349,9 +349,9 @@ struct HfCandidateSelectorLc {
       if (pidLcToPKPi == 0 && pidLcToPiKP == 0) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
-	  hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
         }
-	continue;
+        continue;
       }
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
@@ -369,28 +369,28 @@ struct HfCandidateSelectorLc {
         statusLcToPiKP = 1; // identified as LcToPiKP
       }
 
-      if(applyMl){
-	//ML selections
-	bool isSelectedMlLcToPKPi = false;
-	bool isSelectedMlLcToPiKP = false;
-	
-	if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
+      if (applyMl) {
+        // ML selections
+        bool isSelectedMlLcToPKPi = false;
+        bool isSelectedMlLcToPiKP = false;
+
+        if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
           std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
           isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
         }
-	if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
+        if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
           std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
           isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
         }
 
         hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
 
-	if(!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP){
-	  hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-	  continue;
-	}
+        if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP) {
+          hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+          continue;
+        }
 
-	if (activateQA) {
+        if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, candidate.pt());
         }
       }

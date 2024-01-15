@@ -153,8 +153,8 @@ DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores inform
 
 namespace hf_sel_candidate_lc
 {
-DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int); //!
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int);                  //!
 DECLARE_SOA_COLUMN(MlProbLcToPKPi, mlProbLcToPKPi, std::vector<float>); //!
 DECLARE_SOA_COLUMN(MlProbLcToPiKP, mlProbLcToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_lc

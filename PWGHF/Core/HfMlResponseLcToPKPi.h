@@ -24,7 +24,7 @@
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_LC(FEATURE)                                         \
-  {                                                                   \
+  {                                                                  \
 #FEATURE, static_cast < uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
   }
 
@@ -32,15 +32,15 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_LC_FULL(OBJECT, FEATURE, GETTER)	\
-  case static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE): {  \
-    inputFeatures.emplace_back(OBJECT.GETTER());                \
-    break;                                                      \
+#define CHECK_AND_FILL_VEC_LC_FULL(OBJECT, FEATURE, GETTER)    \
+  case static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE): { \
+    inputFeatures.emplace_back(OBJECT.GETTER());               \
+    break;                                                     \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_LC_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_LC(GETTER)			      \
+#define CHECK_AND_FILL_VEC_LC(GETTER)                         \
   case static_cast<uint8_t>(InputFeaturesLcToPKPi::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());           \
     break;                                                    \
@@ -151,14 +151,14 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tofNSigmaP2, tofNSigmaPr);
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
-	// Combined PID variables
-	CHECK_AND_FILL_VEC_LC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
+        // Combined PID variables
+        CHECK_AND_FILL_VEC_LC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_LC_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_LC_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_LC_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
-	CHECK_AND_FILL_VEC_LC_FULL(prong0, tpcTofNSigmaPr0, tpcTofNSigmaPr);
+        CHECK_AND_FILL_VEC_LC_FULL(prong0, tpcTofNSigmaPr0, tpcTofNSigmaPr);
         CHECK_AND_FILL_VEC_LC_FULL(prong1, tpcTofNSigmaPr1, tpcTofNSigmaPr);
         CHECK_AND_FILL_VEC_LC_FULL(prong2, tpcTofNSigmaPr2, tpcTofNSigmaPr);
       }
@@ -203,7 +203,7 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(tofNSigmaP2),
       FILL_MAP_LC(tofNSigmaKa2),
       FILL_MAP_LC(tofNSigmaPi2),
-    // Combined PID variables
+      // Combined PID variables
       FILL_MAP_LC(tpcTofNSigmaPi0),
       FILL_MAP_LC(tpcTofNSigmaPi1),
       FILL_MAP_LC(tpcTofNSigmaPi2),
@@ -212,7 +212,7 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(tpcTofNSigmaKa2),
       FILL_MAP_LC(tpcTofNSigmaPr0),
       FILL_MAP_LC(tpcTofNSigmaPr1),
-      FILL_MAP_LC(tpcTofNSigmaPr2)}; 
+      FILL_MAP_LC(tpcTofNSigmaPr2)};
   }
 };
 
