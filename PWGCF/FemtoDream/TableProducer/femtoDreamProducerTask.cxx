@@ -79,6 +79,7 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> ConfIsUseMultiplicityPercentile{"ConfIsUseMultiplicityPercentile", true, "Use multiplicity percentile (ccdb object for MC may be missing)"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
@@ -350,7 +351,11 @@ struct femtoDreamProducerTask {
     float mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      mult = col.centFT0M();
+      if (ConfIsUseMultiplicityPercentile) {
+        mult = col.centFT0M();
+      } else {
+        mult = 0;
+      }
       multNtr = col.multNTracksPV();
     } else {
       mult = 1; // multiplicity percentile is know in Run 2
