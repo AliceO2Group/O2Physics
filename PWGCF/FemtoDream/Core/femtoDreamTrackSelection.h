@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMTRACKSELECTION_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMTRACKSELECTION_H_
 
 #include <string>
 #include <vector>
@@ -607,4 +607,4 @@ void FemtoDreamTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMTRACKSELECTION_H_

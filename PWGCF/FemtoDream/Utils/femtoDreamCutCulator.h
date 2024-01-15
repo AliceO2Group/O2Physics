@@ -15,8 +15,8 @@
 /// andreas.mathis@ph.tum.de \author Luca Barioglio, TU München,
 /// luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#ifndef PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
+#define PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 
 #include <bitset>
 #include <functional>
@@ -367,4 +367,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_

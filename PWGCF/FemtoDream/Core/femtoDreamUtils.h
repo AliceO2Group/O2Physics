@@ -13,8 +13,8 @@
 /// \brief Utilities for the FemtoDream framework
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTOUTILS_H_
-#define PWGCF_FEMTODREAM_FEMTOUTILS_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
 
 #include <vector>
 #include <string>
@@ -150,4 +150,4 @@ bool containsNameValuePair(const std::vector<T>& myVector, const std::string& na
 }
 
 } // namespace o2::analysis::femtoDream
-#endif // PWGCF_FEMTODREAM_FEMTOUTILS_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_

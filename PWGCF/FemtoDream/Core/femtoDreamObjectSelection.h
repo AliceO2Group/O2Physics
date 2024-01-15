@@ -13,8 +13,8 @@
 /// \brief FemtoDreamObjectSelection - Parent class of all selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMOBJECTSELECTION_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMOBJECTSELECTION_H_
 
 #include <algorithm>
 #include <string>
@@ -195,4 +195,4 @@ class FemtoDreamObjectSelection
 } // namespace femtoDream
 } // namespace o2::analysis
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMOBJECTSELECTION_H_

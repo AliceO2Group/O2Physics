@@ -13,8 +13,8 @@
 /// \brief Definition of the FemtoDreamMath Container for math calculations of quantities related to pairs
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 
 #include <iostream>
 
@@ -140,4 +140,4 @@ class FemtoDreamMath
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMMATH_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_

@@ -15,8 +15,8 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 
 #include <TMath.h>
 #include <string>
@@ -413,4 +413,4 @@ class FemtoDreamParticleHisto
 };
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_

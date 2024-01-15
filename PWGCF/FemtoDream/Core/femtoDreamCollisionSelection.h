@@ -13,8 +13,8 @@
 /// \brief FemtoDreamCollisionSelection - event selection within the o2femtodream framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCOLLISIONSELECTION_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMCOLLISIONSELECTION_H_
 
 #include <string>
 #include <iostream>
@@ -172,4 +172,4 @@ class FemtoDreamCollisionSelection
 };
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCOLLISIONSELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMCOLLISIONSELECTION_H_
