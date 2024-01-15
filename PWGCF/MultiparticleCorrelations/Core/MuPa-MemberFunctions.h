@@ -1310,7 +1310,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 
   if (tc.fVerbose) {
     // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
-    LOGF(info, "\033[1;32m%s eBeforeAfter = %d \033[0m", __FUNCTION__, ba); // just a bare function name
+    LOGF(info, "\033[1;32m%s eBeforeAfter = %d \033[0m", __FUNCTION__, (Int_t)ba); // just a bare function name
   }
 
   // a) Fill reconstructed ...:
