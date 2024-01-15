@@ -203,7 +203,8 @@ struct phianalysisrun3 {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
+  // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::McTrackLabels>>;
@@ -401,26 +402,24 @@ struct phianalysisrun3 {
             if (std::abs(mothertrack1.y()) > 0.5) {
               continue;
             }
-            if (isITSOnlycut) {
-              if (std::abs(mothertrack1.pdgCode()) != 333) {
+            if (std::abs(mothertrack1.pdgCode()) != 333) {
+              continue;
+            }
+            if (!isITSOnlycut) {
+              if (!selectionPID(track1) || !selectionPID(track2)) {
                 continue;
               }
-              if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-                if (std::abs(mothertrack1.pdgCode()) != 333) {
-                  continue;
-                }
-              }
-              pvec0 = array{track1.px(), track1.py(), track1.pz()};
-              pvec1 = array{track2.px(), track2.py(), track2.pz()};
-              auto arrMomrec = array{pvec0, pvec1};
-
-              auto motherP = mothertrack1.p();
-              auto motherE = mothertrack1.e();
-              genMass = std::sqrt(motherE * motherE - motherP * motherP);
-
-              recMass = RecoDecay::m(arrMomrec, array{massKa, massKa});
-              histos.fill(HIST("h2PhiRec"), mothertrack1.pt(), recMass - genMass);
             }
+            pvec0 = array{track1.px(), track1.py(), track1.pz()};
+            pvec1 = array{track2.px(), track2.py(), track2.pz()};
+            auto arrMomrec = array{pvec0, pvec1};
+
+            auto motherP = mothertrack1.p();
+            auto motherE = mothertrack1.e();
+            genMass = std::sqrt(motherE * motherE - motherP * motherP);
+
+            recMass = RecoDecay::m(arrMomrec, array{massKa, massKa});
+            histos.fill(HIST("h2PhiRec"), mothertrack1.pt(), recMass - genMass);
           }
         }
       }

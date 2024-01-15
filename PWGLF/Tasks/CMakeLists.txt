@@ -181,6 +181,7 @@ o2physics_add_dpl_workflow(k892pmanalysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(lambda1520analysis
                     SOURCES lambda1520analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -238,5 +239,11 @@ o2physics_add_dpl_workflow(phi-analysis-thnsparse
 
 o2physics_add_dpl_workflow(f1protoncorrelation
                     SOURCES f1protoncorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(chargedkstaranalysis
+                    SOURCES chargedkstaranalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
